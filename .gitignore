@@ -6,4 +6,10 @@
 # Common ignores
 node_modules
 .next/
+
+# macOS metadata
 .DS_Store
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
