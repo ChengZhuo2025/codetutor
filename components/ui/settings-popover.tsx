@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Settings, User, Bell, Moon, LogOut, ChevronRight, X } from "lucide-react"
+import { APP_NAME, APP_VERSION } from "@/constants/app"
 import { cn } from "@/lib/utils"
 
 const settingsItems = [
@@ -104,7 +105,7 @@ export function SettingsPopover() {
 
           {/* Version */}
           <div className="border-t border-border/40 px-4 py-2.5">
-            <p className="text-[11px] text-muted-foreground/50">CodeTutor v0.1.0-beta</p>
+            <p className="text-[11px] text-muted-foreground/50">{APP_NAME} v{APP_VERSION}</p>
           </div>
         </div>
       )}

@@ -1,20 +1,7 @@
-const tools = [
-  { name: "Cursor", tag: "图形化 IDE", color: "text-brand", dot: "bg-brand" },
-  { name: "Claude Code", tag: "CLI 工具", color: "text-chart-3", dot: "bg-chart-3" },
-  { name: "Codex CLI", tag: "CLI 工具", color: "text-chart-5", dot: "bg-chart-5" },
-  { name: "Trae", tag: "图形化 IDE", color: "text-brand", dot: "bg-brand" },
-  { name: "Windsurf", tag: "图形化 IDE", color: "text-chart-3", dot: "bg-chart-3" },
-  { name: "Bolt.new", tag: "在线工具", color: "text-gold", dot: "bg-gold" },
-  { name: "Lovable", tag: "在线工具", color: "text-gold", dot: "bg-gold" },
-  { name: "Kiro", tag: "图形化 IDE", color: "text-chart-5", dot: "bg-chart-5" },
-]
-
-const audiences = [
-  { label: "产品经理", desc: "零代码基础，想用 AI 做出产品原型" },
-  { label: "设计师", desc: "掌握前端实现，让设计稿真正跑起来" },
-  { label: "创业者", desc: "快速验证 MVP，自己实现核心功能" },
-  { label: "后端开发者", desc: "用 AI 工具提升全栈效率" },
-]
+import {
+  marketingAudiences,
+  marketingTools,
+} from "@/features/marketing/data/marketing-content"
 
 export function LandingTools() {
   return (
@@ -32,7 +19,7 @@ export function LandingTools() {
               全部覆盖
             </h2>
             <div className="grid grid-cols-2 gap-3">
-              {tools.map((tool) => (
+              {marketingTools.map((tool) => (
                 <div
                   key={tool.name}
                   className="flex items-center gap-3 rounded-xl border border-border/60 bg-surface-2 px-4 py-3.5 transition-colors hover:border-border"
@@ -58,7 +45,7 @@ export function LandingTools() {
               只需要有学习意愿
             </h2>
             <div className="space-y-3">
-              {audiences.map((item) => (
+              {marketingAudiences.map((item) => (
                 <div
                   key={item.label}
                   className="flex items-start gap-4 rounded-xl border border-border/60 bg-surface-2 px-4 py-4 transition-colors hover:border-border"

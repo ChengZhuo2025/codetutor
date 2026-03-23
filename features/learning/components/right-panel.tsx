@@ -1,19 +1,10 @@
 import { ChevronRight, Target, Lightbulb, CheckCircle2, Lock } from "lucide-react"
+import { ROUTES } from "@/constants/routes"
+import {
+  learningKnowledgeTags,
+  learningTasks,
+} from "@/features/learning/data/learning-content"
 import { cn } from "@/lib/utils"
-
-const tasks = [
-  { id: 1, label: "安装 Cursor", done: true },
-  { id: 2, label: "完成第一次 AI 对话", done: true },
-  { id: 3, label: "理解 Chat vs Composer", done: false, current: true },
-  { id: 4, label: "AI 调试助手", done: false },
-  { id: 5, label: "多文件上下文", done: false, locked: true },
-]
-
-const knowledgeTags = [
-  { label: "Composer 模式", color: "text-brand bg-brand-dim border-brand/20" },
-  { label: "Chat 模式", color: "text-chart-3 bg-chart-3/10 border-chart-3/20" },
-  { label: "AI 上下文", color: "text-chart-5 bg-chart-5/10 border-chart-5/20" },
-]
 
 export function LearnRightPanel() {
   return (
@@ -44,13 +35,13 @@ export function LearnRightPanel() {
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             任务路径
           </span>
-          <a href="/map" className="flex items-center gap-1 text-xs text-brand hover:text-brand/80 transition-colors">
+          <a href={ROUTES.map} className="flex items-center gap-1 text-xs text-brand hover:text-brand/80 transition-colors">
             查看全部
             <ChevronRight className="h-3 w-3" />
           </a>
         </div>
         <div className="space-y-2">
-          {tasks.map((task) => (
+          {learningTasks.map((task) => (
             <div
               key={task.id}
               className={cn(
@@ -93,7 +84,7 @@ export function LearnRightPanel() {
           涉及知识点
         </div>
         <div className="flex flex-wrap gap-2">
-          {knowledgeTags.map((tag) => (
+          {learningKnowledgeTags.map((tag) => (
             <span
               key={tag.label}
               className={cn(

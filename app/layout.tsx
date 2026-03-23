@@ -1,10 +1,15 @@
 import type { Metadata } from 'next'
-import { Analytics } from '@vercel/analytics/next'
+import {
+  APP_DESCRIPTION,
+  APP_LANG,
+  APP_TITLE,
+} from '@/constants/app'
+import { AppProviders } from '@/providers/app-providers'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'CodeTutor — AI 编程学习教练',
-  description: '你负责找到想学的内容，我负责陪你真正学会。AI 编程学习陪练，把教程转成可执行步骤，在你卡住时持续陪练。',
+  title: APP_TITLE,
+  description: APP_DESCRIPTION,
   icons: {
     icon: [
       {
@@ -30,10 +35,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="zh-CN">
+    <html lang={APP_LANG}>
       <body className="font-sans antialiased">
-        {children}
-        <Analytics />
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   )

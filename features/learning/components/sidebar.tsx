@@ -3,26 +3,15 @@
 import Link from "next/link"
 import {
   Code2,
-  BookOpen,
-  Map,
-  Trophy,
   Flame,
   Star,
 } from "lucide-react"
+import {
+  learningNavItems,
+  recentSessions,
+} from "@/features/learning/data/learning-content"
 import { cn } from "@/lib/utils"
 import { SettingsPopover } from "@/components/ui/settings-popover"
-
-const navItems = [
-  { icon: BookOpen, label: "学习", href: "/learn", active: true },
-  { icon: Map, label: "闯关地图", href: "/map", active: false },
-  { icon: Trophy, label: "成就", href: "/achievements", active: false },
-]
-
-const recentSessions = [
-  { title: "Cursor 基础配置", time: "今天", done: true },
-  { title: "第一次 AI 对话", time: "昨天", done: true },
-  { title: "项目结构理解", time: "2天前", done: false },
-]
 
 export function LearnSidebar() {
   return (
@@ -75,7 +64,7 @@ export function LearnSidebar() {
 
       {/* Navigation */}
       <nav className="mt-6 flex-1 space-y-1 px-3">
-        {navItems.map((item) => {
+        {learningNavItems.map((item) => {
           const Icon = item.icon
           return (
             <Link

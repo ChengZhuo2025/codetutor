@@ -1,56 +1,7 @@
 import Link from "next/link"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
-
-const plans = [
-  {
-    name: "免费版",
-    price: "¥0",
-    period: "",
-    desc: "探索产品核心体验",
-    highlight: false,
-    features: [
-      "每月 30 次 AI 对话",
-      "工具选择与学习路径",
-      "基础学分与段位系统",
-      "学习进度追踪",
-    ],
-    cta: "免费开始",
-    href: "/login",
-  },
-  {
-    name: "个人版",
-    price: "¥39",
-    period: "/月",
-    desc: "无限学习，持续陪练",
-    highlight: true,
-    features: [
-      "无限 AI 导师对话",
-      "完整学习进度追踪",
-      "全部工具学习路径",
-      "段位 + 连续打卡激励",
-      "历史会话与知识点回顾",
-    ],
-    cta: "立即订阅",
-    href: "/login",
-  },
-  {
-    name: "专业版",
-    price: "¥99",
-    period: "/月",
-    desc: "项目实战陪跑",
-    highlight: false,
-    features: [
-      "个人版全部功能",
-      "项目实战陪跑",
-      "优先响应支持",
-      "高级学习路径模版",
-      "专属工具推荐",
-    ],
-    cta: "联系咨询",
-    href: "/login",
-  },
-]
+import { marketingPlans } from "@/features/marketing/data/marketing-content"
 
 export function LandingPricing() {
   return (
@@ -66,7 +17,7 @@ export function LandingPricing() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {plans.map((plan) => (
+          {marketingPlans.map((plan) => (
             <div
               key={plan.name}
               className={`relative flex flex-col rounded-2xl border p-8 ${

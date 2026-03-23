@@ -1,5 +1,7 @@
 import Link from "next/link"
 import { ArrowRight, Code2 } from "lucide-react"
+import { APP_COPYRIGHT_YEAR, APP_NAME } from "@/constants/app"
+import { ROUTES } from "@/constants/routes"
 import { Button } from "@/components/ui/button"
 
 export function LandingFooter() {
@@ -14,7 +16,7 @@ export function LandingFooter() {
           <p className="mb-8 text-lg text-muted-foreground text-pretty">
             不需要任何编程基础。粘贴一个教程链接，AI 导师帮你拆解第一步。
           </p>
-          <Link href="/login">
+          <Link href={ROUTES.login}>
             <Button
               size="lg"
               className="h-12 bg-brand px-8 text-base font-semibold text-brand-foreground hover:bg-brand/90"
@@ -33,7 +35,7 @@ export function LandingFooter() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-brand-foreground">
               <Code2 className="h-3.5 w-3.5" />
             </div>
-            <span className="text-sm font-medium">CodeTutor</span>
+            <span className="text-sm font-medium">{APP_NAME}</span>
           </div>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <span className="cursor-pointer hover:text-foreground transition-colors">关于</span>
@@ -41,7 +43,7 @@ export function LandingFooter() {
             <span className="cursor-pointer hover:text-foreground transition-colors">使用条款</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            © 2026 CodeTutor. All rights reserved.
+            © {APP_COPYRIGHT_YEAR} {APP_NAME}. All rights reserved.
           </p>
         </div>
       </footer>
