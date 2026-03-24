@@ -14,9 +14,19 @@ export type Stage = {
   tags: string[]
   keyPoints: string[]
   pitfalls: StagePitfall[]
+  estimatedTime: string
+  focus: string
 }
 
 export type ProgressTool = {
   id: string
   label: string
+}
+
+export type MapSummary = {
+  totalXP: number
+  currentRank: string
+  nextRank: string
+  remainingXPToNextRank: number
+  streakDays: number
 }

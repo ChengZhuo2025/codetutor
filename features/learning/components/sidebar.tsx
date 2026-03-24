@@ -1,118 +1,100 @@
 "use client"
 
-import Link from "next/link"
-import {
-  Code2,
-  Flame,
-  Star,
-} from "lucide-react"
-import {
-  learningNavItems,
-  recentSessions,
-} from "@/features/learning/data/learning-content"
+import { Flame, Star, Target } from "lucide-react"
+import { APP_NAME } from "@/constants/app"
+import { getDashboardNavItems } from "@/constants/navigation"
+import { ROUTES } from "@/constants/routes"
+import { DashboardSidebar } from "@/components/layout/dashboard-sidebar"
+import { getLearningPageMock } from "@/lib/api/mock"
 import { cn } from "@/lib/utils"
-import { SettingsPopover } from "@/components/ui/settings-popover"
 
-export function LearnSidebar() {
+type LearnSidebarProps = {
+  mobile?: boolean
+}
+
+export function LearnSidebar({ mobile = false }: LearnSidebarProps) {
+  const { mission, profile, recentSessions } = getLearningPageMock()
+  const progressPercent = Math.min(Math.round((profile.currentScore / 1000) * 100), 100)
+
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-border/50 bg-sidebar">
-      {/* Logo */}
-      <div className="flex h-16 items-center gap-2.5 border-b border-border/50 px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
-          <Code2 className="h-4 w-4" />
-        </div>
-        <span className="font-semibold">CodeTutor</span>
-      </div>
-
-      {/* User rank card */}
-      <div className="mx-4 mt-4 rounded-xl border border-border/50 bg-surface-3 p-4">
-        <div className="mb-3 flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-dim text-sm font-bold text-brand">
-            陈
+    <DashboardSidebar
+      items={getDashboardNavItems(ROUTES.learn)}
+      widthClass={mobile ? "w-full" : "w-72"}
+      footerContent={
+        <div>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/55">
+            最近学习记录
+          </p>
+          <div className="space-y-1">
+            {recentSessions.map((session) => (
+              <button
+                key={session.title}
+                className="flex w-full items-center justify-between rounded-xl px-2 py-2.5 text-left text-xs transition-colors hover:bg-surface-3"
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <div
+                    className={cn(
+                      "h-1.5 w-1.5 shrink-0 rounded-full",
+                      session.done ? "bg-brand" : "bg-muted-foreground/40",
+                    )}
+                  />
+                  <span className="truncate text-muted-foreground">{session.title}</span>
+                </div>
+                <span className="ml-2 shrink-0 text-muted-foreground/55">{session.time}</span>
+              </button>
+            ))}
           </div>
-          <div>
-            <p className="text-sm font-semibold">陈小明</p>
-            <p className="text-xs text-brand">Vibe Coder</p>
+        </div>
+      }
+    >
+      <div className="rounded-[24px] border border-border/50 bg-surface-3 p-4">
+        <div className="mb-3 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-dim text-sm font-bold text-brand">
+            {profile.nickname.slice(0, 1)}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{profile.nickname}</p>
+            <p className="truncate text-xs text-brand">
+              {profile.currentRank} · {APP_NAME}
+            </p>
           </div>
         </div>
         <div className="mb-1.5 flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">680 / 1000 XP</span>
-          <span className="text-muted-foreground">68%</span>
+          <span className="text-muted-foreground">{profile.currentScore} / 1000 XP</span>
+          <span className="text-muted-foreground">{progressPercent}%</span>
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-4">
-          <div className="h-full w-[68%] rounded-full bg-brand" />
+          <div className="h-full rounded-full bg-brand" style={{ width: `${progressPercent}%` }} />
         </div>
       </div>
 
-      {/* Stats row */}
-      <div className="mx-4 mt-3 grid grid-cols-2 gap-2">
-        <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-surface-3 px-3 py-2.5">
+      {mission ? (
+        <div className="rounded-[24px] border border-brand/20 bg-brand-dim/55 p-4">
+          <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand/80">
+            <Target className="h-3.5 w-3.5" />
+            当前训练焦点
+          </div>
+          <p className="text-sm font-semibold text-foreground">{mission.goal}</p>
+          <p className="mt-2 text-xs leading-6 text-muted-foreground">{mission.summary}</p>
+        </div>
+      ) : null}
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface-3 px-3 py-2.5">
           <Flame className="h-4 w-4 text-gold" />
           <div>
-            <p className="text-xs text-muted-foreground">连续</p>
-            <p className="text-sm font-bold text-gold">7 天</p>
+            <p className="text-[11px] text-muted-foreground">连续学习</p>
+            <p className="text-sm font-bold text-gold">{profile.streakDays} 天</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-surface-3 px-3 py-2.5">
+        <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface-3 px-3 py-2.5">
           <Star className="h-4 w-4 text-brand" />
           <div>
-            <p className="text-xs text-muted-foreground">已完成</p>
-            <p className="text-sm font-bold">14 关</p>
+            <p className="text-[11px] text-muted-foreground">已完成</p>
+            <p className="text-sm font-bold">{profile.completedTaskCount} 关</p>
           </div>
         </div>
       </div>
-
-      {/* Navigation */}
-      <nav className="mt-6 flex-1 space-y-1 px-3">
-        {learningNavItems.map((item) => {
-          const Icon = item.icon
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                item.active
-                  ? "bg-brand-dim text-brand"
-                  : "text-muted-foreground hover:bg-surface-3 hover:text-foreground"
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          )
-        })}
-      </nav>
-
-      {/* Recent sessions */}
-      <div className="border-t border-border/50 px-4 py-4">
-        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground/60">
-          历史记录
-        </p>
-        <div className="space-y-1">
-          {recentSessions.map((s) => (
-            <button
-              key={s.title}
-              className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-xs transition-colors hover:bg-surface-3"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <div
-                  className={cn(
-                    "h-1.5 w-1.5 shrink-0 rounded-full",
-                    s.done ? "bg-brand" : "bg-muted-foreground/40"
-                  )}
-                />
-                <span className="truncate text-muted-foreground">{s.title}</span>
-              </div>
-              <span className="ml-2 shrink-0 text-muted-foreground/50">{s.time}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="border-t border-border/50 p-4">
-        <SettingsPopover />
-      </div>
-    </aside>
+    </DashboardSidebar>
   )
 }

@@ -5,58 +5,61 @@ import {
 
 export function LandingTools() {
   return (
-    <section id="tools" className="py-24 px-6">
+    <section id="tools" className="relative px-6 py-24">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/16 to-transparent" />
       <div className="mx-auto max-w-6xl">
-        <div className="grid gap-16 lg:grid-cols-2">
-          {/* Tools */}
-          <div>
+        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+          <div className="flex h-full flex-col">
             <p className="mb-3 text-sm font-medium uppercase tracking-widest text-muted-foreground">
               支持工具
             </p>
-            <h2 className="mb-8 text-3xl font-bold tracking-tight">
-              主流 AI 编程工具
-              <br />
-              全部覆盖
+            <h2 className="mb-4 text-3xl font-bold tracking-tight text-balance">
+              主流 AI 编程工具全部覆盖
             </h2>
-            <div className="grid grid-cols-2 gap-3">
+            <p className="mb-8 max-w-xl text-sm leading-7 text-muted-foreground">
+              先从你真正要用的工具开始学，而不是被迫套进统一课程。不同工具会有不同的起步任务和提示方式。
+            </p>
+
+            <div className="grid flex-1 content-start gap-3 sm:grid-cols-2">
               {marketingTools.map((tool) => (
                 <div
                   key={tool.name}
-                  className="flex items-center gap-3 rounded-xl border border-border/60 bg-surface-2 px-4 py-3.5 transition-colors hover:border-border"
+                  className="flex min-h-[82px] items-center rounded-[24px] border border-white/10 bg-surface-2/85 px-4 py-4 transition-all hover:-translate-y-0.5 hover:border-brand/18 hover:bg-surface-2"
                 >
-                  <div className={`h-2 w-2 rounded-full ${tool.dot}`} />
-                  <div>
-                    <p className="text-sm font-medium">{tool.name}</p>
-                    <p className="text-xs text-muted-foreground">{tool.tag}</p>
+                  <div className="flex items-center gap-3">
+                    <div className={`h-2.5 w-2.5 rounded-full ${tool.dot}`} />
+                    <div>
+                      <p className="text-sm font-semibold">{tool.name}</p>
+                      <p className="text-xs text-muted-foreground">{tool.tag}</p>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Audiences */}
-          <div>
+          <div className="flex h-full flex-col">
             <p className="mb-3 text-sm font-medium uppercase tracking-widest text-muted-foreground">
               适合人群
             </p>
-            <h2 className="mb-8 text-3xl font-bold tracking-tight">
-              不需要有编程基础
-              <br />
-              只需要有学习意愿
+            <h2 className="mb-4 text-3xl font-bold tracking-tight text-balance">
+              不需要先会编程，只需要先开始动手
             </h2>
-            <div className="space-y-3">
+            <p className="mb-8 max-w-xl text-sm leading-7 text-muted-foreground">
+              无论你是想做原型、补齐实现能力，还是把 AI 工具真正引入项目流程，都能从一个更可执行的入口开始。
+            </p>
+
+            <div className="grid flex-1 content-start gap-3 sm:grid-cols-2">
               {marketingAudiences.map((item) => (
                 <div
                   key={item.label}
-                  className="flex items-start gap-4 rounded-xl border border-border/60 bg-surface-2 px-4 py-4 transition-colors hover:border-border"
+                  className="flex min-h-[177px] flex-col justify-center rounded-[24px] border border-white/10 bg-surface-2/85 px-4 py-4 transition-all hover:-translate-y-0.5 hover:border-brand/18 hover:bg-surface-2"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-dim text-xs font-bold text-brand">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-dim text-sm font-bold text-brand">
                     {item.label[0]}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold">{item.label}</p>
-                    <p className="text-sm text-muted-foreground">{item.desc}</p>
-                  </div>
+                  <p className="mt-4 text-sm font-semibold">{item.label}</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.desc}</p>
                 </div>
               ))}
             </div>

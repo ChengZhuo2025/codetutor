@@ -1,25 +1,136 @@
+import type { ApiSuccessResponse } from "@/lib/api/types"
 import type {
-  OnboardingLevel,
-  OnboardingTool,
-  ToolColor,
-} from "@/features/onboarding/types"
+  GetOnboardingToolsResponseData,
+  OnboardingPresetContract,
+  SelectToolResponseData,
+} from "@/lib/api/contracts/onboarding"
+import type { ToolColor } from "@/features/onboarding/types"
 
-export const tools: OnboardingTool[] = [
-  { id: "cursor", name: "Cursor", category: "图形化 IDE", desc: "AI 原生代码编辑器，最适合入门", popular: true, color: "brand" },
-  { id: "claude-code", name: "Claude Code", category: "CLI 工具", desc: "Anthropic 官方 CLI，命令行 AI 编程", popular: false, color: "chart-3" },
-  { id: "trae", name: "Trae", category: "图形化 IDE", desc: "字节出品，中文支持好", popular: true, color: "brand" },
-  { id: "windsurf", name: "Windsurf", category: "图形化 IDE", desc: "Codeium 出品，Agent 模式强大", popular: false, color: "chart-5" },
-  { id: "bolt", name: "Bolt.new", category: "在线工具", desc: "浏览器直接运行，零安装门槛", popular: false, color: "gold" },
-  { id: "codex", name: "Codex CLI", category: "CLI 工具", desc: "OpenAI 官方 CLI，轻量高效", popular: false, color: "chart-5" },
-  { id: "lovable", name: "Lovable", category: "在线工具", desc: "前端生成工具，无需编程即可建站", popular: false, color: "gold" },
-  { id: "kiro", name: "Kiro", category: "图形化 IDE", desc: "AWS 出品，规格文档驱动开发", popular: false, color: "chart-3" },
-]
+export const mockOnboardingToolsResponse: ApiSuccessResponse<GetOnboardingToolsResponseData> = {
+  code: "OK",
+  message: "success",
+  data: {
+    groups: [
+      {
+        groupCode: "gui",
+        groupName: "图形化工具",
+        tools: [
+          {
+            id: "cursor",
+            code: "cursor",
+            name: "Cursor",
+            difficultyLevel: "beginner",
+            summary: "AI 原生代码编辑器，最适合入门",
+            category: "图形化 IDE",
+            popular: true,
+            color: "brand",
+          },
+          {
+            id: "trae",
+            code: "trae",
+            name: "Trae",
+            difficultyLevel: "beginner",
+            summary: "字节出品，中文支持好",
+            category: "图形化 IDE",
+            popular: true,
+            color: "brand",
+          },
+          {
+            id: "windsurf",
+            code: "windsurf",
+            name: "Windsurf",
+            difficultyLevel: "intermediate",
+            summary: "Codeium 出品，Agent 模式强大",
+            category: "图形化 IDE",
+            popular: false,
+            color: "chart-5",
+          },
+          {
+            id: "kiro",
+            code: "kiro",
+            name: "Kiro",
+            difficultyLevel: "intermediate",
+            summary: "AWS 出品，规格文档驱动开发",
+            category: "图形化 IDE",
+            popular: false,
+            color: "chart-3",
+          },
+        ],
+      },
+      {
+        groupCode: "cli",
+        groupName: "CLI 工具",
+        tools: [
+          {
+            id: "claude-code",
+            code: "claude-code",
+            name: "Claude Code",
+            difficultyLevel: "intermediate",
+            summary: "Anthropic 官方 CLI，命令行 AI 编程",
+            category: "CLI 工具",
+            popular: false,
+            color: "chart-3",
+          },
+          {
+            id: "codex",
+            code: "codex",
+            name: "Codex CLI",
+            difficultyLevel: "intermediate",
+            summary: "OpenAI 官方 CLI，轻量高效",
+            category: "CLI 工具",
+            popular: false,
+            color: "chart-5",
+          },
+        ],
+      },
+      {
+        groupCode: "web",
+        groupName: "在线工具",
+        tools: [
+          {
+            id: "bolt",
+            code: "bolt",
+            name: "Bolt.new",
+            difficultyLevel: "beginner",
+            summary: "浏览器直接运行，零安装门槛",
+            category: "在线工具",
+            popular: false,
+            color: "gold",
+          },
+          {
+            id: "lovable",
+            code: "lovable",
+            name: "Lovable",
+            difficultyLevel: "beginner",
+            summary: "前端生成工具，无需编程即可建站",
+            category: "在线工具",
+            popular: false,
+            color: "gold",
+          },
+        ],
+      },
+    ],
+  },
+}
 
-export const levels: OnboardingLevel[] = [
-  { id: "beginner", label: "完全入门", desc: "没有编程基础，想从零开始" },
-  { id: "intermediate", label: "有一定基础", desc: "了解基本编程，想提升 AI 工具效率" },
-  { id: "advanced", label: "进阶提升", desc: "有项目经验，想系统化 AI 编程方法论" },
-]
+export const mockOnboardingInitialPathResponse: ApiSuccessResponse<SelectToolResponseData> = {
+  code: "OK",
+  message: "success",
+  data: {
+    pathId: "path-cursor-beginner",
+    currentTaskId: "task-install-cursor",
+    initialPreview: ["认识工具界面", "写第一个 Prompt", "生成第一个页面"],
+  },
+}
+
+export const onboardingPresets: OnboardingPresetContract = {
+  levels: [
+    { id: "beginner", label: "完全入门", desc: "没有编程基础，想从零开始" },
+    { id: "intermediate", label: "有一定基础", desc: "了解基本编程，想提升 AI 工具效率" },
+    { id: "advanced", label: "进阶提升", desc: "有项目经验，想系统化 AI 编程方法论" },
+  ],
+  toolCards: [],
+}
 
 export const colorMap: Record<ToolColor, string> = {
   brand: "border-brand/40 bg-brand-dim text-brand",

@@ -8,7 +8,10 @@ export const ROUTES = {
 } as const
 
 export const MARKETING_SECTIONS = {
+  home: "#home",
   how: "#how",
   tools: "#tools",
+  benefits: "#benefits",
   pricing: "#pricing",
+  about: "#about",
 } as const

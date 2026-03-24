@@ -11,18 +11,25 @@ type DashboardSidebarProps = {
   items: DashboardNavItem[]
   widthClass?: string
   showSettings?: boolean
+  className?: string
+  children?: React.ReactNode
+  footerContent?: React.ReactNode
 }
 
 export function DashboardSidebar({
   items,
   widthClass = "w-64",
   showSettings = true,
+  className,
+  children,
+  footerContent,
 }: DashboardSidebarProps) {
   return (
     <aside
       className={cn(
-        "flex h-screen shrink-0 flex-col border-r border-border/50 bg-sidebar",
+        "flex h-full min-h-0 shrink-0 flex-col border-r border-border/50 bg-sidebar",
         widthClass,
+        className,
       )}
     >
       <div className="flex h-16 items-center gap-2.5 border-b border-border/50 px-5">
@@ -31,6 +38,8 @@ export function DashboardSidebar({
         </div>
         <span className="font-semibold">{APP_NAME}</span>
       </div>
+
+      {children ? <div className="space-y-3 px-4 pt-4">{children}</div> : null}
 
       <nav className="mt-4 flex-1 space-y-1 px-3">
         {items.map((item) => {
@@ -53,6 +62,10 @@ export function DashboardSidebar({
           )
         })}
       </nav>
+
+      {footerContent ? (
+        <div className="border-t border-border/50 px-4 py-4">{footerContent}</div>
+      ) : null}
 
       {showSettings && (
         <div className="border-t border-border/50 p-4">

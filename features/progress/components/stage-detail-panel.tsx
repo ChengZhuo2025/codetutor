@@ -1,52 +1,112 @@
-import { AlertTriangle, BookMarked, Lightbulb } from "lucide-react"
+import { AlertTriangle, ArrowRight, BookMarked, Lightbulb, Play, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Stage } from "@/features/progress/types"
 
 type StageDetailPanelProps = {
   stage: Stage
+  onContinueLearning: () => void
 }
 
-export function StageDetailPanel({ stage }: StageDetailPanelProps) {
+export function StageDetailPanel({
+  stage,
+  onContinueLearning,
+}: StageDetailPanelProps) {
+  const ctaLabel =
+    stage.status === "current"
+      ? "回到当前关卡继续学习"
+      : stage.status === "available"
+        ? "开始这一关"
+        : stage.status === "done"
+          ? "回顾本关要点"
+          : "完成前置关卡后解锁"
+
   return (
     <div className="flex-1 overflow-y-auto px-6 py-6">
-      <div className="sticky top-0">
-        <div className="mb-4 flex items-center gap-2">
-          <BookMarked className="h-4 w-4 text-brand" />
-          <span className="text-sm font-semibold text-foreground">关键知识点</span>
-          <span className="ml-1 rounded-full bg-surface-3 px-2 py-0.5 text-xs text-muted-foreground">
-            第 {stage.id} 关
-          </span>
+      <div className="sticky top-0 space-y-4">
+        <div className="rounded-[28px] border border-brand/20 bg-brand-dim/55 p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <BookMarked className="h-4 w-4 text-brand" />
+            <span className="text-sm font-semibold text-foreground">关卡详情</span>
+            <span className="rounded-full bg-background/55 px-2 py-0.5 text-xs text-muted-foreground">
+              第 {stage.id} 关
+            </span>
+          </div>
+
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-lg font-semibold text-foreground">{stage.title}</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">{stage.desc}</p>
+            </div>
+            <div className="rounded-full border border-gold/20 bg-gold-dim px-2.5 py-1 text-xs font-semibold text-gold">
+              +{stage.xp} XP
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-2">
+            <div className="rounded-2xl border border-border/50 bg-background/55 px-3 py-3">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/60">
+                本关目标
+              </p>
+              <p className="mt-2 text-sm leading-6 text-foreground">{stage.focus}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-2xl border border-border/50 bg-background/55 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/60">
+                  预计时长
+                </p>
+                <p className="mt-2 text-sm font-semibold text-foreground">{stage.estimatedTime}</p>
+              </div>
+              <div className="rounded-2xl border border-border/50 bg-background/55 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/60">
+                  成长奖励
+                </p>
+                <p className="mt-2 text-sm font-semibold text-foreground">+{stage.xp} XP</p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={onContinueLearning}
+            disabled={stage.status === "locked"}
+            className={cn(
+              "mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold transition-colors",
+              stage.status === "locked"
+                ? "cursor-not-allowed bg-surface-3 text-muted-foreground/50"
+                : stage.status === "available"
+                  ? "bg-chart-3/12 text-chart-3 hover:bg-chart-3/18"
+                  : "bg-brand text-brand-foreground hover:bg-brand/90",
+            )}
+          >
+            {stage.status === "current" ? <Play className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
+            {ctaLabel}
+          </button>
         </div>
 
-        <div className="mb-4 rounded-xl border border-border/50 bg-surface-2 px-4 py-3">
-          <p className="mb-0.5 text-xs text-muted-foreground">当前查看</p>
-          <p className="text-sm font-semibold">{stage.title}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{stage.desc}</p>
-        </div>
-
-        <div className="mb-4 rounded-xl border border-border/50 bg-surface-2 p-4">
+        <div className="rounded-[28px] border border-border/50 bg-surface-2 p-4">
           <div className="mb-3 flex items-center gap-2">
             <Lightbulb className="h-3.5 w-3.5 text-gold" />
-            <span className="text-xs font-semibold text-gold">本关要掌握</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gold">
+              本关要掌握
+            </span>
           </div>
           <ul className="space-y-2.5">
             {stage.keyPoints.map((point, index) => (
               <li key={index} className="flex items-start gap-2.5">
-                <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand/20 text-xs font-bold text-brand">
+                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/20 text-xs font-bold text-brand">
                   {index + 1}
                 </div>
-                <span className="text-xs leading-relaxed text-foreground/85">
-                  {point}
-                </span>
+                <span className="text-sm leading-6 text-foreground/85">{point}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="rounded-xl border border-border/50 bg-surface-2 p-4">
+        <div className="rounded-[28px] border border-border/50 bg-surface-2 p-4">
           <div className="mb-3 flex items-center gap-2">
             <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
-            <span className="text-xs font-semibold text-destructive/80">注意事项</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-destructive/80">
+              注意事项
+            </span>
           </div>
           <ul className="space-y-2.5">
             {stage.pitfalls.map((pitfall, index) => (
@@ -63,13 +123,21 @@ export function StageDetailPanel({ stage }: StageDetailPanelProps) {
                       卡点提醒
                     </span>
                   )}
-                  <span className="text-xs leading-relaxed text-foreground/80">
-                    {pitfall.text}
-                  </span>
+                  <span className="text-sm leading-6 text-foreground/80">{pitfall.text}</span>
                 </div>
               </li>
             ))}
           </ul>
+        </div>
+
+        <div className="rounded-[28px] border border-gold/20 bg-gold-dim p-4">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-gold">
+            <Zap className="h-3.5 w-3.5" />
+            成长反馈
+          </div>
+          <p className="mt-2 text-sm leading-6 text-foreground">
+            完成这一关后会直接增加 {stage.xp} XP，并推动下一关解锁。保持连续学习时，成长反馈会更明显。
+          </p>
         </div>
       </div>
     </div>

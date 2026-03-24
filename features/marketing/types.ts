@@ -6,7 +6,8 @@ export type MarketingStep = {
   title: string
   description: string
   color: string
-  bg: string
+  panelClassName: string
+  iconPanelClassName: string
 }
 
 export type MarketingTool = {
@@ -19,6 +20,28 @@ export type MarketingTool = {
 export type MarketingAudience = {
   label: string
   desc: string
+}
+
+export type MarketingConversationMessage = {
+  id: string
+  speaker: "user" | "ai" | "system"
+  title: string
+  body: string
+  meta?: string
+}
+
+export type MarketingFitNote = {
+  title: string
+  desc: string
+}
+
+export type MarketingBenefit = {
+  icon: LucideIcon
+  title: string
+  desc: string
+  color: string
+  bgColor: string
+  borderColor: string
 }
 
 export type MarketingPlan = {

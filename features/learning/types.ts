@@ -1,8 +1,43 @@
 import type { LucideIcon } from "lucide-react"
 
+export type MessageRole = "system" | "ai" | "user"
+
+export type MessageKind =
+  | "system_goal"
+  | "coach"
+  | "user_input"
+  | "task_feedback"
+
+export type MessageAttachment = {
+  type: "image"
+  url: string
+  name: string
+}
+
 export type Message = {
   id: number
-  role: "user" | "ai"
+  role: MessageRole
+  kind: MessageKind
+  title?: string
+  content: string
+  xp?: number
+  nextStep?: string
+  attachment?: MessageAttachment
+}
+
+export type QuickActionCategory = "progress" | "help" | "hint"
+
+export type QuickAction = {
+  label: string
+  tone: "primary" | "secondary" | "warning"
+  helper: string
+  category: QuickActionCategory
+}
+
+export type LearningReply = {
+  trigger?: string
+  kind: Extract<MessageKind, "coach" | "task_feedback">
+  title?: string
   content: string
   xp?: number
   nextStep?: string
@@ -32,4 +67,24 @@ export type LearningTask = {
 export type LearningKnowledgeTag = {
   label: string
   color: string
+}
+
+export type LearningTip = {
+  title: string
+  body: string
+}
+
+export type LearningMission = {
+  title: string
+  tool: string
+  stageLabel: string
+  goal: string
+  summary: string
+  estimatedTime: string
+  reward: string
+  progressLabel: string
+  progressPercent: number
+  coachCue: string
+  nextUnlockTitle: string
+  nextUnlockSummary: string
 }

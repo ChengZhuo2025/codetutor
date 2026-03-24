@@ -15,6 +15,7 @@ export type Badge = {
   icon: LucideIcon
   earned: boolean
   color: string
+  progressHint?: string
 }
 
 export type StatItem = {
@@ -23,6 +24,7 @@ export type StatItem = {
   unit: string
   icon: LucideIcon
   color: string
+  hint: string
 }
 
 export type XpGuideItem = {
@@ -37,4 +39,12 @@ export type XpHistoryItem = {
   xp: string
   time: string
   type: "task" | "checkin" | "bonus" | "badge"
+}
+
+export type AchievementOverview = {
+  totalXP: number
+  streakDays: number
+  monthlyXP: number
+  nextRankRemainingXP: number
+  earnedBadges: number
 }

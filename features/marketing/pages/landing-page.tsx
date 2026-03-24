@@ -1,3 +1,5 @@
+import { LandingBenefits } from "@/features/marketing/components/benefits"
+import { LandingFinalCta } from "@/features/marketing/components/final-cta"
 import { LandingFooter } from "@/features/marketing/components/footer"
 import { LandingHero } from "@/features/marketing/components/hero"
 import { LandingHowItWorks } from "@/features/marketing/components/how-it-works"
@@ -13,7 +15,9 @@ export function LandingPage() {
         <LandingHero />
         <LandingHowItWorks />
         <LandingTools />
+        <LandingBenefits />
         <LandingPricing />
+        <LandingFinalCta />
       </main>
       <LandingFooter />
     </div>
