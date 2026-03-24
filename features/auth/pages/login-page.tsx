@@ -19,7 +19,7 @@ export function LoginPage() {
   const [countdown, setCountdown] = useState(0)
   const [lastSentPhone, setLastSentPhone] = useState("")
   const [isSendingCode, setIsSendingCode] = useState(false)
-  const [isSubmitting, startSubmitting] = useTransition()
+  const [isPending, startSubmitting] = useTransition()
 
   useEffect(() => {
     if (countdown <= 0) return
@@ -49,11 +49,11 @@ export function LoginPage() {
       ? `验证码已发送至 ${lastSentPhone || phone}，${countdown}s 后可重新获取。`
       : mode === "login"
         ? "登录后将直接回到你上次未完成的学习任务。"
-        : "注册后会先帮你生成一条适合当前水平的学习路径。"
+        : "注册后Ai生成一条适合当前水平的学习路径。"
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <LoginBrandPanel />
+    <div className="flex h-screen overflow-hidden bg-background">
+      <LoginBrandPanel mode={mode} />
       <LoginForm
         tab={tab}
         mode={mode}
@@ -61,7 +61,7 @@ export function LoginPage() {
         code={code}
         countdown={countdown}
         isSendingCode={isSendingCode}
-        isSubmitting={isSubmitting}
+        isSubmitting={isPending}
         statusMessage={statusMessage}
         onTabChange={setTab}
         onModeToggle={() =>

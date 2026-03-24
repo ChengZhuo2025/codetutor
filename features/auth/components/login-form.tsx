@@ -1,27 +1,26 @@
-"use client"
+"use client";
 
-import { ArrowRight, Code2, MessageSquare, Phone } from "lucide-react"
-import { APP_NAME } from "@/constants/app"
-import { Button } from "@/components/ui/button"
-import { StatePanel } from "@/components/ui/state-panel"
-import type { AuthMode, AuthTab } from "@/features/auth/types"
+import { ArrowRight, MessageSquare, Phone } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { StatePanel } from "@/components/ui/state-panel";
+import type { AuthMode, AuthTab } from "@/features/auth/types";
 
 type LoginFormProps = {
-  tab: AuthTab
-  mode: AuthMode
-  phone: string
-  code: string
-  countdown: number
-  isSendingCode: boolean
-  isSubmitting: boolean
-  statusMessage: string
-  onTabChange: (tab: AuthTab) => void
-  onModeToggle: () => void
-  onPhoneChange: (value: string) => void
-  onCodeChange: (value: string) => void
-  onSendCode: () => void
-  onSubmit: () => void
-}
+  tab: AuthTab;
+  mode: AuthMode;
+  phone: string;
+  code: string;
+  countdown: number;
+  isSendingCode: boolean;
+  isSubmitting: boolean;
+  statusMessage: string;
+  onTabChange: (tab: AuthTab) => void;
+  onModeToggle: () => void;
+  onPhoneChange: (value: string) => void;
+  onCodeChange: (value: string) => void;
+  onSendCode: () => void;
+  onSubmit: () => void;
+};
 
 export function LoginForm({
   tab,
@@ -39,80 +38,78 @@ export function LoginForm({
   onSendCode,
   onSubmit,
 }: LoginFormProps) {
-  const canSubmit = tab === "wechat" || (phone.length === 11 && code.length === 6)
-  const verificationState =
-    isSendingCode ? "loading" : countdown > 0 ? "success" : "empty"
-  const verificationTitle =
-    isSendingCode
-      ? "验证码发送中"
-      : countdown > 0
-        ? "验证码已发送"
-        : mode === "login"
-          ? "准备继续学习"
-          : "完成注册前验证手机号"
+  const isValidPhone = /^1[3-9]\d{9}$/.test(phone);
+  const isValidCode = /^\d{6}$/.test(code);
+  const canSubmit = tab === "wechat" || (isValidPhone && isValidCode);
+  const verificationState = isSendingCode
+    ? "loading"
+    : countdown > 0
+      ? "success"
+      : "empty";
+  const verificationTitle = isSendingCode
+    ? "验证码发送中"
+    : countdown > 0
+      ? "验证码已发送"
+      : mode === "login"
+        ? "准备继续学习"
+        : "验证手机号码";
+
+  // 微信扫码的提示信息
+  const wechatTitle = mode === "login" ? "扫码登录" : "扫码注册";
+  const wechatDesc =
+    mode === "login" ? "微信扫码后自动登录" : "微信扫码后快速创建账号";
 
   return (
-    <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-6 py-12">
+    <div className="relative flex w-[40%] flex-col items-center justify-center overflow-hidden px-6 py-8">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,oklch(0.78_0.15_180/0.08),transparent_28%)]" />
 
-      <div className="mb-8 flex items-center gap-2 lg:hidden">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
-          <Code2 className="h-4 w-4" />
-        </div>
-        <span className="font-semibold">{APP_NAME}</span>
-      </div>
-
       <div className="relative z-10 w-full max-w-sm">
-        <div className="mb-5 rounded-3xl border border-brand/20 bg-brand-dim/60 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-brand/80">
-                上次学习进度
-              </p>
-              <h2 className="mt-2 text-sm font-semibold text-foreground">
-                Cursor 入门 · 第 1 关
-              </h2>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                还差一步：打开项目并发起第一次 AI 对话。
-              </p>
-            </div>
-            <span className="rounded-full border border-brand/30 bg-background/60 px-2.5 py-1 text-[11px] font-semibold text-brand">
-              继续中
-            </span>
-          </div>
+        {/* 登录/注册切换 - 文字链接样式，与下方 tab 区分 */}
+        <div className="mb-8 flex items-center justify-center gap-6">
+          <button
+            onClick={() => mode !== "login" && onModeToggle()}
+            className={`text-base font-medium transition-colors ${
+              mode === "login"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            登录
+          </button>
+          <div className="h-4 w-px bg-border/60" />
+          <button
+            onClick={() => mode !== "register" && onModeToggle()}
+            className={`text-base font-medium transition-colors ${
+              mode === "register"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            注册
+          </button>
         </div>
 
-        <div className="mb-6 flex rounded-full border border-border/60 bg-surface-2 p-1">
-          {(["login", "register"] as AuthMode[]).map((item) => (
-            <button
-              key={item}
-              onClick={() => item !== mode && onModeToggle()}
-              className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition-all ${
-                mode === item
-                  ? "bg-background text-foreground shadow-[0_10px_24px_-18px_oklch(0.96_0.01_240/0.85)]"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {item === "login" ? "登录" : "注册"}
-            </button>
-          ))}
-        </div>
-
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight">
             {mode === "login" ? "欢迎回来" : "创建账号"}
           </h1>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
             {mode === "login"
-              ? "登录后继续你上次的学习节奏，不用重新选择工具和路径。"
-              : "注册后会先确认工具与水平，再生成你的第一条学习路径。"}
+              ? "登录后继续你上次的学习节奏。"
+              : "注册后会先确认工具与水平，再生成你的学习路径。"}
           </p>
         </div>
 
-        <div className="mb-5 flex rounded-2xl border border-border/60 bg-surface-2 p-1">
+        <div
+          role="tablist"
+          aria-label="认证方式"
+          className="mb-4 flex rounded-2xl border border-border/60 bg-surface-2 p-1"
+        >
           {(["phone", "wechat"] as AuthTab[]).map((item) => (
             <button
               key={item}
+              role="tab"
+              aria-selected={tab === item}
               onClick={() => onTabChange(item)}
               className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all ${
                 tab === item
@@ -137,49 +134,63 @@ export function LoginForm({
 
         {tab === "phone" ? (
           <form
-            className="space-y-4"
+            className="space-y-3.5"
             onSubmit={(event) => {
-              event.preventDefault()
-              onSubmit()
+              event.preventDefault();
+              onSubmit();
             }}
           >
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-muted-foreground">
+              <label
+                htmlFor="phone-input"
+                className="mb-1.5 block text-sm font-medium text-muted-foreground"
+              >
                 手机号
               </label>
-              <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-surface-2 px-4 py-3.5 transition-all focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.08)]">
+              <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-surface-2 px-4 py-3 transition-all focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.08)]">
                 <span className="text-sm text-muted-foreground">+86</span>
                 <div className="h-4 w-px bg-border/60" />
                 <input
+                  id="phone-input"
                   type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   placeholder="请输入手机号"
                   className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50"
                   value={phone}
                   onChange={(event) => onPhoneChange(event.target.value)}
                   maxLength={11}
+                  aria-describedby="phone-hint"
                 />
               </div>
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-muted-foreground">
+              <label
+                htmlFor="code-input"
+                className="mb-1.5 block text-sm font-medium text-muted-foreground"
+              >
                 验证码
               </label>
               <div className="flex gap-3">
-                <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border/60 bg-surface-2 px-4 py-3.5 transition-all focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.08)]">
+                <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border/60 bg-surface-2 px-4 py-3 transition-all focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.08)]">
                   <input
+                    id="code-input"
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     placeholder="请输入验证码"
                     className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50"
                     value={code}
                     onChange={(event) => onCodeChange(event.target.value)}
                     maxLength={6}
+                    aria-describedby="code-hint"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={onSendCode}
-                  disabled={countdown > 0 || phone.length < 11 || isSendingCode}
+                  disabled={countdown > 0 || !isValidPhone || isSendingCode}
                   className="shrink-0 rounded-2xl border border-brand/40 bg-brand-dim px-4 text-sm font-medium text-brand transition-all hover:-translate-y-0.5 hover:bg-brand/20 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSendingCode
@@ -194,65 +205,49 @@ export function LoginForm({
                 title={verificationTitle}
                 description={statusMessage}
                 compact
-                className="mt-3"
+                className="mt-2"
               />
             </div>
 
             <Button
               type="submit"
               disabled={!canSubmit || isSubmitting}
-              className="mt-2 h-14 w-full rounded-2xl bg-brand text-base font-semibold text-brand-foreground shadow-[0_20px_60px_-24px_oklch(0.78_0.15_180/0.8)] hover:-translate-y-0.5 hover:bg-brand/90 disabled:translate-y-0"
+              className="mt-1 h-12 w-full rounded-2xl bg-brand text-base font-semibold text-brand-foreground shadow-[0_20px_60px_-24px_oklch(0.78_0.15_180/0.8)] hover:-translate-y-0.5 hover:bg-brand/90 disabled:translate-y-0"
             >
               {isSubmitting
                 ? "进入学习流程中..."
                 : mode === "login"
                   ? "继续学习"
                   : "注册并开始学习"}
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </form>
         ) : (
-          <div className="rounded-[28px] border border-border/60 bg-surface-2 p-6">
-            <div className="flex flex-col items-center gap-4 py-4">
-              <div className="rounded-full border border-brand/20 bg-brand-dim px-3 py-1 text-xs font-medium text-brand">
-                扫码后自动回到学习流程
-              </div>
-              <div className="flex h-32 w-32 items-center justify-center rounded-2xl border-2 border-dashed border-border/60 bg-background">
-                <div className="text-center">
-                  <MessageSquare className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
-                  <p className="text-xs text-muted-foreground">扫码登录</p>
-                </div>
+          <div className="rounded-[28px] border border-border/60 bg-surface-2 p-5">
+            <div className="flex flex-col items-center gap-4 py-2">
+              {/* 二维码 - 放大并使用真实占位 */}
+              <div className="flex h-34 w-34 items-center justify-center overflow-hidden rounded-2xl bg-white">
+                {/* 使用 placeholder 二维码图片 */}
+                <img
+                  src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://codetutor.ai/wechat-login&color=000000&bgcolor=ffffff"
+                  alt="微信扫码登录"
+                  className="h-28 w-28/"
+                />
               </div>
               <p className="text-center text-sm text-muted-foreground">
-                使用微信扫一扫完成登录，随后继续当前学习进度。
+                {wechatDesc}
               </p>
             </div>
             <StatePanel
-              status={verificationState}
-              title={tab === "wechat" ? "扫码后自动续上进度" : verificationTitle}
-              description={statusMessage}
+              status="empty"
+              title={wechatTitle}
+              description="打开微信扫一扫"
               compact
             />
           </div>
         )}
 
-        <div className="mt-6 rounded-2xl border border-border/60 bg-surface-2 px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                登录后你会看到
-              </p>
-              <p className="mt-1 text-sm text-foreground">
-                当前关卡、AI 教练提示、下一步待办与连续学习记录。
-              </p>
-            </div>
-            <div className="rounded-full bg-background px-2.5 py-1 text-[11px] font-semibold text-brand">
-              即刻继续
-            </div>
-          </div>
-        </div>
-
-        <p className="mt-6 text-center text-sm text-muted-foreground">
+        <p className="mt-5 text-center text-sm text-muted-foreground">
           {mode === "login" ? "还没有账号？" : "已有账号？"}
           <button
             onClick={onModeToggle}
@@ -262,7 +257,7 @@ export function LoginForm({
           </button>
         </p>
 
-        <p className="mt-4 text-center text-xs leading-5 text-muted-foreground/60">
+        <p className="mt-3 text-center text-xs leading-5 text-muted-foreground/60">
           登录即代表同意{" "}
           <span className="cursor-pointer underline underline-offset-2 hover:text-foreground">
             用户协议
@@ -274,5 +269,5 @@ export function LoginForm({
         </p>
       </div>
     </div>
-  )
+  );
 }

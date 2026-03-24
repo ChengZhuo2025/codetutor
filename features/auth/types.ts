@@ -6,5 +6,5 @@ export type AuthPreviewStep = {
   id: number
   title: string
   description: string
-  active?: boolean
+  active: boolean
 }

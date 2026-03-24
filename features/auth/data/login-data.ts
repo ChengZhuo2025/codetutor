@@ -27,7 +27,7 @@ export const mockAuthPreviewResponse: ApiSuccessResponse<AuthPreviewContract> = 
   code: "OK",
   message: "success",
   data: {
-    previewTools: ["Cursor", "GitHub Copilot", "v0", "Bolt"],
+    previewTools: ["Cursor", "Claude Code", "Codex", "OpenClaw"],
     previewSteps: [
       {
         id: 1,
@@ -39,6 +39,7 @@ export const mockAuthPreviewResponse: ApiSuccessResponse<AuthPreviewContract> = 
         id: 2,
         title: "打开你的第一个项目",
         description: "用 File › Open Folder 打开任意目录",
+        active: false,
       },
     ],
     resumeTitle: "Cursor 入门 · 第 1 关",
