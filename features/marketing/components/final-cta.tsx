@@ -39,18 +39,21 @@ export function LandingFinalCta() {
           <Link href={ROUTES.login}>
             <Button
               size="lg"
-              className="h-16 rounded-2xl bg-brand px-10 text-lg font-semibold text-brand-foreground shadow-[0_24px_70px_-28px_oklch(0.78_0.15_180/0.88)] hover:-translate-y-1 hover:bg-brand/90 transition-all"
+              className="h-14 rounded-2xl bg-brand px-8 text-base font-semibold text-brand-foreground shadow-[0_24px_60px_-24px_oklch(0.78_0.15_180/0.82)] hover:-translate-y-0.5 hover:bg-brand/90"
             >
-              立即免费开始学习
+              立即开始学习
               <ArrowRight className="h-5 w-5" />
             </Button>
           </Link>
-          <a
-            href="#how"
-            className="inline-flex h-16 items-center justify-center rounded-2xl border border-white/10 bg-[oklch(0.16_0.01_240/0.34)] px-8 text-lg font-medium text-foreground backdrop-blur transition-all hover:-translate-y-1 hover:bg-[oklch(0.20_0.015_220)] hover:text-foreground"
-          >
-            了解学习方式
-          </a>
+          <Link href="#how">
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-14 rounded-2xl border-white/10 bg-[oklch(0.16_0.01_240/0.34)] px-8 text-base font-medium text-foreground backdrop-blur transition-all hover:-translate-y-1 hover:bg-[oklch(0.20_0.015_220)] hover:text-foreground"
+              >
+                了解学习方式
+              </Button>
+            </Link>
         </div>
 
         {/* 信任提示 */}

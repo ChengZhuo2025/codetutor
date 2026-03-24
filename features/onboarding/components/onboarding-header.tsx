@@ -1,5 +1,7 @@
+import Link from "next/link"
 import { Code2 } from "lucide-react"
 import { APP_NAME } from "@/constants/app"
+import { ROUTES } from "@/constants/routes"
 import { cn } from "@/lib/utils"
 
 type OnboardingHeaderProps = {
@@ -19,18 +21,22 @@ const stepMeta = {
 
 export function OnboardingHeader({ step }: OnboardingHeaderProps) {
   return (
-    <header className="relative z-10 border-b border-border/50 bg-surface-1/80 px-6 py-4 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
-            <Code2 className="h-4 w-4" />
+    <header className="relative z-10 border-b border-border/50 bg-surface-1/80 px-6 py-5 backdrop-blur">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+        {/* Logo - 与首页样式保持一致 */}
+        <Link href={ROUTES.home} className="flex items-center gap-3 text-foreground">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.78_0.15_180/0.72)]">
+            <Code2 className="h-[18px] w-[18px]" />
           </div>
-          <div>
-            <span className="block font-semibold">{APP_NAME}</span>
-            <span className="text-xs text-muted-foreground">生成你的专属学习路径</span>
+          <div className="leading-[1.02]">
+            <span className="block text-[1.06rem] font-extrabold tracking-tight">{APP_NAME}</span>
+            <span className="mt-0.5 block text-[11px] text-muted-foreground">
+              AI 编程学习教练
+            </span>
           </div>
-        </div>
+        </Link>
 
+        {/* 桌面端步骤指示器 */}
         <div className="hidden items-center gap-6 md:flex">
           {[1, 2].map((item) => (
             <div key={item} className="flex items-center gap-3">
@@ -40,8 +46,8 @@ export function OnboardingHeader({ step }: OnboardingHeaderProps) {
                   item === step
                     ? "border-brand bg-brand text-brand-foreground"
                     : item < step
-                      ? "border-brand/40 bg-brand-dim text-brand"
-                      : "border-border/60 bg-surface-2 text-muted-foreground",
+                      ? "border-brand bg-brand-dim text-brand"
+                      : "border-border bg-surface-2 text-muted-foreground",
                 )}
               >
                 {item}
@@ -63,6 +69,7 @@ export function OnboardingHeader({ step }: OnboardingHeaderProps) {
           ))}
         </div>
 
+        {/* 移动端步骤指示器 */}
         <div className="flex items-center gap-2 md:hidden">
           {[1, 2].map((item) => (
             <div

@@ -59,7 +59,7 @@ export function StageTimeline({
   onOpenLearning,
 }: StageTimelineProps) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
+    <div className="flex min-w-0 flex-1 flex-col overflow-y-auto scrollbar-none px-4 py-5 sm:px-6 sm:py-6">
       <div className="relative">
         {stages.map((stage, idx) => {
           const cfg = statusConfig[stage.status]

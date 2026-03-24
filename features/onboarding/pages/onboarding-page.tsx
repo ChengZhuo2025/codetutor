@@ -30,9 +30,9 @@ export function OnboardingPage() {
 
       <OnboardingHeader step={step} />
 
-      <div className="relative z-10 flex-1 overflow-hidden">
+      <div className="relative z-10 flex-1 overflow-hidden scrollbar-none">
         <div
-          className="flex h-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="flex h-full overflow-hidden transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{
             transform: step === 1 ? "translateX(0%)" : "translateX(-50%)",
             width: "200%",

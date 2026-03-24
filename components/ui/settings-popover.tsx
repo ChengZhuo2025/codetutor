@@ -46,7 +46,7 @@ export function SettingsPopover() {
       <button
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
+          "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors",
           open
             ? "bg-surface-3 text-foreground"
             : "text-muted-foreground hover:bg-surface-3 hover:text-foreground"
@@ -57,44 +57,60 @@ export function SettingsPopover() {
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 mb-2 w-64 overflow-hidden rounded-2xl border border-border/60 bg-surface-2 shadow-2xl shadow-black/40">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
+        <div className="absolute bottom-full left-0 mb-2 w-72 overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,oklch(0.22_0.02_235/0.8),oklch(0.17_0.015_250/0.78))] shadow-[0_32px_80px_-36px_rgba(0,0,0,0.9)] backdrop-blur-2xl">
+          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <span className="text-sm font-semibold">设置</span>
             <button
               onClick={() => setOpen(false)}
-              className="rounded-lg p-1 text-muted-foreground hover:bg-surface-3 hover:text-foreground transition-colors"
+              className="rounded-lg p-1 text-foreground/55 transition-colors hover:bg-white/8 hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
 
-          {/* Items */}
           <div className="py-2">
             {settingsItems.map((group) => (
               <div key={group.group}>
-                <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+                <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-foreground/35">
                   {group.group}
                 </p>
                 {group.items.map((item) => {
                   const Icon = item.icon
+                  const isDanger = Boolean((item as { danger?: boolean }).danger)
+
                   return (
                     <button
                       key={item.label}
                       className={cn(
-                        "flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface-3",
-                        (item as { danger?: boolean }).danger
-                          ? "text-destructive hover:bg-destructive/10"
-                          : "text-foreground"
+                        "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/6",
+                        isDanger ? "text-rose-200/85 hover:bg-rose-300/6" : "text-foreground/88",
                       )}
                     >
-                      <Icon className="h-4 w-4 shrink-0 opacity-70" />
-                      <div className="flex-1">
-                        <p className="text-xs font-medium">{item.label}</p>
-                        <p className="text-[11px] text-muted-foreground">{item.desc}</p>
+                      <div
+                        className={cn(
+                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border",
+                          isDanger
+                            ? "border-rose-200/10 bg-rose-200/8 text-rose-200/80"
+                            : "border-white/10 bg-white/6 text-foreground/78",
+                        )}
+                      >
+                        <Icon className="h-4.5 w-4.5" />
                       </div>
-                      {!(item as { danger?: boolean }).danger && (
-                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
+                      <div className="flex-1">
+                        <p className={cn("text-xs font-medium", isDanger ? "text-rose-200/82" : "text-foreground/88")}>
+                          {item.label}
+                        </p>
+                        <p
+                          className={cn(
+                            "text-[11px]",
+                            isDanger ? "text-rose-200/52" : "text-foreground/48",
+                          )}
+                        >
+                          {item.desc}
+                        </p>
+                      </div>
+                      {!isDanger && (
+                        <ChevronRight className="h-4 w-4 text-foreground/40" />
                       )}
                     </button>
                   )
@@ -103,9 +119,8 @@ export function SettingsPopover() {
             ))}
           </div>
 
-          {/* Version */}
-          <div className="border-t border-border/40 px-4 py-2.5">
-            <p className="text-[11px] text-muted-foreground/50">{APP_NAME} v{APP_VERSION}</p>
+          <div className="border-t border-white/10 px-4 py-2.5">
+            <p className="text-[11px] text-foreground/38">{APP_NAME} v{APP_VERSION}</p>
           </div>
         </div>
       )}

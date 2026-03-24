@@ -206,7 +206,7 @@ export const marketingPlans: MarketingPlan[] = [
       "高级学习路径模版",
       "专属工具推荐",
     ],
-    cta: "联系咨询",
+    cta: "立即订阅",
     href: "/login",
   },
 ]

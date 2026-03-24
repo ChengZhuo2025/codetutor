@@ -41,8 +41,7 @@ export function MapPage() {
         renderSidebar={({ mobile }) => (
           <DashboardSidebar
             items={getDashboardNavItems(ROUTES.map)}
-            widthClass={mobile ? "w-full" : "w-56"}
-            showSettings={false}
+            widthClass={mobile ? "w-full" : "w-72"}
           />
         )}
         renderAside={() => (
@@ -88,8 +87,7 @@ export function MapPage() {
       renderSidebar={({ mobile }) => (
         <DashboardSidebar
           items={getDashboardNavItems(ROUTES.map)}
-          widthClass={mobile ? "w-full" : "w-56"}
-          showSettings={false}
+          widthClass={mobile ? "w-full" : "w-72"}
         />
       )}
       renderAside={() => (

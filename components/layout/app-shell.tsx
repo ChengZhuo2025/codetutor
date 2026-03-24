@@ -42,11 +42,18 @@ export function AppShell({
   const hasAside = Boolean(renderAside)
 
   return (
-    <div className={cn("min-h-screen bg-background text-foreground", className)}>
-      <div className="flex min-h-screen">
-        <div className="hidden lg:flex">{renderSidebar({ mobile: false })}</div>
+    <div
+      className={cn(
+        "min-h-screen h-dvh overflow-hidden bg-background text-foreground",
+        className,
+      )}
+    >
+      <div className="flex h-full min-h-0">
+        <div className="hidden h-full min-h-0 lg:flex">{renderSidebar({ mobile: false })}</div>
 
-        <div className={cn("flex min-w-0 flex-1 flex-col", mainClassName)}>
+        <div
+          className={cn("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden", mainClassName)}
+        >
           <AppMobileNav
             title={mobileTitle}
             subtitle={mobileSubtitle}
@@ -60,7 +67,7 @@ export function AppShell({
         {renderAside ? (
           <div
             className={cn(
-              "hidden xl:flex xl:min-h-screen xl:shrink-0 xl:border-l xl:border-border/50 xl:bg-sidebar/55",
+              "hidden h-full min-h-0 overflow-hidden xl:flex xl:shrink-0 xl:border-l xl:border-border/50 xl:bg-sidebar/55",
               asideClassName,
             )}
           >

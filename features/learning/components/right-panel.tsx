@@ -22,7 +22,12 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
     getLearningPageMock()
 
   return (
-    <aside className={cn("flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-5", className)}>
+    <aside
+      className={cn(
+        "flex h-full min-h-0 flex-col gap-4 overflow-y-auto scrollbar-none p-5",
+        className,
+      )}
+    >
       {mission ? (
         <>
           <PageSection

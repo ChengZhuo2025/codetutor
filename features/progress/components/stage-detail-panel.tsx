@@ -21,7 +21,7 @@ export function StageDetailPanel({
           : "完成前置关卡后解锁"
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-6">
+    <div className="flex-1 overflow-y-auto scrollbar-none px-6 py-6">
       <div className="sticky top-0 space-y-4">
         <div className="rounded-[28px] border border-brand/20 bg-brand-dim/55 p-5">
           <div className="mb-3 flex items-center gap-2">

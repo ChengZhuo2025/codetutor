@@ -10,3 +10,15 @@ export type UserProfileSnapshot = {
   completedTaskCount: number
   lastLearningAt: string
 }
+
+export type SubscriptionSnapshot = {
+  planName: string
+  planPriceLabel: string
+  billingCycleLabel: string
+  expiresAt: string
+  remainingDays: number
+  quotaLabel: string
+  renewalHint: string
+  primaryActionLabel: string
+  secondaryActionLabel: string
+}

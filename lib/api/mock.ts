@@ -16,7 +16,7 @@ import {
   mockProgressMapResponse,
 } from "@/features/progress/data/map-data"
 import { unwrapResponse } from "@/lib/api/types"
-import type { UserProfileSnapshot } from "@/types/profile"
+import type { SubscriptionSnapshot, UserProfileSnapshot } from "@/types/profile"
 
 function toUserProfileSnapshot(): UserProfileSnapshot {
   const profile = unwrapResponse(mockProfileMeResponse)
@@ -112,5 +112,25 @@ export function getAchievementPageMock() {
     checkinDays: summary.calendar.checkins,
     weekDays: summary.calendar.weekDays,
     overview: summary.overview,
+  }
+}
+
+export function getWorkspaceSidebarMock(): {
+  profile: UserProfileSnapshot
+  subscription: SubscriptionSnapshot
+} {
+  return {
+    profile: toUserProfileSnapshot(),
+    subscription: {
+      planName: "个人版",
+      planPriceLabel: "¥39/月",
+      billingCycleLabel: "按月订阅",
+      expiresAt: "2026-04-21",
+      remainingDays: 28,
+      quotaLabel: "无限 AI 导师对话 · 历史会话保留",
+      renewalHint: "将于到期前 3 天提醒你续费，避免学习记录中断。",
+      primaryActionLabel: "升级套餐",
+      secondaryActionLabel: "立即续费",
+    },
   }
 }

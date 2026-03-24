@@ -16,7 +16,12 @@ export function AchievementSidebarPanels({
   className,
 }: AchievementSidebarPanelsProps) {
   return (
-    <div className={cn("space-y-5 overflow-y-auto px-5 py-6 sm:px-6 sm:py-8", className)}>
+    <div
+      className={cn(
+        "space-y-5 overflow-y-auto scrollbar-none px-5 py-6 sm:px-6 sm:py-8",
+        className,
+      )}
+    >
       <PageSection
         eyebrow="成长规则"
         title="XP 获取方式"

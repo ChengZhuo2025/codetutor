@@ -39,7 +39,7 @@ export function AchievementsPage() {
         renderSidebar={({ mobile }) => (
           <DashboardSidebar
             items={getDashboardNavItems(ROUTES.achievements)}
-            widthClass={mobile ? "w-full" : "w-64"}
+            widthClass={mobile ? "w-full" : "w-72"}
           />
         )}
         renderAside={() => (
@@ -91,7 +91,7 @@ export function AchievementsPage() {
       renderSidebar={({ mobile }) => (
         <DashboardSidebar
           items={getDashboardNavItems(ROUTES.achievements)}
-          widthClass={mobile ? "w-full" : "w-64"}
+          widthClass={mobile ? "w-full" : "w-72"}
         />
       )}
       renderAside={() => (
@@ -102,15 +102,15 @@ export function AchievementsPage() {
       )}
       asideClassName="xl:w-[22rem]"
     >
-      <main className="flex-1 overflow-y-auto">
-        <div className="border-b border-border/50 bg-surface-1/80 px-4 py-5 backdrop-blur-sm sm:px-8">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="shrink-0 border-b border-border/50 bg-surface-1/80 px-4 py-5 backdrop-blur-sm sm:px-8">
           <h1 className="text-2xl font-bold tracking-tight">个人成就</h1>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
             这里不是静态数据看板，而是你从当前学习路径里真实累积出来的成长反馈。
           </p>
         </div>
 
-        <div className="px-4 py-6 sm:px-8 sm:py-8">
+        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 py-6 sm:px-8 sm:py-8">
           <RankProgressCard
             currentXP={achievementData.currentXP}
             currentRankIdx={achievementData.currentRankIdx}
