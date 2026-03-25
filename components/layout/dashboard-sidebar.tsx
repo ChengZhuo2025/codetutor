@@ -11,7 +11,7 @@ import {
 import { APP_NAME } from "@/constants/app"
 import { ROUTES } from "@/constants/routes"
 import { SubscriptionDetailDialog } from "@/components/layout/subscription-detail-dialog"
-import { SettingsPopover } from "@/components/ui/settings-popover"
+import { SettingsPopover } from "@/components/layout/settings-popover"
 import { getLearningPageMock, getWorkspaceSidebarMock } from "@/lib/api/mock"
 import { cn } from "@/lib/utils"
 import type { DashboardNavItem } from "@/types/navigation"
@@ -58,12 +58,12 @@ export function DashboardSidebar({
           <div className="rounded-[24px] border border-border/50 bg-surface-3 p-4">
             <SubscriptionDetailDialog subscription={subscription}>
               <div className="mb-3 flex items-center gap-3 cursor-pointer">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-dim text-sm font-bold text-brand">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-dim text-md font-bold text-brand">
                   {profile.nickname.slice(0, 1)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="truncate text-sm font-semibold text-foreground">
+                    <p className="truncate text-md font-semibold text-foreground">
                       {profile.nickname}
                     </p>
                     <span className="inline-flex items-center gap-1 rounded-full border border-gold/20 bg-gold-dim px-1.5 py-0.5 text-[10px] font-medium text-gold">
@@ -71,7 +71,7 @@ export function DashboardSidebar({
                       {subscription.planName}
                     </span>
                   </div>
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p className="mt-1 truncate text-xs text-muted-foreground">
                     有效期至 {subscription.expiresAt}
                   </p>
                 </div>

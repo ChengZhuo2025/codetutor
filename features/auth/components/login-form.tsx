@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, MessageSquare, Phone } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { StatePanel } from "@/components/ui/state-panel";
 import type { AuthMode, AuthTab } from "@/features/auth/types";
@@ -228,10 +229,13 @@ export function LoginForm({
               {/* 二维码 - 放大并使用真实占位 */}
               <div className="flex h-34 w-34 items-center justify-center overflow-hidden rounded-2xl bg-white">
                 {/* 使用 placeholder 二维码图片 */}
-                <img
+                <Image
                   src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://codetutor.ai/wechat-login&color=000000&bgcolor=ffffff"
                   alt="微信扫码登录"
-                  className="h-28 w-28/"
+                  width={112}
+                  height={112}
+                  unoptimized
+                  className="h-28 w-28"
                 />
               </div>
               <p className="text-center text-sm text-muted-foreground">
