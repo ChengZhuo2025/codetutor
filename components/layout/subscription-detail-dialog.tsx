@@ -2,8 +2,8 @@
 
 import type { ReactNode } from "react"
 import Link from "next/link"
-import { CalendarClock, Check, Crown, Sparkles } from "lucide-react"
-import { ROUTES } from "@/constants/routes"
+import { CalendarClock, Check, Crown, FileText, Lock } from "lucide-react"
+import { marketingPlans } from "@/features/marketing/data/marketing-content"
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { marketingPlans } from "@/features/marketing/data/marketing-content"
 import { cn } from "@/lib/utils"
 import type { SubscriptionSnapshot } from "@/types/profile"
 
@@ -25,149 +24,186 @@ export function SubscriptionDetailDialog({
   subscription,
   children,
 }: SubscriptionDetailDialogProps) {
-  const paidPlans = marketingPlans.filter((plan) => plan.name !== "免费版")
+  // 定义套餐等级顺序
+  const planTierOrder = ["免费版", "个人版", "专业版"]
+  const currentPlanIndex = planTierOrder.indexOf(subscription.planName)
 
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-h-[90vh] max-w-4xl rounded-2xl border-white/10 bg-[linear-gradient(180deg,oklch(0.22_0.02_235/0.98),oklch(0.17_0.015_250/0.98))] p-0 text-foreground shadow-[0_36px_100px_-48px_rgba(0,0,0,0.88)] overflow-y-auto scrollbar-none sm:max-w-[820px]">
+      <DialogContent className="max-h-[90vh] max-w-4xl rounded-2xl border-white/10 bg-[linear-gradient(180deg,oklch(0.22_0.02_235/0.98),oklch(0.17_0.015_250/0.98))] p-0 text-foreground shadow-[0_36px_100px_-48px_rgba(0,0,0,0.88)] overflow-y-auto scrollbar-none sm:max-w-[860px]">
         <div className="overflow-hidden rounded-2xl">
           {/* 头部 */}
-          <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.16),transparent_46%)] px-4 py-4 sm:px-5">
+          <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.16),transparent_46%)] px-5 py-4">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold tracking-tight">
+              <DialogTitle className="text-xl font-semibold tracking-tight">
                 套餐订阅与续费
               </DialogTitle>
-              <DialogDescription className="max-w-3xl text-xs leading-2 text-muted-foreground">
+              <DialogDescription className="max-w-3xl text-sm text-muted-foreground">
                 当前使用 {subscription.planName}，可直接查看权益并完成续费决策。
               </DialogDescription>
             </DialogHeader>
           </div>
 
-          <div className="space-y-3 px-4 py-3 sm:px-5">
-            {/* 当前订阅卡片 */}
-            <div className="rounded-xl border border-brand/20 bg-brand-dim/55 p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1.5 inline-flex items-center gap-1 rounded-full border border-brand/20 bg-brand/12 px-2 py-0.5 text-[10px] font-semibold text-brand">
-                    <Sparkles className="h-3 w-3" />
-                    当前订阅
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{subscription.planName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {subscription.planPriceLabel} · {subscription.billingCycleLabel}
-                  </p>
-                </div>
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gold/20 bg-gold-dim text-gold">
-                  <Crown className="h-4 w-4" />
-                </div>
-              </div>
-
-              <div className="mt-2.5 rounded-xl border border-white/10 bg-black/10 px-3 py-2">
-                <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-                  <CalendarClock className="h-3 w-3 text-chart-3" />
-                  到期与权益
-                </div>
-                <p className="mt-1 text-xs text-foreground">
-                  有效期至 <span className="font-semibold">{subscription.expiresAt}</span>
-                  · 剩余 {subscription.remainingDays} 天
-                </p>
-                <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
-                  {subscription.quotaLabel}
-                </p>
-              </div>
-
-              <div className="mt-2.5 grid grid-cols-2 gap-1.5">
-                <Link
-                  href={ROUTES.login}
-                  className="flex items-center justify-center rounded-xl border border-brand/25 bg-brand px-3 py-2 text-xs font-semibold text-brand-foreground transition-colors hover:bg-brand/90"
-                >
-                  {subscription.secondaryActionLabel}
-                </Link>
-                <Link
-                  href={ROUTES.login}
-                  className="flex items-center justify-center rounded-xl border border-border/60 bg-white/5 px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-border hover:bg-white/8"
-                >
-                  {subscription.primaryActionLabel}
-                </Link>
-              </div>
-            </div>
-
-            {/* 套餐对比卡片 */}
-            <div className="grid gap-3 md:grid-cols-2">
-              {paidPlans.map((plan) => {
+          <div className="space-y-4 px-5 py-4">
+            {/* 套餐列表 - 显示全部3个套餐 */}
+            <div className="grid gap-4 md:grid-cols-3">
+              {marketingPlans.map((plan) => {
                 const isCurrent = plan.name === subscription.planName
+                const planIndex = planTierOrder.indexOf(plan.name)
+                const isDowngrade = planIndex < currentPlanIndex // 更低套餐
 
                 return (
                   <div
                     key={plan.name}
                     className={cn(
-                      "flex flex-col rounded-xl border p-3 transition-all",
+                      "relative flex flex-col rounded-xl border p-4 transition-all",
                       isCurrent
-                        ? "border-brand/30 bg-brand-dim/35"
-                        : "border-white/10 bg-white/5",
+                        ? "border-brand/50 bg-brand-dim/50 ring-2 ring-brand/25"
+                        : isDowngrade
+                          ? "border-white/5 bg-white/[0.02] opacity-55"
+                          : "border-white/10 bg-white/5",
                     )}
                   >
-                    <div className="mb-2">
+                    {/* 当前套餐标签 */}
+                    {isCurrent && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-brand px-2.5 py-1 text-[11px] font-semibold text-white">
+                          <Crown className="h-3 w-3" />
+                          当前套餐
+                        </span>
+                      </div>
+                    )}
+
+                    <div className={cn("mb-3", isCurrent && "mt-2")}>
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-foreground">{plan.name}</p>
-                        {isCurrent ? (
-                          <span className="rounded-full border border-brand/20 bg-brand/12 px-1.5 py-0.5 text-[9px] font-semibold text-brand">
-                            当前
-                          </span>
-                        ) : null}
+                        <p className={cn(
+                          "text-base font-semibold",
+                          isDowngrade ? "text-foreground/50" : "text-foreground"
+                        )}>
+                          {plan.name}
+                        </p>
+                        {isDowngrade && (
+                          <Lock className="h-3.5 w-3.5 text-muted-foreground/40" />
+                        )}
                       </div>
-                      <div className="mt-1 flex items-baseline gap-1">
-                        <span className="text-xl font-bold text-foreground">{plan.price}</span>
-                        {plan.period ? (
-                          <span className="text-xs text-muted-foreground">{plan.period}</span>
-                        ) : null}
+                      <div className="mt-1.5 flex items-baseline gap-1">
+                        <span className={cn(
+                          "text-2xl font-bold",
+                          isDowngrade ? "text-foreground/40" : "text-foreground"
+                        )}>
+                          {plan.price}
+                        </span>
+                        {plan.period && (
+                          <span className="text-sm text-muted-foreground">{plan.period}</span>
+                        )}
                       </div>
+                      {plan.desc && (
+                        <p className={cn(
+                          "mt-1 text-xs",
+                          isDowngrade ? "text-muted-foreground/40" : "text-muted-foreground"
+                        )}>
+                          {plan.desc}
+                        </p>
+                      )}
                     </div>
 
-                    <ul className="flex-1 space-y-1.5">
-                      {plan.features.slice(0, 3).map((feature) => (
-                        <li key={feature} className="flex items-start gap-1.5 text-xs">
-                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" />
-                          <span className="leading-4 text-foreground/85">{feature}</span>
+                    <ul className="flex-1 space-y-2">
+                      {plan.features.map((feature) => (
+                        <li key={feature} className="flex items-start gap-2 text-sm">
+                          <Check className={cn(
+                            "mt-0.5 h-4 w-4 shrink-0",
+                            isDowngrade ? "text-muted-foreground/30" : "text-brand"
+                          )} />
+                          <span className={cn(
+                            "leading-5",
+                            isDowngrade ? "text-foreground/40" : "text-foreground/85"
+                          )}>
+                            {feature}
+                          </span>
                         </li>
                       ))}
                     </ul>
 
-                    <Link
-                      href={plan.href}
-                      className={cn(
-                        "mt-3 flex items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition-colors",
-                        isCurrent
-                          ? "border border-border/60 bg-white/5 text-foreground hover:border-border hover:bg-white/8"
-                          : plan.highlight
-                            ? "bg-brand text-brand-foreground hover:bg-brand/90"
-                            : "border border-border/60 bg-white/5 text-foreground hover:border-border hover:bg-white/8",
+                    {/* 按钮区域 */}
+                    <div className="mt-4">
+                      {isCurrent ? (
+                        // 当前套餐：续费按钮
+                        <Link
+                          href="/login"
+                          className="flex items-center justify-center rounded-xl border border-brand/40 bg-brand px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand/90"
+                        >
+                          立即续费
+                        </Link>
+                      ) : isDowngrade ? (
+                        // 更低套餐：不可点击的灰度按钮
+                        <button
+                          disabled
+                          className="flex w-full items-center justify-center rounded-xl border border-white/5 bg-white/[0.02] px-4 py-2.5 text-sm font-medium text-muted-foreground/40 cursor-not-allowed"
+                        >
+                          已有更高级套餐
+                        </button>
+                      ) : (
+                        // 更高套餐：升级按钮
+                        <Link
+                          href="/login"
+                          className={cn(
+                            "flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors",
+                            plan.highlight
+                              ? "bg-brand text-white hover:bg-brand/90"
+                              : "border border-white/15 bg-white/5 text-foreground hover:border-white/25 hover:bg-white/10"
+                          )}
+                        >
+                          升级套餐
+                        </Link>
                       )}
-                    >
-                      {isCurrent ? "续费当前" : plan.cta}
-                    </Link>
+                    </div>
                   </div>
                 )
               })}
             </div>
 
-            {/* 为什么在这里下单 */}
-            <div className="py-3">
-              <div className="mt-2 grid gap-2 md:grid-cols-3">
-                {[
-                  "学习记录、会话历史和阶段进度保持连续。",
-                  "升级后可立即解锁更多陪练频次。",
-                  "已聚合套餐差异，无需跳转页面。",
-                ].map((item) => (
-                  <div key={item} className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                    <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-brand/20 bg-brand/10 text-brand">
-                      <Check className="h-2.5 w-2.5" />
-                    </div>
-                    <span className="leading-4">{item}</span>
+            {/* 当前套餐有效期信息 - 独立通栏卡片 */}
+            <div className="rounded-xl border border-brand/25 bg-brand-dim/30 p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand/20 bg-brand/15 text-brand">
+                    <CalendarClock className="h-5 w-5" />
                   </div>
-                ))}
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">当前订阅有效期</p>
+                    <p className="text-base font-semibold text-foreground">
+                      至 <span className="text-brand">{subscription.expiresAt}</span>
+                      <span className="ml-2 text-sm font-normal text-muted-foreground">
+                        （剩余 <span className="text-brand font-medium">{subscription.remainingDays}</span> 天）
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/login"
+                  className="flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-white/25 hover:bg-white/10"
+                >
+                  <FileText className="h-4 w-4" />
+                  订阅记录
+                </Link>
               </div>
+            </div>
+
+            {/* 底部提示 - flex 布局 */}
+            <div className="flex items-start justify-center gap-8 pt-1">
+              {[
+                "学习记录、会话历史和阶段进度保持连续",
+                "升级后可立即解锁更多陪练频次",
+                "已聚合套餐差异，无需跳转页面",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-brand/20 bg-brand/10 text-brand">
+                    <Check className="h-2.5 w-2.5" />
+                  </div>
+                  <span>{item}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

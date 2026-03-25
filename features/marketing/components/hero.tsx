@@ -53,7 +53,7 @@ export function LandingHero() {
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center text-center">
         <div className="mb-10 inline-flex items-center gap-2 rounded-full border border-brand/18 bg-[oklch(0.2_0.02_220/0.38)] px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp">
           <Sparkles className="h-3.5 w-3.5" />
-          <span>AI 编程学习陪练平台 · 前端壳层内测版</span>
+          <span>AI 编程学习陪练平台 · MVP内测版</span>
         </div>
 
         <h1 className="max-w-5xl text-4xl font-bold leading-[1.05] tracking-tight text-balance md:text-6xl lg:text-7xl animate-fadeUp animate-delay-100">

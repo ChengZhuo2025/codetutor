@@ -57,7 +57,7 @@ export function SettingsPopover() {
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 mb-2 w-72 overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,oklch(0.22_0.02_235/0.8),oklch(0.17_0.015_250/0.78))] shadow-[0_32px_80px_-36px_rgba(0,0,0,0.9)] backdrop-blur-2xl">
+        <div className="absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-[20px] border border-white/10 bg-white/5 shadow-[0_32px_80px_-36px_rgba(0,0,0,0.9)] backdrop-blur-xl">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <span className="text-sm font-semibold">设置</span>
             <button

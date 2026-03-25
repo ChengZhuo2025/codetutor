@@ -29,8 +29,8 @@ export function LandingTools() {
                   <div className="flex items-center gap-3">
                     <div className={`h-2.5 w-2.5 rounded-full ${tool.dot}`} />
                     <div>
-                      <p className="text-sm font-semibold">{tool.name}</p>
-                      <p className="text-xs text-muted-foreground">{tool.tag}</p>
+                      <p className="text-md font-bold">{tool.name}</p>
+                      <p className="text-sm text-muted-foreground">{tool.tag}</p>
                     </div>
                   </div>
                 </div>

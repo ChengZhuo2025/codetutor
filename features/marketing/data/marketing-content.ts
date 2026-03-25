@@ -50,8 +50,8 @@ export const marketingTools: MarketingTool[] = [
   { name: "Claude Code", tag: "CLI 工具", color: "text-chart-3", dot: "bg-chart-3" },
   { name: "Codex CLI", tag: "CLI 工具", color: "text-chart-5", dot: "bg-chart-5" },
   { name: "Trae", tag: "图形化 IDE", color: "text-brand", dot: "bg-brand" },
-  { name: "Windsurf", tag: "图形化 IDE", color: "text-chart-3", dot: "bg-chart-3" },
-  { name: "Bolt.new", tag: "在线工具", color: "text-gold", dot: "bg-gold" },
+  { name: "Windsurf", tag: "图形化 IDE", color: "text-brand", dot: "bg-brand" },
+  { name: "OpenClaw", tag: "Agents应用", color: "text-gold", dot: "bg-gold" },
   { name: "Lovable", tag: "在线工具", color: "text-gold", dot: "bg-gold" },
   { name: "Kiro", tag: "图形化 IDE", color: "text-chart-5", dot: "bg-chart-5" },
 ]
