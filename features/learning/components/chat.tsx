@@ -5,10 +5,11 @@ import { useEffect, useRef, useState } from "react"
 import {
   AlertCircle,
   CheckCircle2,
-  Clock3,
   ImagePlus,
+  Lightbulb,
   RefreshCw,
   Send,
+  Sparkles,
   Target,
   WifiOff,
   X,
@@ -18,7 +19,12 @@ import { APP_EVENTS } from "@/constants/events"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatePanel } from "@/components/ui/state-panel"
 import { getLearningPageMock } from "@/lib/api/mock"
-import type { Message, MessageAttachment, QuickActionCategory } from "@/features/learning/types"
+import type {
+  LearningSupportOption,
+  Message,
+  MessageAttachment,
+  QuickAction,
+} from "@/features/learning/types"
 import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
 
@@ -29,39 +35,21 @@ type PendingDraft = {
   attachment: MessageAttachment | null
 }
 
-const quickActionMeta: Record<
-  QuickActionCategory,
-  { label: string; description: string }
-> = {
-  progress: {
-    label: "推进任务",
-    description: "完成后继续往下走",
-  },
-  help: {
-    label: "请求帮助",
-    description: "卡住时先缩小问题",
-  },
-  hint: {
-    label: "请求提示",
-    description: "先拿一个轻量提醒",
-  },
-}
-
 const messageKindMeta = {
   system_goal: {
-    badge: "系统目标说明",
+    badge: "学习提示",
     bubbleClass: "border-border/60 bg-surface-2 text-foreground",
     avatarClass: "bg-surface-4 text-muted-foreground",
     avatarLabel: "目",
   },
   coach: {
-    badge: "AI 引导",
+    badge: "AI 教练",
     bubbleClass: "border-brand/20 bg-brand-dim text-foreground",
     avatarClass: "bg-brand text-brand-foreground",
     avatarLabel: "AI",
   },
   user_input: {
-    badge: "用户输入",
+    badge: "我的反馈",
     bubbleClass: "border-border/50 bg-surface-3 text-foreground",
     avatarClass: "bg-surface-4 text-muted-foreground",
     avatarLabel: "我",
@@ -73,6 +61,12 @@ const messageKindMeta = {
     avatarLabel: "成",
   },
 } as const
+
+const quickActionToneClass: Record<QuickAction["tone"], string> = {
+  primary: "border-brand/30 bg-brand text-brand-foreground hover:bg-brand/90",
+  warning: "border-gold/25 bg-gold-dim text-gold hover:bg-gold/18",
+  secondary: "border-border/60 bg-surface-2 text-foreground hover:border-border hover:bg-surface-3",
+}
 
 function renderContent(text: string) {
   const lines = text.split("\n")
@@ -118,6 +112,30 @@ function createAttachmentFromFile(file: File): MessageAttachment {
   }
 }
 
+function getInputHint(
+  connectionState: ConnectionState,
+  isTyping: boolean,
+  previewAttachment: MessageAttachment | null,
+) {
+  if (connectionState === "offline") {
+    return "你现在处于离线状态，消息会等待网络恢复后重试。"
+  }
+
+  if (connectionState === "reconnecting") {
+    return "网络恢复中，稍后即可继续发送消息。"
+  }
+
+  if (isTyping) {
+    return "AI 正在整理下一步建议..."
+  }
+
+  if (previewAttachment) {
+    return "截图已附上，适合直接让 AI 帮你定位具体报错。"
+  }
+
+  return "把教程、代码、链接或你卡住的地方直接发给我。Enter 发送，Shift+Enter 换行。"
+}
+
 export function LearnChat() {
   const learningData = getLearningPageMock()
   const { trackEvent } = useAppEventTracker()
@@ -130,6 +148,7 @@ export function LearnChat() {
   const [sendError, setSendError] = useState<string | null>(null)
   const [failedDraft, setFailedDraft] = useState<PendingDraft | null>(null)
   const [connectionState, setConnectionState] = useState<ConnectionState>("online")
+  const [showSupportOptions, setShowSupportOptions] = useState(false)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -138,15 +157,8 @@ export function LearnChat() {
   const nextMessageId = useRef(learningData.initialMessages.length + 1)
   const reconnectTimerRef = useRef<number | null>(null)
 
-  const mission = learningData.mission
-
-  const quickActionGroups = (["progress", "help", "hint"] as QuickActionCategory[]).map(
-    (category) => ({
-      category,
-      ...quickActionMeta[category],
-      items: learningData.quickActions.filter((action) => action.category === category),
-    }),
-  )
+  const { mission, resume, rightPanel, supportOptions } = learningData
+  const inputHint = getInputHint(connectionState, isTyping, previewAttachment)
 
   useEffect(() => {
     const syncConnectionState = () => {
@@ -185,7 +197,7 @@ export function LearnChat() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, isTyping, sendError, connectionState])
+  }, [messages, isTyping, sendError, connectionState, showSupportOptions])
 
   useEffect(() => {
     const el = textareaRef.current
@@ -230,7 +242,7 @@ export function LearnChat() {
       id: allocateMessageId(),
       role: "user",
       kind: "user_input",
-      title: "用户输入",
+      title: "我的反馈",
       content: draft.text || "我上传了一张截图，请帮我定位问题。",
       attachment: draft.attachment ?? undefined,
     }
@@ -240,8 +252,10 @@ export function LearnChat() {
       contentLength: draft.text.length,
       taskId: learningData.task.taskId,
     })
+
     setMessages((prev) => [...prev, userMessage])
     resetComposer()
+    setShowSupportOptions(false)
     setIsTyping(true)
 
     window.setTimeout(() => {
@@ -272,16 +286,45 @@ export function LearnChat() {
     dispatchDraft(draft)
   }
 
-  const handleQuickAction = (text: string) => {
+  const handleQuickAction = (action: QuickAction) => {
     if (isTyping) return
-    const action = learningData.quickActions.find((item) => item.label === text)
-    if (action?.category === "help" || action?.category === "hint") {
+
+    if (action.label === "我卡住了") {
       trackEvent(APP_EVENTS.learningQuickHelp, {
-        action: text,
+        action: action.label,
         category: action.category,
+        taskId: learningData.task.taskId,
+      })
+      setShowSupportOptions((prev) => !prev)
+      return
+    }
+
+    if (action.label === "我完成了") {
+      trackEvent(APP_EVENTS.taskCompleted, {
+        source: "quick_action",
+        taskId: learningData.task.taskId,
       })
     }
-    dispatchDraft({ text, attachment: null })
+
+    if (action.category === "help" || action.category === "hint") {
+      trackEvent(APP_EVENTS.learningQuickHelp, {
+        action: action.label,
+        category: action.category,
+        taskId: learningData.task.taskId,
+      })
+    }
+
+    dispatchDraft({ text: action.label, attachment: null })
+  }
+
+  const handleSupportOption = (option: LearningSupportOption) => {
+    if (isTyping) return
+
+    trackEvent(APP_EVENTS.stuckHelpRequested, {
+      helpMode: option.mode,
+      taskId: learningData.task.taskId,
+    })
+    dispatchDraft({ text: option.prompt, attachment: null })
   }
 
   const handleRetry = () => {
@@ -290,63 +333,51 @@ export function LearnChat() {
     dispatchDraft(failedDraft)
   }
 
+  const handleResume = () => {
+    trackEvent(APP_EVENTS.sessionResumed, {
+      conversationId: learningData.conversationId,
+      taskId: learningData.task.taskId,
+    })
+    textareaRef.current?.focus()
+  }
+
   const removePreview = () => {
     if (!previewAttachment) return
     URL.revokeObjectURL(previewAttachment.url)
     setPreviewAttachment(null)
   }
 
-  const inputHint =
-    connectionState === "offline"
-      ? "你现在处于离线状态，消息会等待网络恢复后重试。"
-      : connectionState === "reconnecting"
-        ? "网络恢复中，稍后即可继续发送消息。"
-        : isTyping
-          ? "AI 正在整理下一步建议..."
-          : previewAttachment
-            ? "截图已附上，适合直接让 AI 帮你定位具体报错。"
-            : "输入为空时发送按钮会禁用，Enter 发送，Shift+Enter 换行。"
-
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 flex flex-col gap-3 border-b border-border/50 bg-surface-1/80 px-4 py-4 backdrop-blur-sm sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <div className="mb-1.5 flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-brand/20 bg-brand-dim px-2 py-1 text-[11px] font-semibold text-brand">
-              当前任务
-            </span>
-            {mission ? (
-              <span className="rounded-full border border-gold/20 bg-gold-dim px-2 py-1 text-[11px] font-semibold text-gold">
-                {mission.reward}
+      <div className="shrink-0 border-b border-border/50 bg-surface-1/80 px-4 py-4 backdrop-blur-sm sm:px-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <div className="mb-1.5 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-brand/20 bg-brand-dim px-2 py-1 text-[11px] font-semibold text-brand">
+                当前任务
               </span>
-            ) : (
-              <span className="rounded-full border border-destructive/20 bg-destructive/10 px-2 py-1 text-[11px] font-semibold text-destructive">
-                未获取到任务
-              </span>
-            )}
-            {connectionState === "offline" && (
-              <span className="rounded-full border border-destructive/20 bg-destructive/10 px-2 py-1 text-[11px] font-semibold text-destructive">
-                连接中断
-              </span>
-            )}
-            {connectionState === "reconnecting" && (
-              <span className="rounded-full border border-chart-3/20 bg-chart-3/10 px-2 py-1 text-[11px] font-semibold text-chart-3">
-                正在重连
-              </span>
-            )}
+              {connectionState === "offline" && (
+                <span className="rounded-full border border-destructive/20 bg-destructive/10 px-2 py-1 text-[11px] font-semibold text-destructive">
+                  连接中断
+                </span>
+              )}
+              {connectionState === "reconnecting" && (
+                <span className="rounded-full border border-chart-3/20 bg-chart-3/10 px-2 py-1 text-[11px] font-semibold text-chart-3">
+                  正在重连
+                </span>
+              )}
+            </div>
+            <h2 className="truncate text-lg font-semibold">
+              {mission?.title ?? "当前任务信息暂时不可用"}
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              {mission
+                ? `${mission.tool} · ${mission.stageLabel}`
+                : "稍后重试，或从学习地图重新进入本关。"}
+            </p>
           </div>
-          <h2 className="truncate text-lg font-semibold">
-            {mission?.title ?? "当前任务信息暂时不可用"}
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            {mission
-              ? `${mission.tool} · ${mission.stageLabel}`
-              : "稍后重试，或从学习地图重新进入本关。"}
-          </p>
-        </div>
 
-        <div className="flex items-center gap-2 self-start lg:self-auto">
-          <button className="flex items-center gap-2 rounded-xl border border-border/60 bg-surface-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground">
+          <button className="flex items-center gap-2 self-start rounded-xl border border-border/60 bg-surface-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground lg:self-auto">
             <RefreshCw className="h-3 w-3" />
             重新开始本关
           </button>
@@ -354,40 +385,80 @@ export function LearnChat() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 py-5 sm:px-6 sm:py-6">
-        <div className="mx-auto max-w-2xl space-y-5">
-          {mission ? (
-            <div className="grid gap-3 rounded-[1.75rem] border border-border/60 bg-surface-2/95 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.18)] sm:grid-cols-[minmax(0,1fr)_auto]">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/65">
-                  <Target className="h-3.5 w-3.5 text-brand" />
-                  今日练习
+        <div className="mx-auto max-w-3xl space-y-4">
+          {resume ? (
+            <div className="rounded-[1.6rem] border border-brand/15 bg-surface-2/95 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.16)]">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand/80">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {resume.title}
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-foreground">{resume.summary}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{resume.lastSeenLabel}</p>
                 </div>
-                <div>
-                  <p className="text-base font-semibold text-foreground">{mission.goal}</p>
-                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                    {mission.summary}
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleResume}
+                  className="shrink-0 rounded-2xl border border-brand/25 bg-brand-dim px-4 py-2 text-sm font-medium text-brand transition-colors hover:bg-brand/20"
+                >
+                  {resume.ctaLabel}
+                </button>
               </div>
+            </div>
+          ) : null}
 
-              <div className="grid gap-2 sm:min-w-[176px]">
-                <div className="rounded-2xl border border-border/50 bg-surface-3 px-3 py-2.5">
-                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/60">
-                    <Clock3 className="h-3.5 w-3.5 text-chart-3" />
-                    建议时长
-                  </div>
-                  <p className="mt-1 text-sm font-semibold text-foreground">
-                    {mission.estimatedTime}
-                  </p>
+          {mission ? (
+            <div className="rounded-[1.9rem] border border-border/60 bg-surface-2/95 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
+              <div className="flex flex-col gap-5">
+                <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/65">
+                  <Target className="h-3.5 w-3.5 text-brand" />
+                  现在只做这一步
                 </div>
-                <div className="rounded-2xl border border-border/50 bg-surface-3 px-3 py-2.5">
-                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/60">
-                    <Target className="h-3.5 w-3.5 text-brand" />
-                    当前进度
+
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_200px]">
+                  <div>
+                    <p className="text-xl font-semibold leading-8 text-foreground">
+                      {rightPanel.currentStep}
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                      {rightPanel.whyThisStep}
+                    </p>
+                    <div className="mt-4 rounded-2xl border border-border/50 bg-background/45 px-4 py-3">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                        <Lightbulb className="h-3.5 w-3.5 text-gold" />
+                        AI 教练提醒
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                        {mission.coachCue}
+                      </p>
+                    </div>
                   </div>
-                  <p className="mt-1 text-sm font-semibold text-foreground">
-                    {mission.progressLabel}
-                  </p>
+
+                  <div className="grid gap-3">
+                    <div className="rounded-2xl border border-border/50 bg-surface-3 px-3 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/60">
+                        建议时长
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {mission.estimatedTime}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-border/50 bg-surface-3 px-3 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/60">
+                        当前进度
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {mission.progressLabel}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-gold/20 bg-gold-dim px-3 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-gold/80">
+                        完成奖励
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-gold">{mission.reward}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -412,51 +483,53 @@ export function LearnChat() {
             />
           )}
 
-          <div className="grid gap-3 md:grid-cols-3">
-            {quickActionGroups.map((group) => (
-              <div
-                key={group.category}
-                className="rounded-2xl border border-border/60 bg-surface-2/90 p-3"
+          <div className="flex flex-wrap gap-2">
+            {learningData.quickActions.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                onClick={() => handleQuickAction(action)}
+                disabled={isTyping || connectionState !== "online"}
+                className={cn(
+                  "rounded-2xl border px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50",
+                  quickActionToneClass[action.tone],
+                )}
               >
-                <div className="mb-3">
-                  <p className="text-xs font-semibold text-foreground">{group.label}</p>
-                  <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
-                    {group.description}
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  {group.items.map((action) => (
-                    <button
-                      key={action.label}
-                      onClick={() => handleQuickAction(action.label)}
-                      disabled={isTyping || connectionState !== "online"}
-                      className={cn(
-                        "w-full rounded-2xl border px-3 py-2 text-left text-xs transition-colors disabled:opacity-50",
-                        action.tone === "primary" &&
-                          "border-brand/25 bg-brand-dim text-brand hover:bg-brand/18",
-                        action.tone === "warning" &&
-                          "border-gold/25 bg-gold-dim text-gold hover:bg-gold/18",
-                        action.tone === "secondary" &&
-                          "border-border/60 bg-surface-3 text-muted-foreground hover:border-border hover:text-foreground",
-                      )}
-                    >
-                      <span className="block font-medium">{action.label}</span>
-                      <span className="mt-0.5 block text-[10px] uppercase tracking-[0.16em] opacity-70">
-                        {action.helper}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+                {action.label}
+              </button>
             ))}
           </div>
+
+          {showSupportOptions ? (
+            <div className="rounded-[1.5rem] border border-gold/20 bg-gold-dim p-4">
+              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Lightbulb className="h-4 w-4 text-gold" />
+                先选一种更轻的求助方式
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {supportOptions.map((option) => (
+                  <button
+                    key={option.mode}
+                    type="button"
+                    onClick={() => handleSupportOption(option)}
+                    disabled={isTyping || connectionState !== "online"}
+                    className="rounded-2xl border border-gold/20 bg-background/70 px-3 py-3 text-left transition-colors hover:bg-background disabled:opacity-50"
+                  >
+                    <span className="block text-sm font-medium text-foreground">{option.label}</span>
+                    <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                      {option.description}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           {messages.length === 0 ? (
             <StatePanel
               status="empty"
               title="还没有对话记录"
-              description="从一个快捷操作开始，或者直接描述你当前卡住的地方。"
+              description="先从当前一步开始，或者直接把你卡住的内容发给我。"
             />
           ) : (
             messages.map((msg) => {
@@ -535,7 +608,7 @@ export function LearnChat() {
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand text-xs font-semibold text-brand-foreground">
                 AI
               </div>
-              <div className="min-w-[200px] rounded-3xl rounded-tl-md border border-brand/15 bg-brand-dim px-4 py-3.5">
+              <div className="min-w-[220px] rounded-3xl rounded-tl-md border border-brand/15 bg-brand-dim px-4 py-3.5">
                 <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand/80">
                   <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                   AI 正在整理下一步
@@ -554,7 +627,7 @@ export function LearnChat() {
       </div>
 
       <div className="shrink-0 border-t border-border/50 bg-surface-1 px-4 pb-4 pt-3 sm:px-6">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-3xl">
           {sendError ? (
             <StatePanel
               status="error"
@@ -588,6 +661,7 @@ export function LearnChat() {
               <div className="flex items-center justify-between gap-3 px-3 py-2 text-xs text-muted-foreground">
                 <span className="truncate">{previewAttachment.name}</span>
                 <button
+                  type="button"
                   onClick={removePreview}
                   className="flex h-5 w-5 items-center justify-center rounded-full bg-surface-4 text-muted-foreground hover:text-foreground"
                 >
@@ -597,11 +671,7 @@ export function LearnChat() {
             </div>
           ) : null}
 
-          <div
-            className={cn(
-              "rounded-[1.6rem] border border-border/60 bg-surface-2 px-3 py-2.5 transition-colors focus-within:border-brand/60 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.10)]",
-            )}
-          >
+          <div className="rounded-[1.6rem] border border-border/60 bg-surface-2 px-3 py-2.5 transition-colors focus-within:border-brand/60 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.10)]">
             <div className="mb-2 flex items-center justify-between gap-3 px-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
                 输入区
@@ -655,7 +725,7 @@ export function LearnChat() {
               <textarea
                 ref={textareaRef}
                 rows={1}
-                placeholder="粘贴教程内容、代码片段、链接，或直接描述你卡住的地方..."
+                placeholder="把教程链接、代码片段或你卡住的问题发给我"
                 className="scrollbar-none flex-1 resize-none bg-transparent py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground/50"
                 style={{ maxHeight: `${24 * 4 + 12}px`, overflowY: "auto" }}
                 value={input}
@@ -669,6 +739,7 @@ export function LearnChat() {
               />
 
               <button
+                type="button"
                 onClick={handleSend}
                 disabled={(!input.trim() && !previewAttachment) || isTyping}
                 className={cn(

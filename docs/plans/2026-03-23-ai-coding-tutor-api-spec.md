@@ -103,8 +103,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 ## 4.2 新手引导
 
 - `GET /api/onboarding/tools`
-- `POST /api/onboarding/select-tool`
-- `GET /api/onboarding/initial-path`
+- `GET /api/onboarding/path-options`
+- `POST /api/onboarding/complete`
 
 ## 4.3 学习核心
 
@@ -253,18 +253,18 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 }
 ```
 
-## 6.2 `POST /api/onboarding/select-tool`
+## 6.2 `GET /api/onboarding/path-options`
 
 用途：
 
-- 提交用户等级与目标工具，生成默认学习路径
+- 获取当前主工具与学习水平下可选的起始学习路线
 
-请求体：
+请求参数：
 
 ```json
 {
-  "learningLevel": "beginner",
-  "toolCode": "cursor"
+  "toolCode": "cursor",
+  "learningLevel": "beginner"
 }
 ```
 
@@ -275,12 +275,25 @@ MVP 默认使用登录态 Session 或 Bearer Token。
   "code": "OK",
   "message": "success",
   "data": {
-    "pathId": "uuid",
-    "currentTaskId": "uuid",
-    "initialPreview": [
-      "认识工具界面",
-      "写第一个 Prompt",
-      "生成第一个页面"
+    "selfStudyOption": {
+      "id": "self-study",
+      "code": "self-study",
+      "name": "自学模式",
+      "sourceType": "self_directed",
+      "summary": "粘贴教程、代码、链接或截图，系统按当前工具与水平拆解训练步骤",
+      "preview": ["粘贴学习内容", "获得当前一步", "卡住时继续追问"]
+    },
+    "presetPathOptions": [
+      {
+        "pathId": "uuid",
+        "code": "cursor-beginner-quickstart",
+        "name": "Cursor 零基础起步营",
+        "sourceType": "preset_training",
+        "stageCount": 8,
+        "summary": "从界面熟悉到完成第一个小作品",
+        "recommended": true,
+        "currentLevelFit": "适合第一次系统上手 Cursor 的新用户"
+      }
     ]
   }
 }
@@ -288,13 +301,54 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 业务规则：
 
-- 一个用户必须先完成主工具选择，才能进入学习主界面
+- 路线列表由 `toolCode + learningLevel` 联合决定
+- 当没有命中的平台路径时，仍必须返回 `selfStudyOption`
 
-## 6.3 `GET /api/onboarding/initial-path`
+## 6.3 `POST /api/onboarding/complete`
 
 用途：
 
-- 获取当前用户的初始化学习路径预览
+- 提交新手引导三步结果并生成进入学习主界面的初始化上下文
+
+请求体：
+
+```json
+{
+  "toolCode": "cursor",
+  "learningLevel": "beginner",
+  "selectionMode": "preset_training",
+  "selectedPathId": "uuid"
+}
+```
+
+成功响应示例：
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "onboardingCompleted": true,
+    "primaryToolCode": "cursor",
+    "learningLevel": "beginner",
+    "selectionMode": "preset_training",
+    "pathId": "uuid",
+    "currentTaskId": "uuid",
+    "initialPreview": [
+      "认识工作区",
+      "写第一个 Prompt",
+      "完成第一个小页面"
+    ],
+    "redirectTo": "/learn"
+  }
+}
+```
+
+业务规则：
+
+- 一个用户必须完成三步引导后，才能进入学习主界面
+- `selectionMode=self_directed` 时 `selectedPathId` 可为空
+- `selectionMode=preset_training` 时 `selectedPathId` 必填
 
 ---
 
@@ -620,7 +674,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 |------|------|------|
 | `POST /api/auth/login` | 否 | 登录入口 |
 | `GET /api/onboarding/tools` | 否 | 可公开 |
-| `POST /api/onboarding/select-tool` | 是 | 写用户偏好 |
+| `GET /api/onboarding/path-options` | 是 | 获取路线候选 |
+| `POST /api/onboarding/complete` | 是 | 写用户引导结果 |
 | `POST /api/learning/message` | 是 | 核心学习数据 |
 | `POST /api/task/complete` | 是 | 写积分与任务 |
 | `GET /api/history/recent` | 是 | 私有历史 |

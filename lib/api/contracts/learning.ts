@@ -2,6 +2,8 @@ import type {
   LearningKnowledgeTag,
   LearningMission,
   LearningReply,
+  LearningResume,
+  LearningSupportOption,
   LearningTask,
   LearningTip,
   Message,
@@ -49,13 +51,18 @@ export type LearningCurrentSessionResponseData = {
   }
   profile: ProfileMeResponseData
   mission: LearningMission | null
+  resume: LearningResume | null
   messages: Message[]
   quickActions: QuickAction[]
+  supportOptions: LearningSupportOption[]
   responseSamples: LearningReply[]
   rightPanel: {
     currentStep: string
+    whyThisStep: string
     completionCriteria: string
+    hintIfStuck: string
     knowledgePoints: string[]
+    nextStepPreview: string
   }
   recentHistory: RecentSession[]
   tasks: LearningTask[]

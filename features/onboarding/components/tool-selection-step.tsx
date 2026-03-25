@@ -1,115 +1,139 @@
 import { ArrowRight, Check, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getOnboardingPageMock } from "@/lib/api/mock"
+import type { OnboardingToolGroup } from "@/features/onboarding/types"
 import { cn } from "@/lib/utils"
 
 type ToolSelectionStepProps = {
-  selectedTools: string[]
-  onToggleTool: (id: string) => void
+  toolGroups: OnboardingToolGroup[]
+  colorMap: Record<string, string>
+  selectedBorderMap: Record<string, string>
+  selectedToolCode: string | null
+  onSelectTool: (toolCode: string) => void
   onNext: () => void
 }
 
 export function ToolSelectionStep({
-  selectedTools,
-  onToggleTool,
+  toolGroups,
+  colorMap,
+  selectedBorderMap,
+  selectedToolCode,
+  onSelectTool,
   onNext,
 }: ToolSelectionStepProps) {
-  const { colorMap, selectedBorderMap, tools } = getOnboardingPageMock()
-  const canGoNext = selectedTools.length > 0
+  const canGoNext = selectedToolCode !== null
+  const selectedTool = toolGroups
+    .flatMap((group) => group.tools)
+    .find((tool) => tool.code === selectedToolCode)
 
   return (
-    <div className="w-1/2 overflow-y-auto scrollbar-none">
-      <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col justify-center px-6 py-6 mt-6">
-        {/* 标题区域 - 更紧凑 */}
-        <div className="mx-auto mb-5 max-w-2xl text-center">
+    <div className="h-full w-1/3 overflow-hidden">
+      <div className="mx-auto flex h-full w-full max-w-6xl flex-col justify-between px-6 py-4 mt-6">
+        <div className="mx-auto mb-4 max-w-2xl text-center">
           <div className="mx-auto mb-3 inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand-dim px-3 py-1 text-sm font-medium text-brand">
             <Sparkles className="h-3.5 w-3.5" />
-            第 1 步，共 2 步
+            第 1 步，共 3 步
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-balance md:text-3xl">
-            你想先学哪个 AI 编程工具？
+            你想先用哪个 AI 编程工具开始训练？
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            可以选择多个，我们会基于你的选择生成不同的学习切入口。
+            先锁定一个主工具，我们再根据你的基础推荐更合适的起步路线。
           </p>
         </div>
 
-        {/* 工具选择卡片 - 三列布局 */}
-        <div className="mx-auto mb-5 grid w-full max-w-4xl grid-cols-2 gap-3 sm:grid-cols-3">
-          {tools.map((tool) => {
-            const isSelected = selectedTools.includes(tool.id)
+        <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 mt-4">
+          <div className="grid w-full gap-3 xl:grid-cols-3">
+            {toolGroups.map((group) => (
+            <section
+              key={group.groupCode}
+              className="flex min-h-0 flex-col rounded-2xl border border-border/60 bg-surface-2/70 p-3"
+            >
+              <div className="mb-3">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  {group.groupName}
+                </p>
+              </div>
 
-            return (
-              <button
-                key={tool.id}
-                onClick={() => onToggleTool(tool.id)}
-                aria-pressed={isSelected}
-                className={cn(
-                  "group relative overflow-hidden rounded-xl border p-3 text-left transition-all duration-300",
-                  isSelected
-                    ? `${selectedBorderMap[tool.color]} bg-surface-1 shadow-[0_20px_50px_-28px_oklch(0.78_0.15_180/0.5)]`
-                    : "border-border/60 bg-surface-2 hover:-translate-y-0.5 hover:border-border hover:bg-surface-1",
-                )}
-              >
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                {group.tools.map((tool) => {
+                  const isSelected = selectedToolCode === tool.code
 
-                <div className="mb-2 flex items-start justify-between gap-2">
-                  <div
-                    className={cn(
-                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border font-bold",
-                      colorMap[tool.color],
-                    )}
-                  >
-                    {tool.name[0]}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {tool.popular && (
-                      <span
+                    return (
+                      <button
+                        key={tool.code}
+                        onClick={() => onSelectTool(tool.code)}
+                        aria-pressed={isSelected}
                         className={cn(
-                          "rounded-full px-2 py-0.5 text-xs font-semibold",
+                          "group relative overflow-hidden rounded-xl border px-3 py-2.5 text-left transition-all duration-300",
                           isSelected
-                            ? "border border-brand bg-brand-dim text-brand"
-                            : "bg-background text-muted-foreground",
+                            ? `${selectedBorderMap[tool.color]} bg-surface-1 shadow-[0_20px_50px_-28px_oklch(0.78_0.15_180/0.5)]`
+                            : "border-border/60 bg-background/80 hover:-translate-y-0.5 hover:border-border hover:bg-surface-1",
                         )}
                       >
-                        推荐
-                      </span>
-                    )}
-                    <div
-                      className={cn(
-                        "flex h-5 w-5 items-center justify-center rounded-full border transition-all",
-                        isSelected
-                          ? "border-brand bg-brand text-brand-foreground"
-                          : "border-border/80 bg-background text-transparent group-hover:text-muted-foreground",
-                      )}
-                    >
-                      <Check className="h-2.5 w-2.5" />
-                    </div>
-                  </div>
-                </div>
+                        <div className="mb-1.5 flex items-start justify-between gap-2">
+                          <div
+                            className={cn(
+                              "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border font-bold",
+                              colorMap[tool.color],
+                            )}
+                          >
+                            {tool.name[0]}
+                          </div>
 
-                <div className="min-w-0">
-                  <div className="mb-0.5 flex items-center gap-1.5">
-                    <span className="truncate text-md font-bold">{tool.name}</span>
-                  </div>
-                  <p className="line-clamp-2 text-sm leading-4 text-muted-foreground">{tool.desc}</p>
+                          <div className="flex items-center gap-2">
+                            {tool.popular && (
+                              <span
+                                className={cn(
+                                  "rounded-full px-2 py-0.5 text-xs font-semibold",
+                                  isSelected
+                                    ? "border border-brand bg-brand-dim text-brand"
+                                    : "bg-surface-2 text-muted-foreground",
+                                )}
+                              >
+                                推荐
+                              </span>
+                            )}
+                            <div
+                              className={cn(
+                                "flex h-5 w-5 items-center justify-center rounded-full border transition-all",
+                                isSelected
+                                  ? "border-brand bg-brand text-brand-foreground"
+                                  : "border-border/80 bg-background text-transparent group-hover:text-muted-foreground",
+                              )}
+                            >
+                              <Check className="h-2.5 w-2.5" />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="mb-1 flex items-center gap-2">
+                            <span className="truncate text-md font-bold">{tool.name}</span>
+                            <span className="rounded-full border border-border/60 px-2 py-0.5 text-[11px] text-muted-foreground">
+                              {tool.category}
+                            </span>
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-4.5 text-muted-foreground">
+                            {tool.desc}
+                          </p>
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
-              </button>
-            )
-          })}
+              </section>
+            ))}
+          </div>
         </div>
-
-        {/* 已选提示和操作区 - 更紧凑 */}
-        <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-2 px-4 py-4">
+        <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-2 px-4 py-2 mt-6">
           <p className="text-sm text-muted-foreground">
-            {selectedTools.length > 0 ? (
+            {selectedTool ? (
               <>
-                已选择 <span className="font-semibold text-brand">{selectedTools.length}</span>{" "}
-                个工具，下一步将根据你的基础生成最合适的起步路径。
+                已选择 <span className="font-semibold text-brand">{selectedTool.name}</span>
+                ，下一步我们会根据你的基础推荐更适合的训练强度。
               </>
             ) : (
-              "先选择至少一个工具，我们再帮你继续收窄学习路径。"
+              "先选择一个主工具，我们再帮你继续收窄起步路线。"
             )}
           </p>
           <Button

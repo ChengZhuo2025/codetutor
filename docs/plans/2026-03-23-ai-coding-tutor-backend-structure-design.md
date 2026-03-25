@@ -150,8 +150,8 @@ app/
     │   ├── message/route.ts
     │   └── stuck-help/route.ts
     ├── onboarding/
-    │   ├── initial-path/route.ts
-    │   ├── select-tool/route.ts
+    │   ├── complete/route.ts
+    │   ├── path-options/route.ts
     │   └── tools/route.ts
     ├── profile/
     │   ├── init/route.ts
@@ -283,8 +283,8 @@ server/modules/profile/
 职责：
 
 - 获取工具列表
-- 提交工具选择
-- 生成初始路径
+- 获取起始路线候选
+- 提交 onboarding 结果并初始化学习上下文
 
 建议结构：
 
@@ -292,8 +292,8 @@ server/modules/profile/
 server/modules/onboarding/
 ├── application/
 │   ├── get-tool-list.ts
-│   ├── select-tool.ts
-│   └── get-initial-path.ts
+│   ├── get-path-options.ts
+│   └── complete-onboarding.ts
 ├── domain/
 │   ├── onboarding-service.ts
 │   └── path-template-selector.ts
@@ -586,8 +586,8 @@ app/
     ├── learning/current-session/route.ts
     ├── learning/message/route.ts
     ├── learning/stuck-help/route.ts
-    ├── onboarding/initial-path/route.ts
-    ├── onboarding/select-tool/route.ts
+    ├── onboarding/complete/route.ts
+    ├── onboarding/path-options/route.ts
     ├── onboarding/tools/route.ts
     ├── profile/init/route.ts
     ├── profile/me/route.ts

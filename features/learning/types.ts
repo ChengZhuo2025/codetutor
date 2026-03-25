@@ -43,6 +43,22 @@ export type LearningReply = {
   nextStep?: string
 }
 
+export type LearningResume = {
+  title: string
+  summary: string
+  lastSeenLabel: string
+  ctaLabel: string
+}
+
+export type LearningSupportMode = "hint" | "breakdown" | "minimal_example"
+
+export type LearningSupportOption = {
+  mode: LearningSupportMode
+  label: string
+  description: string
+  prompt: string
+}
+
 export type LearnSidebarNavItem = {
   href: string
   label: string

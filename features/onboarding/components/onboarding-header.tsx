@@ -2,10 +2,11 @@ import Link from "next/link"
 import { Code2 } from "lucide-react"
 import { APP_NAME } from "@/constants/app"
 import { ROUTES } from "@/constants/routes"
+import type { OnboardingStep } from "@/features/onboarding/types"
 import { cn } from "@/lib/utils"
 
 type OnboardingHeaderProps = {
-  step: 1 | 2
+  step: OnboardingStep
 }
 
 const stepMeta = {
@@ -15,7 +16,11 @@ const stepMeta = {
   },
   2: {
     title: "确认水平",
-    description: "再根据当前基础生成适合你的第一条学习路径。",
+    description: "再根据当前基础缩小适合你的训练节奏。",
+  },
+  3: {
+    title: "选择任务",
+    description: "最后选择自学模式或平台预设训练路径。",
   },
 } as const
 
@@ -38,7 +43,7 @@ export function OnboardingHeader({ step }: OnboardingHeaderProps) {
 
         {/* 桌面端步骤指示器 */}
         <div className="hidden items-center gap-6 md:flex">
-          {[1, 2].map((item) => (
+          {[1, 2, 3].map((item) => (
             <div key={item} className="flex items-center gap-3">
               <div
                 className={cn(
@@ -59,10 +64,10 @@ export function OnboardingHeader({ step }: OnboardingHeaderProps) {
                     item === step ? "text-foreground" : "text-muted-foreground",
                   )}
                 >
-                  {stepMeta[item as 1 | 2].title}
+                  {stepMeta[item as OnboardingStep].title}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {stepMeta[item as 1 | 2].description}
+                  {stepMeta[item as OnboardingStep].description}
                 </p>
               </div>
             </div>
@@ -71,7 +76,7 @@ export function OnboardingHeader({ step }: OnboardingHeaderProps) {
 
         {/* 移动端步骤指示器 */}
         <div className="flex items-center gap-2 md:hidden">
-          {[1, 2].map((item) => (
+          {[1, 2, 3].map((item) => (
             <div
               key={item}
               className={cn(

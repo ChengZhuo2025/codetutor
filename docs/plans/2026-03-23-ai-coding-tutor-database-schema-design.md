@@ -210,9 +210,12 @@ erDiagram
 | `user_id` | `uuid` | FK, unique | 用户 ID |
 | `preferred_tool_ids` | `jsonb` | not null default '[]' | 偏好工具列表 |
 | `onboarding_completed` | `boolean` | not null default false | 是否完成新手引导 |
+| `primary_tool_id` | `uuid` | FK, nullable | 首次引导确认的主学习工具 |
+| `selected_path_id` | `uuid` | FK, nullable | 首次引导选中的平台训练路径 |
+| `selection_mode` | `varchar(32)` | nullable | `self_directed` / `preset_training` |
 | `goal_summary` | `text` | nullable | 学习目标摘要 |
 | `content_language` | `varchar(16)` | not null default 'zh-CN' | 内容语言 |
-| `metadata` | `jsonb` | not null default '{}' | 扩展字段 |
+| `metadata` | `jsonb` | not null default '{}' | 扩展字段，如首次引导快照、候选路线记录 |
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
 
@@ -257,11 +260,14 @@ erDiagram
 | `code` | `varchar(64)` | unique | 路径代码 |
 | `name` | `varchar(128)` | not null | 路径名称 |
 | `target_level` | `learning_level` | not null | 适用等级 |
+| `source_type` | `varchar(32)` | not null default 'preset_training' | `preset_training` / `self_directed` |
 | `version` | `integer` | not null default 1 | 模板版本 |
 | `is_default` | `boolean` | not null default false | 是否默认路径 |
 | `is_active` | `boolean` | not null default true | 是否启用 |
+| `agent_code` | `varchar(64)` | nullable | 后台配置的训练 agent 标识 |
+| `stage_count` | `integer` | not null default 1 | 路径预计关卡数 |
 | `description` | `text` | nullable | 路径说明 |
-| `metadata` | `jsonb` | not null default '{}' | 扩展信息 |
+| `metadata` | `jsonb` | not null default '{}' | 扩展信息，如推荐文案、适配场景、预览关卡 |
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
 
@@ -289,7 +295,7 @@ erDiagram
 | `knowledge_points` | `jsonb` | not null default '[]' | 知识点标签 |
 | `difficulty_weight` | `integer` | not null default 1 | 难度权重 |
 | `is_required` | `boolean` | not null default true | 是否必做 |
-| `metadata` | `jsonb` | not null default '{}' | 下一步预告、示例提示等 |
+| `metadata` | `jsonb` | not null default '{}' | 下一步预告、示例提示、训练 agent 指令片段等 |
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
 

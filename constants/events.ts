@@ -4,6 +4,9 @@ export const APP_EVENTS = {
   onboardingSubmit: "onboarding_submit",
   learningInputSend: "learning_input_send",
   learningQuickHelp: "learning_quick_help",
+  sessionResumed: "session_resumed",
+  stuckHelpRequested: "stuck_help_requested",
+  taskCompleted: "task_completed",
   mapStageClick: "map_stage_click",
   achievementCtaClick: "achievement_cta_click",
 } as const

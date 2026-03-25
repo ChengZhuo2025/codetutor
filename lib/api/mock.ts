@@ -6,11 +6,13 @@ import {
 import { mockLearningCurrentSessionResponse } from "@/features/learning/data/learning-content"
 import {
   colorMap,
-  mockOnboardingInitialPathResponse,
+  getMockOnboardingPathOptionsResponse,
+  getOnboardingToolByCode,
   mockOnboardingToolsResponse,
   onboardingPresets,
   selectedBorderMap,
 } from "@/features/onboarding/data/onboarding-data"
+import type { Level } from "@/features/onboarding/types"
 import {
   mockProgressCurrentResponse,
   mockProgressMapResponse,
@@ -44,25 +46,34 @@ export function getAuthPageMock() {
 
 export function getOnboardingPageMock() {
   const toolsResponse = unwrapResponse(mockOnboardingToolsResponse)
-  const initialPath = unwrapResponse(mockOnboardingInitialPathResponse)
-  const toolCards = toolsResponse.groups.flatMap((group) =>
-    group.tools.map((tool) => ({
-      id: tool.id,
-      name: tool.name,
-      category: tool.category,
-      desc: tool.summary,
-      popular: tool.popular,
-      color: tool.color,
-    })),
-  )
 
   return {
     levels: onboardingPresets.levels,
-    tools: toolCards,
-    initialPreview: initialPath.initialPreview,
+    tools: onboardingPresets.toolCards,
+    toolGroups: toolsResponse.groups.map((group) => ({
+      groupCode: group.groupCode,
+      groupName: group.groupName,
+      tools: group.tools.map((tool) => ({
+        id: tool.id,
+        code: tool.code,
+        name: tool.name,
+        category: tool.category,
+        desc: tool.summary,
+        popular: tool.popular,
+        color: tool.color,
+      })),
+    })),
     colorMap,
     selectedBorderMap,
   }
+}
+
+export function getOnboardingPathOptionsMock(toolCode: string, learningLevel: Level) {
+  return unwrapResponse(getMockOnboardingPathOptionsResponse(toolCode, learningLevel))
+}
+
+export function getOnboardingToolMock(toolCode: string) {
+  return getOnboardingToolByCode(toolCode)
 }
 
 export function getLearningPageMock() {
@@ -73,8 +84,10 @@ export function getLearningPageMock() {
     conversationId: session.conversationId,
     task: session.task,
     mission: session.mission,
+    resume: session.resume,
     initialMessages: session.messages,
     quickActions: session.quickActions,
+    supportOptions: session.supportOptions,
     aiResponses: session.responseSamples,
     rightPanel: session.rightPanel,
     recentSessions: session.recentHistory,

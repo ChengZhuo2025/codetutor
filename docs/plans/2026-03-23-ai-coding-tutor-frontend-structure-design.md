@@ -335,9 +335,10 @@ features/onboarding/
 ├── components/
 │   ├── welcome-header.tsx
 │   ├── level-selector.tsx
+│   ├── learning-path-selector.tsx
 │   ├── tool-card.tsx
 │   ├── tool-grid.tsx
-│   └── initial-path-preview.tsx
+│   └── self-study-card.tsx
 ├── hooks/
 │   └── use-tool-selection.ts
 ├── services/
