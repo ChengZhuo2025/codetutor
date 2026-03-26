@@ -125,7 +125,7 @@ export function SettingsPopover() {
                           </p>
                           <p
                             className={cn(
-                              "text-[12px]",
+                              "text-[12px] mt-1",
                               isDanger ? "text-rose-300/60" : "text-foreground/48",
                             )}
                           >

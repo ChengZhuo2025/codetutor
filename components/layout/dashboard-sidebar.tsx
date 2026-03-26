@@ -134,7 +134,7 @@ export function DashboardSidebar({
               </p>
               <Link
                 href={ROUTES.learn}
-                className="flex items-center gap-1 text-xs text-brand transition-colors hover:text-brand/80"
+                className="flex items-center gap-1 text-[12px] text-brand transition-colors hover:text-brand/80"
               >
                 查看更多
                 <ChevronRight className="h-3 w-3" />
@@ -144,7 +144,7 @@ export function DashboardSidebar({
               {visibleSessions.map((session) => (
                 <button
                   key={session.title}
-                  className="flex w-full items-center justify-between rounded-xl px-2 py-2.5 text-left text-xs transition-colors hover:bg-surface-3"
+                  className="flex w-full items-center justify-between rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-surface-3"
                 >
                   <div className="flex min-w-0 items-center gap-2">
                     <div
@@ -153,9 +153,9 @@ export function DashboardSidebar({
                         session.done ? "bg-brand" : "bg-muted-foreground/40",
                       )}
                     />
-                    <span className="truncate text-muted-foreground">{session.title}</span>
+                    <span className="text-sm truncate text-muted-foreground">{session.title}</span>
                   </div>
-                  <span className="ml-2 shrink-0 text-muted-foreground/55">{session.time}</span>
+                  <span className="ml-2 shrink-0 text-xs text-muted-foreground/55">{session.time}</span>
                 </button>
               ))}
             </div>

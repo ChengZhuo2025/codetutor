@@ -12,11 +12,17 @@ export const MARKETING_NAV_ITEMS: NavItem[] = [
 
 export function getDashboardNavItems(activeHref: string): DashboardNavItem[] {
   return [
-    { icon: BookOpen, label: "学习", href: ROUTES.learn, active: activeHref === ROUTES.learn },
-    { icon: Map, label: "闯关地图", href: ROUTES.map, active: activeHref === ROUTES.map },
+    { icon: BookOpen,
+      label: "今日练习",
+      href: ROUTES.learn,
+      active: activeHref === ROUTES.learn },
+    { icon: Map,
+      label: "闯关地图",
+      href: ROUTES.map,
+      active: activeHref === ROUTES.map },
     {
       icon: Trophy,
-      label: "成就",
+      label: "我的成就",
       href: ROUTES.achievements,
       active: activeHref === ROUTES.achievements,
     },
