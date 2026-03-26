@@ -10,9 +10,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { TimePicker } from "@/components/ui/time-picker"
 
 type NotificationSettingsDialogProps = {
   open: boolean
@@ -92,16 +92,12 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                   <Label htmlFor="checkinTime" className="text-xs text-muted-foreground">
                     提醒时间
                   </Label>
-                  <div className="relative">
-                    <Clock className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/70" />
-                    <Input
-                      id="checkinTime"
-                      type="time"
-                      value={settings.checkinTime}
-                      onChange={(e) => updateSetting("checkinTime", e.target.value)}
-                      className="input-time-dark h-8 w-32 rounded-lg border-white/10 bg-white/5 pr-8 text-xs text-foreground"
-                    />
-                  </div>
+                  <TimePicker
+                    id="checkinTime"
+                    value={settings.checkinTime}
+                    onChange={(value) => updateSetting("checkinTime", value)}
+                    className="w-32"
+                  />
                 </div>
               )}
             </div>
@@ -187,18 +183,16 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
               {settings.doNotDisturb && (
                 <div className="mt-3 flex items-center gap-2 pl-[52px]">
                   <Label className="text-xs text-muted-foreground">静默时段</Label>
-                  <Input
-                    type="time"
+                  <TimePicker
                     value={settings.doNotDisturbStart}
-                    onChange={(e) => updateSetting("doNotDisturbStart", e.target.value)}
-                    className="input-time-dark h-8 w-28 rounded-lg border-white/10 bg-white/5 text-xs text-foreground"
+                    onChange={(value) => updateSetting("doNotDisturbStart", value)}
+                    className="w-28"
                   />
                   <span className="text-xs text-muted-foreground">至</span>
-                  <Input
-                    type="time"
+                  <TimePicker
                     value={settings.doNotDisturbEnd}
-                    onChange={(e) => updateSetting("doNotDisturbEnd", e.target.value)}
-                    className="input-time-dark h-8 w-28 rounded-lg border-white/10 bg-white/5 text-xs text-foreground"
+                    onChange={(value) => updateSetting("doNotDisturbEnd", value)}
+                    className="w-28"
                   />
                 </div>
               )}

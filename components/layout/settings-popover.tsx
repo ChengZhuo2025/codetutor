@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation"
 import { useState, useRef, useEffect } from "react"
-import { Settings, User, Bell, LogOut, ChevronRight, X } from "lucide-react"
+import { Settings, User, Bell, LogOut, ChevronRight, X, MessageSquareMore } from "lucide-react"
 import { APP_NAME, APP_VERSION } from "@/constants/app"
 import { ROUTES } from "@/constants/routes"
 import { cn } from "@/lib/utils"
+import { FeedbackDialog } from "@/components/layout/feedback-dialog"
 import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog"
 import { NotificationSettingsDialog } from "@/components/layout/notification-settings-dialog"
 
@@ -27,12 +28,23 @@ const settingsItems: Array<{
     ],
   },
   {
+    group: "建议反馈",
+    items: [
+      {
+        icon: MessageSquareMore,
+        label: "建议反馈",
+        desc: "前端设计、交互体验、功能与 Bug 反馈",
+        dialog: "feedback",
+      },
+    ],
+  },
+  {
     group: "账号",
     items: [{ icon: LogOut, label: "退出登录", desc: "注销当前账号", danger: true }],
   },
 ]
 
-type DialogType = "profile" | "notification" | null
+type DialogType = "profile" | "notification" | "feedback" | null
 
 export function SettingsPopover() {
   const router = useRouter()
@@ -160,6 +172,10 @@ export function SettingsPopover() {
       />
       <NotificationSettingsDialog
         open={activeDialog === "notification"}
+        onOpenChange={(isOpen) => !isOpen && setActiveDialog(null)}
+      />
+      <FeedbackDialog
+        open={activeDialog === "feedback"}
         onOpenChange={(isOpen) => !isOpen && setActiveDialog(null)}
       />
     </>
