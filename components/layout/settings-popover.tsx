@@ -1,8 +1,10 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useState, useRef, useEffect } from "react"
 import { Settings, User, Bell, LogOut, ChevronRight, X } from "lucide-react"
 import { APP_NAME, APP_VERSION } from "@/constants/app"
+import { ROUTES } from "@/constants/routes"
 import { cn } from "@/lib/utils"
 import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog"
 import { NotificationSettingsDialog } from "@/components/layout/notification-settings-dialog"
@@ -33,6 +35,7 @@ const settingsItems: Array<{
 type DialogType = "profile" | "notification" | null
 
 export function SettingsPopover() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [activeDialog, setActiveDialog] = useState<DialogType>(null)
   const ref = useRef<HTMLDivElement>(null)
@@ -49,7 +52,9 @@ export function SettingsPopover() {
 
   const handleItemClick = (item: { dialog?: string; danger?: boolean }) => {
     if (item.danger) {
-      console.log("退出登录")
+      setOpen(false)
+      setActiveDialog(null)
+      router.push(ROUTES.home)
       return
     }
     if (item.dialog) {

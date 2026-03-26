@@ -209,11 +209,11 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="flex-1 rounded-xl border-white/10 bg-transparent text-foreground hover:bg-white/5"
+              className="flex-1 rounded-[10px] border-white/10 bg-transparent text-foreground hover:bg-white/5"
             >
               取消
             </Button>
-            <Button onClick={handleSave} disabled={isLoading} className="flex-1 rounded-xl">
+            <Button onClick={handleSave} disabled={isLoading} className="flex-1 rounded-[10px]">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

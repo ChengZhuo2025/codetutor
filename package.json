@@ -7,7 +7,10 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
-    "test:workspace-sidebar": "node scripts/check-workspace-sidebar.mjs"
+    "test:workspace-sidebar": "node scripts/check-workspace-sidebar.mjs",
+    "test:settings-logout": "node scripts/check-settings-logout.mjs",
+    "test:workspace-layout-widths": "node scripts/check-workspace-layout-widths.mjs",
+    "test:workspace-aside-styles": "node scripts/check-workspace-aside-styles.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "1.1.15",

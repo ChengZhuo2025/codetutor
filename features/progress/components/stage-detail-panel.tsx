@@ -1,4 +1,11 @@
 import { AlertTriangle, ArrowRight, BookMarked, Lightbulb, Play, Zap } from "lucide-react"
+import {
+  WORKSPACE_ASIDE_BRAND_CARD_CLASS,
+  WORKSPACE_ASIDE_CARD_CLASS,
+  WORKSPACE_ASIDE_GOLD_CARD_CLASS,
+  WORKSPACE_ASIDE_INSET_CARD_CLASS,
+  WorkspaceAside,
+} from "@/components/layout/workspace-aside"
 import { cn } from "@/lib/utils"
 import type { Stage } from "@/features/progress/types"
 
@@ -21,9 +28,9 @@ export function StageDetailPanel({
           : "完成前置关卡后解锁"
 
   return (
-    <div className="flex-1 overflow-y-auto scrollbar-none px-6 py-6">
+    <WorkspaceAside as="div">
       <div className="sticky top-0 space-y-4">
-        <div className="rounded-[28px] border border-brand/20 bg-brand-dim/55 p-5">
+        <div className={WORKSPACE_ASIDE_BRAND_CARD_CLASS}>
           <div className="mb-3 flex items-center gap-2">
             <BookMarked className="h-4 w-4 text-brand" />
             <span className="text-sm font-semibold text-foreground">关卡详情</span>
@@ -43,20 +50,20 @@ export function StageDetailPanel({
           </div>
 
           <div className="mt-4 grid gap-2">
-            <div className="rounded-2xl border border-border/50 bg-background/55 px-3 py-3">
+            <div className={WORKSPACE_ASIDE_INSET_CARD_CLASS}>
               <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/60">
                 本关目标
               </p>
               <p className="mt-2 text-sm leading-6 text-foreground">{stage.focus}</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-2xl border border-border/50 bg-background/55 px-3 py-3">
+              <div className={WORKSPACE_ASIDE_INSET_CARD_CLASS}>
                 <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/60">
                   预计时长
                 </p>
                 <p className="mt-2 text-sm font-semibold text-foreground">{stage.estimatedTime}</p>
               </div>
-              <div className="rounded-2xl border border-border/50 bg-background/55 px-3 py-3">
+              <div className={WORKSPACE_ASIDE_INSET_CARD_CLASS}>
                 <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/60">
                   成长奖励
                 </p>
@@ -82,7 +89,7 @@ export function StageDetailPanel({
           </button>
         </div>
 
-        <div className="rounded-[28px] border border-border/50 bg-surface-2 p-4">
+        <div className={WORKSPACE_ASIDE_CARD_CLASS}>
           <div className="mb-3 flex items-center gap-2">
             <Lightbulb className="h-3.5 w-3.5 text-gold" />
             <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gold">
@@ -101,7 +108,7 @@ export function StageDetailPanel({
           </ul>
         </div>
 
-        <div className="rounded-[28px] border border-border/50 bg-surface-2 p-4">
+        <div className={WORKSPACE_ASIDE_CARD_CLASS}>
           <div className="mb-3 flex items-center gap-2">
             <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
             <span className="text-xs font-semibold uppercase tracking-[0.16em] text-destructive/80">
@@ -130,7 +137,7 @@ export function StageDetailPanel({
           </ul>
         </div>
 
-        <div className="rounded-[28px] border border-gold/20 bg-gold-dim p-4">
+        <div className={WORKSPACE_ASIDE_GOLD_CARD_CLASS}>
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-gold">
             <Zap className="h-3.5 w-3.5" />
             成长反馈
@@ -140,6 +147,6 @@ export function StageDetailPanel({
           </p>
         </div>
       </div>
-    </div>
+    </WorkspaceAside>
   )
 }

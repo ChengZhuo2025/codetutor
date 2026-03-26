@@ -1,4 +1,5 @@
 import { TrendingUp, Zap } from "lucide-react"
+import { WorkspaceAside } from "@/components/layout/workspace-aside"
 import { PageSection } from "@/components/ui/page-section"
 import { StatePanel } from "@/components/ui/state-panel"
 import type { XpGuideItem, XpHistoryItem } from "@/features/achievement/types"
@@ -16,12 +17,7 @@ export function AchievementSidebarPanels({
   className,
 }: AchievementSidebarPanelsProps) {
   return (
-    <div
-      className={cn(
-        "space-y-5 overflow-y-auto scrollbar-none px-5 py-6 sm:px-6 sm:py-8",
-        className,
-      )}
-    >
+    <WorkspaceAside as="div" className={cn("gap-4", className)}>
       <PageSection
         eyebrow="成长规则"
         title="XP 获取方式"
@@ -95,6 +91,6 @@ export function AchievementSidebarPanels({
           />
         )}
       </PageSection>
-    </div>
+    </WorkspaceAside>
   )
 }

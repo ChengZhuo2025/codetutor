@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { APP_EVENTS } from "@/constants/events"
 import { ROUTES } from "@/constants/routes"
+import { WORKSPACE_ASIDE_WIDTH_CLASS } from "@/constants/workspace-layout"
 import { AppShell } from "@/components/layout/app-shell"
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar"
 import { PageSection } from "@/components/ui/page-section"
@@ -50,7 +51,7 @@ export function MapPage() {
             />
           </div>
         )}
-        asideClassName="xl:w-[26rem]"
+        asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
       >
         <main className="flex flex-1 items-start p-4 sm:p-6">
           <div className="w-full">
@@ -89,7 +90,7 @@ export function MapPage() {
           onContinueLearning={() => router.push(ROUTES.learn)}
         />
       )}
-      asideClassName="xl:w-[26rem]"
+      asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
     >
       <main className="flex flex-1 flex-col overflow-hidden">
         <MapHeader

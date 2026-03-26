@@ -3,6 +3,7 @@
 import { AppShell } from "@/components/layout/app-shell"
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar"
 import { ROUTES } from "@/constants/routes"
+import { WORKSPACE_ASIDE_WIDTH_CLASS } from "@/constants/workspace-layout"
 import { LearnChat } from "@/features/learning/components/chat"
 import { LearnRightPanel } from "@/features/learning/components/right-panel"
 
@@ -16,7 +17,7 @@ export function LearnPage() {
         <WorkspaceSidebar activeHref={ROUTES.learn} mobile={mobile} />
       )}
       renderAside={() => <LearnRightPanel />}
-      asideClassName="xl:w-[21rem]"
+      asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
     >
       <LearnChat />
     </AppShell>

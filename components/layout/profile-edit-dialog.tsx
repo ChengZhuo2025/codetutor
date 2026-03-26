@@ -86,7 +86,7 @@ export function ProfileEditDialog({ open, onOpenChange }: ProfileEditDialogProps
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="nickname" className="text-sm font-medium text-foreground/80">
+                <Label htmlFor="nickname" className="text-sm font-medium text-muted-foreground">
                   昵称
                 </Label>
                 <Input
@@ -94,12 +94,12 @@ export function ProfileEditDialog({ open, onOpenChange }: ProfileEditDialogProps
                   value={profile.nickname}
                   onChange={(e) => updateField("nickname", e.target.value)}
                   placeholder="输入昵称"
-                  className="rounded-xl border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
+                  className="rounded-[10px] border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm font-medium text-foreground/80">
+                <Label htmlFor="phone" className="text-sm font-medium text-muted-foreground">
                   手机号码
                 </Label>
                 <Input
@@ -107,12 +107,12 @@ export function ProfileEditDialog({ open, onOpenChange }: ProfileEditDialogProps
                   value={profile.phone}
                   onChange={(e) => updateField("phone", e.target.value)}
                   placeholder="输入手机号码"
-                  className="rounded-xl border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
+                  className="rounded-[10px] border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="wechat" className="text-sm font-medium text-foreground/80">
+                <Label htmlFor="wechat" className="text-sm font-medium text-muted-foreground">
                   微信号
                 </Label>
                 <Input
@@ -120,12 +120,12 @@ export function ProfileEditDialog({ open, onOpenChange }: ProfileEditDialogProps
                   value={profile.wechat}
                   onChange={(e) => updateField("wechat", e.target.value)}
                   placeholder="输入微信号（可选）"
-                  className="rounded-xl border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
+                  className="rounded-[10px] border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-foreground/80">
+                <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">
                   邮箱
                 </Label>
                 <Input
@@ -134,13 +134,13 @@ export function ProfileEditDialog({ open, onOpenChange }: ProfileEditDialogProps
                   value={profile.email}
                   onChange={(e) => updateField("email", e.target.value)}
                   placeholder="输入邮箱（可选）"
-                  className="rounded-xl border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
+                  className="rounded-[10px] border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bio" className="text-sm font-medium text-foreground/80">
+              <Label htmlFor="bio" className="text-sm font-medium text-muted-foreground">
                 个人简介
               </Label>
               <Textarea
@@ -149,11 +149,8 @@ export function ProfileEditDialog({ open, onOpenChange }: ProfileEditDialogProps
                 onChange={(e) => updateField("bio", e.target.value)}
                 placeholder="介绍一下自己吧（可选）"
                 rows={3}
-                className="resize-none rounded-xl border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
+                className="resize-none rounded-[10px] border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
               />
-              <p className="text-[11px] text-muted-foreground">
-                个人简介将在社区功能上线后展示给其他用户
-              </p>
             </div>
           </div>
 
@@ -161,11 +158,11 @@ export function ProfileEditDialog({ open, onOpenChange }: ProfileEditDialogProps
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="flex-1 rounded-xl border-white/10 bg-transparent text-foreground hover:bg-white/5"
+              className="flex-1 rounded-[10px] border-white/10 bg-transparent text-foreground hover:bg-white/5 hover:text-white "
             >
               取消
             </Button>
-            <Button onClick={handleSave} disabled={isLoading} className="flex-1 rounded-xl">
+            <Button onClick={handleSave} disabled={isLoading} className="flex-1 rounded-[10px]">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

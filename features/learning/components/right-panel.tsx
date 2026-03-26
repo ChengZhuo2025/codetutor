@@ -11,6 +11,11 @@ import {
   Target,
 } from "lucide-react"
 import { ROUTES } from "@/constants/routes"
+import {
+  WORKSPACE_ASIDE_CARD_CLASS,
+  WORKSPACE_ASIDE_INSET_CARD_CLASS,
+  WorkspaceAside,
+} from "@/components/layout/workspace-aside"
 import { PageSection } from "@/components/ui/page-section"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatePanel } from "@/components/ui/state-panel"
@@ -27,12 +32,7 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
   const [detailsOpen, setDetailsOpen] = useState(false)
 
   return (
-    <aside
-      className={cn(
-        "flex h-full min-h-0 flex-col gap-4 overflow-y-auto scrollbar-none p-5",
-        className,
-      )}
-    >
+    <WorkspaceAside className={className}>
       {mission ? (
         <>
           <PageSection
@@ -43,7 +43,7 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
             bodyClassName="pt-0"
           >
             <div className="grid gap-3">
-              <div className="rounded-2xl border border-border/50 bg-background/55 px-3 py-3">
+              <div className={WORKSPACE_ASIDE_INSET_CARD_CLASS}>
                 <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/60">
                   完成标准
                 </p>
@@ -51,7 +51,7 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
                   {rightPanel.completionCriteria}
                 </p>
               </div>
-              <div className="rounded-2xl border border-border/50 bg-background/55 px-3 py-3">
+              <div className={WORKSPACE_ASIDE_INSET_CARD_CLASS}>
                 <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-muted-foreground/60">
                   <span>本关进度</span>
                   <span>{mission.progressLabel}</span>
@@ -71,7 +71,7 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
               {supportOptions.map((option, index) => (
                 <div
                   key={option.mode}
-                  className="rounded-2xl border border-border/50 bg-surface-3/90 px-3 py-3"
+                  className={cn(WORKSPACE_ASIDE_INSET_CARD_CLASS, "bg-surface-3/90")}
                 >
                   <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-background/70 text-xs text-muted-foreground">
@@ -87,7 +87,7 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
             </div>
           </PageSection>
 
-          <div className="rounded-[28px] border border-border/60 bg-surface-2/75">
+          <div className={cn(WORKSPACE_ASIDE_CARD_CLASS, "bg-surface-2/75 p-0")}>
             <button
               type="button"
               onClick={() => setDetailsOpen((prev) => !prev)}
@@ -127,7 +127,8 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
                       <div
                         key={task.id}
                         className={cn(
-                          "rounded-2xl border px-3 py-3 text-sm",
+                          WORKSPACE_ASIDE_INSET_CARD_CLASS,
+                          "text-sm",
                           task.current
                             ? "border-brand/25 bg-brand-dim/70"
                             : "border-border/60 bg-surface-3/80",
@@ -245,6 +246,6 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
           />
         </>
       )}
-    </aside>
+    </WorkspaceAside>
   )
 }

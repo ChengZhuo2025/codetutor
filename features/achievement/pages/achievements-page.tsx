@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { APP_EVENTS } from "@/constants/events"
 import { ROUTES } from "@/constants/routes"
+import { WORKSPACE_ASIDE_WIDTH_CLASS } from "@/constants/workspace-layout"
 import { AppShell } from "@/components/layout/app-shell"
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar"
 import { StatePanel } from "@/components/ui/state-panel"
@@ -48,7 +49,7 @@ export function AchievementsPage() {
             />
           </div>
         )}
-        asideClassName="xl:w-[22rem]"
+        asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
       >
         <main className="flex-1 p-4 sm:p-6">
           <StatePanel
@@ -93,7 +94,7 @@ export function AchievementsPage() {
           historyItems={achievementData.history}
         />
       )}
-      asideClassName="xl:w-[22rem]"
+      asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
     >
       <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="shrink-0 border-b border-border/50 bg-surface-1/80 px-4 py-5 backdrop-blur-sm sm:px-8">
