@@ -9,7 +9,7 @@ import type {
   LearningTip,
   Message,
   QuickAction,
-  RecentSession,
+  RecentPracticeRound,
 } from "@/features/learning/types"
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth"
 
@@ -66,7 +66,7 @@ export type LearningCurrentSessionResponseData = {
     knowledgePoints: string[]
     nextStepPreview: string
   }
-  recentHistory: RecentSession[]
+  recentPracticeRounds: RecentPracticeRound[]
   tasks: LearningTask[]
   knowledgeTags: LearningKnowledgeTag[]
   tips: LearningTip[]

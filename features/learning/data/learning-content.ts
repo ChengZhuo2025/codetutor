@@ -148,10 +148,35 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
         knowledgePoints: ["Agent 模式", "Ask 模式", "AI 上下文"],
         nextStepPreview: "下一步会进入 AI 调试助手，练习让 Cursor 帮你定位和修复错误。",
       },
-      recentHistory: [
-        { title: "Cursor 基础配置", time: "今天", done: true },
-        { title: "第一次 AI 对话", time: "昨天", done: true },
-        { title: "项目结构理解", time: "2 天前", done: false },
+      recentPracticeRounds: [
+        {
+          id: "practice-round-001",
+          taskTitle: "安装与配置 Cursor",
+          stageLabel: "第 1 关",
+          lastActiveLabel: "今天",
+          status: "completed",
+        },
+        {
+          id: "practice-round-002",
+          taskTitle: "完成第一次 AI 对话",
+          stageLabel: "第 2 关",
+          lastActiveLabel: "昨天",
+          status: "completed",
+        },
+        {
+          id: "practice-round-003",
+          taskTitle: "理解 Ask 与 Agent 的区别",
+          stageLabel: "第 3 关",
+          lastActiveLabel: "18 分钟前",
+          status: "in_progress",
+        },
+        {
+          id: "practice-round-004",
+          taskTitle: "AI 调试助手",
+          stageLabel: "第 4 关",
+          lastActiveLabel: "2 天前",
+          status: "paused",
+        },
       ],
       tasks: [
         { id: 1, label: "安装 Cursor", done: true },

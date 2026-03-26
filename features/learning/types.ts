@@ -73,10 +73,12 @@ export type LearnSidebarNavItem = {
   active: boolean
 }
 
-export type RecentSession = {
-  title: string
-  time: string
-  done: boolean
+export type RecentPracticeRound = {
+  id: string
+  taskTitle: string
+  stageLabel: string
+  lastActiveLabel: string
+  status: "completed" | "in_progress" | "paused"
 }
 
 export type LearningTask = {

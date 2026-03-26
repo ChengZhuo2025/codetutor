@@ -91,7 +91,7 @@ export function getLearningPageMock() {
     supportOptions: session.supportOptions,
     aiResponses: session.responseSamples,
     rightPanel: session.rightPanel,
-    recentSessions: session.recentHistory,
+    recentPracticeRounds: session.recentPracticeRounds,
     learningTasks: session.tasks,
     learningKnowledgeTags: session.knowledgeTags,
     learningTips: session.tips,

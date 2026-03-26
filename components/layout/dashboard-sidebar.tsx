@@ -34,9 +34,9 @@ export function DashboardSidebar({
   footerContent,
 }: DashboardSidebarProps) {
   const { profile, subscription } = getWorkspaceSidebarMock()
-  const { recentSessions } = getLearningPageMock()
+  const { recentPracticeRounds } = getLearningPageMock()
   const progressPercent = Math.min(Math.round((profile.currentScore / 1000) * 100), 100)
-  const visibleSessions = recentSessions.slice(0, 5)
+  const visiblePracticeRounds = recentPracticeRounds.slice(0, 5)
 
   return (
     <aside
@@ -141,21 +141,34 @@ export function DashboardSidebar({
               </Link>
             </div>
             <div className="space-y-1">
-              {visibleSessions.map((session) => (
+              {visiblePracticeRounds.map((practiceRound) => (
                 <button
-                  key={session.title}
+                  key={practiceRound.id}
                   className="flex w-full items-center justify-between rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-surface-3"
                 >
-                  <div className="flex min-w-0 items-center gap-2">
+                  <div className="flex min-w-0 items-start gap-2">
                     <div
                       className={cn(
-                        "h-1.5 w-1.5 shrink-0 rounded-full",
-                        session.done ? "bg-brand" : "bg-muted-foreground/40",
+                        "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
+                        practiceRound.status === "completed"
+                          ? "bg-brand"
+                          : practiceRound.status === "in_progress"
+                            ? "bg-gold"
+                            : "bg-muted-foreground/40",
                       )}
                     />
-                    <span className="text-sm truncate text-muted-foreground">{session.title}</span>
+                    <div className="min-w-0">
+                      <p className="truncate text-[11px] uppercase tracking-[0.12em] text-muted-foreground/55">
+                        {practiceRound.stageLabel}
+                      </p>
+                      <p className="truncate text-sm text-muted-foreground">
+                        {practiceRound.taskTitle}
+                      </p>
+                    </div>
                   </div>
-                  <span className="ml-2 shrink-0 text-xs text-muted-foreground/55">{session.time}</span>
+                  <span className="ml-2 shrink-0 text-xs text-muted-foreground/55">
+                    {practiceRound.lastActiveLabel}
+                  </span>
                 </button>
               ))}
             </div>
