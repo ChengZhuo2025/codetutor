@@ -1,4 +1,5 @@
 import type {
+  LearningCautionItem,
   LearningKnowledgeTag,
   LearningMission,
   LearningPlanSummary,
@@ -64,6 +65,8 @@ export type LearningCurrentSessionResponseData = {
     completionCriteria: string
     hintIfStuck: string
     knowledgePoints: string[]
+    masteryPoints: string[]
+    cautions: LearningCautionItem[]
     nextStepPreview: string
   }
   recentPracticeRounds: RecentPracticeRound[]

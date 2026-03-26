@@ -146,6 +146,16 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
         completionCriteria: "看到一个可运行的时钟组件并理解为何这是 Agent 场景",
         hintIfStuck: "如果不知道怎么描述，就先提交一句结果导向的话，而不是试图写完整规范。",
         knowledgePoints: ["Agent 模式", "Ask 模式", "AI 上下文"],
+        masteryPoints: [
+          "Ask 更适合解释概念、追问细节和帮你拆清思路",
+          "Agent 更适合生成完整文件或连续修改多段代码",
+          "先做一个最小实验，比一次写完整需求更容易验证判断",
+        ],
+        cautions: [
+          { text: "最常见的卡点：明明想生成文件，却还在 Ask 里反复追问。", isTrap: true },
+          { text: "本关先验证模式差异，不需要提前把 React 语法全部学完。" },
+          { text: "如果 Agent 结果不理想，先缩小任务范围再继续，而不是一次加很多要求。", isTrap: true },
+        ],
         nextStepPreview: "下一步会进入 AI 调试助手，练习让 Cursor 帮你定位和修复错误。",
       },
       recentPracticeRounds: [

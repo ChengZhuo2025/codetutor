@@ -94,6 +94,11 @@ export type LearningKnowledgeTag = {
   color: string
 }
 
+export type LearningCautionItem = {
+  text: string
+  isTrap?: boolean
+}
+
 export type LearningTip = {
   title: string
   body: string

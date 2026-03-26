@@ -1,8 +1,7 @@
-import { AlertTriangle, ArrowRight, BookMarked, Lightbulb, Play, Zap } from "lucide-react"
+import { ArrowRight, BookMarked, Play, Target } from "lucide-react"
 import {
   WORKSPACE_ASIDE_BRAND_CARD_CLASS,
   WORKSPACE_ASIDE_CARD_CLASS,
-  WORKSPACE_ASIDE_GOLD_CARD_CLASS,
   WORKSPACE_ASIDE_INSET_CARD_CLASS,
   WorkspaceAside,
 } from "@/components/layout/workspace-aside"
@@ -33,7 +32,7 @@ export function StageDetailPanel({
         <div className={WORKSPACE_ASIDE_BRAND_CARD_CLASS}>
           <div className="mb-3 flex items-center gap-2">
             <BookMarked className="h-4 w-4 text-brand" />
-            <span className="text-sm font-semibold text-foreground">关卡详情</span>
+            <span className="text-sm font-semibold text-foreground">关卡预览</span>
             <span className="rounded-full bg-background/55 px-2 py-0.5 text-xs text-muted-foreground">
               第 {stage.id} 关
             </span>
@@ -70,6 +69,31 @@ export function StageDetailPanel({
                 <p className="mt-2 text-sm font-semibold text-foreground">+{stage.xp} XP</p>
               </div>
             </div>
+            <div className={WORKSPACE_ASIDE_INSET_CARD_CLASS}>
+              <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground/60">
+                <Target className="h-3.5 w-3.5 text-brand" />
+                当前状态
+              </div>
+              <p className="text-sm leading-6 text-foreground">
+                {stage.status === "current"
+                  ? "这是你当前正在推进的关卡，进入学习页后会看到本关要掌握和注意事项。"
+                  : stage.status === "available"
+                    ? "这关已经可以开始。进入学习页后，右侧会展开完整的执行上下文。"
+                    : stage.status === "done"
+                      ? "这关已经完成，可以回顾重点后继续下一关。"
+                      : "还需先完成前置关卡，解锁后再进入学习执行阶段。"}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 pt-1">
+              {stage.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-border/50 bg-background/45 px-2.5 py-1 text-xs text-muted-foreground"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
 
           <button
@@ -90,60 +114,11 @@ export function StageDetailPanel({
         </div>
 
         <div className={WORKSPACE_ASIDE_CARD_CLASS}>
-          <div className="mb-3 flex items-center gap-2">
-            <Lightbulb className="h-3.5 w-3.5 text-gold" />
-            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gold">
-              本关要掌握
-            </span>
-          </div>
-          <ul className="space-y-2.5">
-            {stage.keyPoints.map((point, index) => (
-              <li key={index} className="flex items-start gap-2.5">
-                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/20 text-xs font-bold text-brand">
-                  {index + 1}
-                </div>
-                <span className="text-sm leading-6 text-foreground/85">{point}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className={WORKSPACE_ASIDE_CARD_CLASS}>
-          <div className="mb-3 flex items-center gap-2">
-            <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
-            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-destructive/80">
-              注意事项
-            </span>
-          </div>
-          <ul className="space-y-2.5">
-            {stage.pitfalls.map((pitfall, index) => (
-              <li key={index} className="flex items-start gap-2.5">
-                <div
-                  className={cn(
-                    "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
-                    pitfall.isTrap ? "bg-destructive" : "bg-muted-foreground/50",
-                  )}
-                />
-                <div className="flex-1">
-                  {pitfall.isTrap && (
-                    <span className="mr-1.5 inline-block rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
-                      卡点提醒
-                    </span>
-                  )}
-                  <span className="text-sm leading-6 text-foreground/80">{pitfall.text}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className={WORKSPACE_ASIDE_GOLD_CARD_CLASS}>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-gold">
-            <Zap className="h-3.5 w-3.5" />
-            成长反馈
-          </div>
-          <p className="mt-2 text-sm leading-6 text-foreground">
-            完成这一关后会直接增加 {stage.xp} XP，并推动下一关解锁。保持连续学习时，成长反馈会更明显。
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
+            为什么这里不展开细节
+          </p>
+          <p className="mt-3 text-sm leading-6 text-foreground/82">
+            路径地图负责帮你判断“现在该进哪一关”，真正进入学习后，右侧会展示本关要掌握、注意事项和下一步提示，避免在地图页提前堆叠过多执行信息。
           </p>
         </div>
       </div>
