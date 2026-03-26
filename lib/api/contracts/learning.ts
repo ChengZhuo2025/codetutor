@@ -1,6 +1,7 @@
 import type {
   LearningKnowledgeTag,
   LearningMission,
+  LearningPlanSummary,
   LearningReply,
   LearningResume,
   LearningSupportOption,
@@ -50,6 +51,7 @@ export type LearningCurrentSessionResponseData = {
     status: LearningTaskState
   }
   profile: ProfileMeResponseData
+  planSummary: LearningPlanSummary
   mission: LearningMission | null
   resume: LearningResume | null
   messages: Message[]

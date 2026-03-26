@@ -50,6 +50,13 @@ export type LearningResume = {
   ctaLabel: string
 }
 
+export type LearningPlanSummary = {
+  selectedToolName: string
+  learningLevelLabel: string
+  selectionModeLabel: string
+  pathName?: string
+}
+
 export type LearningSupportMode = "hint" | "breakdown" | "minimal_example"
 
 export type LearningSupportOption = {

@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   AlertCircle,
   CheckCircle2,
+  Compass,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Lightbulb,
   Lock,
@@ -26,10 +28,29 @@ type LearnRightPanelProps = {
   className?: string
 }
 
+const tipCardClassNames = [
+  "border-brand/25 bg-[linear-gradient(135deg,rgba(31,198,164,0.16),rgba(7,18,27,0.92))]",
+  "border-gold/25 bg-[linear-gradient(135deg,rgba(225,168,75,0.18),rgba(24,18,12,0.92))]",
+  "border-chart-5/25 bg-[linear-gradient(135deg,rgba(63,118,255,0.16),rgba(10,16,30,0.92))]",
+]
+
 export function LearnRightPanel({ className }: LearnRightPanelProps) {
-  const { learningKnowledgeTags, learningTasks, mission, rightPanel, supportOptions } =
+  const { learningKnowledgeTags, learningTasks, learningTips, mission, rightPanel } =
     getLearningPageMock()
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [activeTipIndex, setActiveTipIndex] = useState(0)
+
+  useEffect(() => {
+    if (learningTips.length <= 1) return
+
+    const timer = window.setInterval(() => {
+      setActiveTipIndex((prev) => (prev + 1) % learningTips.length)
+    }, 7000)
+
+    return () => window.clearInterval(timer)
+  }, [learningTips.length])
+
+  const activeTip = learningTips[activeTipIndex]
 
   return (
     <WorkspaceAside className={className}>
@@ -42,9 +63,9 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
             className="border-brand/20 bg-brand-dim/55"
             bodyClassName="pt-0"
           >
-            <div className="grid gap-3">
+            <div className="grid gap-3 pt-4 pb-1">
               <div className={WORKSPACE_ASIDE_INSET_CARD_CLASS}>
-                <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/60">
+                <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   完成标准
                 </p>
                 <p className="mt-2 text-sm leading-6 text-foreground">
@@ -52,7 +73,7 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
                 </p>
               </div>
               <div className={WORKSPACE_ASIDE_INSET_CARD_CLASS}>
-                <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-muted-foreground/60">
+                <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   <span>本关进度</span>
                   <span>{mission.progressLabel}</span>
                 </div>
@@ -66,35 +87,81 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
             </div>
           </PageSection>
 
-          <PageSection eyebrow="卡住时先这样做" title="求助优先级" description={rightPanel.hintIfStuck}>
-            <div className="space-y-3">
-              {supportOptions.map((option, index) => (
+          <PageSection eyebrow="卡住时先这样做" title="技巧小贴士" description={rightPanel.hintIfStuck}>
+            {activeTip ? (
+              <div className="space-y-3">
                 <div
-                  key={option.mode}
-                  className={cn(WORKSPACE_ASIDE_INSET_CARD_CLASS, "bg-surface-3/90")}
+                  className={cn(
+                    "relative overflow-hidden rounded-[16px] border px-4 py-4",
+                    tipCardClassNames[activeTipIndex % tipCardClassNames.length],
+                  )}
                 >
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-background/70 text-xs text-muted-foreground">
-                      {index + 1}
-                    </div>
-                    {option.label}
+                  <div className="absolute right-4 top-3 h-2 w-2 rounded-full bg-background shadow-[0_0_0_2px_rgba(255,255,255,0.12)]" />
+                  <div className="max-w-full">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/55">
+                      Tip {activeTipIndex + 1}
+                    </p>
+                    <p className="mt-3 text-base font-semibold leading-7 text-foreground">
+                      {activeTip.title}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-foreground/78">{activeTip.body}</p>
                   </div>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {option.description}
-                  </p>
                 </div>
-              ))}
-            </div>
+
+                {learningTips.length > 1 ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      {learningTips.map((tip, index) => (
+                        <button
+                          key={tip.title}
+                          type="button"
+                          aria-label={`查看提示 ${index + 1}`}
+                          onClick={() => setActiveTipIndex(index)}
+                          className={cn(
+                            "h-2.5 rounded-full transition-all",
+                            index === activeTipIndex
+                              ? "w-6 bg-brand"
+                              : "w-2.5 bg-surface-4 hover:bg-surface-3",
+                          )}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveTipIndex((prev) =>
+                            prev === 0 ? learningTips.length - 1 : prev - 1,
+                          )
+                        }
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-surface-2 text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveTipIndex((prev) => (prev + 1) % learningTips.length)
+                        }
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-surface-2 text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </PageSection>
 
           <div className={cn(WORKSPACE_ASIDE_CARD_CLASS, "bg-surface-2/75 p-0")}>
             <button
               type="button"
               onClick={() => setDetailsOpen((prev) => !prev)}
-              className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left sm:px-6"
+              className="flex w-full items-center justify-between gap-3 py-4 text-left"
             >
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground/60">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground/60">
                   更多上下文
                 </p>
                 <p className="mt-1 text-sm font-semibold text-foreground">路径、知识点、下一步预告</p>
@@ -108,10 +175,10 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
             </button>
 
             {detailsOpen ? (
-              <div className="space-y-4 border-t border-border/50 px-5 py-5 sm:px-6">
+              <div className="space-y-4 border-t border-border/50 py-4">
                 <div>
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
                       当前学习路径
                     </p>
                     <a
@@ -169,8 +236,8 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
                   </div>
                 </div>
 
-                <div>
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
+                <div className="pt-3">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
                     本关知识点
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -188,19 +255,25 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
                   </div>
                 </div>
 
-                <StatePanel
-                  status="success"
-                  title={mission.nextUnlockTitle}
-                  description={rightPanel.nextStepPreview}
-                  className="border-gold/20 bg-gold-dim"
-                  compact
-                  extra={
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gold">
-                      <Lightbulb className="h-3.5 w-3.5" />
-                      下一关预告
+                <div className="rounded-[16px] border border-gold/20 bg-gold-dim/80 px-4 py-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-gold/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.06))] text-gold shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                      <Compass className="h-5 w-5" />
                     </div>
-                  }
-                />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center mt-1 gap-1 text-xs uppercase tracking-[0.12em] text-gold">
+                        <Lightbulb className="h-3 w-3" />
+                        下一关预告
+                      </div>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {mission.nextUnlockTitle}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    {rightPanel.nextStepPreview}
+                  </p>
+                </div>
               </div>
             ) : null}
           </div>
