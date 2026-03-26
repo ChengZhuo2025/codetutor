@@ -93,7 +93,7 @@ export function LandingNav() {
 
         <div className="hidden items-center gap-3 md:flex">
           <div className="rounded-full border border-brand/20 bg-brand/10 px-3 py-1 text-xs font-medium text-brand">
-            V 1.0.0
+            v0.1.0 Beta
           </div>
           <Link href={ROUTES.login}>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">

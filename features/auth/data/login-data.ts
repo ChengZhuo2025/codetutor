@@ -27,7 +27,7 @@ export const mockAuthPreviewResponse: ApiSuccessResponse<AuthPreviewContract> = 
   code: "OK",
   message: "success",
   data: {
-    previewTools: ["Cursor", "Claude Code", "Codex", "OpenClaw"],
+    previewTools: ["Cursor", "Claude Code", "Codex", "Google Stitch"],
     previewSteps: [
       {
         id: 1,

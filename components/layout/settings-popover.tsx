@@ -108,7 +108,7 @@ export function SettingsPopover() {
                           className={cn(
                             "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border",
                             isDanger
-                              ? "border-rose-300/15 bg-rose-300/10 text-rose-300"
+                              ? "border-rose-300/15 bg-rose-300/10 text-rose-400"
                               : "border-white/10 bg-white/6 text-foreground/78",
                           )}
                         >
@@ -117,15 +117,15 @@ export function SettingsPopover() {
                         <div className="flex-1">
                           <p
                             className={cn(
-                              "text-xs font-medium",
-                              isDanger ? "text-rose-300" : "text-foreground/88",
+                              "text-sm font-medium",
+                              isDanger ? "text-rose-400" : "text-foreground/88",
                             )}
                           >
                             {item.label}
                           </p>
                           <p
                             className={cn(
-                              "text-[11px]",
+                              "text-[12px]",
                               isDanger ? "text-rose-300/60" : "text-foreground/48",
                             )}
                           >

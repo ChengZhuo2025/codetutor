@@ -2,10 +2,9 @@
 
 import { useRouter } from "next/navigation"
 import { APP_EVENTS } from "@/constants/events"
-import { getDashboardNavItems } from "@/constants/navigation"
 import { ROUTES } from "@/constants/routes"
 import { AppShell } from "@/components/layout/app-shell"
-import { DashboardSidebar } from "@/components/layout/dashboard-sidebar"
+import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar"
 import { StatePanel } from "@/components/ui/state-panel"
 import { AchievementSidebarPanels } from "@/features/achievement/components/achievement-sidebar-panels"
 import { AchievementStatsGrid } from "@/features/achievement/components/achievement-stats-grid"
@@ -37,10 +36,7 @@ export function AchievementsPage() {
         mobileSubtitle="等待成长数据"
         asideLabel="XP 流水"
         renderSidebar={({ mobile }) => (
-          <DashboardSidebar
-            items={getDashboardNavItems(ROUTES.achievements)}
-            widthClass={mobile ? "w-full" : "w-72"}
-          />
+          <WorkspaceSidebar activeHref={ROUTES.achievements} mobile={mobile} />
         )}
         renderAside={() => (
           <div className="p-6">
@@ -89,10 +85,7 @@ export function AchievementsPage() {
       mobileSubtitle="XP、段位、连续学习与徽章成长"
       asideLabel="XP 流水"
       renderSidebar={({ mobile }) => (
-        <DashboardSidebar
-          items={getDashboardNavItems(ROUTES.achievements)}
-          widthClass={mobile ? "w-full" : "w-72"}
-        />
+        <WorkspaceSidebar activeHref={ROUTES.achievements} mobile={mobile} />
       )}
       renderAside={() => (
         <AchievementSidebarPanels

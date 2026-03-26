@@ -672,23 +672,6 @@ export function LearnChat() {
           ) : null}
 
           <div className="rounded-[1.6rem] border border-border/60 bg-surface-2 px-3 py-2.5 transition-colors focus-within:border-brand/60 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.10)]">
-            <div className="mb-2 flex items-center justify-between gap-3 px-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
-                输入区
-              </p>
-              <p className="text-xs text-muted-foreground/60">
-                {connectionState === "offline"
-                  ? "离线"
-                  : isTyping
-                    ? "发送中"
-                    : previewAttachment
-                      ? "已附上截图"
-                      : input.trim()
-                        ? "可发送"
-                        : "等待输入"}
-              </p>
-            </div>
-
             <div
               className={cn(
                 "flex",

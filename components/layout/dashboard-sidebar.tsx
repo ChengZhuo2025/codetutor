@@ -129,8 +129,8 @@ export function DashboardSidebar({
 
           <div className="rounded-[24px] border border-border/60 bg-surface-2/80 p-4">
             <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/55">
-                最近对话
+              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/55">
+                最近练习
               </p>
               <Link
                 href={ROUTES.learn}

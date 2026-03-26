@@ -4,9 +4,8 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { APP_EVENTS } from "@/constants/events"
 import { ROUTES } from "@/constants/routes"
-import { getDashboardNavItems } from "@/constants/navigation"
 import { AppShell } from "@/components/layout/app-shell"
-import { DashboardSidebar } from "@/components/layout/dashboard-sidebar"
+import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar"
 import { PageSection } from "@/components/ui/page-section"
 import { StatePanel } from "@/components/ui/state-panel"
 import { MapHeader } from "@/features/progress/components/map-header"
@@ -39,10 +38,7 @@ export function MapPage() {
         mobileSubtitle="等待路径数据"
         asideLabel="关卡详情"
         renderSidebar={({ mobile }) => (
-          <DashboardSidebar
-            items={getDashboardNavItems(ROUTES.map)}
-            widthClass={mobile ? "w-full" : "w-72"}
-          />
+          <WorkspaceSidebar activeHref={ROUTES.map} mobile={mobile} />
         )}
         renderAside={() => (
           <div className="p-6">
@@ -85,10 +81,7 @@ export function MapPage() {
       mobileSubtitle={`已完成 ${done}/${total} 关 · 当前关卡 ${currentStage.id}`}
       asideLabel="关卡详情"
       renderSidebar={({ mobile }) => (
-        <DashboardSidebar
-          items={getDashboardNavItems(ROUTES.map)}
-          widthClass={mobile ? "w-full" : "w-72"}
-        />
+        <WorkspaceSidebar activeHref={ROUTES.map} mobile={mobile} />
       )}
       renderAside={() => (
         <StageDetailPanel
