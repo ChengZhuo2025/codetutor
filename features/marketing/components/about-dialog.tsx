@@ -63,7 +63,7 @@ export function AboutDialog({
               <DialogTitle className="text-2xl font-semibold tracking-tight">
                 关于 CodeTutor
               </DialogTitle>
-              <DialogDescription className="max-w-3xl text-sm leading-6 text-muted-foreground">
+              <DialogDescription className="max-w-3xl text-sm leading-4 text-muted-foreground">
                 我们想把“教程很多、实践很少”的学习断层，变成一个持续推进的 AI 陪练系统。
               </DialogDescription>
             </DialogHeader>
@@ -74,7 +74,7 @@ export function AboutDialog({
               const Icon = item.icon
 
               return (
-                <div key={item.title} className="rounded-[28px] border border-white/10 bg-white/5 p-4">
+                <div key={item.title} className="py-4">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-brand/20 bg-brand/10">
                     <Icon className="h-5 w-5 text-brand" />
                   </div>

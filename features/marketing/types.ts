@@ -15,6 +15,9 @@ export type MarketingTool = {
   tag: string
   color: string
   dot: string
+  siteUrl?: string
+  logoDomain?: string
+  featuredInFooter?: boolean
 }
 
 export type MarketingAudience = {

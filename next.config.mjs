@@ -6,6 +6,13 @@ const rootDir = fileURLToPath(new URL('.', import.meta.url))
 const nextConfig = {
   images: {
     unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'www.google.com',
+        pathname: '/s2/favicons',
+      },
+    ],
   },
   turbopack: {
     root: rootDir,

@@ -71,7 +71,7 @@ export function LandingNav() {
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-4 md:flex">
           {MARKETING_NAV_ITEMS.map((item) => (
             <button
               key={item.href}
@@ -93,7 +93,7 @@ export function LandingNav() {
 
         <div className="hidden items-center gap-3 md:flex">
           <div className="rounded-full border border-brand/20 bg-brand/10 px-3 py-1 text-xs font-medium text-brand">
-            MVP 内测中
+            V 1.0.0
           </div>
           <Link href={ROUTES.login}>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">

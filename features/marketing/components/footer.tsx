@@ -1,17 +1,23 @@
+import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, Code2 } from "lucide-react"
 import { APP_COPYRIGHT_YEAR, APP_NAME } from "@/constants/app"
 import { ROUTES } from "@/constants/routes"
 import { Button } from "@/components/ui/button"
-import { AboutDialog } from "@/features/marketing/components/about-dialog"
-import { ContactDialog } from "@/features/marketing/components/contact-dialog"
+import { marketingTools } from "@/features/marketing/data/marketing-content"
+import { AboutDialog } from "./about-dialog"
+import { ContactDialog } from "./contact-dialog"
+
+const featuredFooterTools = marketingTools.filter(
+  (tool) => tool.featuredInFooter && tool.siteUrl && tool.logoDomain
+)
 
 export function LandingFooter() {
   return (
     <>
-      <section id="about" className="relative px-6 py-24 text-center">
+      <section id="about" className="relative px-6 text-center">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/16 to-transparent" />
-        <div className="mx-auto max-w-3xl rounded-[32px] border border-white/10 bg-[radial-gradient(circle_at_top,oklch(0.78_0.15_180/0.12),transparent_42%),oklch(0.16_0.01_240/0.72)] px-6 py-12 shadow-[0_28px_90px_-52px_rgba(0,0,0,0.85)] backdrop-blur">
+        <div className="mx-auto max-w-3xl px-6 pt-24 pb-16">
           <h2 className="text-4xl font-bold tracking-tight text-balance">
             今天就把第一条学习路径跑起来
           </h2>
@@ -41,26 +47,69 @@ export function LandingFooter() {
         </div>
       </section>
 
-      <footer className="border-t border-border/50 bg-surface-2 px-6 py-10">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 md:flex-row">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-brand-foreground">
-              <Code2 className="h-3.5 w-3.5" />
+      <footer className="px-6 pt-10">
+        <div className="mx-auto max-w-6xl">
+          <div>
+            <div className="flex items-center justify-center gap-4">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/14" />
+              <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                相关应用下载
+              </p>
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/14" />
             </div>
-            <span className="text-sm font-medium">{APP_NAME}</span>
+
+            <div className="mt-10 pb-6 flex flex-wrap items-center justify-center gap-10 gap-y-5">
+              {featuredFooterTools.map((tool) => (
+                <a
+                  key={tool.name}
+                  href={tool.siteUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group flex items-center gap-3 transition-transform hover:-translate-y-0.5"
+                >
+                  <div className="flex h-12 w-12 rounded-lg bg-white/5 border border-white/10 items-center justify-center">
+                    <Image
+                      src={`https://www.google.com/s2/favicons?domain=${tool.logoDomain}&sz=128`}
+                      alt={`${tool.name} logo`}
+                      width={32}
+                      height={32}
+                      className="rounded-md"
+                      unoptimized
+                    />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold leading-5 text-foreground transition-colors group-hover:text-brand">
+                      {tool.name}
+                    </p>
+                    <p className="text-xs leading-5 text-muted-foreground">{tool.tag}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-6 text-sm text-muted-foreground">
-            <AboutDialog
-              triggerLabel="关于我们"
-              triggerClassName="cursor-pointer transition-colors hover:text-foreground"
-            />
-            <span className="cursor-pointer transition-colors hover:text-foreground">隐私政策</span>
-            <span className="cursor-pointer transition-colors hover:text-foreground">使用条款</span>
-            <ContactDialog triggerClassName="cursor-pointer transition-colors hover:text-foreground" />
+
+          <div className="mt-8 py-6 border-t border-border/50 bg-surface-2 flex flex-col items-center justify-between gap-6 md:flex-row">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-brand-foreground">
+                <Code2 className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-sm font-medium">{APP_NAME}</span>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
+              <AboutDialog
+                triggerLabel="关于我们"
+                triggerClassName="cursor-pointer transition-colors hover:text-foreground"
+              />
+              <span className="cursor-pointer transition-colors hover:text-foreground">隐私政策</span>
+              <span className="cursor-pointer transition-colors hover:text-foreground">使用条款</span>
+              <ContactDialog triggerClassName="cursor-pointer transition-colors hover:text-foreground" />
+              <span className="cursor-pointer transition-colors hover:text-foreground">帮助中心</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              © {APP_COPYRIGHT_YEAR} {APP_NAME}. All rights reserved.
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            © {APP_COPYRIGHT_YEAR} {APP_NAME}. All rights reserved.
-          </p>
         </div>
       </footer>
     </>

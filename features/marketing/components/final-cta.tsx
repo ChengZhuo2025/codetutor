@@ -5,7 +5,7 @@ import { ROUTES } from "@/constants/routes"
 
 export function LandingFinalCta() {
   return (
-    <section className="relative overflow-hidden px-6 py-32">
+    <section className="relative overflow-hidden px-6 py-24">
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-white/16 to-transparent" />
       {/* 背景装饰 */}
       <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,oklch(0.12_0.008_240/0.6)_50%,oklch(0.10_0.006_240/0.9)_100%)]" />
