@@ -29,6 +29,7 @@ export const mockAchievementSummaryResponse: ApiSuccessResponse<AchievementSumma
       totalXP: 680,
       streakDays: 7,
       monthlyXP: 360,
+      totalCheckinDays: 21,
       nextRankRemainingXP: 320,
       earnedBadges: 2,
     },
@@ -43,7 +44,7 @@ export const mockAchievementSummaryResponse: ApiSuccessResponse<AchievementSumma
       {
         id: 1,
         title: "零到一",
-        desc: "完成人生第一个 AI 编程任务",
+        desc: "完成第一个自由模式的AI编程任务",
         icon: Star,
         earned: true,
         progressHint: "已完成第一个任务切入点",
@@ -52,7 +53,7 @@ export const mockAchievementSummaryResponse: ApiSuccessResponse<AchievementSumma
       {
         id: 2,
         title: "七日连击",
-        desc: "连续学习 7 天",
+        desc: "连续学习7天",
         icon: Flame,
         earned: true,
         progressHint: "当前连续学习仍在继续",
@@ -61,7 +62,7 @@ export const mockAchievementSummaryResponse: ApiSuccessResponse<AchievementSumma
       {
         id: 3,
         title: "代码驯服师",
-        desc: "完成第一次 AI 调试",
+        desc: "完成第一次AI调试",
         icon: Target,
         earned: false,
         progressHint: "完成「AI 调试助手」后解锁",
@@ -70,7 +71,7 @@ export const mockAchievementSummaryResponse: ApiSuccessResponse<AchievementSumma
       {
         id: 4,
         title: "构建者",
-        desc: "完成第一个完整项目",
+        desc: "与Ai协作完成第一个完整项目",
         icon: Award,
         earned: false,
         progressHint: "完成完整项目实战后解锁",
@@ -88,7 +89,7 @@ export const mockAchievementSummaryResponse: ApiSuccessResponse<AchievementSumma
       {
         id: 6,
         title: "月度冠军",
-        desc: "单月学分排名前 10%",
+        desc: "单月学分排名TOP榜前三",
         icon: Trophy,
         earned: false,
         progressHint: "保持每周稳定学习更容易触发",

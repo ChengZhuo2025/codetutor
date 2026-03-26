@@ -45,6 +45,7 @@ export type AchievementOverview = {
   totalXP: number
   streakDays: number
   monthlyXP: number
+  totalCheckinDays: number
   nextRankRemainingXP: number
   earnedBadges: number
 }

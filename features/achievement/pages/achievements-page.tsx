@@ -114,21 +114,19 @@ export function AchievementsPage() {
             onOpenMap={handleOpenMap}
           />
 
-          <div className="mt-6 grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-            <div className="space-y-6">
-              <AchievementStatsGrid stats={achievementData.stats} />
-              <BadgeGrid badges={achievementData.badges} />
-            </div>
+          <div className="mt-6 space-y-6">
+            <AchievementStatsGrid stats={achievementData.stats} />
 
-            <div className="space-y-6">
-              <CheckinCalendar
-                weekDays={achievementData.weekDays}
-                checkinDays={achievementData.checkinDays}
-                calendarDates={achievementData.calendarDates}
-                streakDays={achievementData.overview.streakDays}
-                monthlyXP={achievementData.overview.monthlyXP}
-              />
-            </div>
+            <CheckinCalendar
+              weekDays={achievementData.weekDays}
+              checkinDays={achievementData.checkinDays}
+              calendarDates={achievementData.calendarDates}
+              streakDays={achievementData.overview.streakDays}
+              monthlyXP={achievementData.overview.monthlyXP}
+              totalCheckinDays={achievementData.overview.totalCheckinDays}
+            />
+
+            <BadgeGrid badges={achievementData.badges} />
           </div>
         </div>
       </main>

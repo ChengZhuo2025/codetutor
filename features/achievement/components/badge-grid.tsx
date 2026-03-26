@@ -1,4 +1,4 @@
-import { Lock } from "lucide-react"
+import { CheckCircle2 } from "lucide-react"
 import { PageSection } from "@/components/ui/page-section"
 import { StatePanel } from "@/components/ui/state-panel"
 import { cn } from "@/lib/utils"
@@ -10,7 +10,6 @@ type BadgeGridProps = {
 
 export function BadgeGrid({ badges }: BadgeGridProps) {
   const earnedBadges = badges.filter((badge) => badge.earned)
-  const lockedBadges = badges.filter((badge) => !badge.earned)
 
   if (badges.length === 0) {
     return (
@@ -26,96 +25,68 @@ export function BadgeGrid({ badges }: BadgeGridProps) {
     <PageSection
       eyebrow="成长身份"
       title="成就徽章"
-      description={`已获得 ${earnedBadges.length} / ${badges.length} 枚，成长会继续解锁新的身份标签。`}
+      description={
+        <>
+          已获得{" "}
+          <span className="font-semibold text-brand">
+            {earnedBadges.length}
+          </span>{" "}
+          / {badges.length} 枚，已解锁徽章高亮显示，未解锁徽章保留灰度等待点亮。
+        </>
+      }
+      bodyClassName="pt-5"
     >
-      <div className="space-y-5">
-        <div>
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground/60">
-            已获得
-          </p>
-          {earnedBadges.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {earnedBadges.map((badge) => {
-                const Icon = badge.icon
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {badges.map((badge) => {
+          const Icon = badge.icon
 
-                return (
-                  <div
-                    key={badge.id}
-                    className={cn("rounded-[24px] border p-4", badge.color)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-current/20 bg-current/5">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-semibold">{badge.title}</p>
-                          <span className="rounded-full border border-current/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em]">
-                            已获得
-                          </span>
-                        </div>
-                        <p className="mt-1 text-xs leading-6 opacity-80">{badge.desc}</p>
-                        {badge.progressHint ? (
-                          <p className="mt-2 text-xs font-medium opacity-90">{badge.progressHint}</p>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <StatePanel
-              status="empty"
-              title="还没有已获得徽章"
-              description="继续完成当前学习路径后，第一批徽章会先从基础连续学习和首个关卡完成开始解锁。"
-              compact
-            />
-          )}
-        </div>
+          return (
+            <div
+              key={badge.id}
+              className={cn(
+                "relative overflow-hidden rounded-[26px] border p-5 transition-transform duration-200 hover:-translate-y-0.5",
+                badge.earned
+                  ? "border-brand/30 bg-brand/12 text-brand shadow-[0_18px_48px_rgba(0,0,0,0.14)]"
+                  : "border-border/40 bg-surface-3 text-muted-foreground",
+              )}
+            >
+              {badge.earned ? (
+                <CheckCircle2 className="absolute right-4 top-4 h-4 w-4 text-brand" />
+              ) : null}
 
-        <div>
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground/60">
-            即将解锁
-          </p>
-          {lockedBadges.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {lockedBadges.map((badge) => (
+              <div className="flex items-start gap-4">
                 <div
-                  key={badge.id}
-                  className="rounded-[24px] border border-border/40 bg-surface-3 p-4"
+                  className={cn(
+                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border",
+                    badge.earned
+                      ? "border-brand/20 bg-brand/10"
+                      : "border-border/40 bg-background/40",
+                  )}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border/40 bg-background/40">
-                      <Lock className="h-4 w-4 text-muted-foreground/55" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground">{badge.title}</p>
-                        <span className="rounded-full border border-border/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
-                          未解锁
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs leading-6 text-muted-foreground">{badge.desc}</p>
-                      {badge.progressHint ? (
-                        <p className="mt-2 text-xs font-medium text-muted-foreground">
-                          {badge.progressHint}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
+                  <Icon className={cn("h-5 w-5", badge.earned ? "" : "opacity-45")} />
                 </div>
-              ))}
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={cn(
+                      "text-sm font-semibold",
+                      badge.earned ? "text-brand" : "text-foreground/75",
+                    )}
+                  >
+                    {badge.title}
+                  </p>
+                  <p
+                    className={cn(
+                      "mt-2 text-sm leading-6",
+                      badge.earned ? "text-brand/80" : "text-muted-foreground/80",
+                    )}
+                  >
+                    {badge.desc}
+                  </p>
+                </div>
+              </div>
             </div>
-          ) : (
-            <StatePanel
-              status="success"
-              title="当前批次徽章已全部解锁"
-              description="继续推进路径后，后续会开放更高阶的专项徽章。"
-              compact
-            />
-          )}
-        </div>
+          )
+        })}
       </div>
     </PageSection>
   )

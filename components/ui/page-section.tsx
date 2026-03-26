@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 type PageSectionProps = {
   eyebrow?: string
   title: string
-  description?: string
+  description?: ReactNode
   action?: ReactNode
   children: ReactNode
   className?: string
