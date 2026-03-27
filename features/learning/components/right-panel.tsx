@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { ROUTES } from "@/constants/routes"
 import {
+  WORKSPACE_ASIDE_CARD_CLASS,
   WORKSPACE_ASIDE_INSET_CARD_CLASS,
   WorkspaceAside,
 } from "@/components/layout/workspace-aside"
@@ -272,7 +273,7 @@ export function LearnRightPanel({ className }: LearnRightPanelProps) {
             </div>
           </PageSection>
 
-          <div className="rounded-[16px] border border-gold/20 bg-gold-dim/80 px-4 py-4">
+          <div className={cn(WORKSPACE_ASIDE_CARD_CLASS, "border-gold/20 bg-gold-dim/80")}>
             <div className="flex items-start gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-gold/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.06))] text-gold shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                 <Compass className="h-5 w-5" />

@@ -120,10 +120,10 @@ export function CheckinCalendar({
                     className={cn(
                       "relative flex aspect-square items-end justify-start rounded-2xl border p-2 transition-colors sm:p-2.5",
                       checked
-                        ? "border-brand/35 bg-brand/18 shadow-[0_0_18px_oklch(0.78_0.15_180/0.18)]"
+                        ? "border-brand/35 bg-brand/15"
                         : isFuture
-                          ? "border-border/20 bg-surface-3/20"
-                          : "border-border/35 bg-surface-3",
+                          ? "border-border/10 bg-surface-3"
+                          : "border-border/60 bg-background/25",
                     )}
                   >
                     <span

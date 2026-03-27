@@ -1,4 +1,7 @@
 import type { LucideIcon } from "lucide-react"
+import type { IconifyIcon } from "@iconify/types"
+
+export type AchievementIcon = IconifyIcon
 
 export type Rank = {
   name: string
@@ -6,13 +9,14 @@ export type Rank = {
   max: number
   color: string
   bg: string
+  icon: AchievementIcon
 }
 
 export type Badge = {
   id: number
   title: string
   desc: string
-  icon: LucideIcon
+  icon: AchievementIcon
   earned: boolean
   color: string
   progressHint?: string

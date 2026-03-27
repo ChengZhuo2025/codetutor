@@ -4,6 +4,19 @@ import type {
   LearningMessageResponseData,
 } from "@/lib/api/contracts/learning"
 import { mockProfileMeResponse } from "@/features/auth/data/login-data"
+import { currentLearningPlan } from "@/lib/mocks/current-learning-plan"
+
+const currentStage =
+  currentLearningPlan.stages.find((stage) => stage.status === "current") ??
+  currentLearningPlan.stages[0]
+const nextStage =
+  currentLearningPlan.stages.find((stage) => stage.id > currentStage.id) ?? currentStage
+
+const knowledgeTagColors = [
+  "text-brand bg-brand-dim border-brand/20",
+  "text-chart-3 bg-chart-3/10 border-chart-3/20",
+  "text-chart-5 bg-chart-5/10 border-chart-5/20",
+]
 
 export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurrentSessionResponseData> =
   {
@@ -12,37 +25,36 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
     data: {
       conversationId: "conversation-cursor-003",
       task: {
-        taskId: "task-chat-vs-composer",
-        title: "理解 Ask 与 Agent 的区别",
+        taskId: currentStage.taskId,
+        title: currentStage.title,
         status: "in_progress",
       },
       profile: mockProfileMeResponse.data,
       planSummary: {
-        selectedToolName: "Cursor",
+        selectedToolName: currentLearningPlan.tool.label,
         learningLevelLabel: "完全入门",
-        selectionModeLabel: "系统训练路径",
-        pathName: "Cursor 零基础起步营",
+        selectionModeLabel: "平台训练模式",
+        pathName: currentLearningPlan.pathName,
       },
       resume: {
         title: "继续上次学习",
-        summary: "你已经确认了 Ask 更适合追问概念，现在继续完成 Agent 的最小实验。",
+        summary: "你已经完成了基础安装与第一次提问，现在继续验证 Ask 与 Agent 的职责边界。",
         lastSeenLabel: "上次停留在 18 分钟前",
         ctaLabel: "继续这一关",
       },
       mission: {
-        title: "理解 Ask 与 Agent 的区别",
-        tool: "Cursor",
-        stageLabel: "第 3 关 / 共 8 关",
-        goal: "用 Cursor 的 Agent 功能创建一个 React 时钟组件",
-        summary:
-          "只做一个最小实验：打开 Agent，用中文描述想要的组件效果，观察 AI 如何生成完整文件。",
-        estimatedTime: "约 8 分钟",
-        reward: "+10 XP",
+        title: currentStage.title,
+        tool: currentLearningPlan.tool.label,
+        stageLabel: `第 ${currentStage.id} 关 / 共 ${currentLearningPlan.stages.length} 关`,
+        goal: currentStage.goal,
+        summary: currentStage.focus,
+        estimatedTime: `约 ${currentStage.estimatedTime}`,
+        reward: `+${currentStage.xp} XP`,
         progressLabel: "1 / 3 步",
         progressPercent: 36,
         coachCue: "先把任务做小，只验证 Agent 是否比 Ask 更适合生成完整文件。",
-        nextUnlockTitle: "AI 调试助手",
-        nextUnlockSummary: "学会用 Cmd+K 让 Cursor 直接定位并修复代码 bug，不再手动排查错误。",
+        nextUnlockTitle: nextStage.title,
+        nextUnlockSummary: nextStage.summary,
       },
       messages: [
         {
@@ -114,9 +126,9 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
           kind: "task_feedback",
           title: "任务反馈",
           content:
-            "很好，这一步已经完成。\n\n**你刚刚确认了两件事：**\n- Agent 更适合生成完整文件或功能块\n- Ask 更适合解释概念、追问细节和排查思路\n\n接下来进入第 4 关，开始练习让 Cursor 直接帮你调试代码。",
-          xp: 10,
-          nextStep: "进入第 4 关：AI 调试助手",
+            `很好，这一步已经完成。\n\n**你刚刚确认了两件事：**\n- Agent 更适合生成完整文件或功能块\n- Ask 更适合解释概念、追问细节和排查思路\n\n接下来进入第 ${nextStage.id} 关，开始练习${nextStage.title}。`,
+          xp: currentStage.xp,
+          nextStep: `进入第 ${nextStage.id} 关：${nextStage.title}`,
         },
         {
           trigger: "帮我拆细一点",
@@ -142,64 +154,32 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
       ],
       rightPanel: {
         currentStep: "用 Agent 生成一个 React 时钟组件",
-        whyThisStep: "先做一个最小实验，最快验证 Agent 和 Ask 的分工差异。",
-        completionCriteria: "看到一个可运行的时钟组件并理解为何这是 Agent 场景",
+        whyThisStep: currentStage.focus,
+        completionCriteria: currentStage.completionCriteria,
         hintIfStuck: "如果不知道怎么描述，就先提交一句结果导向的话，而不是试图写完整规范。",
-        knowledgePoints: ["Agent 模式", "Ask 模式", "AI 上下文"],
-        masteryPoints: [
-          "Ask 更适合解释概念、追问细节和帮你拆清思路",
-          "Agent 更适合生成完整文件或连续修改多段代码",
-          "先做一个最小实验，比一次写完整需求更容易验证判断",
-        ],
-        cautions: [
-          { text: "最常见的卡点：明明想生成文件，却还在 Ask 里反复追问。", isTrap: true },
-          { text: "本关先验证模式差异，不需要提前把 React 语法全部学完。" },
-          { text: "如果 Agent 结果不理想，先缩小任务范围再继续，而不是一次加很多要求。", isTrap: true },
-        ],
-        nextStepPreview: "下一步会进入 AI 调试助手，练习让 Cursor 帮你定位和修复错误。",
+        knowledgePoints: currentStage.tags,
+        masteryPoints: currentStage.keyPoints,
+        cautions: currentStage.pitfalls,
+        nextStepPreview: `下一步会进入 ${nextStage.title}，继续建立更完整的 Cursor 协作工作流。`,
       },
-      recentPracticeRounds: [
-        {
-          id: "practice-round-001",
-          taskTitle: "安装与配置 Cursor",
-          stageLabel: "第 1 关",
-          lastActiveLabel: "今天",
-          status: "completed",
-        },
-        {
-          id: "practice-round-002",
-          taskTitle: "完成第一次 AI 对话",
-          stageLabel: "第 2 关",
-          lastActiveLabel: "昨天",
-          status: "completed",
-        },
-        {
-          id: "practice-round-003",
-          taskTitle: "理解 Ask 与 Agent 的区别",
-          stageLabel: "第 3 关",
-          lastActiveLabel: "18 分钟前",
-          status: "in_progress",
-        },
-        {
-          id: "practice-round-004",
-          taskTitle: "AI 调试助手",
-          stageLabel: "第 4 关",
-          lastActiveLabel: "2 天前",
-          status: "paused",
-        },
-      ],
-      tasks: [
-        { id: 1, label: "安装 Cursor", done: true },
-        { id: 2, label: "完成第一次 AI 对话", done: true },
-        { id: 3, label: "理解 Ask vs Agent", done: false, current: true },
-        { id: 4, label: "AI 调试助手", done: false },
-        { id: 5, label: "多文件上下文", done: false, locked: true },
-      ],
-      knowledgeTags: [
-        { label: "Agent 模式", color: "text-brand bg-brand-dim border-brand/20" },
-        { label: "Ask 模式", color: "text-chart-3 bg-chart-3/10 border-chart-3/20" },
-        { label: "AI 上下文", color: "text-chart-5 bg-chart-5/10 border-chart-5/20" },
-      ],
+      recentPracticeRounds: currentLearningPlan.stages.slice(0, 3).map((stage, index) => ({
+        id: `practice-round-${String(index + 1).padStart(3, "0")}`,
+        taskTitle: stage.title,
+        stageLabel: `第 ${stage.id} 关`,
+        lastActiveLabel: stage.status === "current" ? "18 分钟前" : index === 0 ? "今天" : "昨天",
+        status: stage.status === "done" ? "completed" : "in_progress",
+      })),
+      tasks: currentLearningPlan.stages.map((stage) => ({
+        id: stage.id,
+        label: stage.title,
+        done: stage.status === "done",
+        current: stage.status === "current",
+        locked: stage.status === "locked",
+      })),
+      knowledgeTags: currentStage.tags.map((label, index) => ({
+        label,
+        color: knowledgeTagColors[index % knowledgeTagColors.length],
+      })),
       tips: [
         {
           title: "先看目标，不急着理解全部代码",
@@ -222,15 +202,15 @@ export const mockLearningMessageResponse: ApiSuccessResponse<LearningMessageResp
   message: "success",
   data: {
     conversationId: "conversation-cursor-003",
-    taskId: "task-chat-vs-composer",
+    taskId: currentStage.taskId,
     assistantMessage: {
       messageId: "message-next-step-001",
       currentGoal: "熟悉 Cursor 中 Agent 的工作方式",
       currentStep: "先让 Agent 生成一个 React 时钟组件",
       whyThisStep: "这是当前最小、最容易验证的实验",
       hintIfStuck: "如果 Cmd+I 没反应，试试从 View 菜单打开 Agent",
-      knowledgePoints: ["Agent", "Ask", "生成整块代码"],
-      nextStepPreview: "下一步会进入 AI 调试助手",
+      knowledgePoints: currentStage.tags,
+      nextStepPreview: `下一步会进入 ${nextStage.title}`,
     },
     taskState: "in_progress",
   },

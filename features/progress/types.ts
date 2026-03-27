@@ -1,4 +1,4 @@
-export type StageStatus = "done" | "current" | "available" | "locked"
+export type StageStatus = "done" | "current" | "locked"
 
 export type StagePitfall = {
   text: string
@@ -7,8 +7,12 @@ export type StagePitfall = {
 
 export type Stage = {
   id: number
+  taskId: string
   title: string
-  desc: string
+  summary: string
+  goal: string
+  completionCriteria: string
+  reviewSummary: string
   xp: number
   status: StageStatus
   tags: string[]
@@ -16,6 +20,7 @@ export type Stage = {
   pitfalls: StagePitfall[]
   estimatedTime: string
   focus: string
+  unlockHint?: string
 }
 
 export type ProgressTool = {

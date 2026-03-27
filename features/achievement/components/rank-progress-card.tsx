@@ -1,3 +1,4 @@
+import { Icon } from "@iconify/react/offline";
 import { Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AchievementOverview, Rank } from "@/features/achievement/types";
@@ -21,6 +22,7 @@ export function RankProgressCard({
 }: RankProgressCardProps) {
   const currentRank = ranks[currentRankIdx];
   const nextRank = ranks[currentRankIdx + 1];
+  const CurrentRankIcon = currentRank.icon;
   const currentRange = Math.max(currentRank.max - currentRank.min, 1);
   const progress = Math.min(
     100,
@@ -36,28 +38,30 @@ export function RankProgressCard({
         </div>
 
         <div className="mt-4 flex items-start gap-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[22px] border border-brand/30 bg-background/55 text-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-            {"</>"}
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[26px] border border-brand/30 bg-brand/10 text-brand shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center">
+              <Icon icon={CurrentRankIcon} width={40} height={40} className="block" />
+            </div>
           </div>
           <div className="min-w-0">
             <h2 className="text-3xl font-bold tracking-tight text-brand">
               {currentRank.name}
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-              你已经累计 {overview.totalXP} XP，并保持了 {overview.streakDays}{" "}
+              已经累计 {overview.totalXP} XP，并保持了 {overview.streakDays}{" "}
               天连续学习。 继续推进当前路径，会最快把这条成长轨道往下一段点亮。
             </p>
           </div>
-          <div className="flex flex-col gap-3 xl:w-[236px] xl:justify-self-end">
+          <div className="flex flex-col gap-3 xl:w-[180px] xl:justify-self-end">
             <button
               onClick={onContinueLearning}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand px-4 py-3.5 text-sm font-semibold text-brand-foreground shadow-[0_24px_60px_-28px_oklch(0.78_0.15_180/0.9)] transition-all hover:-translate-y-0.5 hover:bg-brand/90"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand px-4 py-3 text-sm font-semibold text-brand-foreground shadow-[0_24px_60px_-28px_oklch(0.78_0.15_180/0.9)] transition-all hover:-translate-y-0.5 hover:bg-brand/90"
             >
               继续学习赚XP
             </button>
             <button
               onClick={onOpenMap}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border/60 bg-background/45 px-4 py-3.5 text-sm font-medium text-foreground transition-all hover:-translate-y-0.5 hover:bg-background/60"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-background/45 px-4 py-3 text-sm font-medium text-foreground transition-all hover:-translate-y-0.5 hover:bg-background/60"
             >
               查看闯关地图
             </button>
@@ -69,7 +73,7 @@ export function RankProgressCard({
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground/60">
-              段位进阶轨道
+              段位提升进程
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               已达成段位用实线连接，未解锁段位保持虚线等待点亮。
@@ -120,7 +124,7 @@ export function RankProgressCard({
                         ? "border-brand bg-brand text-brand-foreground shadow-[0_0_0_6px_rgba(79,209,197,0.14)]"
                         : isCompleted
                           ? "border-brand/35 bg-brand/15 text-brand"
-                          : "border-border/40 bg-surface-3 text-muted-foreground/45",
+                          : "border-border bg-background/60 text-muted-foreground/45",
                     )}
                   >
                     {isCompleted ? <Check className="h-4 w-4" /> : index + 1}

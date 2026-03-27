@@ -21,23 +21,23 @@ export function MapPage() {
   const router = useRouter()
   const { trackEvent } = useAppEventTracker()
   const progressPayload = getProgressPageMock()
+  const initialSelectedId =
+    progressPayload.map.currentStageId ?? progressPayload.map.stages[0]?.id ?? 0
   const progressState: ApiRequestState<typeof progressPayload> =
     progressPayload.map.stages.length > 0
       ? { status: "success", data: progressPayload }
       : {
           status: "empty",
-          message: "当前还没有可展示的关卡数据。接入真实接口后，这里会显示你的学习路径与当前关卡。",
+          message: "当前还没有激活的学习路径。接入真实接口后，这里会显示你正在推进的主线计划。",
         }
-
-  const [activeTool, setActiveTool] = useState("cursor")
-  const [selectedId, setSelectedId] = useState<number>(3)
+  const [selectedId, setSelectedId] = useState<number>(initialSelectedId)
 
   if (progressState.status !== "success") {
     return (
       <AppShell
         mobileTitle="路径地图"
-        mobileSubtitle="等待路径数据"
-        asideLabel="关卡详情"
+        mobileSubtitle="等待当前学习计划"
+        asideLabel="任务摘要"
         renderSidebar={({ mobile }) => (
           <WorkspaceSidebar activeHref={ROUTES.map} mobile={mobile} />
         )}
@@ -45,7 +45,7 @@ export function MapPage() {
           <div className="p-6">
             <StatePanel
               status={progressState.status}
-              title="路径详情暂不可用"
+              title="当前还没有可展示的主线计划"
               description={progressState.message}
               compact
             />
@@ -57,7 +57,7 @@ export function MapPage() {
           <div className="w-full">
             <StatePanel
               status={progressState.status}
-              title="还没有可展示的学习路径"
+              title="还没有当前学习路径"
               description={progressState.message}
               actionLabel="回到学习页"
               onAction={() => router.push(ROUTES.learn)}
@@ -69,18 +69,21 @@ export function MapPage() {
   }
 
   const { current, map } = progressState.data
-
-  const done = map.stages.filter((stage) => stage.status === "done").length
-  const total = map.stages.length
   const currentStage =
-    map.stages.find((stage) => stage.status === "current") ?? map.stages[0]
+    map.stages.find((stage) => stage.id === map.currentStageId) ??
+    map.stages.find((stage) => stage.status === "current") ??
+    map.stages[0]
+
+  const done = map.completedSteps
+  const total = map.totalSteps
   const selected = map.stages.find((stage) => stage.id === selectedId) ?? currentStage
+  const nextStage = map.stages.find((stage) => stage.id > currentStage.id)
 
   return (
     <AppShell
       mobileTitle="路径地图"
-      mobileSubtitle={`已完成 ${done}/${total} 关 · 当前关卡 ${currentStage.id}`}
-      asideLabel="关卡详情"
+      mobileSubtitle={`${map.pathName} · 第 ${currentStage.id} 关 / 共 ${total} 关`}
+      asideLabel="任务摘要"
       renderSidebar={({ mobile }) => (
         <WorkspaceSidebar activeHref={ROUTES.map} mobile={mobile} />
       )}
@@ -88,50 +91,54 @@ export function MapPage() {
         <StageDetailPanel
           stage={selected}
           onContinueLearning={() => router.push(ROUTES.learn)}
+          onOpenReview={() => router.push(ROUTES.learn)}
         />
       )}
       asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
     >
-      <main className="flex flex-1 flex-col overflow-hidden">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <MapHeader
+          pathName={map.pathName}
+          pathSummary={map.pathSummary}
           done={done}
           total={total}
-          activeTool={activeTool}
-          tools={map.tools}
-          summary={current.summary}
           currentStage={currentStage}
-          onToolChange={setActiveTool}
-        />
-        <ProgressOverview
-          done={done}
-          total={total}
-          summary={current.summary}
-          currentStage={currentStage}
-          onContinueLearning={() => router.push(ROUTES.learn)}
         />
 
-        <div className="flex min-h-0 flex-1 overflow-hidden">
-          <PageSection
-            eyebrow="关卡地图"
-            title="按当前路径逐关推进"
-            description="点击关卡可查看详情，当前关卡和可开始关卡会显示明确的继续动作。"
-            className="m-4 flex min-h-0 flex-1 flex-col overflow-hidden sm:m-6"
-            bodyClassName="flex min-h-0 flex-1 px-0 py-0"
-          >
-            <StageTimeline
-              stages={map.stages}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              onStageClick={(stage) =>
-                trackEvent(APP_EVENTS.mapStageClick, {
-                  stageId: stage.id,
-                  stageStatus: stage.status,
-                  tool: activeTool,
-                })
-              }
-              onOpenLearning={() => router.push(ROUTES.learn)}
-            />
-          </PageSection>
+        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none">
+          <ProgressOverview
+            done={done}
+            total={total}
+            summary={current.summary}
+            currentStage={currentStage}
+            nextStage={nextStage}
+            onContinueLearning={() => router.push(ROUTES.learn)}
+            onOpenAchievements={() => router.push(ROUTES.achievements)}
+          />
+
+          <div className="px-4 py-4 sm:px-6 sm:py-6">
+            <PageSection
+              eyebrow="练习推进步骤"
+              title="沿着当前主线逐关推进"
+              description="这里不展示其他学习计划，只帮你判断当前路径已经完成了什么、现在在哪一关、下一步应该继续什么。"
+              bodyClassName="px-0 py-0"
+            >
+              <StageTimeline
+                stages={map.stages}
+                currentStageId={currentStage.id}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onStageClick={(stage) =>
+                  trackEvent(APP_EVENTS.mapStageClick, {
+                    stageId: stage.id,
+                    stageStatus: stage.status,
+                    pathName: map.pathName,
+                  })
+                }
+                onOpenLearning={() => router.push(ROUTES.learn)}
+              />
+            </PageSection>
+          </div>
         </div>
       </main>
     </AppShell>

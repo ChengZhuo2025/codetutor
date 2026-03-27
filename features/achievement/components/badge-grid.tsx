@@ -1,3 +1,4 @@
+import { Icon } from "@iconify/react/offline"
 import { CheckCircle2 } from "lucide-react"
 import { PageSection } from "@/components/ui/page-section"
 import { StatePanel } from "@/components/ui/state-panel"
@@ -38,7 +39,7 @@ export function BadgeGrid({ badges }: BadgeGridProps) {
     >
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {badges.map((badge) => {
-          const Icon = badge.icon
+          const badgeIcon = badge.icon
 
           return (
             <div
@@ -57,13 +58,21 @@ export function BadgeGrid({ badges }: BadgeGridProps) {
               <div className="flex items-start gap-4">
                 <div
                   className={cn(
-                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border",
+                    "flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] border",
                     badge.earned
                       ? "border-brand/20 bg-brand/10"
                       : "border-border/40 bg-background/40",
                   )}
                 >
-                  <Icon className={cn("h-5 w-5", badge.earned ? "" : "opacity-45")} />
+                  <Icon
+                    icon={badgeIcon}
+                    width={24}
+                    height={24}
+                    className={cn(
+                      "block",
+                      badge.earned ? "text-brand" : "text-muted-foreground/45",
+                    )}
+                  />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p

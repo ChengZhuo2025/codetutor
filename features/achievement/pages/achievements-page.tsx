@@ -33,7 +33,7 @@ export function AchievementsPage() {
   if (achievementState.status !== "success") {
     return (
       <AppShell
-        mobileTitle="个人成就"
+        mobileTitle="我的学习成就"
         mobileSubtitle="等待成长数据"
         asideLabel="XP 流水"
         renderSidebar={({ mobile }) => (
@@ -82,7 +82,7 @@ export function AchievementsPage() {
 
   return (
     <AppShell
-      mobileTitle="个人成就"
+      mobileTitle="我的学习成就"
       mobileSubtitle="XP、段位、连续学习与徽章成长"
       asideLabel="XP 流水"
       renderSidebar={({ mobile }) => (
@@ -97,14 +97,14 @@ export function AchievementsPage() {
       asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
     >
       <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="shrink-0 border-b border-border/50 bg-surface-1/80 px-4 py-5 backdrop-blur-sm sm:px-8">
-          <h1 className="text-2xl font-bold tracking-tight">个人成就</h1>
+        <div className="shrink-0 border-b border-border/50 bg-surface-1/80 px-4 py-5 backdrop-blur-sm sm:px-6">
+          <h1 className="text-2xl font-bold tracking-tight">我的学习成就</h1>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
             这里不是静态数据看板，而是你从当前学习路径里真实累积出来的成长反馈。
           </p>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 py-6 sm:px-8 sm:py-8">
+        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 py-6 sm:px-6 sm:py-8">
           <RankProgressCard
             currentXP={achievementData.currentXP}
             currentRankIdx={achievementData.currentRankIdx}

@@ -13,9 +13,9 @@ export type ProgressCurrentResponseData = {
 
 export type ProgressMapResponseData = {
   pathName: string
+  pathSummary: string
   totalSteps: number
   completedSteps: number
   currentStageId: number
-  tools: ProgressTool[]
   stages: Stage[]
 }
