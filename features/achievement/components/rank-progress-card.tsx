@@ -48,8 +48,8 @@ export function RankProgressCard({
               {currentRank.name}
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-              已经累计 {overview.totalXP} XP，并保持了 {overview.streakDays}{" "}
-              天连续学习。 继续推进当前路径，会最快把这条成长轨道往下一段点亮。
+              已累计 {overview.totalXP} XP，连续学习 {overview.streakDays}{" "}
+              天。完成当前关卡即可获得 XP，积累足够后自动晋升下一段位。
             </p>
           </div>
           <div className="flex flex-col gap-3 xl:w-[180px] xl:justify-self-end">
@@ -76,7 +76,7 @@ export function RankProgressCard({
               段位提升进程
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              已达成段位用实线连接，未解锁段位保持虚线等待点亮。
+              实线为已达成段位，虚线为未解锁段位。
             </p>
           </div>
           <div className="text-right">
@@ -165,7 +165,7 @@ export function RankProgressCard({
               <span className="font-semibold text-brand">
                 {overview.nextRankRemainingXP} XP
               </span>
-              ，继续完成当前关卡会是最快的推进方式。
+              ，继续完成当前关卡即可积累。
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">

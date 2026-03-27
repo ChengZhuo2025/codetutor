@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import {
   ChevronRight,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react"
 import { APP_NAME } from "@/constants/app"
 import { ROUTES } from "@/constants/routes"
+import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog"
 import { SubscriptionDetailDialog } from "@/components/layout/subscription-detail-dialog"
 import { SettingsPopover } from "@/components/layout/settings-popover"
 import { getLearningPageMock, getWorkspaceSidebarMock } from "@/lib/api/mock"
@@ -37,6 +39,7 @@ export function DashboardSidebar({
   const { recentPracticeRounds } = getLearningPageMock()
   const progressPercent = Math.min(Math.round((profile.currentScore / 1000) * 100), 100)
   const visiblePracticeRounds = recentPracticeRounds.slice(0, 5)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   return (
     <aside
@@ -56,12 +59,16 @@ export function DashboardSidebar({
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none">
         <div className="space-y-4 px-4 py-4">
           <div className="rounded-[24px] border border-border/50 bg-surface-3 p-4">
-            <SubscriptionDetailDialog subscription={subscription}>
-              <div className="mb-3 flex items-center gap-3 cursor-pointer">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-dim text-md font-bold text-brand">
-                  {profile.nickname.slice(0, 1)}
-                </div>
-                <div className="min-w-0 flex-1">
+            <div className="mb-3 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setProfileOpen(true)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-dim text-md font-bold text-brand transition-opacity hover:opacity-80"
+              >
+                {profile.nickname.slice(0, 1)}
+              </button>
+              <SubscriptionDetailDialog subscription={subscription}>
+                <div className="min-w-0 flex-1 cursor-pointer">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-md font-semibold text-foreground">
                       {profile.nickname}
@@ -75,35 +82,41 @@ export function DashboardSidebar({
                     有效期至 {subscription.expiresAt}
                   </p>
                 </div>
+              </SubscriptionDetailDialog>
+            </div>
+
+            <Link
+              href={ROUTES.achievements}
+              className="block rounded-xl transition-colors hover:bg-background/40 -mx-1 px-1 py-1"
+            >
+              <div className="mb-2 flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">{profile.currentScore} / 1000 XP</span>
+                <span className="text-muted-foreground">{progressPercent}%</span>
               </div>
-            </SubscriptionDetailDialog>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-4">
+                <div className="h-full rounded-full bg-brand" style={{ width: `${progressPercent}%` }} />
+              </div>
 
-            <div className="mb-2 flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">{profile.currentScore} / 1000 XP</span>
-              <span className="text-muted-foreground">{progressPercent}%</span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-4">
-              <div className="h-full rounded-full bg-brand" style={{ width: `${progressPercent}%` }} />
-            </div>
-
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-background/60 px-3 py-2.5">
-                <Flame className="h-4 w-4 text-gold" />
-                <div>
-                  <p className="text-[11px] text-muted-foreground">连续学习</p>
-                  <p className="text-sm font-bold text-gold">{profile.streakDays} 天</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-background/60 px-3 py-2.5">
+                  <Flame className="h-4 w-4 text-gold" />
+                  <div>
+                    <p className="text-[11px] text-muted-foreground">连续学习</p>
+                    <p className="text-sm font-bold text-gold">{profile.streakDays} 天</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-background/60 px-3 py-2.5">
+                  <Star className="h-4 w-4 text-brand" />
+                  <div>
+                    <p className="text-[11px] text-muted-foreground">已完成</p>
+                    <p className="text-sm font-bold">{profile.completedTaskCount} 关</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-background/60 px-3 py-2.5">
-                <Star className="h-4 w-4 text-brand" />
-                <div>
-                  <p className="text-[11px] text-muted-foreground">已完成</p>
-                  <p className="text-sm font-bold">{profile.completedTaskCount} 关</p>
-                </div>
-              </div>
-            </div>
-
+            </Link>
           </div>
+
+          <ProfileEditDialog open={profileOpen} onOpenChange={setProfileOpen} />
 
           <nav className="space-y-1 rounded-[24px] border border-border/60 bg-surface-2/80 p-2">
             {items.map((item) => {
@@ -130,10 +143,10 @@ export function DashboardSidebar({
           <div className="rounded-[24px] border border-border/60 bg-surface-2/80 p-4">
             <div className="mb-2 flex items-center justify-between gap-3">
               <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/55">
-                最近练习
+                最近学习
               </p>
               <Link
-                href={ROUTES.learn}
+                href={ROUTES.history}
                 className="flex items-center gap-1 text-[12px] text-brand transition-colors hover:text-brand/80"
               >
                 查看更多

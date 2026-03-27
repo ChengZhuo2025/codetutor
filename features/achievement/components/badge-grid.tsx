@@ -17,7 +17,7 @@ export function BadgeGrid({ badges }: BadgeGridProps) {
       <StatePanel
         status="empty"
         title="还没有成就徽章"
-        description="随着关卡推进、连续学习和专项突破，这里会逐步解锁新的身份标签。"
+        description="随着关卡推进、连续学习和专项突破，这里会逐步解锁新的成就。"
       />
     )
   }
@@ -32,7 +32,7 @@ export function BadgeGrid({ badges }: BadgeGridProps) {
           <span className="font-semibold text-brand">
             {earnedBadges.length}
           </span>{" "}
-          / {badges.length} 枚，已解锁徽章高亮显示，未解锁徽章保留灰度等待点亮。
+          / {badges.length} 枚，已解锁徽章高亮显示，未解锁徽章显示为灰色。
         </>
       }
       bodyClassName="pt-5"

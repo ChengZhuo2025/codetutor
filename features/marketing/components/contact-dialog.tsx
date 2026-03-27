@@ -196,10 +196,10 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="h-8 rounded-full border border-white/10 bg-white/5 px-3 text-xs text-foreground hover:bg-white/10"
+                            className="h-8 rounded-full border border-white/10 bg-white/5 px-3 text-xs text-foreground hover:bg-white/10 hover:text-white"
                             onClick={() => handleCopy(copyKey, channel.handle)}
                           >
-                            {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                            {isCopied ? <Check className="h-2 w-2" /> : <Copy className="h-2 w-2" />}
                             {isCopied ? "已复制" : "复制"}
                           </Button>
                         </div>

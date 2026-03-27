@@ -5,6 +5,7 @@ export const ROUTES = {
   learn: "/learn",
   map: "/map",
   achievements: "/achievements",
+  history: "/history",
 } as const
 
 export const MARKETING_SECTIONS = {

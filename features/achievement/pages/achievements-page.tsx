@@ -99,8 +99,8 @@ export function AchievementsPage() {
       <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="shrink-0 border-b border-border/50 bg-surface-1/80 px-4 py-5 backdrop-blur-sm sm:px-6">
           <h1 className="text-2xl font-bold tracking-tight">我的学习成就</h1>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            这里不是静态数据看板，而是你从当前学习路径里真实累积出来的成长反馈。
+          <p className="mt-1 text-sm leading-5 text-muted-foreground">
+            你在学习路径中真实积累的 XP、段位和徽章记录。
           </p>
         </div>
 

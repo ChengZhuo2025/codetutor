@@ -21,7 +21,7 @@ export function AchievementSidebarPanels({
       <PageSection
         eyebrow="成长规则"
         title="XP 获取方式"
-        description="XP 不是单独的积分系统，它直接对应你的关卡推进、连续学习和徽章成长。"
+        description="完成关卡获得 XP，保持连续学习也有额外奖励，积累足够 XP 可晋升段位。"
         action={<TrendingUp className="h-4 w-4 text-brand" />}
       >
         {guideItems.length > 0 ? (
@@ -43,8 +43,8 @@ export function AchievementSidebarPanels({
         ) : (
           <StatePanel
             status="empty"
-            title="暂时没有 XP 规则说明"
-            description="接入真实规则配置后，这里会展示不同学习动作对应的 XP 收益。"
+            title="暂无 XP 规则"
+            description="开始学习后，这里会展示不同学习动作对应的 XP 收益。"
             compact
           />
         )}
@@ -85,8 +85,8 @@ export function AchievementSidebarPanels({
         ) : (
           <StatePanel
             status="empty"
-            title="还没有 XP 流水"
-            description="开始学习、完成关卡和保持连续打卡后，这里会出现最近的成长记录。"
+            title="暂无 XP 记录"
+            description="完成关卡、连续打卡和获得徽章后，这里会出现你最近的成长记录。"
             compact
           />
         )}

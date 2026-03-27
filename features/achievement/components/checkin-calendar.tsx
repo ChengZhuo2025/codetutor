@@ -38,7 +38,7 @@ export function CheckinCalendar({
   return (
     <PageSection
       eyebrow="打卡记录"
-      title="连续成长比临时冲刺更值钱"
+      title="近四月打卡日历"
       action={
         <div className="rounded-2xl border border-gold/20 bg-gold-dim px-3 py-2">
           <div className="flex items-center gap-2 text-sm font-bold text-gold">
@@ -47,7 +47,7 @@ export function CheckinCalendar({
           </div>
         </div>
       }
-      description="保持稳定节奏，成长反馈会比一次学很久更明显。"
+      description="每天打卡积累连续天数，连续天数越长可解锁更高奖励。"
       bodyClassName="space-y-5"
     >
       <div className="grid gap-3 lg:grid-cols-4">
@@ -85,7 +85,7 @@ export function CheckinCalendar({
               本月分布
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              打卡亮起的日期越连续，升级反馈越明显。
+              绿色圆点标记的日期为已打卡，连续打卡可维持连续学习记录。
             </p>
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
