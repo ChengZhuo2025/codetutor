@@ -118,9 +118,9 @@ export function MapPage() {
 
           <div className="px-4 py-4 sm:px-6 sm:py-6">
             <PageSection
-              eyebrow="练习推进步骤"
-              title="沿着当前主线逐关推进"
-              description="这里不展示其他学习计划，只帮你判断当前路径已经完成了什么、现在在哪一关、下一步应该继续什么。"
+              eyebrow="闯关地图"
+              title="计划全部关卡一览"
+              description="展示当前学习计划中的所有关卡，已完成的关卡支持回顾复盘，未解锁关卡在完成前置关卡后自动开放。"
               bodyClassName="px-0 py-0"
             >
               <StageTimeline

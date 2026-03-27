@@ -150,7 +150,7 @@ export function ProgressOverview({
                 {summary.currentRank}
               </p>
               <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                再获得 {summary.remainingXPToNextRank} XP 即可进入 {summary.nextRank}。
+                再获得 {summary.remainingXPToNextRank} XP 即可进阶为 <span className="text-white">{summary.nextRank}</span>
               </p>
             </div>
 
@@ -180,8 +180,8 @@ export function ProgressOverview({
 
           <div className="mt-5 rounded-2xl bg-background/40 px-4 pt-3 pb-4">
             <div className="flex items-center justify-between gap-3 text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
-              <span>累计 XP</span>
-              <span>{summary.totalXP}</span>
+              <span>距离下一段位</span>
+              <span>{summary.totalXP} / {summary.totalXP + summary.remainingXPToNextRank} XP</span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-4">
               <div
