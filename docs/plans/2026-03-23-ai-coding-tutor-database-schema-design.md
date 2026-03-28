@@ -2,8 +2,8 @@
 
 > 文档类型：数据库 Schema 设计文档  
 > 产品名称：AI编程学习教练  
-> 版本：v1.0  
-> 状态：初稿  
+> 版本：v1.1  
+> 状态：已按前端原型校准  
 > 创建日期：2026-03-23  
 > 适用阶段：MVP  
 > 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md`
@@ -46,6 +46,20 @@
 
 首版不引入过多抽象层，但所有核心表保留必要扩展字段，如 `metadata`、`version`、`source_type`。
 
+### 2.6 区分存储模型与页面读模型
+
+当前前端原型已经形成较完整的页面结构，但并不意味着页面上的每个字段都应该直接落库。
+
+- 页面读模型可以包含聚合字段，例如 `progress.percent`、`nextRankRemainingXP`、`checkedInToday`
+- 数据库存储模型只保存权威事实、状态快照和必要流水
+- 图标、颜色、FAQ、套餐文案、按钮辅助文案等展示信息保持前端静态配置，不作为首期数据库字段
+
+本次 schema 校准重点围绕：
+
+1. 让 `/onboarding` 能产出真实的用户路径实例
+2. 让 `/learn`、`/map`、`/history` 共用同一条学习路径实例主线
+3. 让 `/achievements` 的 XP、段位、勋章、打卡来源清晰可追溯
+
 ---
 
 ## 3. Schema 总览
@@ -66,6 +80,7 @@
 - `public.learning_tools`
 - `public.learning_paths`
 - `public.path_steps`
+- `public.user_learning_paths`
 - `public.user_tasks`
 - `public.conversations`
 - `public.conversation_messages`
@@ -86,9 +101,12 @@ erDiagram
     USERS ||--|| USER_LEARNING_PREFERENCES : has
     LEARNING_TOOLS ||--o{ LEARNING_PATHS : provides
     LEARNING_PATHS ||--o{ PATH_STEPS : contains
-    USERS ||--o{ USER_TASKS : owns
+    USERS ||--o{ USER_LEARNING_PATHS : owns
+    LEARNING_PATHS ||--o{ USER_LEARNING_PATHS : instantiates
+    USER_LEARNING_PATHS ||--o{ USER_TASKS : contains
     PATH_STEPS ||--o{ USER_TASKS : instantiates
     USERS ||--o{ CONVERSATIONS : owns
+    USER_LEARNING_PATHS ||--o{ CONVERSATIONS : contains
     CONVERSATIONS ||--o{ CONVERSATION_MESSAGES : contains
     USERS ||--o{ SCORE_LEDGERS : earns
     USERS ||--|| USER_RANKS : current_rank
@@ -130,11 +148,17 @@ erDiagram
 - `assistant`
 - `system`
 
+说明：
+
+- 服务端持久化建议统一使用 `assistant`
+- 若前端展示层仍沿用 `ai`，应在 DTO 或 BFF 层做映射，不在数据库层引入重复枚举
+
 ## 5.5 `message_content_type`
 
 - `text`
 - `link`
 - `code`
+- `image`
 - `system_feedback`
 
 ## 5.6 `score_event_type`
@@ -158,6 +182,18 @@ erDiagram
 - `web`
 - `api`
 - `system`
+
+## 5.9 `path_selection_mode`
+
+- `self_directed`
+- `preset_training`
+
+## 5.10 `user_learning_path_status`
+
+- `active`
+- `completed`
+- `abandoned`
+- `archived`
 
 ---
 
@@ -211,8 +247,8 @@ erDiagram
 | `preferred_tool_ids` | `jsonb` | not null default '[]' | 偏好工具列表 |
 | `onboarding_completed` | `boolean` | not null default false | 是否完成新手引导 |
 | `primary_tool_id` | `uuid` | FK, nullable | 首次引导确认的主学习工具 |
-| `selected_path_id` | `uuid` | FK, nullable | 首次引导选中的平台训练路径 |
-| `selection_mode` | `varchar(32)` | nullable | `self_directed` / `preset_training` |
+| `selected_path_id` | `uuid` | FK, nullable | 首次引导选中的模板路径 |
+| `selection_mode` | `path_selection_mode` | nullable | `self_directed` / `preset_training` |
 | `goal_summary` | `text` | nullable | 学习目标摘要 |
 | `content_language` | `varchar(16)` | not null default 'zh-CN' | 内容语言 |
 | `metadata` | `jsonb` | not null default '{}' | 扩展字段，如首次引导快照、候选路线记录 |
@@ -290,9 +326,16 @@ erDiagram
 | `path_id` | `uuid` | FK | 路径 ID |
 | `step_no` | `integer` | not null | 第几步 |
 | `title` | `varchar(128)` | not null | 步骤标题 |
+| `summary` | `text` | not null | 地图页与历史页摘要 |
+| `focus` | `text` | nullable | 为什么当前先做这一步 |
 | `goal` | `text` | not null | 学习目标 |
 | `completion_criteria` | `text` | nullable | 完成标准 |
+| `review_summary` | `text` | nullable | 完成后的复盘摘要 |
+| `estimated_minutes` | `integer` | nullable | 预计用时，统一存分钟 |
+| `reward_score` | `integer` | not null default 0 | 完成本关奖励 XP |
 | `knowledge_points` | `jsonb` | not null default '[]' | 知识点标签 |
+| `key_points` | `jsonb` | not null default '[]' | 本关掌握要点 |
+| `pitfalls` | `jsonb` | not null default '[]' | 常见误区与 trap 提示 |
 | `difficulty_weight` | `integer` | not null default 1 | 难度权重 |
 | `is_required` | `boolean` | not null default true | 是否必做 |
 | `metadata` | `jsonb` | not null default '{}' | 下一步预告、示例提示、训练 agent 指令片段等 |
@@ -307,7 +350,50 @@ erDiagram
 
 - `idx_path_steps_path_id_step_no`
 
-## 6.6 `user_tasks`
+## 6.6 `user_learning_paths`
+
+用途：
+
+- 用户维度的学习路径实例表
+- 这是 `/learn`、`/map`、`/history` 三个页面共享的主线对象
+
+字段建议：
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | `uuid` | PK | 主键 |
+| `user_id` | `uuid` | FK | 用户 ID |
+| `template_path_id` | `uuid` | FK, nullable | 来源路径模板，`self_directed` 时可为空或指向通用模板 |
+| `tool_id` | `uuid` | FK | 当前主工具 |
+| `path_code_snapshot` | `varchar(64)` | not null | 路径代码快照 |
+| `path_name_snapshot` | `varchar(128)` | not null | 路径名称快照 |
+| `path_summary_snapshot` | `text` | nullable | 路径摘要快照 |
+| `learning_level` | `learning_level` | not null | 用户选择时的学习等级 |
+| `selection_mode` | `path_selection_mode` | not null | `self_directed` / `preset_training` |
+| `status` | `user_learning_path_status` | not null default 'active' | 当前路径实例状态 |
+| `total_steps` | `integer` | not null default 0 | 路径总关卡数快照 |
+| `completed_steps` | `integer` | not null default 0 | 已完成关卡数快照 |
+| `current_task_id` | `uuid` | nullable | 当前进行中的用户任务 |
+| `started_at` | `timestamptz` | not null | 开始时间 |
+| `last_activity_at` | `timestamptz` | nullable | 最近学习时间 |
+| `completed_at` | `timestamptz` | nullable | 路径完成时间 |
+| `abandoned_at` | `timestamptz` | nullable | 路径中断时间 |
+| `metadata` | `jsonb` | not null default '{}' | onboarding 预览、coach 标签、自学模式输入摘要等扩展字段 |
+| `created_at` | `timestamptz` | not null | 创建时间 |
+| `updated_at` | `timestamptz` | not null | 更新时间 |
+
+索引建议：
+
+- `idx_user_learning_paths_user_status_updated_at`
+- `idx_user_learning_paths_user_tool_id`
+- `idx_user_learning_paths_template_path_id`
+
+说明：
+
+- `/history` 页卡片展示的是 `user_learning_paths` 的 read model，而不是 `conversations`
+- `path_name_snapshot`、`path_summary_snapshot` 必须快照化，避免模板后续改名导致历史记录漂移
+
+## 6.7 `user_tasks`
 
 用途：
 
@@ -319,7 +405,7 @@ erDiagram
 |------|------|------|------|
 | `id` | `uuid` | PK | 主键 |
 | `user_id` | `uuid` | FK | 用户 ID |
-| `path_id` | `uuid` | FK | 来源路径 |
+| `user_learning_path_id` | `uuid` | FK | 所属学习路径实例 |
 | `path_step_id` | `uuid` | FK | 来源步骤 |
 | `status` | `task_status` | not null | 任务状态 |
 | `started_at` | `timestamptz` | nullable | 开始时间 |
@@ -335,15 +421,20 @@ erDiagram
 
 约束建议：
 
-- `unique(user_id, path_step_id)` 用于同一路径模板下避免重复实例
+- `unique(user_learning_path_id, path_step_id)` 用于单条路径实例内避免重复任务实例
 
 索引建议：
 
 - `idx_user_tasks_user_status`
-- `idx_user_tasks_user_path`
+- `idx_user_tasks_user_learning_path_id`
 - `idx_user_tasks_last_conversation_id`
 
-## 6.7 `conversations`
+说明：
+
+- 地图页中的 `done/current/locked` 是基于 `user_tasks.status` 聚合后的 read model
+- 推荐映射关系：`completed -> done`、`in_progress -> current`、`not_started -> locked`
+
+## 6.8 `conversations`
 
 用途：
 
@@ -355,7 +446,8 @@ erDiagram
 |------|------|------|------|
 | `id` | `uuid` | PK | 主键 |
 | `user_id` | `uuid` | FK | 用户 ID |
-| `task_id` | `uuid` | FK, nullable | 关联任务 |
+| `user_learning_path_id` | `uuid` | FK, nullable | 所属学习路径实例 |
+| `task_id` | `uuid` | FK, nullable | 关联 `user_tasks.id` |
 | `tool_id` | `uuid` | FK, nullable | 当前工具 |
 | `status` | `conversation_status` | not null default 'active' | 会话状态 |
 | `summary` | `text` | nullable | 最近摘要 |
@@ -368,9 +460,10 @@ erDiagram
 索引建议：
 
 - `idx_conversations_user_last_message_at`
+- `idx_conversations_user_learning_path_id`
 - `idx_conversations_task_id`
 
-## 6.8 `conversation_messages`
+## 6.9 `conversation_messages`
 
 用途：
 
@@ -382,12 +475,12 @@ erDiagram
 |------|------|------|------|
 | `id` | `uuid` | PK | 主键 |
 | `conversation_id` | `uuid` | FK | 会话 ID |
-| `task_id` | `uuid` | FK, nullable | 关联任务 |
+| `task_id` | `uuid` | FK, nullable | 关联 `user_tasks.id` |
 | `role` | `message_role` | not null | 消息角色 |
 | `content_type` | `message_content_type` | not null default 'text' | 内容类型 |
 | `content_text` | `text` | nullable | 文本内容 |
 | `structured_payload` | `jsonb` | not null default '{}' | 结构化 AI 输出 |
-| `source_input` | `jsonb` | not null default '{}' | 原始输入信息 |
+| `source_input` | `jsonb` | not null default '{}' | 原始输入信息，如 `inputType=text/link/code/image` 与客户端上下文 |
 | `sequence_no` | `integer` | not null | 会话内顺序 |
 | `model_name` | `varchar(64)` | nullable | 使用模型 |
 | `latency_ms` | `integer` | nullable | 响应耗时 |
@@ -402,7 +495,7 @@ erDiagram
 - `idx_conversation_messages_conversation_sequence`
 - `idx_conversation_messages_task_id`
 
-## 6.9 `score_ledgers`
+## 6.10 `score_ledgers`
 
 用途：
 
@@ -414,7 +507,7 @@ erDiagram
 |------|------|------|------|
 | `id` | `uuid` | PK | 主键 |
 | `user_id` | `uuid` | FK | 用户 ID |
-| `task_id` | `uuid` | FK, nullable | 任务来源 |
+| `task_id` | `uuid` | FK, nullable | 任务来源，对应 `user_tasks.id` |
 | `event_type` | `score_event_type` | not null | 积分类型 |
 | `score_delta` | `integer` | not null | 积分增量 |
 | `idempotency_key` | `varchar(128)` | unique | 幂等键 |
@@ -427,7 +520,7 @@ erDiagram
 - `idx_score_ledgers_user_created_at`
 - `uidx_score_ledgers_idempotency_key`
 
-## 6.10 `user_ranks`
+## 6.11 `user_ranks`
 
 用途：
 
@@ -444,7 +537,7 @@ erDiagram
 | `score_to_next_rank` | `integer` | nullable | 距离下一段位积分 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
 
-## 6.11 `daily_checkins`
+## 6.12 `daily_checkins`
 
 用途：
 
@@ -469,7 +562,7 @@ erDiagram
 
 - `idx_daily_checkins_user_date`
 
-## 6.12 `achievements`
+## 6.13 `achievements`
 
 用途：
 
@@ -489,7 +582,7 @@ erDiagram
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
 
-## 6.13 `user_achievements`
+## 6.14 `user_achievements`
 
 用途：
 
@@ -510,7 +603,7 @@ erDiagram
 
 - `unique(user_id, achievement_id)`
 
-## 6.14 `event_logs`
+## 6.15 `event_logs`
 
 用途：
 
@@ -540,8 +633,8 @@ erDiagram
 
 ## 7.1 任务唯一性
 
-- 同一用户对同一路径步骤只允许存在一个有效 `user_tasks`
-- 如需支持路径重学，建议未来增加 `attempt_group_id`
+- 同一路径实例内，同一步骤只允许存在一个有效 `user_tasks`
+- 是否允许重学由 `user_learning_paths` 控制，而不是简单禁止同一用户重复进入同一路径模板
 
 ## 7.2 积分幂等
 
@@ -556,12 +649,20 @@ erDiagram
 
 以上字段更新必须由同一事务完成。
 
-## 7.4 会话顺序一致性
+## 7.4 路径实例快照一致性
+
+- `user_learning_paths.completed_steps`
+- `user_learning_paths.current_task_id`
+- `user_learning_paths.last_activity_at`
+
+以上字段应在任务状态更新或任务完成事务中同步维护。
+
+## 7.5 会话顺序一致性
 
 - 会话消息顺序以 `sequence_no` 保证
 - 前端不得自行计算权威顺序
 
-## 7.5 打卡唯一性
+## 7.6 打卡唯一性
 
 - 每个用户每天最多一条打卡记录
 - 使用 `unique(user_id, checkin_date)` 保障
@@ -596,6 +697,7 @@ erDiagram
 需要查询：
 
 - `user_profiles`
+- 当前 `user_learning_paths`
 - 当前 `user_tasks`
 - 最近 `conversations`
 - 最近若干条 `conversation_messages`
@@ -607,6 +709,7 @@ erDiagram
 
 - `learning_paths`
 - `path_steps`
+- `user_learning_paths`
 - 用户对应的 `user_tasks`
 
 ## 9.3 获取成就中心
@@ -618,11 +721,20 @@ erDiagram
 - `score_ledgers`
 - `user_achievements`
 
-## 9.4 记录任务完成
+## 9.4 获取历史学习计划列表
+
+需要查询：
+
+- `user_learning_paths`
+- `learning_tools`
+- 聚合后的 `user_tasks`
+
+## 9.5 记录任务完成
 
 需要写入：
 
 - `user_tasks`
+- `user_learning_paths`
 - `score_ledgers`
 - `user_profiles`
 - `user_ranks`
@@ -640,6 +752,7 @@ erDiagram
 
 - `user_profiles`
 - `user_learning_preferences`
+- `user_learning_paths`
 - `user_tasks`
 - `conversations`
 - `conversation_messages`
@@ -685,6 +798,16 @@ MVP 阶段建议谨慎使用软删除：
 - 必要时对原始输入进行脱敏
 - 用户删除账号时需预留级联清理或匿名化策略
 
+### 12.1 当前前端原型中首期不建议入库的展示字段
+
+以下内容可继续保留前端静态配置或在 BFF 层按需组装：
+
+- 成就页图标、颜色 token、卡片装饰字段
+- FAQ 内容
+- 营销页套餐与价格展示文案
+- 工作台订阅块中的价格标签、续费提示、CTA 文案
+- 日历 `weekDays` 与纯展示用日期矩阵
+
 ---
 
 ## 13. 建表顺序建议
@@ -696,15 +819,16 @@ MVP 阶段建议谨慎使用软删除：
 3. `path_steps`
 4. `user_profiles`
 5. `user_learning_preferences`
-6. `user_ranks`
-7. `user_tasks`
-8. `conversations`
-9. `conversation_messages`
-10. `score_ledgers`
-11. `daily_checkins`
-12. `achievements`
-13. `user_achievements`
-14. `event_logs`
+6. `user_learning_paths`
+7. `user_ranks`
+8. `user_tasks`
+9. `conversations`
+10. `conversation_messages`
+11. `score_ledgers`
+12. `daily_checkins`
+13. `achievements`
+14. `user_achievements`
+15. `event_logs`
 
 ---
 

@@ -2,11 +2,11 @@
 
 > 文档类型：技术架构设计文档  
 > 产品名称：AI编程学习教练  
-> 版本：v1.0  
-> 状态：初稿  
+> 版本：v1.1  
+> 状态：已按当前前端原型校准  
 > 创建日期：2026-03-23  
 > 适用阶段：MVP  
-> 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-prd.md`、`docs/plans/2026-03-23-ai-coding-tutor-engineering-task-list.md`
+> 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-prd.md`、`docs/plans/2026-03-23-ai-coding-tutor-api-spec.md`
 
 ---
 
@@ -21,6 +21,27 @@
 - 前端、后端、数据和 AI 能力如何协作
 - 关键业务链路如何落地
 - MVP 阶段的风险点、扩展点和演进路径是什么
+
+### 1.1 当前原型校准说明
+
+当前仓库已经不是纯文档状态，而是包含真实前端原型的同仓项目。技术架构判断需要以当前真实页面和数据语义为准。
+
+当前前端已存在的核心页面：
+
+- `/`
+- `/login`
+- `/onboarding`
+- `/learn`
+- `/map`
+- `/achievements`
+- `/history`
+
+本次架构校准的核心约束：
+
+- 产品主线应围绕 `user_learning_paths` 展开，而不是围绕“最近会话列表”展开。
+- `/map`、`/learn`、`/history` 共享同一条学习路径实例主线。
+- `/history` 页当前承载的是“历史学习计划列表”，不是“最近消息列表”。
+- FAQ、订阅展示块、营销定价文案仍属于前端静态表达，不属于首期后端权威域模型。
 
 ---
 
@@ -40,7 +61,7 @@ MVP 纳入范围：
 - 学习任务拆解与状态推进
 - 学习进度追踪
 - 基础学分与段位系统
-- 闯关地图与成就页
+- 闯关地图、成就页与历史学习页
 - 核心埋点与数据分析
 
 MVP 不纳入范围：
@@ -106,7 +127,7 @@ MVP 阶段采用模块化单体架构，而不是微服务架构。原因如下�
 AI 输出不能只作为一段聊天回复存在，而必须与以下结构绑定：
 
 - 当前用户
-- 当前工具与路径
+- 当前工具与当前学习路径实例
 - 当前任务状态
 - 最近会话上下文
 - 成长系统结果
@@ -115,7 +136,7 @@ AI 输出不能只作为一段聊天回复存在，而必须与以下结构绑�
 
 - 当前训练路径模板
 - 当前路径所绑定的训练 agent
-- 当前关卡所属阶段
+- 当前关卡所属路径实例位置
 
 ### 4.4 事件可观测优先
 
@@ -153,12 +174,16 @@ flowchart LR
     FE --> BFF[Next.js API Routes / BFF Layer]
     BFF --> AUTH[Auth Module]
     BFF --> LEARN[Learning Orchestrator]
-    BFF --> PROG[Progress & Gamification Module]
+    BFF --> PROG[Progress Module]
+    BFF --> GAME[Gamification Module]
+    BFF --> HIST[History Module]
     BFF --> LINK[Content Parsing Module]
     LEARN --> AI[Claude API]
     AUTH --> DB[(Aliyun ADB PG Supabase)]
     LEARN --> DB
     PROG --> DB
+    GAME --> DB
+    HIST --> DB
     LINK --> DB
     BFF --> STORE[Aliyun Supabase Storage/Functions]
     BFF --> OBS[Analytics / Logs / Monitoring]
@@ -273,9 +298,9 @@ flowchart LR
 
 ### History Service
 
-- 会话恢复
-- 最近学习摘要
-- 历史列表聚合
+- 历史学习计划分页列表
+- 路径实例摘要聚合
+- 与当前学习路径实例的衔接
 
 ### Analytics Service
 
@@ -307,6 +332,7 @@ MVP 阶段采用 `阿里云 AnalyticDB PostgreSQL 版 Supabase` 作为主数据�
 - `learning_tools`
 - `learning_paths`
 - `path_steps`
+- `user_learning_paths`
 - `user_tasks`
 - `conversations`
 - `conversation_messages`
@@ -322,8 +348,11 @@ MVP 阶段采用 `阿里云 AnalyticDB PostgreSQL 版 Supabase` 作为主数据�
 ```mermaid
 erDiagram
     USERS ||--|| USER_PROFILES : has
+    USERS ||--o{ USER_LEARNING_PATHS : owns
+    LEARNING_PATHS ||--o{ USER_LEARNING_PATHS : instantiates
     USERS ||--o{ CONVERSATIONS : owns
-    USERS ||--o{ USER_TASKS : progresses
+    USER_LEARNING_PATHS ||--o{ USER_TASKS : contains
+    USER_LEARNING_PATHS ||--o{ CONVERSATIONS : contains
     USERS ||--o{ SCORE_LEDGERS : earns
     USERS ||--o{ DAILY_CHECKINS : records
     USERS ||--o{ USER_ACHIEVEMENTS : unlocks
@@ -344,11 +373,12 @@ erDiagram
 
 - `learning_paths` 是路径模板，既可承载平台预设训练，也可承载自学模式生成出的轻量路径壳
 - `path_steps` 是路径模板中的具体步骤
+- `user_learning_paths` 是用户维度的学习路径实例，承接 `/learn`、`/map`、`/history` 的共同主线
 - `user_tasks` 是用户维度的任务实例，存储状态、开始时间、完成时间、是否卡住等信息
 
 ### 会话与消息
 
-- `conversations` 记录用户一次学习会话的容器
+- `conversations` 记录用户一次学习会话的容器，并归属于某条 `user_learning_path`
 - `conversation_messages` 记录具体消息，需区分 `user` / `assistant` / `system`
 
 ### 学分与段位
@@ -385,7 +415,7 @@ sequenceDiagram
     U->>FE: 选择工具、水平与起始路线
     FE->>API: 提交 onboarding 完成请求
     API->>ONB: 生成起始学习上下文
-    ONB->>DB: 写入用户偏好、路径选择与任务实例
+    ONB->>DB: 写入用户偏好、user_learning_path 与 user_tasks
     API-->>FE: 返回初始任务与跳转信息
 ```
 
@@ -403,7 +433,7 @@ sequenceDiagram
     U->>FE: 提交教程链接/文本/问题
     FE->>API: /api/learning/message
     API->>LRN: 请求学习编排
-    LRN->>DB: 读取用户档案、当前任务、最近会话
+    LRN->>DB: 读取用户档案、当前 user_learning_path、当前任务、最近会话
     LRN->>AI: 发送结构化 Prompt
     AI-->>LRN: 返回教学型引导结果
     LRN->>DB: 保存消息并更新任务状态
@@ -435,8 +465,15 @@ sequenceDiagram
 
 - 用户进入学习主界面
 - 前端请求最近学习状态
-- 服务端读取最近会话、当前任务、右侧面板上下文
+- 服务端读取当前 `user_learning_path`、当前任务、最近会话、右侧面板上下文
 - 前端恢复到对应路径与对话位置
+
+## 9.5 历史学习页流程
+
+- 用户进入 `/history`
+- 前端请求历史学习计划列表
+- 服务端基于 `user_learning_paths` 聚合工具、模式、进度、XP 与更新时间
+- 前端渲染进行中、已完成、已中断三类计划卡片
 
 ---
 
@@ -543,10 +580,11 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 
 - `/`
 - `/login`
-- `/welcome`
+- `/onboarding`
 - `/learn`
 - `/map`
 - `/achievements`
+- `/history`
 
 ## 12.2 状态管理策略
 
@@ -560,6 +598,7 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 服务端权威状态包括：
 
 - 用户档案
+- 当前学习路径实例
 - 当前任务状态
 - 会话记录
 - 积分与段位

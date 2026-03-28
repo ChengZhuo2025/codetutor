@@ -2,8 +2,8 @@
 
 > 文档类型：API 接口详细定义文档  
 > 产品名称：AI编程学习教练  
-> 版本：v1.0  
-> 状态：初稿  
+> 版本：v1.1  
+> 状态：已按前端原型校准  
 > 创建日期：2026-03-23  
 > 适用阶段：MVP  
 > 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md`
@@ -73,6 +73,19 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - `Idempotency-Key`
 
+## 2.6 前端原型校准原则
+
+当前仓库中的前端原型已经覆盖 `/login`、`/onboarding`、`/learn`、`/map`、`/achievements`、`/history` 等核心页面。服务端接口在与原型对齐时，必须区分以下三类字段：
+
+1. 权威业务字段：需要由服务端持久化或计算，例如 `currentScore`、`currentRank`、`task.status`、`streakDays`、`selectedPathId`。
+2. 服务端 read model 字段：可由服务端聚合后直接返回给前端，例如 `nextRankRemainingXP`、`progress.percent`、`currentStageId`、`hasMore`。
+3. 前端展示字段：不建议作为后端权威契约，例如颜色 token、图标对象、FAQ 文案、营销套餐文案、按钮 helper 文案、日历周标题矩阵等。
+
+因此本次 API 文档更新遵循两条原则：
+
+- 服务端接口优先定义“真实业务语义 + 可直接渲染的 read model”，而不是复用前端组件类型。
+- 当前前端 mock 中的 `icon`、`color`、`bg`、`guideItems.color`、`stats.icon`、`weekDays`、`dates`、`faqItems`、`subscription.*` 等字段，不作为 MVP 后端首期必做接口字段。
+
 ---
 
 ## 3. 错误码定义
@@ -128,6 +141,27 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 ## 4.6 数据事件
 
 - `POST /api/analytics/event`
+
+## 4.7 当前前端页面与接口映射
+
+基于当前前端原型，MVP 首期真正要打通的页面与接口对应关系如下：
+
+| 页面 | 路由 | 主要接口 | 说明 |
+|------|------|------|------|
+| 登录页 | `/login` | `POST /api/auth/login`、`GET /api/profile/me` | 登录成功后判断是否新用户、是否已完成 onboarding |
+| 新手引导 | `/onboarding` | `GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete` | 产出主工具、学习等级、学习模式、初始学习路径实例 |
+| 学习页 | `/learn` | `GET /api/learning/current-session`、`POST /api/learning/message`、`POST /api/learning/stuck-help`、`POST /api/task/update-status`、`POST /api/task/complete` | 学习主链路核心 |
+| 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
+| 成就页 | `/achievements` | `GET /api/achievement/summary`、`GET /api/history/recent`、`POST /api/checkin/daily` | 成长总览和 XP 流水 |
+| 历史页 | `/history` | `GET /api/history/recent` | 当前前端实际需要的是“历史学习计划列表”，而不是“最近对话列表” |
+
+以下内容继续保留前端本地静态配置，不进入 MVP 首期后端：
+
+- 营销页内容
+- FAQ
+- 订阅套餐文案与价格展示
+- 图标映射与颜色 token
+- 快捷按钮 helper 文案、部分提示文案
 
 ---
 
@@ -201,6 +235,12 @@ MVP 默认使用登录态 Session 或 Bearer Token。
   }
 }
 ```
+
+补充规则：
+
+- `primaryTool` 可为空；当前前端原型默认已有主工具，但真实新用户在完成 onboarding 前可能没有主工具。
+- `completedTaskCount`、`currentScore`、`currentRank`、`streakDays` 为服务端聚合快照，不要求前端自行计算。
+- 工作台侧栏中的订阅块继续沿用前端 mock，待支付域明确后再单独设计订阅接口。
 
 ## 5.3 `POST /api/profile/init`
 
@@ -281,7 +321,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
       "name": "自学模式",
       "sourceType": "self_directed",
       "summary": "粘贴教程、代码、链接或截图，系统按当前工具与水平拆解训练步骤",
-      "preview": ["粘贴学习内容", "获得当前一步", "卡住时继续追问"]
+      "preview": ["粘贴学习内容", "获得当前一步", "卡住时继续追问"],
+      "inputTypes": ["教程文本", "代码片段", "网页链接", "截图"]
     },
     "presetPathOptions": [
       {
@@ -292,7 +333,11 @@ MVP 默认使用登录态 Session 或 Bearer Token。
         "stageCount": 8,
         "summary": "从界面熟悉到完成第一个小作品",
         "recommended": true,
-        "currentLevelFit": "适合第一次系统上手 Cursor 的新用户"
+        "currentLevelFit": "适合第一次系统上手 Cursor 的新用户",
+        "coachAgentLabel": "入门陪练 Agent",
+        "estimatedDuration": "3-5 天",
+        "tags": ["界面熟悉", "Prompt 入门", "小作品"],
+        "preview": ["认识 Cursor 工作区", "写第一个 Prompt", "完成第一个页面练习"]
       }
     ]
   }
@@ -428,19 +473,124 @@ MVP 默认使用登录态 Session 或 Bearer Token。
   "data": {
     "conversationId": "uuid",
     "task": {
-      "taskId": "uuid",
-      "title": "生成第一个页面",
+      "taskId": "task-ask-vs-agent",
+      "title": "理解 Ask 与 Agent 的区别",
       "status": "in_progress"
     },
-    "messages": [],
+    "profile": {
+      "userId": "user-demo-001",
+      "nickname": "陈小明",
+      "primaryTool": {
+        "code": "cursor",
+        "name": "Cursor"
+      },
+      "learningLevel": "beginner",
+      "currentScore": 680,
+      "currentRank": "Vibe Coder",
+      "streakDays": 7,
+      "completedTaskCount": 14,
+      "lastLearningAt": "2026-03-24T14:32:00+08:00"
+    },
+    "planSummary": {
+      "selectedToolName": "Cursor",
+      "learningLevelLabel": "完全入门",
+      "selectionModeLabel": "平台训练模式",
+      "pathName": "Cursor 零基础起步营"
+    },
+    "resume": {
+      "title": "继续上次学习",
+      "summary": "你已经完成了基础安装与第一次提问，现在继续验证 Ask 与 Agent 的职责边界。",
+      "lastSeenLabel": "上次停留在 18 分钟前",
+      "ctaLabel": "继续这一关"
+    },
+    "mission": {
+      "title": "理解 Ask 与 Agent 的区别",
+      "tool": "Cursor",
+      "stageLabel": "第 3 关 / 共 6 关",
+      "goal": "用 Cursor 的 Agent 功能创建一个 React 时钟组件。",
+      "summary": "只做一个最小实验：让 Agent 生成一个 React 时钟组件，理解它和 Ask 的职责边界。",
+      "estimatedTime": "约 8 分钟",
+      "reward": "+10 XP",
+      "progressLabel": "1 / 3 步",
+      "progressPercent": 36,
+      "coachCue": "先把任务做小，只验证 Agent 是否比 Ask 更适合生成完整文件。",
+      "nextUnlockTitle": "AI 调试助手",
+      "nextUnlockSummary": "学会带着错误上下文让 Cursor 帮你定位并修复 bug。"
+    },
+    "messages": [
+      {
+        "id": 1,
+        "role": "system",
+        "kind": "system_goal",
+        "title": "系统目标说明",
+        "content": "本关只验证一件事：Agent 是否更适合生成完整文件。"
+      }
+    ],
+    "quickActions": [
+      {
+        "label": "我完成了",
+        "tone": "primary",
+        "helper": "推进任务",
+        "category": "progress"
+      }
+    ],
+    "supportOptions": [
+      {
+        "mode": "hint",
+        "label": "给我一点提示",
+        "description": "只提醒关键方向，不直接把答案展开。",
+        "prompt": "给我一点提示"
+      }
+    ],
     "rightPanel": {
-      "currentStep": "先描述你想要的页面结构",
-      "completionCriteria": "成功生成一个可见页面",
-      "knowledgePoints": ["Prompt", "页面生成"]
-    }
+      "currentStep": "用 Agent 生成一个 React 时钟组件",
+      "whyThisStep": "这是当前最小、最容易验证的实验",
+      "completionCriteria": "看到一个可运行的时钟组件，并理解为什么这是 Agent 场景。",
+      "hintIfStuck": "如果不知道怎么描述，就先提交一句结果导向的话，而不是试图写完整规范。",
+      "knowledgePoints": ["Ask 模式", "Agent 模式", "React"],
+      "masteryPoints": [
+        "Ask 更适合解释概念、追问细节和帮你拆清思路。",
+        "Agent 更适合生成完整文件或连续修改多段代码。"
+      ],
+      "cautions": [
+        {
+          "text": "最常见的卡点：明明想生成文件，却还在 Ask 里反复追问。",
+          "isTrap": true
+        }
+      ],
+      "nextStepPreview": "下一步会进入 AI 调试助手，继续建立更完整的 Cursor 协作工作流。"
+    },
+    "recentPracticeRounds": [
+      {
+        "id": "practice-round-001",
+        "taskTitle": "安装与配置 Cursor",
+        "stageLabel": "第 1 关",
+        "lastActiveLabel": "今天",
+        "status": "completed"
+      }
+    ],
+    "tasks": [
+      {
+        "id": 1,
+        "label": "安装与配置 Cursor",
+        "done": true
+      },
+      {
+        "id": 3,
+        "label": "理解 Ask 与 Agent 的区别",
+        "done": false,
+        "current": true
+      }
+    ]
   }
 }
 ```
+
+实现约束：
+
+- 当前前端原型确实消费了 `planSummary`、`mission`、`resume`、`rightPanel`、`tasks` 等 read model，因此服务端首期可以直接聚合返回。
+- `quickActions`、`supportOptions`、`tips`、`knowledgeTags.color` 等字段偏展示层，可在首期先由前端保留静态配置；如果服务端返回，也应视为可选扩展字段，而不是底层数据库实体。
+- `messages.role` 在服务端内部建议使用 `assistant`，若前端仍保留 `ai`，可在 BFF DTO 层做映射。
 
 ## 7.3 `POST /api/learning/stuck-help`
 
@@ -539,13 +689,33 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - 获取当前用户的进度总览
 
-返回内容建议：
+成功响应示例：
 
-- 当前工具
-- 当前路径
-- 当前任务
-- 当前积分和段位
-- 今日是否已打卡
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "currentTool": {
+      "id": "cursor",
+      "label": "Cursor"
+    },
+    "currentPathName": "Cursor 零基础起步营",
+    "currentTaskTitle": "理解 Ask 与 Agent 的区别",
+    "currentScore": 680,
+    "currentRank": "Vibe Coder",
+    "streakDays": 7,
+    "checkedInToday": true,
+    "summary": {
+      "totalXP": 680,
+      "currentRank": "Vibe Coder",
+      "nextRank": "AI 建造者",
+      "remainingXPToNextRank": 320,
+      "streakDays": 7
+    }
+  }
+}
+```
 
 ## 8.4 `GET /api/progress/map`
 
@@ -553,12 +723,49 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - 获取闯关地图所需完整节点数据
 
-返回内容建议：
+成功响应示例：
 
-- 路径名称
-- 总步骤数
-- 当前进度
-- 每个节点的标题、状态、摘要
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "pathName": "Cursor 零基础起步营",
+    "pathSummary": "从第一次 AI 对话到第一个迷你项目，建立最小但完整的 Cursor 入门工作流。",
+    "totalSteps": 6,
+    "completedSteps": 2,
+    "currentStageId": 3,
+    "stages": [
+      {
+        "id": 3,
+        "taskId": "task-ask-vs-agent",
+        "title": "理解 Ask 与 Agent 的区别",
+        "summary": "先做一个最小实验，判断 Agent 何时比 Ask 更适合。",
+        "goal": "用 Cursor 的 Agent 功能创建一个 React 时钟组件。",
+        "completionCriteria": "看到一个可运行的时钟组件，并理解为什么这是 Agent 场景。",
+        "reviewSummary": "你已经验证了 Ask 与 Agent 的分工差异，下一步可以进入调试协作。",
+        "xp": 10,
+        "status": "current",
+        "tags": ["Ask 模式", "Agent 模式", "React"],
+        "keyPoints": ["Ask 更适合解释概念", "Agent 更适合生成完整文件"],
+        "pitfalls": [
+          {
+            "text": "最常见的卡点：明明想生成文件，却还在 Ask 里反复追问。",
+            "isTrap": true
+          }
+        ],
+        "estimatedTime": "8 分钟",
+        "focus": "只做一个最小实验：让 Agent 生成一个 React 时钟组件，理解它和 Ask 的职责边界。"
+      }
+    ]
+  }
+}
+```
+
+业务规则：
+
+- `status=done/current/locked` 是地图 read model 状态，不要求前端从底层任务状态自行推导。
+- `unlockHint`、`focus`、`reviewSummary` 属于服务端聚合后的路径展示字段，可来源于步骤模板及当前实例状态。
 
 ---
 
@@ -570,26 +777,70 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - 获取成就页数据
 
-成功响应内容建议：
+成功响应示例：
 
-- 当前段位
-- 当前积分
-- 距离下一段位
-- 已完成任务数
-- 连续学习天数
-- 成就列表
-- 技能标签矩阵
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "currentRank": "Vibe Coder",
+    "currentScore": 680,
+    "nextRank": "AI 建造者",
+    "nextRankRemainingXP": 320,
+    "completedTaskCount": 14,
+    "streakDays": 7,
+    "overview": {
+      "totalXP": 680,
+      "streakDays": 7,
+      "monthlyXP": 360,
+      "totalCheckinDays": 21,
+      "nextRankRemainingXP": 320,
+      "earnedBadges": 2
+    },
+    "ranks": [
+      { "code": "rookie", "name": "萌新码农", "minScore": 0, "maxScore": 200 },
+      { "code": "apprentice", "name": "AI 学徒", "minScore": 200, "maxScore": 500 },
+      { "code": "vibe_coder", "name": "Vibe Coder", "minScore": 500, "maxScore": 1000 }
+    ],
+    "badges": [
+      {
+        "code": "first_task",
+        "title": "零到一",
+        "desc": "完成第一个自由模式的 AI 编程任务",
+        "earned": true,
+        "progressHint": "已完成第一个任务切入点"
+      }
+    ],
+    "history": [
+      {
+        "label": "完成「Chat vs Composer」",
+        "xp": "+10",
+        "time": "2026-03-24T14:32:00+08:00",
+        "type": "task"
+      }
+    ]
+  }
+}
+```
+
+实现约束：
+
+- `ranks.icon`、`ranks.color`、`badges.icon`、`badges.color` 不应作为首期后端权威字段，前端按 `rank.code` / `badge.code` 本地映射图标和样式。
+- `stats`、`guideItems`、`calendar.weekDays`、`calendar.dates` 这类强展示型块在首期建议前端静态维护；服务端优先提供累计 XP、连续天数、打卡明细、勋章解锁和 XP 流水。
 
 ## 9.2 `GET /api/history/recent`
 
 用途：
 
-- 获取历史会话列表
+- 获取历史学习计划列表
 
 查询参数建议：
 
-- `limit`
-- `cursor`
+- `page`
+- `pageSize`
+- `status`：可选，`in_progress` / `completed` / `abandoned`
+- `toolCode`：可选
 
 成功响应示例：
 
@@ -600,17 +851,39 @@ MVP 默认使用登录态 Session 或 Bearer Token。
   "data": {
     "items": [
       {
-        "conversationId": "uuid",
-        "toolCode": "cursor",
-        "taskTitle": "生成第一个页面",
-        "summary": "你刚完成页面结构生成",
-        "lastMessageAt": "2026-03-23T08:00:00Z"
+        "id": "ulp-001",
+        "planId": "plan-cursor-basic",
+        "title": "Cursor 零基础起步营",
+        "summary": "从第一次 AI 对话到第一个迷你项目，建立最小但完整的 Cursor 入门工作流。",
+        "tool": {
+          "code": "cursor",
+          "name": "Cursor"
+        },
+        "learningLevel": "beginner",
+        "selectionMode": "preset_training",
+        "progress": {
+          "completed": 8,
+          "total": 10,
+          "percent": 80
+        },
+        "xpEarned": 680,
+        "status": "in_progress",
+        "createdAt": "2026-03-15T00:00:00+08:00",
+        "updatedAt": "2026-03-27T00:00:00+08:00"
       }
     ],
-    "nextCursor": null
+    "total": 15,
+    "page": 1,
+    "hasMore": true
   }
 }
 ```
+
+业务规则：
+
+- 本接口面向 `/history` 页，返回的是“用户的学习路径实例列表”，不是单纯的“最近消息列表”。
+- `progress.percent` 为 read model 聚合字段，服务端可直接返回，前端不必自行计算。
+- `tool.name`、`title`、`summary` 等字段来自路径模板快照，避免模板后续改名导致历史记录漂移。
 
 ## 9.3 `POST /api/checkin/daily`
 
@@ -674,11 +947,20 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 |------|------|------|
 | `POST /api/auth/login` | 否 | 登录入口 |
 | `GET /api/onboarding/tools` | 否 | 可公开 |
+| `GET /api/profile/me` | 是 | 获取侧边栏与用户档案快照 |
+| `POST /api/profile/init` | 是 | 初始化用户档案 |
 | `GET /api/onboarding/path-options` | 是 | 获取路线候选 |
 | `POST /api/onboarding/complete` | 是 | 写用户引导结果 |
 | `POST /api/learning/message` | 是 | 核心学习数据 |
+| `GET /api/learning/current-session` | 是 | 恢复当前学习上下文 |
+| `POST /api/learning/stuck-help` | 是 | 请求卡住帮助 |
 | `POST /api/task/complete` | 是 | 写积分与任务 |
+| `POST /api/task/update-status` | 是 | 更新任务状态 |
+| `GET /api/progress/current` | 是 | 当前路径总览 |
+| `GET /api/progress/map` | 是 | 当前路径地图 |
+| `GET /api/achievement/summary` | 是 | 私人成长总览 |
 | `GET /api/history/recent` | 是 | 私有历史 |
+| `POST /api/checkin/daily` | 是 | 私人打卡写入 |
 | `POST /api/analytics/event` | 是 | 绑定用户事件 |
 
 ---
@@ -734,6 +1016,21 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 ---
 
-## 15. 结论
+## 15. 当前前端原型中不建议直接服务端化的字段
+
+以下字段当前存在于前端 mock 或 view model 中，但不建议在 MVP 首期直接作为服务端权威接口字段：
+
+- 图标对象：`icon`
+- 颜色样式：`color`、`bg`、`borderColor`
+- FAQ 与营销文案：`faqItems`、`marketingPlans`
+- 订阅展示文案：`planPriceLabel`、`renewalHint`、`primaryActionLabel`
+- 纯展示辅助信息：`guideItems.color`
+- 可本地生成的日历展示矩阵：`weekDays`、`dates`
+
+这些内容应优先作为前端静态配置或 BFF 层装配结果存在，避免把表现层细节固化进底层领域接口。
+
+---
+
+## 16. 结论
 
 这套 API 的核心原则，是让前端始终围绕“当前一步”这个业务中心组织体验，而让服务端统一承担鉴权、学习编排、状态推进和成长计算。只要接口边界清晰且幂等控制做稳，MVP 主链路的前后端协作就能保持稳定。

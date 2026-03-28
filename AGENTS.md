@@ -4,6 +4,8 @@
 
 This repository is no longer documentation-only. It contains a runnable Next.js App Router frontend prototype for the AI coding tutor product, plus the original planning docs in `docs/plans/`.
 
+If you need a fast orientation to the project and its current authoritative documents, start with `docs/plans/README.md`.
+
 - `app/`: route entries such as `/`, `/login`, `/onboarding`, `/learn`, `/map`, `/achievements`, `/history`
 - `features/`: feature-level pages, components, mock data, and view models
 - `components/`: shared layout and UI primitives
@@ -60,5 +62,7 @@ Keep each pull request scoped to one frontend slice, one documentation update, o
 ## Contributor Notes
 
 Prefer updating an existing plan doc before creating a duplicate. When assumptions change, update the PRD or architecture doc first, then align downstream files such as the API spec, schema design, or task list.
+
+For quick project understanding, read `docs/plans/README.md` first, then follow its recommended reading order.
 
 Do not describe planned backend or database capabilities as already implemented. Today the repository reflects a frontend demo/prototype with mock data and interface contracts, not a completed full-stack system.

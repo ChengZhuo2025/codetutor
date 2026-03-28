@@ -2,8 +2,8 @@
 
 > 文档类型：后端模块目录结构设计文档  
 > 产品名称：AI编程学习教练  
-> 版本：v1.0  
-> 状态：初稿  
+> 版本：v1.1  
+> 状态：已按前端原型校准  
 > 创建日期：2026-03-23  
 > 适用阶段：MVP  
 > 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md`、`docs/plans/2026-03-23-ai-coding-tutor-api-spec.md`
@@ -32,6 +32,7 @@
 2. 将 Route Handler、应用编排、领域逻辑、数据访问和外部集成分层。
 3. 保证任务状态、积分计算、AI 编排等核心能力统一在服务端权威实现。
 4. 便于后续按域拆分服务，而不是一开始就写成脚本式 API。
+5. 直接支撑当前前端原型已经存在的 `/onboarding`、`/learn`、`/map`、`/achievements`、`/history` 页面。
 
 ---
 
@@ -168,6 +169,7 @@ app/
 
 - 每个 `route.ts` 只做入口处理
 - 不在 `route.ts` 中写复杂数据库访问
+- `/history/recent` 在命名上保留原型兼容性，但实际承载“历史学习路径实例分页列表”
 
 ---
 
@@ -204,7 +206,6 @@ server/
 
 ```text
 server/modules/
-├── achievement/
 ├── analytics/
 ├── auth/
 ├── gamification/
@@ -212,6 +213,7 @@ server/modules/
 ├── learning/
 ├── onboarding/
 ├── profile/
+├── progress/
 └── task/
 ```
 
@@ -263,6 +265,7 @@ server/modules/auth/
 
 - 用户档案初始化
 - 用户顶层状态读取
+- 向工作台侧栏提供稳定的基础用户快照
 
 建议结构：
 
@@ -285,6 +288,7 @@ server/modules/profile/
 - 获取工具列表
 - 获取起始路线候选
 - 提交 onboarding 结果并初始化学习上下文
+- 创建 `user_learning_path` 与首批 `user_tasks`
 
 建议结构：
 
@@ -300,11 +304,35 @@ server/modules/onboarding/
 ├── infrastructure/
 │   ├── learning-tool-repository.ts
 │   ├── learning-path-repository.ts
+│   ├── user-learning-path-repository.ts
 │   └── user-preference-repository.ts
 └── index.ts
 ```
 
-## 8.4 `learning`
+## 8.4 `progress`
+
+职责：
+
+- 返回 `/map` 页需要的当前总览与路径地图 read model
+- 将 `user_learning_paths + user_tasks + path_steps` 聚合成前端可直接渲染的数据
+
+建议结构：
+
+```text
+server/modules/progress/
+├── application/
+│   ├── get-current-progress.ts
+│   └── get-progress-map.ts
+├── domain/
+│   └── progress-read-model-builder.ts
+├── infrastructure/
+│   ├── user-learning-path-repository.ts
+│   ├── task-repository.ts
+│   └── learning-path-repository.ts
+└── index.ts
+```
+
+## 8.5 `learning`
 
 职责：
 
@@ -332,6 +360,8 @@ server/modules/learning/
 ├── infrastructure/
 │   ├── conversation-repository.ts
 │   ├── message-repository.ts
+│   ├── user-learning-path-repository.ts
+│   ├── task-repository.ts
 │   ├── claude-client.ts
 │   └── content-parser.ts
 ├── dto/
@@ -339,7 +369,12 @@ server/modules/learning/
 └── index.ts
 ```
 
-## 8.5 `task`
+说明：
+
+- `/learn` 页中的 `mission`、`resume`、`rightPanel`、`tasks` 属于 read model，可由 learning 模块聚合返回。
+- `quickActions`、`supportOptions`、提示文案等展示性字段可在首期继续前端静态维护，不强制服务端化。
+
+## 8.6 `task`
 
 职责：
 
@@ -359,11 +394,12 @@ server/modules/task/
 │   ├── task-state-machine.ts
 │   └── task-errors.ts
 ├── infrastructure/
-│   └── task-repository.ts
+│   ├── task-repository.ts
+│   └── user-learning-path-repository.ts
 └── index.ts
 ```
 
-## 8.6 `gamification`
+## 8.7 `gamification`
 
 职责：
 
@@ -371,6 +407,7 @@ server/modules/task/
 - 段位
 - 打卡
 - 成就
+- `/achievements` 页总览 read model
 
 建议结构：
 
@@ -393,12 +430,18 @@ server/modules/gamification/
 └── index.ts
 ```
 
-## 8.7 `history`
+说明：
+
+- `achievement summary` 读取侧可以在模块内聚合 `user_ranks + score_ledgers + daily_checkins + user_achievements`
+- 图标、颜色、日历矩阵等表现层细节不建议下沉到基础领域模型
+
+## 8.8 `history`
 
 职责：
 
-- 最近学习历史
+- 历史学习计划列表
 - 历史摘要聚合
+- 面向 `/history` 页输出分页 read model
 
 建议结构：
 
@@ -409,11 +452,17 @@ server/modules/history/
 ├── domain/
 │   └── history-service.ts
 ├── infrastructure/
+│   ├── user-learning-path-repository.ts
 │   └── history-repository.ts
 └── index.ts
 ```
 
-## 8.8 `analytics`
+说明：
+
+- `history` 模块读的主对象应是 `user_learning_paths`，不是 `conversations`
+- 是否显示 `in_progress` / `completed` / `abandoned`，由路径实例状态决定
+
+## 8.9 `analytics`
 
 职责：
 
@@ -543,6 +592,7 @@ server/schemas/
 
 - DTO 用于稳定应用层接口
 - DTO 不等于数据库 entity
+- DTO 可以是面向页面的 read model，但不应直接携带前端组件专属的图标对象、颜色 token、营销文案
 
 ---
 
@@ -611,7 +661,6 @@ server/
 │   ├── logger/
 │   └── observability/
 ├── modules/
-│   ├── achievement/
 │   ├── analytics/
 │   ├── auth/
 │   ├── gamification/
@@ -619,6 +668,7 @@ server/
 │   ├── learning/
 │   ├── onboarding/
 │   ├── profile/
+│   ├── progress/
 │   └── task/
 ├── schemas/
 └── tests/
@@ -656,10 +706,43 @@ server/
 - 在一个 service 文件里同时处理认证、任务和积分
 - 用一个 `services/` 目录承载全部后端逻辑
 - DTO、entity、HTTP response 混成一套类型
+- 为了迎合现有前端 mock，把 `icon`、`color`、`bg`、FAQ、订阅文案直接做成后端权威字段
 
 ---
 
-## 17. 演进建议
+## 17. MVP 推荐开发顺序
+
+基于当前前端原型，推荐按以下顺序推进后端：
+
+1. `auth + profile`
+   - 打通登录
+   - 返回基础用户快照
+   - 判断是否完成 onboarding
+2. `onboarding`
+   - 工具列表
+   - 路径候选
+   - 完成 onboarding 时创建 `user_learning_path + user_tasks`
+3. `progress`
+   - 先打通 `/map` 和 `/learn` 共享的当前路径、当前任务、关卡列表
+4. `task + gamification`
+   - 完成任务
+   - 更新状态
+   - XP、段位、打卡
+5. `history`
+   - 基于 `user_learning_paths` 输出历史学习计划分页列表
+6. `learning`
+   - 接 AI provider
+   - 写会话、消息、卡住帮助
+7. `analytics`
+   - 最后补事件入库
+
+这样做的原因是：
+
+- `onboarding -> progress -> task` 能先形成一条不依赖 AI 的最小学习主链路
+- `/history` 和 `/achievements` 都依赖前面的路径实例、任务状态和积分流水
+- `learning` 模块复杂度最高，放在后面最稳
+
+## 18. 演进建议
 
 如果后续系统复杂度提升，可按以下顺序演进：
 
@@ -671,6 +754,6 @@ MVP 阶段不建议过早引入 DDD 全套重型写法，但必须保留分层�
 
 ---
 
-## 18. 结论
+## 19. 结论
 
-这套后端模块目录设计的核心是：让 API 路由层足够薄，让用例编排清楚，让领域规则有明确归属，让基础设施实现与业务规则分离。只要这一点建立起来，即使当前是模块化单体，后续也能平滑演进，而不会在 MVP 阶段把服务端写成难以维护的接口脚本集合。
+这套后端模块目录设计的核心是：让 API 路由层足够薄，让用例编排清楚，让领域规则有明确归属，让基础设施实现与业务规则分离。当前前端原型真正需要的是一条围绕 `user_learning_paths` 展开的主线，而不是零散接口集合。只要先把 onboarding、progress、task、gamification 这条主线打通，后续 AI 学习会话和历史页、成就页都能自然落位。

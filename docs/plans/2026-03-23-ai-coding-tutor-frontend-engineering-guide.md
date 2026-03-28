@@ -2,10 +2,10 @@
 
 > 文档类型：前端工程说明  
 > 产品名称：AI编程学习教练  
-> 版本：v1.0  
-> 状态：已执行  
+> 版本：v1.1  
+> 状态：已按当前前端原型校准  
 > 创建日期：2026-03-23  
-> 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-frontend-structure-design.md`、`docs/plans/2026-03-23-ai-coding-tutor-frontend-demo-integration.md`
+> 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-prd.md`、`docs/plans/2026-03-23-ai-coding-tutor-api-spec.md`
 
 ---
 
@@ -17,7 +17,7 @@
 
 - 当前前端工程已经整理到什么程度
 - 顶层目录分别负责什么
-- 六个页面分别位于哪里
+- 七个页面分别位于哪里
 - 什么代码应该放在 `features/`，什么代码应该上提到顶层
 - 在尚未接入后端接口时，前端应如何继续推进
 
@@ -45,6 +45,7 @@
 4. `/learn`：学习页
 5. `/map`：地图页
 6. `/achievements`：成就页
+7. `/history`：学习记录页
 
 ---
 
@@ -102,6 +103,7 @@ types/
 - `features/learning`
 - `features/progress`
 - `features/achievement`
+- `features/history`
 
 每个业务域当前大致采用如下结构：
 
@@ -200,7 +202,7 @@ features/<domain>/
 
 ---
 
-## 4. 六个页面的代码位置
+## 4. 七个页面的代码位置
 
 ### 首页
 
@@ -244,6 +246,14 @@ features/<domain>/
 - 页面装配：`features/achievement/pages/achievements-page.tsx`
 - 页面数据：`features/achievement/data/achievement-data.ts`
 - 页面组件：`features/achievement/components/*`
+
+### 历史页
+
+- 路由入口：`app/history/page.tsx`
+- 页面装配：`features/history/pages/history-page.tsx`
+- 页面数据：`features/history/data/history-data.ts`
+- 页面组件：`features/history/components/*`
+- 当前职责：展示历史学习计划列表，而不是最近对话消息列表
 
 ---
 
@@ -409,7 +419,7 @@ features/<domain>/
 
 ## 8. 前端人工验收矩阵
 
-Task 7 之后，6 个页面至少按以下矩阵做人工检查：
+当前 7 个页面至少按以下矩阵做人工检查：
 
 | 页面 | 桌面 | 平板 | 手机 | 空状态 | 交互态 |
 | --- | --- | --- | --- | --- | --- |
@@ -419,6 +429,7 @@ Task 7 之后，6 个页面至少按以下矩阵做人工检查：
 | `/learn` 学习页 | 三栏或主内容 + 辅助区层级明确 | 右侧上下文以抽屉或辅助区方式可达 | 主聊天区优先，输入区和快捷操作可达 | 消息区 reconnect / error / empty 与右侧任务空态可见 | 发送消息、快捷帮助、图片预览、重试发送正常 |
 | `/map` 地图页 | 关卡地图、详情面板、继续学习 CTA 连贯 | 路径列表与详情切换不割裂 | 主地图滚动和关卡点击可用 | 无关卡数据时页面级空态可见 | 点击关卡、切换工具、从地图返回学习页正常 |
 | `/achievements` 成就页 | 段位卡、统计、徽章、打卡和侧栏节奏清晰 | 主内容与侧栏权重仍清楚 | 主要 CTA、统计卡和徽章卡片可顺序浏览 | 无成长数据、无徽章、无 XP 流水时有统一空态 | 继续学习、打开地图、浏览徽章与打卡记录正常 |
+| `/history` 历史页 | 列表信息层级清晰，状态标签、进度和 XP 不混乱 | 列表卡片与 FAQ 侧栏不互抢注意力 | 卡片可纵向连续浏览，筛选和按钮可点击 | 无学习记录时页面级空态可见 | 查看进行中/已完成/已放弃计划的视觉区分准确 |
 
 建议手动检查断点：
 

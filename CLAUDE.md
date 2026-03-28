@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 AI编程学习教练 - 一个面向中文用户的 AI 编程学习陪练产品，核心价值在于把零散教程、视频、代码片段和学习资料转化为可执行、可追踪、可反馈的学习过程。
 
+**快速了解项目：**
+- 先阅读 `docs/plans/README.md`
+- 再按其中的推荐顺序查看 PRD、页面原型、前端工程说明、技术架构、API/数据库/后端设计文档
+
 **技术栈：**
 - 前端：Next.js 16 + React 19.2 + TypeScript 5.9 + Tailwind CSS 4 + shadcn/ui
 - 后端：Next.js API Routes
@@ -46,9 +50,10 @@ features/              # 前端主工作目录，按业务域组织
   ├── onboarding/     # 新手引导/工具选择
   ├── learning/       # AI 导师学习页
   ├── progress/       # 学习地图/进度
-  └── achievement/    # 成就/段位系统
+  ├── achievement/    # 成就/段位系统
+  └── history/        # 历史学习计划页
 hooks/                 # 自定义 React Hooks
-lib/                   # 工具函数和 API 客户端（计划）
+lib/                   # 工具函数、API 契约与 mock client
 providers/            # 全局 Provider 入口
 types/                # 跨 feature 共用的类型定义
 ```
@@ -63,6 +68,7 @@ types/                # 跨 feature 共用的类型定义
 | `/learn` | 学习页 | `features/learning/pages/learn-page.tsx` |
 | `/map` | 地图页 | `features/progress/pages/map-page.tsx` |
 | `/achievements` | 成就页 | `features/achievement/pages/achievements-page.tsx` |
+| `/history` | 历史学习页 | `features/history/pages/history-page.tsx` |
 
 ### 代码组织原则
 
@@ -86,7 +92,7 @@ types/                # 跨 feature 共用的类型定义
 
 **已完成：**
 - ✅ 前端工程结构搭建
-- ✅ 六个核心页面的静态实现
+- ✅ 七个核心页面的静态实现
 - ✅ 共享 UI 组件库（shadcn/ui）
 - ✅ 布局组件和导航系统
 - ✅ 事件追踪基础设施（`constants/events.ts`）
@@ -151,6 +157,7 @@ types/                # 跨 feature 共用的类型定义
 ## 相关文档
 
 详细设计和技术文档位于 `docs/plans/` 目录：
+- `README.md` - 文档索引与推荐阅读顺序
 - `2026-03-23-ai-coding-tutor-prd.md` - 产品需求文档
 - `2026-03-23-ai-coding-tutor-technical-architecture.md` - 技术架构设计
 - `2026-03-23-ai-coding-tutor-frontend-engineering-guide.md` - 前端工程说明
