@@ -2,30 +2,63 @@
 
 ## Project Structure & Module Organization
 
-This repository is currently documentation-first. The main content lives in `docs/plans/`, which contains dated planning artifacts such as the PRD, technical architecture, API spec, schema design, and task lists for the AI coding tutor project. Use the existing filename pattern when adding new docs: `YYYY-MM-DD-topic-name.md`. Local agent permissions live in `.claude/settings.local.json`. Do not place new planning files at the repository root.
+This repository is no longer documentation-only. It contains a runnable Next.js App Router frontend prototype for the AI coding tutor product, plus the original planning docs in `docs/plans/`.
+
+- `app/`: route entries such as `/`, `/login`, `/onboarding`, `/learn`, `/map`, `/achievements`, `/history`
+- `features/`: feature-level pages, components, mock data, and view models
+- `components/`: shared layout and UI primitives
+- `lib/api/`: API contracts and client wrappers; current pages are still backed mainly by `lib/api/mock.ts`
+- `constants/`, `types/`, `providers/`, `public/`: shared frontend support code and assets
+- `scripts/`: lightweight verification scripts for key demo pages and layout rules
+- `docs/plans/`: dated planning artifacts; keep using `YYYY-MM-DD-topic-name.md`
+
+There is currently no implemented backend service, no `app/api` route handlers, and no checked-in database runtime or migration directory. Backend and database materials under `docs/plans/` are design documents, not shipped implementation.
 
 ## Build, Test, and Development Commands
 
-No application runtime, `package.json`, or `Makefile` is checked in yet, so there is no project build pipeline to run. For now, contributors should use lightweight validation:
+Use `pnpm` for local work in this repository.
 
-- `rg --files docs/plans` to confirm file placement and naming.
-- `sed -n '1,80p' docs/plans/<file>.md` to spot-check structure and front matter.
-- `git diff -- AGENTS.md docs/plans` to review documentation-only edits when working in a Git clone.
+- `pnpm dev`: start the Next.js development server
+- `pnpm build`: produce a production build
+- `pnpm lint`: run the frontend lint checks
+- `pnpm test:map-page`
+- `pnpm test:achievements-page`
+- `pnpm test:workspace-sidebar`
+- `pnpm test:settings-logout`
+- `pnpm test:workspace-layout-widths`
+- `pnpm test:workspace-aside-styles`
 
-If you introduce runnable code, add the corresponding build and test scripts in the same change.
+For documentation-only changes, continue using lightweight checks such as `rg --files docs/plans` and `sed -n '1,80p' docs/plans/<file>.md`.
 
 ## Coding Style & Naming Conventions
 
-Write Markdown with short sections, clear headings, and direct language. Keep line content readable in plain text and prefer ordered or flat bullet lists over dense paragraphs. Existing documents are written primarily in Chinese with English product and stack terms; keep terminology consistent. Use lowercase kebab-case for filenames after the date prefix.
+Write frontend code in TypeScript with React and Next.js conventions. Follow the existing alias style such as `@/features/...` and keep component, feature, and constant names consistent with the current structure. Prefer small, composable components and keep mock data close to the relevant feature until real APIs are introduced.
+
+Write Markdown with short sections, clear headings, and direct language. Existing product and planning documents are written primarily in Chinese with English product and stack terms; keep that terminology consistent. Use lowercase kebab-case for filenames after the date prefix in `docs/plans/`.
 
 ## Testing Guidelines
 
-There is no automated test suite in this snapshot. Treat document quality as the test target: verify links, headings, table formatting, and cross-document references before submitting. When implementation begins, place tests next to the delivered runtime and document the exact command used to run them in the same PR.
+There is no full end-to-end or backend test suite in the current snapshot. The main verification surface is:
+
+- `pnpm lint`
+- targeted `scripts/check-*.mjs` assertions for important UI structure and copy regressions
+- manual review of mock-data-driven flows in the frontend prototype
+
+When changing a page or shared layout, run the relevant page check script plus any broader lint/build command needed to support your claim. If you add real backend or database code, add the matching automated tests and document the exact command in the same change.
 
 ## Commit & Pull Request Guidelines
 
-This workspace snapshot does not include `.git`, so local commit history is unavailable. Use Conventional Commits going forward, for example `docs: add database schema notes` or `feat: scaffold Next.js app`. Keep each pull request scoped to one planning artifact or one implementation slice, include a short summary, list affected files, and add screenshots only when UI work is introduced.
+This workspace includes `.git`. Use Conventional Commits, for example `feat: add onboarding flow shell` or `docs: update backend status in agents guide`.
+
+Keep each pull request scoped to one frontend slice, one documentation update, or one implementation concern. Include:
+
+- a short summary of the change
+- affected routes or directories
+- verification commands actually run
+- screenshots for UI changes when they help reviewers
 
 ## Contributor Notes
 
-Prefer updating an existing plan doc before creating a duplicate. When assumptions change, update the PRD or architecture doc first, then align downstream files such as the task list or API spec.
+Prefer updating an existing plan doc before creating a duplicate. When assumptions change, update the PRD or architecture doc first, then align downstream files such as the API spec, schema design, or task list.
+
+Do not describe planned backend or database capabilities as already implemented. Today the repository reflects a frontend demo/prototype with mock data and interface contracts, not a completed full-stack system.

@@ -4,7 +4,6 @@ import {
   Lock,
   Play,
   Sparkles,
-  Star,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Stage } from "@/features/progress/types"

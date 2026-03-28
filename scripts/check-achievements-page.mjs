@@ -24,8 +24,8 @@ const solidIconSource = readFileSync(
 
 assert.match(
   pageSource,
-  /overflow-y-auto scrollbar-none px-4 py-6 sm:px-6 sm:py-8/,
-  "The /achievements scroll area should align with the /map page outer content padding",
+  /overflow-y-auto scrollbar-none px-4 py-4 sm:px-5 sm:py-5/,
+  "The /achievements scroll area should keep the approved compact padding used by the current page design",
 )
 
 assert.match(
@@ -66,14 +66,14 @@ assert.match(
 
 assert.match(
   rankCardSource,
-  /h-20 w-20[\s\S]*h-11 w-11 items-center justify-center overflow-visible[\s\S]*Icon icon=\{CurrentRankIcon\} width="100%" height="100%" className="block"/,
-  "The current rank icon should render at the updated larger size",
+  /h-20 w-20[\s\S]*h-11 w-11 shrink-0 items-center justify-center[\s\S]*Icon icon=\{CurrentRankIcon\} width=\{40\} height=\{40\} className="block"/,
+  "The current rank icon should render at the approved fixed 40x40 size inside the larger card shell",
 )
 
 assert.match(
   badgeGridSource,
-  /h-14 w-14[\s\S]*h-8 w-8 items-center justify-center overflow-visible[\s\S]*Icon[\s\S]*icon=\{badgeIcon\}[\s\S]*width="100%"[\s\S]*height="100%"/,
-  "Badge icons should render at the updated larger size",
+  /h-14 w-14[\s\S]*items-center justify-center rounded-\[18px\][\s\S]*Icon[\s\S]*icon=\{badgeIcon\}[\s\S]*width=\{24\}[\s\S]*height=\{24\}/,
+  "Badge icons should render at the approved fixed 24x24 size inside the current badge shell",
 )
 
 assert.match(

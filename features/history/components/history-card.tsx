@@ -24,17 +24,17 @@ interface HistoryCardProps {
 const statusConfig = {
   completed: {
     label: "已完成",
-    color: "text-brand",
-    bgColor: "bg-brand/10",
-    borderColor: "border-brand/20",
+    color: "text-green-600",
+    bgColor: "bg-green-600/10",
+    borderColor: "border-green-600/30",
     icon: RotateCcw,
     actionLabel: "学习复盘",
   },
   in_progress: {
     label: "进行中",
-    color: "text-gold",
-    bgColor: "bg-gold/10",
-    borderColor: "border-gold/20",
+    color: "text-brand",
+    bgColor: "bg-brand/10",
+    borderColor: "border-brand/30",
     icon: Play,
     actionLabel: "继续学习",
   },
@@ -42,7 +42,7 @@ const statusConfig = {
     label: "已中断",
     color: "text-muted-foreground",
     bgColor: "bg-surface-4",
-    borderColor: "border-border/40",
+    borderColor: "border-border",
     icon: RefreshCw,
     actionLabel: "重新激活",
   },
@@ -75,9 +75,9 @@ export function HistoryCard({ item }: HistoryCardProps) {
       className={cn(
         "group rounded-[26px] border bg-surface-2 p-5 transition-all",
         "hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(0,0,0,0.14)]",
-        item.status === "completed" && "border-brand/15 hover:border-brand/25",
-        item.status === "in_progress" && "border-gold/15 hover:border-gold/25",
-        item.status === "abandoned" && "border-border/50 hover:border-border/70",
+        item.status === "completed" && "border-green-600/15 hover:border-green-600/40",
+        item.status === "in_progress" && "border-brand/15 hover:border-brand/40",
+        item.status === "abandoned" && "border-border/60 hover:border-border",
       )}
     >
       {/* 标题和简介 */}
@@ -102,15 +102,15 @@ export function HistoryCard({ item }: HistoryCardProps) {
 
       {/* 工具/水平/模式标签 */}
       <div className="mb-4 flex flex-wrap gap-2">
-        <span className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-background/50 px-2.5 py-1 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/50 px-2.5 py-1 text-xs text-muted-foreground">
           <Target className="h-3 w-3" />
           {item.tool}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-background/50 px-2.5 py-1 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/50 px-2.5 py-1 text-xs text-muted-foreground">
           <BookOpen className="h-3 w-3" />
           {item.level}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-background/50 px-2.5 py-1 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/50 px-2.5 py-1 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
           {item.mode}
         </span>
@@ -125,7 +125,11 @@ export function HistoryCard({ item }: HistoryCardProps) {
           <span
             className={cn(
               "font-medium",
-              item.status === "completed" ? "text-brand" : "text-foreground",
+              item.status === "completed"
+                ? "text-green-600"
+                : item.status === "in_progress"
+                  ? "text-brand"
+                  : "text-foreground",
             )}
           >
             {item.progress.percent}%
@@ -136,9 +140,9 @@ export function HistoryCard({ item }: HistoryCardProps) {
             className={cn(
               "h-full rounded-full transition-all",
               item.status === "completed"
-                ? "bg-brand"
+                ? "bg-green-600"
                 : item.status === "in_progress"
-                  ? "bg-gold"
+                  ? "bg-brand"
                   : "bg-muted-foreground/40",
             )}
             style={{ width: `${item.progress.percent}%` }}
@@ -171,9 +175,9 @@ export function HistoryCard({ item }: HistoryCardProps) {
           className={cn(
             "gap-1.5 rounded-xl px-4",
             item.status === "completed"
-              ? "bg-brand text-brand-foreground hover:bg-brand/90"
+              ? "bg-green-600 text-background hover:bg-green-600/90"
               : item.status === "in_progress"
-                ? "bg-gold text-background hover:bg-gold/90"
+                ? "bg-brand text-brand-foreground hover:bg-brand/90"
                 : "bg-surface-3 text-foreground hover:bg-surface-4",
           )}
         >

@@ -72,8 +72,14 @@ assert.doesNotMatch(
 
 assert.match(
   mapHeaderSource,
-  /sticky top-0 z-10 shrink-0/,
-  "The map header should stay fixed at the top while the lower content scrolls",
+  /className="shrink-0 border-b border-border\/50 bg-surface-1\/80 px-4 py-5 backdrop-blur-sm sm:px-6"/,
+  "The map header should keep the approved static shell styling and horizontal inset",
+)
+
+assert.doesNotMatch(
+  mapHeaderSource,
+  /sticky top-0 z-10/,
+  "The current approved /map header should remain non-sticky",
 )
 
 assert.doesNotMatch(

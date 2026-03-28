@@ -1,22 +1,18 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { APP_EVENTS } from "@/constants/events"
 import { ROUTES } from "@/constants/routes"
 import { WORKSPACE_ASIDE_WIDTH_CLASS } from "@/constants/workspace-layout"
 import { AppShell } from "@/components/layout/app-shell"
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar"
-import { PageSection } from "@/components/ui/page-section"
 import { StatePanel } from "@/components/ui/state-panel"
 import { HistoryList } from "@/features/history/components/history-list"
 import { HistorySidebarPanels } from "@/features/history/components/history-sidebar-panels"
 import { mockLearningHistoryList, mockFaqItems } from "@/features/history/data/history-data"
-import { useAppEventTracker } from "@/providers/app-providers"
 import type { ApiRequestState } from "@/types/api"
 
 export function HistoryPage() {
   const router = useRouter()
-  const { trackEvent } = useAppEventTracker()
 
   // 模拟 API 响应数据
   const historyState: ApiRequestState<{
@@ -37,14 +33,6 @@ export function HistoryPage() {
           status: "empty",
           message: "当前还没有学习记录。开始学习并完成第一关后，这里会展示你的学习历程。",
         }
-
-  const handleActionClick = (action: string, planId: string) => {
-    trackEvent(APP_EVENTS.mapStageClick, {
-      action,
-      planId,
-      page: "history",
-    })
-  }
 
   if (historyState.status !== "success") {
     return (
