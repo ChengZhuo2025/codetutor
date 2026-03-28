@@ -51,18 +51,18 @@ export function LandingHero() {
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,oklch(0.12_0.008_240/0.16),transparent_14%,transparent_82%,oklch(0.12_0.008_240/0.58)_100%)]" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center text-center">
-        <div className="mb-10 inline-flex items-center gap-2 rounded-full border border-brand/18 bg-[oklch(0.2_0.02_220/0.38)] px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand/18 bg-[oklch(0.2_0.02_220/0.38)] px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp">
           <Sparkles className="h-3.5 w-3.5" />
           <span>AI 编程学习陪练平台 · MVP内测中</span>
         </div>
 
-        <h1 className="max-w-5xl text-4xl font-bold leading-[1.05] tracking-tight text-balance md:text-6xl lg:text-7xl animate-fadeUp animate-delay-100">
+        <h1 className="max-w-5xl text-4xl font-bold leading-[1.15] tracking-tight text-balance md:text-6xl lg:text-7xl animate-fadeUp animate-delay-100">
           收藏夹里的教程，不该只是看过
           <br />
           让 AI 导师陪你<span className="text-brand">真正做成</span>
         </h1>
 
-        <p className="mt-6 max-w-4xl text-lg leading-8 text-muted-foreground text-pretty animate-fadeUp animate-delay-200">
+        <p className="mt-5 max-w-4xl text-lg leading-8 text-muted-foreground text-pretty animate-fadeUp animate-delay-200">
           看到大V的Cursor、Claude Code、OpenCalw...等ai教程，收藏了就当学过了？<br/>
           CodeTutor AI 会把教程内容拆分成一步步可实操练习的任务，并全程陪伴你、辅导你从&ldquo;看过&rdquo;走向&ldquo;学会&rdquo;。
         </p>

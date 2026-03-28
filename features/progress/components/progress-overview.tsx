@@ -26,7 +26,7 @@ export function ProgressOverview({
   )
 
   return (
-    <div className="shrink-0 border-b border-border/40 px-4 py-3 sm:px-6 sm:py-4">
+    <div className="shrink-0 border-b border-border/40 px-4 py-4 sm:px-6 sm:py-5">
       <div className="flex flex-col gap-3">
         <div className="overflow-hidden rounded-[28px] border border-brand/20 bg-[radial-gradient(circle_at_top_left,rgba(92,225,168,0.12),transparent_38%),linear-gradient(145deg,rgba(17,28,44,0.98),rgba(8,15,27,0.98))] px-4 py-4 shadow-[0_18px_56px_-36px_rgba(92,225,168,0.42)] sm:px-5">
           <div className="flex flex-col gap-4">

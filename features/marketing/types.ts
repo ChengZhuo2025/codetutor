@@ -15,8 +15,8 @@ export type MarketingTool = {
   tag: string
   color: string
   dot: string
-  siteUrl?: string
-  logoDomain?: string
+  downloadUrl?: string
+  logoSrc?: string
   featuredInFooter?: boolean
 }
 

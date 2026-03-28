@@ -104,7 +104,7 @@ export function AchievementsPage() {
           </p>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 py-6 sm:px-6 sm:py-8">
+        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 py-4 sm:px-5 sm:py-5">
           <RankProgressCard
             currentXP={achievementData.currentXP}
             currentRankIdx={achievementData.currentRankIdx}

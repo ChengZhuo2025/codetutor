@@ -5,11 +5,18 @@ import { APP_COPYRIGHT_YEAR, APP_NAME } from "@/constants/app"
 import { ROUTES } from "@/constants/routes"
 import { Button } from "@/components/ui/button"
 import { marketingTools } from "@/features/marketing/data/marketing-content"
+import type { MarketingTool } from "@/features/marketing/types"
 import { AboutDialog } from "./about-dialog"
 import { ContactDialog } from "./contact-dialog"
 
+type FooterMarketingTool = MarketingTool & {
+  downloadUrl: string
+  logoSrc: string
+}
+
 const featuredFooterTools = marketingTools.filter(
-  (tool) => tool.featuredInFooter && tool.siteUrl && tool.logoDomain
+  (tool): tool is FooterMarketingTool =>
+    Boolean(tool.featuredInFooter && tool.downloadUrl && tool.logoSrc)
 )
 
 export function LandingFooter() {
@@ -62,19 +69,18 @@ export function LandingFooter() {
               {featuredFooterTools.map((tool) => (
                 <a
                   key={tool.name}
-                  href={tool.siteUrl}
+                  href={tool.downloadUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="group flex items-center gap-3 transition-transform hover:-translate-y-0.5"
                 >
                   <div className="flex h-12 w-12 rounded-lg bg-white/5 border border-white/10 items-center justify-center">
                     <Image
-                      src={`https://www.google.com/s2/favicons?domain=${tool.logoDomain}&sz=128`}
+                      src={tool.logoSrc}
                       alt={`${tool.name} logo`}
                       width={32}
                       height={32}
-                      className="rounded-md"
-                      unoptimized
+                      className="rounded-md object-contain"
                     />
                   </div>
 
