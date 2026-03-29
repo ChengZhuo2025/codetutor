@@ -34,10 +34,10 @@ export function ToolSelectionStep({
             第 1 步，共 3 步
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-balance md:text-3xl">
-            你想先用哪个 AI 编程工具开始训练？
+            你打算主要用哪个工具来练？
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            先锁定一个主工具，我们再根据你的基础推荐更合适的起步路线。
+            点选一项作为「主工具」。后面我们会根据你的基础，推荐更合适的练习强度和学习路线。
           </p>
         </div>
 
@@ -129,11 +129,11 @@ export function ToolSelectionStep({
           <p className="text-sm text-muted-foreground">
             {selectedTool ? (
               <>
-                已选择 <span className="font-semibold text-brand">{selectedTool.name}</span>
-                ，下一步我们会根据你的基础推荐更适合的训练强度。
+                已选 <span className="font-semibold text-brand">{selectedTool.name}</span>
+                。下一步请如实选择你的基础，方便我们匹配难度。
               </>
             ) : (
-              "先选择一个主工具，我们再帮你继续收窄起步路线。"
+              "请先点选上面一项主工具，再点按钮继续。"
             )}
           </p>
           <Button
@@ -146,7 +146,7 @@ export function ToolSelectionStep({
                 : "cursor-not-allowed opacity-40",
             )}
           >
-            下一步：确认我的当前水平
+            下一步：选择我的基础
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>

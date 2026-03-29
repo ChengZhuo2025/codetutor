@@ -11,16 +11,16 @@ type OnboardingHeaderProps = {
 
 const stepMeta = {
   1: {
-    title: "选择工具",
-    description: "先告诉我们你最想上手哪类 AI 编程工具。",
+    title: "选主工具",
+    description: "选一个你最想先练熟的工具，后面的推荐都围绕它。",
   },
   2: {
-    title: "确认水平",
-    description: "再根据当前基础缩小适合你的训练节奏。",
+    title: "选基础",
+    description: "按真实情况选即可，我们会据此安排难度和节奏。",
   },
   3: {
-    title: "选择任务",
-    description: "最后选择自学模式或平台预设训练路径。",
+    title: "选怎么学",
+    description: "跟平台路线一步步练，或用你自己的教程自学。",
   },
 } as const
 

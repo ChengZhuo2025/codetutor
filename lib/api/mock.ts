@@ -1,7 +1,10 @@
 import { mockAuthPreviewResponse, mockProfileMeResponse } from "@/features/auth/data/login-data"
 import {
-  mockAchievementHistoryResponse,
+  buildAchievementGuideItems,
+  buildAchievementStats,
   mockAchievementSummaryResponse,
+  toAchievementBadges,
+  toAchievementRanks,
 } from "@/features/achievement/data/achievement-data"
 import { mockLearningCurrentSessionResponse } from "@/features/learning/data/learning-content"
 import {
@@ -110,18 +113,20 @@ export function getProgressPageMock() {
 
 export function getAchievementPageMock() {
   const summary = unwrapResponse(mockAchievementSummaryResponse)
-  const history = unwrapResponse(mockAchievementHistoryResponse)
-  const currentRankIdx = summary.ranks.findIndex((rank) => rank.name === summary.currentRank)
+  const currentRankIdx = summary.ranks.findIndex((rank) => rank.code === summary.currentRankCode)
 
   return {
     summary,
-    history: history.items,
+    history: summary.history.map((item) => ({
+      ...item,
+      xp: `+${item.xp}`,
+    })),
     currentXP: summary.currentScore,
     currentRankIdx: currentRankIdx >= 0 ? currentRankIdx : 0,
-    ranks: summary.ranks,
-    badges: summary.badges,
-    stats: summary.stats,
-    guideItems: summary.guideItems,
+    ranks: toAchievementRanks(summary.ranks),
+    badges: toAchievementBadges(summary.badges),
+    stats: buildAchievementStats(summary),
+    guideItems: buildAchievementGuideItems(),
     calendarDates: summary.calendar.dates,
     checkinDays: summary.calendar.checkins,
     weekDays: summary.calendar.weekDays,

@@ -40,7 +40,7 @@ export type LearningAssistantMessageContract = {
 export type LearningMessageResponseData = {
   conversationId: string
   taskId: string
-  assistantMessage: LearningAssistantMessageContract
+  message: Message
   taskState: LearningTaskState
 }
 

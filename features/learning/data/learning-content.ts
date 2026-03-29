@@ -203,14 +203,13 @@ export const mockLearningMessageResponse: ApiSuccessResponse<LearningMessageResp
   data: {
     conversationId: "conversation-cursor-003",
     taskId: currentStage.taskId,
-    assistantMessage: {
-      messageId: "message-next-step-001",
-      currentGoal: "熟悉 Cursor 中 Agent 的工作方式",
-      currentStep: "先让 Agent 生成一个 React 时钟组件",
-      whyThisStep: "这是当前最小、最容易验证的实验",
-      hintIfStuck: "如果 Cmd+I 没反应，试试从 View 菜单打开 Agent",
-      knowledgePoints: currentStage.tags,
-      nextStepPreview: `下一步会进入 ${nextStage.title}`,
+    message: {
+      id: 3,
+      role: "ai",
+      kind: "coach",
+      title: "下一步建议",
+      content:
+        "先让 Agent 生成一个 React 时钟组件，确认它更适合整块代码生成。遇到问题时，把报错或生成结果直接贴给我。",
     },
     taskState: "in_progress",
   },

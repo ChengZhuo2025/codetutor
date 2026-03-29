@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { APP_EVENTS } from "@/constants/events"
 import { ROUTES } from "@/constants/routes"
@@ -13,24 +13,75 @@ import { MapHeader } from "@/features/progress/components/map-header"
 import { ProgressOverview } from "@/features/progress/components/progress-overview"
 import { StageDetailPanel } from "@/features/progress/components/stage-detail-panel"
 import { StageTimeline } from "@/features/progress/components/stage-timeline"
-import { getProgressPageMock } from "@/lib/api/mock"
+import type {
+  ProgressCurrentResponseData,
+  ProgressMapResponseData,
+} from "@/lib/api/contracts/progress"
+import { requestData } from "@/lib/api/client"
 import type { ApiRequestState } from "@/types/api"
 import { useAppEventTracker } from "@/providers/app-providers"
 
 export function MapPage() {
   const router = useRouter()
   const { trackEvent } = useAppEventTracker()
-  const progressPayload = getProgressPageMock()
-  const initialSelectedId =
-    progressPayload.map.currentStageId ?? progressPayload.map.stages[0]?.id ?? 0
-  const progressState: ApiRequestState<typeof progressPayload> =
-    progressPayload.map.stages.length > 0
-      ? { status: "success", data: progressPayload }
-      : {
-          status: "empty",
-          message: "当前还没有激活的学习路径。接入真实接口后，这里会显示你正在推进的主线计划。",
+  const [progressState, setProgressState] = useState<
+    ApiRequestState<{
+      current: ProgressCurrentResponseData
+      map: ProgressMapResponseData
+    }>
+  >({
+    status: "loading",
+  })
+  const [selectedId, setSelectedId] = useState<number>(0)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadProgress() {
+      try {
+        const [current, map] = await Promise.all([
+          requestData<ProgressCurrentResponseData>("/progress/current"),
+          requestData<ProgressMapResponseData>("/progress/map"),
+        ])
+
+        if (cancelled) {
+          return
         }
-  const [selectedId, setSelectedId] = useState<number>(initialSelectedId)
+
+        if (map.stages.length === 0) {
+          setProgressState({
+            status: "empty",
+            message: "当前还没有激活的学习路径。完成 onboarding 后，这里会显示你的主线计划。",
+          })
+          return
+        }
+
+        setProgressState({
+          status: "success",
+          data: {
+            current,
+            map,
+          },
+        })
+        setSelectedId(map.currentStageId ?? map.stages[0]?.id ?? 0)
+      } catch (error) {
+        if (cancelled) {
+          return
+        }
+
+        setProgressState({
+          status: "error",
+          message: error instanceof Error ? error.message : "加载当前进度失败",
+        })
+      }
+    }
+
+    loadProgress()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   if (progressState.status !== "success") {
     return (
@@ -59,8 +110,12 @@ export function MapPage() {
               status={progressState.status}
               title="还没有当前学习路径"
               description={progressState.message}
-              actionLabel="回到学习页"
-              onAction={() => router.push(ROUTES.learn)}
+              actionLabel={progressState.status === "error" ? "重试" : "回到学习页"}
+              onAction={() =>
+                progressState.status === "error"
+                  ? window.location.reload()
+                  : router.push(ROUTES.learn)
+              }
             />
           </div>
         </main>

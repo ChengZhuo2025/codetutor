@@ -35,17 +35,17 @@ export function LevelSelectionStep({
             第 2 步，共 3 步
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-balance md:text-3xl">
-            你目前的编程水平是？
+            你的编程基础更接近哪一种？
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            我们会根据你的基础调整训练节奏，并筛出更合适的起步路线。
+            没有标准答案，按真实情况选即可。我们会据此安排练习节奏，并推荐更贴你的路线。
           </p>
         </div>
 
         <div className="mx-auto mb-4 flex w-full max-w-3xl items-center gap-4 rounded-xl border border-border/60 bg-surface-2/75 px-4 py-2 mt-4">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium uppercase tracking-[0.12em] text-muted-foreground">
-              当前已选工具
+              已选主工具
             </p>
             {selectedTool ? (
               <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -59,16 +59,16 @@ export function LevelSelectionStep({
                 </span>
               </div>
             ) : (
-              <p className="mt-1.5 text-sm text-muted-foreground">返回上一步选择你的主工具。</p>
+              <p className="mt-1.5 text-sm text-muted-foreground">请返回上一步，先选好主工具。</p>
             )}
           </div>
 
           <div className="hidden rounded-lg border border-border/60 bg-background/70 px-3 py-2 sm:block">
             <p className="text-sm font-medium uppercase tracking-[0.12em] text-muted-foreground">
-              下一步选择学习路径
+              再下一步
             </p>
             <p className="text-sm leading-5 text-foreground">
-              自学模式 + 平台训练路径
+              选平台路线或自带教程自学
             </p>
           </div>
         </div>
@@ -119,7 +119,7 @@ export function LevelSelectionStep({
                 : "cursor-not-allowed opacity-40",
             )}
           >
-            {isPending ? "切换中..." : "下一步：选择学习闯关任务"}
+            {isPending ? "切换中…" : "下一步：选择学习方式"}
             <ArrowRight className="h-4 w-4" />
           </Button>
           <button
@@ -127,7 +127,7 @@ export function LevelSelectionStep({
             className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-3 w-3" />
-            返回修改工具选择
+            返回上一步，改选工具
           </button>
         </div>
       </div>

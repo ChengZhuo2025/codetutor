@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server"
 import { ok, fail } from "@/server/lib/api-response"
-import { getDevUserId, getDevUserIdHelpText } from "@/server/lib/dev-session"
+import { getRequestAuth, getRequestAuthHelpText } from "@/server/lib/request-auth"
 import { completeOnboarding } from "@/server/modules/onboarding/service"
 import type { CompleteOnboardingRequest } from "@/lib/api/contracts/onboarding"
 
@@ -23,10 +23,10 @@ function isCompleteRequest(input: unknown): input is CompleteOnboardingRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = getDevUserId(request)
+    const auth = await getRequestAuth(request)
 
-    if (!userId) {
-      return fail("AUTH_REQUIRED", getDevUserIdHelpText(), 401)
+    if (!auth) {
+      return fail("AUTH_REQUIRED", getRequestAuthHelpText(), 401)
     }
 
     const body = await request.json()
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       return fail("VALIDATION_FAILED", "learningLevel 或 selectionMode 不合法。", 422)
     }
 
-    const data = await completeOnboarding(userId, body)
+    const data = await completeOnboarding(auth.userId, body)
 
     if (!data) {
       return fail("NOT_FOUND", "未找到对应的工具或路径模板。", 404)
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return fail(
       "INTERNAL_ERROR",
-      error instanceof Error ? error.message : "完成 onboarding 失败",
+      error instanceof Error ? error.message : "保存你的选择失败，请稍后重试。",
       500,
     )
   }

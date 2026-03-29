@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { APP_EVENTS } from "@/constants/events"
 import { ROUTES } from "@/constants/routes"
@@ -12,23 +13,67 @@ import { AchievementStatsGrid } from "@/features/achievement/components/achievem
 import { BadgeGrid } from "@/features/achievement/components/badge-grid"
 import { CheckinCalendar } from "@/features/achievement/components/checkin-calendar"
 import { RankProgressCard } from "@/features/achievement/components/rank-progress-card"
-import { getAchievementPageMock } from "@/lib/api/mock"
+import {
+  buildAchievementGuideItems,
+  buildAchievementStats,
+  toAchievementBadges,
+  toAchievementRanks,
+} from "@/features/achievement/data/achievement-data"
+import type { AchievementSummaryResponseData } from "@/lib/api/contracts/achievement"
+import { requestData } from "@/lib/api/client"
 import type { ApiRequestState } from "@/types/api"
 import { useAppEventTracker } from "@/providers/app-providers"
 
 export function AchievementsPage() {
   const router = useRouter()
   const { trackEvent } = useAppEventTracker()
-  const achievementPayload = getAchievementPageMock()
-  const achievementState: ApiRequestState<typeof achievementPayload> =
-    achievementPayload.stats.length > 0 &&
-    achievementPayload.badges.length > 0 &&
-    achievementPayload.ranks.length > 0
-      ? { status: "success", data: achievementPayload }
-      : {
-          status: "empty",
-          message: "当前还没有可展示的成长数据。开始学习并完成第一关后，这里会展示 XP、段位和徽章积累。",
+  const [achievementState, setAchievementState] =
+    useState<ApiRequestState<AchievementSummaryResponseData>>({
+      status: "loading",
+    })
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadAchievementSummary() {
+      try {
+        const data = await requestData<AchievementSummaryResponseData>("/achievement/summary")
+
+        if (cancelled) {
+          return
         }
+
+        if (data.ranks.length > 0 && data.badges.length > 0) {
+          setAchievementState({
+            status: "success",
+            data,
+          })
+          return
+        }
+
+        setAchievementState({
+          status: "empty",
+          message:
+            "当前还没有可展示的成长数据。开始学习并完成第一关后，这里会展示 XP、段位和徽章积累。",
+        })
+      } catch (error) {
+        if (cancelled) {
+          return
+        }
+
+        setAchievementState({
+          status: "error",
+          message: error instanceof Error ? error.message : "加载成长数据失败",
+        })
+      }
+    }
+
+    loadAchievementSummary()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   if (achievementState.status !== "success") {
     return (
@@ -64,7 +109,19 @@ export function AchievementsPage() {
     )
   }
 
-  const achievementData = achievementState.data
+  const summary = achievementState.data
+  const ranks = toAchievementRanks(summary.ranks)
+  const badges = toAchievementBadges(summary.badges)
+  const stats = buildAchievementStats(summary)
+  const guideItems = buildAchievementGuideItems()
+  const historyItems = summary.history.map((item) => ({
+    ...item,
+    xp: `+${item.xp}`,
+  }))
+  const currentRankIdx = summary.ranks.findIndex(
+    (rank) => rank.code === summary.currentRankCode,
+  )
+
   const handleContinueLearning = () => {
     trackEvent(APP_EVENTS.achievementCtaClick, {
       cta: "continue_learning",
@@ -90,8 +147,9 @@ export function AchievementsPage() {
       )}
       renderAside={() => (
         <AchievementSidebarPanels
-          guideItems={achievementData.guideItems}
-          historyItems={achievementData.history}
+          guideItems={guideItems}
+          historyItems={historyItems}
+          totalXP={summary.overview.totalXP}
         />
       )}
       asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
@@ -106,27 +164,27 @@ export function AchievementsPage() {
 
         <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 py-4 sm:px-5 sm:py-5">
           <RankProgressCard
-            currentXP={achievementData.currentXP}
-            currentRankIdx={achievementData.currentRankIdx}
-            ranks={achievementData.ranks}
-            overview={achievementData.overview}
+            currentXP={summary.currentScore}
+            currentRankIdx={currentRankIdx >= 0 ? currentRankIdx : 0}
+            ranks={ranks}
+            overview={summary.overview}
             onContinueLearning={handleContinueLearning}
             onOpenMap={handleOpenMap}
           />
 
           <div className="mt-6 space-y-6">
-            <AchievementStatsGrid stats={achievementData.stats} />
+            <AchievementStatsGrid stats={stats} />
 
             <CheckinCalendar
-              weekDays={achievementData.weekDays}
-              checkinDays={achievementData.checkinDays}
-              calendarDates={achievementData.calendarDates}
-              streakDays={achievementData.overview.streakDays}
-              monthlyXP={achievementData.overview.monthlyXP}
-              totalCheckinDays={achievementData.overview.totalCheckinDays}
+              weekDays={summary.calendar.weekDays}
+              checkinDays={summary.calendar.checkins}
+              calendarDates={summary.calendar.dates}
+              streakDays={summary.overview.streakDays}
+              monthlyXP={summary.overview.monthlyXP}
+              totalCheckinDays={summary.overview.totalCheckinDays}
             />
 
-            <BadgeGrid badges={achievementData.badges} />
+            <BadgeGrid badges={badges} />
           </div>
         </div>
       </main>

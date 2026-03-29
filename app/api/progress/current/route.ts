@@ -1,17 +1,17 @@
 import type { NextRequest } from "next/server"
 import { ok, fail } from "@/server/lib/api-response"
-import { getDevUserId, getDevUserIdHelpText } from "@/server/lib/dev-session"
+import { getRequestAuth, getRequestAuthHelpText } from "@/server/lib/request-auth"
 import { getProgressCurrentData } from "@/server/modules/progress/service"
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = getDevUserId(request)
+    const auth = await getRequestAuth(request)
 
-    if (!userId) {
-      return fail("AUTH_REQUIRED", getDevUserIdHelpText(), 401)
+    if (!auth) {
+      return fail("AUTH_REQUIRED", getRequestAuthHelpText(), 401)
     }
 
-    const data = await getProgressCurrentData(userId)
+    const data = await getProgressCurrentData(auth.userId)
 
     if (!data) {
       return fail("NOT_FOUND", "当前用户还没有激活的学习路径。", 404)

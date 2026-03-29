@@ -1,6 +1,5 @@
 import { CheckCircle2, Code2, Sparkles } from "lucide-react"
 import { APP_NAME } from "@/constants/app"
-import { getAuthPageMock } from "@/lib/api/mock"
 import { marketingConversationMessages } from "@/features/marketing/data/marketing-content"
 import { cn } from "@/lib/utils"
 import type { AuthMode } from "@/features/auth/types"
@@ -10,7 +9,11 @@ type LoginBrandPanelProps = {
 }
 
 export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
-  const { profile, preview } = getAuthPageMock()
+  const previewTools = ["Cursor", "Claude Code", "Codex CLI", "Google Stitch"]
+  const profile = {
+    currentRank: "Vibe Coder",
+    currentScore: 680,
+  }
 
   return (
     <div className="relative hidden w-[60%] flex-col overflow-hidden bg-surface-2 p-8 lg:flex">
@@ -47,7 +50,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
       {/* 欢迎语 - 根据登录/注册模式切换，比 logo 栏更缩进形成层次 */}
       <div className="relative z-10 mt-10 px-12">
         <div className="mb-4 flex flex-wrap gap-2">
-          {preview.previewTools.map((tool) => (
+          {previewTools.map((tool) => (
             <span
               key={tool}
               className="rounded-full border border-border/60 bg-background/50 px-3 py-1 text-xs text-muted-foreground"

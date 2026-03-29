@@ -1,13 +1,46 @@
 import type {
   AchievementOverview,
-  Badge,
-  Rank,
-  StatItem,
-  XpGuideItem,
-  XpHistoryItem,
 } from "@/features/achievement/types"
 
+export type AchievementRankCode =
+  | "rookie"
+  | "apprentice"
+  | "vibe_coder"
+  | "builder"
+  | "master"
+
+export type AchievementBadgeCode =
+  | "first_task"
+  | "seven_day_streak"
+  | "first_debug"
+  | "first_project"
+  | "multi_tool_master"
+  | "monthly_champion"
+
+export type AchievementRankContract = {
+  code: AchievementRankCode
+  name: string
+  minScore: number
+  maxScore: number
+}
+
+export type AchievementBadgeContract = {
+  code: AchievementBadgeCode
+  title: string
+  desc: string
+  earned: boolean
+  progressHint?: string
+}
+
+export type AchievementHistoryItemContract = {
+  label: string
+  xp: number
+  time: string
+  type: "task" | "checkin" | "bonus" | "badge"
+}
+
 export type AchievementSummaryResponseData = {
+  currentRankCode: AchievementRankCode
   currentRank: string
   currentScore: number
   nextRank: string
@@ -15,18 +48,12 @@ export type AchievementSummaryResponseData = {
   completedTaskCount: number
   streakDays: number
   overview: AchievementOverview
-  ranks: Rank[]
-  badges: Badge[]
-  stats: StatItem[]
-  guideItems: XpGuideItem[]
+  ranks: AchievementRankContract[]
+  badges: AchievementBadgeContract[]
+  history: AchievementHistoryItemContract[]
   calendar: {
     weekDays: string[]
     dates: number[][]
     checkins: boolean[][]
   }
-}
-
-export type RecentHistoryResponseData = {
-  items: XpHistoryItem[]
-  nextCursor: string | null
 }

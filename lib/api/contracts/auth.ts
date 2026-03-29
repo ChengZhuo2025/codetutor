@@ -4,13 +4,15 @@ export type AuthLoginType = "phone" | "wechat"
 
 export type AuthLoginRequest = {
   loginType: AuthLoginType
-  authCode: string
+  authCode?: string
 }
 
 export type AuthLoginResponseData = {
   userId: string
   isNewUser: boolean
+  onboardingCompleted: boolean
   profileCompleted: boolean
+  redirectTo: string
 }
 
 export type ProfileToolContract = {

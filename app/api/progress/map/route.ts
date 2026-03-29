@@ -1,17 +1,17 @@
 import type { NextRequest } from "next/server"
 import { ok, fail } from "@/server/lib/api-response"
-import { getDevUserId, getDevUserIdHelpText } from "@/server/lib/dev-session"
+import { getRequestAuth, getRequestAuthHelpText } from "@/server/lib/request-auth"
 import { getProgressMapData } from "@/server/modules/progress/service"
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = getDevUserId(request)
+    const auth = await getRequestAuth(request)
 
-    if (!userId) {
-      return fail("AUTH_REQUIRED", getDevUserIdHelpText(), 401)
+    if (!auth) {
+      return fail("AUTH_REQUIRED", getRequestAuthHelpText(), 401)
     }
 
-    const data = await getProgressMapData(userId)
+    const data = await getProgressMapData(auth.userId)
 
     if (!data) {
       return fail("NOT_FOUND", "当前用户还没有路径地图数据。", 404)

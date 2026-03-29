@@ -8,12 +8,14 @@ import { cn } from "@/lib/utils"
 type AchievementSidebarPanelsProps = {
   guideItems: XpGuideItem[]
   historyItems: XpHistoryItem[]
+  totalXP: number
   className?: string
 }
 
 export function AchievementSidebarPanels({
   guideItems,
   historyItems,
+  totalXP,
   className,
 }: AchievementSidebarPanelsProps) {
   return (
@@ -79,7 +81,7 @@ export function AchievementSidebarPanels({
               ))}
             </ul>
             <p className="mt-4 border-t border-border/40 pt-3 text-right text-xs text-muted-foreground">
-              累计 <span className="font-bold text-foreground">680 XP</span>
+              累计 <span className="font-bold text-foreground">{totalXP} XP</span>
             </p>
           </>
         ) : (

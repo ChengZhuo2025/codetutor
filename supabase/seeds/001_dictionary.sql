@@ -22,7 +22,7 @@ VALUES
     'beginner',
     true,
     10,
-    '{"summary":"AI 原生代码编辑器，最适合入门","category":"图形化 IDE","color":"brand","popular":true}'::jsonb,
+    '{"summary":"对话式写代码，上手快，适合新手建立习惯","category":"图形化 IDE","color":"brand","popular":true}'::jsonb,
     NOW(),
     NOW()
   ),
@@ -34,7 +34,7 @@ VALUES
     'beginner',
     true,
     20,
-    '{"summary":"字节出品，中文支持好","category":"图形化 IDE","color":"brand","popular":true}'::jsonb,
+    '{"summary":"界面与提示对中文友好，上手阻力小","category":"图形化 IDE","color":"brand","popular":true}'::jsonb,
     NOW(),
     NOW()
   ),
@@ -46,7 +46,7 @@ VALUES
     'intermediate',
     true,
     30,
-    '{"summary":"Agent 模式强，适合进阶工作流练习","category":"图形化 IDE","color":"chart-5","popular":false}'::jsonb,
+    '{"summary":"多步 Agent 能力强，适合练「交代清楚再改」的协作","category":"图形化 IDE","color":"chart-5","popular":false}'::jsonb,
     NOW(),
     NOW()
   )
@@ -90,12 +90,12 @@ SELECT
   true,
   'cursor-buddy',
   6,
-  '从第一次 AI 对话到第一个迷你项目，建立最小但完整的 Cursor 入门闭环。',
+  '从第一次 AI 对话到第一个迷你项目，搭好 Cursor 入门最小闭环。',
   '{
-    "summary":"从第一次 AI 对话到第一个迷你项目，建立最小但完整的 Cursor 入门工作流。",
+    "summary":"从第一次 AI 对话到第一个迷你项目，搭好 Cursor 入门最小闭环。",
     "recommended":true,
     "currentLevelFit":"适合第一次系统使用 Cursor 的新用户",
-    "coachAgentLabel":"入门陪练 Agent",
+    "coachAgentLabel":"入门陪练",
     "estimatedDuration":"3-5 天",
     "tags":["界面熟悉","Prompt 入门","小作品"],
     "preview":["认识 Cursor 工作区","写出第一个 Prompt","完成第一个页面练习"]
@@ -157,8 +157,8 @@ FROM (
       'path-cursor-beginner-self-study',
       'Cursor 自主学习模式',
       'beginner',
-      '粘贴你自己的 Cursor 教程、代码片段或网页链接，按你的节奏拆成可执行练习。',
-      '{"summary":"围绕你自己的 Cursor 学习材料自由推进。","preview":["粘贴学习内容","获得当前一步","卡住时继续追问"]}'
+      '把你手头的教程、代码、链接或截图贴进来，我们会结合「Cursor」和你的基础，拆成一步步能练的小任务。',
+      '{"summary":"把你手头的教程、代码、链接或截图贴进来，我们会结合「Cursor」和你的基础，拆成一步步能练的小任务。","preview":["粘贴或上传材料","先拿到「这一步做什么」","卡住时接着问"]}'
     ),
     (
       '55555555-2222-2222-2222-222222222222'::uuid,
@@ -166,8 +166,8 @@ FROM (
       'path-trae-beginner-self-study',
       'Trae 自主学习模式',
       'beginner',
-      '粘贴你自己的 Trae 学习材料，系统会先帮你拆出最小可执行路径。',
-      '{"summary":"围绕你自己的 Trae 学习材料自由推进。","preview":["粘贴学习内容","获得当前一步","卡住时继续追问"]}'
+      '把你手头的教程、代码、链接或截图贴进来，我们会结合「Trae」和你的基础，拆成一步步能练的小任务。',
+      '{"summary":"把你手头的教程、代码、链接或截图贴进来，我们会结合「Trae」和你的基础，拆成一步步能练的小任务。","preview":["粘贴或上传材料","先拿到「这一步做什么」","卡住时接着问"]}'
     ),
     (
       '55555555-3333-3333-3333-333333333333'::uuid,
@@ -175,8 +175,8 @@ FROM (
       'path-windsurf-intermediate-self-study',
       'Windsurf 自主学习模式',
       'intermediate',
-      '围绕你自己的 Windsurf 工作流素材自由推进，先把当前任务拆清楚。',
-      '{"summary":"围绕你自己的 Windsurf 学习材料自由推进。","preview":["粘贴学习内容","获得当前一步","卡住时继续追问"]}'
+      '把你手头的教程、代码、链接或截图贴进来，我们会结合「Windsurf」和你的基础，拆成一步步能练的小任务。',
+      '{"summary":"把你手头的教程、代码、链接或截图贴进来，我们会结合「Windsurf」和你的基础，拆成一步步能练的小任务。","preview":["粘贴或上传材料","先拿到「这一步做什么」","卡住时接着问"]}'
     )
 ) AS seed(id, tool_code, code, name, target_level, description, metadata)
 JOIN public.learning_tools lt
@@ -392,8 +392,8 @@ self_step_templates AS (
   SELECT
     2,
     '拆出当前一步',
-    '让 AI 基于你的材料，给出当前最小可执行的一步。' AS summary,
-    '目标不是拿到完整课程，而是先拿到当前一步。' AS focus,
+    '让 AI 根据你的材料，告诉你「这一步先做什么」。' AS summary,
+    '不必一次规划整门课，先拿到眼前这一步。' AS focus,
     '获得一个可以立刻开始执行的任务。' AS goal,
     'AI 输出一个清晰、单步、可执行的当前任务。' AS completion_criteria,
     '你已经拿到了当前一步，接下来进入实际执行。' AS review_summary,

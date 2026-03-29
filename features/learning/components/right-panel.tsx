@@ -22,11 +22,12 @@ import {
 import { PageSection } from "@/components/ui/page-section"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatePanel } from "@/components/ui/state-panel"
-import { getLearningPageMock } from "@/lib/api/mock"
+import type { LearningCurrentSessionResponseData } from "@/lib/api/contracts/learning"
 import { cn } from "@/lib/utils"
 
 type LearnRightPanelProps = {
   className?: string
+  learningData: LearningCurrentSessionResponseData
 }
 
 const tipCardClassNames = [
@@ -35,9 +36,14 @@ const tipCardClassNames = [
   "border-chart-5/25 bg-[linear-gradient(135deg,rgba(63,118,255,0.16),rgba(10,16,30,0.92))]",
 ]
 
-export function LearnRightPanel({ className }: LearnRightPanelProps) {
-  const { learningKnowledgeTags, learningTasks, learningTips, mission, rightPanel } =
-    getLearningPageMock()
+export function LearnRightPanel({ className, learningData }: LearnRightPanelProps) {
+  const {
+    knowledgeTags: learningKnowledgeTags,
+    tasks: learningTasks,
+    tips: learningTips,
+    mission,
+    rightPanel,
+  } = learningData
   const [activeTipIndex, setActiveTipIndex] = useState(0)
 
   useEffect(() => {

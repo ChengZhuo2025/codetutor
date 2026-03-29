@@ -35,18 +35,18 @@ type PathSelectionStepProps = {
 
 function buildCtaLabel(mode: OnboardingSelectionMode | null, isPending: boolean) {
   if (isPending) {
-    return "进入中..."
+    return "正在进入…"
   }
 
   if (mode === "self_directed") {
-    return "进入自学模式"
+    return "进入自主学习"
   }
 
   if (mode === "preset_training") {
-    return "开始这条训练路径"
+    return "从这条路开始"
   }
 
-  return "选择一种起步方式"
+  return "请先选择一种方式"
 }
 
 export function PathSelectionStep({
@@ -81,11 +81,10 @@ export function PathSelectionStep({
             第 3 步，共 3 步
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-balance md:text-3xl">
-            选择你的学习闯关任务
+            打算怎么开始学？
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            基于 {selectedTool?.name ?? "当前工具"} 与“{levelLabel}”，你可以直接走平台训练路线，
-            也可以用自己的教程开启自学模式。
+            你可以跟平台推荐的学习路线一步步练，也可以贴自己的教程、链接，让AI教练陪你自学自练。
           </p>
         </div>
 
@@ -104,7 +103,7 @@ export function PathSelectionStep({
             {levelLabel}
           </span>
           <span className="rounded-full border border-border bg-background/80 px-3 py-1 text-sm text-muted-foreground">
-            选择你的训练方式
+            在下面选一种即可
           </span>
         </div>
 
@@ -122,7 +121,7 @@ export function PathSelectionStep({
               <div className="mb-1 flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="rounded-full border border-brand/30 bg-brand-dim px-2.5 py-1 text-xs font-semibold text-brand">
-                    问题导向
+                    自带材料
                   </span>
                   <h2 className="text-xl font-semibold text-foreground">{selfStudyOption.name}</h2>
                 </div>
@@ -146,12 +145,12 @@ export function PathSelectionStep({
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="rounded-full border border-chart-3/30 bg-chart-3/10 px-2.5 py-1 text-xs font-semibold text-chart-3">
-                    规范训练
+                    平台路线
                   </span>
-                  <h2 className="text-xl font-semibold text-foreground">平台学习模式</h2>
+                  <h2 className="text-xl font-semibold text-foreground">推荐学习路线</h2>
                 </div>
                 <span className="rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xs text-muted-foreground">
-                  共 {presetPathOptions.length} 项
+                  共 {presetPathOptions.length} 条
                 </span>
               </div>
 
@@ -240,7 +239,7 @@ export function PathSelectionStep({
                           }}
                           className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                         >
-                          {isExpanded ? "收起关卡" : "展开关卡"}
+                          {isExpanded ? "收起预览" : "展开关卡"}
                           {isExpanded ? (
                             <ChevronUp className="h-3.5 w-3.5" />
                           ) : (
@@ -296,7 +295,7 @@ export function PathSelectionStep({
             className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-3 w-3" />
-            返回修改当前水平
+            返回上一步，改基础水平
           </button>
         </div>
       </div>

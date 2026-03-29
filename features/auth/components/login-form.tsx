@@ -1,7 +1,6 @@
 "use client";
 
-import { ArrowRight, MessageSquare, Phone } from "lucide-react";
-import Image from "next/image";
+import { ArrowRight, MessageSquare, Phone, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatePanel } from "@/components/ui/state-panel";
 import type { AuthMode, AuthTab } from "@/features/auth/types";
@@ -15,12 +14,16 @@ type LoginFormProps = {
   isSendingCode: boolean;
   isSubmitting: boolean;
   statusMessage: string;
+  errorMessage: string | null;
+  wechatStatus: "empty" | "loading" | "success" | "error";
+  wechatMessage: string;
   onTabChange: (tab: AuthTab) => void;
   onModeToggle: () => void;
   onPhoneChange: (value: string) => void;
   onCodeChange: (value: string) => void;
   onSendCode: () => void;
   onSubmit: () => void;
+  onWechatSubmit: () => void;
 };
 
 export function LoginForm({
@@ -32,16 +35,20 @@ export function LoginForm({
   isSendingCode,
   isSubmitting,
   statusMessage,
+  errorMessage,
+  wechatStatus,
+  wechatMessage,
   onTabChange,
   onModeToggle,
   onPhoneChange,
   onCodeChange,
   onSendCode,
   onSubmit,
+  onWechatSubmit,
 }: LoginFormProps) {
   const isValidPhone = /^1[3-9]\d{9}$/.test(phone);
   const isValidCode = /^\d{6}$/.test(code);
-  const canSubmit = tab === "wechat" || (isValidPhone && isValidCode);
+  const canSubmit = isValidPhone && isValidCode;
   const verificationState = isSendingCode
     ? "loading"
     : countdown > 0
@@ -222,30 +229,49 @@ export function LoginForm({
                   : "注册并开始学习"}
               <ArrowRight className="h-4 w-4" />
             </Button>
+
+            {errorMessage ? (
+              <StatePanel
+                status="error"
+                title={mode === "login" ? "登录失败" : "注册失败"}
+                description={errorMessage}
+                compact
+              />
+            ) : null}
           </form>
         ) : (
           <div className="rounded-[28px] border border-border/60 bg-surface-2 p-5">
             <div className="flex flex-col items-center gap-4 py-2">
-              {/* 二维码 - 放大并使用真实占位 */}
-              <div className="flex h-34 w-34 items-center justify-center overflow-hidden rounded-2xl bg-white">
-                {/* 使用 placeholder 二维码图片 */}
-                <Image
-                  src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://codetutor.ai/wechat-login&color=000000&bgcolor=ffffff"
-                  alt="微信扫码登录"
-                  width={112}
-                  height={112}
-                  unoptimized
-                  className="h-28 w-28"
-                />
+              <div className="flex h-34 w-34 items-center justify-center overflow-hidden rounded-2xl border border-border/60 bg-background">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <QrCode className="h-10 w-10 text-brand" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">
+                      进入微信扫码页
+                    </p>
+                    <p className="text-xs leading-5 text-muted-foreground">
+                      跳转到 Supabase 托管授权页完成扫码
+                    </p>
+                  </div>
+                </div>
               </div>
               <p className="text-center text-sm text-muted-foreground">
                 {wechatDesc}
               </p>
+              <Button
+                type="button"
+                onClick={onWechatSubmit}
+                disabled={isSubmitting || wechatStatus === "loading"}
+                className="h-11 w-full rounded-2xl bg-brand text-base font-semibold text-brand-foreground shadow-[0_20px_60px_-24px_oklch(0.78_0.15_180/0.8)] hover:-translate-y-0.5 hover:bg-brand/90 disabled:translate-y-0"
+              >
+                {wechatStatus === "loading" ? "正在跳转..." : wechatTitle}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </div>
             <StatePanel
-              status="empty"
+              status={wechatStatus}
               title={wechatTitle}
-              description="打开微信扫一扫"
+              description={wechatMessage}
               compact
             />
           </div>

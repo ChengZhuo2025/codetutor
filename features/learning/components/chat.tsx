@@ -21,13 +21,17 @@ import { APP_EVENTS } from "@/constants/events"
 import { ROUTES } from "@/constants/routes"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatePanel } from "@/components/ui/state-panel"
-import { getLearningPageMock } from "@/lib/api/mock"
 import type {
   LearningSupportOption,
   Message,
   MessageAttachment,
   QuickAction,
 } from "@/features/learning/types"
+import type {
+  LearningCurrentSessionResponseData,
+  LearningMessageResponseData,
+} from "@/lib/api/contracts/learning"
+import { requestData } from "@/lib/api/client"
 import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
 
@@ -140,10 +144,13 @@ function getInputHint(
   return "把教程、代码、链接或你卡住的地方直接发给我。Enter 发送，Shift+Enter 换行。"
 }
 
-export function LearnChat() {
-  const learningData = getLearningPageMock()
+type LearnChatProps = {
+  learningData: LearningCurrentSessionResponseData
+}
+
+export function LearnChat({ learningData }: LearnChatProps) {
   const { trackEvent } = useAppEventTracker()
-  const [messages, setMessages] = useState<Message[]>(learningData.initialMessages)
+  const [messages, setMessages] = useState<Message[]>(learningData.messages)
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const [previewAttachment, setPreviewAttachment] = useState<MessageAttachment | null>(
@@ -157,12 +164,16 @@ export function LearnChat() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const responseIndex = useRef(0)
-  const nextMessageId = useRef(learningData.initialMessages.length + 1)
+  const nextMessageId = useRef(learningData.messages.length + 1)
   const reconnectTimerRef = useRef<number | null>(null)
 
   const { mission, planSummary, resume, rightPanel, supportOptions } = learningData
   const inputHint = getInputHint(connectionState, isTyping, previewAttachment)
+
+  useEffect(() => {
+    setMessages(learningData.messages)
+    nextMessageId.current = learningData.messages.length + 1
+  }, [learningData])
 
   useEffect(() => {
     const syncConnectionState = () => {
@@ -225,17 +236,7 @@ export function LearnChat() {
     if (textareaRef.current) textareaRef.current.style.height = "auto"
   }
 
-  const resolveReply = (text: string) => {
-    const matched = learningData.aiResponses.find((item) => item.trigger === text)
-    if (matched) return matched
-
-    const fallback =
-      learningData.aiResponses[responseIndex.current % learningData.aiResponses.length]
-    responseIndex.current += 1
-    return fallback
-  }
-
-  const dispatchDraft = (draft: PendingDraft) => {
+  const dispatchDraft = async (draft: PendingDraft) => {
     if (connectionState !== "online") {
       setFailedDraft(draft)
       setSendError("当前网络连接不稳定，消息尚未发出。恢复后可直接重试。")
@@ -262,32 +263,39 @@ export function LearnChat() {
     setShowSupportOptions(false)
     setIsTyping(true)
 
-    window.setTimeout(() => {
-      const reply = resolveReply(draft.text)
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: allocateMessageId(),
-          role: "ai",
-          kind: reply.kind,
-          title: reply.title,
-          content: reply.content,
-          xp: reply.xp,
-          nextStep: reply.nextStep,
-        },
-      ])
+    try {
+      const data = await requestData<LearningMessageResponseData>("/learning/message", {
+        method: "POST",
+        body: JSON.stringify({
+          conversationId: learningData.conversationId,
+          taskId: learningData.task.taskId,
+          inputType: "text",
+          content: draft.text || "我上传了一张截图，请帮我定位问题。",
+          clientContext: {
+            pagePath: ROUTES.learn,
+          },
+        }),
+      })
+
+      setMessages((prev) => [...prev, data.message])
+      setFailedDraft(null)
+      setSendError(null)
+    } catch (error) {
+      setFailedDraft(draft)
+      setSendError(error instanceof Error ? error.message : "消息发送失败，请稍后重试。")
+    } finally {
       setIsTyping(false)
-    }, 1100)
+    }
   }
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const draft = {
       text: input.trim(),
       attachment: previewAttachment,
     }
 
     if ((!draft.text && !draft.attachment) || isTyping) return
-    dispatchDraft(draft)
+    await dispatchDraft(draft)
   }
 
   const handleQuickAction = (action: QuickAction) => {
@@ -318,7 +326,7 @@ export function LearnChat() {
       })
     }
 
-    dispatchDraft({ text: action.label, attachment: null })
+    void dispatchDraft({ text: action.label, attachment: null })
   }
 
   const handleSupportOption = (option: LearningSupportOption) => {
@@ -328,13 +336,13 @@ export function LearnChat() {
       helpMode: option.mode,
       taskId: learningData.task.taskId,
     })
-    dispatchDraft({ text: option.prompt, attachment: null })
+    void dispatchDraft({ text: option.prompt, attachment: null })
   }
 
   const handleRetry = () => {
     if (!failedDraft || connectionState !== "online") return
     setSendError(null)
-    dispatchDraft(failedDraft)
+    void dispatchDraft(failedDraft)
   }
 
   const handleResume = () => {

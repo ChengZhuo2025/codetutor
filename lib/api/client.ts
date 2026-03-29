@@ -1,18 +1,39 @@
 import type { ApiResponse } from "@/lib/api/types"
+import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { unwrapResponse } from "@/lib/api/types"
 
 const API_BASE_PATH = "/api"
+
+async function buildRequestHeaders(initHeaders?: HeadersInit) {
+  const headers = new Headers(initHeaders)
+
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json")
+  }
+
+  if (typeof window !== "undefined") {
+    const supabase = createSupabaseBrowserClient()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (session?.access_token && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${session.access_token}`)
+    }
+  }
+
+  return headers
+}
 
 async function request<T>(
   path: string,
   init?: RequestInit,
 ): Promise<ApiResponse<T>> {
+  const headers = await buildRequestHeaders(init?.headers)
+
   const response = await fetch(`${API_BASE_PATH}${path}`, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
+    headers,
     cache: "no-store",
   })
 

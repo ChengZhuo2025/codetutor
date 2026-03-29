@@ -91,13 +91,19 @@ assert.match(
 assert.match(
   dataSource,
   /icon: SeedRankIcon[\s\S]*icon: OrbitRankIcon[\s\S]*icon: CodeRankIcon[\s\S]*icon: ForgeRankIcon[\s\S]*icon: CrownRankIcon/,
-  "The five ranks should each define a distinct solid icon in mock data",
+  "The five ranks should each define a distinct solid icon in the local presentation mapping",
 )
 
 assert.match(
   dataSource,
-  /icon: SparkBadgeIcon[\s\S]*icon: FlameBadgeIcon[\s\S]*icon: TargetBadgeIcon[\s\S]*icon: BuildBadgeIcon[\s\S]*icon: MultiToolBadgeIcon[\s\S]*icon: TrophyBadgeIcon/,
-  "The six badge cards should each define a solid icon in mock data",
+  /first_task: SparkBadgeIcon[\s\S]*seven_day_streak: FlameBadgeIcon[\s\S]*first_debug: TargetBadgeIcon[\s\S]*first_project: BuildBadgeIcon[\s\S]*multi_tool_master: MultiToolBadgeIcon[\s\S]*monthly_champion: TrophyBadgeIcon/,
+  "The six badge cards should each define a solid icon in the local badge presentation mapping",
+)
+
+assert.match(
+  pageSource,
+  /requestData<AchievementSummaryResponseData>\("\/achievement\/summary"\)/,
+  "The /achievements page should load growth data from the real /api/achievement/summary endpoint",
 )
 
 assert.doesNotMatch(
