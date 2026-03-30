@@ -7,6 +7,7 @@ export const APP_EVENTS = {
   sessionResumed: "session_resumed",
   stuckHelpRequested: "stuck_help_requested",
   taskCompleted: "task_completed",
+  dailyCheckin: "daily_checkin",
   mapStageClick: "map_stage_click",
   achievementCtaClick: "achievement_cta_click",
 } as const

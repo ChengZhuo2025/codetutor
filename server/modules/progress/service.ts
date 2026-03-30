@@ -8,6 +8,7 @@ import {
   getRemainingXpToNextRank,
 } from "@/constants/ranks"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
+import { getCheckinDateKey } from "@/server/modules/checkins/logic"
 import { reconcileInterruptedLearningPaths } from "@/server/modules/learning-paths/service"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import type { Stage } from "@/features/progress/types"
@@ -42,6 +43,10 @@ type TaskRow = {
   id: string
   path_step_id: string
   status: string
+}
+
+type DailyCheckinRow = {
+  checkin_date: string
 }
 
 type StepRow = {
@@ -154,6 +159,16 @@ async function loadActivePath(userId: string) {
 
   assertSupabaseSuccess(taskError, "failed to load active path tasks")
 
+  const todayDate = getCheckinDateKey()
+  const { data: todayCheckin, error: todayCheckinError } = await supabase
+    .from("daily_checkins")
+    .select("checkin_date")
+    .eq("user_id", userId)
+    .eq("checkin_date", todayDate)
+    .limit(1)
+
+  assertSupabaseSuccess(todayCheckinError, "failed to load today checkin")
+
   const { data: steps, error: stepError } = await supabase
     .from("path_steps")
     .select("id, step_no, title, summary, focus, goal, completion_criteria, review_summary, estimated_minutes, reward_score, knowledge_points, key_points, pitfalls")
@@ -167,6 +182,7 @@ async function loadActivePath(userId: string) {
     activePath: activePath as ActivePathRow,
     tool: tool as ToolRow,
     tasks: (tasks ?? []) as TaskRow[],
+    checkedInToday: ((todayCheckin ?? []) as DailyCheckinRow[]).length > 0,
     steps: (steps ?? []) as StepRow[],
   }
 }
@@ -208,7 +224,7 @@ export async function getProgressCurrentData(
     currentScore: state.profile.current_score,
     currentRank: rankSummary.currentRank,
     streakDays: state.profile.streak_days,
-    checkedInToday: false,
+    checkedInToday: state.checkedInToday,
     summary: {
       totalXP: state.profile.current_score,
       currentRank: rankSummary.currentRank,

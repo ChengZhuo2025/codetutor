@@ -227,7 +227,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 新手引导 | `/onboarding` | `GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete` | 产出主工具、学习等级、学习模式、初始学习路径实例 |
 | 学习页 | `/learn` | `GET /api/learning/current-session`、`POST /api/learning/message` | 当前已打通学习主界面 read model 与消息提交；任务写接口仍待补齐 |
 | 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
-| 成就页 | `/achievements` | `GET /api/achievement/summary` | 当前已打通成长总览 read model；每日打卡写接口仍待实现 |
+| 成就页 | `/achievements` | `GET /api/achievement/summary` | 当前已打通成长总览 read model，并支持真实每日打卡 |
 | 历史页 | `/history` | `GET /api/history/recent`、`GET /api/history/{id}`、`POST /api/history/{id}/status` | 当前前端实际需要的是“历史学习计划列表 + 详情复盘 + 状态操作”，而不是“最近对话列表” |
 | 反馈弹窗 | 设置菜单 / `/history` 侧栏 | `POST /api/feedback`、`GET /api/feedback/mine`、`GET /api/feedback/mine/{id}` | 用户可提交反馈并查看管理员回复 |
 
@@ -1194,15 +1194,18 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 用户侧只返回对用户可见的回复，不返回内部备注
 - `status` 当前支持 `submitted`、`in_review`、`replied`、`closed`
 
-## 9.5 规划中：`POST /api/checkin/daily`
+## 9.5 `POST /api/checkin/daily`
 
 用途：
 
 - 完成每日打卡
 
-请求头：
+当前实现说明：
 
-- `Idempotency-Key: uuid`
+- 首版已落地 `daily_checkins`、`score_ledgers`、`user_ranks` 联动写入
+- 同一天重复打卡会幂等返回，不重复发分
+- 当前默认每日打卡奖励为 `+5 XP`
+- 打卡成功后会刷新 `user_profiles.streak_days`、`last_learning_at`，并同步段位快照
 
 成功响应：
 
@@ -1212,9 +1215,13 @@ MVP 默认使用登录态 Session 或 Bearer Token。
   "message": "success",
   "data": {
     "checkedIn": true,
-    "scoreDelta": 20,
+    "alreadyCheckedIn": false,
+    "checkinDate": "2026-03-30",
+    "scoreDelta": 5,
     "streakDays": 4,
-    "currentScore": 150
+    "currentScore": 150,
+    "currentRank": "萌新码农",
+    "rankChanged": false
   }
 }
 ```
@@ -1314,7 +1321,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | `GET /api/feedback/mine` | 是 | 查看我的反馈列表 |
 | `GET /api/feedback/mine/{id}` | 是 | 查看我的反馈详情 |
 | `GET /api/admin/feedback*` | 管理员 | 管理员反馈查询与回复 |
-| `POST /api/checkin/daily` | 是，规划中 | 私人打卡写入 |
+| `POST /api/checkin/daily` | 是 | 私人打卡写入 |
 | `POST /api/analytics/event` | 是，规划中 | 绑定用户事件 |
 
 ---

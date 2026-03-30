@@ -39,6 +39,7 @@ export type AchievementSummaryResponseData = {
   currentRankCode: AchievementRankCode
   currentRank: string
   currentScore: number
+  checkedInToday: boolean
   nextRank: string
   nextRankRemainingXP: number
   completedTaskCount: number

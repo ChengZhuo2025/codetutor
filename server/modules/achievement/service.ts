@@ -9,6 +9,7 @@ import {
   RANK_DEFINITIONS,
 } from "@/constants/ranks"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
+import { getCheckinDateKey } from "@/server/modules/checkins/logic"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 
 type TaskRow = {
@@ -51,6 +52,12 @@ type UserRankRow = {
 type ToolRow = {
   id: string
   code: string
+}
+
+type DailyCheckinRow = {
+  checkin_date: string
+  score_awarded: number
+  created_at: string
 }
 
 const RANKS: AchievementRankContract[] = RANK_DEFINITIONS.map((rank) => ({
@@ -270,6 +277,14 @@ export async function getAchievementSummaryData(
 
   assertSupabaseSuccess(scoreLedgerError, "failed to load achievement score ledgers")
 
+  const { data: dailyCheckins, error: dailyCheckinError } = await supabase
+    .from("daily_checkins")
+    .select("checkin_date, score_awarded, created_at")
+    .eq("user_id", userId)
+    .order("checkin_date", { ascending: false })
+
+  assertSupabaseSuccess(dailyCheckinError, "failed to load daily checkins")
+
   const toolIds = Array.from(new Set((paths ?? []).map((path) => path.tool_id)))
   const { data: tools, error: toolError } =
     toolIds.length === 0
@@ -286,6 +301,7 @@ export async function getAchievementSummaryData(
   const taskById = new Map(taskRows.map((task) => [task.id, task]))
   const completedTasks = taskRows.filter((task) => task.status === "completed")
   const ledgerRows = (scoreLedgers ?? []) as ScoreLedgerRow[]
+  const checkinRows = (dailyCheckins ?? []) as DailyCheckinRow[]
   const completedTaskCount = completedTasks.length
   const totalXPFromTasks = completedTasks.reduce((sum, task) => sum + task.score_awarded, 0)
   const hasRealLedgers = ledgerRows.length > 0
@@ -313,16 +329,22 @@ export async function getAchievementSummaryData(
         .reduce((sum, task) => sum + task.score_awarded, 0)
 
   const activeDates = new Set<string>()
-  for (const task of completedTasks) {
-    if (task.completed_at) {
-      activeDates.add(task.completed_at.slice(0, 10))
+  if (checkinRows.length > 0) {
+    for (const row of checkinRows) {
+      activeDates.add(row.checkin_date)
     }
-    if (task.started_at) {
-      activeDates.add(task.started_at.slice(0, 10))
+  } else {
+    for (const task of completedTasks) {
+      if (task.completed_at) {
+        activeDates.add(task.completed_at.slice(0, 10))
+      }
+      if (task.started_at) {
+        activeDates.add(task.started_at.slice(0, 10))
+      }
     }
-  }
-  if (profile.last_learning_at) {
-    activeDates.add(profile.last_learning_at.slice(0, 10))
+    if (profile.last_learning_at) {
+      activeDates.add(profile.last_learning_at.slice(0, 10))
+    }
   }
 
   const distinctToolCount = new Set((tools ?? []).map((tool) => tool.code)).size
@@ -360,11 +382,13 @@ export async function getAchievementSummaryData(
         }))
 
   const calendar = buildCalendar(profile.streak_days, activeDates)
+  const todayDate = getCheckinDateKey()
 
   return {
     currentRankCode: currentRank.code,
     currentRank: currentRank.name,
     currentScore: rankSnapshot?.score_snapshot ?? profile.current_score,
+    checkedInToday: activeDates.has(todayDate),
     nextRank: nextRank.name,
     nextRankRemainingXP: rankSnapshot?.score_to_next_rank ??
       (nextRank.code === currentRank.code
@@ -376,7 +400,10 @@ export async function getAchievementSummaryData(
       totalXP: rankSnapshot?.score_snapshot ?? Math.max(profile.current_score, totalXP),
       streakDays: profile.streak_days,
       monthlyXP,
-      totalCheckinDays: Math.max(activeDates.size, profile.streak_days),
+      totalCheckinDays:
+        checkinRows.length > 0
+          ? checkinRows.length
+          : Math.max(activeDates.size, profile.streak_days),
       nextRankRemainingXP: rankSnapshot?.score_to_next_rank ??
         (nextRank.code === currentRank.code
           ? 0

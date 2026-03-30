@@ -10,8 +10,8 @@
 
 - 当前项目已不是纯原型仓库，而是“前端页面 + `app/api` + `server/modules` + Supabase migrations”的同仓 MVP。
 - 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈。
-- 已落地数据侧：远程 Supabase、`001` 到 `009` 迁移、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移。
-- 仍待实现：每日打卡、外部 AI provider 接入、事件埋点写入、通知设置落库、管理员后台前端、订阅支付域。
+- 已落地数据侧：远程 Supabase、`001` 到 `011` 迁移、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表。
+- 仍待实现：外部 AI provider 接入、事件埋点写入、通知设置落库、管理员后台前端、订阅支付域。
 - 若只想最快了解真实现状，优先读：
   1. `docs/plans/README.md`
   2. `docs/plans/2026-03-23-ai-coding-tutor-frontend-engineering-guide.md`
@@ -64,12 +64,12 @@
 
 - 当前仓库已经不是“纯前端 demo”，而是一个包含前端页面、`app/api` BFF、`server/modules` 服务层、Supabase 迁移与远程数据库接入脚本的同仓项目。
 - 当前真实页面为 7 个：`/`、`/login`、`/onboarding`、`/learn`、`/map`、`/achievements`、`/history`。
-- 当前已落地的真实接口包括：认证登录、认证会话摘要、用户档案、头像上传、onboarding、当前学习会话、任务完成与任务状态更新、地图/进度、成就汇总、历史学习计划、用户反馈与管理员反馈接口。
-- 当前已落地的数据库迁移为 `001` 到 `010`，其中已包含学习主线核心表、用户资料字段升级、运营导出视图、头像 Storage bucket、反馈工单表、学习计划 `interrupted` 状态，以及成长写模型表 `score_ledgers`、`user_ranks`。
+- 当前已落地的真实接口包括：认证登录、认证会话摘要、用户档案、头像上传、onboarding、当前学习会话、任务完成与任务状态更新、每日打卡、地图/进度、成就汇总、历史学习计划、用户反馈与管理员反馈接口。
+- 当前已落地的数据库迁移为 `001` 到 `011`，其中已包含学习主线核心表、用户资料字段升级、运营导出视图、头像 Storage bucket、反馈工单表、学习计划 `interrupted` 状态，以及成长写模型表 `score_ledgers`、`user_ranks`、`daily_checkins`。
 - 首页营销层已接入登录态恢复：顶部导航、Hero、套餐区、最终 CTA、页脚 CTA 会在用户已登录时切换为“继续学习”，并按真实用户状态跳转到 `/learn`、`/history` 或 `/onboarding`。
 - 工作台左侧栏数据已提升到根级 Provider 缓存，在 `/learn`、`/map`、`/achievements`、`/history` 间切换时不再重复请求并产生加载跳动。
 - 当前学习计划状态机已区分 `active`、`interrupted`、`completed`、`abandoned`、`archived`；其中 `interrupted` 为连续 7 天无学习行为后的系统自动中断，`abandoned` 为用户主动放弃。
-- 当前仍未落地的能力主要包括：每日打卡写接口、外部 AI provider 接入、事件埋点写接口、管理员后台前端页面、通知设置落库、订阅支付域。
+- 当前仍未落地的能力主要包括：外部 AI provider 接入、事件埋点写接口、管理员后台前端页面、通知设置落库、订阅支付域。
 - 当前产品主线围绕 `user_learning_paths` 展开，`/learn`、`/map`、`/history` 共用这条主线。
 - 各文档如果同时包含“已实现”与“后续规划”两部分，应以文档中的“当前实现快照”或“已落地状态”说明为准；若与代码冲突，以代码和迁移为准，再回写文档。
 
@@ -79,7 +79,6 @@
 
 ### P0：必须优先补齐
 
-- 每日打卡：补齐 `POST /api/checkin/daily` 与 `daily_checkins`，让成就页中的连续学习与打卡能力形成真实闭环。
 - 学习会话持久化与真实 AI 编排：补齐 `conversations`、`conversation_messages`，并将 `POST /api/learning/message` 从服务端内置教学回复升级为真实外部 AI provider 编排。
 
 ### P1：用户体验与运营能力完善
@@ -96,10 +95,9 @@
 
 ### 当前建议开发顺序
 
-1. 先完成 `daily_checkins`，把当前已落地的成长写模型补齐到“真实打卡”维度。
-2. 再补 `conversations + conversation_messages + 外部 AI provider`，让学习对话从“可演示”升级为“可持续使用”。
-3. 然后补 `analytics + 通知设置落库 + 管理员后台前端`，把运营和运维能力接上。
-4. 最后再进入 `订阅支付 + Redis/队列 + 更完整测试体系`。
+1. 先补 `conversations + conversation_messages + 外部 AI provider`，让学习对话从“可演示”升级为“可持续使用”。
+2. 再补 `analytics + 通知设置落库 + 管理员后台前端`，把运营和运维能力接上。
+3. 最后再进入 `订阅支付 + Redis/队列 + 更完整测试体系`。
 
 ## 文档维护原则
 

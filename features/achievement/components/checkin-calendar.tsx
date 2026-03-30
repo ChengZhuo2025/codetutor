@@ -10,6 +10,9 @@ type CheckinCalendarProps = {
   streakDays: number
   monthlyXP: number
   totalCheckinDays: number
+  checkedInToday: boolean
+  isSubmitting?: boolean
+  onCheckIn?: () => void
 }
 
 export function CheckinCalendar({
@@ -19,6 +22,9 @@ export function CheckinCalendar({
   streakDays,
   monthlyXP,
   totalCheckinDays,
+  checkedInToday,
+  isSubmitting = false,
+  onCheckIn,
 }: CheckinCalendarProps) {
   const checkedCount = checkinDays.flat().filter(Boolean).length
   const hasCalendar =
@@ -40,11 +46,26 @@ export function CheckinCalendar({
       eyebrow="打卡记录"
       title="近四月打卡日历"
       action={
-        <div className="rounded-2xl border border-gold/20 bg-gold-dim px-3 py-2">
-          <div className="flex items-center gap-2 text-sm font-bold text-gold">
-            <Flame className="h-4 w-4" />
-            {streakDays} 天连续
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="rounded-2xl border border-gold/20 bg-gold-dim px-3 py-2">
+            <div className="flex items-center gap-2 text-sm font-bold text-gold">
+              <Flame className="h-4 w-4" />
+              {streakDays} 天连续
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={onCheckIn}
+            disabled={checkedInToday || isSubmitting || !onCheckIn}
+            className={cn(
+              "rounded-2xl px-4 py-2 text-sm font-semibold transition-colors",
+              checkedInToday
+                ? "cursor-not-allowed border border-brand/20 bg-brand/10 text-brand"
+                : "bg-brand text-brand-foreground hover:bg-brand/90",
+            )}
+          >
+            {isSubmitting ? "打卡中..." : checkedInToday ? "今日已打卡" : "立即打卡"}
+          </button>
         </div>
       }
       description="每天打卡积累连续天数，连续天数越长可解锁更高奖励。"

@@ -20,8 +20,9 @@ import {
   toAchievementRanks,
 } from "@/features/achievement/data/achievement-data"
 import { resolveAuthenticatedRedirectTo } from "@/lib/auth/client-session"
-import { apiClient } from "@/lib/api/client"
+import { apiClient, requestData } from "@/lib/api/client"
 import type { AchievementSummaryResponseData } from "@/lib/api/contracts/achievement"
+import type { CheckinDailyResponseData } from "@/lib/api/contracts/checkin"
 import type { ApiRequestState } from "@/types/api"
 import { useAppEventTracker } from "@/providers/app-providers"
 
@@ -39,6 +40,8 @@ export function AchievementsPage() {
     useState<ApiRequestState<AchievementSummaryResponseData>>({
       status: "loading",
     })
+  const [isSubmittingCheckin, setIsSubmittingCheckin] = useState(false)
+  const [checkinMessage, setCheckinMessage] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -115,6 +118,17 @@ export function AchievementsPage() {
     }
   }, [router])
 
+  const reloadAchievementSummary = async () => {
+    const response = await apiClient.get<AchievementSummaryResponseData>("/achievement/summary")
+
+    if (response.code === "OK") {
+      setAchievementState({
+        status: "success",
+        data: response.data,
+      })
+    }
+  }
+
   if (achievementState.status !== "success") {
     return (
       <AppShell
@@ -177,6 +191,40 @@ export function AchievementsPage() {
     router.push(ROUTES.map)
   }
 
+  const handleDailyCheckin = async () => {
+    if (achievementState.status !== "success" || achievementState.data.checkedInToday || isSubmittingCheckin) {
+      return
+    }
+
+    setIsSubmittingCheckin(true)
+    setCheckinMessage(null)
+
+    try {
+      const data = await requestData<CheckinDailyResponseData>("/checkin/daily", {
+        method: "POST",
+      })
+
+      trackEvent(APP_EVENTS.dailyCheckin, {
+        source: ROUTES.achievements,
+        alreadyCheckedIn: data.alreadyCheckedIn,
+        scoreDelta: data.scoreDelta,
+        streakDays: data.streakDays,
+      })
+
+      setCheckinMessage(
+        data.alreadyCheckedIn
+          ? "今天已经打过卡了。"
+          : `打卡成功，获得 +${data.scoreDelta} XP，当前连续 ${data.streakDays} 天。`,
+      )
+
+      await reloadAchievementSummary()
+    } catch (error) {
+      setCheckinMessage(error instanceof Error ? error.message : "打卡失败，请稍后重试。")
+    } finally {
+      setIsSubmittingCheckin(false)
+    }
+  }
+
   return (
     <AppShell
       mobileTitle="我的学习成就"
@@ -200,6 +248,9 @@ export function AchievementsPage() {
           <p className="mt-1 text-sm leading-5 text-muted-foreground">
             你在学习路径中真实积累的 XP、段位和徽章记录。
           </p>
+          {checkinMessage ? (
+            <p className="mt-2 text-sm text-brand">{checkinMessage}</p>
+          ) : null}
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 py-4 sm:px-5 sm:py-5">
@@ -222,6 +273,9 @@ export function AchievementsPage() {
               streakDays={summary.overview.streakDays}
               monthlyXP={summary.overview.monthlyXP}
               totalCheckinDays={summary.overview.totalCheckinDays}
+              checkedInToday={summary.checkedInToday}
+              isSubmitting={isSubmittingCheckin}
+              onCheckIn={handleDailyCheckin}
             />
 
             <BadgeGrid badges={badges} />

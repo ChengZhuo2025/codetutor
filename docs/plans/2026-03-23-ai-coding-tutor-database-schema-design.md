@@ -60,7 +60,7 @@
 
 补充说明：
 
-- 当前 `/achievements` 页已开始优先读取 `user_ranks` 与 `score_ledgers`，但每日打卡、成就定义、用户成就等仍未落地，因此仍会辅以 `user_profiles`、`user_tasks`、`user_learning_paths` 做部分聚合。
+- 当前 `/achievements` 页已开始优先读取 `user_ranks`、`score_ledgers` 与 `daily_checkins`，成就定义、用户成就等仍未落地，因此仍会辅以 `user_profiles`、`user_tasks`、`user_learning_paths` 做部分聚合。
 
 ---
 
@@ -644,6 +644,7 @@ erDiagram
 用途：
 
 - 每日打卡记录
+- 已于迁移 `011_create_daily_checkins.sql` 落地
 
 字段建议：
 

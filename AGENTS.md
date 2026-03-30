@@ -18,7 +18,7 @@ If you need a fast orientation to the project and its current authoritative docu
 - `scripts/`: lightweight verification scripts for key demo pages and layout rules
 - `docs/plans/`: dated planning artifacts; keep using `YYYY-MM-DD-topic-name.md`
 
-Current implemented backend/data pieces include auth login flow integration, homepage session-summary redirecting, profile read/update, avatar upload, onboarding APIs, current learning/progress/history/achievement read models, task completion and task status write APIs, score ledger and rank snapshot write models, history plan detail and status actions, feedback APIs, and checked-in Supabase migrations through `010`. Still-planned items include check-in write APIs, analytics ingestion, admin frontend pages, real AI provider orchestration, and subscription/payment.
+Current implemented backend/data pieces include auth login flow integration, homepage session-summary redirecting, profile read/update, avatar upload, onboarding APIs, current learning/progress/history/achievement read models, task completion and task status write APIs, daily check-in APIs, score ledger and rank snapshot write models, history plan detail and status actions, feedback APIs, and checked-in Supabase migrations through `011`. Still-planned items include analytics ingestion, admin frontend pages, real AI provider orchestration, and subscription/payment.
 
 ## Build, Test, and Development Commands
 

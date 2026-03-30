@@ -103,12 +103,12 @@ types/                # 跨 feature 共用的类型定义
 - ✅ onboarding / learn / map / achievements / history 的核心 read model API
 - ✅ `/api/task/complete` 与 `/api/task/update-status` 首版落地，学习页可真实推进关卡
 - ✅ `score_ledgers` / `user_ranks` 成长写模型落地，任务积分与段位变化可追溯
+- ✅ `daily_checkins` 与 `/api/checkin/daily` 落地，成就页支持真实每日打卡
 - ✅ 历史学习计划详情、放弃/重新激活/删除记录状态操作
 - ✅ 用户资料编辑、头像上传、反馈系统
-- ✅ Supabase 迁移与远程数据库接入（当前已到 `010`）
+- ✅ Supabase 迁移与远程数据库接入（当前已到 `011`）
 
 **进行中/待完成：**
-- ⏳ 每日打卡写接口
 - ⏳ analytics 事件入库
 - ⏳ 管理员后台前端
 - ⏳ 外部 AI provider 真正接入当前学习消息链路
@@ -136,7 +136,7 @@ types/                # 跨 feature 共用的类型定义
 - 轻量在线工具
 
 ### 学分与段位系统
-- 学分规则：完成步骤+10，每日打卡+20，完成项目+100
+- 学分规则：完成步骤+10，每日打卡+5，完成项目+100
 - 段位：萌新码农(0-200) → AI学徒(200-500) → Vibe Coder(500-1000) → AI建造者(1000-2000) → AI编程大师(2000+)
 
 ## 事件追踪

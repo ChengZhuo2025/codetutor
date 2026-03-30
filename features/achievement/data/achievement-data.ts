@@ -168,6 +168,7 @@ export const mockAchievementSummaryResponse: ApiSuccessResponse<AchievementSumma
     currentRankCode: "vibe_coder",
     currentRank: getRankName("vibe_coder"),
     currentScore: 680,
+    checkedInToday: true,
     nextRank: getNextRankDefinition("vibe_coder").name,
     nextRankRemainingXP: 320,
     completedTaskCount: 14,
