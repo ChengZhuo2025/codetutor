@@ -151,6 +151,25 @@ test("buildStructuredLearningMessageContent derives variant, summary and ordered
           items: ["先只完成最小验证", "再把结果贴回来"],
         },
       ],
+      sections: [
+        {
+          title: null,
+          tone: "default",
+          blocks: [
+            {
+              type: "ordered_list",
+              items: ["先只完成最小验证", "再把结果贴回来"],
+            },
+          ],
+        },
+      ],
+      actions: [
+        {
+          label: "再拆细一点",
+          prompt: "请把刚才这一步继续拆细，直到我可以立即执行第一个动作。",
+          tone: "secondary",
+        },
+      ],
     },
   )
 })
@@ -174,6 +193,25 @@ test("parseStoredStructuredLearningMessageContent restores persisted structured 
         {
           type: "unordered_list",
           items: ["你已经确认了当前关卡的关键能力", "接下来可以进入下一关"],
+        },
+      ],
+      sections: [
+        {
+          title: null,
+          tone: "success",
+          blocks: [
+            {
+              type: "unordered_list",
+              items: ["你已经确认了当前关卡的关键能力", "接下来可以进入下一关"],
+            },
+          ],
+        },
+      ],
+      actions: [
+        {
+          label: "继续下一步",
+          prompt: "请根据我刚完成的结果，告诉我当前最值得做的下一步。",
+          tone: "success",
         },
       ],
     },

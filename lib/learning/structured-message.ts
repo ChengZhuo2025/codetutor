@@ -28,10 +28,36 @@ export type StructuredLearningMessageBlock =
       items: string[]
     }
 
+export type StructuredLearningMessageSectionTone =
+  | "default"
+  | "info"
+  | "success"
+  | "warning"
+
+export type StructuredLearningMessageSection = {
+  title: string | null
+  tone: StructuredLearningMessageSectionTone
+  blocks: StructuredLearningMessageBlock[]
+}
+
+export type StructuredLearningMessageActionTone =
+  | "primary"
+  | "secondary"
+  | "warning"
+  | "success"
+
+export type StructuredLearningMessageAction = {
+  label: string
+  prompt: string
+  tone: StructuredLearningMessageActionTone
+}
+
 export type StructuredLearningMessageContent = {
   variant: StructuredLearningMessageVariant
   summary: string | null
   blocks: StructuredLearningMessageBlock[]
+  sections: StructuredLearningMessageSection[]
+  actions: StructuredLearningMessageAction[]
 }
 
 type StructuredMessageInput = {
@@ -158,6 +184,98 @@ function parseBlocksFromText(text: string): {
   }
 }
 
+function buildStructuredSections(
+  variant: StructuredLearningMessageVariant,
+  blocks: StructuredLearningMessageBlock[],
+): StructuredLearningMessageSection[] {
+  if (blocks.length === 0) {
+    return []
+  }
+
+  const tone =
+    variant === "completion"
+      ? "success"
+      : variant === "blocked_help"
+        ? "warning"
+        : variant === "example" || variant === "hint"
+          ? "info"
+          : "default"
+
+  const firstHeading = blocks[0]?.type === "heading" ? blocks[0].text : null
+  const contentBlocks = firstHeading ? blocks.slice(1) : blocks
+
+  return [
+    {
+      title: firstHeading,
+      tone,
+      blocks: contentBlocks,
+    },
+  ]
+}
+
+function buildStructuredActions(input: {
+  variant: StructuredLearningMessageVariant
+  taskPatch?: LearningTaskPatch | null
+}): StructuredLearningMessageAction[] {
+  if (input.taskPatch?.status === "blocked") {
+    return [
+      {
+        label: "补充报错信息",
+        prompt: input.taskPatch.suggestedNextAction,
+        tone: "warning",
+      },
+    ]
+  }
+
+  if (input.variant === "completion" || input.taskPatch?.status === "completed") {
+    return [
+      {
+        label: "继续下一步",
+        prompt: "请根据我刚完成的结果，告诉我当前最值得做的下一步。",
+        tone: "success",
+      },
+    ]
+  }
+
+  if (input.variant === "example") {
+    return [
+      {
+        label: "给我最小示例",
+        prompt: "请给我一个最小可运行示例，并说明我该先验证什么。",
+        tone: "secondary",
+      },
+    ]
+  }
+
+  if (input.variant === "breakdown") {
+    return [
+      {
+        label: "再拆细一点",
+        prompt: "请把刚才这一步继续拆细，直到我可以立即执行第一个动作。",
+        tone: "secondary",
+      },
+    ]
+  }
+
+  if (input.variant === "review") {
+    return [
+      {
+        label: "帮我复盘结果",
+        prompt: "请根据我刚才的结果，帮我做一次简短复盘。",
+        tone: "secondary",
+      },
+    ]
+  }
+
+  return [
+    {
+      label: "继续当前关卡",
+      prompt: "请根据当前上下文告诉我接下来最小的一步应该做什么。",
+      tone: "primary",
+    },
+  ]
+}
+
 export function resolveStructuredLearningMessageVariant(
   input: StructuredMessageInput,
 ): StructuredLearningMessageVariant {
@@ -208,14 +326,20 @@ export function buildStructuredLearningMessageContent(
   }
 
   const parsed = parseBlocksFromText(content)
+  const variant = resolveStructuredLearningMessageVariant({
+    ...input,
+    content,
+  })
 
   return {
-    variant: resolveStructuredLearningMessageVariant({
-      ...input,
-      content,
-    }),
+    variant,
     summary: parsed.summary,
     blocks: parsed.blocks,
+    sections: buildStructuredSections(variant, parsed.blocks),
+    actions: buildStructuredActions({
+      variant,
+      taskPatch: input.taskPatch,
+    }),
   }
 }
 
@@ -230,6 +354,8 @@ export function parseStoredStructuredLearningMessageContent(
   const variant = record.variant
   const summary = record.summary
   const blocks = record.blocks
+  const sections = record.sections
+  const actions = record.actions
 
   if (
     variant !== "default"
@@ -291,9 +417,100 @@ export function parseStoredStructuredLearningMessageContent(
     })
     .filter((block): block is StructuredLearningMessageBlock => Boolean(block))
 
+  const normalizedSections =
+    Array.isArray(sections)
+      ? sections
+          .map((section) => {
+            if (!section || typeof section !== "object") {
+              return null
+            }
+
+            const item = section as Record<string, unknown>
+            if (
+              !(item.title === null || isNonEmptyString(item.title))
+              || (item.tone !== "default"
+                && item.tone !== "info"
+                && item.tone !== "success"
+                && item.tone !== "warning")
+              || !Array.isArray(item.blocks)
+            ) {
+              return null
+            }
+
+            const sectionBlocks = item.blocks
+              .map((block) => {
+                if (!block || typeof block !== "object") {
+                  return null
+                }
+
+                const blockRecord = block as Record<string, unknown>
+                if (blockRecord.type === "heading" && isNonEmptyString(blockRecord.text)) {
+                  return { type: "heading" as const, text: blockRecord.text.trim() }
+                }
+                if (blockRecord.type === "paragraph" && isNonEmptyString(blockRecord.text)) {
+                  return { type: "paragraph" as const, text: blockRecord.text.trim() }
+                }
+                if (blockRecord.type === "unordered_list" && isStringArray(blockRecord.items)) {
+                  return {
+                    type: "unordered_list" as const,
+                    items: blockRecord.items.map((entry) => entry.trim()).filter(Boolean),
+                  }
+                }
+                if (blockRecord.type === "ordered_list" && isStringArray(blockRecord.items)) {
+                  return {
+                    type: "ordered_list" as const,
+                    items: blockRecord.items.map((entry) => entry.trim()).filter(Boolean),
+                  }
+                }
+                return null
+              })
+              .filter((block): block is StructuredLearningMessageBlock => Boolean(block))
+
+            return {
+              title: item.title === null ? null : item.title.trim(),
+              tone: item.tone,
+              blocks: sectionBlocks,
+            } satisfies StructuredLearningMessageSection
+          })
+          .filter((section): section is StructuredLearningMessageSection => Boolean(section))
+      : buildStructuredSections(variant, normalizedBlocks)
+
+  const normalizedActions =
+    Array.isArray(actions)
+      ? actions
+          .map((action) => {
+            if (!action || typeof action !== "object") {
+              return null
+            }
+
+            const item = action as Record<string, unknown>
+            if (
+              !isNonEmptyString(item.label)
+              || !isNonEmptyString(item.prompt)
+              || (item.tone !== "primary"
+                && item.tone !== "secondary"
+                && item.tone !== "warning"
+                && item.tone !== "success")
+            ) {
+              return null
+            }
+
+            return {
+              label: item.label.trim(),
+              prompt: item.prompt.trim(),
+              tone: item.tone,
+            } satisfies StructuredLearningMessageAction
+          })
+          .filter((action): action is StructuredLearningMessageAction => Boolean(action))
+      : buildStructuredActions({
+          variant,
+        })
+
   return {
     variant,
     summary: summary === null ? null : summary.trim(),
     blocks: normalizedBlocks,
+    sections: normalizedSections,
+    actions: normalizedActions,
   }
 }

@@ -36,7 +36,10 @@ import type {
   UpdateTaskStatusResponseData,
 } from "@/lib/api/contracts/task"
 import { apiFetch, requestData } from "@/lib/api/client"
-import { parseStoredStructuredLearningMessageContent } from "@/lib/learning/structured-message"
+import {
+  buildStructuredLearningMessageContent,
+  parseStoredStructuredLearningMessageContent,
+} from "@/lib/learning/structured-message"
 import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
 
@@ -98,6 +101,15 @@ const quickActionToneClass: Record<QuickAction["tone"], string> = {
   secondary:
     "border-border/80 bg-surface-2 text-foreground hover:border-border hover:bg-surface-3",
 }
+
+const messageActionToneClass = {
+  primary: "border-brand/30 bg-brand-dim text-brand hover:bg-brand/18",
+  secondary:
+    "border-border/80 bg-surface-2 text-foreground hover:border-border hover:bg-surface-3",
+  warning: "border-gold/25 bg-gold-dim text-gold hover:bg-gold/18",
+  success:
+    "border-emerald-500/25 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/16",
+} as const
 
 const assistantMessageVariantMeta: Record<
   AssistantMessageVariant,
@@ -370,8 +382,8 @@ function renderAssistantMessageLead(variant: AssistantMessageVariant) {
 
   return (
     <div className={cn("mb-3 rounded-2xl border px-3.5 py-3", meta.panelClass)}>
-      <div className="flex items-start gap-3">
-        <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", meta.iconClass)} />
+      <div className="flex items-start gap-2">
+        <Icon className={cn("mt-1 h-4 w-4 shrink-0", meta.iconClass)} />
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -406,6 +418,23 @@ function renderStructuredContent(
     structuredContent?.blocks
     ?? (fallbackHasSummary ? fallbackBlocks.slice(1) : fallbackBlocks)
   const variantMeta = assistantMessageVariantMeta[variant]
+  const sections =
+    structuredContent?.sections && structuredContent.sections.length > 0
+      ? structuredContent.sections
+      : [
+          {
+            title: null,
+            tone:
+              variant === "completion"
+                ? "success"
+                : variant === "blocked_help"
+                  ? "warning"
+                  : variant === "example" || variant === "hint"
+                    ? "info"
+                    : "default",
+            blocks: detailBlocks,
+          },
+        ]
 
   return (
     <div className="space-y-3">
@@ -419,14 +448,36 @@ function renderStructuredContent(
         </div>
       ) : null}
 
-      {detailBlocks.map((block, blockIndex) => {
+      {sections.map((section, sectionIndex) => {
+        const sectionToneClass =
+          section.tone === "success"
+            ? "border-emerald-500/18 bg-emerald-500/8"
+            : section.tone === "warning"
+              ? "border-gold/18 bg-gold-dim/55"
+              : section.tone === "info"
+                ? "border-brand/16 bg-brand-dim/45"
+                : "border-background/60 bg-background/40"
+
+        return (
+          <div
+            key={`section-${sectionIndex}`}
+            className={cn("rounded-2xl border px-3.5 py-3", sectionToneClass)}
+          >
+            {section.title ? (
+              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+                {renderInlineText(section.title, `section-title-${sectionIndex}`)}
+              </div>
+            ) : null}
+
+            <div className="space-y-3">
+              {section.blocks.map((block, blockIndex) => {
         if (block.type === "heading") {
           return (
             <div
-              key={`heading-${blockIndex}`}
+              key={`heading-${sectionIndex}-${blockIndex}`}
               className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70"
             >
-              {renderInlineText(block.text, `heading-${blockIndex}`)}
+              {renderInlineText(block.text, `heading-${sectionIndex}-${blockIndex}`)}
             </div>
           )
         }
@@ -434,10 +485,10 @@ function renderStructuredContent(
         if (block.type === "paragraph") {
           return (
             <p
-              key={`paragraph-${blockIndex}`}
+              key={`paragraph-${sectionIndex}-${blockIndex}`}
               className="text-sm leading-6 text-foreground/90"
             >
-              {renderInlineText(block.text, `paragraph-${blockIndex}`)}
+              {renderInlineText(block.text, `paragraph-${sectionIndex}-${blockIndex}`)}
             </p>
           )
         }
@@ -445,14 +496,17 @@ function renderStructuredContent(
         if (block.type === "unordered_list") {
           return (
             <div
-              key={`unordered-${blockIndex}`}
+              key={`unordered-${sectionIndex}-${blockIndex}`}
               className="space-y-2 rounded-2xl border border-background/60 bg-background/40 px-3.5 py-3"
             >
               {block.items.map((item, itemIndex) => (
-                <div key={`unordered-item-${itemIndex}`} className="flex items-start gap-2.5">
+                <div
+                  key={`unordered-item-${sectionIndex}-${blockIndex}-${itemIndex}`}
+                  className="flex items-start gap-2.5"
+                >
                   <CheckCircle2
                     className={cn(
-                      "mt-0.5 h-4 w-4 shrink-0",
+                      "mt-1 h-4 w-4 shrink-0",
                       kind === "task_feedback" || variant === "completion"
                         ? "text-emerald-600"
                         : variant === "blocked_help"
@@ -461,7 +515,10 @@ function renderStructuredContent(
                     )}
                   />
                   <p className="text-sm leading-6 text-foreground/90">
-                    {renderInlineText(item, `unordered-${blockIndex}-${itemIndex}`)}
+                    {renderInlineText(
+                      item,
+                      `unordered-${sectionIndex}-${blockIndex}-${itemIndex}`,
+                    )}
                   </p>
                 </div>
               ))}
@@ -471,19 +528,29 @@ function renderStructuredContent(
 
         return (
           <div
-            key={`ordered-${blockIndex}`}
+            key={`ordered-${sectionIndex}-${blockIndex}`}
             className="space-y-2 rounded-2xl border border-background/60 bg-background/40 px-3.5 py-3"
           >
             {block.items.map((item, itemIndex) => (
-              <div key={`ordered-item-${itemIndex}`} className="flex items-start gap-2.5">
-                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/12 text-[11px] font-semibold text-brand">
+              <div
+                key={`ordered-item-${sectionIndex}-${blockIndex}-${itemIndex}`}
+                className="flex items-start gap-2.5"
+              >
+                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/12 text-[11px] font-semibold text-brand">
                   {itemIndex + 1}
                 </div>
                 <p className="text-sm leading-6 text-foreground/90">
-                  {renderInlineText(item, `ordered-${blockIndex}-${itemIndex}`)}
+                  {renderInlineText(
+                    item,
+                    `ordered-${sectionIndex}-${blockIndex}-${itemIndex}`,
+                  )}
                 </p>
               </div>
             ))}
+          </div>
+        )
+              })}
+            </div>
           </div>
         )
       })}
@@ -907,6 +974,18 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
       kind: "task_feedback",
       title: "任务反馈",
       content: lines.join("\n"),
+      structuredContent: buildStructuredLearningMessageContent({
+        title: "任务反馈",
+        kind: "task_feedback",
+        content: lines.join("\n"),
+        taskPatch: {
+          taskId: learningData.task.taskId,
+          status: "completed",
+          suggestedNextAction: data.nextTask
+            ? `进入下一关：${data.nextTask.title}`
+            : "回到地图查看本轮学习计划状态",
+        },
+      }),
       xp: data.scoreDelta > 0 ? data.scoreDelta : undefined,
       nextStep: data.nextTask ? `进入下一关：${data.nextTask.title}` : "本轮学习计划已完成",
     }
@@ -1606,6 +1685,30 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
                       </div>
                     ) : null}
 
+                    {msg.role === "ai" && msg.structuredContent?.actions?.length ? (
+                      <div className="flex flex-wrap gap-2">
+                        {msg.structuredContent.actions.map((action, actionIndex) => (
+                          <button
+                            key={`message-action-${msg.id}-${actionIndex}`}
+                            type="button"
+                            disabled={isTyping}
+                            onClick={() => {
+                              void dispatchDraft({
+                                text: action.prompt,
+                                attachment: null,
+                              })
+                            }}
+                            className={cn(
+                              "rounded-2xl border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+                              messageActionToneClass[action.tone],
+                            )}
+                          >
+                            {action.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+
                     {msg.taskPatch ? (() => {
                       const taskPatchMeta = getTaskPatchDisplayMeta(msg.taskPatch)
 
@@ -1631,7 +1734,7 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
                           </div>
                           <div className="mt-2 flex items-start gap-2">
                             <Lightbulb
-                              className={cn("mt-0.5 h-4 w-4 shrink-0", taskPatchMeta.iconClass)}
+                              className={cn("h-3.5 w-3.5 shrink-0", taskPatchMeta.iconClass)}
                             />
                             <div>
                               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">

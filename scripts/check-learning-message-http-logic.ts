@@ -103,6 +103,14 @@ test("buildIdempotentReplaySSEEvents returns a deterministic replay event sequen
         variant: "blocked_help",
         summary: "先贴出完整报错。",
         blocks: [],
+        sections: [],
+        actions: [
+          {
+            label: "补充报错信息",
+            prompt: "补充完整报错文本",
+            tone: "warning",
+          },
+        ],
       },
       taskPatch: {
         taskId: "task-1",
@@ -144,6 +152,14 @@ test("buildIdempotentReplaySSEEvents returns a deterministic replay event sequen
             variant: "blocked_help",
             summary: "先贴出完整报错。",
             blocks: [],
+            sections: [],
+            actions: [
+              {
+                label: "补充报错信息",
+                prompt: "补充完整报错文本",
+                tone: "warning",
+              },
+            ],
           },
           finishReason: "idempotent_replay",
           usage: null,
