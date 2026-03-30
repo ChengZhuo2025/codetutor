@@ -50,8 +50,10 @@
 当前已打通的关键链路包括：
 
 - Supabase Auth 登录态接入，支持手机号验证码登录与微信 OAuth 跳转
+- 首页营销层可通过 `GET /api/auth/session` 恢复登录态，并将主要 CTA 切换为“继续学习”
 - onboarding 读取工具和路径候选，并真实创建 `user_learning_paths` 与 `user_tasks`
 - `/learn`、`/map`、`/achievements`、`/history` 读取远程数据库的真实 read model
+- 工作台左侧栏数据已提升到根级 Provider 缓存，跨工作台页面切换时不再重复请求并产生加载跳动
 - 用户资料读写、头像上传到 Supabase Storage
 - 用户反馈提交、我的反馈记录、管理员反馈接口
 - `POST /api/learning/message` 已存在真实接口，但当前仍以服务端内置教学回复逻辑为主，尚未真正接通外部 AI provider
@@ -555,6 +557,7 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 当前已实现：
 
 - `POST /api/auth/login`
+- `GET /api/auth/session`
 - `GET /api/profile/me`
 - `PATCH /api/profile/me`
 - `POST /api/profile/avatar`
@@ -650,7 +653,8 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 - 当前页面 UI 状态
 - 输入框内容
 - 浮层开关
-- 当前页面请求结果缓存
+- 局部页面请求结果缓存
+- 工作台左侧栏共享缓存（根级 Provider）
 
 服务端权威状态包括：
 

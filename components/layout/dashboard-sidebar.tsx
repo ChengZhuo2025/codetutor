@@ -16,11 +16,8 @@ import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog"
 import { SubscriptionDetailDialog } from "@/components/layout/subscription-detail-dialog"
 import { SettingsPopover } from "@/components/layout/settings-popover"
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth"
-import type { LearningCurrentSessionResponseData } from "@/lib/api/contracts/learning"
-import { requestData } from "@/lib/api/client"
-import { PROFILE_UPDATED_EVENT } from "@/lib/profile/events"
+import { useWorkspaceSidebarData } from "@/providers/workspace-sidebar-provider"
 import { cn } from "@/lib/utils"
-import type { RecentPracticeRound } from "@/features/learning/types"
 import type { DashboardNavItem } from "@/types/navigation"
 import type { SubscriptionSnapshot } from "@/types/profile"
 
@@ -53,13 +50,17 @@ export function DashboardSidebar({
   children,
   footerContent,
 }: DashboardSidebarProps) {
-  const [profile, setProfile] = useState<ProfileMeResponseData | null>(null)
-  const [recentPracticeRounds, setRecentPracticeRounds] = useState<RecentPracticeRound[]>([])
+  const {
+    profile,
+    recentPracticeRounds,
+    hasLoaded,
+    updateProfile,
+  } = useWorkspaceSidebarData()
   const [profileOpen, setProfileOpen] = useState(false)
   const [profileFeedbackMessage, setProfileFeedbackMessage] = useState<string | null>(null)
 
   const handleProfileSaved = (nextProfile: ProfileMeResponseData) => {
-    setProfile(nextProfile)
+    updateProfile(nextProfile)
     setProfileFeedbackMessage("个人资料已保存")
   }
 
@@ -77,58 +78,11 @@ export function DashboardSidebar({
     }
   }, [profileFeedbackMessage])
 
-  useEffect(() => {
-    let cancelled = false
+  const displayProfile = hasLoaded
+    ? profile
+    : null
 
-    async function loadSidebarData() {
-      try {
-        const session = await requestData<LearningCurrentSessionResponseData>("/learning/current-session")
-
-        if (cancelled) {
-          return
-        }
-
-        setProfile(session.profile)
-        setRecentPracticeRounds(session.recentPracticeRounds)
-        return
-      } catch {
-        // fall back to profile-only mode when there is no active learning session
-      }
-
-      try {
-        const profileData = await requestData<ProfileMeResponseData>("/profile/me")
-
-        if (cancelled) {
-          return
-        }
-
-        setProfile(profileData)
-        setRecentPracticeRounds([])
-      } catch {
-        if (cancelled) {
-          return
-        }
-
-        setProfile(null)
-        setRecentPracticeRounds([])
-      }
-    }
-
-    function handleProfileUpdated(event: Event) {
-      const nextProfile = (event as CustomEvent<ProfileMeResponseData>).detail
-      setProfile(nextProfile)
-    }
-
-    void loadSidebarData()
-    window.addEventListener(PROFILE_UPDATED_EVENT, handleProfileUpdated as EventListener)
-
-    return () => {
-      cancelled = true
-      window.removeEventListener(PROFILE_UPDATED_EVENT, handleProfileUpdated as EventListener)
-    }
-  }, [])
-
-  const displayProfile = profile ?? {
+  const fallbackProfile = {
     userId: "loading",
     nickname: "加载中",
     avatarUrl: null,
@@ -147,8 +101,10 @@ export function DashboardSidebar({
     completedTaskCount: 0,
     lastLearningAt: new Date(0).toISOString(),
   }
+
+  const resolvedProfile = displayProfile ?? fallbackProfile
   const subscription = SUBSCRIPTION_PLACEHOLDER
-  const progressPercent = Math.min(Math.round((displayProfile.currentScore / 1000) * 100), 100)
+  const progressPercent = Math.min(Math.round((resolvedProfile.currentScore / 1000) * 100), 100)
   const visiblePracticeRounds = recentPracticeRounds.slice(0, 5)
 
   return (
@@ -175,24 +131,24 @@ export function DashboardSidebar({
                 onClick={() => setProfileOpen(true)}
                 className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-dim text-md font-bold text-brand transition-opacity hover:opacity-80"
               >
-                {displayProfile.avatarUrl ? (
+                {resolvedProfile.avatarUrl ? (
                   <Image
-                    src={displayProfile.avatarUrl}
-                    alt={displayProfile.nickname}
+                    src={resolvedProfile.avatarUrl}
+                    alt={resolvedProfile.nickname}
                     width={44}
                     height={44}
                     unoptimized
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  displayProfile.nickname.slice(0, 1)
+                  resolvedProfile.nickname.slice(0, 1)
                 )}
               </button>
               <SubscriptionDetailDialog subscription={subscription}>
                 <div className="min-w-0 flex-1 cursor-pointer">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-md font-semibold text-foreground">
-                      {displayProfile.nickname}
+                      {resolvedProfile.nickname}
                     </p>
                     <span className="inline-flex items-center gap-1 rounded-full border border-gold/20 bg-gold-dim px-1.5 py-0.5 text-[10px] font-medium text-gold">
                       <Crown className="h-2.5 w-2.5" />
@@ -211,7 +167,7 @@ export function DashboardSidebar({
               className="block rounded-xl transition-colors hover:bg-background/40 -mx-1 px-1 py-1"
             >
               <div className="mb-2 flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">{displayProfile.currentScore} / 1000 XP</span>
+                <span className="text-muted-foreground">{resolvedProfile.currentScore} / 1000 XP</span>
                 <span className="text-muted-foreground">{progressPercent}%</span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-4">
@@ -223,14 +179,14 @@ export function DashboardSidebar({
                   <Flame className="h-4 w-4 text-gold" />
                   <div>
                     <p className="text-[11px] text-muted-foreground">连续学习</p>
-                    <p className="text-sm font-bold text-gold">{displayProfile.streakDays} 天</p>
+                    <p className="text-sm font-bold text-gold">{resolvedProfile.streakDays} 天</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-background/60 px-3 py-2.5">
                   <Star className="h-4 w-4 text-brand" />
                   <div>
                     <p className="text-[11px] text-muted-foreground">已完成</p>
-                    <p className="text-sm font-bold">{displayProfile.completedTaskCount} 关</p>
+                    <p className="text-sm font-bold">{resolvedProfile.completedTaskCount} 关</p>
                   </div>
                 </div>
               </div>

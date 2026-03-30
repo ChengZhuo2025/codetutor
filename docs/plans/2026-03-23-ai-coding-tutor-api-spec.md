@@ -93,6 +93,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 当前仓库代码中已经实现的接口有：
 
 - `POST /api/auth/login`
+- `GET /api/auth/session`
 - `GET /api/profile/me`
 - `PATCH /api/profile/me`
 - `POST /api/profile/avatar`
@@ -150,6 +151,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 当前已实现：
 
 - `POST /api/auth/login`
+- `GET /api/auth/session`
 - `GET /api/profile/me`
 - `PATCH /api/profile/me`
 - `POST /api/profile/avatar`
@@ -220,6 +222,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 | 页面 | 路由 | 主要接口 | 说明 |
 |------|------|------|------|
+| 营销首页 | `/` | `GET /api/auth/session` | 首页导航、Hero、套餐区、页脚与最终 CTA 会根据登录态切换为“继续学习”，并跳转到真实推荐目标 |
 | 登录页 | `/login` | `POST /api/auth/login`、`GET/PATCH /api/profile/me`、`POST /api/profile/avatar` | 当前已打通手机号验证码登录、微信 OAuth 跳转、用户档案读取与资料编辑 |
 | 新手引导 | `/onboarding` | `GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete` | 产出主工具、学习等级、学习模式、初始学习路径实例 |
 | 学习页 | `/learn` | `GET /api/learning/current-session`、`POST /api/learning/message` | 当前已打通学习主界面 read model 与消息提交；任务写接口仍待补齐 |
@@ -281,7 +284,43 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 首次登录仅建立最小档案，不强制补全昵称
 - 若阿里云 Supabase 的微信 OAuth 配置在首阶段未完成，可先用手机号作为临时回退入口
 
-## 5.2 `GET /api/profile/me`
+## 5.2 `GET /api/auth/session`
+
+用途：
+
+- 读取当前已登录用户的只读会话摘要，供首页营销层恢复登录态并决定“继续学习”跳转目标
+
+成功响应示例：
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "userId": "uuid",
+    "redirectTo": "/learn",
+    "phone": "18600165902",
+    "nickname": "小王"
+  }
+}
+```
+
+字段说明：
+
+| 字段 | 说明 |
+|------|------|
+| `userId` | 当前登录用户 ID |
+| `redirectTo` | 基于 onboarding 完成状态与 active path 状态计算出的推荐跳转地址 |
+| `phone` | 当前登录手机号，可为空 |
+| `nickname` | 当前用户昵称，可为空 |
+
+业务规则：
+
+- 该接口必须要求认证。
+- 该接口是只读摘要接口，不承担登录写入、副作用更新或登录时间刷新职责。
+- 首页和营销层组件恢复登录态时，应优先读取该接口，而不是复用会产生登录写语义的 `POST /api/auth/login`。
+
+## 5.3 `GET /api/profile/me`
 
 用途：
 
@@ -315,7 +354,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `completedTaskCount`、`currentScore`、`currentRank`、`streakDays` 为服务端聚合快照，不要求前端自行计算。
 - 工作台侧栏中的订阅块继续沿用前端 mock，待支付域明确后再单独设计订阅接口。
 
-## 5.3 规划中：`POST /api/profile/init`
+## 5.4 规划中：`POST /api/profile/init`
 
 用途：
 
@@ -1143,6 +1182,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 接口 | 是否需登录 | 说明 |
 |------|------|------|
 | `POST /api/auth/login` | 否 | 登录入口 |
+| `GET /api/auth/session` | 是 | 首页与营销层恢复当前登录摘要 |
 | `GET /api/onboarding/tools` | 否 | 可公开 |
 | `GET /api/profile/me` | 是 | 获取侧边栏与用户档案快照 |
 | `PATCH /api/profile/me` | 是 | 更新用户资料 |

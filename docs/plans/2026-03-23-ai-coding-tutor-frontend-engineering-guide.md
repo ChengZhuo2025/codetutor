@@ -179,10 +179,11 @@ features/<domain>/
 当前内容：
 
 - `providers/app-providers.tsx`
+- `providers/workspace-sidebar-provider.tsx`
 
 当前状态：
 
-- 目前这里只统一承载了全局包裹入口和 `Analytics`
+- 当前这里已统一承载全局包裹入口、`Analytics` 与工作台左侧栏共享数据缓存
 - 后续接入主题、认证 Session、数据请求缓存时，应继续在这里扩展
 
 ### 3.6 `types/`
@@ -230,6 +231,8 @@ features/<domain>/
 - 页面装配：`features/marketing/pages/landing-page.tsx`
 - 页面数据：`features/marketing/data/marketing-content.ts`
 - 页面组件：`features/marketing/components/*`
+- 当前真实依赖：`features/marketing/providers/landing-auth-provider.tsx`、`GET /api/auth/session`
+- 当前职责补充：已登录用户回到首页时，会恢复 Supabase 会话并把导航、Hero、套餐区、页脚与最终 CTA 切换为“继续学习”
 
 ### 登录页
 
@@ -277,8 +280,8 @@ features/<domain>/
 
 ### 当前已接真实接口的跨页组件
 
-- `components/layout/dashboard-sidebar.tsx`
-  当前会读取 `/api/learning/current-session` 或 `/api/profile/me`
+- `components/layout/workspace-sidebar.tsx` / `components/layout/dashboard-sidebar.tsx`
+  当前通过 `providers/workspace-sidebar-provider.tsx` 在根级缓存侧栏所需数据；首次优先读取 `/api/learning/current-session`，无 active session 时回退 `/api/profile/me`
 - `components/layout/profile-edit-dialog.tsx`
   当前会读取和更新 `/api/profile/me`，并通过 `/api/profile/avatar` 上传头像
 - `components/layout/feedback-dialog.tsx`
@@ -434,6 +437,7 @@ features/<domain>/
 当前前端工程已经完成主要页面和核心接口接入，但仍有以下边界需要明确：
 
 - 尚未引入 React Query / SWR 一类的数据请求缓存层
+- 当前已通过根级 Provider 为工作台左侧栏实现最小共享缓存，但还没有形成通用请求缓存体系
 - 尚未形成系统性的前端自动化测试覆盖
 - 通知设置、订阅模块、FAQ 仍是静态或占位实现
 - 管理员后台前端页面尚未开始

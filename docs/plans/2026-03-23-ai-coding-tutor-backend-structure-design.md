@@ -158,7 +158,8 @@ app/
     │           ├── reply/route.ts
     │           └── status/route.ts
     ├── auth/
-    │   └── login/route.ts
+    │   ├── login/route.ts
+    │   └── session/route.ts
     ├── feedback/
     │   ├── route.ts
     │   └── mine/
@@ -186,6 +187,7 @@ app/
 - 每个 `route.ts` 只做入口处理
 - 不在 `route.ts` 中写复杂数据库访问
 - `/history/recent` 在命名上保留原型兼容性，但实际承载“历史学习路径实例分页列表”
+- `/auth/session` 作为只读会话摘要接口，主要服务首页与营销层登录态恢复，不承担登录写入副作用
 - 当前尚未落地的 `task/*`、`checkin/*`、`analytics/*`、`learning/stuck-help` 仍属于后续开发项
 
 ---
@@ -216,6 +218,7 @@ server/
 - 当前代码采用更轻量的“`route.ts` + `modules/<domain>/service.ts`” 结构
 - 还没有拆出独立 `application / domain / infrastructure` 目录
 - `server/lib/` 负责公共响应、鉴权和 Supabase 错误处理
+- `server/modules/auth/service.ts` 当前同时承载登录结果组装与 `auth/session` 会话摘要读取
 - 如果后续业务复杂度继续上升，再逐步演进到域内分层
 
 ---
@@ -255,6 +258,7 @@ server/modules/<domain>/
 - 登录态校验
 - 用户身份映射
 - 会话权限校验
+- 输出首页与登录页所需的会话摘要与跳转决策
 
 建议结构：
 
@@ -647,6 +651,7 @@ app/
     ├── admin/feedback/[id]/reply/route.ts
     ├── admin/feedback/[id]/status/route.ts
     ├── auth/login/route.ts
+    ├── auth/session/route.ts
     ├── feedback/route.ts
     ├── feedback/mine/route.ts
     ├── feedback/mine/[id]/route.ts
