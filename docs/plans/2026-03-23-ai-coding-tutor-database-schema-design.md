@@ -60,7 +60,7 @@
 
 补充说明：
 
-- 当前 `/achievements` 页的 read model 主要由 `user_profiles`、`user_tasks`、`user_learning_paths` 和本地段位配置聚合得到，并未依赖 `score_ledgers`、`achievements`、`user_achievements` 等后续规划表。
+- 当前 `/achievements` 页已开始优先读取 `user_ranks` 与 `score_ledgers`，但每日打卡、成就定义、用户成就等仍未落地，因此仍会辅以 `user_profiles`、`user_tasks`、`user_learning_paths` 做部分聚合。
 
 ---
 
@@ -600,6 +600,7 @@ erDiagram
 用途：
 
 - 积分流水表
+- 已于迁移 `010_create_growth_write_models.sql` 落地，并包含历史任务积分回填
 
 字段建议：
 
@@ -625,6 +626,7 @@ erDiagram
 用途：
 
 - 用户当前段位快照
+- 已于迁移 `010_create_growth_write_models.sql` 落地，并与 `user_profiles.current_score/current_rank_code` 保持同步
 
 字段建议：
 

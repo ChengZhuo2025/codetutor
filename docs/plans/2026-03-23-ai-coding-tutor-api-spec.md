@@ -782,6 +782,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - 同一任务重复完成不得重复发分
 - 当前首版实现会同步更新 `user_tasks`、`user_learning_paths`、`user_profiles`
+- 当前已落地成长写模型：任务完成时会写入 `score_ledgers`，并刷新 `user_ranks`
 - 完成当前关卡后，若仍有下一关，则自动推进 `current_task_id` 并把下一关置为 `in_progress`
 - 若当前已是最后一关，则整条 `user_learning_path` 自动转为 `completed`
 

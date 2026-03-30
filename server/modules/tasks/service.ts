@@ -6,10 +6,13 @@ import type {
   UpdateTaskStatusResponseData,
 } from "@/lib/api/contracts/task"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
+import {
+  awardTaskCompletionScore,
+  ensureUserRankSnapshot,
+} from "@/server/modules/gamification/service"
 import { reconcileInterruptedLearningPaths } from "@/server/modules/learning-paths/service"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import {
-  getRankCodeForScore,
   resolveTaskProgression,
   type TaskPersistentStatus,
 } from "./logic"
@@ -240,8 +243,6 @@ export async function completeTask(
       : pathTasks.find((item) => item.id === progression.nextTaskId) ?? null
   const nextTaskTitle = nextTask ? stepById.get(nextTask.path_step_id)?.title ?? "下一关" : null
   const nextScore = profile.current_score + scoreDelta
-  const nextRankCode = getRankCodeForScore(nextScore)
-
   const supabase = createSupabaseAdminClient()
 
   const { error: completeTaskError } = await supabase
@@ -294,11 +295,26 @@ export async function completeTask(
 
   assertSupabaseSuccess(pathError, "failed to advance learning path")
 
+  await awardTaskCompletionScore(supabase, {
+    userId,
+    taskId: task.id,
+    scoreDelta,
+    sourceRef: path.id,
+    remark: `Completed task: ${currentStep.title}`,
+    createdAt: now,
+  })
+
+  const rankSnapshot = await ensureUserRankSnapshot(supabase, {
+    userId,
+    currentScore: nextScore,
+    updatedAt: now,
+  })
+
   const { error: profileError } = await supabase
     .from("user_profiles")
     .update({
       current_score: nextScore,
-      current_rank_code: nextRankCode,
+      current_rank_code: rankSnapshot.rankCode,
       last_learning_at: now,
       last_active_task_id: progression.pathCompleted ? null : progression.nextTaskId,
       updated_at: now,
@@ -312,8 +328,8 @@ export async function completeTask(
     taskStatus: "completed",
     scoreDelta,
     currentScore: nextScore,
-    currentRank: getRankName(nextRankCode),
-    rankChanged: nextRankCode !== profile.current_rank_code,
+    currentRank: getRankName(rankSnapshot.rankCode),
+    rankChanged: rankSnapshot.rankCode !== profile.current_rank_code,
     completionSummary: buildCompletionSummary(currentStep.title, nextTaskTitle),
     nextTask:
       nextTask && nextTaskTitle

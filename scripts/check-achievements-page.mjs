@@ -102,7 +102,7 @@ assert.match(
 
 assert.match(
   pageSource,
-  /requestData<AchievementSummaryResponseData>\("\/achievement\/summary"\)/,
+  /(?:requestData|apiClient\.get)<AchievementSummaryResponseData>\("\/achievement\/summary"\)/,
   "The /achievements page should load growth data from the real /api/achievement/summary endpoint",
 )
 

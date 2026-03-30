@@ -26,6 +26,28 @@ type PathRow = {
   tool_id: string
 }
 
+type ScoreLedgerRow = {
+  task_id: string | null
+  event_type:
+    | "task_completion"
+    | "daily_checkin"
+    | "achievement_reward"
+    | "manual_adjustment"
+    | "migration_backfill"
+  score_delta: number
+  source_ref: string | null
+  remark: string | null
+  created_at: string
+}
+
+type UserRankRow = {
+  user_id: string
+  rank_code: AchievementRankContract["code"]
+  score_snapshot: number
+  next_rank_code: AchievementRankContract["code"] | null
+  score_to_next_rank: number
+}
+
 type ToolRow = {
   id: string
   code: string
@@ -148,6 +170,59 @@ function buildBadges(
   ]
 }
 
+function buildHistoryFromLedgers(
+  ledgers: ScoreLedgerRow[],
+  taskById: Map<string, TaskRow>,
+  pathById: Map<string, PathRow>,
+): AchievementHistoryItemContract[] {
+  return ledgers
+    .filter((ledger) => !(ledger.event_type === "migration_backfill" && !ledger.task_id))
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 8)
+    .map((ledger) => {
+      if (ledger.event_type === "daily_checkin") {
+        return {
+          label: ledger.remark ?? "完成每日打卡",
+          xp: ledger.score_delta,
+          time: formatRelativeTime(ledger.created_at),
+          type: "checkin" as const,
+        }
+      }
+
+      if (ledger.event_type === "achievement_reward") {
+        return {
+          label: ledger.remark ?? "解锁成长奖励",
+          xp: ledger.score_delta,
+          time: formatRelativeTime(ledger.created_at),
+          type: "badge" as const,
+        }
+      }
+
+      if (ledger.event_type === "manual_adjustment") {
+        return {
+          label: ledger.remark ?? "积分调整",
+          xp: ledger.score_delta,
+          time: formatRelativeTime(ledger.created_at),
+          type: "bonus" as const,
+        }
+      }
+
+      const relatedTask = ledger.task_id ? taskById.get(ledger.task_id) ?? null : null
+      const relatedPath = relatedTask
+        ? pathById.get(relatedTask.user_learning_path_id) ?? null
+        : null
+
+      return {
+        label: relatedPath
+          ? `完成「${relatedPath.path_name_snapshot}」`
+          : ledger.remark ?? "完成学习任务",
+        xp: ledger.score_delta,
+        time: formatRelativeTime(ledger.created_at),
+        type: "task" as const,
+      }
+    })
+}
+
 export async function getAchievementSummaryData(
   userId: string,
 ): Promise<AchievementSummaryResponseData | null> {
@@ -165,6 +240,14 @@ export async function getAchievementSummaryData(
     return null
   }
 
+  const { data: userRank, error: userRankError } = await supabase
+    .from("user_ranks")
+    .select("user_id, rank_code, score_snapshot, next_rank_code, score_to_next_rank")
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  assertSupabaseSuccess(userRankError, "failed to load achievement rank snapshot")
+
   const { data: tasks, error: taskError } = await supabase
     .from("user_tasks")
     .select("id, user_learning_path_id, status, score_awarded, started_at, completed_at")
@@ -179,6 +262,14 @@ export async function getAchievementSummaryData(
 
   assertSupabaseSuccess(pathError, "failed to load achievement paths")
 
+  const { data: scoreLedgers, error: scoreLedgerError } = await supabase
+    .from("score_ledgers")
+    .select("task_id, event_type, score_delta, source_ref, remark, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+
+  assertSupabaseSuccess(scoreLedgerError, "failed to load achievement score ledgers")
+
   const toolIds = Array.from(new Set((paths ?? []).map((path) => path.tool_id)))
   const { data: tools, error: toolError } =
     toolIds.length === 0
@@ -191,21 +282,35 @@ export async function getAchievementSummaryData(
   assertSupabaseSuccess(toolError, "failed to load achievement tools")
 
   const pathById = new Map(((paths ?? []) as PathRow[]).map((path) => [path.id, path]))
-  const completedTasks = ((tasks ?? []) as TaskRow[]).filter((task) => task.status === "completed")
+  const taskRows = (tasks ?? []) as TaskRow[]
+  const taskById = new Map(taskRows.map((task) => [task.id, task]))
+  const completedTasks = taskRows.filter((task) => task.status === "completed")
+  const ledgerRows = (scoreLedgers ?? []) as ScoreLedgerRow[]
   const completedTaskCount = completedTasks.length
-  const totalXP = completedTasks.reduce((sum, task) => sum + task.score_awarded, 0)
-  const monthlyXP = completedTasks
-    .filter((task) => {
-      if (!task.completed_at) {
-        return false
-      }
+  const totalXPFromTasks = completedTasks.reduce((sum, task) => sum + task.score_awarded, 0)
+  const hasRealLedgers = ledgerRows.length > 0
+  const totalXP = hasRealLedgers
+    ? ledgerRows.reduce((sum, ledger) => sum + ledger.score_delta, 0)
+    : totalXPFromTasks
+  const monthlyXP = hasRealLedgers
+    ? ledgerRows
+        .filter((ledger) => {
+          const diffDays = (Date.now() - new Date(ledger.created_at).getTime()) / 86400000
+          return diffDays <= 30
+        })
+        .reduce((sum, ledger) => sum + ledger.score_delta, 0)
+    : completedTasks
+        .filter((task) => {
+          if (!task.completed_at) {
+            return false
+          }
 
-      const diffDays =
-        (Date.now() - new Date(task.completed_at).getTime()) / 86400000
+          const diffDays =
+            (Date.now() - new Date(task.completed_at).getTime()) / 86400000
 
-      return diffDays <= 30
-    })
-    .reduce((sum, task) => sum + task.score_awarded, 0)
+          return diffDays <= 30
+        })
+        .reduce((sum, task) => sum + task.score_awarded, 0)
 
   const activeDates = new Set<string>()
   for (const task of completedTasks) {
@@ -232,66 +337,50 @@ export async function getAchievementSummaryData(
     completedTaskTitles,
   )
 
+  const rankSnapshot = (userRank as UserRankRow | null) ?? null
   const currentRank =
-    RANKS.find((rank) => rank.code === profile.current_rank_code) ?? RANKS[0]
-  const nextRank = getNextRank(profile.current_rank_code)
-  const history: AchievementHistoryItemContract[] = [
-    ...completedTasks
-      .sort((a, b) => {
-        const aTime = a.completed_at ? new Date(a.completed_at).getTime() : 0
-        const bTime = b.completed_at ? new Date(b.completed_at).getTime() : 0
-        return bTime - aTime
-      })
-      .slice(0, 6)
-      .map((task) => ({
-        label: `完成「${pathById.get(task.user_learning_path_id)?.path_name_snapshot ?? "学习任务"}」`,
-        xp: task.score_awarded,
-        time: formatRelativeTime(task.completed_at),
-        type: "task" as const,
-      })),
-    ...(profile.last_learning_at
-      ? [
-          {
-            label: "最近一次学习打卡",
-            xp: 5,
-            time: formatRelativeTime(profile.last_learning_at),
-            type: "checkin" as const,
-          },
-        ]
-      : []),
-    ...badges
-      .filter((badge) => badge.earned)
-      .slice(0, 2)
-      .map((badge) => ({
-        label: `获得「${badge.title}」徽章`,
-        xp: badge.code === "seven_day_streak" ? 50 : 30,
-        time: profile.last_learning_at ? formatRelativeTime(profile.last_learning_at) : "刚刚",
-        type: "badge" as const,
-      })),
-  ].slice(0, 8)
+    RANKS.find((rank) => rank.code === (rankSnapshot?.rank_code ?? profile.current_rank_code)) ?? RANKS[0]
+  const nextRank = rankSnapshot?.next_rank_code
+    ? (RANKS.find((rank) => rank.code === rankSnapshot.next_rank_code) ?? getNextRank(currentRank.code))
+    : getNextRank(currentRank.code)
+  const history = hasRealLedgers
+    ? buildHistoryFromLedgers(ledgerRows, taskById, pathById)
+    : completedTasks
+        .sort((a, b) => {
+          const aTime = a.completed_at ? new Date(a.completed_at).getTime() : 0
+          const bTime = b.completed_at ? new Date(b.completed_at).getTime() : 0
+          return bTime - aTime
+        })
+        .slice(0, 8)
+        .map((task) => ({
+          label: `完成「${pathById.get(task.user_learning_path_id)?.path_name_snapshot ?? "学习任务"}」`,
+          xp: task.score_awarded,
+          time: formatRelativeTime(task.completed_at),
+          type: "task" as const,
+        }))
 
   const calendar = buildCalendar(profile.streak_days, activeDates)
 
   return {
     currentRankCode: currentRank.code,
     currentRank: currentRank.name,
-    currentScore: profile.current_score,
+    currentScore: rankSnapshot?.score_snapshot ?? profile.current_score,
     nextRank: nextRank.name,
-    nextRankRemainingXP:
-      nextRank.code === currentRank.code
+    nextRankRemainingXP: rankSnapshot?.score_to_next_rank ??
+      (nextRank.code === currentRank.code
         ? 0
-        : Math.max(0, nextRank.minScore - profile.current_score),
+        : Math.max(0, nextRank.minScore - profile.current_score)),
     completedTaskCount,
     streakDays: profile.streak_days,
     overview: {
-      totalXP: Math.max(profile.current_score, totalXP),
+      totalXP: rankSnapshot?.score_snapshot ?? Math.max(profile.current_score, totalXP),
       streakDays: profile.streak_days,
       monthlyXP,
       totalCheckinDays: Math.max(activeDates.size, profile.streak_days),
-      nextRankRemainingXP:
-        nextRank.code === currentRank.code
+      nextRankRemainingXP: rankSnapshot?.score_to_next_rank ??
+        (nextRank.code === currentRank.code
           ? 0
-          : Math.max(0, nextRank.minScore - profile.current_score),
+          : Math.max(0, nextRank.minScore - profile.current_score)),
       earnedBadges: badges.filter((badge) => badge.earned).length,
     },
     ranks: RANKS,

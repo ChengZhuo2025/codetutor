@@ -102,12 +102,12 @@ types/                # 跨 feature 共用的类型定义
 - ✅ 首页登录态恢复与真实推荐分流（`/learn`、`/history`、`/onboarding`）
 - ✅ onboarding / learn / map / achievements / history 的核心 read model API
 - ✅ `/api/task/complete` 与 `/api/task/update-status` 首版落地，学习页可真实推进关卡
+- ✅ `score_ledgers` / `user_ranks` 成长写模型落地，任务积分与段位变化可追溯
 - ✅ 历史学习计划详情、放弃/重新激活/删除记录状态操作
 - ✅ 用户资料编辑、头像上传、反馈系统
-- ✅ Supabase 迁移与远程数据库接入（当前已到 `009`）
+- ✅ Supabase 迁移与远程数据库接入（当前已到 `010`）
 
 **进行中/待完成：**
-- ⏳ 任务完成 / 状态更新写接口
 - ⏳ 每日打卡写接口
 - ⏳ analytics 事件入库
 - ⏳ 管理员后台前端

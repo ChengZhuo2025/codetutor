@@ -7,6 +7,7 @@ import type {
   OnboardingToolGroupContract,
 } from "@/lib/api/contracts/onboarding"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
+import { ensureUserRankSnapshot } from "@/server/modules/gamification/service"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 
 type JsonRecord = Record<string, unknown>
@@ -291,6 +292,12 @@ export async function completeOnboarding(
 
     assertSupabaseSuccess(updateProfileError, "failed to update user profile")
   }
+
+  await ensureUserRankSnapshot(supabase, {
+    userId,
+    currentScore: existingProfile?.current_score ?? 0,
+    updatedAt: now,
+  })
 
   const { error: preferenceError } = await supabase
     .from("user_learning_preferences")

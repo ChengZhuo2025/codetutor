@@ -9,6 +9,7 @@ import type {
   UpdateProfileMeRequest,
 } from "@/lib/api/contracts/auth"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
+import { ensureUserRankSnapshot } from "@/server/modules/gamification/service"
 import { getLearningPathStatusSummary } from "@/server/modules/learning-paths/service"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
 
@@ -224,6 +225,12 @@ export async function finalizeAuthLogin(
       "failed to update learning preferences during auth login",
     )
   }
+
+  await ensureUserRankSnapshot(supabase, {
+    userId: user.id,
+    currentScore: profile?.current_score ?? 0,
+    updatedAt: now,
+  })
 
   const gateState = await loadUserGateState(user.id)
 

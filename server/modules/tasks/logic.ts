@@ -1,16 +1,4 @@
-type RankCode = "rookie" | "apprentice" | "vibe_coder" | "builder" | "master"
-
-const RANK_THRESHOLDS: Array<{
-  code: RankCode
-  minScore: number
-  maxScore: number
-}> = [
-  { code: "rookie", minScore: 0, maxScore: 200 },
-  { code: "apprentice", minScore: 200, maxScore: 500 },
-  { code: "vibe_coder", minScore: 500, maxScore: 1000 },
-  { code: "builder", minScore: 1000, maxScore: 2000 },
-  { code: "master", minScore: 2000, maxScore: 9999 },
-]
+import { deriveRankSnapshot } from "../gamification/logic.ts"
 
 export type TaskPersistentStatus =
   | "not_started"
@@ -29,13 +17,8 @@ export type TaskProgressionInput = {
   }>
 }
 
-export function getRankCodeForScore(score: number): RankCode {
-  const safeScore = Math.max(0, score)
-
-  return (
-    RANK_THRESHOLDS.find((rank) => safeScore >= rank.minScore && safeScore < rank.maxScore)?.code
-    ?? RANK_THRESHOLDS[RANK_THRESHOLDS.length - 1].code
-  )
+export function getRankCodeForScore(score: number) {
+  return deriveRankSnapshot(score).rankCode
 }
 
 export function resolveTaskProgression(input: TaskProgressionInput) {

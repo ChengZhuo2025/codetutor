@@ -449,7 +449,7 @@ server/modules/gamification/
 
 说明：
 
-- `achievement summary` 读取侧可以在模块内聚合 `user_ranks + score_ledgers + daily_checkins + user_achievements`
+- `achievement summary` 当前已开始聚合 `user_ranks + score_ledgers + user_profiles + user_tasks`，后续再继续接入 `daily_checkins + user_achievements`
 - 图标、颜色、日历矩阵等表现层细节不建议下沉到基础领域模型
 
 ## 8.8 `history`
