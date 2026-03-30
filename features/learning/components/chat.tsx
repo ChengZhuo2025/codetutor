@@ -29,6 +29,10 @@ import type {
   LearningCurrentSessionResponseData,
   LearningMessageResponseData,
 } from "@/lib/api/contracts/learning"
+import type {
+  CompleteTaskResponseData,
+  UpdateTaskStatusResponseData,
+} from "@/lib/api/contracts/task"
 import { requestData } from "@/lib/api/client"
 import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
@@ -144,9 +148,10 @@ function getInputHint(
 
 type LearnChatProps = {
   learningData: LearningCurrentSessionResponseData
+  onRequestRefresh: () => void
 }
 
-export function LearnChat({ learningData }: LearnChatProps) {
+export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
   const { trackEvent } = useAppEventTracker()
   const [messages, setMessages] = useState<Message[]>(learningData.messages)
   const [input, setInput] = useState("")
@@ -158,6 +163,7 @@ export function LearnChat({ learningData }: LearnChatProps) {
   const [failedDraft, setFailedDraft] = useState<PendingDraft | null>(null)
   const [connectionState, setConnectionState] = useState<ConnectionState>("online")
   const [showSupportOptions, setShowSupportOptions] = useState(false)
+  const [taskState, setTaskState] = useState(learningData.task.status)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -170,6 +176,7 @@ export function LearnChat({ learningData }: LearnChatProps) {
 
   useEffect(() => {
     setMessages(learningData.messages)
+    setTaskState(learningData.task.status)
     nextMessageId.current = learningData.messages.length + 1
   }, [learningData])
 
@@ -234,7 +241,101 @@ export function LearnChat({ learningData }: LearnChatProps) {
     if (textareaRef.current) textareaRef.current.style.height = "auto"
   }
 
-  const dispatchDraft = async (draft: PendingDraft) => {
+  const appendTaskFeedbackMessage = (data: CompleteTaskResponseData) => {
+    const lines = [data.completionSummary]
+
+    if (data.scoreDelta > 0) {
+      lines.push("", `本次获得 +${data.scoreDelta} XP，当前累计 ${data.currentScore} XP。`)
+    }
+
+    if (data.rankChanged) {
+      lines.push(`当前段位已提升为 ${data.currentRank}。`)
+    }
+
+    if (data.nextTask) {
+      lines.push("", `下一关：${data.nextTask.title}`)
+    }
+
+    const message: Message = {
+      id: allocateMessageId(),
+      role: "ai",
+      kind: "task_feedback",
+      title: "任务反馈",
+      content: lines.join("\n"),
+      xp: data.scoreDelta > 0 ? data.scoreDelta : undefined,
+      nextStep: data.nextTask ? `进入下一关：${data.nextTask.title}` : "本轮学习计划已完成",
+    }
+
+    setMessages((prev) => [...prev, message])
+  }
+
+  const syncTaskStatus = async (
+    status: "in_progress" | "blocked",
+    reason?: string | null,
+  ) => {
+    const data = await requestData<UpdateTaskStatusResponseData>("/task/update-status", {
+      method: "POST",
+      body: JSON.stringify({
+        taskId: learningData.task.taskId,
+        status,
+        reason,
+      }),
+    })
+
+    setTaskState(data.taskStatus)
+    return data
+  }
+
+  const completeCurrentTask = async () => {
+    if (connectionState !== "online") {
+      setSendError("当前网络连接不稳定，完成结果尚未提交。恢复后请重试。")
+      return
+    }
+
+    const userMessage: Message = {
+      id: allocateMessageId(),
+      role: "user",
+      kind: "user_input",
+      title: "我的反馈",
+      content: "我完成了",
+    }
+
+    setMessages((prev) => [...prev, userMessage])
+    setShowSupportOptions(false)
+    setIsTyping(true)
+    setSendError(null)
+
+    try {
+      const data = await requestData<CompleteTaskResponseData>("/task/complete", {
+        method: "POST",
+        body: JSON.stringify({
+          taskId: learningData.task.taskId,
+          conversationId: learningData.conversationId,
+        }),
+      })
+
+      setTaskState("completed")
+      appendTaskFeedbackMessage(data)
+      setFailedDraft(null)
+      setInput("")
+      setPreviewAttachment(null)
+
+      window.setTimeout(() => {
+        onRequestRefresh()
+      }, 400)
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : "任务完成失败，请稍后重试。")
+    } finally {
+      setIsTyping(false)
+    }
+  }
+
+  const dispatchDraft = async (
+    draft: PendingDraft,
+    options?: {
+      preserveBlockedStatus?: boolean
+    },
+  ) => {
     if (connectionState !== "online") {
       setFailedDraft(draft)
       setSendError("当前网络连接不稳定，消息尚未发出。恢复后可直接重试。")
@@ -262,6 +363,10 @@ export function LearnChat({ learningData }: LearnChatProps) {
     setIsTyping(true)
 
     try {
+      if (taskState === "blocked" && !options?.preserveBlockedStatus) {
+        await syncTaskStatus("in_progress")
+      }
+
       const data = await requestData<LearningMessageResponseData>("/learning/message", {
         method: "POST",
         body: JSON.stringify({
@@ -293,6 +398,12 @@ export function LearnChat({ learningData }: LearnChatProps) {
     }
 
     if ((!draft.text && !draft.attachment) || isTyping) return
+
+    if (!draft.attachment && draft.text === "我完成了") {
+      await completeCurrentTask()
+      return
+    }
+
     await dispatchDraft(draft)
   }
 
@@ -314,6 +425,8 @@ export function LearnChat({ learningData }: LearnChatProps) {
         source: "quick_action",
         taskId: learningData.task.taskId,
       })
+      void completeCurrentTask()
+      return
     }
 
     if (action.category === "help" || action.category === "hint") {
@@ -322,6 +435,19 @@ export function LearnChat({ learningData }: LearnChatProps) {
         category: action.category,
         taskId: learningData.task.taskId,
       })
+
+      void (async () => {
+        try {
+          await syncTaskStatus("blocked", action.label)
+          await dispatchDraft(
+            { text: action.label, attachment: null },
+            { preserveBlockedStatus: true },
+          )
+        } catch (error) {
+          setSendError(error instanceof Error ? error.message : "更新任务状态失败，请稍后重试。")
+        }
+      })()
+      return
     }
 
     void dispatchDraft({ text: action.label, attachment: null })
@@ -334,7 +460,18 @@ export function LearnChat({ learningData }: LearnChatProps) {
       helpMode: option.mode,
       taskId: learningData.task.taskId,
     })
-    void dispatchDraft({ text: option.prompt, attachment: null })
+
+    void (async () => {
+      try {
+        await syncTaskStatus("blocked", option.label)
+          await dispatchDraft(
+            { text: option.prompt, attachment: null },
+            { preserveBlockedStatus: true },
+          )
+      } catch (error) {
+        setSendError(error instanceof Error ? error.message : "更新任务状态失败，请稍后重试。")
+      }
+    })()
   }
 
   const handleRetry = () => {
@@ -348,6 +485,13 @@ export function LearnChat({ learningData }: LearnChatProps) {
       conversationId: learningData.conversationId,
       taskId: learningData.task.taskId,
     })
+
+    if (taskState === "blocked") {
+      void syncTaskStatus("in_progress").catch((error) => {
+        setSendError(error instanceof Error ? error.message : "恢复任务状态失败，请稍后重试。")
+      })
+    }
+
     textareaRef.current?.focus()
   }
 

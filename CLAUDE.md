@@ -101,6 +101,7 @@ types/                # 跨 feature 共用的类型定义
 - ✅ 手机验证码登录与微信 OAuth 跳转
 - ✅ 首页登录态恢复与真实推荐分流（`/learn`、`/history`、`/onboarding`）
 - ✅ onboarding / learn / map / achievements / history 的核心 read model API
+- ✅ `/api/task/complete` 与 `/api/task/update-status` 首版落地，学习页可真实推进关卡
 - ✅ 历史学习计划详情、放弃/重新激活/删除记录状态操作
 - ✅ 用户资料编辑、头像上传、反馈系统
 - ✅ Supabase 迁移与远程数据库接入（当前已到 `009`）

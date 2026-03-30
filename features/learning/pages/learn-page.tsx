@@ -16,6 +16,7 @@ import type { ApiRequestState } from "@/types/api"
 
 export function LearnPage() {
   const router = useRouter()
+  const [refreshNonce, setRefreshNonce] = useState(0)
   const [sessionState, setSessionState] =
     useState<ApiRequestState<LearningCurrentSessionResponseData>>({
       status: "loading",
@@ -81,7 +82,7 @@ export function LearnPage() {
     return () => {
       cancelled = true
     }
-  }, [router])
+  }, [refreshNonce, router])
 
   return (
     <AppShell
@@ -108,7 +109,12 @@ export function LearnPage() {
       asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
     >
       {sessionState.status === "success" ? (
-        <LearnChat learningData={sessionState.data} />
+        <LearnChat
+          learningData={sessionState.data}
+          onRequestRefresh={() => {
+            setRefreshNonce((current) => current + 1)
+          }}
+        />
       ) : (
         <div className="flex min-h-0 flex-1 items-center justify-center p-4 sm:p-6">
           <div className="w-full max-w-3xl">

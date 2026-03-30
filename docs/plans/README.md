@@ -64,7 +64,7 @@
 
 - 当前仓库已经不是“纯前端 demo”，而是一个包含前端页面、`app/api` BFF、`server/modules` 服务层、Supabase 迁移与远程数据库接入脚本的同仓项目。
 - 当前真实页面为 7 个：`/`、`/login`、`/onboarding`、`/learn`、`/map`、`/achievements`、`/history`。
-- 当前已落地的真实接口包括：认证登录、认证会话摘要、用户档案、头像上传、onboarding、当前学习会话、地图/进度、成就汇总、历史学习计划、用户反馈与管理员反馈接口。
+- 当前已落地的真实接口包括：认证登录、认证会话摘要、用户档案、头像上传、onboarding、当前学习会话、任务完成与任务状态更新、地图/进度、成就汇总、历史学习计划、用户反馈与管理员反馈接口。
 - 当前已落地的数据库迁移为 `001` 到 `009`，其中已包含学习主线核心表、用户资料字段升级、运营导出视图、头像 Storage bucket、反馈工单表，以及学习计划 `interrupted` 状态与 `interrupted_at` 字段。
 - 首页营销层已接入登录态恢复：顶部导航、Hero、套餐区、最终 CTA、页脚 CTA 会在用户已登录时切换为“继续学习”，并按真实用户状态跳转到 `/learn`、`/history` 或 `/onboarding`。
 - 工作台左侧栏数据已提升到根级 Provider 缓存，在 `/learn`、`/map`、`/achievements`、`/history` 间切换时不再重复请求并产生加载跳动。
@@ -79,7 +79,6 @@
 
 ### P0：必须优先补齐
 
-- 任务状态写接口：补齐 `POST /api/task/complete`、`POST /api/task/update-status`，让用户能真实完成关卡、推进路径，而不只是读取 read model。
 - 成长写模型：落地 `score_ledgers`、`user_ranks`，把 XP、段位、成长反馈从只读聚合升级为可追溯的写入链路。
 - 每日打卡：补齐 `POST /api/checkin/daily` 与 `daily_checkins`，让成就页中的连续学习与打卡能力形成真实闭环。
 - 学习会话持久化与真实 AI 编排：补齐 `conversations`、`conversation_messages`，并将 `POST /api/learning/message` 从服务端内置教学回复升级为真实外部 AI provider 编排。
@@ -98,7 +97,7 @@
 
 ### 当前建议开发顺序
 
-1. 先完成 `task + gamification write + daily_checkins`，让学习闭环真正可推进。
+1. 先完成 `gamification write + daily_checkins`，把当前已落地的任务推进能力升级为可追溯成长链路。
 2. 再补 `conversations + conversation_messages + 外部 AI provider`，让学习对话从“可演示”升级为“可持续使用”。
 3. 然后补 `analytics + 通知设置落库 + 管理员后台前端`，把运营和运维能力接上。
 4. 最后再进入 `订阅支付 + Redis/队列 + 更完整测试体系`。

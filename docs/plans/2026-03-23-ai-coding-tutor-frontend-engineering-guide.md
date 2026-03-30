@@ -253,9 +253,9 @@ features/<domain>/
 
 - 路由入口：`app/learn/page.tsx`
 - 页面装配：`features/learning/pages/learn-page.tsx`
-- 当前真实依赖：`GET /api/learning/current-session`、`POST /api/learning/message`
+- 当前真实依赖：`GET /api/learning/current-session`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`
 - 页面组件：`features/learning/components/*`
-- 当前职责补充：若当前用户没有 `active` 学习计划，页面会根据 `/api/auth/session` 的真实 gate 状态自动跳转到 `/history` 或 `/onboarding`
+- 当前职责补充：若当前用户没有 `active` 学习计划，页面会根据 `/api/auth/session` 的真实 gate 状态自动跳转到 `/history` 或 `/onboarding`；“我完成了”和求助类动作已接入真实任务写接口
 
 ### 地图页
 

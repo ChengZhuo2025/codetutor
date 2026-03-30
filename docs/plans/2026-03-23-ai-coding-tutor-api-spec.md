@@ -738,7 +738,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 ## 8. 任务与进度接口
 
-## 8.1 规划中：`POST /api/task/complete`
+## 8.1 `POST /api/task/complete`
 
 用途：
 
@@ -781,9 +781,11 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 业务规则：
 
 - 同一任务重复完成不得重复发分
-- 必须在事务内完成任务状态与积分写入
+- 当前首版实现会同步更新 `user_tasks`、`user_learning_paths`、`user_profiles`
+- 完成当前关卡后，若仍有下一关，则自动推进 `current_task_id` 并把下一关置为 `in_progress`
+- 若当前已是最后一关，则整条 `user_learning_path` 自动转为 `completed`
 
-## 8.2 规划中：`POST /api/task/update-status`
+## 8.2 `POST /api/task/update-status`
 
 用途：
 
@@ -798,6 +800,18 @@ MVP 默认使用登录态 Session 或 Bearer Token。
   "reason": "环境配置没完成"
 }
 ```
+
+当前首版支持状态：
+
+- `blocked`
+- `in_progress`
+
+业务规则：
+
+- 仅允许更新当前 `active` 学习计划中的当前关卡
+- `blocked` 会写入 `blocked_at` 与 `block_reason`
+- `in_progress` 会清理 `blocked_at` 与 `block_reason`
+- 当前 `/learn` 页里的“我完成了”和求助动作已接入这两个真实任务写接口
 
 ## 8.3 `GET /api/progress/current`
 
@@ -1289,8 +1303,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | `POST /api/learning/message` | 是 | 核心学习数据 |
 | `GET /api/learning/current-session` | 是 | 恢复当前学习上下文 |
 | `POST /api/learning/stuck-help` | 是，规划中 | 请求卡住帮助 |
-| `POST /api/task/complete` | 是，规划中 | 写积分与任务 |
-| `POST /api/task/update-status` | 是，规划中 | 更新任务状态 |
+| `POST /api/task/complete` | 是 | 写任务完成、推进下一关、同步积分快照 |
+| `POST /api/task/update-status` | 是 | 更新当前关卡状态 |
 | `GET /api/progress/current` | 是 | 当前路径总览 |
 | `GET /api/progress/map` | 是 | 当前路径地图 |
 | `GET /api/achievement/summary` | 是 | 私人成长总览 |
