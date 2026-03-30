@@ -24,7 +24,9 @@ import type {
   GetOnboardingPathOptionsResponseData,
   GetOnboardingToolsResponseData,
 } from "@/lib/api/contracts/onboarding"
+import type { LearningCurrentSessionResponseData } from "@/lib/api/contracts/learning"
 import { requestData } from "@/lib/api/client"
+import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { useAppEventTracker } from "@/providers/app-providers"
 import type { ApiRequestState } from "@/types/api"
 
@@ -47,6 +49,7 @@ export function OnboardingPage() {
     })
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [isCheckingAccess, setIsCheckingAccess] = useState(true)
 
   const levels = onboardingPresets.levels
   const toolGroups: OnboardingToolGroup[] =
@@ -92,6 +95,46 @@ export function OnboardingPage() {
   useEffect(() => {
     let cancelled = false
 
+    async function checkExistingActivePlan() {
+      try {
+        const supabase = createSupabaseBrowserClient()
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        if (!session?.access_token) {
+          if (!cancelled) {
+            setIsCheckingAccess(false)
+          }
+          return
+        }
+
+        await requestData<LearningCurrentSessionResponseData>("/learning/current-session")
+
+        if (!cancelled) {
+          router.replace(ROUTES.learn)
+        }
+      } catch {
+        if (!cancelled) {
+          setIsCheckingAccess(false)
+        }
+      }
+    }
+
+    void checkExistingActivePlan()
+
+    return () => {
+      cancelled = true
+    }
+  }, [router])
+
+  useEffect(() => {
+    if (isCheckingAccess) {
+      return
+    }
+
+    let cancelled = false
+
     async function loadToolGroups() {
       try {
         const data = await requestData<GetOnboardingToolsResponseData>("/onboarding/tools")
@@ -128,9 +171,13 @@ export function OnboardingPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [isCheckingAccess])
 
   useEffect(() => {
+    if (isCheckingAccess) {
+      return
+    }
+
     let cancelled = false
 
     if (!selectedToolCode || !level) {
@@ -181,7 +228,7 @@ export function OnboardingPage() {
     return () => {
       cancelled = true
     }
-  }, [level, selectedToolCode])
+  }, [isCheckingAccess, level, selectedToolCode])
 
   const goToStep = (nextStep: OnboardingStep) => {
     startTransition(() => {
@@ -211,7 +258,7 @@ export function OnboardingPage() {
     })
   }
 
-  if (toolGroupsState.status !== "success") {
+  if (isCheckingAccess || toolGroupsState.status !== "success") {
     return (
       <div className="relative flex min-h-screen flex-col overflow-hidden bg-background">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.08),transparent_26%),radial-gradient(circle_at_bottom_right,oklch(0.8_0.18_60/0.08),transparent_20%)]" />
@@ -221,18 +268,26 @@ export function OnboardingPage() {
         <div className="relative z-10 flex flex-1 items-center justify-center px-6 py-10">
           <div className="w-full max-w-xl">
             <StatePanel
-              status={toolGroupsState.status}
+              status={isCheckingAccess ? "loading" : toolGroupsState.status}
               title={
-                toolGroupsState.status === "loading"
+                isCheckingAccess
+                  ? "正在检查当前学习计划"
+                  : toolGroupsState.status === "loading"
                   ? "正在加载工具列表"
                   : toolGroupsState.status === "error"
                     ? "工具列表加载失败"
                     : "暂无可选工具"
               }
-              description={toolGroupsState.message}
-              actionLabel={toolGroupsState.status === "error" ? "重试" : undefined}
+              description={
+                isCheckingAccess
+                  ? "如果你已有进行中的学习计划，将直接回到学习工作台。"
+                  : toolGroupsState.message
+              }
+              actionLabel={
+                !isCheckingAccess && toolGroupsState.status === "error" ? "重试" : undefined
+              }
               onAction={
-                toolGroupsState.status === "error"
+                !isCheckingAccess && toolGroupsState.status === "error"
                   ? () => window.location.reload()
                   : undefined
               }

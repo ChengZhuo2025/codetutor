@@ -7,6 +7,16 @@ import type { AuthLoginResponseData } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
+function withAuthorization(accessToken: string | null | undefined) {
+  if (!accessToken) {
+    return undefined
+  }
+
+  return {
+    Authorization: `Bearer ${accessToken}`,
+  }
+}
+
 function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -36,7 +46,7 @@ function AuthCallbackContent() {
 
       try {
         const supabase = createSupabaseBrowserClient()
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (error) {
           throw error
@@ -44,6 +54,7 @@ function AuthCallbackContent() {
 
         const data = await requestData<AuthLoginResponseData>("/auth/login", {
           method: "POST",
+          headers: withAuthorization(exchangeData.session?.access_token),
           body: JSON.stringify({
             loginType: "wechat",
           }),

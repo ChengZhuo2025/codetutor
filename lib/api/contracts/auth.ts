@@ -23,6 +23,11 @@ export type ProfileToolContract = {
 export type ProfileMeResponseData = {
   userId: string
   nickname: string
+  avatarUrl: string | null
+  phone: string | null
+  email: string | null
+  wechat: string | null
+  bio: string | null
   primaryTool: ProfileToolContract
   learningLevel: string
   currentScore: number
@@ -30,6 +35,20 @@ export type ProfileMeResponseData = {
   streakDays: number
   completedTaskCount: number
   lastLearningAt: string
+}
+
+export type UpdateProfileMeRequest = {
+  nickname: string
+  avatarUrl?: string | null
+  email?: string | null
+  wechat?: string | null
+  bio?: string | null
+}
+
+export type UploadProfileAvatarResponseData = {
+  avatarUrl: string
+  storagePath: string
+  previousAvatarUrl: string | null
 }
 
 export type AuthPreviewContract = {

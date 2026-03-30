@@ -44,8 +44,7 @@ export async function getRequestAuth(
     }
   }
 
-  const devUserId =
-    request.headers.get(DEV_USER_ID_HEADER) ?? process.env.DEV_SUPABASE_USER_ID ?? null
+  const devUserId = request.headers.get(DEV_USER_ID_HEADER)
 
   if (!devUserId) {
     return null

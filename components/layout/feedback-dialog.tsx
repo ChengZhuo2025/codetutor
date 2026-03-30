@@ -90,15 +90,15 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
                       type="button"
                       onClick={() => updateField("feedbackType", option.value)}
                       className={cn(
-                        "flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors",
+                        "flex items-center gap-3 pt-2 text-left transition-colors",
                         active
-                          ? "border-brand/35 bg-brand/12 text-brand"
-                          : "border-white/10 bg-white/5 text-foreground/80 hover:bg-white/7",
+                          ? "text-brand"
+                          : "text-foreground/80",
                       )}
                     >
                       <div
                         className={cn(
-                          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors",
+                          "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
                           active
                             ? "border-brand bg-brand/10"
                             : "border-white/20 bg-transparent",
@@ -106,7 +106,7 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
                       >
                         <span
                           className={cn(
-                            "h-2 w-2 rounded-full transition-colors",
+                            "h-1.5 w-1.5 rounded-full transition-colors",
                             active ? "bg-brand" : "bg-transparent",
                           )}
                         />
@@ -168,12 +168,14 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
           <div className="flex gap-3 border-t border-white/10 px-5 py-4">
             <Button
               variant="outline"
+              size="lg"
               onClick={() => handleOpenChange(false)}
               className="flex-1 rounded-[10px] border-white/10 bg-transparent text-foreground hover:bg-white/5 hover:text-white"
             >
               取消
             </Button>
             <Button
+              size="lg"
               onClick={handleSubmit}
               disabled={!isValid || isSubmitting}
               className="flex-1 rounded-[10px]"

@@ -15,6 +15,7 @@ type JsonRecord = Record<string, unknown>
 type ProfileRow = {
   user_id: string
   nickname: string | null
+  avatar_url: string | null
   learning_level: "beginner" | "intermediate" | "advanced"
   current_score: number
   current_rank_code: string
@@ -171,7 +172,7 @@ async function loadLearningState(userId: string) {
 
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
-    .select("user_id, nickname, learning_level, current_score, current_rank_code, streak_days, last_learning_at")
+    .select("user_id, nickname, avatar_url, learning_level, current_score, current_rank_code, streak_days, last_learning_at")
     .eq("user_id", userId)
     .maybeSingle()
 
@@ -239,6 +240,11 @@ function toProfileData(
   return {
     userId: profile.user_id,
     nickname: profile.nickname ?? "学员",
+    avatarUrl: profile.avatar_url ?? null,
+    phone: null,
+    email: null,
+    wechat: null,
+    bio: null,
     primaryTool: {
       code: tool.code,
       name: tool.name,

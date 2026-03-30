@@ -10,6 +10,11 @@ export const mockProfileMeResponse: ApiSuccessResponse<ProfileMeResponseData> = 
   data: {
     userId: "user-demo-001",
     nickname: "陈小明",
+    avatarUrl: null,
+    phone: "13800138000",
+    email: "xiaoming@example.com",
+    wechat: "xiaoming_dev",
+    bio: "正在学习 AI 编程，希望用 AI 工具提升开发效率。",
     primaryTool: {
       code: "cursor",
       name: "Cursor",

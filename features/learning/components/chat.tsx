@@ -361,8 +361,8 @@ export function LearnChat({ learningData }: LearnChatProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-border/50 bg-surface-1/80 px-4 py-4 backdrop-blur-sm sm:px-6">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="shrink-0 border-b border-border/80 bg-surface-1/80 px-4 py-4 backdrop-blur-sm sm:px-6">
+        <div className="relative">
           <div className="min-w-0">
             <div className="mb-1.5 flex flex-wrap items-center gap-2">
               <span className="rounded-full border border-brand/20 bg-brand-dim px-2 py-1 text-[11px] font-semibold text-brand">
@@ -406,14 +406,14 @@ export function LearnChat({ learningData }: LearnChatProps) {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
-            <button className="flex items-center gap-2 rounded-xl border border-border/60 bg-surface-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground">
+          <div className="flex items-center gap-2 self-start lg:absolute lg:right-0 lg:top-8 lg:mt-0">
+            <button className="flex items-center gap-1 whitespace-nowrap rounded-xl border border-border/60 bg-surface-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground">
               <RefreshCw className="h-3 w-3" />
               重头开始
             </button>
             <Link
               href={ROUTES.onboarding}
-              className="flex items-center gap-2 rounded-xl border border-brand/20 bg-brand-dim px-3 py-2 text-xs text-brand transition-colors hover:border-brand/35 hover:bg-brand/18"
+              className="flex items-center gap-1 whitespace-nowrap rounded-xl border border-brand/20 bg-brand-dim px-3 py-2 text-xs text-brand transition-colors hover:border-brand/35 hover:bg-brand/18"
             >
               <Plus className="h-3 w-3" />
               新建计划

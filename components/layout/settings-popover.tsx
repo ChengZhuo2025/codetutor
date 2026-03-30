@@ -5,10 +5,12 @@ import { useState, useRef, useEffect } from "react"
 import { Settings, User, Bell, LogOut, ChevronRight, X, MessageSquareMore } from "lucide-react"
 import { APP_NAME, APP_VERSION } from "@/constants/app"
 import { ROUTES } from "@/constants/routes"
+import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { FeedbackDialog } from "@/components/layout/feedback-dialog"
 import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog"
 import { NotificationSettingsDialog } from "@/components/layout/notification-settings-dialog"
+import type { ProfileMeResponseData } from "@/lib/api/contracts/auth"
 
 const settingsItems: Array<{
   group: string
@@ -46,7 +48,11 @@ const settingsItems: Array<{
 
 type DialogType = "profile" | "notification" | "feedback" | null
 
-export function SettingsPopover() {
+type SettingsPopoverProps = {
+  onProfileSaved?: (profile: ProfileMeResponseData) => void
+}
+
+export function SettingsPopover({ onProfileSaved }: SettingsPopoverProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [activeDialog, setActiveDialog] = useState<DialogType>(null)
@@ -62,14 +68,22 @@ export function SettingsPopover() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [open])
 
-  const handleItemClick = (item: { dialog?: string; danger?: boolean }) => {
+  const handleItemClick = async (item: { dialog?: string; danger?: boolean }) => {
     if (item.danger) {
       setOpen(false)
       setActiveDialog(null)
-      router.push(ROUTES.home)
+
+      try {
+        const supabase = createSupabaseBrowserClient()
+        await supabase.auth.signOut()
+      } finally {
+        router.replace(ROUTES.home)
+      }
+
       return
     }
     if (item.dialog) {
+      setOpen(false)
       setActiveDialog(item.dialog as DialogType)
     }
   }
@@ -115,7 +129,9 @@ export function SettingsPopover() {
                     return (
                       <button
                         key={item.label}
-                        onClick={() => handleItemClick(item)}
+                        onClick={() => {
+                          void handleItemClick(item)
+                        }}
                         className={cn(
                           "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/6",
                           isDanger ? "text-rose-300 hover:bg-rose-400/8" : "text-foreground/88",
@@ -169,6 +185,7 @@ export function SettingsPopover() {
       <ProfileEditDialog
         open={activeDialog === "profile"}
         onOpenChange={(isOpen) => !isOpen && setActiveDialog(null)}
+        onSaved={onProfileSaved}
       />
       <NotificationSettingsDialog
         open={activeDialog === "notification"}

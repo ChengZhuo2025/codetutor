@@ -216,6 +216,12 @@ erDiagram
 | `user_id` | `uuid` | PK, FK | 用户主键 |
 | `nickname` | `varchar(64)` | nullable | 昵称 |
 | `avatar_url` | `text` | nullable | 头像 |
+| `wechat` | `varchar(64)` | nullable | 微信号 |
+| `contact_email` | `varchar(255)` | nullable | 业务联系邮箱，独立于 auth 登录邮箱 |
+| `bio` | `text` | nullable | 个人简介 |
+| `signup_provider` | `varchar(32)` | nullable | 首次注册来源，如 `phone`、`wechat` |
+| `last_login_provider` | `varchar(32)` | nullable | 最近一次登录方式 |
+| `last_login_at` | `timestamptz` | nullable | 最近一次登录时间 |
 | `primary_tool_id` | `uuid` | FK, nullable | 当前主学习工具 |
 | `learning_level` | `learning_level` | not null | 当前学习等级 |
 | `current_rank_code` | `rank_code` | not null | 当前段位 |
@@ -223,7 +229,7 @@ erDiagram
 | `streak_days` | `integer` | not null default 0 | 连续学习天数 |
 | `last_learning_at` | `timestamptz` | nullable | 最近学习时间 |
 | `last_active_task_id` | `uuid` | nullable | 最近活跃任务 |
-| `metadata` | `jsonb` | not null default '{}' | 扩展字段 |
+| `metadata` | `jsonb` | not null default '{}' | 低频扩展字段，不再承载微信号、联系邮箱、个人简介、注册来源 |
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
 
@@ -231,6 +237,11 @@ erDiagram
 
 - `idx_user_profiles_primary_tool_id`
 - `idx_user_profiles_learning_level`
+
+导出建议：
+
+- 建议提供 `public.user_profile_export_view` 作为后台运营导出视图，统一聚合 `user_profiles`、`auth.users`、`user_learning_preferences` 与当前 `active` 学习路径，避免每次导出时重复手写 join。
+- 视图建议包含常看运营指标，如 `completed_task_count_total`、`active_path_total_steps`、`active_path_completed_steps`、`active_path_completion_percent`、进行中任务数、待开始任务数。
 
 ## 6.2 `user_learning_preferences`
 

@@ -18,8 +18,20 @@ assert.match(
 
 assert.match(
   source,
-  /router\.push\(ROUTES\.home\)/,
-  "SettingsPopover should redirect to ROUTES.home on logout",
+  /createSupabaseBrowserClient/,
+  "SettingsPopover should create a Supabase browser client for logout",
 )
 
-console.log("Settings logout behavior redirects to home.")
+assert.match(
+  source,
+  /supabase\.auth\.signOut\(\)/,
+  "SettingsPopover should clear the Supabase session on logout",
+)
+
+assert.match(
+  source,
+  /router\.(push|replace)\(ROUTES\.home\)/,
+  "SettingsPopover should redirect to ROUTES.home after logout",
+)
+
+console.log("Settings logout behavior signs out Supabase session and redirects home.")

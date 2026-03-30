@@ -202,12 +202,13 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
           <div className="flex gap-3 border-t border-white/10 px-5 py-4">
             <Button
               variant="outline"
+              size="lg"
               onClick={() => onOpenChange(false)}
-              className="flex-1 rounded-[10px] border-white/10 bg-transparent text-foreground hover:bg-white/5"
+              className="flex-1 rounded-[10px] border-white/10 bg-transparent text-foreground hover:bg-white/5 hover:text-white"
             >
               取消
             </Button>
-            <Button onClick={handleSave} disabled={isLoading} className="flex-1 rounded-[10px]">
+            <Button size="lg" onClick={handleSave} disabled={isLoading} className="flex-1 rounded-[10px]">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

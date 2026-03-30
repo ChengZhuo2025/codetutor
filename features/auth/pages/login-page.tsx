@@ -12,8 +12,73 @@ import { requestData } from "@/lib/api/client"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { useAppEventTracker } from "@/providers/app-providers"
 
-function toCnPhoneE164(phone: string) {
-  return `+86${phone}`
+function normalizePhoneInput(value: string) {
+  const digitsOnly = value.replace(/\D/g, "")
+
+  if (/^86\d{11}$/.test(digitsOnly)) {
+    return digitsOnly.slice(2, 13)
+  }
+
+  return digitsOnly.slice(0, 11)
+}
+
+function isValidChinaMainlandPhone(phone: string) {
+  return /^1[3-9]\d{9}$/.test(phone)
+}
+
+function toFriendlyAuthError(error: unknown, action: "send" | "verify" | "oauth") {
+  const fallback =
+    action === "send"
+      ? "验证码发送失败，请稍后重试。"
+      : action === "verify"
+        ? "登录失败，请检查验证码后重试。"
+        : "微信登录跳转失败，请稍后重试。"
+
+  if (!(error instanceof Error)) {
+    return fallback
+  }
+
+  const message = error.message.toLowerCase()
+
+  if (message.includes("otp_expired") || message.includes("token has expired")) {
+    return "验证码已失效或不正确，请重新获取后再试。"
+  }
+
+  if (message.includes("request_timeout")) {
+    return "短信服务响应超时，请稍后再试。若多次失败，可先使用测试验证码或检查短信通道配置。"
+  }
+
+  if (message.includes("invalid phone") || message.includes("phone_number_invalid")) {
+    return "手机号格式不正确，请输入真实的 11 位中国大陆手机号。"
+  }
+
+  if (
+    message.includes("rate limit") ||
+    message.includes("over_sms_send_rate_limit") ||
+    message.includes("too many requests")
+  ) {
+    return "发送过于频繁，请稍后再试。"
+  }
+
+  if (message.includes("sms provider") || message.includes("sms")) {
+    return "短信发送失败，请检查短信模板、签名和服务商配置。"
+  }
+
+  if (message.includes("network")) {
+    return "网络连接异常，请稍后重试。"
+  }
+
+  return error.message || fallback
+}
+
+function withAuthorization(accessToken: string | null | undefined) {
+  if (!accessToken) {
+    return undefined
+  }
+
+  return {
+    Authorization: `Bearer ${accessToken}`,
+  }
 }
 
 const WECHAT_PROVIDER = "wechat" as never
@@ -63,6 +128,7 @@ export function LoginPage() {
       try {
         const data = await requestData<AuthLoginResponseData>("/auth/login", {
           method: "POST",
+          headers: withAuthorization(session.access_token),
           body: JSON.stringify({
             loginType: "phone",
           }),
@@ -84,7 +150,15 @@ export function LoginPage() {
   }, [router])
 
   const sendCode = async () => {
-    if (countdown > 0 || phone.length < 11 || isSendingCode) return
+    if (countdown > 0 || isSendingCode) return
+
+    const normalizedPhone = normalizePhoneInput(phone)
+
+    if (!isValidChinaMainlandPhone(normalizedPhone)) {
+      setPhone(normalizedPhone)
+      setErrorMessage("请输入真实的 11 位中国大陆手机号。")
+      return
+    }
 
     setErrorMessage(null)
     setIsSendingCode(true)
@@ -92,7 +166,7 @@ export function LoginPage() {
     try {
       const supabase = createSupabaseBrowserClient()
       const { error } = await supabase.auth.signInWithOtp({
-        phone: toCnPhoneE164(phone),
+        phone: normalizedPhone,
         options: {
           shouldCreateUser: true,
         },
@@ -105,7 +179,7 @@ export function LoginPage() {
       setLastSentPhone(phone)
       setCountdown(60)
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "验证码发送失败")
+      setErrorMessage(toFriendlyAuthError(error, "send"))
     } finally {
       setIsSendingCode(false)
     }
@@ -120,14 +194,27 @@ export function LoginPage() {
         : "注册后Ai生成一条适合当前水平的学习路径。"
 
   const handlePhoneSubmit = () => {
+    const normalizedPhone = normalizePhoneInput(phone)
+
+    if (!isValidChinaMainlandPhone(normalizedPhone)) {
+      setPhone(normalizedPhone)
+      setErrorMessage("请输入真实的 11 位中国大陆手机号。")
+      return
+    }
+
+    if (!/^\d{6}$/.test(code)) {
+      setErrorMessage("请输入 6 位数字验证码。")
+      return
+    }
+
     setErrorMessage(null)
 
     startSubmitting(() => {
       void (async () => {
         try {
           const supabase = createSupabaseBrowserClient()
-          const { error } = await supabase.auth.verifyOtp({
-            phone: toCnPhoneE164(phone),
+          const { data: otpData, error } = await supabase.auth.verifyOtp({
+            phone: normalizedPhone,
             token: code,
             type: "sms",
           })
@@ -138,6 +225,7 @@ export function LoginPage() {
 
           const data = await requestData<AuthLoginResponseData>("/auth/login", {
             method: "POST",
+            headers: withAuthorization(otpData.session?.access_token),
             body: JSON.stringify({
               loginType: "phone",
             }),
@@ -152,7 +240,7 @@ export function LoginPage() {
 
           router.push(data.redirectTo)
         } catch (error) {
-          setErrorMessage(error instanceof Error ? error.message : "手机号登录失败")
+          setErrorMessage(toFriendlyAuthError(error, "verify"))
         }
       })()
     })
@@ -183,7 +271,7 @@ export function LoginPage() {
           }
         } catch (error) {
           setWechatStatus("error")
-          setWechatMessage(error instanceof Error ? error.message : "微信登录跳转失败")
+          setWechatMessage(toFriendlyAuthError(error, "oauth"))
         }
       })()
     })
@@ -211,7 +299,10 @@ export function LoginPage() {
           setWechatMessage("点击进入微信扫码页，使用 Supabase 托管的微信 OAuth 完成登录或注册。")
           setMode((prev) => (prev === "login" ? "register" : "login"))
         }}
-        onPhoneChange={setPhone}
+        onPhoneChange={(value) => {
+          setErrorMessage(null)
+          setPhone(normalizePhoneInput(value))
+        }}
         onCodeChange={setCode}
         onSendCode={sendCode}
         onSubmit={handlePhoneSubmit}
