@@ -1,14 +1,12 @@
 "use client"
 
 import Image from "next/image"
-import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import {
   AlertCircle,
   CheckCircle2,
   ImagePlus,
   Lightbulb,
-  Plus,
   RefreshCw,
   Send,
   Sparkles,
@@ -406,18 +404,11 @@ export function LearnChat({ learningData }: LearnChatProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start lg:absolute lg:right-0 lg:top-8 lg:mt-0">
+          <div className="lg:absolute lg:right-0 lg:top-8 lg:mt-0">
             <button className="flex items-center gap-1 whitespace-nowrap rounded-xl border border-border/60 bg-surface-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground">
               <RefreshCw className="h-3 w-3" />
               重头开始
             </button>
-            <Link
-              href={ROUTES.onboarding}
-              className="flex items-center gap-1 whitespace-nowrap rounded-xl border border-brand/20 bg-brand-dim px-3 py-2 text-xs text-brand transition-colors hover:border-brand/35 hover:bg-brand/18"
-            >
-              <Plus className="h-3 w-3" />
-              新建计划
-            </Link>
           </div>
         </div>
       </div>

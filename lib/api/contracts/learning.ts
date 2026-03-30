@@ -46,6 +46,10 @@ export type LearningMessageResponseData = {
 
 export type LearningCurrentSessionResponseData = {
   conversationId: string
+  path: {
+    id: string
+    status: "in_progress"
+  }
   task: {
     taskId: string
     title: string

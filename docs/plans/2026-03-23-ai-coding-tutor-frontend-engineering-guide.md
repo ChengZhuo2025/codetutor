@@ -232,7 +232,7 @@ features/<domain>/
 - 页面数据：`features/marketing/data/marketing-content.ts`
 - 页面组件：`features/marketing/components/*`
 - 当前真实依赖：`features/marketing/providers/landing-auth-provider.tsx`、`GET /api/auth/session`
-- 当前职责补充：已登录用户回到首页时，会恢复 Supabase 会话并把导航、Hero、套餐区、页脚与最终 CTA 切换为“继续学习”
+- 当前职责补充：已登录用户回到首页时，会恢复 Supabase 会话并把导航、Hero、套餐区、页脚与最终 CTA 切换为“继续学习”；目标路由由 `GET /api/auth/session` 统一返回 `/learn`、`/history` 或 `/onboarding`
 
 ### 登录页
 
@@ -255,6 +255,7 @@ features/<domain>/
 - 页面装配：`features/learning/pages/learn-page.tsx`
 - 当前真实依赖：`GET /api/learning/current-session`、`POST /api/learning/message`
 - 页面组件：`features/learning/components/*`
+- 当前职责补充：若当前用户没有 `active` 学习计划，页面会根据 `/api/auth/session` 的真实 gate 状态自动跳转到 `/history` 或 `/onboarding`
 
 ### 地图页
 
@@ -262,6 +263,7 @@ features/<domain>/
 - 页面装配：`features/progress/pages/map-page.tsx`
 - 当前真实依赖：`GET /api/progress/current`、`GET /api/progress/map`
 - 页面组件：`features/progress/components/*`
+- 当前职责补充：若没有 `active` 学习计划，会自动按真实 gate 状态离开地图页，而不是停留错误空态
 
 ### 成就页
 
@@ -269,14 +271,15 @@ features/<domain>/
 - 页面装配：`features/achievement/pages/achievements-page.tsx`
 - 当前真实依赖：`GET /api/achievement/summary`
 - 页面组件：`features/achievement/components/*`
+- 当前职责补充：无成长数据时，空态 CTA 会根据真实 gate 状态跳转到 `/history` 或 `/onboarding`
 
 ### 历史页
 
 - 路由入口：`app/history/page.tsx`
 - 页面装配：`features/history/pages/history-page.tsx`
-- 当前真实依赖：`GET /api/history/recent`，侧栏 FAQ 仍为本地静态数据
+- 当前真实依赖：`GET /api/history/recent`、`GET /api/history/[id]`、`POST /api/history/[id]/status`，侧栏 FAQ 仍为本地静态数据
 - 页面组件：`features/history/components/*`
-- 当前职责：展示历史学习计划列表，而不是最近对话消息列表
+- 当前职责：展示历史学习计划列表，而不是最近对话消息列表；支持复盘详情、放弃当前计划、重新激活中断计划、删除历史记录
 
 ### 当前已接真实接口的跨页组件
 
@@ -411,7 +414,7 @@ features/<domain>/
 - 静态展示数据优先放到对应 feature 的 `data/`
 - 不要把长数据对象直接写在页面 JSX 文件里
 - 当前仍然保留静态的内容主要包括：营销页内容、FAQ、订阅占位、通知设置默认值、部分成就页本地图标/段位展示配置
-- 当前已经改为真实接口的数据主链路包括：登录、用户资料、头像上传、onboarding、学习会话、地图、成就、历史、反馈
+- 当前已经改为真实接口的数据主链路包括：登录、首页登录态恢复、用户资料、头像上传、onboarding、学习会话、地图、成就、历史计划管理、反馈
 
 ### 6.6 统一反馈态
 

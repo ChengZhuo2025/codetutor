@@ -222,13 +222,13 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 | 页面 | 路由 | 主要接口 | 说明 |
 |------|------|------|------|
-| 营销首页 | `/` | `GET /api/auth/session` | 首页导航、Hero、套餐区、页脚与最终 CTA 会根据登录态切换为“继续学习”，并跳转到真实推荐目标 |
+| 营销首页 | `/` | `GET /api/auth/session` | 首页导航、Hero、套餐区、页脚与最终 CTA 会根据登录态切换为“继续学习”，并跳转到 `/learn`、`/history` 或 `/onboarding` |
 | 登录页 | `/login` | `POST /api/auth/login`、`GET/PATCH /api/profile/me`、`POST /api/profile/avatar` | 当前已打通手机号验证码登录、微信 OAuth 跳转、用户档案读取与资料编辑 |
 | 新手引导 | `/onboarding` | `GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete` | 产出主工具、学习等级、学习模式、初始学习路径实例 |
 | 学习页 | `/learn` | `GET /api/learning/current-session`、`POST /api/learning/message` | 当前已打通学习主界面 read model 与消息提交；任务写接口仍待补齐 |
 | 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
 | 成就页 | `/achievements` | `GET /api/achievement/summary` | 当前已打通成长总览 read model；每日打卡写接口仍待实现 |
-| 历史页 | `/history` | `GET /api/history/recent` | 当前前端实际需要的是“历史学习计划列表”，而不是“最近对话列表” |
+| 历史页 | `/history` | `GET /api/history/recent`、`GET /api/history/{id}`、`POST /api/history/{id}/status` | 当前前端实际需要的是“历史学习计划列表 + 详情复盘 + 状态操作”，而不是“最近对话列表” |
 | 反馈弹窗 | 设置菜单 / `/history` 侧栏 | `POST /api/feedback`、`GET /api/feedback/mine`、`GET /api/feedback/mine/{id}` | 用户可提交反馈并查看管理员回复 |
 
 以下内容继续保留前端本地静态配置，不进入 MVP 首期后端：
@@ -310,7 +310,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 字段 | 说明 |
 |------|------|
 | `userId` | 当前登录用户 ID |
-| `redirectTo` | 基于 onboarding 完成状态与 active path 状态计算出的推荐跳转地址 |
+| `redirectTo` | 基于学习计划状态摘要计算出的推荐跳转地址 |
 | `phone` | 当前登录手机号，可为空 |
 | `nickname` | 当前用户昵称，可为空 |
 
@@ -319,6 +319,10 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 该接口必须要求认证。
 - 该接口是只读摘要接口，不承担登录写入、副作用更新或登录时间刷新职责。
 - 首页和营销层组件恢复登录态时，应优先读取该接口，而不是复用会产生登录写语义的 `POST /api/auth/login`。
+- 当前真实分流规则为：
+  - 有 `active` 学习计划：`/learn`
+  - 无 `active`，但已有 `interrupted` / `completed` / `abandoned` 历史计划：`/history`
+  - 无任何学习计划历史：`/onboarding`
 
 ## 5.3 `GET /api/profile/me`
 
@@ -951,7 +955,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - `page`
 - `pageSize`
-- `status`：可选，`in_progress` / `completed` / `abandoned`
+- `status`：可选，`all` / `in_progress` / `interrupted` / `completed` / `abandoned`
 - `toolCode`：可选
 
 成功响应示例：
@@ -967,12 +971,9 @@ MVP 默认使用登录态 Session 或 Bearer Token。
         "planId": "plan-cursor-basic",
         "title": "Cursor 零基础起步营",
         "summary": "从第一次 AI 对话到第一个迷你项目，建立最小但完整的 Cursor 入门工作流。",
-        "tool": {
-          "code": "cursor",
-          "name": "Cursor"
-        },
-        "learningLevel": "beginner",
-        "selectionMode": "preset_training",
+        "tool": "Cursor",
+        "level": "入门",
+        "mode": "平台训练",
         "progress": {
           "completed": 8,
           "total": 10,
@@ -986,7 +987,17 @@ MVP 默认使用登录态 Session 或 Bearer Token。
     ],
     "total": 15,
     "page": 1,
-    "hasMore": true
+    "hasMore": true,
+    "filter": "in_progress",
+    "summary": {
+      "activeCount": 1,
+      "interruptedCount": 2,
+      "completedCount": 8,
+      "abandonedCount": 4,
+      "totalCount": 15,
+      "activePlanId": "ulp-001",
+      "canCreateNewPlan": false
+    }
   }
 }
 ```
@@ -995,9 +1006,94 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - 本接口面向 `/history` 页，返回的是“用户的学习路径实例列表”，不是单纯的“最近消息列表”。
 - `progress.percent` 为 read model 聚合字段，服务端可直接返回，前端不必自行计算。
-- `tool.name`、`title`、`summary` 等字段来自路径模板快照，避免模板后续改名导致历史记录漂移。
+- `tool`、`title`、`summary` 等字段来自路径模板快照，避免模板后续改名导致历史记录漂移。
+- `in_progress` 是前端展示状态，数据库实际来源为 `user_learning_paths.status = active`。
+- `interrupted` 由服务端在读取摘要或历史接口前自动对账；当前规则为最近学习时间距离现在大于等于 7 天时，`active` 自动转为 `interrupted`。
+- `summary.canCreateNewPlan = true` 仅代表当前没有 `active` 计划，不代表必须新建；前端也可优先引导用户重新激活 `interrupted` 计划。
 
-## 9.3 `POST /api/feedback`
+## 9.3 `GET /api/history/{id}`
+
+用途：
+
+- 获取单条学习计划的复盘详情，供 `/history` 页右侧复盘弹窗使用
+
+成功响应示例：
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "detail": {
+      "item": {
+        "id": "ulp-001",
+        "planId": "plan-cursor-basic",
+        "title": "Cursor 零基础起步营",
+        "summary": "从第一次 AI 对话到第一个迷你项目，建立最小但完整的 Cursor 入门工作流。",
+        "tool": "Cursor",
+        "level": "入门",
+        "mode": "平台训练",
+        "progress": {
+          "completed": 8,
+          "total": 10,
+          "percent": 80
+        },
+        "xpEarned": 680,
+        "createdAt": "2026-03-15T00:00:00+08:00",
+        "updatedAt": "2026-03-27T00:00:00+08:00",
+        "status": "completed"
+      },
+      "timeline": {
+        "startedAt": "2026-03-15T00:00:00+08:00",
+        "lastActivityAt": "2026-03-24T10:00:00+08:00",
+        "completedAt": "2026-03-27T20:00:00+08:00",
+        "interruptedAt": null,
+        "abandonedAt": null
+      },
+      "steps": [
+        {
+          "id": "step-001",
+          "stepNo": 1,
+          "title": "安装 Cursor",
+          "status": "completed",
+          "rewardXp": 80,
+          "completedAt": "2026-03-15T10:00:00+08:00"
+        }
+      ]
+    }
+  }
+}
+```
+
+## 9.4 `POST /api/history/{id}/status`
+
+用途：
+
+- 更新历史学习计划状态，支持用户在历史页执行放弃、重新激活、删除记录等动作
+
+请求体：
+
+```json
+{
+  "action": "reactivate"
+}
+```
+
+字段说明：
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `action` | 是 | `abandon` / `reactivate` / `archive` |
+
+业务规则：
+
+- `abandon` 仅允许对 `active` 计划执行，执行后状态转为 `abandoned`。
+- `reactivate` 仅允许对 `interrupted` 计划执行，执行后状态转为 `active`。
+- `archive` 用于删除历史记录，只允许对 `completed`、`interrupted`、`abandoned` 执行，数据库实际转为 `archived` 软删除。
+- 同一时刻最多只允许 1 条 `active` 计划；若当前已有其他 `active` 计划，再激活中断计划时必须返回冲突错误。
+- `abandoned` 为用户主动放弃，不支持再次激活；若要重新学习，应新建学习计划。
+
+## 9.5 `POST /api/feedback`
 
 用途：
 

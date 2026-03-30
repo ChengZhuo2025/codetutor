@@ -1,6 +1,5 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import {
   ArrowRight,
   BookOpen,
@@ -8,17 +7,23 @@ import {
   Clock,
   Play,
   RefreshCw,
-  RotateCcw,
   Target,
+  Trash2,
   Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { ROUTES } from "@/constants/routes"
-import type { LearningHistory } from "@/features/history/types"
+import type {
+  HistoryPlanAction,
+  LearningHistory,
+} from "@/features/history/types"
 
 interface HistoryCardProps {
   item: LearningHistory
+  isMutating?: boolean
+  onContinue: (item: LearningHistory) => void
+  onReview: (item: LearningHistory) => void
+  onManageAction: (item: LearningHistory, action: HistoryPlanAction) => void
 }
 
 const statusConfig = {
@@ -27,47 +32,138 @@ const statusConfig = {
     color: "text-green-600",
     bgColor: "bg-green-600/10",
     borderColor: "border-green-600/30",
-    icon: RotateCcw,
-    actionLabel: "学习复盘",
   },
   in_progress: {
     label: "进行中",
     color: "text-brand",
     bgColor: "bg-brand/10",
     borderColor: "border-brand/30",
-    icon: Play,
-    actionLabel: "继续学习",
+  },
+  interrupted: {
+    label: "已中断",
+    color: "text-chart-3",
+    bgColor: "bg-chart-3/10",
+    borderColor: "border-chart-3/30",
   },
   abandoned: {
-    label: "已中断",
+    label: "已放弃",
     color: "text-muted-foreground",
     bgColor: "bg-surface-4",
     borderColor: "border-border",
-    icon: RefreshCw,
-    actionLabel: "重新激活",
   },
 } as const
 
-export function HistoryCard({ item }: HistoryCardProps) {
-  const router = useRouter()
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr)
+  return date.toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
+export function HistoryCard({
+  item,
+  isMutating = false,
+  onContinue,
+  onReview,
+  onManageAction,
+}: HistoryCardProps) {
   const status = statusConfig[item.status]
-  const StatusIcon = status.icon
 
-  const handleAction = () => {
+  const renderActions = () => {
     if (item.status === "in_progress") {
-      router.push(ROUTES.learn)
-    } else {
-      router.push(`${ROUTES.map}?plan=${item.planId}`)
+      return (
+        <>
+          <Button
+            size="sm"
+            onClick={() => onManageAction(item, "abandon")}
+            disabled={isMutating}
+            variant="outline"
+            className="rounded-xl border-border/70 bg-background/50"
+          >
+            放弃本轮练习
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => onContinue(item)}
+            disabled={isMutating}
+            className="gap-1.5 rounded-xl bg-brand px-4 text-brand-foreground hover:bg-brand/90"
+          >
+            <Play className="h-4 w-4" />
+            继续学习
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </>
+      )
     }
-  }
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString("zh-CN", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
+    if (item.status === "interrupted") {
+      return (
+        <>
+          <Button
+            size="sm"
+            onClick={() => onManageAction(item, "archive")}
+            disabled={isMutating}
+            variant="outline"
+            className="rounded-xl border-border/70 bg-background/50"
+          >
+            <Trash2 className="h-4 w-4" />
+            删除记录
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => onManageAction(item, "reactivate")}
+            disabled={isMutating}
+            className="gap-1.5 rounded-xl bg-chart-3 px-4 text-background hover:bg-chart-3/90"
+          >
+            <RefreshCw className="h-4 w-4" />
+            重新激活
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </>
+      )
+    }
+
+    if (item.status === "completed") {
+      return (
+        <>
+          <Button
+            size="sm"
+            onClick={() => onManageAction(item, "archive")}
+            disabled={isMutating}
+            variant="outline"
+            className="rounded-xl border-border/70 bg-background/50"
+          >
+            <Trash2 className="h-4 w-4" />
+            删除记录
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => onReview(item)}
+            disabled={isMutating}
+            className="gap-1.5 rounded-xl bg-green-600 px-4 text-background hover:bg-green-600/90"
+          >
+            <BookOpen className="h-4 w-4" />
+            学习复盘
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </>
+      )
+    }
+
+    return (
+      <Button
+        size="sm"
+        onClick={() => onManageAction(item, "archive")}
+        disabled={isMutating}
+        variant="outline"
+        className="rounded-xl border-border/70 bg-background/50"
+      >
+        <Trash2 className="h-4 w-4" />
+        删除记录
+      </Button>
+    )
   }
 
   return (
@@ -77,10 +173,10 @@ export function HistoryCard({ item }: HistoryCardProps) {
         "hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(0,0,0,0.14)]",
         item.status === "completed" && "border-green-600/15 hover:border-green-600/40",
         item.status === "in_progress" && "border-brand/15 hover:border-brand/40",
+        item.status === "interrupted" && "border-chart-3/15 hover:border-chart-3/40",
         item.status === "abandoned" && "border-border/60 hover:border-border",
       )}
     >
-      {/* 标题和简介 */}
       <div className="mb-2">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-lg font-semibold text-foreground">{item.title}</h3>
@@ -100,7 +196,6 @@ export function HistoryCard({ item }: HistoryCardProps) {
         </p>
       </div>
 
-      {/* 工具/水平/模式标签 */}
       <div className="mb-4 flex flex-wrap gap-2">
         <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/50 px-2.5 py-1 text-xs text-muted-foreground">
           <Target className="h-3 w-3" />
@@ -116,7 +211,6 @@ export function HistoryCard({ item }: HistoryCardProps) {
         </span>
       </div>
 
-      {/* 进度条 */}
       <div className="mb-4">
         <div className="mb-2 flex items-center justify-between text-xs">
           <span className="text-muted-foreground">
@@ -129,7 +223,9 @@ export function HistoryCard({ item }: HistoryCardProps) {
                 ? "text-green-600"
                 : item.status === "in_progress"
                   ? "text-brand"
-                  : "text-foreground",
+                  : item.status === "interrupted"
+                    ? "text-chart-3"
+                    : "text-foreground",
             )}
           >
             {item.progress.percent}%
@@ -143,15 +239,16 @@ export function HistoryCard({ item }: HistoryCardProps) {
                 ? "bg-green-600"
                 : item.status === "in_progress"
                   ? "bg-brand"
-                  : "bg-muted-foreground/40",
+                  : item.status === "interrupted"
+                    ? "bg-chart-3"
+                    : "bg-muted-foreground/40",
             )}
             style={{ width: `${item.progress.percent}%` }}
           />
         </div>
       </div>
 
-      {/* 底部信息 */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
             <Zap className="h-3.5 w-3.5 text-gold" />
@@ -161,30 +258,15 @@ export function HistoryCard({ item }: HistoryCardProps) {
             <Calendar className="h-3.5 w-3.5" />
             {formatDate(item.createdAt)} 开始
           </span>
-          {item.status !== "in_progress" && (
-            <span className="hidden sm:inline-flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />
-              {formatDate(item.updatedAt)} 更新
-            </span>
-          )}
+          <span className="inline-flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5" />
+            {formatDate(item.updatedAt)} 更新
+          </span>
         </div>
 
-        <Button
-          size="sm"
-          onClick={handleAction}
-          className={cn(
-            "gap-1.5 rounded-xl px-4",
-            item.status === "completed"
-              ? "bg-green-600 text-background hover:bg-green-600/90"
-              : item.status === "in_progress"
-                ? "bg-brand text-brand-foreground hover:bg-brand/90"
-                : "bg-surface-3 text-foreground hover:bg-surface-4",
-          )}
-        >
-          <StatusIcon className="h-4 w-4" />
-          {status.actionLabel}
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {renderActions()}
+        </div>
       </div>
     </div>
   )

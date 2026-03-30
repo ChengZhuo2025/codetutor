@@ -1,16 +1,25 @@
 "use client"
 
-import { HistoryCard } from "./history-card"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { StatePanel } from "@/components/ui/state-panel"
-import { Loader2 } from "lucide-react"
-import type { LearningHistory } from "@/features/history/types"
+import { HistoryCard } from "./history-card"
+import type {
+  HistoryPlanAction,
+  LearningHistory,
+} from "@/features/history/types"
 
 interface HistoryListProps {
   items: LearningHistory[]
   total: number
   hasMore: boolean
+  emptyTitle?: string
+  emptyDescription?: string
+  isMutating?: boolean
   isLoadingMore?: boolean
+  onContinue: (item: LearningHistory) => void
+  onReview: (item: LearningHistory) => void
+  onManageAction: (item: LearningHistory, action: HistoryPlanAction) => void
   onLoadMore?: () => void
 }
 
@@ -18,15 +27,21 @@ export function HistoryList({
   items,
   total,
   hasMore,
+  emptyTitle = "还没有学习记录",
+  emptyDescription = "开始学习并完成第一个关卡后，这里会展示你的学习历程。",
+  isMutating = false,
   isLoadingMore = false,
+  onContinue,
+  onReview,
+  onManageAction,
   onLoadMore,
 }: HistoryListProps) {
   if (items.length === 0) {
     return (
       <StatePanel
         status="empty"
-        title="还没有学习记录"
-        description="开始学习并完成第一个关卡后，这里会展示你的学习历程。"
+        title={emptyTitle}
+        description={emptyDescription}
       />
     )
   }
@@ -46,7 +61,14 @@ export function HistoryList({
       {/* 卡片列表 */}
       <div className="grid gap-4">
         {items.map((item) => (
-          <HistoryCard key={item.id} item={item} />
+          <HistoryCard
+            key={item.id}
+            item={item}
+            isMutating={isMutating}
+            onContinue={onContinue}
+            onReview={onReview}
+            onManageAction={onManageAction}
+          />
         ))}
       </div>
 

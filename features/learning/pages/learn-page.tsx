@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { AppShell } from "@/components/layout/app-shell"
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar"
 import { StatePanel } from "@/components/ui/state-panel"
@@ -8,11 +9,13 @@ import { ROUTES } from "@/constants/routes"
 import { WORKSPACE_ASIDE_WIDTH_CLASS } from "@/constants/workspace-layout"
 import { LearnChat } from "@/features/learning/components/chat"
 import { LearnRightPanel } from "@/features/learning/components/right-panel"
+import { resolveAuthenticatedRedirectTo } from "@/lib/auth/client-session"
+import { apiClient } from "@/lib/api/client"
 import type { LearningCurrentSessionResponseData } from "@/lib/api/contracts/learning"
-import { requestData } from "@/lib/api/client"
 import type { ApiRequestState } from "@/types/api"
 
 export function LearnPage() {
+  const router = useRouter()
   const [sessionState, setSessionState] =
     useState<ApiRequestState<LearningCurrentSessionResponseData>>({
       status: "loading",
@@ -22,41 +25,63 @@ export function LearnPage() {
     let cancelled = false
 
     async function loadSession() {
-      try {
-        const data = await requestData<LearningCurrentSessionResponseData>(
-          "/learning/current-session",
-        )
+      const response = await apiClient.get<LearningCurrentSessionResponseData>(
+        "/learning/current-session",
+      )
 
-        if (cancelled) {
-          return
-        }
+      if (cancelled) {
+        return
+      }
 
+      if (response.code === "OK") {
         setSessionState({
           status: "success",
-          data,
+          data: response.data,
         })
-      } catch (error) {
+        return
+      }
+
+      if (response.code === "AUTH_REQUIRED") {
+        router.replace(ROUTES.login)
+        return
+      }
+
+      if (response.code === "NOT_FOUND") {
+        setSessionState({
+          status: "loading",
+          message: "当前没有进行中的学习计划，正在为你跳转。",
+        })
+
+        const redirectTo = await resolveAuthenticatedRedirectTo()
+
         if (cancelled) {
           return
         }
 
+        if (redirectTo && redirectTo !== ROUTES.learn) {
+          router.replace(redirectTo)
+          return
+        }
+
         setSessionState({
-          status:
-            error instanceof Error && error.message.includes("NOT_FOUND")
-              ? "empty"
-              : "error",
-          message:
-            error instanceof Error ? error.message : "加载当前学习会话失败",
+          status: "empty",
+          message: response.message,
         })
+        return
       }
+
+      setSessionState({
+        status: "error",
+        message: response.message,
+      })
     }
 
-    loadSession()
+    void loadSession()
 
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [router])
 
   return (
     <AppShell

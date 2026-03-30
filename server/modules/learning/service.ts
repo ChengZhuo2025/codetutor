@@ -12,6 +12,10 @@ import {
 } from "@/constants/learning-taxonomy"
 import { getRankName } from "@/constants/ranks"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
+import {
+  reconcileInterruptedLearningPaths,
+  touchLearningPathActivity,
+} from "@/server/modules/learning-paths/service"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
 import type { Message } from "@/features/learning/types"
 
@@ -154,6 +158,8 @@ function mapTaskState(status: TaskRow["status"]): LearningTaskState {
 }
 
 async function loadLearningState(userId: string) {
+  await reconcileInterruptedLearningPaths(userId)
+
   const supabase = createSupabaseAdminClient()
 
   const { data: profile, error: profileError } = await supabase
@@ -286,6 +292,10 @@ export async function getLearningCurrentSessionData(
 
   return {
     conversationId: `session-${state.activePath.id}`,
+    path: {
+      id: state.activePath.id,
+      status: "in_progress",
+    },
     task: {
       taskId: currentTask.id,
       title: currentStep.title,
@@ -583,6 +593,7 @@ export async function sendLearningMessage(
   const inputType: LearningInputType = request.inputType ?? "text"
   const content = request.content.trim()
   const message = guessReply(content, session)
+  await touchLearningPathActivity(userId, session.path.id)
 
   return {
     conversationId: session.conversationId,

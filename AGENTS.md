@@ -18,7 +18,7 @@ If you need a fast orientation to the project and its current authoritative docu
 - `scripts/`: lightweight verification scripts for key demo pages and layout rules
 - `docs/plans/`: dated planning artifacts; keep using `YYYY-MM-DD-topic-name.md`
 
-Current implemented backend/data pieces include auth login flow integration, profile read/update, avatar upload, onboarding APIs, current learning/progress/history/achievement read models, feedback APIs, and checked-in Supabase migrations. Still-planned items include task write APIs, check-in write APIs, analytics ingestion, admin frontend pages, and subscription/payment.
+Current implemented backend/data pieces include auth login flow integration, homepage session-summary redirecting, profile read/update, avatar upload, onboarding APIs, current learning/progress/history/achievement read models, history plan detail and status actions, feedback APIs, and checked-in Supabase migrations through `009`. Still-planned items include task write APIs, check-in write APIs, analytics ingestion, admin frontend pages, real AI provider orchestration, and subscription/payment.
 
 ## Build, Test, and Development Commands
 
@@ -69,4 +69,4 @@ Prefer updating an existing plan doc before creating a duplicate. When assumptio
 
 For quick project understanding, read `docs/plans/README.md` first, then follow its recommended reading order.
 
-Do not describe planned backend or database capabilities as already implemented. Today the repository reflects a partially implemented full-stack MVP: several user-facing flows already use real `app/api` + Supabase, while some write-side and admin capabilities are still only planned.
+Do not describe planned backend or database capabilities as already implemented. Today the repository reflects a partially implemented full-stack MVP: several user-facing flows already use real `app/api` + Supabase, including auth, homepage redirect recovery, onboarding, learning/progress/history read models, history plan management, profile/avatar, and feedback, while some write-side, AI orchestration, and admin capabilities are still only planned.

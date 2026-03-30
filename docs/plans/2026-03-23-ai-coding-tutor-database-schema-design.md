@@ -242,9 +242,18 @@ erDiagram
 ## 5.10 `user_learning_path_status`
 
 - `active`
+- `interrupted`
 - `completed`
 - `abandoned`
 - `archived`
+
+补充语义：
+
+- `active`：当前进行中的唯一学习计划
+- `interrupted`：系统自动判定中断，当前规则为连续 7 天无学习行为
+- `completed`：整条学习计划正常完成
+- `abandoned`：用户主动放弃本轮练习，不再允许重新激活
+- `archived`：历史记录软删除，仅用于隐藏，不再出现在用户历史列表
 
 ## 5.11 `feedback_type`
 
@@ -465,7 +474,8 @@ erDiagram
 | `started_at` | `timestamptz` | not null | 开始时间 |
 | `last_activity_at` | `timestamptz` | nullable | 最近学习时间 |
 | `completed_at` | `timestamptz` | nullable | 路径完成时间 |
-| `abandoned_at` | `timestamptz` | nullable | 路径中断时间 |
+| `interrupted_at` | `timestamptz` | nullable | 系统自动中断时间 |
+| `abandoned_at` | `timestamptz` | nullable | 用户主动放弃时间 |
 | `metadata` | `jsonb` | not null default '{}' | onboarding 预览、coach 标签、自学模式输入摘要等扩展字段 |
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
@@ -480,6 +490,8 @@ erDiagram
 
 - `/history` 页卡片展示的是 `user_learning_paths` 的 read model，而不是 `conversations`
 - `path_name_snapshot`、`path_summary_snapshot` 必须快照化，避免模板后续改名导致历史记录漂移
+- 需要保留 `last_activity_at`，用于服务端在读取学习摘要、历史列表或当前会话前执行“7 天自动中断”对账
+- 建议业务约束为“同一用户同一时刻最多只有 1 条 `active` 学习计划”
 
 ## 6.7 `user_tasks`
 

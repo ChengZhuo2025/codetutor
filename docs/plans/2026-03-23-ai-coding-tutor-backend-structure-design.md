@@ -458,6 +458,8 @@ server/modules/gamification/
 
 - 历史学习计划列表
 - 历史摘要聚合
+- 单条学习计划复盘详情
+- 学习计划状态操作
 - 面向 `/history` 页输出分页 read model
 
 建议结构：
@@ -477,7 +479,10 @@ server/modules/history/
 说明：
 
 - `history` 模块读的主对象应是 `user_learning_paths`，不是 `conversations`
-- 是否显示 `in_progress` / `completed` / `abandoned`，由路径实例状态决定
+- 前端展示的 `in_progress` 实际映射数据库中的 `active`
+- 当前真实状态机已区分 `active` / `interrupted` / `completed` / `abandoned` / `archived`
+- `interrupted` 的判定当前由 `server/modules/learning-paths/service.ts` 在读取摘要前执行，规则为连续 7 天无学习行为自动中断
+- `history` 模块当前除列表接口外，还需承载详情读取与 `abandon` / `reactivate` / `archive` 三类状态操作
 
 ## 8.9 `analytics`
 
@@ -655,6 +660,8 @@ app/
     ├── feedback/route.ts
     ├── feedback/mine/route.ts
     ├── feedback/mine/[id]/route.ts
+    ├── history/[id]/route.ts
+    ├── history/[id]/status/route.ts
     ├── history/recent/route.ts
     ├── learning/current-session/route.ts
     ├── learning/message/route.ts
@@ -686,6 +693,7 @@ server/
 │   ├── feedback/service.ts
 │   ├── history/service.ts
 │   ├── learning/service.ts
+│   ├── learning-paths/service.ts
 │   ├── onboarding/service.ts
 │   └── progress/service.ts
 
@@ -744,6 +752,8 @@ supabase/
    - 当前路径总览
    - 地图 read model
    - 历史学习计划分页列表
+   - 历史学习计划详情复盘
+   - 放弃 / 重新激活 / 删除记录状态操作
    - 成长总览 read model
 4. 已完成首版：`learning`
    - 当前学习会话恢复

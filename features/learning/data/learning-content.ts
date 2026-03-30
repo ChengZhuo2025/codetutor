@@ -28,6 +28,10 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
     message: "success",
     data: {
       conversationId: "conversation-cursor-003",
+      path: {
+        id: "path-instance-cursor-003",
+        status: "in_progress",
+      },
       task: {
         taskId: currentStage.taskId,
         title: currentStage.title,

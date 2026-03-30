@@ -3,6 +3,20 @@ import { ok, fail } from "@/server/lib/api-response"
 import { getRequestAuth, getRequestAuthHelpText } from "@/server/lib/request-auth"
 import { getRecentHistoryData } from "@/server/modules/history/service"
 
+function normalizeHistoryFilter(input: string | null) {
+  if (
+    input === "all"
+    || input === "in_progress"
+    || input === "interrupted"
+    || input === "completed"
+    || input === "abandoned"
+  ) {
+    return input
+  }
+
+  return "all"
+}
+
 export async function GET(request: NextRequest) {
   try {
     const auth = await getRequestAuth(request)
@@ -14,7 +28,8 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const page = Number(searchParams.get("page") ?? "1")
     const pageSize = Number(searchParams.get("pageSize") ?? "20")
-    const data = await getRecentHistoryData(auth.userId, page, pageSize)
+    const filter = normalizeHistoryFilter(searchParams.get("status"))
+    const data = await getRecentHistoryData(auth.userId, page, pageSize, filter)
 
     return ok(data)
   } catch (error) {

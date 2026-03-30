@@ -9,6 +9,7 @@ import type {
   UpdateProfileMeRequest,
 } from "@/lib/api/contracts/auth"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
+import { getLearningPathStatusSummary } from "@/server/modules/learning-paths/service"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
 
 type JsonRecord = Record<string, unknown>
@@ -112,24 +113,22 @@ async function loadUserGateState(userId: string) {
 
   assertSupabaseSuccess(preferenceError, "failed to query learning preferences")
 
-  const { count: activePathCount, error: activePathError } = await supabase
-    .from("user_learning_paths")
-    .select("id", {
-      count: "exact",
-      head: true,
-    })
-    .eq("user_id", userId)
-    .eq("status", "active")
-
-  assertSupabaseSuccess(activePathError, "failed to query active learning path")
+  const pathSummary = await getLearningPathStatusSummary(userId)
 
   const onboardingCompleted =
     (preference as UserPreferenceRow | null)?.onboarding_completed ?? false
-  const hasActivePath = (activePathCount ?? 0) > 0
+  const hasActivePath = pathSummary.activeCount > 0
+  const hasHistoryPaths = pathSummary.totalCount > 0
+
+  const redirectTo = hasActivePath
+    ? ROUTES.learn
+    : onboardingCompleted || hasHistoryPaths
+      ? ROUTES.history
+      : ROUTES.onboarding
 
   return {
-    onboardingCompleted: onboardingCompleted || hasActivePath,
-    redirectTo: onboardingCompleted || hasActivePath ? ROUTES.learn : ROUTES.onboarding,
+    onboardingCompleted: onboardingCompleted || hasActivePath || hasHistoryPaths,
+    redirectTo,
   }
 }
 

@@ -13,17 +13,25 @@ import { MapHeader } from "@/features/progress/components/map-header"
 import { ProgressOverview } from "@/features/progress/components/progress-overview"
 import { StageDetailPanel } from "@/features/progress/components/stage-detail-panel"
 import { StageTimeline } from "@/features/progress/components/stage-timeline"
+import { resolveAuthenticatedRedirectTo } from "@/lib/auth/client-session"
+import { apiClient } from "@/lib/api/client"
 import type {
   ProgressCurrentResponseData,
   ProgressMapResponseData,
 } from "@/lib/api/contracts/progress"
-import { requestData } from "@/lib/api/client"
 import type { ApiRequestState } from "@/types/api"
 import { useAppEventTracker } from "@/providers/app-providers"
 
 export function MapPage() {
   const router = useRouter()
   const { trackEvent } = useAppEventTracker()
+  const [emptyAction, setEmptyAction] = useState<{
+    href: string
+    label: string
+  }>({
+    href: ROUTES.learn,
+    label: "回到学习页",
+  })
   const [progressState, setProgressState] = useState<
     ApiRequestState<{
       current: ProgressCurrentResponseData
@@ -38,16 +46,18 @@ export function MapPage() {
     let cancelled = false
 
     async function loadProgress() {
-      try {
-        const [current, map] = await Promise.all([
-          requestData<ProgressCurrentResponseData>("/progress/current"),
-          requestData<ProgressMapResponseData>("/progress/map"),
-        ])
+      const [currentResponse, mapResponse] = await Promise.all([
+        apiClient.get<ProgressCurrentResponseData>("/progress/current"),
+        apiClient.get<ProgressMapResponseData>("/progress/map"),
+      ])
 
-        if (cancelled) {
-          return
-        }
+      if (cancelled) {
+        return
+      }
 
+      if (currentResponse.code === "OK" && mapResponse.code === "OK") {
+        const current = currentResponse.data
+        const map = mapResponse.data
         if (map.stages.length === 0) {
           setProgressState({
             status: "empty",
@@ -64,24 +74,58 @@ export function MapPage() {
           },
         })
         setSelectedId(map.currentStageId ?? map.stages[0]?.id ?? 0)
-      } catch (error) {
+        return
+      }
+
+      const firstError =
+        currentResponse.code !== "OK" ? currentResponse : mapResponse
+
+      if (firstError.code === "AUTH_REQUIRED") {
+        router.replace(ROUTES.login)
+        return
+      }
+
+      if (firstError.code === "NOT_FOUND") {
+        setProgressState({
+          status: "loading",
+          message: "当前没有进行中的学习计划，正在为你跳转。",
+        })
+
+        const redirectTo = await resolveAuthenticatedRedirectTo()
+
         if (cancelled) {
           return
         }
 
-        setProgressState({
-          status: "error",
-          message: error instanceof Error ? error.message : "加载当前进度失败",
+        if (redirectTo && redirectTo !== ROUTES.map) {
+          router.replace(redirectTo)
+          return
+        }
+
+        setEmptyAction({
+          href: ROUTES.history,
+          label: "去学习计划页",
         })
+
+        setProgressState({
+          status: "empty",
+          message: firstError.message,
+        })
+        return
       }
+
+      setProgressState({
+        status: "error",
+        message: firstError.message,
+      })
     }
 
-    loadProgress()
+    void loadProgress()
 
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [router])
 
   if (progressState.status !== "success") {
     return (
@@ -110,11 +154,11 @@ export function MapPage() {
               status={progressState.status}
               title="还没有当前学习路径"
               description={progressState.message}
-              actionLabel={progressState.status === "error" ? "重试" : "回到学习页"}
+              actionLabel={progressState.status === "error" ? "重试" : emptyAction.label}
               onAction={() =>
                 progressState.status === "error"
                   ? window.location.reload()
-                  : router.push(ROUTES.learn)
+                  : router.push(emptyAction.href)
               }
             />
           </div>

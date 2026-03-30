@@ -19,14 +19,22 @@ import {
   toAchievementBadges,
   toAchievementRanks,
 } from "@/features/achievement/data/achievement-data"
+import { resolveAuthenticatedRedirectTo } from "@/lib/auth/client-session"
+import { apiClient } from "@/lib/api/client"
 import type { AchievementSummaryResponseData } from "@/lib/api/contracts/achievement"
-import { requestData } from "@/lib/api/client"
 import type { ApiRequestState } from "@/types/api"
 import { useAppEventTracker } from "@/providers/app-providers"
 
 export function AchievementsPage() {
   const router = useRouter()
   const { trackEvent } = useAppEventTracker()
+  const [emptyAction, setEmptyAction] = useState<{
+    href: string
+    label: string
+  }>({
+    href: ROUTES.learn,
+    label: "去学习页积累第一批 XP",
+  })
   const [achievementState, setAchievementState] =
     useState<ApiRequestState<AchievementSummaryResponseData>>({
       status: "loading",
@@ -36,13 +44,14 @@ export function AchievementsPage() {
     let cancelled = false
 
     async function loadAchievementSummary() {
-      try {
-        const data = await requestData<AchievementSummaryResponseData>("/achievement/summary")
+      const response = await apiClient.get<AchievementSummaryResponseData>("/achievement/summary")
 
-        if (cancelled) {
-          return
-        }
+      if (cancelled) {
+        return
+      }
 
+      if (response.code === "OK") {
+        const data = response.data
         if (data.ranks.length > 0 && data.badges.length > 0) {
           setAchievementState({
             status: "success",
@@ -56,24 +65,55 @@ export function AchievementsPage() {
           message:
             "当前还没有可展示的成长数据。开始学习并完成第一关后，这里会展示 XP、段位和徽章积累。",
         })
-      } catch (error) {
+        return
+      }
+
+      if (response.code === "AUTH_REQUIRED") {
+        router.replace(ROUTES.login)
+        return
+      }
+
+      if (response.code === "NOT_FOUND") {
+        const redirectTo = await resolveAuthenticatedRedirectTo()
+
         if (cancelled) {
           return
         }
 
+        if (redirectTo === ROUTES.history) {
+          setEmptyAction({
+            href: ROUTES.history,
+            label: "去学习计划页",
+          })
+        } else if (redirectTo === ROUTES.onboarding) {
+          setEmptyAction({
+            href: ROUTES.onboarding,
+            label: "去创建学习计划",
+          })
+        }
+
         setAchievementState({
-          status: "error",
-          message: error instanceof Error ? error.message : "加载成长数据失败",
+          status: "empty",
+          message:
+            redirectTo === ROUTES.history
+              ? "当前没有新的成长数据，可以先回到历史计划中继续或新建学习计划。"
+              : response.message,
         })
+        return
       }
+
+      setAchievementState({
+        status: "error",
+        message: response.message,
+      })
     }
 
-    loadAchievementSummary()
+    void loadAchievementSummary()
 
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [router])
 
   if (achievementState.status !== "success") {
     return (
@@ -101,8 +141,8 @@ export function AchievementsPage() {
             status={achievementState.status}
             title="还没有成长数据"
             description={achievementState.message}
-            actionLabel="去学习页积累第一批 XP"
-            onAction={() => router.push(ROUTES.learn)}
+            actionLabel={emptyAction.label}
+            onAction={() => router.push(emptyAction.href)}
           />
         </main>
       </AppShell>

@@ -50,9 +50,10 @@
 当前已打通的关键链路包括：
 
 - Supabase Auth 登录态接入，支持手机号验证码登录与微信 OAuth 跳转
-- 首页营销层可通过 `GET /api/auth/session` 恢复登录态，并将主要 CTA 切换为“继续学习”
+- 首页营销层可通过 `GET /api/auth/session` 恢复登录态，并将主要 CTA 切换为“继续学习”，按真实状态跳转到 `/learn`、`/history` 或 `/onboarding`
 - onboarding 读取工具和路径候选，并真实创建 `user_learning_paths` 与 `user_tasks`
 - `/learn`、`/map`、`/achievements`、`/history` 读取远程数据库的真实 read model
+- 历史学习计划已支持详情复盘、放弃、重新激活与软删除，学习计划状态机已扩展到 `active/interrupted/completed/abandoned/archived`
 - 工作台左侧栏数据已提升到根级 Provider 缓存，跨工作台页面切换时不再重复请求并产生加载跳动
 - 用户资料读写、头像上传到 Supabase Storage
 - 用户反馈提交、我的反馈记录、管理员反馈接口
@@ -495,8 +496,10 @@ sequenceDiagram
 
 - 用户进入 `/history`
 - 前端请求历史学习计划列表
-- 服务端基于 `user_learning_paths` 聚合工具、模式、进度、XP 与更新时间
-- 前端渲染进行中、已完成、已中断三类计划卡片
+- 服务端先基于 `last_activity_at` 对 `active` 计划执行“7 天自动中断”对账
+- 服务端基于 `user_learning_paths` 聚合工具、模式、进度、XP、时间线与状态摘要
+- 前端渲染进行中、已中断、已完成、已放弃四类计划卡片
+- 用户可继续当前计划、重新激活中断计划、放弃进行中计划、查看复盘详情或删除历史记录
 
 ---
 
@@ -601,6 +604,8 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 
 - `GET /api/achievement/summary`
 - `GET /api/history/recent`
+- `GET /api/history/{id}`
+- `POST /api/history/{id}/status`
 
 规划中：
 

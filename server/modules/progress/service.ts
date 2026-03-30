@@ -8,6 +8,7 @@ import {
   getRemainingXpToNextRank,
 } from "@/constants/ranks"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
+import { reconcileInterruptedLearningPaths } from "@/server/modules/learning-paths/service"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import type { Stage } from "@/features/progress/types"
 
@@ -107,6 +108,8 @@ function getRankSummary(currentRankCode: string, currentScore: number) {
 }
 
 async function loadActivePath(userId: string) {
+  await reconcileInterruptedLearningPaths(userId)
+
   const supabase = createSupabaseAdminClient()
 
   const { data: profile, error: profileError } = await supabase
