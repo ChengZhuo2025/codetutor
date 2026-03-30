@@ -6,6 +6,7 @@ import type {
   LearningTaskState,
 } from "../../../lib/api/contracts/learning.ts"
 import type { MessageKind } from "../../../features/learning/types.ts"
+import type { StructuredLearningMessageContent } from "../../../lib/learning/structured-message.ts"
 import {
   LearningAIProviderError,
   LearningValidationError,
@@ -137,6 +138,7 @@ export function buildIdempotentReplayResponse(input: {
   assistantTitle: string
   assistantKind: MessageKind
   assistantContent: string
+  structuredContent?: StructuredLearningMessageContent | null
   taskPatch?: LearningTaskPatch | null
 }): LearningMessageResponseData {
   return {
@@ -148,6 +150,7 @@ export function buildIdempotentReplayResponse(input: {
       kind: input.assistantKind,
       title: input.assistantTitle,
       content: input.assistantContent,
+      structuredContent: input.structuredContent ?? null,
       taskPatch: input.taskPatch ?? null,
     },
     taskState: mapPersistentTaskStatusToViewState(input.taskStatus),

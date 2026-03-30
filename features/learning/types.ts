@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react"
+import type { StructuredLearningMessageContent } from "@/lib/learning/structured-message"
 
 export type MessageRole = "system" | "ai" | "user"
 
@@ -28,6 +29,7 @@ export type Message = {
   kind: MessageKind
   title?: string
   content: string
+  structuredContent?: StructuredLearningMessageContent | null
   taskPatch?: MessageTaskPatch | null
   xp?: number
   nextStep?: string

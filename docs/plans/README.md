@@ -82,7 +82,7 @@
 
 ### P0：必须优先补齐
 
-- 学习消息链路运营化完善：当前 `conversation_sessions`、`conversation_messages`、provider / agent / skill 配置表、`POST /api/learning/message`、`GET /api/learning/current-session`、`GET /api/learning/messages`、SSE 流式输出、前端增量渲染、`task_patch` 状态联动、基础结构化状态提示卡，以及学习消息的纯逻辑测试、分页测试、HTTP 分发测试、路由级测试、真实 provider / database 参与的 live 集成测试已落地；其中 live 测试已提供整体验证、`json-only`、`sse-only` 三种入口，便于区分普通回复链路与流式链路问题；下一步优先补齐更细的教练消息组件化呈现。
+- 学习消息链路运营化完善：当前 `conversation_sessions`、`conversation_messages`、provider / agent / skill 配置表、`POST /api/learning/message`、`GET /api/learning/current-session`、`GET /api/learning/messages`、SSE 流式输出、前端增量渲染、`task_patch` 状态联动、基础结构化状态提示卡，以及学习消息的纯逻辑测试、分页测试、HTTP 分发测试、路由级测试、真实 provider / database 参与的 live 集成测试已落地；当前消息协议已开始显式返回并持久化 `structuredContent`，前端优先消费该结构化 payload，再回退到文本解析；其中 live 测试已提供整体验证、`json-only`、`sse-only` 三种入口，便于区分普通回复链路与流式链路问题，但三条 live 命令应顺序执行，避免并发命中同一活跃会话的 `sequence_no` 唯一键；下一步优先补齐更细的教练消息组件化呈现。
 
 ### P1：用户体验与运营能力完善
 

@@ -4,6 +4,8 @@ import type {
   LearningMessageResponseData,
   LearningTaskPatch,
 } from "../../../lib/api/contracts/learning.ts"
+import type { MessageKind } from "../../../features/learning/types.ts"
+import type { StructuredLearningMessageContent } from "../../../lib/learning/structured-message.ts"
 import type {
   ApiErrorResponse,
   ApiSuccessResponse,
@@ -145,7 +147,10 @@ export function buildIdempotentReplaySSEEvents(input: {
   agentCode: string
   modelCode: string
   providerCode: string
+  messageTitle: string
+  messageKind: MessageKind
   messageContent: string
+  structuredContent?: StructuredLearningMessageContent | null
   taskPatch?: LearningTaskPatch | null
 }): SSEReplayEvent[] {
   const events: SSEReplayEvent[] = [
@@ -178,6 +183,9 @@ export function buildIdempotentReplaySSEEvents(input: {
     {
       event: "assistant_done",
       data: {
+        title: input.messageTitle,
+        kind: input.messageKind,
+        structuredContent: input.structuredContent ?? null,
         finishReason: "idempotent_replay",
         usage: null,
       },

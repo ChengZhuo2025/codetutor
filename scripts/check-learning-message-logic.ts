@@ -10,6 +10,10 @@ import {
   shouldPersistTaskPatch,
 } from "../server/modules/learning/logic.ts"
 import {
+  buildStructuredLearningMessageContent,
+  parseStoredStructuredLearningMessageContent,
+} from "../lib/learning/structured-message.ts"
+import {
   LearningAIProviderError,
   LearningValidationError,
 } from "../server/modules/learning/errors.ts"
@@ -117,12 +121,63 @@ test("buildIdempotentReplayResponse preserves taskPatch for replayed assistant m
     status: "blocked",
     suggestedNextAction: "补充完整报错文本",
   })
+  assert.equal(response.message.structuredContent, null)
   assert.equal(response.taskState, "blocked")
   assert.deepEqual(response.taskPatch, {
     taskId: "task-1",
     status: "blocked",
     suggestedNextAction: "补充完整报错文本",
   })
+})
+
+test("buildStructuredLearningMessageContent derives variant, summary and ordered blocks from assistant text", () => {
+  assert.deepEqual(
+    buildStructuredLearningMessageContent({
+      title: "拆小当前步骤",
+      kind: "coach",
+      content: [
+        "我们把这一步再缩小。",
+        "",
+        "1. 先只完成最小验证",
+        "2. 再把结果贴回来",
+      ].join("\n"),
+    }),
+    {
+      variant: "breakdown",
+      summary: "我们把这一步再缩小。",
+      blocks: [
+        {
+          type: "ordered_list",
+          items: ["先只完成最小验证", "再把结果贴回来"],
+        },
+      ],
+    },
+  )
+})
+
+test("parseStoredStructuredLearningMessageContent restores persisted structured assistant payload", () => {
+  assert.deepEqual(
+    parseStoredStructuredLearningMessageContent({
+      variant: "completion",
+      summary: "很好，这一步已经完成。",
+      blocks: [
+        {
+          type: "unordered_list",
+          items: ["你已经确认了当前关卡的关键能力", "接下来可以进入下一关"],
+        },
+      ],
+    }),
+    {
+      variant: "completion",
+      summary: "很好，这一步已经完成。",
+      blocks: [
+        {
+          type: "unordered_list",
+          items: ["你已经确认了当前关卡的关键能力", "接下来可以进入下一关"],
+        },
+      ],
+    },
+  )
 })
 
 test("parseStoredTaskPatchMetadata restores task_patch payload from persisted assistant metadata", () => {

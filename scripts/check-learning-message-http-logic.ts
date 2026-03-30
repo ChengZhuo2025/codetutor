@@ -96,7 +96,14 @@ test("buildIdempotentReplaySSEEvents returns a deterministic replay event sequen
       agentCode: "coach_general",
       modelCode: "glm-5",
       providerCode: "siliconflow",
+      messageTitle: "排查建议",
+      messageKind: "coach",
       messageContent: "先贴出完整报错。",
+      structuredContent: {
+        variant: "blocked_help",
+        summary: "先贴出完整报错。",
+        blocks: [],
+      },
       taskPatch: {
         taskId: "task-1",
         status: "blocked",
@@ -131,6 +138,13 @@ test("buildIdempotentReplaySSEEvents returns a deterministic replay event sequen
       {
         event: "assistant_done",
         data: {
+          title: "排查建议",
+          kind: "coach",
+          structuredContent: {
+            variant: "blocked_help",
+            summary: "先贴出完整报错。",
+            blocks: [],
+          },
           finishReason: "idempotent_replay",
           usage: null,
         },

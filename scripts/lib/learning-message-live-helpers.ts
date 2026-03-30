@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 
+import { parseStoredStructuredLearningMessageContent } from "../../lib/learning/structured-message.ts"
 import { loadEnvFile } from "./db-env.mjs"
 
 export const DEMO_USER_ID = "c53ca227-d0b9-40f2-8274-cea851f7ad03"
@@ -25,6 +26,7 @@ type PersistedAssistantMessageRow = {
   id: string
   sequence_no: number
   content_text: string | null
+  content_json: Record<string, unknown>
   stream_chunk_count: number
   finish_reason: string | null
 }
@@ -139,7 +141,7 @@ export async function loadPersistedArtifacts(
 
   const { data: assistantMessageData, error: assistantMessageError } = await supabase
     .from("conversation_messages")
-    .select("id, sequence_no, content_text, stream_chunk_count, finish_reason")
+    .select("id, sequence_no, content_text, content_json, stream_chunk_count, finish_reason")
     .eq("session_id", userMessage.session_id)
     .eq("role", "assistant")
     .eq("reply_to_message_id", userMessage.id)
@@ -185,6 +187,29 @@ export function parseSSEEventNames(streamText: string) {
     .split("\n\n")
     .map((chunk) => chunk.match(/^event:\s*(.+)$/m)?.[1] ?? null)
     .filter((value): value is string => Boolean(value))
+}
+
+export function parseSSEEvents(streamText: string) {
+  return streamText
+    .split("\n\n")
+    .map((chunk) => {
+      const event = chunk.match(/^event:\s*(.+)$/m)?.[1] ?? null
+      const dataText = chunk
+        .split("\n")
+        .filter((line) => line.startsWith("data:"))
+        .map((line) => line.slice(5).trim())
+        .join("")
+
+      if (!event || !dataText) {
+        return null
+      }
+
+      return {
+        event,
+        data: JSON.parse(dataText) as Record<string, unknown>,
+      }
+    })
+    .filter((item): item is { event: string; data: Record<string, unknown> } => Boolean(item))
 }
 
 export async function assertTaskStatusUnchanged(
@@ -237,6 +262,10 @@ export async function runJsonLiveAssertions() {
     response.message.content.trim().length > 0,
     "expected json assistant content to be non-empty",
   )
+  assert.ok(
+    response.message.structuredContent,
+    "expected json assistant response to include structuredContent",
+  )
 
   const artifacts = await loadPersistedArtifacts(supabase, clientMessageId)
   assert.equal(artifacts.userMessage.content_text?.includes("简短复盘"), true)
@@ -252,6 +281,12 @@ export async function runJsonLiveAssertions() {
   assert.equal(artifacts.invocation.stream_enabled, false)
   assert.ok(artifacts.invocation.provider_code.length > 0)
   assert.ok(artifacts.invocation.model_code.length > 0)
+  assert.ok(
+    parseStoredStructuredLearningMessageContent(
+      artifacts.assistantMessage.content_json?.structuredContent ?? null,
+    ),
+    "expected persisted assistant json message to store structuredContent",
+  )
 
   await assertTaskStatusUnchanged(supabase, runtime.task.id, beforeTaskStatus)
 }
@@ -280,6 +315,8 @@ export async function runSseLiveAssertions() {
 
   const streamText = await new Response(stream).text()
   const eventNames = parseSSEEventNames(streamText)
+  const events = parseSSEEvents(streamText)
+  const assistantDone = events.find((event) => event.event === "assistant_done") ?? null
   assert.ok(
     eventNames.includes("session_started"),
     "expected sse stream to emit session_started",
@@ -297,6 +334,16 @@ export async function runSseLiveAssertions() {
     false,
     `did not expect provider stream error, got events: ${eventNames.join(", ")}`,
   )
+  assert.ok(assistantDone, "expected sse stream to emit assistant_done payload")
+  assert.equal(typeof assistantDone?.data.title, "string")
+  assert.ok(
+    assistantDone?.data.kind === "coach" || assistantDone?.data.kind === "task_feedback",
+    "expected assistant_done to include message kind",
+  )
+  assert.ok(
+    parseStoredStructuredLearningMessageContent(assistantDone?.data.structuredContent ?? null),
+    "expected assistant_done to include structuredContent payload",
+  )
 
   const artifacts = await loadPersistedArtifacts(supabase, clientMessageId)
   assert.equal(artifacts.invocation.status, "succeeded")
@@ -308,6 +355,12 @@ export async function runSseLiveAssertions() {
   assert.ok(
     (artifacts.assistantMessage.content_text ?? "").trim().length > 0,
     "expected streamed assistant content to be non-empty",
+  )
+  assert.ok(
+    parseStoredStructuredLearningMessageContent(
+      artifacts.assistantMessage.content_json?.structuredContent ?? null,
+    ),
+    "expected persisted streamed assistant message to store structuredContent",
   )
 
   await assertTaskStatusUnchanged(supabase, runtime.task.id, beforeTaskStatus)

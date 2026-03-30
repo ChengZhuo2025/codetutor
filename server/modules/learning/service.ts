@@ -13,6 +13,10 @@ import {
 import { getRankName } from "@/constants/ranks"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import {
+  buildStructuredLearningMessageContent,
+  parseStoredStructuredLearningMessageContent,
+} from "@/lib/learning/structured-message"
+import {
   reconcileInterruptedLearningPaths,
 } from "@/server/modules/learning-paths/service"
 import { normalizeUuid } from "@/server/lib/identifiers"
@@ -97,6 +101,7 @@ type ConversationMessageRow = {
   role: "user" | "assistant"
   message_type: "plain_text" | "assistant_answer" | "assistant_error"
   content_text: string | null
+  content_json: JsonRecord
   metadata: JsonRecord
 }
 
@@ -286,6 +291,7 @@ function buildDefaultMessages(currentStep: StepRow): Message[] {
         `2. 对照完成标准检查是否达成`,
         "3. 把你的结果、截图或报错贴给我",
       ].join("\n"),
+      structuredContent: null,
     },
     {
       id: 2,
@@ -295,6 +301,13 @@ function buildDefaultMessages(currentStep: StepRow): Message[] {
       content:
         currentStep.focus ??
         "先从一个最小实验开始，不要求一次理解全部概念。做完后把结果发给我，我们再判断下一步。",
+      structuredContent: buildStructuredLearningMessageContent({
+        title: "AI 教练引导",
+        kind: "coach",
+        content:
+          currentStep.focus ??
+          "先从一个最小实验开始，不要求一次理解全部概念。做完后把结果发给我，我们再判断下一步。",
+      }),
     },
   ]
 }
@@ -353,7 +366,7 @@ async function loadPersistedMessages(
   const supabase = createSupabaseAdminClient()
   let query = supabase
     .from("conversation_messages")
-    .select("id, sequence_no, user_task_id, role, message_type, content_text, metadata")
+    .select("id, sequence_no, user_task_id, role, message_type, content_text, content_json, metadata")
     .eq("session_id", conversationId)
     .in("role", ["user", "assistant"])
     .order("sequence_no", { ascending: false })
@@ -398,6 +411,12 @@ async function loadPersistedMessages(
         kind,
         title,
         content: row.content_text ?? "",
+        structuredContent:
+          row.role === "assistant"
+            ? parseStoredStructuredLearningMessageContent(
+                row.content_json?.structuredContent ?? null,
+              )
+            : null,
         taskPatch:
           row.role === "assistant"
             ? parseStoredTaskPatchMetadata({

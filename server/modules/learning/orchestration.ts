@@ -1,6 +1,10 @@
 import "server-only"
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
+import {
+  buildStructuredLearningMessageContent,
+  parseStoredStructuredLearningMessageContent,
+} from "@/lib/learning/structured-message"
 import type {
   LearningInputType,
   LearningMessageRequest,
@@ -597,7 +601,7 @@ async function tryGetIdempotentResponse(
 
   const { data: assistantData, error: assistantError } = await supabase
     .from("conversation_messages")
-    .select("id, content_text, metadata")
+    .select("id, content_text, content_json, metadata")
     .eq("session_id", sessionId)
     .eq("reply_to_message_id", existingUser.id)
     .eq("role", "assistant")
@@ -608,7 +612,12 @@ async function tryGetIdempotentResponse(
   assertSupabaseSuccess(assistantError, "failed to load idempotent assistant response")
 
   const assistant =
-    (assistantData as { id: string; content_text: string | null; metadata: JsonRecord } | null)
+    (assistantData as {
+      id: string
+      content_text: string | null
+      content_json: JsonRecord
+      metadata: JsonRecord
+    } | null)
     ?? null
 
   if (!assistant) {
@@ -628,6 +637,9 @@ async function tryGetIdempotentResponse(
     assistantTitle: title,
     assistantKind: kind,
     assistantContent: assistant.content_text ?? "",
+    structuredContent: parseStoredStructuredLearningMessageContent(
+      assistant.content_json?.structuredContent ?? null,
+    ),
     taskPatch: parseStoredTaskPatchMetadata({
       taskId: task.id,
       metadata,
@@ -903,6 +915,12 @@ async function persistAssistantResult(
     input.providerResult.content,
     input.request.inputType,
   )
+  const structuredContent = buildStructuredLearningMessageContent({
+    title: presentation.title,
+    kind: presentation.kind,
+    content: presentation.content,
+    taskPatch: input.taskPatch,
+  })
 
   const { data: assistantMessageData, error: assistantMessageError } = await input.supabase
     .from("conversation_messages")
@@ -915,7 +933,9 @@ async function persistAssistantResult(
       sequence_no: assistantSequenceNo,
       reply_to_message_id: input.userMessageId,
       content_text: presentation.content,
-      content_json: {},
+      content_json: {
+        structuredContent,
+      },
       provider_code: input.provider.code,
       model_code: input.model.code,
       input_tokens: input.providerResult.usage.promptTokens,
@@ -985,6 +1005,7 @@ async function persistAssistantResult(
 
   return {
     presentation,
+    structuredContent,
     assistantMessageId: assistantMessageData.id,
   }
 }
@@ -1088,7 +1109,7 @@ export async function orchestrateLearningMessage(
       temperature: agent.temperature,
       maxOutputTokens: agent.max_output_tokens,
     })
-    const { presentation } = await persistAssistantResult({
+    const { presentation, structuredContent } = await persistAssistantResult({
       ...prepared,
       userId,
       request,
@@ -1106,6 +1127,7 @@ export async function orchestrateLearningMessage(
       assistantTitle: presentation.title,
       assistantKind: presentation.kind,
       assistantContent: presentation.content,
+      structuredContent,
       taskPatch,
     })
   } catch (error) {
@@ -1155,7 +1177,10 @@ export async function streamLearningMessage(
           agentCode: agent.code,
           modelCode: model.code,
           providerCode: provider.code,
+          messageTitle: existingResponse.message.title ?? "AI 教练引导",
+          messageKind: existingResponse.message.kind,
           messageContent: existingResponse.message.content,
+          structuredContent: existingResponse.message.structuredContent ?? null,
           taskPatch: existingResponse.taskPatch,
         })
 
@@ -1222,7 +1247,7 @@ export async function streamLearningMessage(
           },
         })
 
-        const { assistantMessageId } = await persistAssistantResult({
+        const { assistantMessageId, presentation, structuredContent } = await persistAssistantResult({
           ...prepared,
           userId,
           request,
@@ -1235,6 +1260,9 @@ export async function streamLearningMessage(
 
         send("assistant_done", {
           messageId: assistantMessageId,
+          title: presentation.title,
+          kind: presentation.kind,
+          structuredContent,
           finishReason: providerResult.finishReason,
           usage: providerResult.usage,
         })

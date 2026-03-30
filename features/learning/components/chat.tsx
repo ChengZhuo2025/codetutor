@@ -36,6 +36,7 @@ import type {
   UpdateTaskStatusResponseData,
 } from "@/lib/api/contracts/task"
 import { apiFetch, requestData } from "@/lib/api/client"
+import { parseStoredStructuredLearningMessageContent } from "@/lib/learning/structured-message"
 import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
 
@@ -310,6 +311,10 @@ function renderPlainContent(text: string) {
 }
 
 function resolveAssistantMessageVariant(message: Message): AssistantMessageVariant {
+  if (message.structuredContent?.variant) {
+    return message.structuredContent.variant
+  }
+
   if (message.kind === "task_feedback" || message.taskPatch?.status === "completed") {
     return "completion"
   }
@@ -389,12 +394,17 @@ function renderStructuredContent(
   text: string,
   kind: Message["kind"],
   variant: AssistantMessageVariant,
+  structuredContent?: Message["structuredContent"],
 ) {
-  const blocks = parseMessageBlocks(text)
-  const firstBlock = blocks[0] ?? null
-  const hasSummary = firstBlock?.type === "paragraph"
-  const summaryText = hasSummary ? firstBlock.text : null
-  const detailBlocks = hasSummary ? blocks.slice(1) : blocks
+  const fallbackBlocks = parseMessageBlocks(text)
+  const firstFallbackBlock = fallbackBlocks[0] ?? null
+  const fallbackHasSummary = firstFallbackBlock?.type === "paragraph"
+  const summaryText =
+    structuredContent?.summary
+    ?? (fallbackHasSummary ? firstFallbackBlock.text : null)
+  const detailBlocks =
+    structuredContent?.blocks
+    ?? (fallbackHasSummary ? fallbackBlocks.slice(1) : fallbackBlocks)
   const variantMeta = assistantMessageVariantMeta[variant]
 
   return (
@@ -546,6 +556,10 @@ function parseTaskPatchPayload(payload: Record<string, unknown>): LearningTaskPa
     status: payload.status,
     suggestedNextAction: payload.suggestedNextAction,
   }
+}
+
+function parseStructuredContentPayload(payload: Record<string, unknown>) {
+  return parseStoredStructuredLearningMessageContent(payload.structuredContent ?? null)
 }
 
 function getTaskPatchDisplayMeta(taskPatch: LearningTaskPatch) {
@@ -1095,6 +1109,24 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
 
           if (event === "assistant_done") {
             flushRemainingStreamDelta()
+            const structuredContent = parseStructuredContentPayload(payload)
+            const title =
+              typeof payload.title === "string" ? payload.title : "AI 教练引导"
+            const kind =
+              payload.kind === "task_feedback" ? "task_feedback" : "coach"
+
+            setMessages((prev) =>
+              prev.map((message) =>
+                message.id === assistantMessageId
+                  ? {
+                      ...message,
+                      title,
+                      kind,
+                      structuredContent,
+                    }
+                  : message,
+              ),
+            )
             return
           }
 
@@ -1544,6 +1576,7 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
                                 msg.content,
                                 msg.kind,
                                 resolveAssistantMessageVariant(msg),
+                                msg.structuredContent,
                               )}
                         </div>
                       )}
