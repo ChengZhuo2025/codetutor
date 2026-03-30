@@ -5,6 +5,7 @@ import {
   buildIdempotentReplayResponse,
   classifyLearningRouteError,
   deriveTaskPatch,
+  parseStoredTaskPatchMetadata,
   resolveLearningResponseMode,
   shouldPersistTaskPatch,
 } from "../server/modules/learning/logic.ts"
@@ -111,12 +112,45 @@ test("buildIdempotentReplayResponse preserves taskPatch for replayed assistant m
   assert.equal(response.message.kind, "coach")
   assert.equal(response.message.title, "排查建议")
   assert.equal(response.message.content, "请先补充完整报错信息。")
+  assert.deepEqual(response.message.taskPatch, {
+    taskId: "task-1",
+    status: "blocked",
+    suggestedNextAction: "补充完整报错文本",
+  })
   assert.equal(response.taskState, "blocked")
   assert.deepEqual(response.taskPatch, {
     taskId: "task-1",
     status: "blocked",
     suggestedNextAction: "补充完整报错文本",
   })
+})
+
+test("parseStoredTaskPatchMetadata restores task_patch payload from persisted assistant metadata", () => {
+  assert.deepEqual(
+    parseStoredTaskPatchMetadata({
+      taskId: "task-3",
+      metadata: {
+        taskPatchStatus: "in_progress",
+        taskPatchSuggestedNextAction: "先完成一个最小验证结果",
+      },
+    }),
+    {
+      taskId: "task-3",
+      status: "in_progress",
+      suggestedNextAction: "先完成一个最小验证结果",
+    },
+  )
+
+  assert.equal(
+    parseStoredTaskPatchMetadata({
+      taskId: "task-3",
+      metadata: {
+        taskPatchStatus: "unknown",
+        taskPatchSuggestedNextAction: "无效",
+      },
+    }),
+    null,
+  )
 })
 
 test("classifyLearningRouteError maps validation and provider failures to stable API responses", () => {

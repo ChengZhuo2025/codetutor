@@ -24,6 +24,8 @@ export type LearningRouteErrorResult = {
   message: string
 }
 
+type JsonRecord = Record<string, unknown>
+
 export function mapPersistentTaskStatusToViewState(
   status: LearningTaskPersistentStatus,
 ): LearningTaskState {
@@ -146,9 +148,41 @@ export function buildIdempotentReplayResponse(input: {
       kind: input.assistantKind,
       title: input.assistantTitle,
       content: input.assistantContent,
+      taskPatch: input.taskPatch ?? null,
     },
     taskState: mapPersistentTaskStatusToViewState(input.taskStatus),
     taskPatch: input.taskPatch ?? null,
+  }
+}
+
+export function parseStoredTaskPatchMetadata(input: {
+  taskId: string
+  metadata: JsonRecord | null | undefined
+}): LearningTaskPatch | null {
+  if (!input.taskId) {
+    return null
+  }
+
+  const metadata = input.metadata ?? {}
+  const status =
+    metadata.taskPatchStatus === "in_progress"
+    || metadata.taskPatchStatus === "blocked"
+    || metadata.taskPatchStatus === "completed"
+      ? metadata.taskPatchStatus
+      : null
+  const suggestedNextAction =
+    typeof metadata.taskPatchSuggestedNextAction === "string"
+      ? metadata.taskPatchSuggestedNextAction
+      : null
+
+  if (!status || !suggestedNextAction) {
+    return null
+  }
+
+  return {
+    taskId: input.taskId,
+    status,
+    suggestedNextAction,
   }
 }
 

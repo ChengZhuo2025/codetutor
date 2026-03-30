@@ -18,6 +18,7 @@ import {
 import { normalizeUuid } from "@/server/lib/identifiers"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
 import { orchestrateLearningMessage } from "./orchestration"
+import { parseStoredTaskPatchMetadata } from "./logic"
 import {
   buildPersistedLearningMessageId,
   normalizeLearningMessagesPageSize,
@@ -92,6 +93,7 @@ type ConversationSessionRow = {
 type ConversationMessageRow = {
   id: string
   sequence_no: number
+  user_task_id: string | null
   role: "user" | "assistant"
   message_type: "plain_text" | "assistant_answer" | "assistant_error"
   content_text: string | null
@@ -351,7 +353,7 @@ async function loadPersistedMessages(
   const supabase = createSupabaseAdminClient()
   let query = supabase
     .from("conversation_messages")
-    .select("id, sequence_no, role, message_type, content_text, metadata")
+    .select("id, sequence_no, user_task_id, role, message_type, content_text, metadata")
     .eq("session_id", conversationId)
     .in("role", ["user", "assistant"])
     .order("sequence_no", { ascending: false })
@@ -396,6 +398,13 @@ async function loadPersistedMessages(
         kind,
         title,
         content: row.content_text ?? "",
+        taskPatch:
+          row.role === "assistant"
+            ? parseStoredTaskPatchMetadata({
+                taskId: row.user_task_id ?? "",
+                metadata,
+              })
+            : null,
       } satisfies Message
     }),
     pagination: {

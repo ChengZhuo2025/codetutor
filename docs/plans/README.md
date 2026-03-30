@@ -82,7 +82,7 @@
 
 ### P0：必须优先补齐
 
-- 学习消息链路运营化完善：当前 `conversation_sessions`、`conversation_messages`、provider / agent / skill 配置表、`POST /api/learning/message`、`GET /api/learning/current-session`、`GET /api/learning/messages`、SSE 流式输出、前端增量渲染、`task_patch` 状态联动，以及首批学习消息纯逻辑测试已落地；下一步优先补齐更细的消息呈现与更高层级的接口集成测试。
+- 学习消息链路运营化完善：当前 `conversation_sessions`、`conversation_messages`、provider / agent / skill 配置表、`POST /api/learning/message`、`GET /api/learning/current-session`、`GET /api/learning/messages`、SSE 流式输出、前端增量渲染、`task_patch` 状态联动、基础结构化状态提示卡，以及学习消息的纯逻辑测试、分页测试、HTTP 分发测试、路由级测试已落地；下一步优先补齐更真实的 provider / database 接口集成测试与更细的教练消息组件化呈现。
 
 ### P1：用户体验与运营能力完善
 
@@ -98,7 +98,7 @@
 
 ### 当前建议开发顺序
 
-1. 先继续完善学习消息链路的消息呈现和更高层级自动化测试，让学习对话从“已可连续使用”升级为“稳定可维护”。
+1. 先继续完善学习消息链路的更高层级自动化测试与教练消息组件化呈现，让学习对话从“已可连续使用”升级为“稳定可维护”。
    当前 AI 相关权威设计以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准。
 2. 再补 `analytics + 通知设置落库 + 管理员后台前端`，把运营和运维能力接上。
 3. 最后再进入 `订阅支付 + Redis/队列 + 更完整测试体系`。

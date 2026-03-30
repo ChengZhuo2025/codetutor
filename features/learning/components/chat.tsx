@@ -191,6 +191,33 @@ function parseTaskPatchPayload(payload: Record<string, unknown>): LearningTaskPa
   }
 }
 
+function getTaskPatchDisplayMeta(taskPatch: LearningTaskPatch) {
+  if (taskPatch.status === "blocked") {
+    return {
+      badge: "已标记为卡住",
+      badgeClass: "border-gold/25 bg-gold-dim text-gold",
+      panelClass: "border-gold/20 bg-gold-dim/60",
+      iconClass: "text-gold",
+    }
+  }
+
+  if (taskPatch.status === "completed") {
+    return {
+      badge: "已完成当前关卡",
+      badgeClass: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600",
+      panelClass: "border-emerald-500/20 bg-emerald-500/8",
+      iconClass: "text-emerald-600",
+    }
+  }
+
+  return {
+    badge: "继续推进当前关卡",
+    badgeClass: "border-brand/20 bg-brand-dim text-brand",
+    panelClass: "border-brand/20 bg-brand-dim/60",
+    iconClass: "text-brand",
+  }
+}
+
 async function consumeSSE(
   response: Response,
   onEvent: SSEEventHandler,
@@ -696,6 +723,16 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
             }
 
             setTaskState((prev) => resolveTaskStateFromPatch(taskPatch, prev))
+            setMessages((prev) =>
+              prev.map((message) =>
+                message.id === assistantMessageId
+                  ? {
+                      ...message,
+                      taskPatch,
+                    }
+                  : message,
+              ),
+            )
             return
           }
 
@@ -1170,6 +1207,46 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
                         <span className="text-xs text-muted-foreground">任务步骤完成</span>
                       </div>
                     ) : null}
+
+                    {msg.taskPatch ? (() => {
+                      const taskPatchMeta = getTaskPatchDisplayMeta(msg.taskPatch)
+
+                      return (
+                        <div
+                          className={cn(
+                            "rounded-2xl border px-3.5 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.06)]",
+                            taskPatchMeta.panelClass,
+                          )}
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={cn(
+                                "rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                                taskPatchMeta.badgeClass,
+                              )}
+                            >
+                              {taskPatchMeta.badge}
+                            </span>
+                            <span className="text-[11px] font-medium text-muted-foreground">
+                              当前任务状态已同步
+                            </span>
+                          </div>
+                          <div className="mt-2 flex items-start gap-2">
+                            <Lightbulb
+                              className={cn("mt-0.5 h-4 w-4 shrink-0", taskPatchMeta.iconClass)}
+                            />
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+                                下一步建议
+                              </p>
+                              <p className="mt-1 text-sm leading-6 text-foreground/90">
+                                {msg.taskPatch.suggestedNextAction}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })() : null}
 
                     {msg.nextStep ? (
                       <button className="flex items-center gap-2 self-start rounded-2xl border border-brand/30 bg-brand-dim px-3 py-2 text-sm font-medium text-brand transition-colors hover:bg-brand/20">

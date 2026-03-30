@@ -14,12 +14,21 @@ export type MessageAttachment = {
   name: string
 }
 
+export type MessageTaskPatchStatus = "in_progress" | "blocked" | "completed"
+
+export type MessageTaskPatch = {
+  taskId: string
+  status: MessageTaskPatchStatus
+  suggestedNextAction: string
+}
+
 export type Message = {
   id: number
   role: MessageRole
   kind: MessageKind
   title?: string
   content: string
+  taskPatch?: MessageTaskPatch | null
   xp?: number
   nextStep?: string
   attachment?: MessageAttachment

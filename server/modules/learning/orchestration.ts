@@ -14,9 +14,11 @@ import { LearningAIProviderError, LearningValidationError } from "./errors"
 import {
   buildIdempotentReplayResponse,
   deriveTaskPatch,
+  parseStoredTaskPatchMetadata,
   shouldPersistTaskPatch,
   taskPatchStatusToPersistentStatus,
 } from "./logic"
+import { buildIdempotentReplaySSEEvents } from "./http-logic"
 import {
   invokeAIProvider,
   streamAIProvider,
@@ -618,16 +620,6 @@ async function tryGetIdempotentResponse(
     typeof metadata.title === "string" ? metadata.title : "AI 教练引导"
   const kind =
     metadata.kind === "task_feedback" ? "task_feedback" : "coach"
-  const taskPatchStatus =
-    metadata.taskPatchStatus === "in_progress"
-    || metadata.taskPatchStatus === "blocked"
-    || metadata.taskPatchStatus === "completed"
-      ? metadata.taskPatchStatus
-      : null
-  const taskPatchSuggestedNextAction =
-    typeof metadata.taskPatchSuggestedNextAction === "string"
-      ? metadata.taskPatchSuggestedNextAction
-      : null
 
   return buildIdempotentReplayResponse({
     conversationId: sessionId,
@@ -636,14 +628,10 @@ async function tryGetIdempotentResponse(
     assistantTitle: title,
     assistantKind: kind,
     assistantContent: assistant.content_text ?? "",
-    taskPatch:
-      taskPatchStatus && taskPatchSuggestedNextAction
-        ? {
-            taskId: task.id,
-            status: taskPatchStatus,
-            suggestedNextAction: taskPatchSuggestedNextAction,
-          }
-        : null,
+    taskPatch: parseStoredTaskPatchMetadata({
+      taskId: task.id,
+      metadata,
+    }),
   })
 }
 
@@ -1161,31 +1149,20 @@ export async function streamLearningMessage(
   if (existingResponse) {
     return new ReadableStream<Uint8Array>({
       start(controller) {
-        controller.enqueue(
-          encodeSSEEvent("session_started", {
-            conversationId: session.id,
-            interactionType: prepared.interactionType,
-            agentCode: agent.code,
-            modelCode: model.code,
-            providerCode: provider.code,
-          }),
-        )
-        if (existingResponse.taskPatch) {
-          controller.enqueue(
-            encodeSSEEvent("task_patch", existingResponse.taskPatch),
-          )
+        const replayEvents = buildIdempotentReplaySSEEvents({
+          conversationId: session.id,
+          interactionType: prepared.interactionType,
+          agentCode: agent.code,
+          modelCode: model.code,
+          providerCode: provider.code,
+          messageContent: existingResponse.message.content,
+          taskPatch: existingResponse.taskPatch,
+        })
+
+        for (const event of replayEvents) {
+          controller.enqueue(encodeSSEEvent(event.event, event.data))
         }
-        controller.enqueue(
-          encodeSSEEvent("assistant_delta", {
-            delta: existingResponse.message.content,
-          }),
-        )
-        controller.enqueue(
-          encodeSSEEvent("assistant_done", {
-            finishReason: "idempotent_replay",
-            usage: null,
-          }),
-        )
+
         controller.close()
       },
     })
