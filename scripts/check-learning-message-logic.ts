@@ -218,6 +218,96 @@ test("parseStoredStructuredLearningMessageContent restores persisted structured 
   )
 })
 
+test("buildStructuredLearningMessageContent parses agent-native markdown headings and action lines", () => {
+  assert.deepEqual(
+    buildStructuredLearningMessageContent({
+      title: "下一步建议",
+      kind: "coach",
+      content: [
+        "先把当前这一步做成，不要一次扩展太多。",
+        "",
+        "## 当前建议",
+        "1. 先完成最小验证",
+        "2. 再把结果贴回来",
+        "",
+        "## 关键提醒",
+        "- 先看终端输出，不要凭感觉改",
+        "",
+        "## 建议动作",
+        "- 继续当前关卡｜请根据当前上下文告诉我接下来最小的一步应该做什么。",
+        "- 给我最小示例｜请给我一个最小可运行示例，并说明我该先验证什么。",
+      ].join("\n"),
+    }),
+    {
+      variant: "path_guidance",
+      summary: "先把当前这一步做成，不要一次扩展太多。",
+      blocks: [
+        {
+          type: "heading",
+          text: "当前建议",
+        },
+        {
+          type: "ordered_list",
+          items: ["先完成最小验证", "再把结果贴回来"],
+        },
+        {
+          type: "heading",
+          text: "关键提醒",
+        },
+        {
+          type: "unordered_list",
+          items: ["先看终端输出，不要凭感觉改"],
+        },
+        {
+          type: "heading",
+          text: "建议动作",
+        },
+        {
+          type: "unordered_list",
+          items: [
+            "继续当前关卡｜请根据当前上下文告诉我接下来最小的一步应该做什么。",
+            "给我最小示例｜请给我一个最小可运行示例，并说明我该先验证什么。",
+          ],
+        },
+      ],
+      sections: [
+        {
+          title: "当前建议",
+          tone: "default",
+          blocks: [
+            {
+              type: "ordered_list",
+              items: ["先完成最小验证", "再把结果贴回来"],
+            },
+          ],
+        },
+        {
+          title: "关键提醒",
+          tone: "default",
+          blocks: [
+            {
+              type: "unordered_list",
+              items: ["先看终端输出，不要凭感觉改"],
+            },
+          ],
+        },
+      ],
+      actions: [
+        {
+          label: "继续当前关卡",
+          prompt: "请根据当前上下文告诉我接下来最小的一步应该做什么。",
+          tone: "secondary",
+        },
+        {
+          label: "给我最小示例",
+          prompt: "请给我一个最小可运行示例，并说明我该先验证什么。",
+          tone: "secondary",
+        },
+      ],
+    },
+  )
+})
+
 test("parseStoredTaskPatchMetadata restores task_patch payload from persisted assistant metadata", () => {
   assert.deepEqual(
     parseStoredTaskPatchMetadata({

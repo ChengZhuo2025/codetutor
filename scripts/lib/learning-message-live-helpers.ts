@@ -266,6 +266,10 @@ export async function runJsonLiveAssertions() {
     response.message.structuredContent,
     "expected json assistant response to include structuredContent",
   )
+  assert.ok(
+    (response.message.structuredContent?.actions.length ?? 0) > 0,
+    "expected json assistant structuredContent to include actions",
+  )
 
   const artifacts = await loadPersistedArtifacts(supabase, clientMessageId)
   assert.equal(artifacts.userMessage.content_text?.includes("简短复盘"), true)
@@ -286,6 +290,14 @@ export async function runJsonLiveAssertions() {
       artifacts.assistantMessage.content_json?.structuredContent ?? null,
     ),
     "expected persisted assistant json message to store structuredContent",
+  )
+  assert.ok(
+    (
+      parseStoredStructuredLearningMessageContent(
+        artifacts.assistantMessage.content_json?.structuredContent ?? null,
+      )?.actions.length ?? 0
+    ) > 0,
+    "expected persisted assistant json message to store structured actions",
   )
 
   await assertTaskStatusUnchanged(supabase, runtime.task.id, beforeTaskStatus)
@@ -344,6 +356,14 @@ export async function runSseLiveAssertions() {
     parseStoredStructuredLearningMessageContent(assistantDone?.data.structuredContent ?? null),
     "expected assistant_done to include structuredContent payload",
   )
+  assert.ok(
+    (
+      parseStoredStructuredLearningMessageContent(
+        assistantDone?.data.structuredContent ?? null,
+      )?.actions.length ?? 0
+    ) > 0,
+    "expected assistant_done structuredContent to include actions",
+  )
 
   const artifacts = await loadPersistedArtifacts(supabase, clientMessageId)
   assert.equal(artifacts.invocation.status, "succeeded")
@@ -361,6 +381,14 @@ export async function runSseLiveAssertions() {
       artifacts.assistantMessage.content_json?.structuredContent ?? null,
     ),
     "expected persisted streamed assistant message to store structuredContent",
+  )
+  assert.ok(
+    (
+      parseStoredStructuredLearningMessageContent(
+        artifacts.assistantMessage.content_json?.structuredContent ?? null,
+      )?.actions.length ?? 0
+    ) > 0,
+    "expected persisted streamed assistant message to store structured actions",
   )
 
   await assertTaskStatusUnchanged(supabase, runtime.task.id, beforeTaskStatus)

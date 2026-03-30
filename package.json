@@ -20,6 +20,7 @@
     "test:learning-message-live:sse": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-live-sse.ts",
     "test:learning-message-live": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-live.ts",
     "test:learning-message-logic": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-logic.ts",
+    "test:learning-message-output-format": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-output-format.ts",
     "test:learning-message-route": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-route.ts",
     "test:map-page": "node scripts/check-map-page.mjs",
     "test:task-write-service": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-task-write-service.ts",

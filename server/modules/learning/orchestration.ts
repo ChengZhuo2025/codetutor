@@ -15,6 +15,7 @@ import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import { normalizeUuid } from "@/server/lib/identifiers"
 import { touchLearningPathActivity } from "@/server/modules/learning-paths/service"
 import { LearningAIProviderError, LearningValidationError } from "./errors.ts"
+import { buildLearningOutputFormatGuide } from "./output-format.ts"
 import {
   buildIdempotentReplayResponse,
   deriveTaskPatch,
@@ -243,6 +244,7 @@ function buildSystemPrompt(
     "你服务于 AI 编程学习教练产品，回答必须中文、直接、具体。",
     "不要虚构用户已经完成的结果，不要脱离当前关卡目标扩展过多。",
     "优先给当前一步、验证方式和下一步，而不是泛泛而谈。",
+    "除非用户明确要求，否则不要输出 JSON。",
     "",
     "# 当前学习上下文",
     `工具：${input.tool.name} (${input.tool.code})`,
@@ -255,6 +257,8 @@ function buildSystemPrompt(
     `完成标准：${input.step.completion_criteria ?? input.step.goal}`,
     `任务状态：${input.task.status}`,
     `本次交互类型：${input.interactionType}`,
+    "",
+    ...buildLearningOutputFormatGuide(input.interactionType),
     "",
     "# Skills",
     input.skillsText,

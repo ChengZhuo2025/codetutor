@@ -110,6 +110,15 @@ function parseBlocksFromText(text: string): {
       continue
     }
 
+    if (line.startsWith("## ") && line.length > 3) {
+      flushParagraph()
+      blocks.push({
+        type: "heading",
+        text: line.slice(3).trim(),
+      })
+      continue
+    }
+
     if (line.startsWith("**") && line.endsWith("**") && line.length > 4) {
       flushParagraph()
       blocks.push({
@@ -184,6 +193,38 @@ function parseBlocksFromText(text: string): {
   }
 }
 
+function isActionSectionTitle(title: string | null) {
+  if (!title) {
+    return false
+  }
+
+  return /(建议动作|可继续动作|下一步动作)/.test(title)
+}
+
+function parseStructuredActionItem(
+  value: string,
+  fallbackTone: StructuredLearningMessageActionTone,
+): StructuredLearningMessageAction | null {
+  const normalized = value.trim()
+  if (!normalized) {
+    return null
+  }
+
+  const match =
+    normalized.match(/^([^｜|:：-][^｜|:：]{0,30})\s*[｜|:：]\s*(.+)$/)
+    ?? null
+
+  if (!match?.[1] || !match[2]) {
+    return null
+  }
+
+  return {
+    label: match[1].trim(),
+    prompt: match[2].trim(),
+    tone: fallbackTone,
+  }
+}
+
 function buildStructuredSections(
   variant: StructuredLearningMessageVariant,
   blocks: StructuredLearningMessageBlock[],
@@ -201,22 +242,82 @@ function buildStructuredSections(
           ? "info"
           : "default"
 
-  const firstHeading = blocks[0]?.type === "heading" ? blocks[0].text : null
-  const contentBlocks = firstHeading ? blocks.slice(1) : blocks
+  const sections: StructuredLearningMessageSection[] = []
+  let currentTitle: string | null = null
+  let currentBlocks: StructuredLearningMessageBlock[] = []
 
-  return [
-    {
-      title: firstHeading,
-      tone,
-      blocks: contentBlocks,
-    },
-  ]
+  const flushSection = () => {
+    if (currentBlocks.length === 0 && currentTitle === null) {
+      return
+    }
+
+    if (!isActionSectionTitle(currentTitle)) {
+      sections.push({
+        title: currentTitle,
+        tone,
+        blocks: currentBlocks,
+      })
+    }
+
+    currentTitle = null
+    currentBlocks = []
+  }
+
+  for (const block of blocks) {
+    if (block.type === "heading") {
+      flushSection()
+      currentTitle = block.text
+      continue
+    }
+
+    currentBlocks.push(block)
+  }
+
+  flushSection()
+  return sections
 }
 
 function buildStructuredActions(input: {
   variant: StructuredLearningMessageVariant
+  blocks?: StructuredLearningMessageBlock[]
   taskPatch?: LearningTaskPatch | null
 }): StructuredLearningMessageAction[] {
+  const fallbackTone =
+    input.variant === "completion"
+      ? "success"
+      : input.variant === "blocked_help"
+        ? "warning"
+        : "secondary"
+
+  if (Array.isArray(input.blocks) && input.blocks.length > 0) {
+    let activeHeading: string | null = null
+    const actions: StructuredLearningMessageAction[] = []
+
+    for (const block of input.blocks) {
+      if (block.type === "heading") {
+        activeHeading = block.text
+        continue
+      }
+
+      if (!isActionSectionTitle(activeHeading)) {
+        continue
+      }
+
+      if (block.type === "unordered_list" || block.type === "ordered_list") {
+        for (const item of block.items) {
+          const parsed = parseStructuredActionItem(item, fallbackTone)
+          if (parsed) {
+            actions.push(parsed)
+          }
+        }
+      }
+    }
+
+    if (actions.length > 0) {
+      return actions
+    }
+  }
+
   if (input.taskPatch?.status === "blocked") {
     return [
       {
@@ -338,6 +439,7 @@ export function buildStructuredLearningMessageContent(
     sections: buildStructuredSections(variant, parsed.blocks),
     actions: buildStructuredActions({
       variant,
+      blocks: parsed.blocks,
       taskPatch: input.taskPatch,
     }),
   }
@@ -504,6 +606,7 @@ export function parseStoredStructuredLearningMessageContent(
           .filter((action): action is StructuredLearningMessageAction => Boolean(action))
       : buildStructuredActions({
           variant,
+          blocks: normalizedBlocks,
         })
 
   return {
