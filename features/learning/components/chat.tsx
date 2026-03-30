@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import {
   AlertCircle,
   CheckCircle2,
@@ -28,6 +28,8 @@ import type {
 import type {
   LearningCurrentSessionResponseData,
   LearningMessageResponseData,
+  LearningMessagesResponseData,
+  LearningTaskPatch,
 } from "@/lib/api/contracts/learning"
 import type {
   CompleteTaskResponseData,
@@ -45,6 +47,12 @@ type PendingDraft = {
 }
 
 type SSEEventHandler = (event: string, data: Record<string, unknown>) => void
+
+const STREAMING_PLACEHOLDER = "__streaming_placeholder__"
+const STREAMING_BATCH_SIZE = 16
+const STREAMING_BATCH_DELAY_MS = 70
+const STREAMING_LOADING_TITLE = "AI 正在思考中"
+const STREAMING_LOADING_HINT = "先分析你的输入和当前上下文，再生成回复"
 
 const messageKindMeta = {
   system_goal: {
@@ -138,7 +146,7 @@ function getInputHint(
   }
 
   if (isTyping) {
-    return "AI 正在整理下一步建议..."
+    return "AI 正在分析你的输入并生成回复..."
   }
 
   if (previewAttachment) {
@@ -146,6 +154,41 @@ function getInputHint(
   }
 
   return "把教程、代码、链接或你卡住的地方直接发给我。Enter 发送，Shift+Enter 换行。"
+}
+
+function resolveTaskStateFromPatch(
+  taskPatch: LearningTaskPatch | null | undefined,
+  fallbackState: LearningCurrentSessionResponseData["task"]["status"],
+) {
+  if (!taskPatch || taskPatch.status === "completed") {
+    return fallbackState
+  }
+
+  return taskPatch.status
+}
+
+function parseTaskPatchPayload(payload: Record<string, unknown>): LearningTaskPatch | null {
+  if (typeof payload.taskId !== "string") {
+    return null
+  }
+
+  if (
+    payload.status !== "in_progress"
+    && payload.status !== "blocked"
+    && payload.status !== "completed"
+  ) {
+    return null
+  }
+
+  if (typeof payload.suggestedNextAction !== "string") {
+    return null
+  }
+
+  return {
+    taskId: payload.taskId,
+    status: payload.status,
+    suggestedNextAction: payload.suggestedNextAction,
+  }
 }
 
 async function consumeSSE(
@@ -215,12 +258,29 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
   const [connectionState, setConnectionState] = useState<ConnectionState>("online")
   const [showSupportOptions, setShowSupportOptions] = useState(false)
   const [taskState, setTaskState] = useState(learningData.task.status)
+  const [historyPagination, setHistoryPagination] = useState(
+    learningData.historyPagination,
+  )
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const [historyError, setHistoryError] = useState<string | null>(null)
+  const [pendingAssistantMessageId, setPendingAssistantMessageId] = useState<number | null>(
+    null,
+  )
 
   const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const nextMessageId = useRef(learningData.messages.length + 1)
   const reconnectTimerRef = useRef<number | null>(null)
+  const streamBufferRef = useRef("")
+  const streamFlushTimerRef = useRef<number | null>(null)
+  const streamTargetMessageIdRef = useRef<number | null>(null)
+  const streamHasVisibleContentRef = useRef(false)
+  const prependScrollMetricsRef = useRef<{
+    previousScrollHeight: number
+    previousScrollTop: number
+  } | null>(null)
 
   const { mission, planSummary, resume, rightPanel, supportOptions } = learningData
   const inputHint = getInputHint(connectionState, isTyping, previewAttachment)
@@ -229,7 +289,14 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
     setMessages(learningData.messages)
     setConversationId(learningData.conversationId)
     setTaskState(learningData.task.status)
+    setHistoryPagination(learningData.historyPagination)
+    setHistoryError(null)
+    setIsLoadingHistory(false)
+    setPendingAssistantMessageId(null)
     nextMessageId.current = learningData.messages.length + 1
+    streamBufferRef.current = ""
+    streamTargetMessageIdRef.current = null
+    streamHasVisibleContentRef.current = false
   }, [learningData])
 
   useEffect(() => {
@@ -264,10 +331,23 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
       if (reconnectTimerRef.current) {
         window.clearTimeout(reconnectTimerRef.current)
       }
+      if (streamFlushTimerRef.current) {
+        window.clearTimeout(streamFlushTimerRef.current)
+      }
     }
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current
+    const metrics = prependScrollMetricsRef.current
+
+    if (container && metrics) {
+      const scrollDelta = container.scrollHeight - metrics.previousScrollHeight
+      container.scrollTop = metrics.previousScrollTop + scrollDelta
+      prependScrollMetricsRef.current = null
+      return
+    }
+
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, isTyping, sendError, connectionState, showSupportOptions])
 
@@ -287,6 +367,118 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
 
   const createClientMessageId = () =>
     `msg_client_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+
+  const clearStreamFlushTimer = () => {
+    if (streamFlushTimerRef.current) {
+      window.clearTimeout(streamFlushTimerRef.current)
+      streamFlushTimerRef.current = null
+    }
+  }
+
+  const appendAssistantChunk = (messageId: number, chunk: string) => {
+    if (!chunk) {
+      return
+    }
+
+    setMessages((prev) =>
+      prev.map((message) =>
+        message.id === messageId
+          ? {
+              ...message,
+              content:
+                message.content === STREAMING_PLACEHOLDER
+                  ? chunk
+                  : `${message.content}${chunk}`,
+            }
+          : message,
+      ),
+    )
+  }
+
+  const scheduleStreamFlush = (delayMs = STREAMING_BATCH_DELAY_MS) => {
+    if (streamFlushTimerRef.current) {
+      return
+    }
+
+    streamFlushTimerRef.current = window.setTimeout(() => {
+      streamFlushTimerRef.current = null
+
+      const messageId = streamTargetMessageIdRef.current
+      if (messageId === null) {
+        return
+      }
+
+      const buffered = streamBufferRef.current
+      if (!buffered) {
+        return
+      }
+
+      let chunk = buffered
+      if (buffered.length > STREAMING_BATCH_SIZE) {
+        const punctuationIndex = buffered
+          .slice(0, STREAMING_BATCH_SIZE + 1)
+          .search(/[，。！？；：\n]/)
+
+        chunk =
+          punctuationIndex >= 0
+            ? buffered.slice(0, punctuationIndex + 1)
+            : buffered.slice(0, STREAMING_BATCH_SIZE)
+      }
+
+      streamBufferRef.current = buffered.slice(chunk.length)
+      appendAssistantChunk(messageId, chunk)
+
+      if (streamBufferRef.current) {
+        scheduleStreamFlush()
+      }
+    }, delayMs)
+  }
+
+  const enqueueStreamDelta = (messageId: number, delta: string) => {
+    if (!delta) {
+      return
+    }
+
+    streamTargetMessageIdRef.current = messageId
+
+    if (!streamHasVisibleContentRef.current) {
+      streamHasVisibleContentRef.current = true
+      appendAssistantChunk(messageId, delta)
+      return
+    }
+
+    streamBufferRef.current += delta
+
+    if (
+      streamBufferRef.current.length >= STREAMING_BATCH_SIZE
+      || /[，。！？；：\n]/.test(streamBufferRef.current)
+    ) {
+      scheduleStreamFlush(30)
+      return
+    }
+
+    scheduleStreamFlush()
+  }
+
+  const flushRemainingStreamDelta = () => {
+    clearStreamFlushTimer()
+
+    const messageId = streamTargetMessageIdRef.current
+    const buffered = streamBufferRef.current
+
+    if (messageId !== null && buffered) {
+      streamBufferRef.current = ""
+      appendAssistantChunk(messageId, buffered)
+    }
+  }
+
+  const resetStreamState = () => {
+    clearStreamFlushTimer()
+    streamBufferRef.current = ""
+    streamTargetMessageIdRef.current = null
+    streamHasVisibleContentRef.current = false
+    setPendingAssistantMessageId(null)
+  }
 
   const resetAgent = () => {
     setInput("")
@@ -417,16 +609,24 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
     setShowSupportOptions(false)
     setIsTyping(true)
 
+    const assistantMessageId = allocateMessageId()
+    setPendingAssistantMessageId(assistantMessageId)
+    streamTargetMessageIdRef.current = assistantMessageId
+    streamBufferRef.current = ""
+    streamHasVisibleContentRef.current = false
+
     try {
       if (taskState === "blocked" && !options?.preserveBlockedStatus) {
         await syncTaskStatus("in_progress")
       }
 
       const clientMessageId = createClientMessageId()
-      const assistantMessageId = allocateMessageId()
       let assistantInserted = false
 
-      const ensureAssistantMessage = (title = "AI 教练引导") => {
+      const ensureAssistantMessage = (
+        title = "AI 教练引导",
+        initialContent = STREAMING_PLACEHOLDER,
+      ) => {
         if (assistantInserted) {
           return
         }
@@ -439,10 +639,12 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
             role: "ai",
             kind: "coach",
             title,
-            content: "",
+            content: initialContent,
           },
         ])
       }
+
+      ensureAssistantMessage()
 
       const response = await apiFetch("/learning/message", {
         method: "POST",
@@ -470,7 +672,6 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
             setConversationId(
               typeof payload.conversationId === "string" ? payload.conversationId : null,
             )
-            ensureAssistantMessage()
             return
           }
 
@@ -484,22 +685,22 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
               return
             }
 
-            ensureAssistantMessage()
-            setIsTyping(false)
-            setMessages((prev) =>
-              prev.map((message) =>
-                message.id === assistantMessageId
-                  ? {
-                      ...message,
-                      content: `${message.content}${delta}`,
-                    }
-                  : message,
-              ),
-            )
+            enqueueStreamDelta(assistantMessageId, delta)
+            return
+          }
+
+          if (event === "task_patch") {
+            const taskPatch = parseTaskPatchPayload(payload)
+            if (!taskPatch) {
+              return
+            }
+
+            setTaskState((prev) => resolveTaskStateFromPatch(taskPatch, prev))
             return
           }
 
           if (event === "assistant_done") {
+            flushRemainingStreamDelta()
             return
           }
 
@@ -523,19 +724,34 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
         }
 
         const responseData = apiResponse.data
+        resetStreamState()
         setConversationId(responseData.conversationId)
-        setMessages((prev) => [...prev, responseData.message])
+        setTaskState(resolveTaskStateFromPatch(responseData.taskPatch, responseData.taskState))
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === assistantMessageId
+              ? {
+                  ...message,
+                  ...responseData.message,
+                  id: assistantMessageId,
+                }
+              : message,
+          ),
+        )
       }
 
       setFailedDraft(null)
       setSendError(null)
     } catch (error) {
+      resetStreamState()
       setMessages((prev) =>
-        prev.filter((message) => !(message.role === "ai" && message.content.length === 0)),
+        prev.filter((message) => message.id !== assistantMessageId),
       )
       setFailedDraft(draft)
       setSendError(error instanceof Error ? error.message : "消息发送失败，请稍后重试。")
     } finally {
+      flushRemainingStreamDelta()
+      resetStreamState()
       setIsTyping(false)
     }
   }
@@ -644,6 +860,52 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
     textareaRef.current?.focus()
   }
 
+  const handleLoadEarlierMessages = async () => {
+    if (
+      !conversationId
+      || !historyPagination.hasMore
+      || historyPagination.nextBeforeSequenceNo === null
+      || isLoadingHistory
+    ) {
+      return
+    }
+
+    setIsLoadingHistory(true)
+    setHistoryError(null)
+
+    try {
+      const query = new URLSearchParams({
+        conversationId,
+        beforeSequenceNo: String(historyPagination.nextBeforeSequenceNo),
+        limit: "20",
+      })
+
+      const data = await requestData<LearningMessagesResponseData>(
+        `/learning/messages?${query.toString()}`,
+      )
+
+      const container = scrollContainerRef.current
+      prependScrollMetricsRef.current =
+        container
+          ? {
+              previousScrollHeight: container.scrollHeight,
+              previousScrollTop: container.scrollTop,
+            }
+          : null
+
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((message) => message.id))
+        const incoming = data.messages.filter((message) => !existingIds.has(message.id))
+        return [...incoming, ...prev]
+      })
+      setHistoryPagination(data.pagination)
+    } catch (error) {
+      setHistoryError(error instanceof Error ? error.message : "加载更早消息失败，请稍后重试。")
+    } finally {
+      setIsLoadingHistory(false)
+    }
+  }
+
   const removePreview = () => {
     if (!previewAttachment) return
     URL.revokeObjectURL(previewAttachment.url)
@@ -706,8 +968,27 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 py-5 sm:px-6 sm:py-6">
+      <div
+        ref={scrollContainerRef}
+        className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 py-5 sm:px-6 sm:py-6"
+      >
         <div className="mx-auto max-w-3xl space-y-4">
+          {conversationId && historyPagination.hasMore ? (
+            <div className="flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={handleLoadEarlierMessages}
+                disabled={isLoadingHistory}
+                className="rounded-full border border-border/70 bg-surface-2 px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isLoadingHistory ? "正在加载更早消息..." : "加载更早消息"}
+              </button>
+              {historyError ? (
+                <p className="text-xs text-destructive">{historyError}</p>
+              ) : null}
+            </div>
+          ) : null}
+
           {resume ? (
             <div className="rounded-[1.6rem] border border-brand/15 bg-surface-2/95 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.16)]">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -847,7 +1128,23 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
                         meta.bubbleClass,
                       )}
                     >
-                      <div className="space-y-1.5">{renderContent(msg.content)}</div>
+                      {msg.content === STREAMING_PLACEHOLDER ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-sm font-medium text-brand">
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                            {STREAMING_LOADING_TITLE}
+                          </div>
+                          <p className="text-sm leading-6 text-muted-foreground">
+                            {STREAMING_LOADING_HINT}
+                          </p>
+                          <div className="space-y-2">
+                            <Skeleton className="h-3 w-28 bg-brand/20" />
+                            <Skeleton className="h-3 w-44 bg-brand/20" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5">{renderContent(msg.content)}</div>
+                      )}
 
                       {msg.attachment ? (
                         <div className="mt-3 overflow-hidden rounded-2xl border border-border/60 bg-background/55">
@@ -886,7 +1183,7 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
             })
           )}
 
-          {isTyping && (
+          {isTyping && pendingAssistantMessageId === null && (
             <div className="flex gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand text-xs font-semibold text-brand-foreground">
                 AI

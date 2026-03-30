@@ -2,6 +2,7 @@ import type {
   LearningCurrentSessionResponseData,
   LearningMessageRequest,
   LearningMessageResponseData,
+  LearningMessagesResponseData,
   LearningTaskState,
 } from "@/lib/api/contracts/learning"
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth"
@@ -17,6 +18,11 @@ import {
 import { normalizeUuid } from "@/server/lib/identifiers"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
 import { orchestrateLearningMessage } from "./orchestration"
+import {
+  buildPersistedLearningMessageId,
+  normalizeLearningMessagesPageSize,
+  resolveLearningMessagesPage,
+} from "./history-logic"
 import type { Message } from "@/features/learning/types"
 
 type JsonRecord = Record<string, unknown>
@@ -85,6 +91,7 @@ type ConversationSessionRow = {
 
 type ConversationMessageRow = {
   id: string
+  sequence_no: number
   role: "user" | "assistant"
   message_type: "plain_text" | "assistant_answer" | "assistant_error"
   content_text: string | null
@@ -331,43 +338,114 @@ async function resolveActiveConversationForTask(
 
 async function loadPersistedMessages(
   conversationId: string,
-  startingMessageId: number,
-): Promise<Message[]> {
+  limit?: number,
+  beforeSequenceNo?: number | null,
+): Promise<{
+  messages: Message[]
+  pagination: {
+    hasMore: boolean
+    nextBeforeSequenceNo: number | null
+  }
+}> {
+  const pageSize = normalizeLearningMessagesPageSize(limit)
   const supabase = createSupabaseAdminClient()
-  const { data, error } = await supabase
+  let query = supabase
     .from("conversation_messages")
-    .select("id, role, message_type, content_text, metadata")
+    .select("id, sequence_no, role, message_type, content_text, metadata")
     .eq("session_id", conversationId)
     .in("role", ["user", "assistant"])
-    .order("sequence_no", { ascending: true })
+    .order("sequence_no", { ascending: false })
+    .limit(pageSize + 1)
+
+  if (typeof beforeSequenceNo === "number" && Number.isFinite(beforeSequenceNo)) {
+    query = query.lt("sequence_no", beforeSequenceNo)
+  }
+
+  const { data, error } = await query
 
   assertSupabaseSuccess(error, "failed to load persisted conversation messages")
 
   const rows = (data ?? []) as ConversationMessageRow[]
+  const page = resolveLearningMessagesPage(
+    rows.map((row) => ({
+      ...row,
+      sequenceNo: row.sequence_no,
+    })),
+    pageSize,
+  )
 
-  return rows.map((row, index) => {
-    const metadata = row.metadata ?? {}
-    const title =
-      typeof metadata.title === "string"
-        ? metadata.title
-        : row.role === "assistant"
-          ? "AI 教练引导"
-          : "我的反馈"
-    const kind =
-      row.role === "assistant"
-        ? metadata.kind === "task_feedback"
-          ? "task_feedback"
-          : "coach"
-        : "user_input"
+  return {
+    messages: page.items.map((row) => {
+      const metadata = row.metadata ?? {}
+      const title =
+        typeof metadata.title === "string"
+          ? metadata.title
+          : row.role === "assistant"
+            ? "AI 教练引导"
+            : "我的反馈"
+      const kind =
+        row.role === "assistant"
+          ? metadata.kind === "task_feedback"
+            ? "task_feedback"
+            : "coach"
+          : "user_input"
 
-    return {
-      id: startingMessageId + index,
-      role: row.role === "assistant" ? "ai" : "user",
-      kind,
-      title,
-      content: row.content_text ?? "",
-    } satisfies Message
-  })
+      return {
+        id: buildPersistedLearningMessageId(row.sequenceNo),
+        role: row.role === "assistant" ? "ai" : "user",
+        kind,
+        title,
+        content: row.content_text ?? "",
+      } satisfies Message
+    }),
+    pagination: {
+      hasMore: page.hasMore,
+      nextBeforeSequenceNo: page.nextBeforeSequenceNo,
+    },
+  }
+}
+
+async function assertConversationBelongsToUser(
+  userId: string,
+  conversationId: string,
+) {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("conversation_sessions")
+    .select("id")
+    .eq("id", conversationId)
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  assertSupabaseSuccess(error, "failed to validate conversation ownership")
+
+  return (data as ConversationSessionRow | null) ?? null
+}
+
+export async function getLearningMessagesPage(
+  userId: string,
+  input: {
+    conversationId: string
+    beforeSequenceNo?: number | null
+    limit?: number
+  },
+): Promise<LearningMessagesResponseData | null> {
+  const conversation = await assertConversationBelongsToUser(userId, input.conversationId)
+  if (!conversation) {
+    return null
+  }
+
+  const page = await loadPersistedMessages(
+    conversation.id,
+    input.limit,
+    input.beforeSequenceNo,
+  )
+
+  return {
+    conversationId: conversation.id,
+    messages: page.messages,
+    pagination: page.pagination,
+  }
 }
 
 export async function getLearningCurrentSessionData(
@@ -406,10 +484,11 @@ export async function getLearningCurrentSessionData(
   const pitfalls = toPitfalls(currentStep.pitfalls)
   const baseMessages = buildDefaultMessages(currentStep)
   const activeConversation = await resolveActiveConversationForTask(userId, currentTask)
-  const persistedMessages =
+  const persistedMessagePage =
     activeConversation
-      ? await loadPersistedMessages(activeConversation.id, baseMessages.length + 1)
-      : []
+      ? await loadPersistedMessages(activeConversation.id)
+      : null
+  const persistedMessages = persistedMessagePage?.messages ?? []
   const totalSteps = Math.max(state.activePath.total_steps, orderedSteps.length)
   const currentProgressPercent =
     totalSteps > 0
@@ -418,6 +497,10 @@ export async function getLearningCurrentSessionData(
 
   return {
     conversationId: activeConversation?.id ?? null,
+    historyPagination: persistedMessagePage?.pagination ?? {
+      hasMore: false,
+      nextBeforeSequenceNo: null,
+    },
     path: {
       id: state.activePath.id,
       status: "in_progress",

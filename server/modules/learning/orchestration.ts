@@ -5,12 +5,18 @@ import type {
   LearningInputType,
   LearningMessageRequest,
   LearningMessageResponseData,
-  LearningTaskState,
+  LearningTaskPatch,
 } from "@/lib/api/contracts/learning"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import { normalizeUuid } from "@/server/lib/identifiers"
 import { touchLearningPathActivity } from "@/server/modules/learning-paths/service"
 import { LearningAIProviderError, LearningValidationError } from "./errors"
+import {
+  buildIdempotentReplayResponse,
+  deriveTaskPatch,
+  shouldPersistTaskPatch,
+  taskPatchStatusToPersistentStatus,
+} from "./logic"
 import {
   invokeAIProvider,
   streamAIProvider,
@@ -130,24 +136,6 @@ export type LearningInteractionType =
   | "path_guidance"
 
 const textEncoder = new TextEncoder()
-
-function mapTaskState(
-  status: TaskRow["status"],
-): LearningTaskState {
-  if (status === "completed") {
-    return "completed"
-  }
-
-  if (status === "in_progress") {
-    return "in_progress"
-  }
-
-  if (status === "blocked") {
-    return "blocked"
-  }
-
-  return "pending"
-}
 
 function resolveInteractionType(
   requested: string | null | undefined,
@@ -630,18 +618,126 @@ async function tryGetIdempotentResponse(
     typeof metadata.title === "string" ? metadata.title : "AI 教练引导"
   const kind =
     metadata.kind === "task_feedback" ? "task_feedback" : "coach"
+  const taskPatchStatus =
+    metadata.taskPatchStatus === "in_progress"
+    || metadata.taskPatchStatus === "blocked"
+    || metadata.taskPatchStatus === "completed"
+      ? metadata.taskPatchStatus
+      : null
+  const taskPatchSuggestedNextAction =
+    typeof metadata.taskPatchSuggestedNextAction === "string"
+      ? metadata.taskPatchSuggestedNextAction
+      : null
 
-  return {
+  return buildIdempotentReplayResponse({
     conversationId: sessionId,
     taskId: task.id,
-    message: {
-      id: Date.now(),
-      role: "ai",
-      kind,
-      title,
-      content: assistant.content_text ?? "",
-    },
-    taskState: mapTaskState(task.status),
+    taskStatus: task.status,
+    assistantTitle: title,
+    assistantKind: kind,
+    assistantContent: assistant.content_text ?? "",
+    taskPatch:
+      taskPatchStatus && taskPatchSuggestedNextAction
+        ? {
+            taskId: task.id,
+            status: taskPatchStatus,
+            suggestedNextAction: taskPatchSuggestedNextAction,
+          }
+        : null,
+  })
+}
+
+async function persistTaskPatch(
+  input: PreparedLearningInvocation & {
+    userId: string
+    now: string
+    taskPatch: LearningTaskPatch
+    request: LearningMessageRequest
+  },
+) {
+  const nextStatus = taskPatchStatusToPersistentStatus(input.taskPatch.status)
+  const blockReason =
+    nextStatus === "blocked"
+      ? input.request.content.trim() || input.taskPatch.suggestedNextAction
+      : null
+
+  const { error: taskError } = await input.supabase
+    .from("user_tasks")
+    .update({
+      status: nextStatus,
+      started_at: input.task.status === "not_started" ? input.now : undefined,
+      blocked_at: nextStatus === "blocked" ? input.now : null,
+      block_reason: blockReason,
+      updated_at: input.now,
+    })
+    .eq("id", input.task.id)
+    .eq("user_id", input.userId)
+
+  assertSupabaseSuccess(taskError, "failed to persist task patch status")
+
+  const { error: pathError } = await input.supabase
+    .from("user_learning_paths")
+    .update({
+      current_task_id: input.task.id,
+      last_activity_at: input.now,
+      updated_at: input.now,
+    })
+    .eq("id", input.path.id)
+    .eq("user_id", input.userId)
+
+  assertSupabaseSuccess(pathError, "failed to touch learning path after task patch")
+
+  const { error: profileError } = await input.supabase
+    .from("user_profiles")
+    .update({
+      last_learning_at: input.now,
+      last_active_task_id: input.task.id,
+      updated_at: input.now,
+    })
+    .eq("user_id", input.userId)
+
+  assertSupabaseSuccess(profileError, "failed to touch profile after task patch")
+
+  return nextStatus
+}
+
+async function resolveTaskPatchState(
+  input: PreparedLearningInvocation & {
+    userId: string
+    now: string
+    request: LearningMessageRequest
+  },
+): Promise<{
+  taskPatch: LearningTaskPatch | null
+  taskStatus: TaskRow["status"]
+}> {
+  const taskPatch = deriveTaskPatch({
+    taskId: input.task.id,
+    interactionType: input.interactionType,
+    currentStatus: input.task.status,
+    content: input.request.content,
+  })
+
+  if (!shouldPersistTaskPatch(taskPatch, input.task.status)) {
+    return {
+      taskPatch,
+      taskStatus: input.task.status,
+    }
+  }
+
+  if (!taskPatch) {
+    return {
+      taskPatch: null,
+      taskStatus: input.task.status,
+    }
+  }
+
+  return {
+    taskPatch,
+    taskStatus: await persistTaskPatch({
+      ...input,
+      taskPatch,
+    }),
   }
 }
 
@@ -810,6 +906,7 @@ async function persistAssistantResult(
     userMessageId: string
     userSequenceNo: number
     providerResult: AIProviderResult
+    taskPatch: LearningTaskPatch | null
   },
 ) {
   const assistantSequenceNo = input.userSequenceNo + 1
@@ -842,6 +939,8 @@ async function persistAssistantResult(
         agentCode: input.agent.code,
         title: presentation.title,
         kind: presentation.kind,
+        taskPatchStatus: input.taskPatch?.status ?? null,
+        taskPatchSuggestedNextAction: input.taskPatch?.suggestedNextAction ?? null,
       },
       created_at: input.now,
     })
@@ -975,6 +1074,12 @@ export async function orchestrateLearningMessage(
     request,
     now,
   })
+  const { taskPatch, taskStatus } = await resolveTaskPatchState({
+    ...prepared,
+    userId,
+    request,
+    now,
+  })
 
   try {
     const providerResult = await invokeAIProvider({
@@ -1003,20 +1108,18 @@ export async function orchestrateLearningMessage(
       userMessageId,
       userSequenceNo,
       providerResult,
+      taskPatch,
     })
 
-    return {
+    return buildIdempotentReplayResponse({
       conversationId: session.id,
       taskId: task.id,
-      message: {
-        id: Date.now(),
-        role: "ai",
-        kind: presentation.kind,
-        title: presentation.title,
-        content: presentation.content,
-      },
-      taskState: mapTaskState(task.status),
-    }
+      taskStatus,
+      assistantTitle: presentation.title,
+      assistantKind: presentation.kind,
+      assistantContent: presentation.content,
+      taskPatch,
+    })
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown AI provider error"
@@ -1067,6 +1170,11 @@ export async function streamLearningMessage(
             providerCode: provider.code,
           }),
         )
+        if (existingResponse.taskPatch) {
+          controller.enqueue(
+            encodeSSEEvent("task_patch", existingResponse.taskPatch),
+          )
+        }
         controller.enqueue(
           encodeSSEEvent("assistant_delta", {
             delta: existingResponse.message.content,
@@ -1090,6 +1198,12 @@ export async function streamLearningMessage(
     request,
     now,
   })
+  const { taskPatch } = await resolveTaskPatchState({
+    ...prepared,
+    userId,
+    request,
+    now,
+  })
 
   return new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -1105,6 +1219,9 @@ export async function streamLearningMessage(
           modelCode: model.code,
           providerCode: provider.code,
         })
+        if (taskPatch) {
+          send("task_patch", taskPatch)
+        }
 
         const providerResult = await streamAIProvider({
           provider: {
@@ -1136,6 +1253,7 @@ export async function streamLearningMessage(
           userMessageId,
           userSequenceNo,
           providerResult,
+          taskPatch,
         })
 
         send("assistant_done", {

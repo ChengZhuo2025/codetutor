@@ -28,6 +28,10 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
     message: "success",
     data: {
       conversationId: "conversation-cursor-003",
+      historyPagination: {
+        hasMore: false,
+        nextBeforeSequenceNo: null,
+      },
       path: {
         id: "path-instance-cursor-003",
         status: "in_progress",

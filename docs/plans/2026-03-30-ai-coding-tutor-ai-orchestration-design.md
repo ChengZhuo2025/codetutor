@@ -66,6 +66,7 @@
 
 - 已有学习消息入口：`POST /api/learning/message`
 - 已有学习会话恢复入口：`GET /api/learning/current-session`
+- 已有学习历史消息分页入口：`GET /api/learning/messages`
 - 已落地 `conversation_sessions`、`conversation_messages`
 - 已落地 `ai_providers`、`ai_models`、`agent_templates`、`agent_bindings`、`skill_packs`、`agent_skill_bindings`、`llm_invocations`
 - `POST /api/learning/message` 已切到真实编排链路：会话创建/复用、消息持久化、agent 解析、skill 上下文装配、provider 调用、调用审计写入
@@ -249,6 +250,7 @@
 
 - `POST /api/learning/message`
 - `GET /api/learning/current-session`
+- `GET /api/learning/messages`
 - 后续可补 `GET /api/learning/session/{id}`
 
 职责：
@@ -1764,7 +1766,6 @@ data: {"code":"AI_PROVIDER_ERROR","message":"provider stream interrupted"}
 后续可考虑新增：
 
 - `GET /api/learning/session/{id}`
-- `GET /api/learning/messages`
 - `POST /api/learning/message/stream`
 - `POST /api/admin/ai/agent/test`
 

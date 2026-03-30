@@ -14,6 +14,8 @@
     "test:home-auth-nav": "node scripts/check-home-auth-nav.mjs",
     "test:home-auth-cta": "node scripts/check-home-auth-cta.mjs",
     "test:gamification-write-model": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-gamification-write-model.ts",
+    "test:learning-message-history-logic": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-history-logic.ts",
+    "test:learning-message-logic": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-logic.ts",
     "test:map-page": "node scripts/check-map-page.mjs",
     "test:task-write-service": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-task-write-service.ts",
     "test:workspace-sidebar": "node scripts/check-workspace-sidebar.mjs",

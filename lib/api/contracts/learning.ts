@@ -22,6 +22,18 @@ export type LearningInteractionType =
   | "task_review"
   | "completion_feedback"
   | "path_guidance"
+export type LearningTaskPatchStatus = "in_progress" | "blocked" | "completed"
+
+export type LearningTaskPatch = {
+  taskId: string
+  status: LearningTaskPatchStatus
+  suggestedNextAction: string
+}
+
+export type LearningHistoryPagination = {
+  hasMore: boolean
+  nextBeforeSequenceNo: number | null
+}
 
 export type LearningMessageRequest = {
   conversationId?: string | null
@@ -56,10 +68,18 @@ export type LearningMessageResponseData = {
   taskId: string
   message: Message
   taskState: LearningTaskState
+  taskPatch?: LearningTaskPatch | null
+}
+
+export type LearningMessagesResponseData = {
+  conversationId: string
+  messages: Message[]
+  pagination: LearningHistoryPagination
 }
 
 export type LearningCurrentSessionResponseData = {
   conversationId: string | null
+  historyPagination: LearningHistoryPagination
   path: {
     id: string
     status: "in_progress"
