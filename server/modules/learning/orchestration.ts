@@ -10,22 +10,22 @@ import type {
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import { normalizeUuid } from "@/server/lib/identifiers"
 import { touchLearningPathActivity } from "@/server/modules/learning-paths/service"
-import { LearningAIProviderError, LearningValidationError } from "./errors"
+import { LearningAIProviderError, LearningValidationError } from "./errors.ts"
 import {
   buildIdempotentReplayResponse,
   deriveTaskPatch,
   parseStoredTaskPatchMetadata,
   shouldPersistTaskPatch,
   taskPatchStatusToPersistentStatus,
-} from "./logic"
-import { buildIdempotentReplaySSEEvents } from "./http-logic"
+} from "./logic.ts"
+import { buildIdempotentReplaySSEEvents } from "./http-logic.ts"
 import {
   invokeAIProvider,
   streamAIProvider,
   type AIChatMessage,
   type AIProviderResult,
-} from "./provider"
-import { loadAgentSkillContexts } from "./skills"
+} from "./provider.ts"
+import { loadAgentSkillContexts } from "./skills.ts"
 
 type JsonRecord = Record<string, unknown>
 

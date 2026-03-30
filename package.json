@@ -16,6 +16,9 @@
     "test:gamification-write-model": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-gamification-write-model.ts",
     "test:learning-message-http-logic": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-http-logic.ts",
     "test:learning-message-history-logic": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-history-logic.ts",
+    "test:learning-message-live:json": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-live-json.ts",
+    "test:learning-message-live:sse": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-live-sse.ts",
+    "test:learning-message-live": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-live.ts",
     "test:learning-message-logic": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-logic.ts",
     "test:learning-message-route": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-route.ts",
     "test:map-page": "node scripts/check-map-page.mjs",
@@ -46,6 +49,7 @@
     "ogl": "^1.0.11",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "server-only": "file:vendor/server-only",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {

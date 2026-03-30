@@ -54,6 +54,16 @@ const STREAMING_BATCH_DELAY_MS = 70
 const STREAMING_LOADING_TITLE = "AI 正在思考中"
 const STREAMING_LOADING_HINT = "先分析你的输入和当前上下文，再生成回复"
 
+type AssistantMessageVariant =
+  | "default"
+  | "hint"
+  | "example"
+  | "breakdown"
+  | "blocked_help"
+  | "path_guidance"
+  | "review"
+  | "completion"
+
 const messageKindMeta = {
   system_goal: {
     badge: "学习提示",
@@ -75,8 +85,8 @@ const messageKindMeta = {
   },
   task_feedback: {
     badge: "任务反馈",
-    bubbleClass: "border-gold/20 bg-gold-dim text-foreground",
-    avatarClass: "bg-gold text-background",
+    bubbleClass: "border-emerald-500/20 bg-emerald-500/10 text-foreground",
+    avatarClass: "bg-emerald-500 text-white",
     avatarLabel: "成",
   },
 } as const
@@ -88,40 +98,387 @@ const quickActionToneClass: Record<QuickAction["tone"], string> = {
     "border-border/80 bg-surface-2 text-foreground hover:border-border hover:bg-surface-3",
 }
 
-function renderContent(text: string) {
+const assistantMessageVariantMeta: Record<
+  AssistantMessageVariant,
+  {
+    label: string
+    hint: string
+    panelClass: string
+    iconClass: string
+    chipClass: string
+    summaryClass: string
+  }
+> = {
+  default: {
+    label: "教练引导",
+    hint: "先给你当前关卡最值得执行的一步。",
+    panelClass: "border-brand/20 bg-background/50",
+    iconClass: "text-brand",
+    chipClass: "border-brand/20 bg-brand-dim text-brand",
+    summaryClass: "text-foreground",
+  },
+  hint: {
+    label: "轻量提示",
+    hint: "先给方向，不直接展开完整答案。",
+    panelClass: "border-gold/20 bg-background/50",
+    iconClass: "text-gold",
+    chipClass: "border-gold/20 bg-gold-dim text-gold",
+    summaryClass: "text-foreground",
+  },
+  example: {
+    label: "最小示例",
+    hint: "先跑通最小结果，再决定是否扩展。",
+    panelClass: "border-chart-3/20 bg-background/50",
+    iconClass: "text-chart-3",
+    chipClass: "border-chart-3/20 bg-chart-3/10 text-chart-3",
+    summaryClass: "text-foreground",
+  },
+  breakdown: {
+    label: "拆解步骤",
+    hint: "把当前任务压缩成更容易验证的小动作。",
+    panelClass: "border-brand/20 bg-background/50",
+    iconClass: "text-brand",
+    chipClass: "border-brand/20 bg-brand-dim text-brand",
+    summaryClass: "text-foreground",
+  },
+  blocked_help: {
+    label: "排查建议",
+    hint: "先定位卡点，再决定下一步修改动作。",
+    panelClass: "border-gold/20 bg-background/50",
+    iconClass: "text-gold",
+    chipClass: "border-gold/20 bg-gold-dim text-gold",
+    summaryClass: "text-foreground",
+  },
+  path_guidance: {
+    label: "下一步建议",
+    hint: "优先把眼前这一步做成，而不是一次铺得太大。",
+    panelClass: "border-brand/20 bg-background/50",
+    iconClass: "text-brand",
+    chipClass: "border-brand/20 bg-brand-dim text-brand",
+    summaryClass: "text-foreground",
+  },
+  review: {
+    label: "复盘建议",
+    hint: "回看结果，确认做对了什么、还差什么。",
+    panelClass: "border-chart-5/20 bg-background/50",
+    iconClass: "text-chart-5",
+    chipClass: "border-chart-5/20 bg-chart-5/10 text-chart-5",
+    summaryClass: "text-foreground",
+  },
+  completion: {
+    label: "完成反馈",
+    hint: "总结这一步收获，并准备进入下一关。",
+    panelClass: "border-emerald-500/20 bg-background/50",
+    iconClass: "text-emerald-600",
+    chipClass: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600",
+    summaryClass: "text-emerald-700",
+  },
+}
+
+type MessageInlineToken =
+  | { type: "text"; value: string }
+  | { type: "strong"; value: string }
+
+type MessageBlock =
+  | { type: "heading"; text: string }
+  | { type: "paragraph"; text: string }
+  | { type: "unordered_list"; items: string[] }
+  | { type: "ordered_list"; items: string[] }
+
+function tokenizeInlineText(text: string): MessageInlineToken[] {
+  const parts = text.split(/\*\*(.*?)\*\*/g)
+
+  return parts
+    .filter((part) => part.length > 0)
+    .map((part, index) =>
+      index % 2 === 1
+        ? { type: "strong" as const, value: part }
+        : { type: "text" as const, value: part },
+    )
+}
+
+function renderInlineText(text: string, keyPrefix: string) {
+  return tokenizeInlineText(text).map((token, index) =>
+    token.type === "strong" ? (
+      <strong key={`${keyPrefix}-strong-${index}`} className="font-semibold text-foreground">
+        {token.value}
+      </strong>
+    ) : (
+      <span key={`${keyPrefix}-text-${index}`}>{token.value}</span>
+    ),
+  )
+}
+
+function parseMessageBlocks(text: string): MessageBlock[] {
   const lines = text.split("\n")
-  return lines.map((line, i) => {
-    if (line.startsWith("**") && line.endsWith("**")) {
-      return (
-        <p key={i} className="font-semibold text-foreground">
-          {line.slice(2, -2)}
-        </p>
-      )
-    }
-    if (line.startsWith("- ")) {
-      return (
-        <li key={i} className="ml-4 list-disc text-muted-foreground">
-          {line.slice(2)}
-        </li>
-      )
-    }
-    if (line.match(/^\d+\. /)) {
-      return (
-        <li key={i} className="ml-4 list-decimal text-muted-foreground">
-          {line.replace(/^\d+\. /, "")}
-        </li>
-      )
+  const blocks: MessageBlock[] = []
+  let paragraphBuffer: string[] = []
+
+  const flushParagraph = () => {
+    if (paragraphBuffer.length === 0) {
+      return
     }
 
-    const boldParts = line.split(/\*\*(.*?)\*\*/g)
-    return (
-      <p key={i} className={line === "" ? "h-2" : "text-foreground/90"}>
-        {boldParts.map((part, j) =>
-          j % 2 === 1 ? <strong key={j}>{part}</strong> : part,
-        )}
+    const textValue = paragraphBuffer.join(" ").trim()
+    if (textValue) {
+      blocks.push({
+        type: "paragraph",
+        text: textValue,
+      })
+    }
+    paragraphBuffer = []
+  }
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index]?.trim() ?? ""
+
+    if (!line) {
+      flushParagraph()
+      continue
+    }
+
+    if (line.startsWith("**") && line.endsWith("**") && line.length > 4) {
+      flushParagraph()
+      blocks.push({
+        type: "heading",
+        text: line.slice(2, -2).trim(),
+      })
+      continue
+    }
+
+    if (line.startsWith("- ")) {
+      flushParagraph()
+      const items: string[] = []
+      let pointer = index
+
+      while (pointer < lines.length) {
+        const current = lines[pointer]?.trim() ?? ""
+        if (!current.startsWith("- ")) {
+          break
+        }
+        items.push(current.slice(2).trim())
+        pointer += 1
+      }
+
+      blocks.push({
+        type: "unordered_list",
+        items,
+      })
+      index = pointer - 1
+      continue
+    }
+
+    if (/^\d+\. /.test(line)) {
+      flushParagraph()
+      const items: string[] = []
+      let pointer = index
+
+      while (pointer < lines.length) {
+        const current = lines[pointer]?.trim() ?? ""
+        if (!/^\d+\. /.test(current)) {
+          break
+        }
+        items.push(current.replace(/^\d+\. /, "").trim())
+        pointer += 1
+      }
+
+      blocks.push({
+        type: "ordered_list",
+        items,
+      })
+      index = pointer - 1
+      continue
+    }
+
+    paragraphBuffer.push(line)
+  }
+
+  flushParagraph()
+  return blocks
+}
+
+function renderPlainContent(text: string) {
+  return text.split("\n").map((line, index) =>
+    line === "" ? (
+      <div key={`spacer-${index}`} className="h-2" />
+    ) : (
+      <p key={`line-${index}`} className="text-foreground/90">
+        {renderInlineText(line, `plain-${index}`)}
       </p>
-    )
-  })
+    ),
+  )
+}
+
+function resolveAssistantMessageVariant(message: Message): AssistantMessageVariant {
+  if (message.kind === "task_feedback" || message.taskPatch?.status === "completed") {
+    return "completion"
+  }
+
+  const title = message.title ?? ""
+  const content = message.content
+
+  if (
+    title.includes("排查")
+    || message.taskPatch?.status === "blocked"
+    || /报错|错误|failed|失败|卡住/i.test(content)
+  ) {
+    return "blocked_help"
+  }
+
+  if (title.includes("最小示例") || title.includes("示例")) {
+    return "example"
+  }
+
+  if (title.includes("拆小") || title.includes("拆细")) {
+    return "breakdown"
+  }
+
+  if (title.includes("下一步")) {
+    return "path_guidance"
+  }
+
+  if (title.includes("复盘")) {
+    return "review"
+  }
+
+  if (title.includes("提示")) {
+    return "hint"
+  }
+
+  return "default"
+}
+
+function renderAssistantMessageLead(variant: AssistantMessageVariant) {
+  const meta = assistantMessageVariantMeta[variant]
+  const Icon =
+    variant === "blocked_help"
+      ? AlertCircle
+      : variant === "completion"
+        ? CheckCircle2
+        : variant === "breakdown"
+          ? Target
+          : variant === "example"
+            ? Sparkles
+            : variant === "review"
+              ? RefreshCw
+              : Lightbulb
+
+  return (
+    <div className={cn("mb-3 rounded-2xl border px-3.5 py-3", meta.panelClass)}>
+      <div className="flex items-start gap-3">
+        <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", meta.iconClass)} />
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                "rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                meta.chipClass,
+              )}
+            >
+              {meta.label}
+            </span>
+          </div>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">{meta.hint}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function renderStructuredContent(
+  text: string,
+  kind: Message["kind"],
+  variant: AssistantMessageVariant,
+) {
+  const blocks = parseMessageBlocks(text)
+  const firstBlock = blocks[0] ?? null
+  const hasSummary = firstBlock?.type === "paragraph"
+  const summaryText = hasSummary ? firstBlock.text : null
+  const detailBlocks = hasSummary ? blocks.slice(1) : blocks
+  const variantMeta = assistantMessageVariantMeta[variant]
+
+  return (
+    <div className="space-y-3">
+      {renderAssistantMessageLead(variant)}
+
+      {summaryText ? (
+        <div className="rounded-2xl border border-background/60 bg-background/45 px-3.5 py-3">
+          <p className={cn("text-sm font-medium leading-6", variantMeta.summaryClass)}>
+            {renderInlineText(summaryText, "summary")}
+          </p>
+        </div>
+      ) : null}
+
+      {detailBlocks.map((block, blockIndex) => {
+        if (block.type === "heading") {
+          return (
+            <div
+              key={`heading-${blockIndex}`}
+              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70"
+            >
+              {renderInlineText(block.text, `heading-${blockIndex}`)}
+            </div>
+          )
+        }
+
+        if (block.type === "paragraph") {
+          return (
+            <p
+              key={`paragraph-${blockIndex}`}
+              className="text-sm leading-6 text-foreground/90"
+            >
+              {renderInlineText(block.text, `paragraph-${blockIndex}`)}
+            </p>
+          )
+        }
+
+        if (block.type === "unordered_list") {
+          return (
+            <div
+              key={`unordered-${blockIndex}`}
+              className="space-y-2 rounded-2xl border border-background/60 bg-background/40 px-3.5 py-3"
+            >
+              {block.items.map((item, itemIndex) => (
+                <div key={`unordered-item-${itemIndex}`} className="flex items-start gap-2.5">
+                  <CheckCircle2
+                    className={cn(
+                      "mt-0.5 h-4 w-4 shrink-0",
+                      kind === "task_feedback" || variant === "completion"
+                        ? "text-emerald-600"
+                        : variant === "blocked_help"
+                          ? "text-gold"
+                          : "text-brand",
+                    )}
+                  />
+                  <p className="text-sm leading-6 text-foreground/90">
+                    {renderInlineText(item, `unordered-${blockIndex}-${itemIndex}`)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )
+        }
+
+        return (
+          <div
+            key={`ordered-${blockIndex}`}
+            className="space-y-2 rounded-2xl border border-background/60 bg-background/40 px-3.5 py-3"
+          >
+            {block.items.map((item, itemIndex) => (
+              <div key={`ordered-item-${itemIndex}`} className="flex items-start gap-2.5">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/12 text-[11px] font-semibold text-brand">
+                  {itemIndex + 1}
+                </div>
+                <p className="text-sm leading-6 text-foreground/90">
+                  {renderInlineText(item, `ordered-${blockIndex}-${itemIndex}`)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 function createAttachmentFromFile(file: File): MessageAttachment {
@@ -1165,7 +1522,7 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
                         meta.bubbleClass,
                       )}
                     >
-                      {msg.content === STREAMING_PLACEHOLDER ? (
+                    {msg.content === STREAMING_PLACEHOLDER ? (
                         <div className="space-y-3">
                           <div className="flex items-center gap-2 text-sm font-medium text-brand">
                             <RefreshCw className="h-4 w-4 animate-spin" />
@@ -1180,7 +1537,15 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
                           </div>
                         </div>
                       ) : (
-                        <div className="space-y-1.5">{renderContent(msg.content)}</div>
+                        <div className="space-y-1.5">
+                          {msg.role === "user"
+                            ? renderPlainContent(msg.content)
+                            : renderStructuredContent(
+                                msg.content,
+                                msg.kind,
+                                resolveAssistantMessageVariant(msg),
+                              )}
+                        </div>
                       )}
 
                       {msg.attachment ? (
@@ -1201,9 +1566,9 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
                     </div>
 
                     {msg.kind === "task_feedback" && msg.xp ? (
-                      <div className="flex items-center gap-2 rounded-2xl border border-gold/20 bg-gold-dim px-3 py-2">
-                        <Zap className="h-4 w-4 text-gold" />
-                        <span className="text-sm font-semibold text-gold">+{msg.xp} XP</span>
+                      <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2">
+                        <Zap className="h-4 w-4 text-emerald-600" />
+                        <span className="text-sm font-semibold text-emerald-600">+{msg.xp} XP</span>
                         <span className="text-xs text-muted-foreground">任务步骤完成</span>
                       </div>
                     ) : null}

@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
-import { getPublicSupabaseEnv } from "./env"
+import { getPublicSupabaseEnv } from "./env.ts"
 
 let browserClient: SupabaseClient | undefined
 

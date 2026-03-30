@@ -1,6 +1,6 @@
 import "server-only"
 
-import { LearningAIProviderError } from "./errors"
+import { LearningAIProviderError } from "./errors.ts"
 
 type AIProviderConfig = {
   code: string

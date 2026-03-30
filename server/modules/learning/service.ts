@@ -17,13 +17,13 @@ import {
 } from "@/server/modules/learning-paths/service"
 import { normalizeUuid } from "@/server/lib/identifiers"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
-import { orchestrateLearningMessage } from "./orchestration"
-import { parseStoredTaskPatchMetadata } from "./logic"
+import { orchestrateLearningMessage } from "./orchestration.ts"
+import { parseStoredTaskPatchMetadata } from "./logic.ts"
 import {
   buildPersistedLearningMessageId,
   normalizeLearningMessagesPageSize,
   resolveLearningMessagesPage,
-} from "./history-logic"
+} from "./history-logic.ts"
 import type { Message } from "@/features/learning/types"
 
 type JsonRecord = Record<string, unknown>
