@@ -10,6 +10,9 @@ This folder holds the idempotent SQL scripts that populate the MVP dictionary ta
 2. `supabase/seeds/003_onboarding_tool_expansion.sql` – run after `001_dictionary.sql` when you want the onboarding tool list to match the full 9-tool frontend prototype. It adds the missing CLI / online tools plus a minimal preset path and self-study path for each tool.
 3. `supabase/seeds/004_claude_codex_preset_curriculum.sql` – run after `003_onboarding_tool_expansion.sql` when you want `Claude Code` and `Codex CLI` to have fuller platform-learning preset curriculum data instead of only the minimal starter path.
 4. `supabase/seeds/002_demo_user.sql` – run after dictionary seeds are live and after you have a Supabase Auth user. **Before running, edit the `dev_user_id` constant in the file to match the real `auth.users.id` value you created through Supabase Auth.**
+5. `supabase/seeds/005_ai_provider_and_model_registry.sql` – run after `012-016` AI migrations are applied. It seeds the first SiliconFlow provider row plus the phase-1 model registry (`deepseek-v3-2`, `glm-5`, `deepseek-r1`).
+6. `supabase/seeds/006_ai_agent_and_binding_registry.sql` – run after `005_ai_provider_and_model_registry.sql`. It seeds the first batch of teaching agents, helper agents, and path / tool-level binding rules.
+7. `supabase/seeds/007_ai_skill_registry.sql` – run after `006_ai_agent_and_binding_registry.sql`. It seeds the first batch of built-in skill packs plus agent-to-skill bindings. Make sure the local `ai/skills/` directory exists and stays aligned with the seeded paths.
 
 ## 改种子数据还是写迁移？
 
@@ -26,5 +29,8 @@ This folder holds the idempotent SQL scripts that populate the MVP dictionary ta
 - `003_onboarding_tool_expansion.sql` is an additive expansion seed for the remaining six tools in the current onboarding prototype: `Claude Code`, `Codex CLI`, `OpenCode`, `Google Stitch`, `Bolt.new`, `Lovable`.
 - The expansion seed also inserts a minimal preset-training path and a minimal self-directed path for each of those six tools, so onboarding can complete and `/learn` can open successfully after selection.
 - `004_claude_codex_preset_curriculum.sql` upgrades the preset-training catalog for the two current core CLI tools, `Claude Code` and `Codex CLI`, to include `workflow-boost`, `debug-lab`, and `feature-shipping` curriculum paths with richer step data.
+- `005_ai_provider_and_model_registry.sql` seeds the first AI provider registry used by the planned learning orchestration backend. `deepseek-r1` is intentionally marked for manual test use only and should not become the default production route.
+- `006_ai_agent_and_binding_registry.sql` seeds the first batch of agent templates and routing bindings for current seeded paths and tools. It intentionally does not seed skill packs yet; those will follow once the local `ai/skills` directory structure is created.
+- `007_ai_skill_registry.sql` seeds the first batch of built-in skill packs and agent skill bindings. The database paths in that seed point to the checked-in `ai/skills/` directory in this repository.
 - The user script inserts `user_profiles`, `user_learning_preferences`, `user_learning_paths`, and `user_tasks`; it assumes the referenced path and tools already exist (hence the execution order).
 - Rerun the user script only when you want to reset the demo user’s progress—it updates the same rows via `ON CONFLICT`.

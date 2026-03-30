@@ -16,14 +16,28 @@ import type { ProfileMeResponseData } from "@/lib/api/contracts/auth"
 
 export type LearningInputType = "text" | "link" | "code"
 export type LearningTaskState = "pending" | "in_progress" | "blocked" | "completed"
+export type LearningInteractionType =
+  | "teaching"
+  | "blocked_help"
+  | "task_review"
+  | "completion_feedback"
+  | "path_guidance"
 
 export type LearningMessageRequest = {
-  conversationId?: string
+  conversationId?: string | null
   taskId?: string
+  clientMessageId?: string
+  interactionType?: LearningInteractionType
   inputType: LearningInputType
   content: string
+  stream?: boolean
   clientContext?: {
     pagePath: string
+    selectionMode?: "self_directed" | "preset_training"
+    toolCode?: string
+    pathCode?: string
+    stepNo?: number
+    locale?: string
   }
 }
 
@@ -38,14 +52,14 @@ export type LearningAssistantMessageContract = {
 }
 
 export type LearningMessageResponseData = {
-  conversationId: string
+  conversationId: string | null
   taskId: string
   message: Message
   taskState: LearningTaskState
 }
 
 export type LearningCurrentSessionResponseData = {
-  conversationId: string
+  conversationId: string | null
   path: {
     id: string
     status: "in_progress"

@@ -66,12 +66,14 @@
 
 - 已有学习消息入口：`POST /api/learning/message`
 - 已有学习会话恢复入口：`GET /api/learning/current-session`
-- 当前服务端回复仍是内置教学回复，不是真实外部 AI provider 编排
-- 当前尚未落地 `conversation_sessions` 与 `conversation_messages`
-- 当前尚未落地 `ai_providers`、`ai_models`、`agent_templates`、`agent_bindings`
+- 已落地 `conversation_sessions`、`conversation_messages`
+- 已落地 `ai_providers`、`ai_models`、`agent_templates`、`agent_bindings`、`skill_packs`、`agent_skill_bindings`、`llm_invocations`
+- `POST /api/learning/message` 已切到真实编排链路：会话创建/复用、消息持久化、agent 解析、skill 上下文装配、provider 调用、调用审计写入
+- 当前首版 provider 调用已同时支持非流式 JSON 与 `text/event-stream` SSE
+- 当前真实外部 provider 联调还依赖环境变量 `SILICONFLOW_API_KEY`，若未配置会返回 `AI_PROVIDER_ERROR`
 - 当前仓库已经具备适合承载该能力的基础设施：`app/api`、`server/modules`、Supabase Auth、Database、Storage、远程迁移执行脚本
 
-因此，本文档面向的是“下一阶段真实落地”的设计规范，而不是对当前代码状态的误报
+因此，本文档既是后续扩展规范，也是当前首版真实实现的权威快照
 
 ---
 

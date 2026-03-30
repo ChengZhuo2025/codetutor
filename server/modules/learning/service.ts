@@ -1,6 +1,5 @@
 import type {
   LearningCurrentSessionResponseData,
-  LearningInputType,
   LearningMessageRequest,
   LearningMessageResponseData,
   LearningTaskState,
@@ -14,9 +13,10 @@ import { getRankName } from "@/constants/ranks"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import {
   reconcileInterruptedLearningPaths,
-  touchLearningPathActivity,
 } from "@/server/modules/learning-paths/service"
+import { normalizeUuid } from "@/server/lib/identifiers"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
+import { orchestrateLearningMessage } from "./orchestration"
 import type { Message } from "@/features/learning/types"
 
 type JsonRecord = Record<string, unknown>
@@ -59,6 +59,7 @@ type TaskRow = {
   started_at: string | null
   completed_at: string | null
   created_at: string
+  last_conversation_id: string | null
   score_awarded: number
 }
 
@@ -76,6 +77,18 @@ type StepRow = {
   knowledge_points: unknown
   key_points: unknown
   pitfalls: unknown
+}
+
+type ConversationSessionRow = {
+  id: string
+}
+
+type ConversationMessageRow = {
+  id: string
+  role: "user" | "assistant"
+  message_type: "plain_text" | "assistant_answer" | "assistant_error"
+  content_text: string | null
+  metadata: JsonRecord
 }
 
 const KNOWLEDGE_TAG_COLORS = [
@@ -195,7 +208,7 @@ async function loadLearningState(userId: string) {
 
   const { data: tasks, error: taskError } = await supabase
     .from("user_tasks")
-    .select("id, path_step_id, status, started_at, completed_at, created_at, score_awarded")
+    .select("id, path_step_id, status, started_at, completed_at, created_at, last_conversation_id, score_awarded")
     .eq("user_learning_path_id", activePath.id)
 
   assertSupabaseSuccess(taskError, "failed to load learning tasks")
@@ -250,6 +263,113 @@ function toProfileData(
   }
 }
 
+function buildDefaultMessages(currentStep: StepRow): Message[] {
+  return [
+    {
+      id: 1,
+      role: "system",
+      kind: "system_goal",
+      title: "系统目标说明",
+      content: [
+        `本关只验证一件事：${currentStep.goal}`,
+        "",
+        `1. 先完成「${currentStep.title}」`,
+        `2. 对照完成标准检查是否达成`,
+        "3. 把你的结果、截图或报错贴给我",
+      ].join("\n"),
+    },
+    {
+      id: 2,
+      role: "ai",
+      kind: "coach",
+      title: "AI 教练引导",
+      content:
+        currentStep.focus ??
+        "先从一个最小实验开始，不要求一次理解全部概念。做完后把结果发给我，我们再判断下一步。",
+    },
+  ]
+}
+
+async function resolveActiveConversationForTask(
+  userId: string,
+  task: TaskRow,
+) {
+  const supabase = createSupabaseAdminClient()
+  const preferredSessionId = normalizeUuid(task.last_conversation_id)
+
+  if (preferredSessionId) {
+    const { data, error } = await supabase
+      .from("conversation_sessions")
+      .select("id")
+      .eq("id", preferredSessionId)
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .maybeSingle()
+
+    assertSupabaseSuccess(error, "failed to load preferred conversation session")
+
+    const session = (data as ConversationSessionRow | null) ?? null
+    if (session) {
+      return session
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("conversation_sessions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("user_task_id", task.id)
+    .eq("status", "active")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  assertSupabaseSuccess(error, "failed to load active conversation session for task")
+
+  return (data as ConversationSessionRow | null) ?? null
+}
+
+async function loadPersistedMessages(
+  conversationId: string,
+  startingMessageId: number,
+): Promise<Message[]> {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("conversation_messages")
+    .select("id, role, message_type, content_text, metadata")
+    .eq("session_id", conversationId)
+    .in("role", ["user", "assistant"])
+    .order("sequence_no", { ascending: true })
+
+  assertSupabaseSuccess(error, "failed to load persisted conversation messages")
+
+  const rows = (data ?? []) as ConversationMessageRow[]
+
+  return rows.map((row, index) => {
+    const metadata = row.metadata ?? {}
+    const title =
+      typeof metadata.title === "string"
+        ? metadata.title
+        : row.role === "assistant"
+          ? "AI 教练引导"
+          : "我的反馈"
+    const kind =
+      row.role === "assistant"
+        ? metadata.kind === "task_feedback"
+          ? "task_feedback"
+          : "coach"
+        : "user_input"
+
+    return {
+      id: startingMessageId + index,
+      role: row.role === "assistant" ? "ai" : "user",
+      kind,
+      title,
+      content: row.content_text ?? "",
+    } satisfies Message
+  })
+}
+
 export async function getLearningCurrentSessionData(
   userId: string,
 ): Promise<LearningCurrentSessionResponseData | null> {
@@ -284,6 +404,12 @@ export async function getLearningCurrentSessionData(
   const knowledgePoints = toStringArray(currentStep.knowledge_points)
   const masteryPoints = toStringArray(currentStep.key_points)
   const pitfalls = toPitfalls(currentStep.pitfalls)
+  const baseMessages = buildDefaultMessages(currentStep)
+  const activeConversation = await resolveActiveConversationForTask(userId, currentTask)
+  const persistedMessages =
+    activeConversation
+      ? await loadPersistedMessages(activeConversation.id, baseMessages.length + 1)
+      : []
   const totalSteps = Math.max(state.activePath.total_steps, orderedSteps.length)
   const currentProgressPercent =
     totalSteps > 0
@@ -291,7 +417,7 @@ export async function getLearningCurrentSessionData(
       : 0
 
   return {
-    conversationId: `session-${state.activePath.id}`,
+    conversationId: activeConversation?.id ?? null,
     path: {
       id: state.activePath.id,
       status: "in_progress",
@@ -332,30 +458,7 @@ export async function getLearningCurrentSessionData(
       nextUnlockSummary:
         nextStep?.summary ?? "完成这一关后，你可以回到地图查看新的路径状态。",
     },
-    messages: [
-      {
-        id: 1,
-        role: "system",
-        kind: "system_goal",
-        title: "系统目标说明",
-        content: [
-          `本关只验证一件事：${currentStep.goal}`,
-          "",
-          `1. 先完成「${currentStep.title}」`,
-          `2. 对照完成标准检查是否达成`,
-          "3. 把你的结果、截图或报错贴给我",
-        ].join("\n"),
-      },
-      {
-        id: 2,
-        role: "ai",
-        kind: "coach",
-        title: "AI 教练引导",
-        content:
-          currentStep.focus ??
-          "先从一个最小实验开始，不要求一次理解全部概念。做完后把结果发给我，我们再判断下一步。",
-      },
-    ],
+    messages: [...baseMessages, ...persistedMessages],
     quickActions: [
       {
         label: "我完成了",
@@ -515,96 +618,9 @@ export async function getLearningCurrentSessionData(
   }
 }
 
-function guessReply(
-  input: string,
-  session: LearningCurrentSessionResponseData,
-): Message {
-  const normalized = input.trim()
-  const completedReply = session.responseSamples.find((item) => item.trigger === "我完成了")
-  const breakdownReply = session.responseSamples.find((item) => item.trigger === "帮我拆细一点")
-  const hintReply = session.responseSamples.find((item) => item.trigger === "给我一点提示")
-  const exampleReply = session.responseSamples.find((item) => item.trigger === "给我一个例子")
-
-  if (normalized.includes("完成") && completedReply) {
-    return {
-      id: Date.now(),
-      role: "ai",
-      kind: completedReply.kind,
-      title: completedReply.title,
-      content: completedReply.content,
-      xp: completedReply.xp,
-      nextStep: completedReply.nextStep,
-    }
-  }
-
-  if ((normalized.includes("拆") || normalized.includes("卡住")) && breakdownReply) {
-    return {
-      id: Date.now(),
-      role: "ai",
-      kind: breakdownReply.kind,
-      title: breakdownReply.title,
-      content: breakdownReply.content,
-    }
-  }
-
-  if (normalized.includes("例子") && exampleReply) {
-    return {
-      id: Date.now(),
-      role: "ai",
-      kind: exampleReply.kind,
-      title: exampleReply.title,
-      content: exampleReply.content,
-    }
-  }
-
-  if ((normalized.includes("提示") || normalized.includes("怎么")) && hintReply) {
-    return {
-      id: Date.now(),
-      role: "ai",
-      kind: hintReply.kind,
-      title: hintReply.title,
-      content: hintReply.content,
-    }
-  }
-
-  return {
-    id: Date.now(),
-    role: "ai",
-    kind: "coach",
-    title: "下一步建议",
-    content: [
-      "我已经收到你的当前反馈。",
-      "",
-      `先继续围绕「${session.task.title}」做最小验证，把这一步的结果、截图或报错贴给我，我再帮你判断下一步。`,
-    ].join("\n"),
-  }
-}
-
 export async function sendLearningMessage(
   userId: string,
   request: LearningMessageRequest,
 ): Promise<LearningMessageResponseData | null> {
-  const session = await getLearningCurrentSessionData(userId)
-
-  if (!session) {
-    return null
-  }
-
-  const inputType: LearningInputType = request.inputType ?? "text"
-  const content = request.content.trim()
-  const message = guessReply(content, session)
-  await touchLearningPathActivity(userId, session.path.id)
-
-  return {
-    conversationId: session.conversationId,
-    taskId: session.task.taskId,
-    message: {
-      ...message,
-      content:
-        inputType === "code"
-          ? `${message.content}\n\n如果你已经有代码片段，可以继续直接贴出来，我会按代码上下文继续帮你判断。`
-          : message.content,
-    },
-    taskState: session.task.status,
-  }
+  return orchestrateLearningMessage(userId, request)
 }

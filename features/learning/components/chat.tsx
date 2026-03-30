@@ -33,7 +33,7 @@ import type {
   CompleteTaskResponseData,
   UpdateTaskStatusResponseData,
 } from "@/lib/api/contracts/task"
-import { requestData } from "@/lib/api/client"
+import { apiFetch, requestData } from "@/lib/api/client"
 import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
 
@@ -43,6 +43,8 @@ type PendingDraft = {
   text: string
   attachment: MessageAttachment | null
 }
+
+type SSEEventHandler = (event: string, data: Record<string, unknown>) => void
 
 const messageKindMeta = {
   system_goal: {
@@ -146,6 +148,52 @@ function getInputHint(
   return "把教程、代码、链接或你卡住的地方直接发给我。Enter 发送，Shift+Enter 换行。"
 }
 
+async function consumeSSE(
+  response: Response,
+  onEvent: SSEEventHandler,
+) {
+  if (!response.body) {
+    throw new Error("流式响应为空。")
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ""
+
+  while (true) {
+    const { value, done } = await reader.read()
+    if (done) {
+      break
+    }
+
+    buffer += decoder.decode(value, { stream: true })
+
+    while (true) {
+      const boundary = buffer.indexOf("\n\n")
+      if (boundary < 0) {
+        break
+      }
+
+      const rawEvent = buffer.slice(0, boundary)
+      buffer = buffer.slice(boundary + 2)
+
+      const lines = rawEvent.split("\n")
+      const eventLine = lines.find((line) => line.startsWith("event:"))
+      const dataLines = lines
+        .filter((line) => line.startsWith("data:"))
+        .map((line) => line.slice(5).trim())
+
+      if (!eventLine || dataLines.length === 0) {
+        continue
+      }
+
+      const event = eventLine.slice(6).trim()
+      const data = JSON.parse(dataLines.join("")) as Record<string, unknown>
+      onEvent(event, data)
+    }
+  }
+}
+
 type LearnChatProps = {
   learningData: LearningCurrentSessionResponseData
   onRequestRefresh: () => void
@@ -154,6 +202,9 @@ type LearnChatProps = {
 export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
   const { trackEvent } = useAppEventTracker()
   const [messages, setMessages] = useState<Message[]>(learningData.messages)
+  const [conversationId, setConversationId] = useState<string | null>(
+    learningData.conversationId,
+  )
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const [previewAttachment, setPreviewAttachment] = useState<MessageAttachment | null>(
@@ -176,6 +227,7 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
 
   useEffect(() => {
     setMessages(learningData.messages)
+    setConversationId(learningData.conversationId)
     setTaskState(learningData.task.status)
     nextMessageId.current = learningData.messages.length + 1
   }, [learningData])
@@ -232,6 +284,9 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
     nextMessageId.current += 1
     return id
   }
+
+  const createClientMessageId = () =>
+    `msg_client_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
 
   const resetAgent = () => {
     setInput("")
@@ -310,7 +365,7 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
         method: "POST",
         body: JSON.stringify({
           taskId: learningData.task.taskId,
-          conversationId: learningData.conversationId,
+          conversationId,
         }),
       })
 
@@ -367,23 +422,117 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
         await syncTaskStatus("in_progress")
       }
 
-      const data = await requestData<LearningMessageResponseData>("/learning/message", {
+      const clientMessageId = createClientMessageId()
+      const assistantMessageId = allocateMessageId()
+      let assistantInserted = false
+
+      const ensureAssistantMessage = (title = "AI 教练引导") => {
+        if (assistantInserted) {
+          return
+        }
+
+        assistantInserted = true
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: assistantMessageId,
+            role: "ai",
+            kind: "coach",
+            title,
+            content: "",
+          },
+        ])
+      }
+
+      const response = await apiFetch("/learning/message", {
         method: "POST",
+        headers: {
+          Accept: "text/event-stream",
+        },
         body: JSON.stringify({
-          conversationId: learningData.conversationId,
+          conversationId,
           taskId: learningData.task.taskId,
+          clientMessageId,
           inputType: "text",
           content: draft.text || "我上传了一张截图，请帮我定位问题。",
+          stream: true,
           clientContext: {
             pagePath: ROUTES.learn,
           },
         }),
       })
 
-      setMessages((prev) => [...prev, data.message])
+      const contentType = response.headers.get("content-type") ?? ""
+
+      if (contentType.includes("text/event-stream")) {
+        await consumeSSE(response, (event, payload) => {
+          if (event === "session_started") {
+            setConversationId(
+              typeof payload.conversationId === "string" ? payload.conversationId : null,
+            )
+            ensureAssistantMessage()
+            return
+          }
+
+          if (event === "assistant_delta") {
+            const delta =
+              typeof payload.delta === "string"
+                ? payload.delta
+                : ""
+
+            if (!delta) {
+              return
+            }
+
+            ensureAssistantMessage()
+            setIsTyping(false)
+            setMessages((prev) =>
+              prev.map((message) =>
+                message.id === assistantMessageId
+                  ? {
+                      ...message,
+                      content: `${message.content}${delta}`,
+                    }
+                  : message,
+              ),
+            )
+            return
+          }
+
+          if (event === "assistant_done") {
+            return
+          }
+
+          if (event === "error") {
+            throw new Error(
+              typeof payload.message === "string"
+                ? payload.message
+                : "流式消息发送失败，请稍后重试。",
+            )
+          }
+        })
+      } else {
+        const apiResponse = (await response.json()) as {
+          code: string
+          message: string
+          data: LearningMessageResponseData | null
+        }
+
+        if (apiResponse.code !== "OK" || !apiResponse.data) {
+          throw new Error(apiResponse.message || "消息发送失败，请稍后重试。")
+        }
+
+        const responseData = apiResponse.data
+        setConversationId(responseData.conversationId)
+        setMessages((prev) => [...prev, responseData.message])
+      }
+
       setFailedDraft(null)
       setSendError(null)
     } catch (error) {
+      setMessages((prev) =>
+        prev.filter((message) => !(message.role === "ai" && message.content.length === 0)),
+      )
       setFailedDraft(draft)
       setSendError(error instanceof Error ? error.message : "消息发送失败，请稍后重试。")
     } finally {
@@ -482,7 +631,7 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
 
   const handleResume = () => {
     trackEvent(APP_EVENTS.sessionResumed, {
-      conversationId: learningData.conversationId,
+      conversationId,
       taskId: learningData.task.taskId,
     })
 

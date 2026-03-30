@@ -6,6 +6,7 @@ import type {
   UpdateTaskStatusResponseData,
 } from "@/lib/api/contracts/task"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
+import { normalizeUuid } from "@/server/lib/identifiers"
 import {
   awardTaskCompletionScore,
   ensureUserRankSnapshot,
@@ -237,6 +238,7 @@ export async function completeTask(
 
   const now = new Date().toISOString()
   const scoreDelta = task.score_awarded > 0 ? 0 : currentStep.reward_score
+  const conversationId = normalizeUuid(input.conversationId)
   const nextTask =
     progression.nextTaskId === null
       ? null
@@ -254,7 +256,7 @@ export async function completeTask(
       blocked_at: null,
       block_reason: null,
       attempt_count: Math.max(1, task.attempt_count),
-      last_conversation_id: input.conversationId ?? task.last_conversation_id,
+      last_conversation_id: conversationId ?? task.last_conversation_id,
       score_awarded: scoreDelta > 0 ? currentStep.reward_score : task.score_awarded,
       updated_at: now,
     })
@@ -294,6 +296,21 @@ export async function completeTask(
     .eq("user_id", userId)
 
   assertSupabaseSuccess(pathError, "failed to advance learning path")
+
+  if (conversationId) {
+    const { error: sessionError } = await supabase
+      .from("conversation_sessions")
+      .update({
+        status: "completed",
+        closed_at: now,
+        updated_at: now,
+      })
+      .eq("id", conversationId)
+      .eq("user_id", userId)
+      .eq("status", "active")
+
+    assertSupabaseSuccess(sessionError, "failed to close conversation session on task completion")
+  }
 
   await awardTaskCompletionScore(supabase, {
     userId,

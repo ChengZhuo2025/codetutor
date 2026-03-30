@@ -4,7 +4,7 @@ import { unwrapResponse } from "@/lib/api/types"
 
 const API_BASE_PATH = "/api"
 
-async function buildRequestHeaders(initHeaders?: HeadersInit) {
+export async function buildRequestHeaders(initHeaders?: HeadersInit) {
   const headers = new Headers(initHeaders)
 
   if (!headers.has("Content-Type")) {
@@ -25,17 +25,24 @@ async function buildRequestHeaders(initHeaders?: HeadersInit) {
   return headers
 }
 
-async function request<T>(
+export async function apiFetch(
   path: string,
   init?: RequestInit,
-): Promise<ApiResponse<T>> {
+) {
   const headers = await buildRequestHeaders(init?.headers)
 
-  const response = await fetch(`${API_BASE_PATH}${path}`, {
+  return fetch(`${API_BASE_PATH}${path}`, {
     ...init,
     headers,
     cache: "no-store",
   })
+}
+
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<ApiResponse<T>> {
+  const response = await apiFetch(path, init)
 
   return (await response.json()) as ApiResponse<T>
 }

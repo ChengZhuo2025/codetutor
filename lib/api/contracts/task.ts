@@ -2,7 +2,7 @@ export type TaskStatusUpdateValue = "in_progress" | "blocked"
 
 export type CompleteTaskRequest = {
   taskId: string
-  conversationId?: string
+  conversationId?: string | null
 }
 
 export type CompleteTaskResponseData = {

@@ -1,0 +1,244 @@
+BEGIN;
+
+INSERT INTO public.skill_packs (
+  id,
+  code,
+  name,
+  version,
+  source_type,
+  trust_level,
+  root_path,
+  manifest_path,
+  entry_resource_path,
+  scripts_enabled,
+  is_active,
+  metadata,
+  created_at,
+  updated_at
+)
+SELECT
+  seed.id,
+  seed.code,
+  seed.name,
+  '1.0.0',
+  'built_in'::public.skill_source_type,
+  'internal_verified'::public.skill_trust_level,
+  'ai/skills/' || seed.code,
+  'ai/skills/' || seed.code || '/SKILL.md',
+  'ai/skills/' || seed.code || '/SKILL.md',
+  false,
+  true,
+  jsonb_build_object(
+    'toolFamily', seed.tool_family,
+    'category', seed.category,
+    'phase', 'phase1'
+  ),
+  NOW(),
+  NOW()
+FROM (
+  VALUES
+    ('c1000000-0000-0000-0000-000000000001'::uuid, 'cursor-install-setup-skill', 'Cursor 安装与初始化', 'cursor', 'setup'),
+    ('c1000000-0000-0000-0000-000000000002'::uuid, 'cursor-ask-vs-agent-skill', 'Cursor 提问与 Agent 分工', 'cursor', 'workflow'),
+    ('c1000000-0000-0000-0000-000000000003'::uuid, 'cursor-debug-basics-skill', 'Cursor 基础调试', 'cursor', 'debug'),
+    ('c1000000-0000-0000-0000-000000000004'::uuid, 'general-learning-reflection-skill', '通用学习复盘', 'shared', 'reflection'),
+    ('c1000000-0000-0000-0000-000000000005'::uuid, 'learning-material-intake-skill', '学习材料整理', 'shared', 'intake'),
+    ('c1000000-0000-0000-0000-000000000006'::uuid, 'ide-context-organization-skill', 'IDE 上下文整理', 'ide', 'context'),
+    ('c1000000-0000-0000-0000-000000000007'::uuid, 'claude-code-workspace-basics-skill', 'Claude Code 工作区基础', 'claude-code', 'workflow'),
+    ('c1000000-0000-0000-0000-000000000008'::uuid, 'task-slicing-skill', '任务切片', 'shared', 'planning'),
+    ('c1000000-0000-0000-0000-000000000009'::uuid, 'cli-verification-basics-skill', 'CLI 验证基础', 'cli', 'verification'),
+    ('c1000000-0000-0000-0000-000000000010'::uuid, 'debug-hypothesis-checklist-skill', '调试假设检查清单', 'shared', 'debug'),
+    ('c1000000-0000-0000-0000-000000000011'::uuid, 'error-context-format-skill', '错误上下文整理格式', 'shared', 'debug'),
+    ('c1000000-0000-0000-0000-000000000012'::uuid, 'cli-retest-checklist-skill', 'CLI 复测检查清单', 'cli', 'verification'),
+    ('c1000000-0000-0000-0000-000000000013'::uuid, 'feature-slicing-skill', '功能切片', 'shared', 'planning'),
+    ('c1000000-0000-0000-0000-000000000014'::uuid, 'implementation-plan-skill', '实现顺序规划', 'shared', 'planning'),
+    ('c1000000-0000-0000-0000-000000000015'::uuid, 'acceptance-checklist-skill', '验收检查清单', 'shared', 'verification'),
+    ('c1000000-0000-0000-0000-000000000016'::uuid, 'codex-cli-basics-skill', 'Codex CLI 基础', 'codex', 'workflow'),
+    ('c1000000-0000-0000-0000-000000000017'::uuid, 'prompt-compaction-skill', '提示词压缩', 'shared', 'prompting'),
+    ('c1000000-0000-0000-0000-000000000018'::uuid, 'cli-context-organization-skill', 'CLI 上下文整理', 'cli', 'context'),
+    ('c1000000-0000-0000-0000-000000000019'::uuid, 'opencode-context-basics-skill', 'OpenCode 上下文基础', 'opencode', 'workflow'),
+    ('c1000000-0000-0000-0000-000000000020'::uuid, 'multi-language-context-skill', '多语言上下文切换', 'opencode', 'context'),
+    ('c1000000-0000-0000-0000-000000000021'::uuid, 'prompt-to-ui-basics-skill', '提示词到页面基础', 'web-builder', 'workflow'),
+    ('c1000000-0000-0000-0000-000000000022'::uuid, 'web-iteration-checklist-skill', '页面迭代检查清单', 'web-builder', 'verification'),
+    ('c1000000-0000-0000-0000-000000000023'::uuid, 'visual-acceptance-check-skill', '视觉验收检查', 'web-builder', 'verification'),
+    ('c1000000-0000-0000-0000-000000000024'::uuid, 'ide-debug-intake-skill', 'IDE 卡点信息采集', 'ide', 'debug'),
+    ('c1000000-0000-0000-0000-000000000025'::uuid, 'verification-next-step-skill', '验证后下一步建议', 'shared', 'guidance'),
+    ('c1000000-0000-0000-0000-000000000026'::uuid, 'cli-debug-intake-skill', 'CLI 卡点信息采集', 'cli', 'debug'),
+    ('c1000000-0000-0000-0000-000000000027'::uuid, 'web-builder-debug-intake-skill', '在线工具卡点信息采集', 'web-builder', 'debug'),
+    ('c1000000-0000-0000-0000-000000000028'::uuid, 'ui-diff-review-skill', '页面差异复核', 'web-builder', 'review'),
+    ('c1000000-0000-0000-0000-000000000029'::uuid, 'review-checklist-skill', '结果复盘检查清单', 'shared', 'review'),
+    ('c1000000-0000-0000-0000-000000000030'::uuid, 'next-step-guidance-skill', '下一步引导', 'shared', 'guidance'),
+    ('c1000000-0000-0000-0000-000000000031'::uuid, 'completion-summary-skill', '完成总结', 'shared', 'completion'),
+    ('c1000000-0000-0000-0000-000000000032'::uuid, 'rank-progress-feedback-skill', '段位成长反馈', 'shared', 'completion')
+) AS seed(id, code, name, tool_family, category)
+ON CONFLICT (code) DO UPDATE
+SET
+  name = EXCLUDED.name,
+  version = EXCLUDED.version,
+  source_type = EXCLUDED.source_type,
+  trust_level = EXCLUDED.trust_level,
+  root_path = EXCLUDED.root_path,
+  manifest_path = EXCLUDED.manifest_path,
+  entry_resource_path = EXCLUDED.entry_resource_path,
+  scripts_enabled = EXCLUDED.scripts_enabled,
+  is_active = EXCLUDED.is_active,
+  metadata = EXCLUDED.metadata,
+  updated_at = NOW();
+
+DELETE FROM public.agent_skill_bindings
+WHERE agent_code IN (
+  'cursor-buddy',
+  'cursor-self-study-coach',
+  'trae-self-study-coach',
+  'windsurf-self-study-coach',
+  'claude-code-coach',
+  'claude-debug-coach',
+  'claude-shipping-coach',
+  'claude-code-self-study-coach',
+  'codex-cli-coach',
+  'codex-debug-coach',
+  'codex-shipping-coach',
+  'codex-self-study-coach',
+  'opencode-coach',
+  'opencode-self-study-coach',
+  'stitch-buddy',
+  'stitch-self-study-coach',
+  'bolt-buddy',
+  'bolt-self-study-coach',
+  'lovable-buddy',
+  'lovable-self-study-coach',
+  'ide-blocked-helper',
+  'cli-blocked-helper',
+  'web-builder-blocked-helper',
+  'ide-task-reviewer',
+  'cli-task-reviewer',
+  'web-builder-task-reviewer',
+  'learning-completion-coach'
+);
+
+INSERT INTO public.agent_skill_bindings (
+  id,
+  agent_code,
+  skill_code,
+  priority,
+  is_required,
+  context_budget_tokens,
+  is_active,
+  metadata,
+  created_at,
+  updated_at
+)
+SELECT
+  gen_random_uuid(),
+  seed.agent_code,
+  seed.skill_code,
+  seed.priority,
+  true,
+  seed.context_budget_tokens,
+  true,
+  jsonb_build_object('bindingKind', seed.binding_kind),
+  NOW(),
+  NOW()
+FROM (
+  VALUES
+    ('cursor-buddy', 'cursor-install-setup-skill', 10, 900, 'phase1_default'),
+    ('cursor-buddy', 'cursor-ask-vs-agent-skill', 20, 900, 'phase1_default'),
+    ('cursor-buddy', 'cursor-debug-basics-skill', 30, 900, 'phase1_default'),
+    ('cursor-buddy', 'general-learning-reflection-skill', 40, 700, 'phase1_default'),
+
+    ('cursor-self-study-coach', 'learning-material-intake-skill', 10, 900, 'phase1_default'),
+    ('cursor-self-study-coach', 'ide-context-organization-skill', 20, 900, 'phase1_default'),
+    ('cursor-self-study-coach', 'general-learning-reflection-skill', 30, 700, 'phase1_default'),
+    ('trae-self-study-coach', 'learning-material-intake-skill', 10, 900, 'phase1_default'),
+    ('trae-self-study-coach', 'ide-context-organization-skill', 20, 900, 'phase1_default'),
+    ('trae-self-study-coach', 'general-learning-reflection-skill', 30, 700, 'phase1_default'),
+    ('windsurf-self-study-coach', 'learning-material-intake-skill', 10, 900, 'phase1_default'),
+    ('windsurf-self-study-coach', 'ide-context-organization-skill', 20, 900, 'phase1_default'),
+    ('windsurf-self-study-coach', 'general-learning-reflection-skill', 30, 700, 'phase1_default'),
+
+    ('claude-code-coach', 'claude-code-workspace-basics-skill', 10, 900, 'phase1_default'),
+    ('claude-code-coach', 'task-slicing-skill', 20, 800, 'phase1_default'),
+    ('claude-code-coach', 'cli-verification-basics-skill', 30, 900, 'phase1_default'),
+
+    ('claude-debug-coach', 'debug-hypothesis-checklist-skill', 10, 1000, 'phase1_default'),
+    ('claude-debug-coach', 'error-context-format-skill', 20, 900, 'phase1_default'),
+    ('claude-debug-coach', 'cli-retest-checklist-skill', 30, 900, 'phase1_default'),
+    ('codex-debug-coach', 'debug-hypothesis-checklist-skill', 10, 1000, 'phase1_default'),
+    ('codex-debug-coach', 'error-context-format-skill', 20, 900, 'phase1_default'),
+    ('codex-debug-coach', 'cli-retest-checklist-skill', 30, 900, 'phase1_default'),
+
+    ('claude-shipping-coach', 'feature-slicing-skill', 10, 900, 'phase1_default'),
+    ('claude-shipping-coach', 'implementation-plan-skill', 20, 900, 'phase1_default'),
+    ('claude-shipping-coach', 'acceptance-checklist-skill', 30, 900, 'phase1_default'),
+    ('codex-shipping-coach', 'feature-slicing-skill', 10, 900, 'phase1_default'),
+    ('codex-shipping-coach', 'implementation-plan-skill', 20, 900, 'phase1_default'),
+    ('codex-shipping-coach', 'acceptance-checklist-skill', 30, 900, 'phase1_default'),
+
+    ('codex-cli-coach', 'codex-cli-basics-skill', 10, 900, 'phase1_default'),
+    ('codex-cli-coach', 'prompt-compaction-skill', 20, 800, 'phase1_default'),
+    ('codex-cli-coach', 'cli-verification-basics-skill', 30, 900, 'phase1_default'),
+
+    ('claude-code-self-study-coach', 'learning-material-intake-skill', 10, 900, 'phase1_default'),
+    ('claude-code-self-study-coach', 'cli-context-organization-skill', 20, 900, 'phase1_default'),
+    ('claude-code-self-study-coach', 'general-learning-reflection-skill', 30, 700, 'phase1_default'),
+    ('codex-self-study-coach', 'learning-material-intake-skill', 10, 900, 'phase1_default'),
+    ('codex-self-study-coach', 'cli-context-organization-skill', 20, 900, 'phase1_default'),
+    ('codex-self-study-coach', 'general-learning-reflection-skill', 30, 700, 'phase1_default'),
+    ('opencode-self-study-coach', 'learning-material-intake-skill', 10, 900, 'phase1_default'),
+    ('opencode-self-study-coach', 'cli-context-organization-skill', 20, 900, 'phase1_default'),
+    ('opencode-self-study-coach', 'general-learning-reflection-skill', 30, 700, 'phase1_default'),
+
+    ('opencode-coach', 'opencode-context-basics-skill', 10, 900, 'phase1_default'),
+    ('opencode-coach', 'multi-language-context-skill', 20, 900, 'phase1_default'),
+    ('opencode-coach', 'cli-verification-basics-skill', 30, 900, 'phase1_default'),
+
+    ('stitch-buddy', 'prompt-to-ui-basics-skill', 10, 900, 'phase1_default'),
+    ('stitch-buddy', 'web-iteration-checklist-skill', 20, 900, 'phase1_default'),
+    ('stitch-buddy', 'visual-acceptance-check-skill', 30, 900, 'phase1_default'),
+    ('bolt-buddy', 'prompt-to-ui-basics-skill', 10, 900, 'phase1_default'),
+    ('bolt-buddy', 'web-iteration-checklist-skill', 20, 900, 'phase1_default'),
+    ('bolt-buddy', 'visual-acceptance-check-skill', 30, 900, 'phase1_default'),
+    ('lovable-buddy', 'prompt-to-ui-basics-skill', 10, 900, 'phase1_default'),
+    ('lovable-buddy', 'web-iteration-checklist-skill', 20, 900, 'phase1_default'),
+    ('lovable-buddy', 'visual-acceptance-check-skill', 30, 900, 'phase1_default'),
+
+    ('stitch-self-study-coach', 'learning-material-intake-skill', 10, 900, 'phase1_default'),
+    ('stitch-self-study-coach', 'prompt-to-ui-basics-skill', 20, 900, 'phase1_default'),
+    ('stitch-self-study-coach', 'general-learning-reflection-skill', 30, 700, 'phase1_default'),
+    ('bolt-self-study-coach', 'learning-material-intake-skill', 10, 900, 'phase1_default'),
+    ('bolt-self-study-coach', 'prompt-to-ui-basics-skill', 20, 900, 'phase1_default'),
+    ('bolt-self-study-coach', 'general-learning-reflection-skill', 30, 700, 'phase1_default'),
+    ('lovable-self-study-coach', 'learning-material-intake-skill', 10, 900, 'phase1_default'),
+    ('lovable-self-study-coach', 'prompt-to-ui-basics-skill', 20, 900, 'phase1_default'),
+    ('lovable-self-study-coach', 'general-learning-reflection-skill', 30, 700, 'phase1_default'),
+
+    ('ide-blocked-helper', 'ide-debug-intake-skill', 10, 900, 'phase1_default'),
+    ('ide-blocked-helper', 'error-context-format-skill', 20, 900, 'phase1_default'),
+    ('ide-blocked-helper', 'verification-next-step-skill', 30, 700, 'phase1_default'),
+    ('cli-blocked-helper', 'cli-debug-intake-skill', 10, 900, 'phase1_default'),
+    ('cli-blocked-helper', 'error-context-format-skill', 20, 900, 'phase1_default'),
+    ('cli-blocked-helper', 'cli-retest-checklist-skill', 30, 900, 'phase1_default'),
+    ('web-builder-blocked-helper', 'web-builder-debug-intake-skill', 10, 900, 'phase1_default'),
+    ('web-builder-blocked-helper', 'ui-diff-review-skill', 20, 900, 'phase1_default'),
+    ('web-builder-blocked-helper', 'verification-next-step-skill', 30, 700, 'phase1_default'),
+
+    ('ide-task-reviewer', 'review-checklist-skill', 10, 800, 'phase1_default'),
+    ('ide-task-reviewer', 'next-step-guidance-skill', 20, 700, 'phase1_default'),
+    ('cli-task-reviewer', 'review-checklist-skill', 10, 800, 'phase1_default'),
+    ('cli-task-reviewer', 'next-step-guidance-skill', 20, 700, 'phase1_default'),
+    ('web-builder-task-reviewer', 'review-checklist-skill', 10, 800, 'phase1_default'),
+    ('web-builder-task-reviewer', 'next-step-guidance-skill', 20, 700, 'phase1_default'),
+
+    ('learning-completion-coach', 'completion-summary-skill', 10, 800, 'phase1_default'),
+    ('learning-completion-coach', 'rank-progress-feedback-skill', 20, 800, 'phase1_default'),
+    ('learning-completion-coach', 'next-step-guidance-skill', 30, 700, 'phase1_default')
+) AS seed(agent_code, skill_code, priority, context_budget_tokens, binding_kind)
+ON CONFLICT (agent_code, skill_code) DO UPDATE
+SET
+  priority = EXCLUDED.priority,
+  is_required = EXCLUDED.is_required,
+  context_budget_tokens = EXCLUDED.context_budget_tokens,
+  is_active = EXCLUDED.is_active,
+  metadata = EXCLUDED.metadata,
+  updated_at = NOW();
+
+COMMIT;
