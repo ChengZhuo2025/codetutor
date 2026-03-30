@@ -266,6 +266,10 @@ export async function runJsonLiveAssertions() {
     response.message.structuredContent,
     "expected json assistant response to include structuredContent",
   )
+  assert.equal(
+    response.message.structuredContent?.interactionType,
+    "completion_feedback",
+  )
   assert.ok(
     (response.message.structuredContent?.actions.length ?? 0) > 0,
     "expected json assistant structuredContent to include actions",
@@ -290,6 +294,12 @@ export async function runJsonLiveAssertions() {
       artifacts.assistantMessage.content_json?.structuredContent ?? null,
     ),
     "expected persisted assistant json message to store structuredContent",
+  )
+  assert.equal(
+    parseStoredStructuredLearningMessageContent(
+      artifacts.assistantMessage.content_json?.structuredContent ?? null,
+    )?.interactionType,
+    "completion_feedback",
   )
   assert.ok(
     (
@@ -356,6 +366,12 @@ export async function runSseLiveAssertions() {
     parseStoredStructuredLearningMessageContent(assistantDone?.data.structuredContent ?? null),
     "expected assistant_done to include structuredContent payload",
   )
+  assert.equal(
+    parseStoredStructuredLearningMessageContent(
+      assistantDone?.data.structuredContent ?? null,
+    )?.interactionType,
+    "completion_feedback",
+  )
   assert.ok(
     (
       parseStoredStructuredLearningMessageContent(
@@ -381,6 +397,12 @@ export async function runSseLiveAssertions() {
       artifacts.assistantMessage.content_json?.structuredContent ?? null,
     ),
     "expected persisted streamed assistant message to store structuredContent",
+  )
+  assert.equal(
+    parseStoredStructuredLearningMessageContent(
+      artifacts.assistantMessage.content_json?.structuredContent ?? null,
+    )?.interactionType,
+    "completion_feedback",
   )
   assert.ok(
     (

@@ -304,6 +304,7 @@ function buildDefaultMessages(currentStep: StepRow): Message[] {
       structuredContent: buildStructuredLearningMessageContent({
         title: "AI 教练引导",
         kind: "coach",
+        interactionType: "teaching",
         content:
           currentStep.focus ??
           "先从一个最小实验开始，不要求一次理解全部概念。做完后把结果发给我，我们再判断下一步。",

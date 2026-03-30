@@ -100,6 +100,7 @@ test("buildIdempotentReplaySSEEvents returns a deterministic replay event sequen
       messageKind: "coach",
       messageContent: "先贴出完整报错。",
       structuredContent: {
+        interactionType: "blocked_help",
         variant: "blocked_help",
         summary: "先贴出完整报错。",
         blocks: [],
@@ -149,6 +150,7 @@ test("buildIdempotentReplaySSEEvents returns a deterministic replay event sequen
           title: "排查建议",
           kind: "coach",
           structuredContent: {
+            interactionType: "blocked_help",
             variant: "blocked_help",
             summary: "先贴出完整报错。",
             blocks: [],

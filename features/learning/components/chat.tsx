@@ -27,6 +27,7 @@ import type {
 } from "@/features/learning/types"
 import type {
   LearningCurrentSessionResponseData,
+  LearningInteractionType,
   LearningMessageResponseData,
   LearningMessagesResponseData,
   LearningTaskPatch,
@@ -67,6 +68,18 @@ type AssistantMessageVariant =
   | "path_guidance"
   | "review"
   | "completion"
+
+type AssistantMessageInteractionMeta = {
+  label: string
+  hint: string
+  panelClass: string
+  iconClass: string
+  chipClass: string
+  summaryClass: string
+  sectionClass: string
+  orderedBadgeClass: string
+  listIconClass: string
+}
 
 const messageKindMeta = {
   system_goal: {
@@ -185,6 +198,67 @@ const assistantMessageVariantMeta: Record<
     iconClass: "text-emerald-600",
     chipClass: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600",
     summaryClass: "text-emerald-700",
+  },
+}
+
+const assistantMessageInteractionMeta: Record<
+  LearningInteractionType,
+  AssistantMessageInteractionMeta
+> = {
+  teaching: {
+    label: "教练引导",
+    hint: "围绕当前关卡给出最小下一步，先做成再扩展。",
+    panelClass: "border-brand/20 bg-background/50",
+    iconClass: "text-brand",
+    chipClass: "border-brand/20 bg-brand-dim text-brand",
+    summaryClass: "text-foreground",
+    sectionClass: "border-brand/16 bg-brand-dim/45",
+    orderedBadgeClass: "bg-brand/12 text-brand",
+    listIconClass: "text-brand",
+  },
+  blocked_help: {
+    label: "排查建议",
+    hint: "先收敛问题来源，再决定要改哪里。",
+    panelClass: "border-gold/20 bg-background/50",
+    iconClass: "text-gold",
+    chipClass: "border-gold/20 bg-gold-dim text-gold",
+    summaryClass: "text-foreground",
+    sectionClass: "border-gold/18 bg-gold-dim/55",
+    orderedBadgeClass: "bg-gold-dim text-gold",
+    listIconClass: "text-gold",
+  },
+  task_review: {
+    label: "复盘建议",
+    hint: "回看当前结果，确认做对了什么、还差什么。",
+    panelClass: "border-chart-5/20 bg-background/50",
+    iconClass: "text-chart-5",
+    chipClass: "border-chart-5/20 bg-chart-5/10 text-chart-5",
+    summaryClass: "text-foreground",
+    sectionClass: "border-chart-5/16 bg-chart-5/10",
+    orderedBadgeClass: "bg-chart-5/12 text-chart-5",
+    listIconClass: "text-chart-5",
+  },
+  completion_feedback: {
+    label: "完成反馈",
+    hint: "确认这一步已经完成，并把收获转成下一步动作。",
+    panelClass: "border-emerald-500/20 bg-background/50",
+    iconClass: "text-emerald-600",
+    chipClass: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600",
+    summaryClass: "text-emerald-700",
+    sectionClass: "border-emerald-500/18 bg-emerald-500/8",
+    orderedBadgeClass: "bg-emerald-500/12 text-emerald-600",
+    listIconClass: "text-emerald-600",
+  },
+  path_guidance: {
+    label: "下一步建议",
+    hint: "优先把当前这一步做实，再判断是否进入后续扩展。",
+    panelClass: "border-brand/20 bg-background/50",
+    iconClass: "text-brand",
+    chipClass: "border-brand/20 bg-brand-dim text-brand",
+    summaryClass: "text-foreground",
+    sectionClass: "border-brand/16 bg-brand-dim/45",
+    orderedBadgeClass: "bg-brand/12 text-brand",
+    listIconClass: "text-brand",
   },
 }
 
@@ -322,13 +396,13 @@ function renderPlainContent(text: string) {
   )
 }
 
-function resolveAssistantMessageVariant(message: Message): AssistantMessageVariant {
-  if (message.structuredContent?.variant) {
-    return message.structuredContent.variant
+function resolveAssistantInteractionType(message: Message): LearningInteractionType {
+  if (message.structuredContent?.interactionType) {
+    return message.structuredContent.interactionType
   }
 
   if (message.kind === "task_feedback" || message.taskPatch?.status === "completed") {
-    return "completion"
+    return "completion_feedback"
   }
 
   const title = message.title ?? ""
@@ -342,20 +416,49 @@ function resolveAssistantMessageVariant(message: Message): AssistantMessageVaria
     return "blocked_help"
   }
 
+  if (title.includes("下一步")) {
+    return "path_guidance"
+  }
+
+  if (title.includes("复盘")) {
+    return "task_review"
+  }
+
+  return "teaching"
+}
+
+function resolveAssistantMessageVariant(
+  message: Message,
+  interactionType: LearningInteractionType,
+): AssistantMessageVariant {
+  if (message.structuredContent?.variant) {
+    return message.structuredContent.variant
+  }
+
+  if (interactionType === "completion_feedback") {
+    return "completion"
+  }
+
+  if (interactionType === "blocked_help") {
+    return "blocked_help"
+  }
+
+  if (interactionType === "task_review") {
+    return "review"
+  }
+
+  if (interactionType === "path_guidance") {
+    return "path_guidance"
+  }
+
+  const title = message.title ?? ""
+
   if (title.includes("最小示例") || title.includes("示例")) {
     return "example"
   }
 
   if (title.includes("拆小") || title.includes("拆细")) {
     return "breakdown"
-  }
-
-  if (title.includes("下一步")) {
-    return "path_guidance"
-  }
-
-  if (title.includes("复盘")) {
-    return "review"
   }
 
   if (title.includes("提示")) {
@@ -365,18 +468,23 @@ function resolveAssistantMessageVariant(message: Message): AssistantMessageVaria
   return "default"
 }
 
-function renderAssistantMessageLead(variant: AssistantMessageVariant) {
-  const meta = assistantMessageVariantMeta[variant]
+function renderAssistantMessageLead(
+  interactionType: LearningInteractionType,
+  variant: AssistantMessageVariant,
+) {
+  const meta = assistantMessageInteractionMeta[interactionType]
+  const subtypeMeta =
+    interactionType === "teaching" && variant !== "default"
+      ? assistantMessageVariantMeta[variant]
+      : null
   const Icon =
-    variant === "blocked_help"
+    interactionType === "blocked_help"
       ? AlertCircle
-      : variant === "completion"
+      : interactionType === "completion_feedback"
         ? CheckCircle2
-        : variant === "breakdown"
+        : interactionType === "path_guidance"
           ? Target
-          : variant === "example"
-            ? Sparkles
-            : variant === "review"
+          : interactionType === "task_review"
               ? RefreshCw
               : Lightbulb
 
@@ -394,8 +502,20 @@ function renderAssistantMessageLead(variant: AssistantMessageVariant) {
             >
               {meta.label}
             </span>
+            {subtypeMeta ? (
+              <span
+                className={cn(
+                  "rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                  subtypeMeta.chipClass,
+                )}
+              >
+                {subtypeMeta.label}
+              </span>
+            ) : null}
           </div>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">{meta.hint}</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {subtypeMeta ? subtypeMeta.hint : meta.hint}
+          </p>
         </div>
       </div>
     </div>
@@ -405,6 +525,7 @@ function renderAssistantMessageLead(variant: AssistantMessageVariant) {
 function renderStructuredContent(
   text: string,
   kind: Message["kind"],
+  interactionType: LearningInteractionType,
   variant: AssistantMessageVariant,
   structuredContent?: Message["structuredContent"],
 ) {
@@ -417,7 +538,7 @@ function renderStructuredContent(
   const detailBlocks =
     structuredContent?.blocks
     ?? (fallbackHasSummary ? fallbackBlocks.slice(1) : fallbackBlocks)
-  const variantMeta = assistantMessageVariantMeta[variant]
+  const interactionMeta = assistantMessageInteractionMeta[interactionType]
   const sections =
     structuredContent?.sections && structuredContent.sections.length > 0
       ? structuredContent.sections
@@ -425,11 +546,14 @@ function renderStructuredContent(
           {
             title: null,
             tone:
-              variant === "completion"
+              interactionType === "completion_feedback"
                 ? "success"
-                : variant === "blocked_help"
+                : interactionType === "blocked_help"
                   ? "warning"
-                  : variant === "example" || variant === "hint"
+                  : interactionType === "path_guidance"
+                    || interactionType === "task_review"
+                    || variant === "example"
+                    || variant === "hint"
                     ? "info"
                     : "default",
             blocks: detailBlocks,
@@ -438,11 +562,11 @@ function renderStructuredContent(
 
   return (
     <div className="space-y-3">
-      {renderAssistantMessageLead(variant)}
+      {renderAssistantMessageLead(interactionType, variant)}
 
       {summaryText ? (
         <div className="rounded-2xl border border-background/60 bg-background/45 px-3.5 py-3">
-          <p className={cn("text-sm font-medium leading-6", variantMeta.summaryClass)}>
+          <p className={cn("text-sm font-medium leading-6", interactionMeta.summaryClass)}>
             {renderInlineText(summaryText, "summary")}
           </p>
         </div>
@@ -455,7 +579,7 @@ function renderStructuredContent(
             : section.tone === "warning"
               ? "border-gold/18 bg-gold-dim/55"
               : section.tone === "info"
-                ? "border-brand/16 bg-brand-dim/45"
+                ? interactionMeta.sectionClass
                 : "border-background/60 bg-background/40"
 
         return (
@@ -507,11 +631,9 @@ function renderStructuredContent(
                   <CheckCircle2
                     className={cn(
                       "mt-1 h-4 w-4 shrink-0",
-                      kind === "task_feedback" || variant === "completion"
+                      kind === "task_feedback" || interactionType === "completion_feedback"
                         ? "text-emerald-600"
-                        : variant === "blocked_help"
-                          ? "text-gold"
-                          : "text-brand",
+                        : interactionMeta.listIconClass,
                     )}
                   />
                   <p className="text-sm leading-6 text-foreground/90">
@@ -536,7 +658,12 @@ function renderStructuredContent(
                 key={`ordered-item-${sectionIndex}-${blockIndex}-${itemIndex}`}
                 className="flex items-start gap-2.5"
               >
-                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/12 text-[11px] font-semibold text-brand">
+                <div
+                  className={cn(
+                    "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+                    interactionMeta.orderedBadgeClass,
+                  )}
+                >
                   {itemIndex + 1}
                 </div>
                 <p className="text-sm leading-6 text-foreground/90">
@@ -977,6 +1104,7 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
       structuredContent: buildStructuredLearningMessageContent({
         title: "任务反馈",
         kind: "task_feedback",
+        interactionType: "completion_feedback",
         content: lines.join("\n"),
         taskPatch: {
           taskId: learningData.task.taskId,
@@ -1604,6 +1732,12 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
             messages.map((msg) => {
               const meta = messageKindMeta[msg.kind]
               const isUser = msg.role === "user"
+              const interactionType =
+                msg.role === "ai" ? resolveAssistantInteractionType(msg) : null
+              const assistantVariant =
+                msg.role === "ai" && interactionType
+                  ? resolveAssistantMessageVariant(msg, interactionType)
+                  : null
 
               return (
                 <div
@@ -1654,7 +1788,8 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
                             : renderStructuredContent(
                                 msg.content,
                                 msg.kind,
-                                resolveAssistantMessageVariant(msg),
+                                interactionType ?? "teaching",
+                                assistantVariant ?? "default",
                                 msg.structuredContent,
                               )}
                         </div>

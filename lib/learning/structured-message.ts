@@ -1,4 +1,7 @@
-import type { LearningTaskPatch } from "../api/contracts/learning.ts"
+import type {
+  LearningInteractionType,
+  LearningTaskPatch,
+} from "../api/contracts/learning.ts"
 
 export type StructuredLearningMessageVariant =
   | "default"
@@ -53,6 +56,7 @@ export type StructuredLearningMessageAction = {
 }
 
 export type StructuredLearningMessageContent = {
+  interactionType: LearningInteractionType
   variant: StructuredLearningMessageVariant
   summary: string | null
   blocks: StructuredLearningMessageBlock[]
@@ -63,6 +67,7 @@ export type StructuredLearningMessageContent = {
 type StructuredMessageInput = {
   title?: string | null
   kind: "coach" | "task_feedback" | "user_input" | "system_goal"
+  interactionType?: LearningInteractionType | null
   content: string
   taskPatch?: LearningTaskPatch | null
 }
@@ -225,7 +230,30 @@ function parseStructuredActionItem(
   }
 }
 
+function resolveInteractionTypeFromVariant(
+  variant: StructuredLearningMessageVariant,
+): LearningInteractionType {
+  if (variant === "blocked_help") {
+    return "blocked_help"
+  }
+
+  if (variant === "path_guidance") {
+    return "path_guidance"
+  }
+
+  if (variant === "review") {
+    return "task_review"
+  }
+
+  if (variant === "completion") {
+    return "completion_feedback"
+  }
+
+  return "teaching"
+}
+
 function buildStructuredSections(
+  interactionType: LearningInteractionType,
   variant: StructuredLearningMessageVariant,
   blocks: StructuredLearningMessageBlock[],
 ): StructuredLearningMessageSection[] {
@@ -234,11 +262,13 @@ function buildStructuredSections(
   }
 
   const tone =
-    variant === "completion"
+    interactionType === "completion_feedback"
       ? "success"
-      : variant === "blocked_help"
+      : interactionType === "blocked_help"
         ? "warning"
-        : variant === "example" || variant === "hint"
+        : interactionType === "path_guidance" || interactionType === "task_review"
+          ? "info"
+          : variant === "example" || variant === "hint"
           ? "info"
           : "default"
 
@@ -278,14 +308,15 @@ function buildStructuredSections(
 }
 
 function buildStructuredActions(input: {
+  interactionType: LearningInteractionType
   variant: StructuredLearningMessageVariant
   blocks?: StructuredLearningMessageBlock[]
   taskPatch?: LearningTaskPatch | null
 }): StructuredLearningMessageAction[] {
   const fallbackTone =
-    input.variant === "completion"
+    input.interactionType === "completion_feedback"
       ? "success"
-      : input.variant === "blocked_help"
+      : input.interactionType === "blocked_help"
         ? "warning"
         : "secondary"
 
@@ -328,7 +359,24 @@ function buildStructuredActions(input: {
     ]
   }
 
-  if (input.variant === "completion" || input.taskPatch?.status === "completed") {
+  if (
+    input.interactionType === "blocked_help"
+    || input.variant === "blocked_help"
+  ) {
+    return [
+      {
+        label: "补充报错信息",
+        prompt: "请补充当前执行命令、终端输出和你预期的结果。",
+        tone: "warning",
+      },
+    ]
+  }
+
+  if (
+    input.interactionType === "completion_feedback"
+    || input.variant === "completion"
+    || input.taskPatch?.status === "completed"
+  ) {
     return [
       {
         label: "继续下一步",
@@ -418,6 +466,25 @@ export function resolveStructuredLearningMessageVariant(
   return "default"
 }
 
+function resolveStructuredLearningInteractionType(
+  input: StructuredMessageInput,
+  variant?: StructuredLearningMessageVariant,
+): LearningInteractionType {
+  if (
+    input.interactionType === "teaching"
+    || input.interactionType === "blocked_help"
+    || input.interactionType === "task_review"
+    || input.interactionType === "completion_feedback"
+    || input.interactionType === "path_guidance"
+  ) {
+    return input.interactionType
+  }
+
+  return resolveInteractionTypeFromVariant(
+    variant ?? resolveStructuredLearningMessageVariant(input),
+  )
+}
+
 export function buildStructuredLearningMessageContent(
   input: StructuredMessageInput,
 ): StructuredLearningMessageContent | null {
@@ -431,13 +498,22 @@ export function buildStructuredLearningMessageContent(
     ...input,
     content,
   })
+  const interactionType = resolveStructuredLearningInteractionType(
+    {
+      ...input,
+      content,
+    },
+    variant,
+  )
 
   return {
+    interactionType,
     variant,
     summary: parsed.summary,
     blocks: parsed.blocks,
-    sections: buildStructuredSections(variant, parsed.blocks),
+    sections: buildStructuredSections(interactionType, variant, parsed.blocks),
     actions: buildStructuredActions({
+      interactionType,
       variant,
       blocks: parsed.blocks,
       taskPatch: input.taskPatch,
@@ -453,6 +529,7 @@ export function parseStoredStructuredLearningMessageContent(
   }
 
   const record = value as Record<string, unknown>
+  const interactionType = record.interactionType
   const variant = record.variant
   const summary = record.summary
   const blocks = record.blocks
@@ -468,6 +545,18 @@ export function parseStoredStructuredLearningMessageContent(
     && variant !== "path_guidance"
     && variant !== "review"
     && variant !== "completion"
+  ) {
+    return null
+  }
+
+  if (
+    interactionType !== undefined
+    && interactionType !== null
+    && interactionType !== "teaching"
+    && interactionType !== "blocked_help"
+    && interactionType !== "task_review"
+    && interactionType !== "completion_feedback"
+    && interactionType !== "path_guidance"
   ) {
     return null
   }
@@ -518,6 +607,15 @@ export function parseStoredStructuredLearningMessageContent(
       return null
     })
     .filter((block): block is StructuredLearningMessageBlock => Boolean(block))
+
+  const normalizedInteractionType =
+    interactionType === "teaching"
+    || interactionType === "blocked_help"
+    || interactionType === "task_review"
+    || interactionType === "completion_feedback"
+    || interactionType === "path_guidance"
+      ? interactionType
+      : resolveInteractionTypeFromVariant(variant)
 
   const normalizedSections =
     Array.isArray(sections)
@@ -575,7 +673,7 @@ export function parseStoredStructuredLearningMessageContent(
             } satisfies StructuredLearningMessageSection
           })
           .filter((section): section is StructuredLearningMessageSection => Boolean(section))
-      : buildStructuredSections(variant, normalizedBlocks)
+      : buildStructuredSections(normalizedInteractionType, variant, normalizedBlocks)
 
   const normalizedActions =
     Array.isArray(actions)
@@ -605,11 +703,13 @@ export function parseStoredStructuredLearningMessageContent(
           })
           .filter((action): action is StructuredLearningMessageAction => Boolean(action))
       : buildStructuredActions({
+          interactionType: normalizedInteractionType,
           variant,
           blocks: normalizedBlocks,
         })
 
   return {
+    interactionType: normalizedInteractionType,
     variant,
     summary: summary === null ? null : summary.trim(),
     blocks: normalizedBlocks,

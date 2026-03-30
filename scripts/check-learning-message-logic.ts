@@ -135,6 +135,7 @@ test("buildStructuredLearningMessageContent derives variant, summary and ordered
     buildStructuredLearningMessageContent({
       title: "拆小当前步骤",
       kind: "coach",
+      interactionType: "teaching",
       content: [
         "我们把这一步再缩小。",
         "",
@@ -143,6 +144,7 @@ test("buildStructuredLearningMessageContent derives variant, summary and ordered
       ].join("\n"),
     }),
     {
+      interactionType: "teaching",
       variant: "breakdown",
       summary: "我们把这一步再缩小。",
       blocks: [
@@ -177,6 +179,7 @@ test("buildStructuredLearningMessageContent derives variant, summary and ordered
 test("parseStoredStructuredLearningMessageContent restores persisted structured assistant payload", () => {
   assert.deepEqual(
     parseStoredStructuredLearningMessageContent({
+      interactionType: "completion_feedback",
       variant: "completion",
       summary: "很好，这一步已经完成。",
       blocks: [
@@ -187,6 +190,7 @@ test("parseStoredStructuredLearningMessageContent restores persisted structured 
       ],
     }),
     {
+      interactionType: "completion_feedback",
       variant: "completion",
       summary: "很好，这一步已经完成。",
       blocks: [
@@ -223,6 +227,7 @@ test("buildStructuredLearningMessageContent parses agent-native markdown heading
     buildStructuredLearningMessageContent({
       title: "下一步建议",
       kind: "coach",
+      interactionType: "path_guidance",
       content: [
         "先把当前这一步做成，不要一次扩展太多。",
         "",
@@ -239,6 +244,7 @@ test("buildStructuredLearningMessageContent parses agent-native markdown heading
       ].join("\n"),
     }),
     {
+      interactionType: "path_guidance",
       variant: "path_guidance",
       summary: "先把当前这一步做成，不要一次扩展太多。",
       blocks: [
@@ -273,7 +279,7 @@ test("buildStructuredLearningMessageContent parses agent-native markdown heading
       sections: [
         {
           title: "当前建议",
-          tone: "default",
+          tone: "info",
           blocks: [
             {
               type: "ordered_list",
@@ -283,7 +289,7 @@ test("buildStructuredLearningMessageContent parses agent-native markdown heading
         },
         {
           title: "关键提醒",
-          tone: "default",
+          tone: "info",
           blocks: [
             {
               type: "unordered_list",
@@ -302,6 +308,30 @@ test("buildStructuredLearningMessageContent parses agent-native markdown heading
           label: "给我最小示例",
           prompt: "请给我一个最小可运行示例，并说明我该先验证什么。",
           tone: "secondary",
+        },
+      ],
+    },
+  )
+})
+
+test("parseStoredStructuredLearningMessageContent falls back to inferred interactionType for legacy payload", () => {
+  assert.deepEqual(
+    parseStoredStructuredLearningMessageContent({
+      variant: "blocked_help",
+      summary: "先补充完整报错。",
+      blocks: [],
+    }),
+    {
+      interactionType: "blocked_help",
+      variant: "blocked_help",
+      summary: "先补充完整报错。",
+      blocks: [],
+      sections: [],
+      actions: [
+        {
+          label: "补充报错信息",
+          prompt: "请补充当前执行命令、终端输出和你预期的结果。",
+          tone: "warning",
         },
       ],
     },

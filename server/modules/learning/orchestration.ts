@@ -922,6 +922,7 @@ async function persistAssistantResult(
   const structuredContent = buildStructuredLearningMessageContent({
     title: presentation.title,
     kind: presentation.kind,
+    interactionType: input.interactionType,
     content: presentation.content,
     taskPatch: input.taskPatch,
   })
