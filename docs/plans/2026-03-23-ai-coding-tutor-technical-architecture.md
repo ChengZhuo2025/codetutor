@@ -53,6 +53,7 @@
 - 首页营销层可通过 `GET /api/auth/session` 恢复登录态，并将主要 CTA 切换为“继续学习”，按真实状态跳转到 `/learn`、`/history` 或 `/onboarding`
 - onboarding 读取工具和路径候选，并真实创建 `user_learning_paths` 与 `user_tasks`
 - `/learn`、`/map`、`/achievements`、`/history` 读取远程数据库的真实 read model
+- `POST /api/task/complete`、`POST /api/task/update-status`、`POST /api/checkin/daily` 已落地，任务推进、XP/段位写模型与每日打卡已接通
 - 历史学习计划已支持详情复盘、放弃、重新激活与软删除，学习计划状态机已扩展到 `active/interrupted/completed/abandoned/archived`
 - 工作台左侧栏数据已提升到根级 Provider 缓存，跨工作台页面切换时不再重复请求并产生加载跳动
 - 用户资料读写、头像上传到 Supabase Storage
@@ -61,10 +62,9 @@
 
 当前尚未落地的链路包括：
 
-- 任务完成写接口、任务状态更新写接口
-- 每日打卡写接口
 - 事件埋点写接口
 - 管理员后台前端
+- 真实外部 AI provider 编排与会话持久化配置层
 - Redis / 队列等增强型基础设施
 
 ---
@@ -98,7 +98,7 @@ MVP 目标范围：
 
 ### 2.3 技术约束
 
-- 前后端技术栈已在产品设计阶段初步约束为 `Next.js 16 + React 19.2 + TypeScript 5.9 + Tailwind CSS 4 + 阿里云 AnalyticDB PostgreSQL 版 Supabase + Claude API + Vercel`
+- 前后端技术栈已在产品设计阶段初步约束为 `Next.js 16 + React 19.2 + TypeScript 5.9 + Tailwind CSS 4 + 阿里云 AnalyticDB PostgreSQL 版 Supabase + 外部 AI provider 抽象层 + Vercel`
 - 首版以快速验证产品闭环为目标，不追求过早分布式拆分
 - 需要尽量降低运维复杂度，优先采用托管服务
 - 需要支持中文市场的账号体系与未来支付接入预留
@@ -144,7 +144,7 @@ MVP 阶段采用模块化单体架构，而不是微服务架构。原因如下�
 
 - Vercel：部署与边缘分发
 - 阿里云 AnalyticDB PostgreSQL 版 Supabase：Postgres、认证、边缘函数与托管后台能力
-- Claude API：模型推理
+- 外部 AI provider 抽象层：模型推理，首期规划接入 SiliconFlow
 
 ### 4.3 AI 是业务引擎的一部分，不是孤立外挂
 
@@ -181,7 +181,7 @@ AI 输出不能只作为一段聊天回复存在，而必须与以下结构绑�
 | 前端运行时与框架 | React 19.2 + TypeScript 5.9 + Tailwind CSS 4 | 与 Next.js 16 对齐，采用当前稳定代际 |
 | 数据库 | 阿里云 AnalyticDB PostgreSQL 版 Supabase | 延续 Supabase 范式，同时更贴近国内微信生态接入诉求 |
 | 认证 | 阿里云 Supabase Auth | 保留 Supabase Auth 范式，并优先使用其国内 OAuth 能力 |
-| AI 服务 | Claude API（规划接入） | 当前架构已预留外部 AI provider 接入点，但代码尚未真正连通 |
+| AI 服务 | 外部 AI provider 抽象层（首期 SiliconFlow） | 当前架构已预留外部 AI provider 接入点，但代码尚未真正连通 |
 | 状态管理 | 服务端主状态 + 前端轻状态 | 核心状态统一在服务端，避免任务状态漂移 |
 | 部署 | Vercel + 托管数据库 | 降低运维门槛 |
 | 观测 | 事件埋点 + 服务日志 + 前端错误监控 | 支撑产品验证与快速定位问题 |
@@ -202,7 +202,7 @@ flowchart LR
     BFF --> GAME[Gamification Module]
     BFF --> HIST[History Module]
     BFF --> LINK[Content Parsing Module]
-    LEARN --> AI[Claude API]
+    LEARN --> AI[AI Provider Layer]
     AUTH --> DB[(Aliyun ADB PG Supabase)]
     LEARN --> DB
     PROG --> DB
@@ -221,7 +221,7 @@ flowchart LR
 2. BFF 层：API Routes，负责聚合前端所需接口
 3. 领域服务层：认证、学习编排、任务状态、积分段位、内容解析
 4. 数据层：阿里云 Supabase Postgres、Storage/Functions、埋点数据
-5. 外部能力层：Claude API、消息/支付等未来外部服务
+5. 外部能力层：AI Provider Layer、消息/支付等未来外部服务
 
 ---
 
@@ -358,7 +358,7 @@ MVP 阶段采用 `阿里云 AnalyticDB PostgreSQL 版 Supabase` 作为主数据�
 - `path_steps`
 - `user_learning_paths`
 - `user_tasks`
-- `conversations`
+- `conversation_sessions`
 - `conversation_messages`
 - `score_ledgers`
 - `user_ranks`
@@ -402,7 +402,7 @@ erDiagram
 
 ### 会话与消息
 
-- `conversations` 记录用户一次学习会话的容器，并归属于某条 `user_learning_path`
+- `conversation_sessions` 记录用户一次学习会话的容器，并归属于某条 `user_learning_path`
 - `conversation_messages` 记录具体消息，需区分 `user` / `assistant` / `system`
 
 ### 学分与段位
@@ -451,7 +451,7 @@ sequenceDiagram
     participant FE as Frontend
     participant API as BFF
     participant LRN as Learning Orchestrator
-    participant AI as Claude API
+    participant AI as AI Provider Layer
     participant DB as Postgres
 
     U->>FE: 提交教程链接/文本/问题
@@ -465,7 +465,7 @@ sequenceDiagram
     API-->>FE: 渲染学习主界面
 ```
 
-## 9.3 规划中的任务完成与成长反馈流程
+## 9.3 当前已打通的任务完成与成长反馈流程
 
 ```mermaid
 sequenceDiagram
@@ -504,6 +504,8 @@ sequenceDiagram
 ---
 
 ## 10. AI 编排架构（规划中）
+
+本节只保留总体架构摘要。字段级表结构、agent 绑定、skill 机制、provider 选择与首批路径命中规则，以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准。
 
 ## 10.1 设计目标
 
@@ -590,13 +592,10 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 
 当前已实现：
 
-- `GET /api/progress/current`
-- `GET /api/progress/map`
-
-规划中：
-
 - `POST /api/task/complete`
 - `POST /api/task/update-status`
+- `GET /api/progress/current`
+- `GET /api/progress/map`
 
 ### 成长与历史
 
@@ -606,9 +605,6 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 - `GET /api/history/recent`
 - `GET /api/history/{id}`
 - `POST /api/history/{id}/status`
-
-规划中：
-
 - `POST /api/checkin/daily`
 
 ### 反馈与运营
@@ -690,7 +686,7 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 
 ## 13.2 密钥管理
 
-- Claude API Key、阿里云 Supabase Service Key 等只存于服务端环境变量
+- AI provider API Key、阿里云 Supabase Service Key 等只存于服务端环境变量
 - 前端绝不直连模型密钥
 
 ## 13.3 数据保护
@@ -801,7 +797,7 @@ flowchart TB
     API --> DB[(Aliyun ADB PG Supabase)]
     API --> AUTH[Aliyun Supabase Auth]
     API --> STORAGE[Aliyun Supabase Storage]
-    API --> CLAUDE[Claude API]
+    API --> AIPROVIDER[AI Provider Layer]
     API --> MON[Monitoring & Analytics]
 ```
 

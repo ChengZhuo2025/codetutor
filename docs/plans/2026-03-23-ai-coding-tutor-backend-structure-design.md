@@ -19,7 +19,7 @@
 - Next.js API Routes / Route Handlers
 - TypeScript 5.9
 - 阿里云 AnalyticDB PostgreSQL 版 Supabase
-- Claude API
+- 外部 AI provider 抽象层（首期规划接入 SiliconFlow）
 - Node.js 24 Active LTS
 
 补充说明：
@@ -160,12 +160,16 @@ app/
     ├── auth/
     │   ├── login/route.ts
     │   └── session/route.ts
+    ├── checkin/
+    │   └── daily/route.ts
     ├── feedback/
     │   ├── route.ts
     │   └── mine/
     │       ├── route.ts
     │       └── [id]/route.ts
     ├── history/
+    │   ├── [id]/route.ts
+    │   ├── [id]/status/route.ts
     │   └── recent/route.ts
     ├── learning/
     │   ├── current-session/route.ts
@@ -180,6 +184,9 @@ app/
     ├── progress/
     │   ├── current/route.ts
     │   └── map/route.ts
+    └── task/
+        ├── complete/route.ts
+        └── update-status/route.ts
 ```
 
 规则：
@@ -188,7 +195,7 @@ app/
 - 不在 `route.ts` 中写复杂数据库访问
 - `/history/recent` 在命名上保留原型兼容性，但实际承载“历史学习路径实例分页列表”
 - `/auth/session` 作为只读会话摘要接口，主要服务首页与营销层登录态恢复，不承担登录写入副作用
-- 当前尚未落地的 `task/*`、`checkin/*`、`analytics/*`、`learning/stuck-help` 仍属于后续开发项
+- 当前尚未落地的主要接口为 `analytics/*`、`learning/stuck-help` 与后续 AI provider 编排相关接口
 
 ---
 
@@ -206,10 +213,14 @@ server/
 └── modules/
     ├── achievement/
     ├── auth/
+    ├── checkins/
     ├── feedback/
+    ├── gamification/
     ├── history/
     ├── learning/
+    ├── learning-paths/
     ├── onboarding/
+    ├── tasks/
     └── progress/
 ```
 
@@ -478,7 +489,7 @@ server/modules/history/
 
 说明：
 
-- `history` 模块读的主对象应是 `user_learning_paths`，不是 `conversations`
+- `history` 模块读的主对象应是 `user_learning_paths`，不是 `conversation_sessions`
 - 前端展示的 `in_progress` 实际映射数据库中的 `active`
 - 当前真实状态机已区分 `active` / `interrupted` / `completed` / `abandoned` / `archived`
 - `interrupted` 的判定当前由 `server/modules/learning-paths/service.ts` 在读取摘要前执行，规则为连续 7 天无学习行为自动中断
@@ -728,7 +739,7 @@ supabase/
 ## 16. 不建议的做法
 
 - 在 `route.ts` 中直接写阿里云 Supabase 查询
-- 在 repository 中直接调用 Claude API
+- 在 repository 中直接调用某一家模型 SDK 或把 provider 细节散落到各处
 - 在一个 service 文件里同时处理认证、任务和积分
 - 用一个 `services/` 目录承载全部后端逻辑
 - DTO、entity、HTTP response 混成一套类型
@@ -764,12 +775,16 @@ supabase/
    - 用户反馈提交
    - 我的反馈列表与详情
    - 管理员查询与回复接口
-6. 待实现：`task + gamification write`
+6. 已完成：`task + gamification write`
    - 完成任务
    - 更新状态
    - XP、段位、打卡写入
 7. 待实现：`analytics`
    - 事件入库
+8. 待实现：`ai orchestration`
+   - `conversation_sessions` 与 `conversation_messages`
+   - provider / model / agent / skill 配置层
+   - 真实外部 AI provider 编排
 
 这样做的原因是：
 

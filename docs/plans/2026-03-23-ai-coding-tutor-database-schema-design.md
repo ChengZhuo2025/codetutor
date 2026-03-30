@@ -32,6 +32,9 @@
 - `006_expand_user_profile_export_view_metrics.sql`
 - `007_create_profile_avatar_bucket.sql`
 - `008_add_feedback_tickets.sql`
+- `009_add_interrupted_learning_path_status.sql`
+- `010_create_growth_write_models.sql`
+- `011_create_daily_checkins.sql`
 
 当前数据库中已落地的核心业务表包括：
 
@@ -42,16 +45,23 @@
 - `path_steps`
 - `user_learning_paths`
 - `user_tasks`
+- `score_ledgers`
+- `user_ranks`
+- `daily_checkins`
 - `feedback_tickets`
 - `feedback_replies`
 
 当前尚未通过迁移落地、仍属于后续设计的表包括：
 
-- `conversations`
+- `conversation_sessions`
 - `conversation_messages`
-- `score_ledgers`
-- `user_ranks`
-- `daily_checkins`
+- `ai_providers`
+- `ai_models`
+- `agent_templates`
+- `agent_bindings`
+- `skill_packs`
+- `agent_skill_bindings`
+- `llm_invocations`
 - `achievements`
 - `user_achievements`
 - `event_logs`
@@ -131,11 +141,15 @@
 
 后续规划核心表：
 
-- `public.conversations`
+- `public.conversation_sessions`
 - `public.conversation_messages`
-- `public.score_ledgers`
-- `public.user_ranks`
-- `public.daily_checkins`
+- `public.ai_providers`
+- `public.ai_models`
+- `public.agent_templates`
+- `public.agent_bindings`
+- `public.skill_packs`
+- `public.agent_skill_bindings`
+- `public.llm_invocations`
 - `public.achievements`
 - `public.user_achievements`
 - `public.event_logs`
@@ -154,9 +168,9 @@ erDiagram
     LEARNING_PATHS ||--o{ USER_LEARNING_PATHS : instantiates
     USER_LEARNING_PATHS ||--o{ USER_TASKS : contains
     PATH_STEPS ||--o{ USER_TASKS : instantiates
-    USERS ||--o{ CONVERSATIONS : owns
-    USER_LEARNING_PATHS ||--o{ CONVERSATIONS : contains
-    CONVERSATIONS ||--o{ CONVERSATION_MESSAGES : contains
+    USERS ||--o{ CONVERSATION_SESSIONS : owns
+    USER_LEARNING_PATHS ||--o{ CONVERSATION_SESSIONS : contains
+    CONVERSATION_SESSIONS ||--o{ CONVERSATION_MESSAGES : contains
     USERS ||--o{ SCORE_LEDGERS : earns
     USERS ||--|| USER_RANKS : current_rank
     USERS ||--o{ DAILY_CHECKINS : checks_in
@@ -488,7 +502,7 @@ erDiagram
 
 说明：
 
-- `/history` 页卡片展示的是 `user_learning_paths` 的 read model，而不是 `conversations`
+- `/history` 页卡片展示的是 `user_learning_paths` 的 read model，而不是 `conversation_sessions`
 - `path_name_snapshot`、`path_summary_snapshot` 必须快照化，避免模板后续改名导致历史记录漂移
 - 需要保留 `last_activity_at`，用于服务端在读取学习摘要、历史列表或当前会话前执行“7 天自动中断”对账
 - 建议业务约束为“同一用户同一时刻最多只有 1 条 `active` 学习计划”
@@ -534,7 +548,12 @@ erDiagram
 - 地图页中的 `done/current/locked` 是基于 `user_tasks.status` 聚合后的 read model
 - 推荐映射关系：`completed -> done`、`in_progress -> current`、`not_started -> locked`
 
-## 6.8 `conversations`
+## 6.8 `conversation_sessions`
+
+说明：
+
+- 本节已按当前 AI 编排主文档的命名口径同步
+- 该表当前尚未落地迁移，后续以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 的字段级定义为主
 
 用途：
 
@@ -559,9 +578,9 @@ erDiagram
 
 索引建议：
 
-- `idx_conversations_user_last_message_at`
-- `idx_conversations_user_learning_path_id`
-- `idx_conversations_task_id`
+- `idx_conversation_sessions_user_last_message_at`
+- `idx_conversation_sessions_user_learning_path_id`
+- `idx_conversation_sessions_task_id`
 
 ## 6.9 `conversation_messages`
 
@@ -592,7 +611,7 @@ erDiagram
 
 索引建议：
 
-- `idx_conversation_messages_conversation_sequence`
+- `idx_conversation_messages_session_sequence`
 - `idx_conversation_messages_task_id`
 
 ## 6.10 `score_ledgers`
@@ -854,8 +873,8 @@ erDiagram
 建议重点索引：
 
 - `user_tasks(user_id, status, updated_at desc)`
-- `conversations(user_id, last_message_at desc)`
-- `conversation_messages(conversation_id, sequence_no)`
+- `conversation_sessions(user_id, last_message_at desc)`
+- `conversation_messages(session_id, sequence_no)`
 - `score_ledgers(user_id, created_at desc)`
 - `daily_checkins(user_id, checkin_date desc)`
 - `feedback_tickets(user_id, created_at desc)`
@@ -874,7 +893,7 @@ erDiagram
 - `user_profiles`
 - 当前 `user_learning_paths`
 - 当前 `user_tasks`
-- 最近 `conversations`
+- 最近 `conversation_sessions`
 - 最近若干条 `conversation_messages`
 - `user_ranks`
 
@@ -945,7 +964,7 @@ erDiagram
 - `user_learning_preferences`
 - `user_learning_paths`
 - `user_tasks`
-- `conversations`
+- `conversation_sessions`
 - `conversation_messages`
 - `score_ledgers`
 - `user_ranks`
@@ -1015,7 +1034,7 @@ MVP 阶段建议谨慎使用软删除：
 6. `user_learning_paths`
 7. `user_ranks`
 8. `user_tasks`
-9. `conversations`
+9. `conversation_sessions`
 10. `conversation_messages`
 11. `score_ledgers`
 12. `daily_checkins`

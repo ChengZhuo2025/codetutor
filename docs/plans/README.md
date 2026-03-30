@@ -38,6 +38,7 @@
 
 - [UI 视觉设计说明](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-ui-visual-design-spec.md)
 - [ADR 合集](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-adr-records.md)
+- [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md)
 
 ## 当前目录中各文档职责
 
@@ -59,6 +60,8 @@
   后端目录结构、模块划分与开发顺序。
 - `2026-03-23-ai-coding-tutor-adr-records.md`
   仍然有效的关键架构决策记录。
+- `2026-03-30-ai-coding-tutor-ai-orchestration-design.md`
+  AI 编排模块的持久性设计主文档，用于说明 provider、agent、会话、消息、上下文与运行时链路。
 
 ## 当前项目事实摘要
 
@@ -79,7 +82,7 @@
 
 ### P0：必须优先补齐
 
-- 学习会话持久化与真实 AI 编排：补齐 `conversations`、`conversation_messages`，并将 `POST /api/learning/message` 从服务端内置教学回复升级为真实外部 AI provider 编排。
+- 学习会话持久化与真实 AI 编排：补齐 `conversation_sessions`、`conversation_messages` 及 provider / agent / skill 配置表，并将 `POST /api/learning/message` 从服务端内置教学回复升级为真实外部 AI provider 编排。
 
 ### P1：用户体验与运营能力完善
 
@@ -95,7 +98,8 @@
 
 ### 当前建议开发顺序
 
-1. 先补 `conversations + conversation_messages + 外部 AI provider`，让学习对话从“可演示”升级为“可持续使用”。
+1. 先补 `conversation_sessions + conversation_messages + 外部 AI provider`，让学习对话从“可演示”升级为“可持续使用”。
+   当前 AI 相关权威设计以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准。
 2. 再补 `analytics + 通知设置落库 + 管理员后台前端`，把运营和运维能力接上。
 3. 最后再进入 `订阅支付 + Redis/队列 + 更完整测试体系`。
 

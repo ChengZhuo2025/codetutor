@@ -102,6 +102,9 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `POST /api/onboarding/complete`
 - `GET /api/learning/current-session`
 - `POST /api/learning/message`
+- `POST /api/task/complete`
+- `POST /api/task/update-status`
+- `POST /api/checkin/daily`
 - `GET /api/progress/current`
 - `GET /api/progress/map`
 - `GET /api/achievement/summary`
@@ -118,9 +121,6 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - `POST /api/profile/init`
 - `POST /api/learning/stuck-help`
-- `POST /api/task/complete`
-- `POST /api/task/update-status`
-- `POST /api/checkin/daily`
 - `POST /api/analytics/event`
 
 除明确标注“规划中”的接口外，本文件中描述的现状应以当前代码为准。
@@ -181,13 +181,10 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 当前已实现：
 
-- `GET /api/progress/current`
-- `GET /api/progress/map`
-
-规划中：
-
 - `POST /api/task/complete`
 - `POST /api/task/update-status`
+- `GET /api/progress/current`
+- `GET /api/progress/map`
 
 ## 4.5 成长与历史
 
@@ -195,9 +192,6 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - `GET /api/achievement/summary`
 - `GET /api/history/recent`
-
-规划中：
-
 - `POST /api/checkin/daily`
 
 ## 4.6 反馈与运营
@@ -225,7 +219,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 营销首页 | `/` | `GET /api/auth/session` | 首页导航、Hero、套餐区、页脚与最终 CTA 会根据登录态切换为“继续学习”，并跳转到 `/learn`、`/history` 或 `/onboarding` |
 | 登录页 | `/login` | `POST /api/auth/login`、`GET/PATCH /api/profile/me`、`POST /api/profile/avatar` | 当前已打通手机号验证码登录、微信 OAuth 跳转、用户档案读取与资料编辑 |
 | 新手引导 | `/onboarding` | `GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete` | 产出主工具、学习等级、学习模式、初始学习路径实例 |
-| 学习页 | `/learn` | `GET /api/learning/current-session`、`POST /api/learning/message` | 当前已打通学习主界面 read model 与消息提交；任务写接口仍待补齐 |
+| 学习页 | `/learn` | `GET /api/learning/current-session`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status` | 当前已打通学习主界面 read model、消息提交与任务状态写入；AI 回复仍是服务端内置教学逻辑，尚未接通真实外部 provider |
 | 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
 | 成就页 | `/achievements` | `GET /api/achievement/summary` | 当前已打通成长总览 read model，并支持真实每日打卡 |
 | 历史页 | `/history` | `GET /api/history/recent`、`GET /api/history/{id}`、`POST /api/history/{id}/status` | 当前前端实际需要的是“历史学习计划列表 + 详情复盘 + 状态操作”，而不是“最近对话列表” |
@@ -520,6 +514,12 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 用途：
 
 - 提交学习输入并触发 AI 导师编排
+
+当前实现说明：
+
+- 当前接口已经真实落地并接入 `/learn`
+- 当前返回仍以服务端内置教学回复逻辑为主
+- 外部 provider、`conversation_sessions`、`agent_templates`、`agent_bindings`、`skill_packs` 等真实 AI 编排链路以后续 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准
 
 请求体：
 
