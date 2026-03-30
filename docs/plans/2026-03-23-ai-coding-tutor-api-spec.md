@@ -3,7 +3,7 @@
 > 文档类型：API 接口详细定义文档  
 > 产品名称：AI编程学习教练  
 > 版本：v1.1  
-> 状态：已按前端原型校准  
+> 状态：已按当前代码实现同步  
 > 创建日期：2026-03-23  
 > 适用阶段：MVP  
 > 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md`
@@ -86,6 +86,44 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 服务端接口优先定义“真实业务语义 + 可直接渲染的 read model”，而不是复用前端组件类型。
 - 当前前端 mock 中的 `icon`、`color`、`bg`、`guideItems.color`、`stats.icon`、`weekDays`、`dates`、`faqItems`、`subscription.*` 等字段，不作为 MVP 后端首期必做接口字段。
 
+## 2.7 当前代码实现状态快照
+
+本文件同时承载“当前已实现接口”和“后续规划接口”两部分内容。
+
+当前仓库代码中已经实现的接口有：
+
+- `POST /api/auth/login`
+- `GET /api/profile/me`
+- `PATCH /api/profile/me`
+- `POST /api/profile/avatar`
+- `GET /api/onboarding/tools`
+- `GET /api/onboarding/path-options`
+- `POST /api/onboarding/complete`
+- `GET /api/learning/current-session`
+- `POST /api/learning/message`
+- `GET /api/progress/current`
+- `GET /api/progress/map`
+- `GET /api/achievement/summary`
+- `GET /api/history/recent`
+- `POST /api/feedback`
+- `GET /api/feedback/mine`
+- `GET /api/feedback/mine/{id}`
+- `GET /api/admin/feedback`
+- `GET /api/admin/feedback/{id}`
+- `POST /api/admin/feedback/{id}/reply`
+- `POST /api/admin/feedback/{id}/status`
+
+当前仍属于规划、尚未在代码中落地的接口包括：
+
+- `POST /api/profile/init`
+- `POST /api/learning/stuck-help`
+- `POST /api/task/complete`
+- `POST /api/task/update-status`
+- `POST /api/checkin/daily`
+- `POST /api/analytics/event`
+
+除明确标注“规划中”的接口外，本文件中描述的现状应以当前代码为准。
+
 ---
 
 ## 3. 错误码定义
@@ -109,8 +147,15 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 ## 4.1 认证与档案
 
+当前已实现：
+
 - `POST /api/auth/login`
 - `GET /api/profile/me`
+- `PATCH /api/profile/me`
+- `POST /api/profile/avatar`
+
+规划中：
+
 - `POST /api/profile/init`
 
 ## 4.2 新手引导
@@ -121,21 +166,36 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 ## 4.3 学习核心
 
+当前已实现：
+
 - `POST /api/learning/message`
 - `GET /api/learning/current-session`
+
+规划中：
+
 - `POST /api/learning/stuck-help`
 
 ## 4.4 任务与进度
 
-- `POST /api/task/complete`
-- `POST /api/task/update-status`
+当前已实现：
+
 - `GET /api/progress/current`
 - `GET /api/progress/map`
 
+规划中：
+
+- `POST /api/task/complete`
+- `POST /api/task/update-status`
+
 ## 4.5 成长与历史
+
+当前已实现：
 
 - `GET /api/achievement/summary`
 - `GET /api/history/recent`
+
+规划中：
+
 - `POST /api/checkin/daily`
 
 ## 4.6 反馈与运营
@@ -150,6 +210,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 ## 4.7 数据事件
 
+规划中：
+
 - `POST /api/analytics/event`
 
 ## 4.8 当前前端页面与接口映射
@@ -158,11 +220,11 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 | 页面 | 路由 | 主要接口 | 说明 |
 |------|------|------|------|
-| 登录页 | `/login` | `POST /api/auth/login`、`GET /api/profile/me` | 登录成功后判断是否新用户、是否已完成 onboarding |
+| 登录页 | `/login` | `POST /api/auth/login`、`GET/PATCH /api/profile/me`、`POST /api/profile/avatar` | 当前已打通手机号验证码登录、微信 OAuth 跳转、用户档案读取与资料编辑 |
 | 新手引导 | `/onboarding` | `GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete` | 产出主工具、学习等级、学习模式、初始学习路径实例 |
-| 学习页 | `/learn` | `GET /api/learning/current-session`、`POST /api/learning/message`、`POST /api/learning/stuck-help`、`POST /api/task/update-status`、`POST /api/task/complete` | 学习主链路核心 |
+| 学习页 | `/learn` | `GET /api/learning/current-session`、`POST /api/learning/message` | 当前已打通学习主界面 read model 与消息提交；任务写接口仍待补齐 |
 | 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
-| 成就页 | `/achievements` | `GET /api/achievement/summary`、`GET /api/history/recent`、`POST /api/checkin/daily` | 成长总览和 XP 流水 |
+| 成就页 | `/achievements` | `GET /api/achievement/summary` | 当前已打通成长总览 read model；每日打卡写接口仍待实现 |
 | 历史页 | `/history` | `GET /api/history/recent` | 当前前端实际需要的是“历史学习计划列表”，而不是“最近对话列表” |
 | 反馈弹窗 | 设置菜单 / `/history` 侧栏 | `POST /api/feedback`、`GET /api/feedback/mine`、`GET /api/feedback/mine/{id}` | 用户可提交反馈并查看管理员回复 |
 
@@ -253,7 +315,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `completedTaskCount`、`currentScore`、`currentRank`、`streakDays` 为服务端聚合快照，不要求前端自行计算。
 - 工作台侧栏中的订阅块继续沿用前端 mock，待支付域明确后再单独设计订阅接口。
 
-## 5.3 `POST /api/profile/init`
+## 5.3 规划中：`POST /api/profile/init`
 
 用途：
 
@@ -603,7 +665,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `quickActions`、`supportOptions`、`tips`、`knowledgeTags.color` 等字段偏展示层，可在首期先由前端保留静态配置；如果服务端返回，也应视为可选扩展字段，而不是底层数据库实体。
 - `messages.role` 在服务端内部建议使用 `assistant`，若前端仍保留 `ai`，可在 BFF DTO 层做映射。
 
-## 7.3 `POST /api/learning/stuck-help`
+## 7.3 规划中：`POST /api/learning/stuck-help`
 
 用途：
 
@@ -633,7 +695,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 ## 8. 任务与进度接口
 
-## 8.1 `POST /api/task/complete`
+## 8.1 规划中：`POST /api/task/complete`
 
 用途：
 
@@ -678,7 +740,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 同一任务重复完成不得重复发分
 - 必须在事务内完成任务状态与积分写入
 
-## 8.2 `POST /api/task/update-status`
+## 8.2 规划中：`POST /api/task/update-status`
 
 用途：
 
@@ -982,7 +1044,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 用户侧只返回对用户可见的回复，不返回内部备注
 - `status` 当前支持 `submitted`、`in_review`、`replied`、`closed`
 
-## 9.5 `POST /api/checkin/daily`
+## 9.5 规划中：`POST /api/checkin/daily`
 
 用途：
 
@@ -1011,7 +1073,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 ## 10. 数据事件接口
 
-## 10.1 `POST /api/analytics/event`
+## 10.1 规划中：`POST /api/analytics/event`
 
 用途：
 
@@ -1083,20 +1145,26 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | `POST /api/auth/login` | 否 | 登录入口 |
 | `GET /api/onboarding/tools` | 否 | 可公开 |
 | `GET /api/profile/me` | 是 | 获取侧边栏与用户档案快照 |
-| `POST /api/profile/init` | 是 | 初始化用户档案 |
+| `PATCH /api/profile/me` | 是 | 更新用户资料 |
+| `POST /api/profile/avatar` | 是 | 上传用户头像 |
+| `POST /api/profile/init` | 是，规划中 | 初始化用户档案 |
 | `GET /api/onboarding/path-options` | 是 | 获取路线候选 |
 | `POST /api/onboarding/complete` | 是 | 写用户引导结果 |
 | `POST /api/learning/message` | 是 | 核心学习数据 |
 | `GET /api/learning/current-session` | 是 | 恢复当前学习上下文 |
-| `POST /api/learning/stuck-help` | 是 | 请求卡住帮助 |
-| `POST /api/task/complete` | 是 | 写积分与任务 |
-| `POST /api/task/update-status` | 是 | 更新任务状态 |
+| `POST /api/learning/stuck-help` | 是，规划中 | 请求卡住帮助 |
+| `POST /api/task/complete` | 是，规划中 | 写积分与任务 |
+| `POST /api/task/update-status` | 是，规划中 | 更新任务状态 |
 | `GET /api/progress/current` | 是 | 当前路径总览 |
 | `GET /api/progress/map` | 是 | 当前路径地图 |
 | `GET /api/achievement/summary` | 是 | 私人成长总览 |
 | `GET /api/history/recent` | 是 | 私有历史 |
-| `POST /api/checkin/daily` | 是 | 私人打卡写入 |
-| `POST /api/analytics/event` | 是 | 绑定用户事件 |
+| `POST /api/feedback` | 是 | 提交用户反馈 |
+| `GET /api/feedback/mine` | 是 | 查看我的反馈列表 |
+| `GET /api/feedback/mine/{id}` | 是 | 查看我的反馈详情 |
+| `GET /api/admin/feedback*` | 管理员 | 管理员反馈查询与回复 |
+| `POST /api/checkin/daily` | 是，规划中 | 私人打卡写入 |
+| `POST /api/analytics/event` | 是，规划中 | 绑定用户事件 |
 
 ---
 

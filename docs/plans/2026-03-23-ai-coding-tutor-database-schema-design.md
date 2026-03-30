@@ -3,7 +3,7 @@
 > 文档类型：数据库 Schema 设计文档  
 > 产品名称：AI编程学习教练  
 > 版本：v1.1  
-> 状态：已按前端原型校准  
+> 状态：已按当前迁移与代码实现同步  
 > 创建日期：2026-03-23  
 > 适用阶段：MVP  
 > 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md`
@@ -17,6 +17,50 @@
 数据库默认选型：
 
 - `阿里云 AnalyticDB PostgreSQL 版 Supabase`
+
+### 1.1 当前迁移实现快照
+
+当前仓库并不是只有数据库设计文档，已经存在真实迁移并已连接远程 Supabase。
+
+当前已落地迁移：
+
+- `001_init.sql`
+- `002_fix_update_updated_at_search_path.sql`
+- `003_promote_profile_contact_fields.sql`
+- `004_add_profile_auth_tracking_fields.sql`
+- `005_create_user_profile_export_view.sql`
+- `006_expand_user_profile_export_view_metrics.sql`
+- `007_create_profile_avatar_bucket.sql`
+- `008_add_feedback_tickets.sql`
+
+当前数据库中已落地的核心业务表包括：
+
+- `user_profiles`
+- `user_learning_preferences`
+- `learning_tools`
+- `learning_paths`
+- `path_steps`
+- `user_learning_paths`
+- `user_tasks`
+- `feedback_tickets`
+- `feedback_replies`
+
+当前尚未通过迁移落地、仍属于后续设计的表包括：
+
+- `conversations`
+- `conversation_messages`
+- `score_ledgers`
+- `user_ranks`
+- `daily_checkins`
+- `achievements`
+- `user_achievements`
+- `event_logs`
+
+因此，本文档后续章节如果描述了上述未落地表，应视为“后续规划建模”，不是当前远程数据库中的既有对象。
+
+补充说明：
+
+- 当前 `/achievements` 页的 read model 主要由 `user_profiles`、`user_tasks`、`user_learning_paths` 和本地段位配置聚合得到，并未依赖 `score_ledgers`、`achievements`、`user_achievements` 等后续规划表。
 
 ---
 
@@ -72,7 +116,7 @@
 4. 成长与激励域
 5. 分析与审计域
 
-核心表：
+当前已落地核心表：
 
 - `auth.users`
 - `public.user_profiles`
@@ -82,6 +126,11 @@
 - `public.path_steps`
 - `public.user_learning_paths`
 - `public.user_tasks`
+- `public.feedback_tickets`
+- `public.feedback_replies`
+
+后续规划核心表：
+
 - `public.conversations`
 - `public.conversation_messages`
 - `public.score_ledgers`
@@ -89,8 +138,6 @@
 - `public.daily_checkins`
 - `public.achievements`
 - `public.user_achievements`
-- `public.feedback_tickets`
-- `public.feedback_replies`
 - `public.event_logs`
 
 ---

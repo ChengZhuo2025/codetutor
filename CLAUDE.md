@@ -13,9 +13,10 @@ AI编程学习教练 - 一个面向中文用户的 AI 编程学习陪练产品�
 **技术栈：**
 - 前端：Next.js 16 + React 19.2 + TypeScript 5.9 + Tailwind CSS 4 + shadcn/ui
 - 后端：Next.js API Routes
-- 数据库：阿里云 AnalyticDB PostgreSQL 版 Supabase（计划）
-- AI 服务：Claude API（计划）
-- 部署：Vercel（计划）
+- 数据库：阿里云 AnalyticDB PostgreSQL 版 Supabase（已接入，含迁移与远程库）
+- 文件存储：Supabase Storage（已用于头像上传）
+- AI 服务：Claude API（架构预留，尚未真正接通到当前学习消息链路）
+- 部署：Vercel（规划）
 
 ## 常用开发命令
 
@@ -54,6 +55,8 @@ features/              # 前端主工作目录，按业务域组织
   └── history/        # 历史学习计划页
 hooks/                 # 自定义 React Hooks
 lib/                   # 工具函数、API 契约与 mock client
+server/                # 服务端通用能力与按域 service
+supabase/              # 数据库迁移与相关 SQL
 providers/            # 全局 Provider 入口
 types/                # 跨 feature 共用的类型定义
 ```
@@ -92,20 +95,23 @@ types/                # 跨 feature 共用的类型定义
 
 **已完成：**
 - ✅ 前端工程结构搭建
-- ✅ 七个核心页面的静态实现
+- ✅ 七个核心页面实现
 - ✅ 共享 UI 组件库（shadcn/ui）
 - ✅ 布局组件和导航系统
-- ✅ 事件追踪基础设施（`constants/events.ts`）
+- ✅ 手机验证码登录与微信 OAuth 跳转
+- ✅ onboarding / learn / map / achievements / history 的核心 read model API
+- ✅ 用户资料编辑、头像上传、反馈系统
+- ✅ Supabase 迁移与远程数据库接入
 
 **进行中/待完成：**
-- ⏳ 后端 API 接入
-- ⏳ 数据库集成
-- ⏳ AI 服务集成
-- ⏳ 用户认证系统
-- ⏳ 真实数据状态管理
+- ⏳ 任务完成 / 状态更新写接口
+- ⏳ 每日打卡写接口
+- ⏳ analytics 事件入库
+- ⏳ 管理员后台前端
+- ⏳ 外部 AI provider 真正接入当前学习消息链路
 
 **开发策略：**
-当前阶段前端使用 `features/<domain>/data/` 中的静态假数据驱动页面迭代。等后端接口准备好后，将逐步替换为服务端返回数据。
+当前项目已是“部分真实接口 + 部分静态展示数据”的状态。优先继续扩展真实用户主链路；营销内容、FAQ、订阅占位、通知设置等仍可继续用本地静态数据承载。
 
 ## 核心业务概念
 
@@ -167,6 +173,6 @@ types/                # 跨 feature 共用的类型定义
 ## 重要提醒
 
 1. **前端主导期**：当前项目处于前端结构完善阶段，重点在于稳定交互和信息结构
-2. **假数据驱动**：使用 `features/<domain>/data/` 中的静态数据，等后端准备好后再替换
+2. **真实接口优先**：已有真实接口时优先对齐 `app/api` 与 Supabase；仅对刻意保留为展示层的内容继续使用 `features/<domain>/data/`
 3. **保持结构清晰**：遵循代码组织原则，避免在 `app/` 中直接实现业务逻辑
-4. **渐进式集成**：后续接入认证、数据库、AI 服务时，结构已预留好扩展空间
+4. **渐进式集成**：尚未实现的写接口、AI provider 和后台能力继续按现有结构渐进接入

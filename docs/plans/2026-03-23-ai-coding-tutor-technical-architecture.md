@@ -3,7 +3,7 @@
 > 文档类型：技术架构设计文档  
 > 产品名称：AI编程学习教练  
 > 版本：v1.1  
-> 状态：已按当前前端原型校准  
+> 状态：已按当前代码实现同步  
 > 创建日期：2026-03-23  
 > 适用阶段：MVP  
 > 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-prd.md`、`docs/plans/2026-03-23-ai-coding-tutor-api-spec.md`
@@ -43,6 +43,27 @@
 - `/history` 页当前承载的是“历史学习计划列表”，不是“最近消息列表”。
 - FAQ、订阅展示块、营销定价文案仍属于前端静态表达，不属于首期后端权威域模型。
 
+### 1.2 当前实现快照
+
+截至当前代码，项目已落地为“Next.js 前端 + `app/api` BFF + `server/modules` 服务层 + Supabase” 的同仓全栈形态，而不是仅有原型页面。
+
+当前已打通的关键链路包括：
+
+- Supabase Auth 登录态接入，支持手机号验证码登录与微信 OAuth 跳转
+- onboarding 读取工具和路径候选，并真实创建 `user_learning_paths` 与 `user_tasks`
+- `/learn`、`/map`、`/achievements`、`/history` 读取远程数据库的真实 read model
+- 用户资料读写、头像上传到 Supabase Storage
+- 用户反馈提交、我的反馈记录、管理员反馈接口
+- `POST /api/learning/message` 已存在真实接口，但当前仍以服务端内置教学回复逻辑为主，尚未真正接通外部 AI provider
+
+当前尚未落地的链路包括：
+
+- 任务完成写接口、任务状态更新写接口
+- 每日打卡写接口
+- 事件埋点写接口
+- 管理员后台前端
+- Redis / 队列等增强型基础设施
+
 ---
 
 ## 2. 背景与约束
@@ -53,7 +74,7 @@ AI编程学习教练的核心能力不是内容分发，而是将教程、链接
 
 ### 2.2 MVP 业务边界
 
-MVP 纳入范围：
+MVP 目标范围：
 
 - 用户账号系统
 - 工具选择、水平分层与起始训练路线选择
@@ -64,7 +85,7 @@ MVP 纳入范围：
 - 闯关地图、成就页与历史学习页
 - 核心埋点与数据分析
 
-MVP 不纳入范围：
+当前仍未纳入或尚未实现范围：
 
 - 排行榜与社区
 - 支付系统
@@ -157,7 +178,7 @@ AI 输出不能只作为一段聊天回复存在，而必须与以下结构绑�
 | 前端运行时与框架 | React 19.2 + TypeScript 5.9 + Tailwind CSS 4 | 与 Next.js 16 对齐，采用当前稳定代际 |
 | 数据库 | 阿里云 AnalyticDB PostgreSQL 版 Supabase | 延续 Supabase 范式，同时更贴近国内微信生态接入诉求 |
 | 认证 | 阿里云 Supabase Auth | 保留 Supabase Auth 范式，并优先使用其国内 OAuth 能力 |
-| AI 服务 | Claude API | 满足教学型对话与结构化引导需求 |
+| AI 服务 | Claude API（规划接入） | 当前架构已预留外部 AI provider 接入点，但代码尚未真正连通 |
 | 状态管理 | 服务端主状态 + 前端轻状态 | 核心状态统一在服务端，避免任务状态漂移 |
 | 部署 | Vercel + 托管数据库 | 降低运维门槛 |
 | 观测 | 事件埋点 + 服务日志 + 前端错误监控 | 支撑产品验证与快速定位问题 |
@@ -419,7 +440,7 @@ sequenceDiagram
     API-->>FE: 返回初始任务与跳转信息
 ```
 
-## 9.2 AI 导师学习流程
+## 9.2 规划中的 AI 导师学习流程
 
 ```mermaid
 sequenceDiagram
@@ -441,7 +462,7 @@ sequenceDiagram
     API-->>FE: 渲染学习主界面
 ```
 
-## 9.3 任务完成与成长反馈流程
+## 9.3 规划中的任务完成与成长反馈流程
 
 ```mermaid
 sequenceDiagram
@@ -477,7 +498,7 @@ sequenceDiagram
 
 ---
 
-## 10. AI 编排架构
+## 10. AI 编排架构（规划中）
 
 ## 10.1 设计目标
 
@@ -531,8 +552,15 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 
 ### 认证与档案
 
+当前已实现：
+
 - `POST /api/auth/login`
 - `GET /api/profile/me`
+- `PATCH /api/profile/me`
+- `POST /api/profile/avatar`
+
+规划中：
+
 - `POST /api/profile/init`
 
 ### 新手引导
@@ -543,24 +571,53 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 
 ### 学习核心
 
+当前已实现：
+
 - `POST /api/learning/message`
 - `GET /api/learning/current-session`
+
+规划中：
+
 - `POST /api/learning/stuck-help`
 
 ### 任务与进度
 
-- `POST /api/task/complete`
-- `POST /api/task/update-status`
+当前已实现：
+
 - `GET /api/progress/current`
 - `GET /api/progress/map`
 
+规划中：
+
+- `POST /api/task/complete`
+- `POST /api/task/update-status`
+
 ### 成长与历史
+
+当前已实现：
 
 - `GET /api/achievement/summary`
 - `GET /api/history/recent`
+
+规划中：
+
 - `POST /api/checkin/daily`
 
+### 反馈与运营
+
+当前已实现：
+
+- `POST /api/feedback`
+- `GET /api/feedback/mine`
+- `GET /api/feedback/mine/{id}`
+- `GET /api/admin/feedback`
+- `GET /api/admin/feedback/{id}`
+- `POST /api/admin/feedback/{id}/reply`
+- `POST /api/admin/feedback/{id}/status`
+
 ### 数据与事件
+
+规划中：
 
 - `POST /api/analytics/event`
 
@@ -637,7 +694,7 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 
 ### 平台接入确认风险
 
-虽然当前已选定阿里云 AnalyticDB PostgreSQL 版 Supabase，但仍需在 Sprint 1 内确认具体产品能力边界，包括微信 OAuth 配置流程、回调域名限制、Auth 控制台能力以及环境隔离方式。
+当前已完成远程数据库连通、短信 OTP 登录、头像 Storage 上传与基础 OAuth callback 接入，但仍需继续验证微信 OAuth 在真实生产域名、不同环境隔离和异常回调场景下的稳定性。
 
 ### AI 输出不可控
 

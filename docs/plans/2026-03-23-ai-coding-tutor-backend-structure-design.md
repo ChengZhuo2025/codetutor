@@ -3,7 +3,7 @@
 > 文档类型：后端模块目录结构设计文档  
 > 产品名称：AI编程学习教练  
 > 版本：v1.1  
-> 状态：已按前端原型校准  
+> 状态：已按当前代码实现同步  
 > 创建日期：2026-03-23  
 > 适用阶段：MVP  
 > 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md`、`docs/plans/2026-03-23-ai-coding-tutor-api-spec.md`
@@ -21,6 +21,11 @@
 - 阿里云 AnalyticDB PostgreSQL 版 Supabase
 - Claude API
 - Node.js 24 Active LTS
+
+补充说明：
+
+- 本文档同时包含“当前已落地目录形态”和“后续可演进方向”
+- 涉及当前仓库真实目录与接口时，以已落地结构为准，不再假定 `src/` 根目录或尚未存在的模块层级
 
 ---
 
@@ -108,61 +113,72 @@
 
 ---
 
-## 4. 推荐顶层目录结构
+## 4. 当前已落地顶层目录结构
 
-建议结构如下：
+当前仓库真实与后端相关的顶层目录如下：
 
 ```text
-src/
-├── app/
-├── server/
-├── shared/
-├── types/
-└── tests/
+app/
+├── api/
+└── ...
+lib/
+├── api/
+└── supabase/
+scripts/
+server/
+supabase/
+└── migrations/
+types/
 ```
 
 说明：
 
-- `app/` 存放 Next.js route handlers
+- `app/api/` 存放 Next.js Route Handlers
 - `server/` 存放真正的服务端业务代码
-- 不建议把业务逻辑直接堆在 `app/api/*`
+- `lib/api/` 存放接口契约与浏览器端请求封装
+- `lib/supabase/` 存放浏览器端和服务端 Supabase client
+- `supabase/migrations/` 存放实际已执行的数据库迁移
 
 ---
 
 ## 5. `app/api` 目录设计
 
-建议仅作为接口入口层使用：
+当前 `app/api` 已作为接口入口层使用：
 
 ```text
 app/
 └── api/
     ├── achievement/
     │   └── summary/route.ts
-    ├── analytics/
-    │   └── event/route.ts
+    ├── admin/
+    │   └── feedback/
+    │       ├── route.ts
+    │       └── [id]/
+    │           ├── route.ts
+    │           ├── reply/route.ts
+    │           └── status/route.ts
     ├── auth/
     │   └── login/route.ts
-    ├── checkin/
-    │   └── daily/route.ts
+    ├── feedback/
+    │   ├── route.ts
+    │   └── mine/
+    │       ├── route.ts
+    │       └── [id]/route.ts
     ├── history/
     │   └── recent/route.ts
     ├── learning/
     │   ├── current-session/route.ts
-    │   ├── message/route.ts
-    │   └── stuck-help/route.ts
+    │   └── message/route.ts
     ├── onboarding/
     │   ├── complete/route.ts
     │   ├── path-options/route.ts
     │   └── tools/route.ts
     ├── profile/
-    │   ├── init/route.ts
+    │   ├── avatar/route.ts
     │   └── me/route.ts
     ├── progress/
     │   ├── current/route.ts
     │   └── map/route.ts
-    └── task/
-        ├── complete/route.ts
-        └── update-status/route.ts
 ```
 
 规则：
@@ -170,70 +186,67 @@ app/
 - 每个 `route.ts` 只做入口处理
 - 不在 `route.ts` 中写复杂数据库访问
 - `/history/recent` 在命名上保留原型兼容性，但实际承载“历史学习路径实例分页列表”
+- 当前尚未落地的 `task/*`、`checkin/*`、`analytics/*`、`learning/stuck-help` 仍属于后续开发项
 
 ---
 
 ## 6. `server/` 目录设计
 
-建议结构：
+当前 `server/` 已落地结构：
 
 ```text
 server/
-├── application/
-├── domain/
-├── infrastructure/
-├── modules/
-├── schemas/
-├── config/
-└── lib/
+├── lib/
+│   ├── api-response.ts
+│   ├── request-admin.ts
+│   ├── request-auth.ts
+│   └── supabase.ts
+└── modules/
+    ├── achievement/
+    ├── auth/
+    ├── feedback/
+    ├── history/
+    ├── learning/
+    ├── onboarding/
+    └── progress/
 ```
 
 说明：
 
-- `application/`：用例编排
-- `domain/`：核心领域规则
-- `infrastructure/`：数据库与第三方
-- `modules/`：按业务域聚合导出
-- `schemas/`：请求和响应 schema
-- `config/`：环境配置
-- `lib/`：服务端通用能力
+- 当前代码采用更轻量的“`route.ts` + `modules/<domain>/service.ts`” 结构
+- 还没有拆出独立 `application / domain / infrastructure` 目录
+- `server/lib/` 负责公共响应、鉴权和 Supabase 错误处理
+- 如果后续业务复杂度继续上升，再逐步演进到域内分层
 
 ---
 
 ## 7. `server/modules` 业务域组织
 
-建议按域组织：
+当前已落地模块：
 
 ```text
 server/modules/
-├── analytics/
+├── achievement/
 ├── auth/
-├── gamification/
+├── feedback/
 ├── history/
 ├── learning/
 ├── onboarding/
-├── profile/
-├── progress/
-└── task/
+└── progress/
 ```
 
-每个模块建议包含：
+当前每个模块的最小形态通常是：
 
 ```text
-server/modules/learning/
-├── application/
-├── domain/
-├── infrastructure/
-├── dto/
-├── schemas/
-└── index.ts
+server/modules/<domain>/
+└── service.ts
 ```
 
-这是一种“按域聚合、域内分层”的结构，适合模块化单体。
+这是一种适合当前 MVP 阶段的“按域聚合、先保留单 service 入口”的结构。等单个域的复杂度明显上升后，再在域内继续细分 application、domain、repository。
 
 ---
 
-## 8. 业务域细化设计
+## 8. 后续可演进业务域细化设计
 
 ## 8.1 `auth`
 
@@ -623,79 +636,79 @@ server/lib/
 
 ---
 
-## 14. 后端推荐目录树
+## 14. 当前落地目录树
 
 ```text
 app/
 └── api/
     ├── achievement/summary/route.ts
-    ├── analytics/event/route.ts
+    ├── admin/feedback/route.ts
+    ├── admin/feedback/[id]/route.ts
+    ├── admin/feedback/[id]/reply/route.ts
+    ├── admin/feedback/[id]/status/route.ts
     ├── auth/login/route.ts
-    ├── checkin/daily/route.ts
+    ├── feedback/route.ts
+    ├── feedback/mine/route.ts
+    ├── feedback/mine/[id]/route.ts
     ├── history/recent/route.ts
     ├── learning/current-session/route.ts
     ├── learning/message/route.ts
-    ├── learning/stuck-help/route.ts
     ├── onboarding/complete/route.ts
     ├── onboarding/path-options/route.ts
     ├── onboarding/tools/route.ts
-    ├── profile/init/route.ts
+    ├── profile/avatar/route.ts
     ├── profile/me/route.ts
     ├── progress/current/route.ts
-    ├── progress/map/route.ts
-    ├── task/complete/route.ts
-    └── task/update-status/route.ts
+    └── progress/map/route.ts
+
+lib/
+├── api/
+│   ├── client.ts
+│   ├── types.ts
+│   └── contracts/
+├── profile/
+└── supabase/
 
 server/
-├── config/
-├── infrastructure/
-│   ├── ai/
-│   ├── auth/
-│   ├── db/
-│   ├── logging/
-│   └── storage/
 ├── lib/
-│   ├── auth/
-│   ├── errors/
-│   ├── idempotency/
-│   ├── logger/
-│   └── observability/
+│   ├── api-response.ts
+│   ├── request-admin.ts
+│   ├── request-auth.ts
+│   └── supabase.ts
 ├── modules/
-│   ├── analytics/
-│   ├── auth/
-│   ├── gamification/
-│   ├── history/
-│   ├── learning/
-│   ├── onboarding/
-│   ├── profile/
-│   ├── progress/
-│   └── task/
-├── schemas/
-└── tests/
+│   ├── achievement/service.ts
+│   ├── auth/service.ts
+│   ├── feedback/service.ts
+│   ├── history/service.ts
+│   ├── learning/service.ts
+│   ├── onboarding/service.ts
+│   └── progress/service.ts
+
+supabase/
+└── migrations/
 ```
 
 ---
 
-## 15. 请求处理推荐流转
+## 15. 当前请求处理流转
 
 每个接口推荐遵循以下流转：
 
 1. `route.ts` 接收请求
-2. 调用 `require-user` 做鉴权
-3. 使用 `schema` 做参数校验
-4. 调用 `application use case`
-5. use case 调用 `domain service + repository + external client`
-6. 统一格式返回响应
+2. 调用 `getRequestAuth` 或 `getRequestAdmin` 做鉴权
+3. 在 route 内做轻量参数解析与校验
+4. 调用 `server/modules/<domain>/service.ts`
+5. service 使用 Supabase Admin Client 读取或写入数据库
+6. 通过 `ok / fail` 统一格式返回响应
 
 示例：
 
-`POST /api/task/complete`
+`POST /api/feedback`
 
-- `app/api/task/complete/route.ts`
-- `server/modules/task/application/complete-task.ts`
-- `server/modules/task/domain/task-service.ts`
-- `server/modules/gamification/application/award-score.ts`
-- `server/modules/task/infrastructure/task-repository.ts`
+- `app/api/feedback/route.ts`
+- `server/lib/request-auth.ts`
+- `server/modules/feedback/service.ts`
+- `lib/supabase/admin.ts`
 
 ---
 
@@ -712,29 +725,35 @@ server/
 
 ## 17. MVP 推荐开发顺序
 
-基于当前前端原型，推荐按以下顺序推进后端：
+结合当前代码，后端开发顺序已经推进到如下状态：
 
-1. `auth + profile`
-   - 打通登录
-   - 返回基础用户快照
-   - 判断是否完成 onboarding
-2. `onboarding`
+1. 已完成：`auth + profile`
+   - 登录态处理
+   - 用户档案读取与更新
+   - 头像上传到 Supabase Storage
+2. 已完成：`onboarding`
    - 工具列表
    - 路径候选
    - 完成 onboarding 时创建 `user_learning_path + user_tasks`
-3. `progress`
-   - 先打通 `/map` 和 `/learn` 共享的当前路径、当前任务、关卡列表
-4. `task + gamification`
+3. 已完成：`progress + history + achievement`
+   - 当前路径总览
+   - 地图 read model
+   - 历史学习计划分页列表
+   - 成长总览 read model
+4. 已完成首版：`learning`
+   - 当前学习会话恢复
+   - 消息提交接口
+   - 仍未接入真正的外部 AI provider 编排
+5. 已完成：`feedback`
+   - 用户反馈提交
+   - 我的反馈列表与详情
+   - 管理员查询与回复接口
+6. 待实现：`task + gamification write`
    - 完成任务
    - 更新状态
-   - XP、段位、打卡
-5. `history`
-   - 基于 `user_learning_paths` 输出历史学习计划分页列表
-6. `learning`
-   - 接 AI provider
-   - 写会话、消息、卡住帮助
-7. `analytics`
-   - 最后补事件入库
+   - XP、段位、打卡写入
+7. 待实现：`analytics`
+   - 事件入库
 
 这样做的原因是：
 

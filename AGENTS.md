@@ -2,19 +2,23 @@
 
 ## Project Structure & Module Organization
 
-This repository is no longer documentation-only. It contains a runnable Next.js App Router frontend prototype for the AI coding tutor product, plus the original planning docs in `docs/plans/`.
+This repository is no longer documentation-only. It contains a runnable Next.js App Router app for the AI coding tutor product, with frontend pages, `app/api` route handlers, `server/modules` services, Supabase migrations, and the planning docs in `docs/plans/`.
 
 If you need a fast orientation to the project and its current authoritative documents, start with `docs/plans/README.md`.
 
 - `app/`: route entries such as `/`, `/login`, `/onboarding`, `/learn`, `/map`, `/achievements`, `/history`
-- `features/`: feature-level pages, components, mock data, and view models
+- `app/api/`: current BFF/API route handlers
+- `features/`: feature-level pages, components, static view data, and view models
 - `components/`: shared layout and UI primitives
-- `lib/api/`: API contracts and client wrappers; current pages are still backed mainly by `lib/api/mock.ts`
+- `lib/api/`: API contracts and client wrappers
+- `lib/supabase/`: browser/server Supabase clients and storage helpers
+- `server/modules/`: current domain services such as auth, onboarding, learning, progress, achievement, history, feedback
+- `supabase/migrations/`: checked-in database migrations
 - `constants/`, `types/`, `providers/`, `public/`: shared frontend support code and assets
 - `scripts/`: lightweight verification scripts for key demo pages and layout rules
 - `docs/plans/`: dated planning artifacts; keep using `YYYY-MM-DD-topic-name.md`
 
-There is currently no implemented backend service, no `app/api` route handlers, and no checked-in database runtime or migration directory. Backend and database materials under `docs/plans/` are design documents, not shipped implementation.
+Current implemented backend/data pieces include auth login flow integration, profile read/update, avatar upload, onboarding APIs, current learning/progress/history/achievement read models, feedback APIs, and checked-in Supabase migrations. Still-planned items include task write APIs, check-in write APIs, analytics ingestion, admin frontend pages, and subscription/payment.
 
 ## Build, Test, and Development Commands
 
@@ -34,7 +38,7 @@ For documentation-only changes, continue using lightweight checks such as `rg --
 
 ## Coding Style & Naming Conventions
 
-Write frontend code in TypeScript with React and Next.js conventions. Follow the existing alias style such as `@/features/...` and keep component, feature, and constant names consistent with the current structure. Prefer small, composable components and keep mock data close to the relevant feature until real APIs are introduced.
+Write frontend code in TypeScript with React and Next.js conventions. Follow the existing alias style such as `@/features/...` and keep component, feature, and constant names consistent with the current structure. Prefer small, composable components and keep static display data close to the relevant feature when it is intentionally not backed by an API yet.
 
 Write Markdown with short sections, clear headings, and direct language. Existing product and planning documents are written primarily in Chinese with English product and stack terms; keep that terminology consistent. Use lowercase kebab-case for filenames after the date prefix in `docs/plans/`.
 
@@ -44,7 +48,7 @@ There is no full end-to-end or backend test suite in the current snapshot. The m
 
 - `pnpm lint`
 - targeted `scripts/check-*.mjs` assertions for important UI structure and copy regressions
-- manual review of mock-data-driven flows in the frontend prototype
+- manual review of real API-backed user flows plus remaining static-display flows
 
 When changing a page or shared layout, run the relevant page check script plus any broader lint/build command needed to support your claim. If you add real backend or database code, add the matching automated tests and document the exact command in the same change.
 
@@ -65,4 +69,4 @@ Prefer updating an existing plan doc before creating a duplicate. When assumptio
 
 For quick project understanding, read `docs/plans/README.md` first, then follow its recommended reading order.
 
-Do not describe planned backend or database capabilities as already implemented. Today the repository reflects a frontend demo/prototype with mock data and interface contracts, not a completed full-stack system.
+Do not describe planned backend or database capabilities as already implemented. Today the repository reflects a partially implemented full-stack MVP: several user-facing flows already use real `app/api` + Supabase, while some write-side and admin capabilities are still only planned.

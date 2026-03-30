@@ -3,7 +3,7 @@
 > 文档类型：前端工程说明  
 > 产品名称：AI编程学习教练  
 > 版本：v1.1  
-> 状态：已按当前前端原型校准  
+> 状态：已按当前代码实现同步  
 > 创建日期：2026-03-23  
 > 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-prd.md`、`docs/plans/2026-03-23-ai-coding-tutor-api-spec.md`
 
@@ -19,21 +19,24 @@
 - 顶层目录分别负责什么
 - 七个页面分别位于哪里
 - 什么代码应该放在 `features/`，什么代码应该上提到顶层
-- 在尚未接入后端接口时，前端应如何继续推进
+- 当前哪些页面已经接入真实接口，哪些仍是静态展示层
 
 ---
 
 ## 2. 当前工程状态
 
-当前仓库已经是一个可运行的 `Next.js 16 + React 19 + TypeScript + Tailwind CSS 4 + shadcn/ui` 前端工程。
+当前仓库已经是一个可运行的 `Next.js 16 + React 19 + TypeScript + Tailwind CSS 4 + shadcn/ui` 前端工程，并且已经接入同仓 `app/api` 与 Supabase。
 
 当前已具备：
 
 - `app/` 路由入口
+- `app/api/` BFF Route Handlers
 - `features/` 业务域代码
 - `components/ui` 共享 UI 组件
 - `components/layout` 共享布局组件
 - `constants/` 顶层常量
+- `lib/api` 接口客户端与契约
+- `lib/supabase` 浏览器端 / 服务端 Supabase 封装
 - `providers/` 全局 Provider 入口
 - `types/` 顶层共享类型
 
@@ -200,6 +203,23 @@ features/<domain>/
 
 如果类型只被一个业务域使用，优先放在对应 feature 的 `types.ts`
 
+### 3.7 `lib/`
+
+职责：
+
+- 放前后端共享的轻量基础能力
+
+当前内容重点包括：
+
+- `lib/api/`：接口契约、浏览器端请求封装、基础响应类型
+- `lib/supabase/`：浏览器端与服务端 Supabase client、环境变量和 Storage 约定
+- `lib/profile/`：个人资料更新事件分发
+
+约束：
+
+- `lib/` 适合放“被多个 feature 或前后端共同依赖”的基础能力
+- 具体业务规则仍应放在 `features/` 或 `server/modules/`，不要把 `lib/` 演化成新的杂物目录
+
 ---
 
 ## 4. 七个页面的代码位置
@@ -215,14 +235,14 @@ features/<domain>/
 
 - 路由入口：`app/login/page.tsx`
 - 页面装配：`features/auth/pages/login-page.tsx`
-- 页面数据：`features/auth/data/login-data.ts`
+- 当前真实依赖：Supabase Auth 短信 OTP、微信 OAuth 跳转、`POST /api/auth/login`
 - 页面组件：`features/auth/components/*`
 
 ### 工具选择页
 
 - 路由入口：`app/onboarding/page.tsx`
 - 页面装配：`features/onboarding/pages/onboarding-page.tsx`
-- 页面数据：`features/onboarding/data/onboarding-data.ts`
+- 当前真实依赖：`GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete`
 - 页面组件：`features/onboarding/components/*`
 - 当前职责：承载“主工具选择 -> 当前水平确认 -> 起始训练路线选择”的三步流程
 
@@ -230,30 +250,39 @@ features/<domain>/
 
 - 路由入口：`app/learn/page.tsx`
 - 页面装配：`features/learning/pages/learn-page.tsx`
-- 页面数据：`features/learning/data/learning-content.ts`
+- 当前真实依赖：`GET /api/learning/current-session`、`POST /api/learning/message`
 - 页面组件：`features/learning/components/*`
 
 ### 地图页
 
 - 路由入口：`app/map/page.tsx`
 - 页面装配：`features/progress/pages/map-page.tsx`
-- 页面数据：`features/progress/data/map-data.ts`
+- 当前真实依赖：`GET /api/progress/current`、`GET /api/progress/map`
 - 页面组件：`features/progress/components/*`
 
 ### 成就页
 
 - 路由入口：`app/achievements/page.tsx`
 - 页面装配：`features/achievement/pages/achievements-page.tsx`
-- 页面数据：`features/achievement/data/achievement-data.ts`
+- 当前真实依赖：`GET /api/achievement/summary`
 - 页面组件：`features/achievement/components/*`
 
 ### 历史页
 
 - 路由入口：`app/history/page.tsx`
 - 页面装配：`features/history/pages/history-page.tsx`
-- 页面数据：`features/history/data/history-data.ts`
+- 当前真实依赖：`GET /api/history/recent`，侧栏 FAQ 仍为本地静态数据
 - 页面组件：`features/history/components/*`
 - 当前职责：展示历史学习计划列表，而不是最近对话消息列表
+
+### 当前已接真实接口的跨页组件
+
+- `components/layout/dashboard-sidebar.tsx`
+  当前会读取 `/api/learning/current-session` 或 `/api/profile/me`
+- `components/layout/profile-edit-dialog.tsx`
+  当前会读取和更新 `/api/profile/me`，并通过 `/api/profile/avatar` 上传头像
+- `components/layout/feedback-dialog.tsx`
+  当前会读取和写入 `/api/feedback`、`/api/feedback/mine`，支持查看反馈记录与回复
 
 ---
 
@@ -370,15 +399,16 @@ features/<domain>/
 - 仅服务单个业务域：放 `features/<domain>/types.ts`
 - 跨业务域共享：放 `types/`
 
-### 6.5 页面文案和假数据
+### 6.5 页面文案和静态数据
 
-当前项目尚未接入后端接口，因此页面文案、统计值、任务列表、路线配置等仍以静态假数据为主。
+当前项目已经接入一批真实接口，但并不是所有展示块都来自后端。
 
 约定：
 
-- 假数据优先放到对应 feature 的 `data/`
+- 静态展示数据优先放到对应 feature 的 `data/`
 - 不要把长数据对象直接写在页面 JSX 文件里
-- 等真实 API 接入后，再逐步将 `data/` 中的静态内容替换为服务端返回数据
+- 当前仍然保留静态的内容主要包括：营销页内容、FAQ、订阅占位、通知设置默认值、部分成就页本地图标/段位展示配置
+- 当前已经改为真实接口的数据主链路包括：登录、用户资料、头像上传、onboarding、学习会话、地图、成就、历史、反馈
 
 ### 6.6 统一反馈态
 
@@ -401,19 +431,19 @@ features/<domain>/
 
 ## 7. 当前限制与边界
 
-当前前端工程已经完成结构收敛，但仍有以下边界需要明确：
+当前前端工程已经完成主要页面和核心接口接入，但仍有以下边界需要明确：
 
-- 尚未接入任何后端接口
-- 尚未接入真实登录、会话、用户资料
-- 尚未接入数据库或 Supabase
-- 尚未引入全局状态管理或数据请求缓存层
-- 尚未编写前端测试
+- 尚未引入 React Query / SWR 一类的数据请求缓存层
+- 尚未形成系统性的前端自动化测试覆盖
+- 通知设置、订阅模块、FAQ 仍是静态或占位实现
+- 管理员后台前端页面尚未开始
+- 任务完成写接口、每日打卡、埋点写入等链路尚未接入到当前页面主流程
 
 因此，当前阶段的目标仍然是：
 
 - 保持页面结构清晰
-- 保持可运行和可演示
-- 让未来接接口时无需再次大规模搬迁目录
+- 在不引入重型状态层的前提下继续扩展真实接口覆盖
+- 让未来新增接口和后台页面时无需再次大规模搬迁目录
 
 ---
 
@@ -445,11 +475,11 @@ features/<domain>/
 
 ## 9. 后续开发建议
 
-在后端尚未准备好之前，前端侧建议按以下顺序推进：
+结合当前代码现状，前端下一步建议按以下顺序推进：
 
-1. 继续用 `features/<domain>/data/` 驱动页面迭代，先稳定交互和信息结构。
-2. 补充 `tests/` 目录和页面级基础测试方案。
-3. 预留 `lib/api/` 和 `lib/auth/` 目录，等后端接口确定后再接。
-4. 当真实接口上线时，优先替换 `login`、`onboarding`、`learn` 三个高频入口的数据流，其中 `onboarding` 需优先对齐“工具列表 -> 路线候选 -> 完成引导”三段契约。
+1. 继续把剩余静态模块切到真实接口，优先级依次为任务完成写接口、每日打卡、埋点事件、通知设置。
+2. 为已接接口的高频页面补充页面级自动化测试或最小交互测试。
+3. 在确认请求复杂度继续上升后，再评估是否引入 Query 缓存层，而不是过早全局化。
+4. 管理员后台开始前，先把用户侧 read model 稳定下来，避免后台列表和用户页使用两套口径。
 
 如果后续目录与本说明出现偏差，应优先更新本文档，再继续扩展代码。
