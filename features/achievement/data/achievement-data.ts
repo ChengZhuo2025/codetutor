@@ -17,6 +17,11 @@ import {
   TargetBadgeIcon,
   TrophyBadgeIcon,
 } from "@/features/achievement/components/solid-achievement-icons"
+import {
+  getNextRankDefinition,
+  getRankName,
+  RANK_DEFINITIONS,
+} from "@/constants/ranks"
 import type { ApiSuccessResponse } from "@/lib/api/types"
 import type {
   AchievementSummaryResponseData,
@@ -72,13 +77,12 @@ const ACHIEVEMENT_BADGE_PRESENTATION: Record<AchievementBadgeCode, Badge["icon"]
   monthly_champion: TrophyBadgeIcon,
 }
 
-const ACHIEVEMENT_RANKS: AchievementRankContract[] = [
-  { code: "rookie", name: "萌新码农", minScore: 0, maxScore: 200 },
-  { code: "apprentice", name: "AI 学徒", minScore: 200, maxScore: 500 },
-  { code: "vibe_coder", name: "Vibe Coder", minScore: 500, maxScore: 1000 },
-  { code: "builder", name: "AI 建造者", minScore: 1000, maxScore: 2000 },
-  { code: "master", name: "AI 编程大师", minScore: 2000, maxScore: 9999 },
-]
+const ACHIEVEMENT_RANKS: AchievementRankContract[] = RANK_DEFINITIONS.map((rank) => ({
+  code: rank.code,
+  name: rank.name,
+  minScore: rank.minScore,
+  maxScore: rank.maxScore,
+}))
 
 const ACHIEVEMENT_GUIDE_ITEMS: XpGuideItem[] = [
   { label: "完成关卡任务", xp: "+10", color: "text-brand", desc: "每完成一个标准关卡" },
@@ -162,9 +166,9 @@ export const mockAchievementSummaryResponse: ApiSuccessResponse<AchievementSumma
   message: "success",
   data: {
     currentRankCode: "vibe_coder",
-    currentRank: "Vibe Coder",
+    currentRank: getRankName("vibe_coder"),
     currentScore: 680,
-    nextRank: "AI 建造者",
+    nextRank: getNextRankDefinition("vibe_coder").name,
     nextRankRemainingXP: 320,
     completedTaskCount: 14,
     streakDays: 7,

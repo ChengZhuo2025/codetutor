@@ -6,6 +6,11 @@ import type {
   LearningTaskState,
 } from "@/lib/api/contracts/learning"
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth"
+import {
+  getLearningLevelLabel,
+  getSelectionModeLabel,
+} from "@/constants/learning-taxonomy"
+import { getRankName } from "@/constants/ranks"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
 import type { Message } from "@/features/learning/types"
@@ -67,25 +72,6 @@ type StepRow = {
   knowledge_points: unknown
   key_points: unknown
   pitfalls: unknown
-}
-
-const LEVEL_LABEL_MAP: Record<string, string> = {
-  beginner: "完全入门",
-  intermediate: "有一定基础",
-  advanced: "进阶提升",
-}
-
-const MODE_LABEL_MAP: Record<string, string> = {
-  self_directed: "自由模式",
-  preset_training: "平台训练模式",
-}
-
-const RANK_LABEL_MAP: Record<string, string> = {
-  rookie: "萌新码农",
-  apprentice: "AI 学徒",
-  vibe_coder: "Vibe Coder",
-  builder: "AI 建造者",
-  master: "AI 编程大师",
 }
 
 const KNOWLEDGE_TAG_COLORS = [
@@ -251,7 +237,7 @@ function toProfileData(
     },
     learningLevel: profile.learning_level,
     currentScore: profile.current_score,
-    currentRank: RANK_LABEL_MAP[profile.current_rank_code] ?? profile.current_rank_code,
+    currentRank: getRankName(profile.current_rank_code),
     streakDays: profile.streak_days,
     completedTaskCount,
     lastLearningAt: toIsoDate(profile.last_learning_at),
@@ -308,9 +294,8 @@ export async function getLearningCurrentSessionData(
     profile: toProfileData(state.profile, state.tool, completedTaskCount),
     planSummary: {
       selectedToolName: state.tool.name,
-      learningLevelLabel: LEVEL_LABEL_MAP[state.activePath.learning_level] ?? state.activePath.learning_level,
-      selectionModeLabel:
-        MODE_LABEL_MAP[state.activePath.selection_mode] ?? state.activePath.selection_mode,
+      learningLevelLabel: getLearningLevelLabel(state.activePath.learning_level),
+      selectionModeLabel: getSelectionModeLabel(state.activePath.selection_mode),
       pathName: state.activePath.path_name_snapshot,
     },
     resume: {

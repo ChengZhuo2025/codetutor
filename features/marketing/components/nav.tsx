@@ -8,6 +8,7 @@ import { APP_NAME } from "@/constants/app"
 import { MARKETING_NAV_ITEMS } from "@/constants/navigation"
 import { ROUTES } from "@/constants/routes"
 import { Button } from "@/components/ui/button"
+import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
 import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
 
@@ -27,6 +28,7 @@ function scrollToSection(href: string) {
 export function LandingNav() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [activeHref, setActiveHref] = useState(MARKETING_NAV_ITEMS[0]?.href ?? "#home")
+  const { authState, maskedPhone } = useLandingAuthState()
   const { trackEvent } = useAppEventTracker()
 
   useEffect(() => {
@@ -55,6 +57,56 @@ export function LandingNav() {
       window.removeEventListener("resize", updateActiveSection)
     }
   }, [])
+
+  const desktopActions =
+    authState.status === "authenticated" ? (
+      <>
+        <div className="rounded-full border border-brand/20 bg-brand/10 px-3 py-1 text-xs font-medium text-brand">
+          {maskedPhone}
+        </div>
+        <Link href={authState.summary.redirectTo}>
+          <Button
+            size="sm"
+            onClick={() =>
+              trackEvent(APP_EVENTS.landingCtaClick, {
+                source: "marketing_nav_resume",
+                target: authState.summary.redirectTo,
+              })
+            }
+            className="bg-brand text-brand-foreground shadow-[0_18px_40px_-20px_oklch(0.78_0.15_180/0.9)] hover:bg-brand/90"
+          >
+            继续学习
+          </Button>
+        </Link>
+      </>
+    ) : authState.status === "guest" ? (
+      <>
+        <div className="rounded-full border border-brand/20 bg-brand/10 px-3 py-1 text-xs font-medium text-brand">
+          v0.1.0 Beta
+        </div>
+        <Link href={ROUTES.login}>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+            登录
+          </Button>
+        </Link>
+        <Link href={ROUTES.login}>
+          <Button
+            size="sm"
+            onClick={() =>
+              trackEvent(APP_EVENTS.landingCtaClick, {
+                source: "marketing_nav",
+                target: ROUTES.login,
+              })
+            }
+            className="bg-brand text-brand-foreground shadow-[0_18px_40px_-20px_oklch(0.78_0.15_180/0.9)] hover:bg-brand/90"
+          >
+            免费开始
+          </Button>
+        </Link>
+      </>
+    ) : (
+      <div className="h-9 w-[188px]" aria-hidden="true" />
+    )
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/8 bg-[oklch(0.16_0.01_240/0.5)] backdrop-blur-xl">
@@ -91,30 +143,7 @@ export function LandingNav() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
-          <div className="rounded-full border border-brand/20 bg-brand/10 px-3 py-1 text-xs font-medium text-brand">
-            v0.1.0 Beta
-          </div>
-          <Link href={ROUTES.login}>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              登录
-            </Button>
-          </Link>
-          <Link href={ROUTES.login}>
-            <Button
-              size="sm"
-              onClick={() =>
-                trackEvent(APP_EVENTS.landingCtaClick, {
-                  source: "marketing_nav",
-                  target: ROUTES.login,
-                })
-              }
-              className="bg-brand text-brand-foreground shadow-[0_18px_40px_-20px_oklch(0.78_0.15_180/0.9)] hover:bg-brand/90"
-            >
-              免费开始
-            </Button>
-          </Link>
-        </div>
+        <div className="hidden items-center gap-3 md:flex">{desktopActions}</div>
 
         <button
           className="flex items-center justify-center text-muted-foreground md:hidden"
@@ -152,19 +181,44 @@ export function LandingNav() {
               </button>
             ))}
             <hr className="border-border/50" />
-            <Link href={ROUTES.login}>
-              <Button
-                className="w-full bg-brand text-brand-foreground hover:bg-brand/90"
-                onClick={() =>
-                  trackEvent(APP_EVENTS.landingCtaClick, {
-                    source: "marketing_nav_mobile",
-                    target: ROUTES.login,
-                  })
-                }
-              >
-                免费开始
-              </Button>
-            </Link>
+            {authState.status === "authenticated" ? (
+              <>
+                <div className="rounded-2xl border border-brand/20 bg-brand/10 px-3 py-2 text-sm text-brand">
+                  当前账号：{maskedPhone}
+                </div>
+                <Link href={authState.summary.redirectTo}>
+                  <Button
+                    className="w-full bg-brand text-brand-foreground hover:bg-brand/90"
+                    onClick={() =>
+                      trackEvent(APP_EVENTS.landingCtaClick, {
+                        source: "marketing_nav_mobile_resume",
+                        target: authState.summary.redirectTo,
+                      })
+                    }
+                  >
+                    继续学习
+                  </Button>
+                </Link>
+              </>
+            ) : authState.status === "guest" ? (
+              <Link href={ROUTES.login}>
+                <Button
+                  className="w-full bg-brand text-brand-foreground hover:bg-brand/90"
+                  onClick={() =>
+                    trackEvent(APP_EVENTS.landingCtaClick, {
+                      source: "marketing_nav_mobile",
+                      target: ROUTES.login,
+                    })
+                  }
+                >
+                  免费开始
+                </Button>
+              </Link>
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-white/4 px-3 py-2 text-sm text-muted-foreground">
+                正在恢复登录状态...
+              </div>
+            )}
           </nav>
         </div>
       )}

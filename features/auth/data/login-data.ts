@@ -1,4 +1,6 @@
 import type { ApiSuccessResponse } from "@/lib/api/types"
+import { getRankName } from "@/constants/ranks"
+import { AUTH_PREVIEW_TOOL_CODES, getToolName } from "@/constants/tools"
 import type {
   AuthPreviewContract,
   ProfileMeResponseData,
@@ -17,11 +19,11 @@ export const mockProfileMeResponse: ApiSuccessResponse<ProfileMeResponseData> = 
     bio: "正在学习 AI 编程，希望用 AI 工具提升开发效率。",
     primaryTool: {
       code: "cursor",
-      name: "Cursor",
+      name: getToolName("cursor"),
     },
     learningLevel: "beginner",
     currentScore: 680,
-    currentRank: "Vibe Coder",
+    currentRank: getRankName("vibe_coder"),
     streakDays: 7,
     completedTaskCount: 14,
     lastLearningAt: "2026-03-24T14:32:00+08:00",
@@ -32,11 +34,11 @@ export const mockAuthPreviewResponse: ApiSuccessResponse<AuthPreviewContract> = 
   code: "OK",
   message: "success",
   data: {
-    previewTools: ["Cursor", "Claude Code", "Codex", "Google Stitch"],
+    previewTools: AUTH_PREVIEW_TOOL_CODES.map((code) => getToolName(code)),
     previewSteps: [
       {
         id: 1,
-        title: "安装 Cursor 编辑器",
+        title: `安装 ${getToolName("cursor")} 编辑器`,
         description: "从 cursor.com 下载并完成安装",
         active: true,
       },
@@ -47,7 +49,7 @@ export const mockAuthPreviewResponse: ApiSuccessResponse<AuthPreviewContract> = 
         active: false,
       },
     ],
-    resumeTitle: "Cursor 入门 · 第 1 关",
+    resumeTitle: `${getToolName("cursor")} 入门 · 第 1 关`,
     resumeSummary: "还差一步：打开项目并发起第一次 AI 对话。",
   },
 }

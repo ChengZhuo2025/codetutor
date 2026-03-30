@@ -1,4 +1,6 @@
 import { Bot, CheckCircle2, MessageCircle, Trophy, TrendingUp, Upload } from "lucide-react"
+import { getRankName } from "@/constants/ranks"
+import { getToolName } from "@/constants/tools"
 import type {
   MarketingAudience,
   MarketingBenefit,
@@ -8,6 +10,11 @@ import type {
   MarketingStep,
   MarketingTool,
 } from "@/features/marketing/types"
+
+const firstRankName = getRankName("rookie")
+const lastRankName = getRankName("master")
+const cursorToolName = getToolName("cursor")
+const claudeCodeToolName = getToolName("claude-code")
 
 export const marketingSteps: MarketingStep[] = [
   {
@@ -37,7 +44,7 @@ export const marketingSteps: MarketingStep[] = [
     icon: Trophy,
     title: "完成步骤，积累段位",
     description:
-      "每完成一步获得学分，从萌新码农进阶到 AI 编程大师。连续打卡保持学习节奏，清楚看到自己的成长。",
+      `每完成一步获得学分，从 ${firstRankName} 进阶到 ${lastRankName}。连续打卡保持学习节奏，清楚看到自己的成长。`,
     color: "text-gold",
     panelClassName:
       "border-white/10 bg-[linear-gradient(180deg,oklch(0.26_0.02_210/0.9),oklch(0.18_0.015_235/0.95))] shadow-[0_24px_70px_-45px_oklch(0.82_0.12_82/0.24)]",
@@ -47,7 +54,7 @@ export const marketingSteps: MarketingStep[] = [
 
 export const marketingTools: MarketingTool[] = [
   {
-    name: "Claude Code",
+    name: getToolName("claude-code"),
     tag: "CLI 工具",
     color: "text-chart-3",
     dot: "bg-chart-3",
@@ -56,7 +63,7 @@ export const marketingTools: MarketingTool[] = [
     featuredInFooter: true,
   },
   {
-    name: "Cursor",
+    name: getToolName("cursor"),
     tag: "图形化 IDE",
     color: "text-brand",
     dot: "bg-brand",
@@ -65,7 +72,7 @@ export const marketingTools: MarketingTool[] = [
     featuredInFooter: true,
   },
   {
-    name: "Codex CLI",
+    name: getToolName("codex"),
     tag: "CLI 工具",
     color: "text-chart-5",
     dot: "bg-chart-5",
@@ -74,7 +81,7 @@ export const marketingTools: MarketingTool[] = [
     featuredInFooter: true,
   },
   {
-    name: "Trae",
+    name: getToolName("trae"),
     tag: "图形化 IDE",
     color: "text-brand",
     dot: "bg-brand",
@@ -83,7 +90,7 @@ export const marketingTools: MarketingTool[] = [
     featuredInFooter: true,
   },
   {
-    name: "Windsurf",
+    name: getToolName("windsurf"),
     tag: "图形化 IDE",
     color: "text-brand",
     dot: "bg-brand",
@@ -91,9 +98,9 @@ export const marketingTools: MarketingTool[] = [
     logoSrc: "/tool-logos/windsurf.png",
     featuredInFooter: true,
   },
-  { name: "OpenCode", tag: "开源 AI 编程工具", color: "text-gold", dot: "bg-gold" },
+  { name: getToolName("opencode"), tag: "开源 AI 编程工具", color: "text-gold", dot: "bg-gold" },
   {
-    name: "Lovable",
+    name: getToolName("lovable"),
     tag: "在线工具",
     color: "text-gold",
     dot: "bg-gold",
@@ -101,7 +108,7 @@ export const marketingTools: MarketingTool[] = [
     logoSrc: "/tool-logos/lovable.jpeg",
     featuredInFooter: true,
   },
-  { name: "Google Stitch", tag: "在线工具 前端设计", color: "text-chart-5", dot: "bg-chart-5" },
+  { name: getToolName("stitch"), tag: "在线工具 前端设计", color: "text-chart-5", dot: "bg-chart-5" },
 ]
 
 export const marketingAudiences: MarketingAudience[] = [
@@ -116,14 +123,14 @@ export const marketingConversationMessages: MarketingConversationMessage[] = [
     id: "u-1",
     speaker: "user",
     title: "用户目标",
-    body: "我看了一个用 Cursor 做博客后台的教程，但自己一动手就卡住，不知道第一步该做什么。",
+    body: `我看了一个用 ${cursorToolName} 做博客后台的教程，但自己一动手就卡住，不知道第一步该做什么。`,
     meta: "教程转实践",
   },
   {
     id: "ai-1",
     speaker: "ai",
     title: "AI 陪练",
-    body: "先别做完整后台。你今天的目标只收窄成一件事：在本地跑起一个最小页面，并让 Cursor 帮你补一个 API 路由。",
+    body: `先别做完整后台。你今天的目标只收窄成一件事：在本地跑起一个最小页面，并让 ${cursorToolName} 帮你补一个 API 路由。`,
     meta: "拆解今日目标",
   },
   {
@@ -151,7 +158,7 @@ export const marketingConversationMessages: MarketingConversationMessage[] = [
     id: "u-3",
     speaker: "user",
     title: "开发者场景",
-    body: "我本身有后端经验，但第一次用 Claude Code，想知道怎样把它放进真实项目流程里。",
+    body: `我本身有后端经验，但第一次用 ${claudeCodeToolName}，想知道怎样把它放进真实项目流程里。`,
     meta: "有技术基础",
   },
   {

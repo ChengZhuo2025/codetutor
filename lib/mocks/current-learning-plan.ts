@@ -1,3 +1,5 @@
+import { getToolName } from "@/constants/tools"
+
 export type CurrentLearningPlanStatus = "done" | "current" | "locked"
 
 export type CurrentLearningPlanPitfall = {
@@ -22,21 +24,23 @@ export type CurrentLearningPlanStage = {
   pitfalls: CurrentLearningPlanPitfall[]
 }
 
+const primaryToolName = getToolName("cursor")
+
 export const currentLearningPlan = {
   tool: {
     id: "cursor",
-    label: "Cursor",
+    label: primaryToolName,
   },
-  pathName: "Cursor 零基础起步营",
-  pathSummary: "从第一次 AI 对话到第一个迷你项目，建立最小但完整的 Cursor 入门工作流。",
+  pathName: `${primaryToolName} 零基础起步营`,
+  pathSummary: `从第一次 AI 对话到第一个迷你项目，建立最小但完整的 ${primaryToolName} 入门工作流。`,
   stages: [
     {
       id: 1,
       taskId: "task-install-cursor",
-      title: "安装与配置 Cursor",
+      title: `安装与配置 ${primaryToolName}`,
       summary: "完成安装、登录和基础配置，让 AI 能正常工作。",
       focus: "先把环境准备好，后面的每一关才有真实练习价值。",
-      goal: "安装 Cursor 并确认 AI 功能可以正常使用。",
+      goal: `安装 ${primaryToolName} 并确认 AI 功能可以正常使用。`,
       completionCriteria: "完成安装、登录账号，并能成功打开一个项目目录。",
       reviewSummary: "你已经完成安装与登录配置，后续可以直接进入第一次 AI 协作。",
       estimatedTime: "5 分钟",
@@ -44,7 +48,7 @@ export const currentLearningPlan = {
       status: "done",
       tags: ["环境配置", "编辑器"],
       keyPoints: [
-        "先确保 Cursor 可以打开本地项目，再进入学习流程。",
+        `先确保 ${primaryToolName} 可以打开本地项目，再进入学习流程。`,
         "登录成功后再验证 AI 功能是否可用，避免后续排查偏题。",
         "环境准备完成比急着提问更重要。",
       ],
@@ -81,8 +85,8 @@ export const currentLearningPlan = {
       taskId: "task-ask-vs-agent",
       title: "理解 Ask 与 Agent 的区别",
       summary: "先做一个最小实验，判断 Agent 何时比 Ask 更适合。",
-      focus: "只做一个最小实验：让 Agent 生成一个 React 时钟组件，理解它和 Ask 的职责边界。",
-      goal: "用 Cursor 的 Agent 功能创建一个 React 时钟组件。",
+      focus: `只做一个最小实验：让 Agent 生成一个 React 时钟组件，理解它和 Ask 的职责边界。`,
+      goal: `用 ${primaryToolName} 的 Agent 功能创建一个 React 时钟组件。`,
       completionCriteria: "看到一个可运行的时钟组件，并理解为什么这是 Agent 场景。",
       reviewSummary: "你已经验证了 Ask 与 Agent 的分工差异，下一步可以进入调试协作。",
       estimatedTime: "8 分钟",
@@ -104,9 +108,9 @@ export const currentLearningPlan = {
       id: 4,
       taskId: "task-debug-with-ai",
       title: "AI 调试助手",
-      summary: "学会带着错误上下文让 Cursor 帮你定位并修复 bug。",
+      summary: `学会带着错误上下文让 ${primaryToolName} 帮你定位并修复 bug。`,
       focus: "不是让 AI 猜答案，而是提供足够上下文，让它和你一起定位问题。",
-      goal: "用报错信息和相关代码，让 Cursor 帮你完成一次有效调试。",
+      goal: `用报错信息和相关代码，让 ${primaryToolName} 帮你完成一次有效调试。`,
       completionCriteria: "提供错误信息与上下文后，完成一次定位和修复闭环。",
       reviewSummary: "你已经完成了一次 AI 调试闭环，能更有效地描述问题上下文。",
       estimatedTime: "10 分钟",
@@ -127,7 +131,7 @@ export const currentLearningPlan = {
       id: 5,
       taskId: "task-multi-file-context",
       title: "多文件上下文",
-      summary: "让 Cursor 理解项目结构，而不是只盯着单一代码片段。",
+      summary: `让 ${primaryToolName} 理解项目结构，而不是只盯着单一代码片段。`,
       focus: "学会给 AI 足够但不过量的上下文，让它理解真实项目而不是局部片段。",
       goal: "通过引用多个文件，让 AI 理解一个小项目的结构并协助修改。",
       completionCriteria: "完成一次跨文件上下文协作，并理解何时需要扩大上下文。",
@@ -152,7 +156,7 @@ export const currentLearningPlan = {
       title: "完成第一个迷你项目",
       summary: "把前面的提问、生成、调试和上下文能力串成一次完整实战。",
       focus: "通过一个最小项目把前几关串起来，形成可复用的协作节奏。",
-      goal: "和 Cursor 一起完成一个最小但完整的迷你项目交付。",
+      goal: `和 ${primaryToolName} 一起完成一个最小但完整的迷你项目交付。`,
       completionCriteria: "完成从需求、生成、调试到收尾的一个完整协作闭环。",
       reviewSummary: "你已经完成了首个完整实战，具备继续扩展到真实项目的基础。",
       estimatedTime: "30 分钟",

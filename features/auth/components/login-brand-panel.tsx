@@ -1,5 +1,7 @@
 import { CheckCircle2, Code2, Sparkles } from "lucide-react"
 import { APP_NAME } from "@/constants/app"
+import { getRankName } from "@/constants/ranks"
+import { AUTH_PREVIEW_TOOL_CODES, getToolName } from "@/constants/tools"
 import { marketingConversationMessages } from "@/features/marketing/data/marketing-content"
 import { cn } from "@/lib/utils"
 import type { AuthMode } from "@/features/auth/types"
@@ -9,9 +11,9 @@ type LoginBrandPanelProps = {
 }
 
 export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
-  const previewTools = ["Cursor", "Claude Code", "Codex CLI", "Google Stitch"]
+  const previewTools = AUTH_PREVIEW_TOOL_CODES.map((code) => getToolName(code))
   const profile = {
-    currentRank: "Vibe Coder",
+    currentRank: getRankName("vibe_coder"),
     currentScore: 680,
   }
 

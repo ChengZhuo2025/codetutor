@@ -1,9 +1,14 @@
 import type { LearningHistoryResponseData } from "@/lib/api/contracts/history"
+import {
+  getLearningLevelLabel,
+  getSelectionModeLabel,
+} from "@/constants/learning-taxonomy"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
 
 type HistoryPathRow = {
   id: string
+  tool_id: string
   path_code_snapshot: string
   path_name_snapshot: string
   path_summary_snapshot: string | null
@@ -21,15 +26,9 @@ type HistoryTaskRow = {
   score_awarded: number
 }
 
-const LEVEL_LABEL_MAP: Record<string, string> = {
-  beginner: "零基础",
-  intermediate: "有基础",
-  advanced: "进阶",
-}
-
-const MODE_LABEL_MAP: Record<string, string> = {
-  self_directed: "自由模式",
-  preset_training: "闯关模式",
+type ToolRow = {
+  id: string
+  name: string
 }
 
 const HISTORY_STATUS_MAP: Record<string, "in_progress" | "completed" | "abandoned"> = {
@@ -53,7 +52,7 @@ export async function getRecentHistoryData(
   const { data: paths, error: pathError, count } = await supabase
     .from("user_learning_paths")
     .select(
-      "id, path_code_snapshot, path_name_snapshot, path_summary_snapshot, learning_level, selection_mode, status, total_steps, completed_steps, created_at, updated_at",
+      "id, tool_id, path_code_snapshot, path_name_snapshot, path_summary_snapshot, learning_level, selection_mode, status, total_steps, completed_steps, created_at, updated_at",
       { count: "exact" },
     )
     .eq("user_id", userId)
@@ -65,6 +64,7 @@ export async function getRecentHistoryData(
 
   const historyPaths = (paths ?? []) as HistoryPathRow[]
   const pathIds = historyPaths.map((item) => item.id)
+  const toolIds = Array.from(new Set(historyPaths.map((item) => item.tool_id)))
   const { data: tasks, error: taskError } =
     pathIds.length === 0
       ? { data: [] as HistoryTaskRow[], error: null }
@@ -75,7 +75,18 @@ export async function getRecentHistoryData(
 
   assertSupabaseSuccess(taskError, "failed to load history task summaries")
 
+  const { data: tools, error: toolError } =
+    toolIds.length === 0
+      ? { data: [] as ToolRow[], error: null }
+      : await supabase
+          .from("learning_tools")
+          .select("id, name")
+          .in("id", toolIds)
+
+  assertSupabaseSuccess(toolError, "failed to load history tool names")
+
   const xpByPathId = new Map<string, number>()
+  const toolNameById = new Map(((tools ?? []) as ToolRow[]).map((tool) => [tool.id, tool.name]))
 
   for (const task of (tasks ?? []) as HistoryTaskRow[]) {
     xpByPathId.set(
@@ -90,9 +101,9 @@ export async function getRecentHistoryData(
       planId: item.path_code_snapshot,
       title: item.path_name_snapshot,
       summary: item.path_summary_snapshot ?? "",
-      tool: item.path_name_snapshot.split(" ")[0] ?? "未知工具",
-      level: LEVEL_LABEL_MAP[item.learning_level] ?? item.learning_level,
-      mode: MODE_LABEL_MAP[item.selection_mode] ?? item.selection_mode,
+      tool: toolNameById.get(item.tool_id) ?? "未知工具",
+      level: getLearningLevelLabel(item.learning_level, "short"),
+      mode: getSelectionModeLabel(item.selection_mode, "short"),
       progress: {
         completed: item.completed_steps,
         total: item.total_steps,

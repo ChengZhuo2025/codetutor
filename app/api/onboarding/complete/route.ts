@@ -1,11 +1,9 @@
 import type { NextRequest } from "next/server"
+import { VALID_LEARNING_LEVELS, VALID_SELECTION_MODES } from "@/constants/learning-taxonomy"
 import { ok, fail } from "@/server/lib/api-response"
 import { getRequestAuth, getRequestAuthHelpText } from "@/server/lib/request-auth"
 import { completeOnboarding } from "@/server/modules/onboarding/service"
 import type { CompleteOnboardingRequest } from "@/lib/api/contracts/onboarding"
-
-const VALID_LEVELS = new Set(["beginner", "intermediate", "advanced"])
-const VALID_SELECTION_MODES = new Set(["self_directed", "preset_training"])
 
 function isCompleteRequest(input: unknown): input is CompleteOnboardingRequest {
   if (!input || typeof input !== "object") {
@@ -36,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (
-      !VALID_LEVELS.has(body.learningLevel) ||
+      !VALID_LEARNING_LEVELS.has(body.learningLevel) ||
       !VALID_SELECTION_MODES.has(body.selectionMode)
     ) {
       return fail("VALIDATION_FAILED", "learningLevel 或 selectionMode 不合法。", 422)

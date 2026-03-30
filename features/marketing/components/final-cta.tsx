@@ -1,9 +1,13 @@
+"use client"
+
 import Link from "next/link"
 import { ArrowRight, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ROUTES } from "@/constants/routes"
+import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
 
 export function LandingFinalCta() {
+  const { authState, ctaHref, ctaLabel } = useLandingAuthState()
+
   return (
     <section className="relative overflow-hidden px-6 py-24">
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-white/16 to-transparent" />
@@ -36,12 +40,12 @@ export function LandingFinalCta() {
 
         {/* CTA按钮组 */}
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <Link href={ROUTES.login}>
+          <Link href={ctaHref}>
             <Button
               size="lg"
               className="h-14 rounded-2xl bg-brand px-8 text-base font-semibold text-brand-foreground shadow-[0_24px_60px_-24px_oklch(0.78_0.15_180/0.82)] hover:-translate-y-0.5 hover:bg-brand/90"
             >
-              立即开始学习
+              {authState.status === "authenticated" ? ctaLabel : "立即开始学习"}
               <ArrowRight className="h-5 w-5" />
             </Button>
           </Link>
@@ -68,7 +72,7 @@ export function LandingFinalCta() {
                 />
               </svg>
             </div>
-            <span>免费开始，无需信用卡</span>
+            <span>免费试用，每天30轮 AI 对话</span>
           </div>
           <div className="hidden h-4 w-px bg-white/10 sm:block" />
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -81,7 +85,7 @@ export function LandingFinalCta() {
                 />
               </svg>
             </div>
-            <span>8+ 主流工具全覆盖</span>
+            <span>已支持 8+ 款主流 AI 编程工具</span>
           </div>
           <div className="hidden h-4 w-px bg-white/10 sm:block" />
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -94,7 +98,7 @@ export function LandingFinalCta() {
                 />
               </svg>
             </div>
-            <span>每日15分钟起即可开始</span>
+            <span>每天15分钟，学习效果看得见</span>
           </div>
         </div>
       </div>

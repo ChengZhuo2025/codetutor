@@ -1,0 +1,116 @@
+export const TOOL_DEFINITIONS = [
+  {
+    code: "cursor",
+    name: "Cursor",
+    toolType: "gui",
+    groupName: "图形化工具",
+    category: "图形化 IDE",
+    difficultyLevel: "beginner",
+    summary: "对话式写代码，上手快，适合新手建立习惯",
+    popular: true,
+    color: "brand",
+  },
+  {
+    code: "trae",
+    name: "Trae",
+    toolType: "gui",
+    groupName: "图形化工具",
+    category: "图形化 IDE",
+    difficultyLevel: "beginner",
+    summary: "界面与提示对中文友好，上手阻力小",
+    popular: true,
+    color: "brand",
+  },
+  {
+    code: "windsurf",
+    name: "Windsurf",
+    toolType: "gui",
+    groupName: "图形化工具",
+    category: "图形化 IDE",
+    difficultyLevel: "intermediate",
+    summary: "多步 Agent 能力强，适合练「交代清楚再改」的协作",
+    popular: false,
+    color: "chart-5",
+  },
+  {
+    code: "claude-code",
+    name: "Claude Code",
+    toolType: "cli",
+    groupName: "CLI 工具",
+    category: "CLI 工具",
+    difficultyLevel: "intermediate",
+    summary: "终端里与 AI 结对编程，适合练命令行工作流",
+    popular: true,
+    color: "chart-3",
+  },
+  {
+    code: "codex",
+    name: "Codex CLI",
+    toolType: "cli",
+    groupName: "CLI 工具",
+    category: "CLI 工具",
+    difficultyLevel: "intermediate",
+    summary: "轻量命令行，适合快速在仓库里改代码",
+    popular: false,
+    color: "chart-5",
+  },
+  {
+    code: "opencode",
+    name: "OpenCode",
+    toolType: "cli",
+    groupName: "CLI 工具",
+    category: "CLI 工具",
+    difficultyLevel: "intermediate",
+    summary: "开源、可自托管，多语言与框架都方便",
+    popular: true,
+    color: "brand",
+  },
+  {
+    code: "stitch",
+    name: "Google Stitch",
+    toolType: "web",
+    groupName: "在线工具",
+    category: "在线工具",
+    difficultyLevel: "beginner",
+    summary: "偏网页与界面生成，适合快速出高保真原型",
+    popular: true,
+    color: "brand",
+  },
+  {
+    code: "bolt",
+    name: "Bolt.new",
+    toolType: "web",
+    groupName: "在线工具",
+    category: "在线工具",
+    difficultyLevel: "beginner",
+    summary: "浏览器里跑起来，免安装，适合先试想法",
+    popular: false,
+    color: "gold",
+  },
+  {
+    code: "lovable",
+    name: "Lovable",
+    toolType: "web",
+    groupName: "在线工具",
+    category: "在线工具",
+    difficultyLevel: "beginner",
+    summary: "从想法到页面一条龙，适合产品向快速试错",
+    popular: false,
+    color: "gold",
+  },
+] as const
+
+export const AUTH_PREVIEW_TOOL_CODES = [
+  "cursor",
+  "claude-code",
+  "codex",
+  "stitch",
+] as const
+
+export function getToolDefinition(code: string) {
+  return TOOL_DEFINITIONS.find((tool) => tool.code === code) ?? null
+}
+
+export function getToolName(code: string) {
+  return getToolDefinition(code)?.name ?? code
+}

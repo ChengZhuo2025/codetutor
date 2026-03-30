@@ -1,4 +1,8 @@
 import type { ApiSuccessResponse } from "@/lib/api/types"
+import {
+  getLearningLevelLabel,
+  getSelectionModeLabel,
+} from "@/constants/learning-taxonomy"
 import type {
   LearningCurrentSessionResponseData,
   LearningMessageResponseData,
@@ -32,8 +36,8 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
       profile: mockProfileMeResponse.data,
       planSummary: {
         selectedToolName: currentLearningPlan.tool.label,
-        learningLevelLabel: "完全入门",
-        selectionModeLabel: "平台训练模式",
+        learningLevelLabel: getLearningLevelLabel("beginner"),
+        selectionModeLabel: getSelectionModeLabel("preset_training"),
         pathName: currentLearningPlan.pathName,
       },
       resume: {

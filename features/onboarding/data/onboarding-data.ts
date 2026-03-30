@@ -1,4 +1,10 @@
 import { ROUTES } from "@/constants/routes"
+import {
+  getLearningLevelDescription,
+  getLearningLevelLabel,
+  LEARNING_LEVEL_DEFINITIONS,
+} from "@/constants/learning-taxonomy"
+import { TOOL_DEFINITIONS } from "@/constants/tools"
 import type { ApiSuccessResponse } from "@/lib/api/types"
 import type {
   CompleteOnboardingRequest,
@@ -10,133 +16,31 @@ import type {
 } from "@/lib/api/contracts/onboarding"
 import type { Level, OnboardingPresetPathOption, ToolColor } from "@/features/onboarding/types"
 
-const toolGroups: OnboardingToolGroupContract[] = [
-  {
-    groupCode: "gui",
-    groupName: "图形化工具",
-    tools: [
-      {
-        id: "cursor",
-        code: "cursor",
-        name: "Cursor",
-        difficultyLevel: "beginner",
-        summary: "对话式写代码，上手快，适合新手建立习惯",
-        category: "图形化 IDE",
-        popular: true,
-        color: "brand",
-      },
-      {
-        id: "trae",
-        code: "trae",
-        name: "Trae",
-        difficultyLevel: "beginner",
-        summary: "界面与提示对中文友好，上手阻力小",
-        category: "图形化 IDE",
-        popular: true,
-        color: "brand",
-      },
-      {
-        id: "windsurf",
-        code: "windsurf",
-        name: "Windsurf",
-        difficultyLevel: "intermediate",
-        summary: "多步 Agent 能力强，适合练「交代清楚再改」的协作",
-        category: "图形化 IDE",
-        popular: false,
-        color: "chart-5",
-      },
-    ],
-  },
-  {
-    groupCode: "cli",
-    groupName: "CLI 工具",
-    tools: [
-      {
-        id: "claude-code",
-        code: "claude-code",
-        name: "Claude Code",
-        difficultyLevel: "intermediate",
-        summary: "终端里与 AI 结对编程，适合练命令行工作流",
-        category: "CLI 工具",
-        popular: true,
-        color: "chart-3",
-      },
-      {
-        id: "codex",
-        code: "codex",
-        name: "Codex CLI",
-        difficultyLevel: "intermediate",
-        summary: "轻量命令行，适合快速在仓库里改代码",
-        category: "CLI 工具",
-        popular: false,
-        color: "chart-5",
-      },
-      {
-        id: "opencode",
-        code: "opencode",
-        name: "OpenCode",
-        difficultyLevel: "intermediate",
-        summary: "开源、可自托管，多语言与框架都方便",
-        category: "CLI 工具",
-        popular: true,
-        color: "brand",
-      },
-    ],
-  },
-  {
-    groupCode: "web",
-    groupName: "在线工具",
-    tools: [
-      {
-        id: "stitch",
-        code: "stitch",
-        name: "Google Stitch",
-        difficultyLevel: "beginner",
-        summary: "偏网页与界面生成，适合快速出高保真原型",
-        category: "在线工具",
-        popular: true,
-        color: "brand",
-      },
-      {
-        id: "bolt",
-        code: "bolt",
-        name: "Bolt.new",
-        difficultyLevel: "beginner",
-        summary: "浏览器里跑起来，免安装，适合先试想法",
-        category: "在线工具",
-        popular: false,
-        color: "gold",
-      },
-      {
-        id: "lovable",
-        code: "lovable",
-        name: "Lovable",
-        difficultyLevel: "beginner",
-        summary: "从想法到页面一条龙，适合产品向快速试错",
-        category: "在线工具",
-        popular: false,
-        color: "gold",
-      }
-    ],
-  },
-]
+const toolGroups: OnboardingToolGroupContract[] = ["gui", "cli", "web"].map((groupCode) => {
+  const groupedTools = TOOL_DEFINITIONS.filter((tool) => tool.toolType === groupCode)
+
+  return {
+    groupCode,
+    groupName: groupedTools[0]?.groupName ?? "工具",
+    tools: groupedTools.map((tool) => ({
+      id: tool.code,
+      code: tool.code,
+      name: tool.name,
+      difficultyLevel: tool.difficultyLevel as Level,
+      summary: tool.summary,
+      category: tool.category,
+      popular: tool.popular,
+      color: tool.color as ToolColor,
+    })),
+  }
+})
 
 const levelTemplates: OnboardingPresetContract["levels"] = [
-  {
-    id: "beginner",
-    label: "零基础 / 刚入门",
-    desc: "几乎没写过代码，或刚开始接触编程与 AI 工具",
-  },
-  {
-    id: "intermediate",
-    label: "写过一些代码",
-    desc: "懂基本语法和项目结构，主要想把 AI 用得更顺手",
-  },
-  {
-    id: "advanced",
-    label: "有项目经验",
-    desc: "做过完整项目，想系统梳理 AI 协作与交付方法",
-  },
+  ...LEARNING_LEVEL_DEFINITIONS.map((level) => ({
+    id: level.code as Level,
+    label: getLearningLevelLabel(level.code, "card"),
+    desc: getLearningLevelDescription(level.code),
+  })),
 ]
 
 type PathTemplate = {

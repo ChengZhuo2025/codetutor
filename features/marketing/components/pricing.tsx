@@ -1,9 +1,14 @@
+"use client"
+
 import Link from "next/link"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { marketingPlans } from "@/features/marketing/data/marketing-content"
+import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
 
 export function LandingPricing() {
+  const { authState, ctaHref, ctaLabel } = useLandingAuthState()
+
   return (
     <section id="pricing" className="relative bg-surface-1 px-6 py-24">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/16 to-transparent" />
@@ -61,7 +66,13 @@ export function LandingPricing() {
                 ))}
               </ul>
 
-              <Link href={plan.href}>
+              <Link
+                href={
+                  authState.status === "authenticated" && plan.name === "免费版"
+                    ? ctaHref
+                    : plan.href
+                }
+              >
                 <Button
                   className={`w-full rounded-2xl font-semibold ${
                     plan.highlight
@@ -69,7 +80,9 @@ export function LandingPricing() {
                       : "border border-white/10 bg-white/4 text-foreground hover:-translate-y-0.5 hover:bg-white/8"
                   }`}
                 >
-                  {plan.cta}
+                  {authState.status === "authenticated" && plan.name === "免费版"
+                    ? ctaLabel
+                    : plan.cta}
                 </Button>
               </Link>
             </div>

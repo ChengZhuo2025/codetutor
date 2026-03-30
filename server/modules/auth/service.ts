@@ -1,7 +1,9 @@
 import type { User } from "@supabase/supabase-js"
 import { ROUTES } from "@/constants/routes"
+import { getRankName } from "@/constants/ranks"
 import type {
   AuthLoginResponseData,
+  AuthSessionSummaryResponseData,
   AuthLoginType,
   ProfileMeResponseData,
   UpdateProfileMeRequest,
@@ -36,14 +38,6 @@ type UserProfileRow = {
 type ToolRow = {
   code: string
   name: string
-}
-
-const RANK_NAME_MAP: Record<string, string> = {
-  rookie: "萌新码农",
-  apprentice: "AI 学徒",
-  vibe_coder: "Vibe Coder",
-  builder: "AI 建造者",
-  master: "AI 编程大师",
 }
 
 function readUserMetadataString(user: User, keys: string[]) {
@@ -107,6 +101,38 @@ async function getAuthUserById(userId: string) {
   return data.user ?? null
 }
 
+async function loadUserGateState(userId: string) {
+  const supabase = createSupabaseAdminClient()
+
+  const { data: preference, error: preferenceError } = await supabase
+    .from("user_learning_preferences")
+    .select("onboarding_completed")
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  assertSupabaseSuccess(preferenceError, "failed to query learning preferences")
+
+  const { count: activePathCount, error: activePathError } = await supabase
+    .from("user_learning_paths")
+    .select("id", {
+      count: "exact",
+      head: true,
+    })
+    .eq("user_id", userId)
+    .eq("status", "active")
+
+  assertSupabaseSuccess(activePathError, "failed to query active learning path")
+
+  const onboardingCompleted =
+    (preference as UserPreferenceRow | null)?.onboarding_completed ?? false
+  const hasActivePath = (activePathCount ?? 0) > 0
+
+  return {
+    onboardingCompleted: onboardingCompleted || hasActivePath,
+    redirectTo: onboardingCompleted || hasActivePath ? ROUTES.learn : ROUTES.onboarding,
+  }
+}
+
 export async function finalizeAuthLogin(
   user: User,
   loginType: AuthLoginType,
@@ -133,20 +159,6 @@ export async function finalizeAuthLogin(
   assertSupabaseSuccess(
     preferenceError,
     "failed to query learning preferences during auth login",
-  )
-
-  const { count: activePathCount, error: activePathError } = await supabase
-    .from("user_learning_paths")
-    .select("id", {
-      count: "exact",
-      head: true,
-    })
-    .eq("user_id", user.id)
-    .eq("status", "active")
-
-  assertSupabaseSuccess(
-    activePathError,
-    "failed to query active learning path during auth login",
   )
 
   const isNewUser = !profile && !preference
@@ -214,16 +226,37 @@ export async function finalizeAuthLogin(
     )
   }
 
-  const hasActivePath = (activePathCount ?? 0) > 0
-  const onboardingCompleted =
-    (preference as UserPreferenceRow | null)?.onboarding_completed ?? false
+  const gateState = await loadUserGateState(user.id)
 
   return {
     userId: user.id,
     isNewUser,
-    onboardingCompleted: onboardingCompleted || hasActivePath,
-    profileCompleted: onboardingCompleted || hasActivePath,
-    redirectTo: onboardingCompleted || hasActivePath ? ROUTES.learn : ROUTES.onboarding,
+    onboardingCompleted: gateState.onboardingCompleted,
+    profileCompleted: gateState.onboardingCompleted,
+    redirectTo: gateState.redirectTo,
+  }
+}
+
+export async function getAuthSessionSummary(
+  userId: string,
+): Promise<AuthSessionSummaryResponseData> {
+  const supabase = createSupabaseAdminClient()
+  const authUser = await getAuthUserById(userId)
+  const gateState = await loadUserGateState(userId)
+
+  const { data: profile, error: profileError } = await supabase
+    .from("user_profiles")
+    .select("nickname")
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  assertSupabaseSuccess(profileError, "failed to query auth session profile")
+
+  return {
+    userId,
+    redirectTo: gateState.redirectTo,
+    phone: authUser?.phone ?? null,
+    nickname: normalizeOptionalString((profile as { nickname?: string | null } | null)?.nickname),
   }
 }
 
@@ -287,7 +320,7 @@ export async function getProfileMe(userId: string): Promise<ProfileMeResponseDat
     primaryTool,
     learningLevel: typedProfile.learning_level,
     currentScore: typedProfile.current_score,
-    currentRank: RANK_NAME_MAP[typedProfile.current_rank_code] ?? typedProfile.current_rank_code,
+    currentRank: getRankName(typedProfile.current_rank_code),
     streakDays: typedProfile.streak_days,
     completedTaskCount: completedTaskCount ?? 0,
     lastLearningAt: toIsoDate(typedProfile.last_learning_at),

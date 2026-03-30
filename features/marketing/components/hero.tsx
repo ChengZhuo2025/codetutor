@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import {
   ArrowRight,
@@ -6,8 +8,9 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LightRays } from "@/features/marketing/components/light-rays"
-import { ROUTES } from "@/constants/routes"
+import { getToolName } from "@/constants/tools"
 import { marketingConversationMessages } from "@/features/marketing/data/marketing-content"
+import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
 import { cn } from "@/lib/utils"
 
 const heroStats = [
@@ -16,7 +19,14 @@ const heroStats = [
   { label: "学习方式", value: "Ai带你一步步操作" },
 ]
 
+const cursorToolName = getToolName("cursor")
+const claudeCodeToolName = getToolName("claude-code")
+const codexToolName = getToolName("codex")
+const heroFeaturedTools = [cursorToolName, claudeCodeToolName, "OpenCode"].join("、")
+
 export function LandingHero() {
+  const { authState, ctaHref, ctaLabel } = useLandingAuthState()
+
   return (
     <section
       id="home"
@@ -63,17 +73,17 @@ export function LandingHero() {
         </h1>
 
         <p className="mt-5 max-w-4xl text-lg leading-8 text-muted-foreground text-pretty animate-fadeUp animate-delay-200">
-          看到大V的Cursor、Claude Code、OpenCalw...等ai教程，收藏了就当学过了？<br/>
+          看到大V的{heroFeaturedTools}...等 AI 教程，收藏了就当学过了？<br/>
           CodeTutor AI 会把教程内容拆分成一步步可实操练习的任务，并全程陪伴你、辅导你从&ldquo;看过&rdquo;走向&ldquo;学会&rdquo;。
         </p>
 
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row animate-fadeUp animate-delay-300">
-          <Link href={ROUTES.login}>
+          <Link href={ctaHref}>
             <Button
               size="lg"
               className="h-14 rounded-2xl bg-brand px-9 text-base font-semibold text-brand-foreground shadow-[0_24px_60px_-24px_oklch(0.78_0.15_180/0.82)] hover:-translate-y-0.5 hover:bg-brand/90"
             >
-              免费开始学习
+              {authState.status === "authenticated" ? ctaLabel : "免费开始学习"}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
@@ -196,7 +206,7 @@ export function LandingHero() {
               </p>
               <div className="mt-4 space-y-3">
                 {[
-                  "安装 Cursor 编辑器",
+                  `安装 ${cursorToolName} 编辑器`,
                   "打开一个本地项目文件夹",
                   "发起第一次 AI 对话",
                 ].map((item, index) => (
@@ -232,7 +242,7 @@ export function LandingHero() {
               <div className="mt-5 rounded-2xl border border-white/8 bg-white/4 px-4 py-4 backdrop-blur-sm">
                 <p className="text-xs text-muted-foreground">适合人群</p>
                 <p className="mt-2 text-sm leading-7 text-foreground">
-                  第一次接触 AI 编程工具的人，也包括已经能写代码、但想把 Cursor、Claude Code、Codex CLI 真正接入自己项目流程的开发者。
+                  第一次接触 AI 编程工具的人，也包括已经能写代码、但想把 {cursorToolName}、{claudeCodeToolName}、{codexToolName} 真正接入自己项目流程的开发者。
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {["新手起步", "项目实战", "调试重构", "接口联调"].map((tag) => (

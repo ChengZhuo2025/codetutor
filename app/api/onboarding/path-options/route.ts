@@ -1,8 +1,7 @@
 import type { NextRequest } from "next/server"
+import { VALID_LEARNING_LEVELS } from "@/constants/learning-taxonomy"
 import { ok, fail } from "@/server/lib/api-response"
 import { getOnboardingPathOptionsData } from "@/server/modules/onboarding/service"
-
-const VALID_LEVELS = new Set(["beginner", "intermediate", "advanced"])
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +9,7 @@ export async function GET(request: NextRequest) {
     const toolCode = searchParams.get("toolCode")
     const learningLevel = searchParams.get("learningLevel")
 
-    if (!toolCode || !learningLevel || !VALID_LEVELS.has(learningLevel)) {
+    if (!toolCode || !learningLevel || !VALID_LEARNING_LEVELS.has(learningLevel)) {
       return fail("BAD_REQUEST", "缺少合法的 toolCode 或 learningLevel。", 400)
     }
 

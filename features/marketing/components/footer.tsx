@@ -1,10 +1,12 @@
+"use client"
+
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, Code2 } from "lucide-react"
 import { APP_COPYRIGHT_YEAR, APP_NAME } from "@/constants/app"
-import { ROUTES } from "@/constants/routes"
 import { Button } from "@/components/ui/button"
 import { marketingTools } from "@/features/marketing/data/marketing-content"
+import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
 import type { MarketingTool } from "@/features/marketing/types"
 import { AboutDialog } from "./about-dialog"
 import { ContactDialog } from "./contact-dialog"
@@ -20,6 +22,8 @@ const featuredFooterTools = marketingTools.filter(
 )
 
 export function LandingFooter() {
+  const { authState, ctaHref, ctaLabel } = useLandingAuthState()
+
   return (
     <>
       <section id="about" className="relative px-6 text-center">
@@ -32,12 +36,12 @@ export function LandingFooter() {
             选择工具、确认水平，然后直接进入第一课。先从一个能完成的动作开始，再慢慢积累成真正的成长节奏。
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link href={ROUTES.login}>
+            <Link href={ctaHref}>
               <Button
                 size="lg"
                 className="h-14 rounded-2xl bg-brand px-8 text-base font-semibold text-brand-foreground shadow-[0_24px_60px_-24px_oklch(0.78_0.15_180/0.82)] hover:-translate-y-0.5 hover:bg-brand/90"
               >
-                立即行动
+                {authState.status === "authenticated" ? ctaLabel : "立即行动"}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>

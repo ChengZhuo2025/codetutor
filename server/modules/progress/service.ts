@@ -2,6 +2,11 @@ import type {
   ProgressCurrentResponseData,
   ProgressMapResponseData,
 } from "@/lib/api/contracts/progress"
+import {
+  getNextRankDefinition,
+  getRankName,
+  getRemainingXpToNextRank,
+} from "@/constants/ranks"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import type { Stage } from "@/features/progress/types"
@@ -54,24 +59,6 @@ type StepRow = {
   pitfalls: unknown
 }
 
-const RANK_LABEL_MAP: Record<string, string> = {
-  rookie: "Rookie",
-  apprentice: "Apprentice",
-  vibe_coder: "Vibe Coder",
-  builder: "AI 建造者",
-  master: "Master",
-}
-
-const RANK_ORDER = ["rookie", "apprentice", "vibe_coder", "builder", "master"] as const
-
-const RANK_MIN_SCORE: Record<string, number> = {
-  rookie: 0,
-  apprentice: 100,
-  vibe_coder: 300,
-  builder: 1000,
-  master: 2000,
-}
-
 function toStringArray(input: unknown) {
   if (!Array.isArray(input)) {
     return [] as string[]
@@ -110,20 +97,12 @@ function toPitfalls(input: unknown) {
 }
 
 function getRankSummary(currentRankCode: string, currentScore: number) {
-  const currentIndex = RANK_ORDER.indexOf(
-    currentRankCode as (typeof RANK_ORDER)[number],
-  )
-  const safeIndex = currentIndex >= 0 ? currentIndex : 0
-  const nextRankCode =
-    RANK_ORDER[Math.min(safeIndex + 1, RANK_ORDER.length - 1)]
+  const nextRank = getNextRankDefinition(currentRankCode)
 
   return {
-    currentRank: RANK_LABEL_MAP[currentRankCode] ?? currentRankCode,
-    nextRank: RANK_LABEL_MAP[nextRankCode] ?? nextRankCode,
-    remainingXPToNextRank:
-      nextRankCode === currentRankCode
-        ? 0
-        : Math.max(0, (RANK_MIN_SCORE[nextRankCode] ?? currentScore) - currentScore),
+    currentRank: getRankName(currentRankCode),
+    nextRank: nextRank.name,
+    remainingXPToNextRank: getRemainingXpToNextRank(currentRankCode, currentScore),
   }
 }
 

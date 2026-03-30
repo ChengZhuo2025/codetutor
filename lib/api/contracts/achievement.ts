@@ -1,13 +1,9 @@
+import type { RankCode } from "@/constants/ranks"
 import type {
   AchievementOverview,
 } from "@/features/achievement/types"
 
-export type AchievementRankCode =
-  | "rookie"
-  | "apprentice"
-  | "vibe_coder"
-  | "builder"
-  | "master"
+export type AchievementRankCode = RankCode
 
 export type AchievementBadgeCode =
   | "first_task"

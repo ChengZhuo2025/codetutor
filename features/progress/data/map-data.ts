@@ -1,4 +1,5 @@
 import type { ApiSuccessResponse } from "@/lib/api/types"
+import { getNextRankDefinition } from "@/constants/ranks"
 import type {
   ProgressCurrentResponseData,
   ProgressMapResponseData,
@@ -25,7 +26,7 @@ export const mockProgressCurrentResponse: ApiSuccessResponse<ProgressCurrentResp
     summary: {
       totalXP: mockProfileMeResponse.data.currentScore,
       currentRank: mockProfileMeResponse.data.currentRank,
-      nextRank: "AI 建造者",
+      nextRank: getNextRankDefinition("vibe_coder").name,
       remainingXPToNextRank: 320,
       streakDays: mockProfileMeResponse.data.streakDays,
     },

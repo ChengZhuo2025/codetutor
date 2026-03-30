@@ -15,6 +15,13 @@ export type AuthLoginResponseData = {
   redirectTo: string
 }
 
+export type AuthSessionSummaryResponseData = {
+  userId: string
+  redirectTo: string
+  phone: string | null
+  nickname: string | null
+}
+
 export type ProfileToolContract = {
   code: string
   name: string

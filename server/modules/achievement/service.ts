@@ -4,7 +4,10 @@ import type {
   AchievementRankContract,
   AchievementSummaryResponseData,
 } from "@/lib/api/contracts/achievement"
-import { getAchievementRankContracts } from "@/features/achievement/data/achievement-data"
+import {
+  getNextRankDefinition,
+  RANK_DEFINITIONS,
+} from "@/constants/ranks"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 
@@ -28,7 +31,12 @@ type ToolRow = {
   code: string
 }
 
-const RANKS = getAchievementRankContracts()
+const RANKS: AchievementRankContract[] = RANK_DEFINITIONS.map((rank) => ({
+  code: rank.code,
+  name: rank.name,
+  minScore: rank.minScore,
+  maxScore: rank.maxScore,
+}))
 
 function formatRelativeTime(input: string | null) {
   if (!input) {
@@ -52,9 +60,12 @@ function formatRelativeTime(input: string | null) {
 }
 
 function getNextRank(currentRankCode: AchievementRankContract["code"]) {
-  const currentIndex = RANKS.findIndex((rank) => rank.code === currentRankCode)
-  const safeIndex = currentIndex >= 0 ? currentIndex : 0
-  return RANKS[Math.min(safeIndex + 1, RANKS.length - 1)]
+  const nextRank = getNextRankDefinition(currentRankCode)
+
+  return (
+    RANKS.find((rank) => rank.code === nextRank.code) ??
+    RANKS[0]
+  )
 }
 
 function buildCalendar(streakDays: number, activeDates: Set<string>) {
