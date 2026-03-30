@@ -138,11 +138,21 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `GET /api/history/recent`
 - `POST /api/checkin/daily`
 
-## 4.6 数据事件
+## 4.6 反馈与运营
+
+- `POST /api/feedback`
+- `GET /api/feedback/mine`
+- `GET /api/feedback/mine/{id}`
+- `GET /api/admin/feedback`
+- `GET /api/admin/feedback/{id}`
+- `POST /api/admin/feedback/{id}/reply`
+- `POST /api/admin/feedback/{id}/status`
+
+## 4.7 数据事件
 
 - `POST /api/analytics/event`
 
-## 4.7 当前前端页面与接口映射
+## 4.8 当前前端页面与接口映射
 
 基于当前前端原型，MVP 首期真正要打通的页面与接口对应关系如下：
 
@@ -154,6 +164,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
 | 成就页 | `/achievements` | `GET /api/achievement/summary`、`GET /api/history/recent`、`POST /api/checkin/daily` | 成长总览和 XP 流水 |
 | 历史页 | `/history` | `GET /api/history/recent` | 当前前端实际需要的是“历史学习计划列表”，而不是“最近对话列表” |
+| 反馈弹窗 | 设置菜单 / `/history` 侧栏 | `POST /api/feedback`、`GET /api/feedback/mine`、`GET /api/feedback/mine/{id}` | 用户可提交反馈并查看管理员回复 |
 
 以下内容继续保留前端本地静态配置，不进入 MVP 首期后端：
 
@@ -885,7 +896,93 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `progress.percent` 为 read model 聚合字段，服务端可直接返回，前端不必自行计算。
 - `tool.name`、`title`、`summary` 等字段来自路径模板快照，避免模板后续改名导致历史记录漂移。
 
-## 9.3 `POST /api/checkin/daily`
+## 9.3 `POST /api/feedback`
+
+用途：
+
+- 提交新的用户反馈单
+
+请求体：
+
+```json
+{
+  "feedbackType": "feature_request",
+  "title": "希望增加课程续学入口",
+  "content": "我退出后再次登录，希望直接看到继续上次计划的明显入口。",
+  "contactMethod": "18600165902",
+  "source": "settings_popover"
+}
+```
+
+字段说明：
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `feedbackType` | 是 | `visual_design` / `interaction_flow` / `feature_request` / `issue_report` |
+| `title` | 是 | 4 到 80 个字符 |
+| `content` | 是 | 10 到 2000 个字符 |
+| `contactMethod` | 否 | 用户希望被联系的手机号、微信号或邮箱 |
+| `source` | 否 | 入口来源，如 `settings_popover`、`history_sidebar` |
+
+成功响应：
+
+```json
+{
+  "code": "OK",
+  "message": "feedback created",
+  "data": {
+    "ticketId": "uuid"
+  }
+}
+```
+
+业务规则：
+
+- 反馈提交后默认状态为 `submitted`
+- 提交时应快照用户昵称、手机号、联系邮箱，避免后续用户资料变化影响运营排查
+
+## 9.4 `GET /api/feedback/mine` 与 `GET /api/feedback/mine/{id}`
+
+用途：
+
+- 获取当前用户自己的反馈列表及详情
+- 支撑反馈弹窗中的“我的反馈”视图
+
+列表响应示例：
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "items": [
+      {
+        "id": "uuid",
+        "feedbackType": "interaction_flow",
+        "feedbackTypeLabel": "交互流程",
+        "status": "replied",
+        "statusLabel": "已回复",
+        "title": "登录后希望直接继续当前计划",
+        "contentPreview": "我希望再次登录后优先回到当前计划，而不是重新走 onboarding。",
+        "contactMethod": "18600165902",
+        "latestReplySnippet": "这个逻辑已经在最新版本修复。",
+        "replyCount": 1,
+        "submittedAt": "2026-03-30T08:00:00Z",
+        "updatedAt": "2026-03-30T09:00:00Z",
+        "lastReplyAt": "2026-03-30T09:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+详情补充规则：
+
+- 详情接口返回完整 `content` 与回复列表 `replies`
+- 用户侧只返回对用户可见的回复，不返回内部备注
+- `status` 当前支持 `submitted`、`in_review`、`replied`、`closed`
+
+## 9.5 `POST /api/checkin/daily`
 
 用途：
 
@@ -938,6 +1035,44 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - 服务端应补齐 `user_id`
 - 非关键事件可异步入库
+
+---
+
+## 11. 管理员反馈接口
+
+管理员接口首期不提供后台页面，但先提供后端能力，默认使用 `x-admin-secret` 请求头做临时鉴权。
+
+### 11.1 `GET /api/admin/feedback`
+
+用途：
+
+- 按状态、类型、关键词、用户查询反馈单列表
+
+查询参数建议：
+
+- `status`
+- `feedbackType`
+- `keyword`
+- `userId`
+- `limit`
+
+### 11.2 `GET /api/admin/feedback/{id}`
+
+用途：
+
+- 获取反馈单详情、用户快照和回复记录
+
+### 11.3 `POST /api/admin/feedback/{id}/reply`
+
+用途：
+
+- 以管理员身份追加回复，并可同步推进状态到 `replied` 或 `closed`
+
+### 11.4 `POST /api/admin/feedback/{id}/status`
+
+用途：
+
+- 单独更新反馈状态，例如从 `submitted` 调整到 `in_review`
 
 ---
 

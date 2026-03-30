@@ -194,6 +194,7 @@ export function SettingsPopover({ onProfileSaved }: SettingsPopoverProps) {
       <FeedbackDialog
         open={activeDialog === "feedback"}
         onOpenChange={(isOpen) => !isOpen && setActiveDialog(null)}
+        source="settings_popover"
       />
     </>
   )

@@ -89,6 +89,8 @@
 - `public.daily_checkins`
 - `public.achievements`
 - `public.user_achievements`
+- `public.feedback_tickets`
+- `public.feedback_replies`
 - `public.event_logs`
 
 ---
@@ -113,6 +115,8 @@ erDiagram
     USERS ||--o{ DAILY_CHECKINS : checks_in
     ACHIEVEMENTS ||--o{ USER_ACHIEVEMENTS : unlocks
     USERS ||--o{ USER_ACHIEVEMENTS : owns
+    USERS ||--o{ FEEDBACK_TICKETS : submits
+    FEEDBACK_TICKETS ||--o{ FEEDBACK_REPLIES : contains
     USERS ||--o{ EVENT_LOGS : triggers
 ```
 
@@ -194,6 +198,32 @@ erDiagram
 - `completed`
 - `abandoned`
 - `archived`
+
+## 5.11 `feedback_type`
+
+- `visual_design`
+- `interaction_flow`
+- `feature_request`
+- `issue_report`
+
+## 5.12 `feedback_status`
+
+- `submitted`
+- `in_review`
+- `replied`
+- `closed`
+
+## 5.13 `feedback_priority`
+
+- `low`
+- `medium`
+- `high`
+
+## 5.14 `feedback_reply_author_type`
+
+- `user`
+- `admin`
+- `system`
 
 ---
 
@@ -638,6 +668,74 @@ erDiagram
 - `idx_event_logs_event_name_occurred_at`
 - `idx_event_logs_user_id_occurred_at`
 
+## 6.16 `feedback_tickets`
+
+用途：
+
+- 保存用户提交的反馈单主记录
+- 支撑用户“我的反馈”列表、管理员处理流转和后续运营导出
+
+字段建议：
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | `uuid` | PK | 反馈单主键 |
+| `user_id` | `uuid` | FK | 提交用户，关联 `auth.users.id` |
+| `feedback_type` | `feedback_type` | not null | 反馈类型 |
+| `status` | `feedback_status` | not null default `submitted` | 处理状态 |
+| `priority` | `feedback_priority` | not null default `medium` | 运营优先级 |
+| `source` | `varchar(32)` | nullable | 反馈入口来源，如 `settings_popover` |
+| `title` | `varchar(80)` | not null | 标题 |
+| `content` | `text` | not null | 用户原始反馈内容 |
+| `contact_method` | `varchar(120)` | nullable | 用户主动填写的回访方式 |
+| `user_nickname_snapshot` | `varchar(64)` | nullable | 提交时昵称快照 |
+| `user_phone_snapshot` | `varchar(32)` | nullable | 提交时手机号快照 |
+| `user_contact_email_snapshot` | `varchar(255)` | nullable | 提交时联系邮箱快照 |
+| `submitted_at` | `timestamptz` | not null | 首次提交时间 |
+| `last_reply_at` | `timestamptz` | nullable | 最近一次外部回复时间 |
+| `closed_at` | `timestamptz` | nullable | 关闭时间 |
+| `metadata` | `jsonb` | not null default '{}' | 预留扩展字段，如版本号、前端上下文等 |
+| `created_at` | `timestamptz` | not null | 创建时间 |
+| `updated_at` | `timestamptz` | not null | 更新时间 |
+
+索引建议：
+
+- `idx_feedback_tickets_user_created_at`
+- `idx_feedback_tickets_status_updated_at`
+- `idx_feedback_tickets_type_created_at`
+
+说明：
+
+- 反馈单主表保留用户提交原文，不把第一条用户内容拆成 reply，方便列表和详情统一读取
+- 用户昵称、手机号、联系邮箱应做提交时快照，避免运营排查时受后续资料修改影响
+
+## 6.17 `feedback_replies`
+
+用途：
+
+- 保存反馈单下的管理员回复、系统回执以及后续扩展的用户追问
+
+字段建议：
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | `uuid` | PK | 回复主键 |
+| `ticket_id` | `uuid` | FK | 关联 `feedback_tickets.id` |
+| `author_type` | `feedback_reply_author_type` | not null | `user` / `admin` / `system` |
+| `author_id` | `varchar(64)` | nullable | 回复人标识，管理员阶段可先存工号或固定标识 |
+| `content` | `text` | not null | 回复内容 |
+| `is_internal_note` | `boolean` | not null default false | 是否仅后台可见备注 |
+| `created_at` | `timestamptz` | not null | 创建时间 |
+
+索引建议：
+
+- `idx_feedback_replies_ticket_created_at`
+
+说明：
+
+- 用户侧详情页只展示 `is_internal_note = false` 的回复
+- 后续若要做真实后台，可在此表继续扩展内部备注、处理人交接记录等能力，不必改动用户侧主链路
+
 ---
 
 ## 7. 关键约束与一致性规则
@@ -689,6 +787,7 @@ erDiagram
 3. 查询某工具默认路径和步骤
 4. 查询任务列表与地图
 5. 查询成就与积分流水
+6. 查询用户反馈记录与管理员待处理工单
 
 建议重点索引：
 
@@ -697,6 +796,9 @@ erDiagram
 - `conversation_messages(conversation_id, sequence_no)`
 - `score_ledgers(user_id, created_at desc)`
 - `daily_checkins(user_id, checkin_date desc)`
+- `feedback_tickets(user_id, created_at desc)`
+- `feedback_tickets(status, updated_at desc)`
+- `feedback_replies(ticket_id, created_at asc)`
 - `event_logs(event_name, occurred_at desc)`
 
 ---
@@ -753,6 +855,22 @@ erDiagram
 
 必须在事务内完成。
 
+## 9.6 获取用户反馈记录与详情
+
+需要查询：
+
+- `feedback_tickets`
+- `feedback_replies`
+- 可选聚合 `user_profiles`、`auth.users` 的快照字段
+
+## 9.7 管理员处理反馈工单
+
+需要查询或写入：
+
+- `feedback_tickets`
+- `feedback_replies`
+- 可选 `event_logs`
+
 ---
 
 ## 10. RLS 与权限建议
@@ -771,6 +889,8 @@ erDiagram
 - `user_ranks`
 - `daily_checkins`
 - `user_achievements`
+- `feedback_tickets`
+- `feedback_replies`
 - `event_logs`
 
 ### 策略原则
@@ -839,7 +959,9 @@ MVP 阶段建议谨慎使用软删除：
 12. `daily_checkins`
 13. `achievements`
 14. `user_achievements`
-15. `event_logs`
+15. `feedback_tickets`
+16. `feedback_replies`
+17. `event_logs`
 
 ---
 

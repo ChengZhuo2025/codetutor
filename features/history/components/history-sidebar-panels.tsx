@@ -94,7 +94,11 @@ export function HistorySidebarPanels({ faqItems }: HistorySidebarPanelsProps) {
         </div>
       </PageSection>
 
-      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+      <FeedbackDialog
+        open={feedbackOpen}
+        onOpenChange={setFeedbackOpen}
+        source="history_sidebar"
+      />
     </>
   )
 }
