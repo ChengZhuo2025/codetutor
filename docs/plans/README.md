@@ -42,6 +42,7 @@
 - [UI 视觉设计说明](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-ui-visual-design-spec.md)
 - [ADR 合集](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-adr-records.md)
 - [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md)
+- [管理后台设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-31-ai-coding-tutor-admin-console-design.md)
 
 ## 当前目录中各文档职责
 
@@ -65,6 +66,8 @@
   仍然有效的关键架构决策记录。
 - `2026-03-30-ai-coding-tutor-ai-orchestration-design.md`
   AI 编排模块的持久性设计主文档，用于说明 provider、agent、会话、消息、上下文与运行时链路。
+- `2026-03-31-ai-coding-tutor-admin-console-design.md`
+  管理后台的运营需求、技术方案、后端契约、数据库扩展与推进顺序主文档。
 
 ## 当前项目事实摘要
 
