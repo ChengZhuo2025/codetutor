@@ -5,8 +5,6 @@ import {
   MessageSquare,
   BookOpen,
   Bot,
-  ChevronDown,
-  ChevronRight,
   Server,
   Cpu,
   Network,

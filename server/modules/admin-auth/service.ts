@@ -2,7 +2,7 @@
 import { cookies } from "next/headers"
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
-import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
+import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import type { AdminAccountStatus, AdminRoleCode, AdminSessionResponseData } from "@/lib/api/contracts/admin"
 
 type AdminAccountRow = {

@@ -53,7 +53,7 @@ export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content: replyContent,
-          status: newStatus as any,
+          status: newStatus,
         }),
       })
       const result = await response.json()

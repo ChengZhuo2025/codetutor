@@ -11,12 +11,13 @@ AI编程学习教练 - 一个面向中文用户的 AI 编程学习陪练产品�
 - 再按其中的推荐顺序查看 PRD、页面原型、前端工程说明、技术架构、API/数据库/后端设计文档
 
 **技术栈：**
-- 前端：Next.js 16 + React 19.2 + TypeScript 5.9 + Tailwind CSS 4 + shadcn/ui
-- 后端：Next.js API Routes
+- 前端：Next.js 16.2.0 + React 19.2.4 + TypeScript 5.7.3 + Tailwind CSS 4.2 + shadcn/ui
+- 后端：Next.js API Routes（BFF 入口层 + `server/modules` 服务层）
 - 数据库：阿里云 AnalyticDB PostgreSQL 版 Supabase（已接入，含迁移与远程库）
 - 文件存储：Supabase Storage（已用于头像上传）
-- AI 服务：Claude API（架构预留，尚未真正接通到当前学习消息链路）
+- AI 服务：Claude API（主学习消息链路已接通 SSE 流式输出，详见 `docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md`）
 - 部署：Vercel（规划）
+- 本地验证环境：`Node.js 22.18.0`
 
 ## 常用开发命令
 
@@ -39,7 +40,7 @@ pnpm lint
 ### 目录结构
 
 ```
-app/                    # Next.js App Router 路由入口（薄层装配）
+app/                    # Next.js App Router 路由入口（薄层装配）和 API 路由
 components/             # 跨业务域共享组件
   ├── ui/              # shadcn/ui 和基础通用 UI
   └── layout/          # 布局类组件
@@ -52,10 +53,24 @@ features/              # 前端主工作目录，按业务域组织
   ├── learning/       # AI 导师学习页
   ├── progress/       # 学习地图/进度
   ├── achievement/    # 成就/段位系统
-  └── history/        # 历史学习计划页
+  ├── history/        # 历史学习计划页
+  └── api-docs/       # Swagger UI API 文档页
 hooks/                 # 自定义 React Hooks
 lib/                   # 工具函数、API 契约与 mock client
-server/                # 服务端通用能力与按域 service
+server/                # 服务端逻辑
+  ├── lib/            # 服务端通用库（请求校验、统一响应、错误映射、Supabase 客户端）
+  └── modules/        # 按域划分的业务服务层
+    ├── auth/         # 认证域
+    ├── learning/     # AI 学习域
+    ├── tasks/        # 任务域
+    ├── gamification/ # 成长/段位域
+    ├── checkins/     # 打卡域
+    ├── achievement/  # 成就域
+    ├── progress/    # 地图/进度域
+    ├── onboarding/   # onboarding 域
+    ├── history/      # 历史学习计划域
+    ├── feedback/     # 反馈域
+    └── api-docs/     # OpenAPI 文档注册
 supabase/              # 数据库迁移与相关 SQL
 providers/            # 全局 Provider 入口
 types/                # 跨 feature 共用的类型定义
@@ -72,6 +87,7 @@ types/                # 跨 feature 共用的类型定义
 | `/map` | 地图页 | `features/progress/pages/map-page.tsx` |
 | `/achievements` | 成就页 | `features/achievement/pages/achievements-page.tsx` |
 | `/history` | 历史学习页 | `features/history/pages/history-page.tsx` |
+| `/api-docs` | Swagger UI API 文档 | `features/api-docs/pages/api-docs-page.tsx` |
 
 ### 代码组织原则
 
@@ -91,11 +107,18 @@ types/                # 跨 feature 共用的类型定义
 - 类型仅服务单个业务域 → `features/<domain>/types.ts`
 - 类型跨业务域共享 → `types/`
 
+### 后端路由规范
+
+- **`app/api/` 目录**：只作为薄入口层，路由文件只做参数解析和路由分发
+- **业务逻辑下沉**：`server/lib/` 中的 `request-validation.ts`、`route-response.ts`、`route-error.ts` 集中处理请求校验、统一响应和错误映射
+- **各域 route-handler**：`server/modules/<domain>/route-handler.ts` 处理域内路由编排
+- **OpenAPI 文档维护**：新增/修改接口后需同步更新 `server/modules/api-docs/openapi.ts` 与 `schemas.ts`
+
 ## 当前开发状态
 
 **已完成：**
 - ✅ 前端工程结构搭建
-- ✅ 七个核心页面实现
+- ✅ 七个核心用户页面 + API 文档页
 - ✅ 共享 UI 组件库（shadcn/ui）
 - ✅ 布局组件和导航系统
 - ✅ 手机验证码登录与微信 OAuth 跳转
@@ -106,12 +129,15 @@ types/                # 跨 feature 共用的类型定义
 - ✅ `daily_checkins` 与 `/api/checkin/daily` 落地，成就页支持真实每日打卡
 - ✅ 历史学习计划详情、放弃/重新激活/删除记录状态操作
 - ✅ 用户资料编辑、头像上传、反馈系统
-- ✅ Supabase 迁移与远程数据库接入（当前已到 `011`）
+- ✅ AI 学习消息链路第一阶段（SSE 流式输出 + 结构化 structuredContent）
+- ✅ OpenAPI 3.1 文档（`/api/docs/openapi`）与 Swagger UI（`/api-docs`）
+- ✅ Supabase 迁移与远程数据库接入（当前已到 `016`）
 
 **进行中/待完成：**
 - ⏳ analytics 事件入库
 - ⏳ 管理员后台前端
-- ⏳ 外部 AI provider 真正接入当前学习消息链路
+- ⏳ AI 编排第二阶段（更细粒度 agent 控制、prompt 版本化管理）
+- ⏳ 通知设置落库
 
 **开发策略：**
 当前项目已是“部分真实接口 + 部分静态展示数据”的状态。优先继续扩展真实用户主链路；营销内容、FAQ、订阅占位、通知设置等仍可继续用本地静态数据承载。
@@ -173,16 +199,26 @@ types/                # 跨 feature 共用的类型定义
 ## 相关文档
 
 详细设计和技术文档位于 `docs/plans/` 目录：
-- `README.md` - 文档索引与推荐阅读顺序
+
+**必读文档（按推荐顺序）：**
+1. `README.md` - 项目状态速览与文档索引
+2. `2026-03-23-ai-coding-tutor-frontend-engineering-guide.md` - 前端工程现状
+3. `2026-03-23-ai-coding-tutor-api-spec.md` - API 规范与接口契约
+
+**补充文档：**
 - `2026-03-23-ai-coding-tutor-prd.md` - 产品需求文档
+- `2026-03-23-ai-coding-tutor-page-prototype-spec.md` - 页面职责与信息架构
 - `2026-03-23-ai-coding-tutor-technical-architecture.md` - 技术架构设计
-- `2026-03-23-ai-coding-tutor-frontend-engineering-guide.md` - 前端工程说明
 - `2026-03-23-ai-coding-tutor-database-schema-design.md` - 数据库设计
-- `2026-03-23-ai-coding-tutor-api-spec.md` - API 规范
+- `2026-03-23-ai-coding-tutor-backend-structure-design.md` - 后端结构设计
+- `2026-03-23-ai-coding-tutor-ui-visual-design-spec.md` - UI 视觉设计
+- `2026-03-23-ai-coding-tutor-adr-records.md` - 架构决策记录
+- `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` - AI 编排设计（第一阶段已完成）
+- `2026-03-31-ai-coding-tutor-admin-console-design.md` - 管理后台设计
 
 ## 重要提醒
 
-1. **部分全栈 MVP 阶段**：当前项目已不是纯前端原型，重点是在现有真实 `app/api + Supabase` 主链路上继续补齐写接口与 AI 编排
-2. **真实接口优先**：已有真实接口时优先对齐 `app/api` 与 Supabase；仅对刻意保留为展示层的内容继续使用 `features/<domain>/data/`
-3. **保持结构清晰**：遵循代码组织原则，避免在 `app/` 中直接实现业务逻辑
-4. **渐进式集成**：尚未实现的写接口、AI provider 和后台能力继续按现有结构渐进接入
+1. **当前已是同仓 MVP**：项目包含前端页面 + `app/api` BFF + `server/modules` 服务层 + Supabase migrations，是一个完整全栈项目
+2. **AI 学习消息链路已接通**：Claude API 已通过 SSE 流式输出接入 `POST /api/learning/message`，返回结构化 `structuredContent`，第一阶段已完成
+3. **API 文档地址**：`/api-docs` 提供 Swagger UI 查看与调试，`/api/docs/openapi` 返回 OpenAPI 3.1 JSON
+4. **文档与代码冲突时**：以代码和迁移文件为准，再回写文档

@@ -2,7 +2,7 @@
 import type { NextRequest } from "next/server"
 
 import { ok, fail } from "@/server/lib/api-response"
-import { adminLoginRequestSchema, adminSessionResponseDataSchema } from "@/server/modules/api-docs/schemas"
+import { adminLoginRequestSchema } from "@/server/modules/api-docs/schemas"
 import { adminLogin, getAdminSession, adminLogout } from "./service"
 import type { AdminLoginRequest } from "@/lib/api/contracts/admin"
 
@@ -45,7 +45,7 @@ export async function POST_login(req: NextRequest) {
  * GET /api/admin/auth/session
  * 获取当前管理员会话
  */
-export async function GET_session(req: NextRequest) {
+export async function GET_session() {
   try {
     const sessionData = await getAdminSession()
 
