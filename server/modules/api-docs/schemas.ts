@@ -1,6 +1,7 @@
 import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi"
 import { z } from "zod"
 import { FEEDBACK_PRIORITIES, FEEDBACK_REPLY_AUTHOR_TYPES, FEEDBACK_STATUSES, FEEDBACK_SOURCES, FEEDBACK_TYPES } from "@/lib/api/contracts/feedback"
+import { ADMIN_ACCOUNT_STATUSES, ADMIN_ROLE_CODES } from "@/lib/api/contracts/admin"
 
 extendZodWithOpenApi(z)
 
@@ -1005,3 +1006,42 @@ export const adminUpdateFeedbackStatusRequestSchema = z
 export const openApiStreamResponseSchema = z
   .string()
   .openapi("OpenApiSseStream")
+
+// ============================================
+// 管理员认证 API Schemas
+// ============================================
+
+export const adminAccountStatusSchema = z.enum(ADMIN_ACCOUNT_STATUSES).openapi("AdminAccountStatus")
+
+export const adminRoleCodeSchema = z.enum(ADMIN_ROLE_CODES).openapi("AdminRoleCode")
+
+export const adminLoginRequestSchema = z
+  .object({
+    email: z.string().email(),
+    password: nonEmptyStringSchema,
+  })
+  .openapi("AdminLoginRequest")
+
+export const adminSessionResponseDataSchema = z
+  .object({
+    adminAccountId: z.string().uuid(),
+    userId: z.string().uuid(),
+    displayName: nonEmptyStringSchema,
+    roles: z.array(adminRoleCodeSchema),
+    status: adminAccountStatusSchema,
+  })
+  .openapi("AdminSessionResponseData")
+
+// ============================================
+// 管理员看板 API Schemas
+// ============================================
+
+export const adminDashboardOverviewResponseDataSchema = z
+  .object({
+    pendingFeedbackCount: z.number().int().nonnegative(),
+    todayNewUserCount: z.number().int().nonnegative(),
+    todayCompletedTaskCount: z.number().int().nonnegative(),
+    activeLearningPathCount: z.number().int().nonnegative(),
+    todayCheckinCount: z.number().int().nonnegative(),
+  })
+  .openapi("AdminDashboardOverviewResponseData")
