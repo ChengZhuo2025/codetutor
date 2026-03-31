@@ -1,5 +1,5 @@
-import { FeedbackList } from "@/features/admin-feedback/components/feedback-list"
+import FeedbackListPage from "@/features/admin-feedback/components/feedback-list-page"
 
-export default function FeedbackListPage() {
-  return <FeedbackList />
+export default function FeedbackListPageRoute() {
+  return <FeedbackListPage />
 }

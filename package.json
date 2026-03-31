@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "db:check": "node scripts/check-remote-db-connection.mjs",
     "db:run:file": "node scripts/run-remote-sql.mjs",
+    "admin:create-test": "node scripts/create-test-admin.mjs",
     "test:achievements-page": "node scripts/check-achievements-page.mjs",
     "test:daily-checkin-logic": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-daily-checkin-logic.ts",
     "test:home-auth-nav": "node scripts/check-home-auth-nav.mjs",

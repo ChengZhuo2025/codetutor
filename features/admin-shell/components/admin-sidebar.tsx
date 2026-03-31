@@ -1,17 +1,46 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
 import { menuItems, brandIcon } from "../data/menu-config"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { LogOut, ChevronDown, ChevronRight } from "lucide-react"
+import type { AdminSessionResponseData } from "@/lib/api/contracts/admin"
 
 const BrandIcon = brandIcon
 
 export function AdminSidebar() {
+  const router = useRouter()
   const pathname = usePathname()
   const [aiExpanded, setAiExpanded] = useState(pathname.startsWith("/admin/ai"))
+  const [session, setSession] = useState<AdminSessionResponseData | null>(null)
+
+  useEffect(() => {
+    async function fetchSession() {
+      try {
+        const response = await fetch("/api/admin/auth/session")
+        const result = await response.json()
+        if (result.code === "OK") {
+          setSession(result.data)
+        }
+      } catch {
+        setSession(null)
+      }
+    }
+    fetchSession()
+  }, [])
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin/auth/logout", { method: "POST" })
+      router.push("/admin/login")
+      router.refresh()
+    } catch {
+      console.error("登出失败")
+    }
+  }
 
   return (
     <aside className="w-56 flex-shrink-0 bg-sidebar border-r border-sidebar-border flex flex-col">
@@ -118,13 +147,23 @@ export function AdminSidebar() {
       <div className="border-t border-sidebar-border p-3">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-semibold text-primary">A</span>
+            <span className="text-xs font-semibold text-primary">
+              {session?.displayName?.charAt(0).toUpperCase() || "A"}
+            </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-sidebar-foreground truncate">admin@codecoach.ai</p>
-            <p className="text-[10px] text-muted-foreground">super_admin</p>
+            <p className="text-xs font-medium text-sidebar-foreground truncate">
+              {session?.displayName || "管理员"}
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              {session?.roles?.[0] || "super_admin"}
+            </p>
           </div>
-          <button className="text-muted-foreground hover:text-sidebar-foreground transition-colors">
+          <button
+            onClick={handleLogout}
+            className="text-muted-foreground hover:text-sidebar-foreground transition-colors"
+            title="登出"
+          >
             <LogOut className="w-3.5 h-3.5" />
           </button>
         </div>
