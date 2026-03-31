@@ -5,17 +5,21 @@
  *   node scripts/create-test-admin.mjs
  *
  * 环境变量：
- *   SUPABASE_URL - Supabase 项目 URL
+ *   NEXT_PUBLIC_SUPABASE_URL - Supabase 项目 URL
  *   SUPABASE_SERVICE_ROLE_KEY - Supabase service role key
  */
 
+import { config } from "dotenv"
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.SUPABASE_URL
+// 加载 .env 文件
+config()
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error("❌ 缺少环境变量 SUPABASE_URL 或 SUPABASE_SERVICE_ROLE_KEY")
+  console.error("❌ 缺少环境变量 NEXT_PUBLIC_SUPABASE_URL 或 SUPABASE_SERVICE_ROLE_KEY")
   process.exit(1)
 }
 
