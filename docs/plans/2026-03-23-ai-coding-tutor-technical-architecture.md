@@ -67,6 +67,32 @@
 - 通知设置落库
 - Redis / 队列等增强型基础设施
 
+当前代码与依赖快照补充：
+
+- 包管理：`pnpm`
+- 前端与全栈框架：`Next.js 16.2.0` + App Router
+- UI 运行时：`React 19.2.4`
+- 类型系统：`TypeScript 5.7.3`
+- 样式系统：`Tailwind CSS 4.2` + `shadcn/ui`
+- 接口文档：`Zod 3.25` + `@asteasolutions/zod-to-openapi` + `swagger-ui-react`
+- 当前生产构建命令：`next build --webpack`
+- 当前本地验证环境：`Node.js 22.18.0`；项目暂未在 `package.json` 中锁定 `engines`
+
+### 1.3 当前仓库目录快照
+
+当前项目顶层目录已稳定为：
+
+- `app/`：页面入口、`app/api` Route Handlers、`app/api-docs`
+- `features/`：前端业务域页面、组件、数据和局部类型
+- `components/`：跨域共享 UI 与布局
+- `lib/`：接口客户端、Supabase、auth、learning、mock、utils 等共享轻量能力
+- `providers/`：全局 Provider
+- `server/lib/`：鉴权、请求校验、统一响应和错误 helper
+- `server/modules/`：后端核心业务域
+- `server/services/`、`server/utils/`：当前仍为预留目录
+- `supabase/migrations/`、`supabase/seeds/`：数据库迁移与初始化 SQL
+- `docs/plans/`：持久化产品/架构/接口文档
+
 ---
 
 ## 2. 背景与约束
@@ -98,11 +124,11 @@ MVP 目标范围：
 
 ### 2.3 技术约束
 
-- 前后端技术栈已在产品设计阶段初步约束为 `Next.js 16 + React 19.2 + TypeScript 5.9 + Tailwind CSS 4 + 阿里云 AnalyticDB PostgreSQL 版 Supabase + 外部 AI provider 抽象层 + Vercel`
+- 前后端技术栈当前以真实代码依赖为准：`Next.js 16.2 + React 19.2.4 + TypeScript 5.7.3 + Tailwind CSS 4.2 + 阿里云 AnalyticDB PostgreSQL 版 Supabase + 外部 AI provider 抽象层 + Vercel`
 - 首版以快速验证产品闭环为目标，不追求过早分布式拆分
 - 需要尽量降低运维复杂度，优先采用托管服务
 - 需要支持中文市场的账号体系与未来支付接入预留
-- 运行时基线建议为 `Node.js 24 Active LTS`
+- 当前本地验证运行时为 `Node.js 22.18.0`，后续若要统一升级到更高 Node LTS，应同时更新 `package.json`、CI 与本文档
 
 ---
 
@@ -142,7 +168,7 @@ MVP 阶段采用模块化单体架构，而不是微服务架构。原因如下�
 
 优先使用托管能力：
 
-- Vercel：部署与边缘分发
+- Vercel：部署与边缘分发目标
 - 阿里云 AnalyticDB PostgreSQL 版 Supabase：Postgres、认证、边缘函数与托管后台能力
 - 外部 AI provider 抽象层：模型推理，当前首版已接入 SiliconFlow，并保留多 provider 扩展边界
 
@@ -178,7 +204,7 @@ AI 输出不能只作为一段聊天回复存在，而必须与以下结构绑�
 |------|------|------|
 | 应用架构 | 模块化单体 | MVP 交付快、复杂度低、迭代效率高 |
 | Web 架构 | Next.js 16 全栈一体 | 前后端同仓协作效率高，适合 MVP |
-| 前端运行时与框架 | React 19.2 + TypeScript 5.9 + Tailwind CSS 4 | 与 Next.js 16 对齐，采用当前稳定代际 |
+| 前端运行时与框架 | React 19.2.4 + TypeScript 5.7.3 + Tailwind CSS 4.2 | 与当前 `package.json` 实际依赖对齐 |
 | 数据库 | 阿里云 AnalyticDB PostgreSQL 版 Supabase | 延续 Supabase 范式，同时更贴近国内微信生态接入诉求 |
 | 认证 | 阿里云 Supabase Auth | 保留 Supabase Auth 范式，并优先使用其国内 OAuth 能力 |
 | AI 服务 | 外部 AI provider 抽象层（首期 SiliconFlow） | 当前已接通首版真实 provider，并通过抽象层保留多 provider / 多模型扩展能力 |
@@ -195,7 +221,7 @@ AI 输出不能只作为一段聊天回复存在，而必须与以下结构绑�
 ```mermaid
 flowchart LR
     U[Web User] --> FE[Next.js 16 Frontend]
-    FE --> BFF[Next.js API Routes / BFF Layer]
+    FE --> BFF[Next.js App Router Route Handlers / BFF Layer]
     BFF --> AUTH[Auth Module]
     BFF --> LEARN[Learning Orchestrator]
     BFF --> PROG[Progress Module]
@@ -218,7 +244,7 @@ flowchart LR
 系统分为 5 层：
 
 1. 表现层：Next.js 页面、组件、交互状态
-2. BFF 层：API Routes，负责聚合前端所需接口
+2. BFF 层：App Router Route Handlers，负责聚合前端所需接口
 3. 领域服务层：认证、学习编排、任务状态、积分段位、内容解析
 4. 数据层：阿里云 Supabase Postgres、Storage/Functions、埋点数据
 5. 外部能力层：AI Provider Layer、消息/支付等未来外部服务
@@ -257,7 +283,7 @@ flowchart LR
 
 ## 7.2 BFF 层
 
-采用 Next.js API Routes 作为 BFF 层。
+采用 Next.js App Router Route Handlers 作为 BFF 层。
 
 职责：
 
@@ -793,7 +819,7 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 flowchart TB
     USER[User Browser] --> CDN[Vercel Edge / CDN]
     CDN --> APP[Next.js App]
-    APP --> API[API Routes]
+    APP --> API[App Router Route Handlers]
     API --> DB[(Aliyun ADB PG Supabase)]
     API --> AUTH[Aliyun Supabase Auth]
     API --> STORAGE[Aliyun Supabase Storage]

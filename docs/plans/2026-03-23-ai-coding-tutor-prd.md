@@ -587,12 +587,13 @@ MVP 需要埋点以下关键事件：
 
 基于设计稿，当前建议技术栈如下：
 
-- 前端：Next.js 16 + React 19.2 + TypeScript 5.9 + Tailwind CSS 4 + shadcn/ui
-- 后端：Next.js API Routes
+- 前端：Next.js 16.2 + React 19.2.4 + TypeScript 5.7.3 + Tailwind CSS 4.2 + shadcn/ui
+- 后端：Next.js App Router Route Handlers + `server/modules`
 - 数据库与认证：阿里云 AnalyticDB PostgreSQL 版 Supabase
-- AI 服务：Claude API
+- AI 服务：外部 AI provider 抽象层，当前首版为 SiliconFlow
 - 部署：Vercel
-- 运行时：Node.js 24 Active LTS
+- 接口文档：OpenAPI 3.1 + Swagger UI
+- 当前本地验证运行时：Node.js 22.18.0（项目暂未锁定 `engines`）
 
 约束说明：
 

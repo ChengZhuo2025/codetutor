@@ -14,6 +14,22 @@
 
 本文档定义 AI编程学习教练 MVP 的服务端 API，包含接口分组、认证方式、请求响应结构、参数定义、业务规则、错误码和幂等要求，作为前后端联调与测试依据。
 
+## 1.1 持久文档与运行时文档的关系
+
+本文件是持久化 API 主文档，用来说明接口边界、业务语义、分组方式和“已实现 / 规划中”状态。
+
+当前代码里同时提供运行时 API 文档：
+
+- `GET /api/docs/openapi`：返回当前注册过的 OpenAPI 3.1 JSON
+- `/api-docs`：基于 Swagger UI 的接口查看与调试页
+
+当前运行时文档的维护入口位于：
+
+- `server/modules/api-docs/openapi.ts`
+- `server/modules/api-docs/schemas.ts`
+
+需要明确的是：当前实现不是扫描整个 `app/api` 目录后零配置自动发现所有接口；新增或修改后端接口时，除了改 `route.ts` / `route-handler.ts` / `service.ts` 外，仍需同步更新上述 OpenAPI 注册与 schema，运行时文档才会一起反映真实变更。
+
 ---
 
 ## 2. 通用规范
@@ -47,10 +63,18 @@
 ```json
 {
   "code": "AUTH_REQUIRED",
-  "message": "login required",
+  "message": "未登录或登录态已失效。",
   "data": null
 }
 ```
+
+当前代码约定补充：
+
+- 成功响应统一使用 `code/message/data`
+- 常见错误文案当前以中文为主，便于直接映射前端提示
+- `400` 常用于请求结构错误、非法 ID、缺少前置条件等
+- `422` 常用于共享 schema 已识别出字段，但字段值未通过业务校验
+- `404` / `409` / `502` 等错误，已在部分高频路由中通过共享 helper 统一映射
 
 ## 2.4 认证方式
 
@@ -119,6 +143,15 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `GET /api/admin/feedback/{id}`
 - `POST /api/admin/feedback/{id}/reply`
 - `POST /api/admin/feedback/{id}/status`
+
+当前这些已实现接口，已经开始复用一套共享的请求与响应基础设施：
+
+- `server/lib/request-validation.ts`
+- `server/lib/route-response.ts`
+- `server/lib/route-error.ts`
+- `server/lib/route-error-presets.ts`
+
+当前 `app/api` 中越来越多的 `route.ts` 只负责接住请求并转交各域 `route-handler.ts`，而不是在每个文件里重复手写参数读取、错误分支和响应结构。
 
 当前仍属于规划、尚未在代码中落地的接口包括：
 

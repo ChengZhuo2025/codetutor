@@ -87,15 +87,15 @@ MVP 同时需要营销页、登录流程、学习主界面、路径地图、成�
 
 ### 决策
 
-采用 Next.js 16 全栈一体方案，并配套 React 19.2、TypeScript 5.9、Tailwind CSS 4。
+采用 Next.js 16 全栈一体方案，并配套 React 19.2.4、TypeScript 5.7.3、Tailwind CSS 4.2。
 
 ### 理由
 
 - 前后端同仓协作效率高
 - 营销页和应用页都可统一承载
-- API Routes 可直接作为 BFF
+- App Router Route Handlers 可直接作为 BFF
 - 适合 Vercel 托管部署
-- 与当前稳定代际的 React 19.2、Tailwind CSS 4 技术栈对齐
+- 与当前代码依赖中的 React 19.2.4、TypeScript 5.7.3、Tailwind CSS 4.2 对齐
 
 ### 代价与权衡
 
@@ -200,7 +200,7 @@ Accepted with Risk
 
 ---
 
-## ADR-005：AI 服务选择 Claude API，且采用教学型结构化输出
+## ADR-005：AI 服务采用外部 provider 抽象层，首版接入 SiliconFlow，并采用教学型结构化输出
 
 ### 状态
 
@@ -216,19 +216,19 @@ AI 导师是产品核心。系统需要稳定输出“当前目标、当前一�
 
 ### 备选方案
 
-1. Claude API + 结构化输出
-2. 通用聊天式模型调用，不强约束结构
+1. SiliconFlow + 结构化输出
+2. 直接耦合单一模型 SDK，不做 provider 抽象
 3. 自建多模型路由
 
 ### 决策
 
-采用 Claude API，并要求模型输出结构化 JSON，由服务端做 schema 校验。
+采用外部 AI provider 抽象层，当前首版接入 SiliconFlow，并要求模型输出结构化 JSON，由服务端做 schema 校验。
 
 ### 理由
 
 - 教学型对话更依赖稳定结构
 - 服务端 schema 校验可降低回复失控风险
-- 当前阶段单模型集成复杂度最低
+- 当前阶段先落一个稳定 provider，并保留后续多 provider / 多模型扩展边界
 
 ### 代价与权衡
 

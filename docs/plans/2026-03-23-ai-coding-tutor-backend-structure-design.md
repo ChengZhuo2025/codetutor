@@ -16,11 +16,11 @@
 
 本设计基于：
 
-- Next.js API Routes / Route Handlers
-- TypeScript 5.9
+- Next.js App Router Route Handlers
+- TypeScript 5.7.3
 - 阿里云 AnalyticDB PostgreSQL 版 Supabase
-- 外部 AI provider 抽象层（首期规划接入 SiliconFlow）
-- Node.js 24 Active LTS
+- 外部 AI provider 抽象层（当前首版已接入 SiliconFlow）
+- 当前本地验证环境：Node.js 22.18.0（项目暂未在 `package.json` 锁定 `engines`）
 
 补充说明：
 
@@ -57,15 +57,16 @@
 
 - 接收 HTTP 请求
 - 鉴权
-- 参数解析
-- 调用应用服务
-- 统一返回格式
+- 调用共享请求校验与错误映射
+- 调用域内 `route-handler.ts` 或服务入口
+- 返回统一响应格式
 
 不负责：
 
 - 直接写业务规则
 - 直接写 SQL
 - 直接拼 Prompt 细节
+- 在每个 `route.ts` 中重复手写请求解析和错误分支
 
 ### 3.2 Application Layer
 
@@ -119,15 +120,28 @@
 
 ```text
 app/
+├── api-docs/
 ├── api/
 └── ...
+components/
+constants/
+features/
 lib/
 ├── api/
+├── auth/
+├── learning/
+├── mocks/
 └── supabase/
+providers/
+public/
 scripts/
 server/
+├── services/
+├── utils/
+└── ...
 supabase/
-└── migrations/
+├── migrations/
+└── seeds/
 types/
 ```
 
@@ -135,18 +149,24 @@ types/
 
 - `app/api/` 存放 Next.js Route Handlers
 - `server/` 存放真正的服务端业务代码
+- `server/services/` 与 `server/utils/` 当前仍为预留目录，真实主逻辑尚未迁入
 - `lib/api/` 存放接口契约与浏览器端请求封装
+- `lib/auth/`、`lib/learning/`、`lib/mocks/` 存放前后端共享或前端辅助能力
 - `lib/supabase/` 存放浏览器端和服务端 Supabase client
 - `supabase/migrations/` 存放实际已执行的数据库迁移
+- `supabase/seeds/` 存放字典、demo 用户、路径模板与 AI registry 初始化 SQL
 
 ---
 
 ## 5. `app/api` 目录设计
 
-当前 `app/api` 已作为接口入口层使用：
+当前 `app/api` 已作为接口入口层使用，另外 `app/api-docs` 承担内部开发用 Swagger UI 页面：
 
 ```text
 app/
+├── api-docs/
+│   ├── layout.tsx
+│   └── page.tsx
 └── api/
     ├── achievement/
     │   └── summary/route.ts
@@ -162,6 +182,9 @@ app/
     │   └── session/route.ts
     ├── checkin/
     │   └── daily/route.ts
+    ├── docs/
+    │   ├── openapi/route.ts
+    │   └── swagger-ui-bundle/route.ts
     ├── feedback/
     │   ├── route.ts
     │   └── mine/
@@ -193,9 +216,12 @@ app/
 规则：
 
 - 每个 `route.ts` 只做入口处理
+- 尽量只负责拿到 `NextRequest` 并调用预构造的 handler
 - 不在 `route.ts` 中写复杂数据库访问
+- 不在 `route.ts` 中重复手写请求体、查询参数、动态路由参数校验
 - `/history/recent` 在命名上保留原型兼容性，但实际承载“历史学习路径实例分页列表”
 - `/auth/session` 作为只读会话摘要接口，主要服务首页与营销层登录态恢复，不承担登录写入副作用
+- `/api/docs/openapi` 与 `/api-docs` 只服务开发与联调用途，不是面向终端用户的产品页面
 - 当前尚未落地的主要接口主要为 `analytics/*` 与 `learning/stuck-help`
 
 ---
@@ -208,11 +234,16 @@ app/
 server/
 ├── lib/
 │   ├── api-response.ts
+│   ├── request-validation.ts
 │   ├── request-admin.ts
 │   ├── request-auth.ts
+│   ├── route-error-presets.ts
+│   ├── route-error.ts
+│   ├── route-response.ts
 │   └── supabase.ts
 └── modules/
     ├── achievement/
+    ├── api-docs/
     ├── auth/
     ├── checkins/
     ├── feedback/
@@ -227,10 +258,11 @@ server/
 
 说明：
 
-- 当前代码采用更轻量的“`route.ts` + `modules/<domain>/service.ts`” 结构
+- 当前代码采用更轻量的“`route.ts` + `modules/<domain>/route-handler.ts` + `service.ts`” 结构
 - 还没有拆出独立 `application / domain / infrastructure` 目录
-- `server/lib/` 负责公共响应、鉴权和 Supabase 错误处理
+- `server/lib/` 当前除了公共鉴权与 Supabase 辅助外，也负责共享请求校验、统一响应、错误包装和常见错误预设
 - `server/modules/auth/service.ts` 当前同时承载登录结果组装与 `auth/session` 会话摘要读取
+- `server/modules/api-docs/` 当前负责 OpenAPI schema、接口注册与运行时文档生成
 - `server/modules/learning/` 已从单一 `service.ts` 演进为 `service + orchestration + provider + skills + output-format + logic + http-logic + history-logic + route-handler + errors` 的较完整结构，是当前最复杂的服务端业务域
 - 如果后续业务复杂度继续上升，再逐步演进到域内分层
 
@@ -243,6 +275,7 @@ server/
 ```text
 server/modules/
 ├── achievement/
+├── api-docs/
 ├── auth/
 ├── checkins/
 ├── feedback/
@@ -259,10 +292,11 @@ server/modules/
 
 ```text
 server/modules/<domain>/
+├── (optional) route-handler.ts
 └── service.ts
 ```
 
-当前较简单的域仍主要以 `service.ts` 为入口；但 `learning`、`tasks`、`checkins`、`gamification` 已经拆出 `logic.ts`、`http-logic.ts`、`history-logic.ts`、`route-handler.ts`、`orchestration.ts`、`provider.ts` 等辅助文件。这仍属于“按域聚合”的同一策略，只是复杂域已经自然演进出域内分层雏形。等单个域复杂度继续上升后，再在域内继续细分 application、domain、repository。
+当前较简单的域仍主要以 `service.ts` 为核心；但 `auth`、`onboarding`、`feedback`、`history`、`tasks`、`learning`、`api-docs` 已经拆出 `route-handler.ts`，`learning`、`checkins`、`gamification` 还继续拆出了 `logic.ts`、`http-logic.ts`、`history-logic.ts`、`orchestration.ts`、`provider.ts`、`errors.ts` 等辅助文件。这仍属于“按域聚合”的同一策略，只是复杂域已经自然演进出域内分层雏形。等单个域复杂度继续上升后，再在域内继续细分 application、domain、repository。
 
 ---
 
@@ -666,6 +700,9 @@ server/lib/
 
 ```text
 app/
+├── api-docs/
+│   ├── layout.tsx
+│   └── page.tsx
 └── api/
     ├── achievement/summary/route.ts
     ├── admin/feedback/route.ts
@@ -674,6 +711,9 @@ app/
     ├── admin/feedback/[id]/status/route.ts
     ├── auth/login/route.ts
     ├── auth/session/route.ts
+    ├── checkin/daily/route.ts
+    ├── docs/openapi/route.ts
+    ├── docs/swagger-ui-bundle/route.ts
     ├── feedback/route.ts
     ├── feedback/mine/route.ts
     ├── feedback/mine/[id]/route.ts
@@ -682,20 +722,27 @@ app/
     ├── history/recent/route.ts
     ├── learning/current-session/route.ts
     ├── learning/message/route.ts
+    ├── learning/messages/route.ts
     ├── onboarding/complete/route.ts
     ├── onboarding/path-options/route.ts
     ├── onboarding/tools/route.ts
     ├── profile/avatar/route.ts
     ├── profile/me/route.ts
     ├── progress/current/route.ts
-    └── progress/map/route.ts
+    ├── progress/map/route.ts
+    ├── task/complete/route.ts
+    └── task/update-status/route.ts
 
 lib/
 ├── api/
 │   ├── client.ts
 │   ├── types.ts
 │   └── contracts/
+├── auth/
+├── learning/
+├── mocks/
 ├── profile/
+├── utils.ts
 └── supabase/
 
 server/
@@ -703,33 +750,61 @@ server/
 │   ├── api-response.ts
 │   ├── request-admin.ts
 │   ├── request-auth.ts
+│   ├── request-validation.ts
+│   ├── route-error-presets.ts
+│   ├── route-error.ts
+│   ├── route-response.ts
 │   └── supabase.ts
 ├── modules/
 │   ├── achievement/service.ts
+│   ├── api-docs/openapi.ts
+│   ├── api-docs/route-handler.ts
+│   ├── api-docs/schemas.ts
+│   ├── auth/route-handler.ts
 │   ├── auth/service.ts
+│   ├── checkins/logic.ts
+│   ├── checkins/service.ts
+│   ├── feedback/route-handler.ts
 │   ├── feedback/service.ts
+│   ├── history/route-handler.ts
 │   ├── history/service.ts
+│   ├── learning/errors.ts
+│   ├── learning/history-logic.ts
+│   ├── learning/http-logic.ts
+│   ├── learning/logic.ts
+│   ├── learning/orchestration.ts
+│   ├── learning/output-format.ts
+│   ├── learning/provider.ts
+│   ├── learning/route-handler.ts
 │   ├── learning/service.ts
+│   ├── learning/skills.ts
 │   ├── learning-paths/service.ts
+│   ├── onboarding/route-handler.ts
 │   ├── onboarding/service.ts
-│   └── progress/service.ts
+│   ├── tasks/logic.ts
+│   ├── tasks/route-handler.ts
+│   ├── tasks/service.ts
+│   ├── progress/service.ts
+├── services/
+└── utils/
 
 supabase/
-└── migrations/
+├── migrations/
+└── seeds/
 ```
 
 ---
 
 ## 15. 当前请求处理流转
 
-每个接口推荐遵循以下流转：
+当前多数接口推荐遵循以下流转：
 
 1. `route.ts` 接收请求
-2. 调用 `getRequestAuth` 或 `getRequestAdmin` 做鉴权
-3. 在 route 内做轻量参数解析与校验
-4. 调用 `server/modules/<domain>/service.ts`
-5. service 使用 Supabase Admin Client 读取或写入数据库
-6. 通过 `ok / fail` 统一格式返回响应
+2. 通过依赖注入把 `getRequestAuth` / `getRequestAdmin`、service 方法、编排函数组装到域内 `route-handler.ts`
+3. `route-handler.ts` 调用 `server/lib/request-validation.ts` 做请求体、查询参数、动态参数校验
+4. `route-handler.ts` 调用 `server/modules/<domain>/service.ts` 或该域其他逻辑入口
+5. service 使用 Supabase Admin Client 或其他基础设施读取 / 写入数据库
+6. 通过 `server/lib/route-response.ts`、`server/lib/route-error.ts`、`server/lib/route-error-presets.ts` 返回统一 HTTP 响应
 
 示例：
 
@@ -737,14 +812,18 @@ supabase/
 
 - `app/api/feedback/route.ts`
 - `server/lib/request-auth.ts`
+- `server/lib/request-validation.ts`
+- `server/lib/route-response.ts`
 - `server/modules/feedback/service.ts`
-- `lib/supabase/admin.ts`
+- `server/modules/feedback/route-handler.ts`
+- `server/lib/supabase.ts`
 
 ---
 
 ## 16. 不建议的做法
 
 - 在 `route.ts` 中直接写阿里云 Supabase 查询
+- 在多个 `route.ts` 中复制粘贴相同的请求校验、错误文案和响应分支
 - 在 repository 中直接调用某一家模型 SDK 或把 provider 细节散落到各处
 - 在一个 service 文件里同时处理认证、任务和积分
 - 用一个 `services/` 目录承载全部后端逻辑

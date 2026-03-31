@@ -17,7 +17,7 @@
 
 - 当前前端工程已经整理到什么程度
 - 顶层目录分别负责什么
-- 七个页面分别位于哪里
+- 核心用户页面与内部开发调试页分别位于哪里
 - 什么代码应该放在 `features/`，什么代码应该上提到顶层
 - 当前哪些页面已经接入真实接口，哪些仍是静态展示层
 - 当前学习消息链路已经细化到什么程度
@@ -26,7 +26,7 @@
 
 ## 2. 当前工程状态
 
-当前仓库已经是一个可运行的 `Next.js 16 + React 19 + TypeScript + Tailwind CSS 4 + shadcn/ui` 前端工程，并且已经接入同仓 `app/api` 与 Supabase。
+当前仓库已经是一个可运行的 `Next.js 16.2.0 + React 19.2.4 + TypeScript 5.7.3 + Tailwind CSS 4.2 + shadcn/ui` 前端工程，并且已经接入同仓 `app/api` 与 Supabase。
 
 当前已具备：
 
@@ -40,10 +40,12 @@
 - `lib/supabase` 浏览器端 / 服务端 Supabase 封装
 - `providers/` 全局 Provider 入口
 - `types/` 顶层共享类型
+- 运行时 OpenAPI 3.1 文档与 `/api-docs` Swagger UI 调试页
+- 生产构建当前使用 `next build --webpack`
 - `POST /api/learning/message` 已接入真实 SiliconFlow provider，并支持 JSON / SSE 双返回模式
 - `/learn` 已优先消费结构化 `structuredContent`，消息展示按 `interactionType` 驱动，再按 `variant` 做次级细分
 
-当前已可直接访问的页面：
+当前已可直接访问的用户页面：
 
 1. `/`：首页
 2. `/login`：登录页
@@ -52,6 +54,10 @@
 5. `/map`：地图页
 6. `/achievements`：成就页
 7. `/history`：学习记录页
+
+另外还有一个内部开发调试页：
+
+8. `/api-docs`：Swagger UI 接口文档与调试面板
 
 ---
 
@@ -103,6 +109,7 @@ types/
 
 当前业务域：
 
+- `features/api-docs`
 - `features/marketing`
 - `features/auth`
 - `features/onboarding`
@@ -216,17 +223,53 @@ features/<domain>/
 当前内容重点包括：
 
 - `lib/api/`：接口契约、浏览器端请求封装、基础响应类型
+- `lib/auth/`：浏览器侧登录态恢复辅助
+- `lib/learning/`：结构化学习消息等共用轻量工具
+- `lib/mocks/`：仍需保留的局部 mock 数据
 - `lib/supabase/`：浏览器端与服务端 Supabase client、环境变量和 Storage 约定
 - `lib/profile/`：个人资料更新事件分发
+- `lib/utils.ts`：基础通用工具
 
 约束：
 
 - `lib/` 适合放“被多个 feature 或前后端共同依赖”的基础能力
 - 具体业务规则仍应放在 `features/` 或 `server/modules/`，不要把 `lib/` 演化成新的杂物目录
 
+### 3.8 `hooks/`
+
+职责：
+
+- 预留跨 feature 通用 Hook 的放置位置
+
+当前状态：
+
+- 当前仓库里 `hooks/` 仍基本为空，尚未沉淀出稳定的顶层共享 Hook
+- 若后续 Hook 只在单个 feature 内使用，优先放回对应 feature
+
+### 3.9 `public/`
+
+职责：
+
+- 承载无需走构建产物编译的静态资源
+
+当前内容：
+
+- 应用图标
+- 各学习工具 logo 资源
+
+### 3.10 `docs/`
+
+职责：
+
+- 存放当前仍有效的持久化产品、架构、接口和设计文档
+
+当前重点：
+
+- `docs/plans/` 是后续接手项目时的权威阅读入口
+
 ---
 
-## 4. 七个页面的代码位置
+## 4. 用户页面与内部调试页的代码位置
 
 ### 首页
 
@@ -283,6 +326,15 @@ features/<domain>/
 - 当前真实依赖：`GET /api/history/recent`、`GET /api/history/[id]`、`POST /api/history/[id]/status`，侧栏 FAQ 仍为本地静态数据
 - 页面组件：`features/history/components/*`
 - 当前职责：展示历史学习计划列表，而不是最近对话消息列表；支持复盘详情、放弃当前计划、重新激活中断计划、删除历史记录
+
+### 接口文档页
+
+- 路由入口：`app/api-docs/page.tsx`
+- 页面装配：`features/api-docs/pages/api-docs-page.tsx`
+- 页面组件：`features/api-docs/components/swagger-api-viewer.tsx`
+- 当前真实依赖：`GET /api/docs/openapi`、`GET /api/docs/swagger-ui-bundle`
+- 当前职责：提供内部接口查看与调试面板，按标签分组展示接口，补充常见成功响应示例、错误说明、管理员接口调试提示和学习消息 SSE 调试说明
+- 当前实现边界：该页面消费的是运行时注册出来的 OpenAPI 文档；新增后端接口后，需要同步维护 `server/modules/api-docs/openapi.ts` 与 `server/modules/api-docs/schemas.ts`，这里才会一起更新
 
 ### 当前已接真实接口的跨页组件
 
@@ -447,7 +499,7 @@ features/<domain>/
 - 尚未形成系统性的前端自动化测试覆盖
 - 通知设置、订阅模块、FAQ 仍是静态或占位实现
 - 管理员后台前端页面尚未开始
-- 任务完成写接口、每日打卡、埋点写入等链路尚未接入到当前页面主流程
+- 每日打卡和埋点写入等链路仍未接入到所有页面主流程；其中任务完成与任务状态更新已接入 `/learn`
 
 因此，当前阶段的目标仍然是：
 
