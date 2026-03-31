@@ -9,6 +9,9 @@ export type ApiCode =
   | "AI_PROVIDER_ERROR"
   | "RATE_LIMITED"
   | "INTERNAL_ERROR"
+  | "ADMIN_FORBIDDEN"
+  | "ADMIN_INVALID_CREDENTIALS"
+  | "ADMIN_INACTIVE_ACCOUNT"
 
 export type ApiSuccessResponse<T> = {
   code: "OK"
