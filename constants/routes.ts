@@ -7,6 +7,7 @@ export const ROUTES = {
   map: "/map",
   achievements: "/achievements",
   history: "/history",
+  apiDocs: "/api-docs",
 } as const
 
 export const MARKETING_SECTIONS = {

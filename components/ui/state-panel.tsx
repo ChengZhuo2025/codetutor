@@ -60,7 +60,7 @@ export function StatePanel({
     <div
       className={cn(
         "rounded-[28px] border",
-        compact ? "px-4 py-3" : "px-5 py-5",
+        compact ? "p-5" : "p-6",
         meta.panelClassName,
         className,
       )}
@@ -70,9 +70,9 @@ export function StatePanel({
           <Icon className={cn("h-5 w-5", meta.iconClassName)} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground">{title}</p>
+          <p className="text-sm font-bold text-foreground">{title}</p>
           {description ? (
-            <p className={cn("text-sm leading-6 text-muted-foreground", compact ? "mt-1" : "mt-2")}>
+            <p className={cn("text-sm leading-5 text-muted-foreground", compact ? "mt-1" : "mt-2")}>
               {description}
             </p>
           ) : null}

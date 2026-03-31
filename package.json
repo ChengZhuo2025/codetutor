@@ -21,7 +21,11 @@
     "test:learning-message-live": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-live.ts",
     "test:learning-message-logic": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-logic.ts",
     "test:learning-message-output-format": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-output-format.ts",
-    "test:learning-message-route": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-route.ts",
+    "test:learning-message-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-route.ts",
+    "test:api-request-validation": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-api-request-validation.ts",
+    "test:request-validated-routes": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-request-validated-routes.ts",
+    "test:openapi-document": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-openapi-document.ts",
+    "test:openapi-docs-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-openapi-docs-route.ts",
     "test:map-page": "node scripts/check-map-page.mjs",
     "test:task-write-service": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-task-write-service.ts",
     "test:workspace-sidebar": "node scripts/check-workspace-sidebar.mjs",
@@ -31,6 +35,7 @@
     "test:workspace-aside-styles": "node scripts/check-workspace-aside-styles.mjs"
   },
   "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^7.3.4",
     "@iconify-json/fa6-solid": "^1.2.4",
     "@iconify/react": "^6.0.2",
     "@radix-ui/react-dialog": "1.1.15",
@@ -51,6 +56,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "server-only": "file:vendor/server-only",
+    "swagger-ui-react": "^5.28.1",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
@@ -65,6 +71,7 @@
     "postcss": "^8.5",
     "tailwindcss": "^4.2.0",
     "tw-animate-css": "1.3.3",
-    "typescript": "5.7.3"
+    "typescript": "5.7.3",
+    "zod": "^3.25.76"
   }
 }

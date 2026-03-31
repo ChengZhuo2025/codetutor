@@ -6,8 +6,13 @@ import type {
   AuthSessionSummaryResponseData,
   AuthLoginType,
   ProfileMeResponseData,
+  UploadProfileAvatarResponseData,
   UpdateProfileMeRequest,
 } from "@/lib/api/contracts/auth"
+import {
+  PROFILE_AVATAR_BUCKET,
+  getAvatarStoragePrefix,
+} from "@/lib/supabase/storage"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { ensureUserRankSnapshot } from "@/server/modules/gamification/service"
 import { getLearningPathStatusSummary } from "@/server/modules/learning-paths/service"
@@ -92,6 +97,25 @@ function normalizeOptionalString(value: string | null | undefined) {
 
   const normalized = value.trim()
   return normalized.length > 0 ? normalized : null
+}
+
+function getFileExtension(file: File) {
+  const filename = file.name.trim()
+  const extension = filename.includes(".") ? filename.split(".").pop() : null
+
+  if (extension && /^[a-zA-Z0-9]+$/.test(extension)) {
+    return extension.toLowerCase()
+  }
+
+  if (file.type === "image/png") {
+    return "png"
+  }
+
+  if (file.type === "image/webp") {
+    return "webp"
+  }
+
+  return "jpg"
 }
 
 async function getAuthUserById(userId: string) {
@@ -365,4 +389,43 @@ export async function updateProfileMe(
   assertSupabaseSuccess(updateError, "failed to update user profile")
 
   return getProfileMe(userId)
+}
+
+export async function uploadProfileAvatar(
+  userId: string,
+  file: File,
+): Promise<UploadProfileAvatarResponseData> {
+  const bytes = await file.arrayBuffer()
+  const supabase = createSupabaseAdminClient()
+  const extension = getFileExtension(file)
+  const objectPath = `${getAvatarStoragePrefix(userId)}${Date.now()}-${crypto.randomUUID()}.${extension}`
+  const { data: profile, error: profileError } = await supabase
+    .from("user_profiles")
+    .select("avatar_url")
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  assertSupabaseSuccess(profileError, "failed to query existing avatar before upload")
+
+  const { error: uploadError } = await supabase.storage
+    .from(PROFILE_AVATAR_BUCKET)
+    .upload(objectPath, bytes, {
+      contentType: file.type,
+      upsert: true,
+    })
+
+  assertSupabaseSuccess(uploadError, "failed to upload profile avatar")
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(PROFILE_AVATAR_BUCKET).getPublicUrl(objectPath)
+
+  return {
+    avatarUrl: publicUrl,
+    storagePath: objectPath,
+    previousAvatarUrl:
+      typeof (profile as { avatar_url?: unknown } | null)?.avatar_url === "string"
+        ? ((profile as { avatar_url?: string | null }).avatar_url ?? null)
+        : null,
+  }
 }

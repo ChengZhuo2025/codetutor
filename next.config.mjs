@@ -14,6 +14,7 @@ const nextConfig = {
       },
     ],
   },
+  transpilePackages: ["swagger-ui-react"],
   turbopack: {
     root: rootDir,
   },

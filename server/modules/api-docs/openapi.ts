@@ -1,0 +1,1507 @@
+import { OpenAPIRegistry, OpenApiGeneratorV31 } from "@asteasolutions/zod-to-openapi"
+import { z } from "zod"
+import { ROUTE_ERROR_MESSAGES } from "@/server/lib/route-error-presets"
+import {
+  achievementSummaryResponseDataSchema,
+  adminOptionalHeadersSchema,
+  adminFeedbackListQuerySchema,
+  adminFeedbackListResponseDataSchema,
+  adminFeedbackTicketDetailResponseDataSchema,
+  adminReplyFeedbackRequestSchema,
+  adminUpdateFeedbackStatusRequestSchema,
+  ApiErrorResponseSchema,
+  authLoginRequestSchema,
+  authLoginResponseDataSchema,
+  authSessionSummaryResponseDataSchema,
+  checkinDailyResponseDataSchema,
+  completeOnboardingRequestSchema,
+  completeOnboardingResponseDataSchema,
+  completeTaskRequestSchema,
+  completeTaskResponseDataSchema,
+  createApiSuccessResponseSchema,
+  createFeedbackRequestSchema,
+  createFeedbackResponseDataSchema,
+  feedbackMineListResponseDataSchema,
+  feedbackTicketDetailSchema,
+  getOnboardingPathOptionsQuerySchema,
+  getOnboardingPathOptionsResponseDataSchema,
+  getOnboardingToolsResponseDataSchema,
+  historyRecentQuerySchema,
+  learningCurrentSessionResponseDataSchema,
+  learningMessageRequestSchema,
+  learningMessageResponseDataSchema,
+  learningMessagesQuerySchema,
+  learningMessagesResponseDataSchema,
+  learningHistoryDetailResponseDataSchema,
+  learningHistoryResponseDataSchema,
+  openApiStreamResponseSchema,
+  profileMeResponseDataSchema,
+  progressCurrentResponseDataSchema,
+  progressMapResponseDataSchema,
+  routeIdParamsSchema,
+  updateLearningHistoryStatusRequestSchema,
+  updateLearningHistoryStatusResponseDataSchema,
+  updateProfileMeRequestSchema,
+  updateTaskStatusRequestSchema,
+  updateTaskStatusResponseDataSchema,
+  uploadProfileAvatarRequestSchema,
+  uploadProfileAvatarResponseDataSchema,
+} from "./schemas.ts"
+
+const registry = new OpenAPIRegistry()
+
+const EXAMPLE_NOW = "2026-03-31T09:00:00.000Z"
+const EXAMPLE_LATER = "2026-03-31T09:05:00.000Z"
+const EXAMPLE_LATEST = "2026-03-31T09:10:00.000Z"
+
+const profileMeExample = {
+  userId: "user-123",
+  nickname: "Bao",
+  avatarUrl: "https://cdn.example.com/avatar/user-123.png",
+  phone: "13800000000",
+  email: "bao@example.com",
+  wechat: "bao_cursor",
+  bio: "正在用真实项目学习 Cursor。",
+  primaryTool: {
+    code: "cursor",
+    name: "Cursor",
+  },
+  learningLevel: "beginner",
+  currentScore: 120,
+  currentRank: "新手学徒",
+  streakDays: 3,
+  completedTaskCount: 5,
+  lastLearningAt: EXAMPLE_NOW,
+}
+
+const messageExample = {
+  id: 12,
+  role: "ai",
+  kind: "coach",
+  title: "AI 教练引导",
+  content: "先确认你已经打开了项目目录，再执行下一步命令。",
+  structuredContent: null,
+}
+
+const feedbackReplyExample = {
+  id: "reply-1",
+  authorType: "admin",
+  authorId: "system-admin",
+  content: "已经收到你的反馈，我们会继续跟进。",
+  createdAt: EXAMPLE_LATER,
+}
+
+const historyItemExample = {
+  id: "path-runtime-1",
+  planId: "path-cursor-beginner-01",
+  title: "Cursor 入门训练营",
+  summary: "从安装、索引到第一次智能改代码。",
+  tool: "Cursor",
+  level: "入门",
+  mode: "预设训练",
+  progress: {
+    completed: 2,
+    total: 5,
+    percent: 40,
+  },
+  xpEarned: 120,
+  createdAt: EXAMPLE_NOW,
+  updatedAt: EXAMPLE_LATEST,
+  status: "in_progress",
+}
+
+const adminFeedbackDetailExample = {
+  id: "ticket-1",
+  feedbackType: "feature_request",
+  feedbackTypeLabel: "功能建议",
+  status: "replied",
+  statusLabel: "已回复",
+  title: "希望支持项目级模板",
+  content: "如果能直接从项目生成学习路径会更方便。",
+  contactMethod: "bao@example.com",
+  submittedAt: EXAMPLE_NOW,
+  updatedAt: EXAMPLE_LATEST,
+  lastReplyAt: EXAMPLE_LATER,
+  replies: [feedbackReplyExample],
+  userId: "user-123",
+  userNicknameSnapshot: "Bao",
+  userPhoneSnapshot: "13800000000",
+  userContactEmailSnapshot: "bao@example.com",
+  priority: "medium",
+  source: "settings_popover",
+}
+
+const successExamples = {
+  authLogin: {
+    userId: "user-123",
+    isNewUser: false,
+    onboardingCompleted: true,
+    profileCompleted: true,
+    redirectTo: "/learn",
+  },
+  authSession: {
+    userId: "user-123",
+    redirectTo: "/learn",
+    phone: "13800000000",
+    nickname: "Bao",
+  },
+  profileMe: profileMeExample,
+  profileAvatar: {
+    avatarUrl: "https://cdn.example.com/avatar/user-123.png",
+    storagePath: "avatars/user-123/1711846800000-uuid.png",
+    previousAvatarUrl: "https://cdn.example.com/avatar/user-123-old.png",
+  },
+  onboardingTools: {
+    groups: [
+      {
+        groupCode: "gui",
+        groupName: "图形化工具",
+        tools: [
+          {
+            id: "tool-cursor",
+            code: "cursor",
+            name: "Cursor",
+            difficultyLevel: "beginner",
+            summary: "从零开始学习 AI 辅助编程。",
+            category: "图形化工具",
+            popular: true,
+            color: "brand",
+          },
+        ],
+      },
+    ],
+  },
+  onboardingPathOptions: {
+    selfStudyOption: {
+      id: "self-study-cursor-beginner",
+      code: "self-study-cursor-beginner",
+      name: "自主学习模式",
+      sourceType: "self_directed",
+      summary: "把你手头的教程或报错贴进来，我们按步骤陪你练。",
+      preview: ["粘贴资料", "拆成任务", "边练边问"],
+      inputTypes: ["教程文本", "代码片段", "网页链接", "截图"],
+    },
+    presetPathOptions: [
+      {
+        pathId: "path-cursor-beginner-01",
+        code: "cursor-beginner-01",
+        name: "Cursor 入门训练营",
+        sourceType: "preset_training",
+        stageCount: 5,
+        summary: "完成第一次索引、问答和改代码闭环。",
+        recommended: true,
+        currentLevelFit: "适合第一次接触 Cursor 的学习者",
+        coachAgentLabel: "入门教练",
+        estimatedDuration: "5 天",
+        tags: ["安装", "索引", "补全"],
+        preview: ["搭好环境", "看懂建议", "完成第一次提交"],
+      },
+    ],
+  },
+  onboardingComplete: {
+    onboardingCompleted: true,
+    primaryToolCode: "cursor",
+    learningLevel: "beginner",
+    selectionMode: "preset_training",
+    pathId: "path-cursor-beginner-01",
+    currentTaskId: "task-1",
+    initialPreview: ["先确认环境", "打开项目", "尝试第一次提问"],
+    redirectTo: "/learn",
+  },
+  learningCurrentSession: {
+    conversationId: "conversation-1",
+    historyPagination: {
+      hasMore: false,
+      nextBeforeSequenceNo: null,
+    },
+    path: {
+      id: "path-runtime-1",
+      status: "in_progress",
+    },
+    task: {
+      taskId: "task-1",
+      title: "完成第一次代码补全",
+      status: "in_progress",
+    },
+    profile: profileMeExample,
+    planSummary: {
+      selectedToolName: "Cursor",
+      learningLevelLabel: "入门",
+      selectionModeLabel: "预设训练",
+      pathName: "Cursor 入门训练营",
+    },
+    mission: {
+      title: "完成第一次代码补全",
+      tool: "Cursor",
+      stageLabel: "第 1 关",
+      goal: "在编辑器里完成一次真实补全",
+      summary: "学会在具体代码上下文里请求补全。",
+      estimatedTime: "15 分钟",
+      reward: "+20 XP",
+      progressLabel: "已完成 2 / 5",
+      progressPercent: 40,
+      coachCue: "先选中一小段代码，再描述你想要的改动。",
+      nextUnlockTitle: "第一次智能重构",
+      nextUnlockSummary: "下一步会让 AI 帮你整理已有代码。",
+    },
+    resume: {
+      title: "回到上次练习",
+      summary: "继续完成 Cursor 入门训练营。",
+      lastSeenLabel: "上次停留在 5 分钟前",
+      ctaLabel: "继续练习",
+    },
+    messages: [messageExample],
+    quickActions: [
+      {
+        label: "我卡住了",
+        tone: "warning",
+        helper: "把当前报错贴给我。",
+        category: "help",
+      },
+    ],
+    supportOptions: [
+      {
+        mode: "hint",
+        label: "给我一点提示",
+        description: "只给下一步提醒，不直接给答案。",
+        prompt: "请给我下一步提示。",
+      },
+    ],
+    responseSamples: [
+      {
+        trigger: "我已经完成了",
+        kind: "task_feedback",
+        title: "教练反馈",
+        content: "把你的结果贴给我，我来帮你确认。",
+      },
+    ],
+    rightPanel: {
+      currentStep: "打开项目并索引代码库",
+      whyThisStep: "后续问答和改代码都依赖索引结果。",
+      completionCriteria: "项目索引成功，能看到代码建议。",
+      hintIfStuck: "先确认目录是否正确、文件是否已加载。",
+      knowledgePoints: ["索引", "上下文", "补全"],
+      masteryPoints: ["知道何时需要重新索引"],
+      cautions: [
+        {
+          text: "不要一次索引过大的无关目录。",
+          isTrap: true,
+        },
+      ],
+      nextStepPreview: "下一步会练习如何提一个好的上下文问题。",
+    },
+    recentPracticeRounds: [
+      {
+        id: "round-1",
+        taskTitle: "完成第一次代码补全",
+        stageLabel: "第 1 关",
+        lastActiveLabel: "5 分钟前",
+        status: "in_progress",
+      },
+    ],
+    tasks: [
+      {
+        id: 1,
+        label: "安装并登录 Cursor",
+        done: true,
+      },
+      {
+        id: 2,
+        label: "完成第一次代码补全",
+        done: false,
+        current: true,
+      },
+    ],
+    knowledgeTags: [
+      {
+        label: "上下文提问",
+        color: "text-brand bg-brand-dim border-brand/20",
+      },
+    ],
+    tips: [
+      {
+        title: "先从最小任务开始",
+        body: "一次只问一个明确的小问题，更容易得到可执行答案。",
+      },
+    ],
+  },
+  learningMessage: {
+    conversationId: "conversation-1",
+    taskId: "task-1",
+    message: messageExample,
+    taskState: "in_progress",
+    taskPatch: null,
+  },
+  learningMessages: {
+    conversationId: "conversation-1",
+    messages: [messageExample],
+    pagination: {
+      hasMore: false,
+      nextBeforeSequenceNo: null,
+    },
+  },
+  taskComplete: {
+    taskId: "task-1",
+    taskStatus: "completed",
+    scoreDelta: 20,
+    currentScore: 140,
+    currentRank: "新手学徒",
+    rankChanged: false,
+    completionSummary: "你已经完成第一次真实补全。",
+    nextTask: {
+      taskId: "task-2",
+      title: "第一次智能重构",
+    },
+  },
+  taskUpdateStatus: {
+    taskId: "task-1",
+    taskStatus: "blocked",
+    reason: "索引一直失败，无法进入下一步。",
+  },
+  checkinDaily: {
+    checkedIn: true,
+    alreadyCheckedIn: false,
+    checkinDate: "2026-03-31",
+    scoreDelta: 5,
+    streakDays: 3,
+    currentScore: 125,
+    currentRank: "新手学徒",
+    rankChanged: false,
+  },
+  progressCurrent: {
+    currentTool: {
+      id: "tool-cursor",
+      label: "Cursor",
+    },
+    currentPathName: "Cursor 入门训练营",
+    currentTaskTitle: "完成第一次代码补全",
+    currentScore: 120,
+    currentRank: "新手学徒",
+    streakDays: 3,
+    checkedInToday: true,
+    summary: {
+      totalXP: 120,
+      currentRank: "新手学徒",
+      nextRank: "进阶学员",
+      remainingXPToNextRank: 80,
+      streakDays: 3,
+    },
+  },
+  progressMap: {
+    pathName: "Cursor 入门训练营",
+    pathSummary: "从环境搭建到第一次真实改代码。",
+    totalSteps: 5,
+    completedSteps: 2,
+    currentStageId: 3,
+    stages: [
+      {
+        id: 1,
+        taskId: "task-1",
+        title: "安装并登录 Cursor",
+        summary: "完成基础环境准备。",
+        goal: "能正常打开项目。",
+        completionCriteria: "成功进入编辑器并打开项目。",
+        reviewSummary: "环境准备完成。",
+        xp: 20,
+        status: "done",
+        tags: ["安装"],
+        keyPoints: ["登录", "打开项目"],
+        pitfalls: [],
+        estimatedTime: "10 分钟",
+        focus: "完成第一次启动",
+      },
+    ],
+  },
+  achievementSummary: {
+    currentRankCode: "rookie",
+    currentRank: "新手学徒",
+    currentScore: 120,
+    checkedInToday: true,
+    nextRank: "进阶学员",
+    nextRankRemainingXP: 80,
+    completedTaskCount: 5,
+    streakDays: 3,
+    overview: {
+      totalXP: 120,
+      streakDays: 3,
+      monthlyXP: 85,
+      totalCheckinDays: 10,
+      nextRankRemainingXP: 80,
+      earnedBadges: 2,
+    },
+    ranks: [
+      {
+        code: "rookie",
+        name: "新手学徒",
+        minScore: 0,
+        maxScore: 199,
+      },
+    ],
+    badges: [
+      {
+        code: "first_task",
+        title: "第一关通关",
+        desc: "完成第一项学习任务。",
+        earned: true,
+      },
+    ],
+    history: [
+      {
+        label: "完成第一次代码补全",
+        xp: 20,
+        time: EXAMPLE_NOW,
+        type: "task",
+      },
+    ],
+    calendar: {
+      weekDays: ["一", "二", "三", "四", "五", "六", "日"],
+      dates: [[31]],
+      checkins: [[true]],
+    },
+  },
+  historyRecent: {
+    items: [historyItemExample],
+    total: 1,
+    page: 1,
+    hasMore: false,
+    filter: "all",
+    summary: {
+      activeCount: 1,
+      interruptedCount: 0,
+      completedCount: 2,
+      abandonedCount: 0,
+      totalCount: 3,
+      activePlanId: "path-runtime-1",
+      canCreateNewPlan: false,
+    },
+  },
+  historyDetail: {
+    detail: {
+      item: historyItemExample,
+      timeline: {
+        startedAt: EXAMPLE_NOW,
+        lastActivityAt: EXAMPLE_LATEST,
+        completedAt: null,
+        interruptedAt: null,
+        abandonedAt: null,
+      },
+      steps: [
+        {
+          id: "step-1",
+          stepNo: 1,
+          title: "安装并登录 Cursor",
+          status: "completed",
+          rewardXp: 20,
+          completedAt: EXAMPLE_LATER,
+        },
+      ],
+    },
+  },
+  historyStatus: {
+    pathId: "path-runtime-1",
+    status: "abandoned",
+  },
+  feedbackCreate: {
+    ticketId: "ticket-1",
+  },
+  feedbackMineList: {
+    items: [
+      {
+        id: "ticket-1",
+        feedbackType: "feature_request",
+        feedbackTypeLabel: "功能建议",
+        status: "replied",
+        statusLabel: "已回复",
+        title: "希望支持项目级模板",
+        contentPreview: "如果能直接从项目生成学习路径会更方便。",
+        contactMethod: "bao@example.com",
+        latestReplySnippet: "已经收到你的反馈，我们会继续跟进。",
+        replyCount: 1,
+        submittedAt: EXAMPLE_NOW,
+        updatedAt: EXAMPLE_LATEST,
+        lastReplyAt: EXAMPLE_LATER,
+      },
+    ],
+  },
+  feedbackDetail: {
+    id: "ticket-1",
+    feedbackType: "feature_request",
+    feedbackTypeLabel: "功能建议",
+    status: "replied",
+    statusLabel: "已回复",
+    title: "希望支持项目级模板",
+    content: "如果能直接从项目生成学习路径会更方便。",
+    contactMethod: "bao@example.com",
+    submittedAt: EXAMPLE_NOW,
+    updatedAt: EXAMPLE_LATEST,
+    lastReplyAt: EXAMPLE_LATER,
+    replies: [feedbackReplyExample],
+  },
+  adminFeedbackList: {
+    items: [
+      {
+        id: "ticket-1",
+        feedbackType: "feature_request",
+        feedbackTypeLabel: "功能建议",
+        status: "replied",
+        statusLabel: "已回复",
+        title: "希望支持项目级模板",
+        contentPreview: "如果能直接从项目生成学习路径会更方便。",
+        contactMethod: "bao@example.com",
+        latestReplySnippet: "已经收到你的反馈，我们会继续跟进。",
+        replyCount: 1,
+        submittedAt: EXAMPLE_NOW,
+        updatedAt: EXAMPLE_LATEST,
+        lastReplyAt: EXAMPLE_LATER,
+        userId: "user-123",
+        userNicknameSnapshot: "Bao",
+        userPhoneSnapshot: "13800000000",
+        userContactEmailSnapshot: "bao@example.com",
+        priority: "medium",
+        source: "settings_popover",
+      },
+    ],
+  },
+  adminFeedbackDetail: adminFeedbackDetailExample,
+} as const
+
+const defaultErrorResponses = {
+  "400": {
+    description: "请求参数不合法或请求体格式不正确。",
+    example: {
+      code: "BAD_REQUEST",
+      message: "请求参数不合法。",
+      data: null,
+    },
+  },
+  "401": {
+    description: "未登录、登录态失效，或缺少访问令牌。",
+    example: {
+      code: "AUTH_REQUIRED",
+      message: "请先登录后再访问该接口。",
+      data: null,
+    },
+  },
+  "403": {
+    description: "管理员密钥无效，或当前调用方没有权限访问该接口。",
+    example: {
+      code: "FORBIDDEN",
+      message: "管理员凭证无效。",
+      data: null,
+    },
+  },
+      "404": {
+        description: "请求的资源不存在，或当前用户无权访问该资源。",
+        example: {
+          code: "NOT_FOUND",
+          message: ROUTE_ERROR_MESSAGES.historyPlanNotFound,
+          data: null,
+        },
+      },
+  "409": {
+    description: "请求与当前资源状态冲突，需先处理前置条件。",
+    example: {
+      code: "CONFLICT",
+      message: "当前已有进行中的学习计划",
+      data: null,
+    },
+  },
+  "422": {
+    description: "请求字段通过了 JSON 结构解析，但未通过业务校验。",
+    example: {
+      code: "VALIDATION_FAILED",
+      message: "请求字段未通过校验。",
+      data: null,
+    },
+  },
+  "500": {
+    description: "服务端处理失败，请稍后重试。",
+    example: {
+      code: "INTERNAL_ERROR",
+      message: "服务端处理失败。",
+      data: null,
+    },
+  },
+  "502": {
+    description: "下游 AI Provider 调用失败，当前请求未成功完成。",
+    example: {
+      code: "AI_PROVIDER_ERROR",
+      message: "AI 服务暂时不可用，请稍后再试。",
+      data: null,
+    },
+  },
+} as const
+
+registry.registerComponent("securitySchemes", "bearerAuth", {
+  type: "http",
+  scheme: "bearer",
+  bearerFormat: "JWT",
+  description: "Supabase access token。Swagger UI 会在已登录状态下自动注入。",
+})
+
+registry.registerComponent("securitySchemes", "adminSecretHeader", {
+  type: "apiKey",
+  in: "header",
+  name: "x-admin-secret",
+  description: "管理员接口密钥。",
+})
+
+function jsonResponse(
+  schema: z.ZodTypeAny,
+  description: string,
+  example?: unknown,
+) {
+  return {
+    description,
+    content: {
+      "application/json": {
+        schema,
+        ...(example === undefined ? {} : { example }),
+      },
+    },
+  }
+}
+
+function successResponse(
+  schema: z.ZodTypeAny,
+  name: string,
+  description: string,
+  dataExample: unknown,
+  message = "success",
+) {
+  return jsonResponse(
+    createApiSuccessResponseSchema(schema, name),
+    description,
+    {
+      code: "OK",
+      message,
+      data: dataExample,
+    },
+  )
+}
+
+function commonErrorResponses(
+  statuses: string[],
+  overrides?: Partial<Record<string, { description: string; example: unknown }>>,
+) {
+  const responses: Record<string, ReturnType<typeof jsonResponse>> = {}
+
+  for (const status of statuses) {
+    const spec = overrides?.[status] ?? defaultErrorResponses[status as keyof typeof defaultErrorResponses]
+
+    responses[status] = jsonResponse(
+      ApiErrorResponseSchema,
+      spec?.description ?? "错误响应",
+      spec?.example,
+    )
+  }
+
+  return responses
+}
+
+registry.registerPath({
+  method: "post",
+  path: "/api/auth/login",
+  operationId: "postAuthLogin",
+  tags: ["auth"],
+  summary: "完成登录流程并返回跳转摘要",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: authLoginRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      authLoginResponseDataSchema,
+      "AuthLoginResponse",
+      "登录成功",
+      successExamples.authLogin,
+    ),
+    ...commonErrorResponses(["400", "401", "500"], {
+      "400": {
+        description: "请求体中的 `loginType` 不合法。",
+        example: {
+          code: "BAD_REQUEST",
+          message: "loginType 不合法。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/auth/session",
+  operationId: "getAuthSession",
+  tags: ["auth"],
+  summary: "读取当前登录会话摘要",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      authSessionSummaryResponseDataSchema,
+      "AuthSessionResponse",
+      "会话读取成功",
+      successExamples.authSession,
+    ),
+    ...commonErrorResponses(["401", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/profile/me",
+  operationId: "getProfileMe",
+  tags: ["profile"],
+  summary: "获取当前用户档案",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      profileMeResponseDataSchema,
+      "ProfileMeResponse",
+      "档案读取成功",
+      successExamples.profileMe,
+    ),
+    ...commonErrorResponses(["401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/profile/me",
+  operationId: "patchProfileMe",
+  tags: ["profile"],
+  summary: "更新当前用户档案",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: updateProfileMeRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      profileMeResponseDataSchema,
+      "ProfileMeUpdateResponse",
+      "档案更新成功",
+      successExamples.profileMe,
+      "profile updated",
+    ),
+    ...commonErrorResponses(["400", "401", "404", "500"], {
+      "400": {
+        description: "请求体格式错误，或昵称/邮箱/头像链接等字段未通过业务校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "昵称至少需要 2 个字符。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/profile/avatar",
+  operationId: "postProfileAvatar",
+  tags: ["profile"],
+  summary: "上传头像",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "multipart/form-data": {
+          schema: uploadProfileAvatarRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      uploadProfileAvatarResponseDataSchema,
+      "UploadProfileAvatarResponse",
+      "头像上传成功",
+      successExamples.profileAvatar,
+      "avatar uploaded",
+    ),
+    ...commonErrorResponses(["400", "401", "500"], {
+      "400": {
+        description: "缺少文件，或上传文件类型/大小未通过校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "头像仅支持 JPG、PNG、WebP 格式。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/onboarding/tools",
+  operationId: "getOnboardingTools",
+  tags: ["onboarding"],
+  summary: "获取 onboarding 工具选项",
+  responses: {
+    "200": successResponse(
+      getOnboardingToolsResponseDataSchema,
+      "OnboardingToolsResponse",
+      "工具列表读取成功",
+      successExamples.onboardingTools,
+    ),
+    ...commonErrorResponses(["500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/onboarding/path-options",
+  operationId: "getOnboardingPathOptions",
+  tags: ["onboarding"],
+  summary: "按工具和水平获取路径选项",
+  request: {
+    query: getOnboardingPathOptionsQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      getOnboardingPathOptionsResponseDataSchema,
+      "OnboardingPathOptionsResponse",
+      "路径选项读取成功",
+      successExamples.onboardingPathOptions,
+    ),
+    ...commonErrorResponses(["400", "404", "500"], {
+      "400": {
+        description: "缺少合法的 `toolCode` 或 `learningLevel` 查询参数。",
+        example: {
+          code: "BAD_REQUEST",
+          message: "缺少合法的 toolCode 或 learningLevel。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/onboarding/complete",
+  operationId: "postOnboardingComplete",
+  tags: ["onboarding"],
+  summary: "完成 onboarding 并激活学习路径",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: completeOnboardingRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      completeOnboardingResponseDataSchema,
+      "OnboardingCompleteResponse",
+      "onboarding 完成",
+      successExamples.onboardingComplete,
+    ),
+    ...commonErrorResponses(["400", "401", "404", "422", "500"], {
+      "400": {
+        description: "请求体结构不正确，无法完成 onboarding。",
+        example: {
+          code: "BAD_REQUEST",
+          message: "请求体格式不正确。",
+          data: null,
+        },
+      },
+      "422": {
+        description: "请求体字段通过了解析，但学习等级或选择模式未通过业务校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "learningLevel 或 selectionMode 不合法。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/learning/current-session",
+  operationId: "getLearningCurrentSession",
+  tags: ["learning"],
+  summary: "获取当前学习会话",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      learningCurrentSessionResponseDataSchema,
+      "LearningCurrentSessionResponse",
+      "学习会话读取成功",
+      successExamples.learningCurrentSession,
+    ),
+    ...commonErrorResponses(["401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/learning/message",
+  operationId: "postLearningMessage",
+  tags: ["learning"],
+  summary: "发送学习消息，支持 JSON 和 SSE",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: learningMessageRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": {
+      description: "消息发送成功",
+      content: {
+        "application/json": {
+          schema: createApiSuccessResponseSchema(learningMessageResponseDataSchema, "LearningMessageResponse"),
+          example: {
+            code: "OK",
+            message: "success",
+            data: successExamples.learningMessage,
+          },
+        },
+        "text/event-stream": {
+          schema: openApiStreamResponseSchema,
+          example: "event: message\ndata: {\"code\":\"OK\",\"message\":\"success\"}\n\n",
+        },
+      },
+    },
+    ...commonErrorResponses(["401", "422", "500", "502"], {
+      "422": {
+        description: "请求体不是合法 JSON，或消息字段未通过业务校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "请求体不是合法 JSON。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/learning/messages",
+  operationId: "getLearningMessages",
+  tags: ["learning"],
+  summary: "分页获取历史学习消息",
+  security: [{ bearerAuth: [] }],
+  request: {
+    query: learningMessagesQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      learningMessagesResponseDataSchema,
+      "LearningMessagesResponse",
+      "历史消息读取成功",
+      successExamples.learningMessages,
+    ),
+    ...commonErrorResponses(["401", "404", "422", "500"], {
+      "422": {
+        description: "查询参数格式正确但未通过业务校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "conversationId 不合法。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/task/complete",
+  operationId: "postTaskComplete",
+  tags: ["task"],
+  summary: "完成当前任务",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: completeTaskRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      completeTaskResponseDataSchema,
+      "TaskCompleteResponse",
+      "任务完成成功",
+      successExamples.taskComplete,
+    ),
+    ...commonErrorResponses(["400", "401", "404", "422", "500"], {
+      "400": {
+        description: "任务存在，但当前学习路径状态不允许完成该任务。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "只能完成当前正在进行的关卡",
+          data: null,
+        },
+      },
+      "422": {
+        description: "请求字段通过了解析，但 `taskId` 未通过校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "taskId 不合法。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/task/update-status",
+  operationId: "postTaskUpdateStatus",
+  tags: ["task"],
+  summary: "更新当前任务状态",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: updateTaskStatusRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      updateTaskStatusResponseDataSchema,
+      "TaskUpdateStatusResponse",
+      "任务状态更新成功",
+      successExamples.taskUpdateStatus,
+    ),
+    ...commonErrorResponses(["400", "401", "404", "422", "500"], {
+      "400": {
+        description: "任务存在，但当前学习路径状态不允许更新该任务状态。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "只能更新当前正在进行的关卡状态",
+          data: null,
+        },
+      },
+      "422": {
+        description: "请求字段通过了解析，但 `taskId` 或 `status` 未通过校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "taskId 或 status 不合法。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/checkin/daily",
+  operationId: "postCheckinDaily",
+  tags: ["achievement"],
+  summary: "执行每日打卡",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      checkinDailyResponseDataSchema,
+      "CheckinDailyResponse",
+      "打卡成功",
+      successExamples.checkinDaily,
+    ),
+    ...commonErrorResponses(["401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/progress/current",
+  operationId: "getProgressCurrent",
+  tags: ["progress"],
+  summary: "获取当前学习进度摘要",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      progressCurrentResponseDataSchema,
+      "ProgressCurrentResponse",
+      "当前进度读取成功",
+      successExamples.progressCurrent,
+    ),
+    ...commonErrorResponses(["401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/progress/map",
+  operationId: "getProgressMap",
+  tags: ["progress"],
+  summary: "获取路径地图",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      progressMapResponseDataSchema,
+      "ProgressMapResponse",
+      "路径地图读取成功",
+      successExamples.progressMap,
+    ),
+    ...commonErrorResponses(["401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/achievement/summary",
+  operationId: "getAchievementSummary",
+  tags: ["achievement"],
+  summary: "获取成长与成就汇总",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      achievementSummaryResponseDataSchema,
+      "AchievementSummaryResponse",
+      "成就汇总读取成功",
+      successExamples.achievementSummary,
+    ),
+    ...commonErrorResponses(["401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/history/recent",
+  operationId: "getHistoryRecent",
+  tags: ["history"],
+  summary: "分页获取学习计划历史",
+  security: [{ bearerAuth: [] }],
+  request: {
+    query: historyRecentQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      learningHistoryResponseDataSchema,
+      "LearningHistoryResponse",
+      "学习历史读取成功",
+      successExamples.historyRecent,
+    ),
+    ...commonErrorResponses(["401", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/history/{id}",
+  operationId: "getHistoryDetail",
+  tags: ["history"],
+  summary: "获取单条学习计划详情",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: routeIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      learningHistoryDetailResponseDataSchema,
+      "LearningHistoryDetailResponse",
+      "学习计划详情读取成功",
+      successExamples.historyDetail,
+    ),
+    ...commonErrorResponses(["400", "401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/history/{id}/status",
+  operationId: "postHistoryStatus",
+  tags: ["history"],
+  summary: "更新学习计划状态",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: routeIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: updateLearningHistoryStatusRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      updateLearningHistoryStatusResponseDataSchema,
+      "UpdateLearningHistoryStatusResponse",
+      "学习计划状态更新成功",
+      successExamples.historyStatus,
+      "history plan updated",
+    ),
+    ...commonErrorResponses(["400", "401", "404", "409", "500"], {
+      "400": {
+        description: "请求体或当前学习计划状态不允许执行该操作。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "只有进行中的学习计划才能执行该操作",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/feedback",
+  operationId: "postFeedback",
+  tags: ["feedback"],
+  summary: "提交用户反馈",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: createFeedbackRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      createFeedbackResponseDataSchema,
+      "CreateFeedbackResponse",
+      "反馈提交成功",
+      successExamples.feedbackCreate,
+      "feedback created",
+    ),
+    ...commonErrorResponses(["400", "401", "500"], {
+      "400": {
+        description: "反馈类型、标题、内容或联系方式未通过校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "标题至少需要 4 个字符。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/feedback/mine",
+  operationId: "getFeedbackMine",
+  tags: ["feedback"],
+  summary: "获取当前用户反馈列表",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      feedbackMineListResponseDataSchema,
+      "FeedbackMineListResponse",
+      "反馈列表读取成功",
+      successExamples.feedbackMineList,
+    ),
+    ...commonErrorResponses(["401", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/feedback/mine/{id}",
+  operationId: "getFeedbackMineDetail",
+  tags: ["feedback"],
+  summary: "获取当前用户单条反馈详情",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: routeIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      feedbackTicketDetailSchema,
+      "FeedbackTicketDetailResponse",
+      "反馈详情读取成功",
+      successExamples.feedbackDetail,
+    ),
+    ...commonErrorResponses(["400", "401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/feedback",
+  operationId: "getAdminFeedbackList",
+  tags: ["admin-feedback"],
+  summary: "获取管理员反馈列表",
+  security: [{ adminSecretHeader: [] }],
+  request: {
+    query: adminFeedbackListQuerySchema,
+    headers: adminOptionalHeadersSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminFeedbackListResponseDataSchema,
+      "AdminFeedbackListResponse",
+      "管理员反馈列表读取成功",
+      successExamples.adminFeedbackList,
+    ),
+    ...commonErrorResponses(["400", "403", "500"], {
+      "400": {
+        description: "管理员筛选参数未通过校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "limit 必须在 1 到 100 之间。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/feedback/{id}",
+  operationId: "getAdminFeedbackDetail",
+  tags: ["admin-feedback"],
+  summary: "获取管理员反馈详情",
+  security: [{ adminSecretHeader: [] }],
+  request: {
+    params: routeIdParamsSchema,
+    headers: adminOptionalHeadersSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminFeedbackTicketDetailResponseDataSchema,
+      "AdminFeedbackDetailResponse",
+      "管理员反馈详情读取成功",
+      successExamples.adminFeedbackDetail,
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/feedback/{id}/reply",
+  operationId: "postAdminFeedbackReply",
+  tags: ["admin-feedback"],
+  summary: "管理员回复反馈",
+  security: [{ adminSecretHeader: [] }],
+  request: {
+    params: routeIdParamsSchema,
+    headers: adminOptionalHeadersSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminReplyFeedbackRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminFeedbackTicketDetailResponseDataSchema,
+      "AdminReplyFeedbackResponse",
+      "管理员回复成功",
+      successExamples.adminFeedbackDetail,
+      "feedback replied",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"], {
+      "400": {
+        description: "管理员回复内容或状态字段未通过校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "回复内容至少需要 2 个字符。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/feedback/{id}/status",
+  operationId: "postAdminFeedbackStatus",
+  tags: ["admin-feedback"],
+  summary: "管理员更新反馈状态",
+  security: [{ adminSecretHeader: [] }],
+  request: {
+    params: routeIdParamsSchema,
+    headers: adminOptionalHeadersSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminUpdateFeedbackStatusRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminFeedbackTicketDetailResponseDataSchema,
+      "AdminUpdateFeedbackStatusResponse",
+      "管理员状态更新成功",
+      successExamples.adminFeedbackDetail,
+      "feedback status updated",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"], {
+      "400": {
+        description: "管理员状态更新请求体格式不正确，或状态值未通过校验。",
+        example: {
+          code: "BAD_REQUEST",
+          message: ROUTE_ERROR_MESSAGES.invalidAdminStatusBody,
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+export function buildOpenApiDocument() {
+  const generator = new OpenApiGeneratorV31(registry.definitions)
+
+  return generator.generateDocument({
+    openapi: "3.1.0",
+    info: {
+      title: "AI编程学习教练 API",
+      version: "1.0.0",
+      description: "当前仓库已实现后端 API 的自动生成 OpenAPI 文档。",
+    },
+    servers: [
+      {
+        url: "/",
+      },
+    ],
+  })
+}
