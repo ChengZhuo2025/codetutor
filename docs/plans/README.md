@@ -78,13 +78,13 @@
 - 当前接口文档不是“扫描整个 `app/api` 目录零维护生成”；新增或修改后端接口后，仍需同步更新 `server/modules/api-docs/openapi.ts` 与 `server/modules/api-docs/schemas.ts` 中的注册与 schema。
 - 当前 `app/api` 路由文件已不再普遍手写请求解析；请求体/查询参数校验、统一成功/失败响应、常见 `NOT_FOUND` / `BAD_REQUEST` 文案与错误映射，正在集中收敛到 `server/lib/request-validation.ts`、`server/lib/route-response.ts`、`server/lib/route-error.ts`、`server/lib/route-error-presets.ts` 以及各域 `route-handler.ts`。
 - 当前仓库顶层真实目录除了页面和服务端主目录外，还包含 `lib/auth`、`lib/learning`、`lib/mocks`、`server/services`、`server/utils`、`supabase/seeds` 等辅助或预留目录；目录阅读应以当前代码树为准，不再按最早设计稿假定不存在的层级。
-- 当前已落地的数据库迁移为 `001` 到 `016`，其中已包含学习主线核心表、用户资料字段升级、运营导出视图、头像 Storage bucket、反馈工单表、学习计划 `interrupted` 状态、成长写模型表 `score_ledgers` / `user_ranks` / `daily_checkins`，以及 AI 会话、provider、agent、skill、调用审计相关表。
+- 当前已落地的数据库迁移为 `001` 到 `017`，其中已包含学习主线核心表、用户资料字段升级、运营导出视图、头像 Storage bucket、反馈工单表、学习计划 `interrupted` 状态、成长写模型表 `score_ledgers` / `user_ranks` / `daily_checkins`、AI 会话/agent/provider/skill 相关表、以及管理员账号/角色/审计日志表。
 - 当前主学习闭环已真实打通：学习消息链路首版已完成 `conversation_sessions`、`conversation_messages`、provider / agent / skill 配置表、`POST /api/learning/message`、`GET /api/learning/current-session`、`GET /api/learning/messages`、SSE 流式输出、前端增量渲染、`task_patch` 状态联动、结构化 `structuredContent`（`interactionType / variant / summary / blocks / sections / actions`）与对应测试链路。
 - AI Orchestration 当前仅第一阶段主链路已落地；`2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 中的 `15.2 第二阶段` 与 `15.3 第三阶段` 仍属后续开发计划，尚未开始实现。
 - 首页营销层已接入登录态恢复：顶部导航、Hero、套餐区、最终 CTA、页脚 CTA 会在用户已登录时切换为“继续学习”，并按真实用户状态跳转到 `/learn`、`/history` 或 `/onboarding`。
 - 工作台左侧栏数据已提升到根级 Provider 缓存，在 `/learn`、`/map`、`/achievements`、`/history` 间切换时不再重复请求并产生加载跳动。
 - 当前学习计划状态机已区分 `active`、`interrupted`、`completed`、`abandoned`、`archived`；其中 `interrupted` 为连续 7 天无学习行为后的系统自动中断，`abandoned` 为用户主动放弃。
-- 当前仍未落地的能力主要包括：事件埋点写接口、管理员后台前端页面、通知设置落库、订阅支付域，以及 AI 域的更深层运营化与可视化配置能力。
+- 当前仍未落地的能力主要包括：事件埋点写接口、管理员后台 Phase 2（用户运营、学习运营、AI 运营、细粒度权限控制）、通知设置落库、订阅支付域，以及 AI 域的更深层运营化与可视化配置能力。
 - 当前产品主线围绕 `user_learning_paths` 展开，`/learn`、`/map`、`/history` 共用这条主线。
 - 各文档如果同时包含“已实现”与“后续规划”两部分，应以文档中的“当前实现快照”或“已落地状态”说明为准；若与代码冲突，以代码和迁移为准，再回写文档。
 
@@ -97,7 +97,7 @@
 - AI 第二阶段能力：按 `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 的 `15.2` 落地更细粒度的 agent 控制，包括按不同工具/路径补 agent seed、按不同 `interactionType` 补专用 agent、补 prompt 版本化管理。
 - 事件埋点写入：补齐 `POST /api/analytics/event` 与 `event_logs`，为激活、留存、转化和卡点分析提供真实数据。
 - 通知设置落库：把当前静态通知设置升级为真实用户偏好数据，避免设置只停留在前端展示层。
-- 管理员后台前端：在已有反馈后台接口基础上，补齐管理员登录、反馈工单列表/详情、用户列表、导出视图接入等页面。
+- 管理员后台 Phase 2：在 Phase 1（认证、看板、反馈工单）基础上，补齐用户运营、学习运营、AI 运营、细粒度权限控制等模块。
 
 ### P2：商业化与基础设施增强
 

@@ -54,7 +54,10 @@ features/              # 前端主工作目录，按业务域组织
   ├── progress/       # 学习地图/进度
   ├── achievement/    # 成就/段位系统
   ├── history/        # 历史学习计划页
-  └── api-docs/       # Swagger UI API 文档页
+  ├── api-docs/       # Swagger UI API 文档页
+  ├── admin-shell/    # 管理后台壳层（布局、侧边栏、头部）
+  ├── admin-dashboard/ # 管理后台看板
+  └── admin-feedback/ # 管理后台反馈工单
 hooks/                 # 自定义 React Hooks
 lib/                   # 工具函数、API 契约与 mock client
 server/                # 服务端逻辑
@@ -70,6 +73,8 @@ server/                # 服务端逻辑
     ├── onboarding/   # onboarding 域
     ├── history/      # 历史学习计划域
     ├── feedback/     # 反馈域
+    ├── admin-auth/   # 管理员认证域
+    ├── admin-dashboard/ # 管理员看板域
     └── api-docs/     # OpenAPI 文档注册
 supabase/              # 数据库迁移与相关 SQL
 providers/            # 全局 Provider 入口
@@ -88,6 +93,9 @@ types/                # 跨 feature 共用的类型定义
 | `/achievements` | 成就页 | `features/achievement/pages/achievements-page.tsx` |
 | `/history` | 历史学习页 | `features/history/pages/history-page.tsx` |
 | `/api-docs` | Swagger UI API 文档 | `features/api-docs/pages/api-docs-page.tsx` |
+| `/admin` | 管理后台看板 | `features/admin-dashboard/components/dashboard-overview.tsx` |
+| `/admin/feedback` | 反馈工单列表 | `features/admin-feedback/components/feedback-list.tsx` |
+| `/admin/feedback/[id]` | 反馈工单详情 | `features/admin-feedback/components/feedback-detail.tsx` |
 
 ### 代码组织原则
 
@@ -121,7 +129,7 @@ types/                # 跨 feature 共用的类型定义
 - ✅ 七个核心用户页面 + API 文档页
 - ✅ 共享 UI 组件库（shadcn/ui）
 - ✅ 布局组件和导航系统
-- ✅ 手机验证码登录与微信 OAuth 跳转
+- �� 手机验证码登录与微信 OAuth 跳转
 - ✅ 首页登录态恢复与真实推荐分流（`/learn`、`/history`、`/onboarding`）
 - ✅ onboarding / learn / map / achievements / history 的核心 read model API
 - ✅ `/api/task/complete` 与 `/api/task/update-status` 首版落地，学习页可真实推进关卡
@@ -131,11 +139,12 @@ types/                # 跨 feature 共用的类型定义
 - ✅ 用户资料编辑、头像上传、反馈系统
 - ✅ AI 学习消息链路第一阶段（SSE 流式输出 + 结构化 structuredContent）
 - ✅ OpenAPI 3.1 文档（`/api/docs/openapi`）与 Swagger UI（`/api-docs`）
-- ✅ Supabase 迁移与远程数据库接入（当前已到 `016`）
+- ✅ Supabase 迁移与远程数据库接入（当前已到 `017`）
+- ✅ 管理后台 Phase 1（管理员认证、看板、反馈工单）
 
 **进行中/待完成：**
 - ⏳ analytics 事件入库
-- ⏳ 管理员后台前端
+- ⏳ 管理员后台 Phase 2（用户运营、学习运营、AI 运营、细粒度权限控制）
 - ⏳ AI 编排第二阶段（更细粒度 agent 控制、prompt 版本化管理）
 - ⏳ 通知设置落库
 
@@ -214,7 +223,9 @@ types/                # 跨 feature 共用的类型定义
 - `2026-03-23-ai-coding-tutor-ui-visual-design-spec.md` - UI 视觉设计
 - `2026-03-23-ai-coding-tutor-adr-records.md` - 架构决策记录
 - `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` - AI 编排设计（第一阶段已完成）
-- `2026-03-31-ai-coding-tutor-admin-console-design.md` - 管理后台设计
+- `2026-03-31-ai-coding-tutor-admin-console-design.md` - 管理后台设计（Phase 1 已完成）
+- `2026-03-31-admin-console-phase1-design.md` - 管理后台 Phase 1 详细设计
+- `2026-03-31-admin-console-phase1-implementation.md` - 管理后台 Phase 1 实施计划
 
 ## 重要提醒
 

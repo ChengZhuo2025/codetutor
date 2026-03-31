@@ -1,12 +1,13 @@
 # AI编程学习教练 管理后台设计文档
 
-> 文档类型：管理后台设计文档  
-> 产品名称：AI编程学习教练  
-> 版本：v0.2  
-> 状态：基于当前代码现状的新设计提案  
-> 创建日期：2026-03-31  
-> 适用阶段：MVP 后续运营化阶段  
-> 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md`、`docs/plans/2026-03-23-ai-coding-tutor-api-spec.md`、`docs/plans/2026-03-23-ai-coding-tutor-database-schema-design.md`、`docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md`
+> 文档类型：管理后台设计文档
+> 产品名称：AI编程学习教练
+> 版本：v0.3
+> 状态：Phase 1 已完成，Phase 2 规划中
+> 创建日期：2026-03-31
+> 更新日期：2026-03-31
+> 适用阶段：MVP 后续运营化阶段
+> 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md`、`docs/plans/2026-03-23-ai-coding-tutor-api-spec.md`、`docs/plans/2026-03-23-ai-coding-tutor-database-schema-design.md`、`docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md`、`docs/plans/2026-03-31-admin-console-phase1-design.md`、`docs/plans/2026-03-31-admin-console-phase1-implementation.md`
 
 ---
 
@@ -1067,7 +1068,7 @@ AI 核心配置变更既要可追踪，也要尽量少引入额外配置真源�
 - 后续后台前端设计文档
 - 后台 API 细化计划
 
-### Phase 1：反馈工单后台正式化
+### Phase 1：反馈工单后台正式化 ✅ 已完成
 
 目标：
 
@@ -1081,6 +1082,11 @@ AI 核心配置变更既要可追踪，也要尽量少引入额外配置真源�
 - 后台基础 layout
 - 反馈列表、详情、回复、状态切换
 - `admin_accounts`、`admin_roles`、`admin_account_roles`、`admin_audit_logs`
+
+完成日期：2026-03-31
+
+详细设计：`docs/plans/2026-03-31-admin-console-phase1-design.md`
+实施计划：`docs/plans/2026-03-31-admin-console-phase1-implementation.md`
 
 ### Phase 2：AI 核心配置后台
 
