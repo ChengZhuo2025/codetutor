@@ -102,6 +102,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `POST /api/onboarding/complete`
 - `GET /api/learning/current-session`
 - `POST /api/learning/message`
+- `GET /api/learning/messages`
 - `POST /api/task/complete`
 - `POST /api/task/update-status`
 - `POST /api/checkin/daily`
@@ -109,6 +110,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `GET /api/progress/map`
 - `GET /api/achievement/summary`
 - `GET /api/history/recent`
+- `GET /api/history/{id}`
+- `POST /api/history/{id}/status`
 - `POST /api/feedback`
 - `GET /api/feedback/mine`
 - `GET /api/feedback/mine/{id}`
@@ -172,6 +175,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - `POST /api/learning/message`
 - `GET /api/learning/current-session`
+- `GET /api/learning/messages`
 
 规划中：
 
@@ -192,6 +196,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - `GET /api/achievement/summary`
 - `GET /api/history/recent`
+- `GET /api/history/{id}`
+- `POST /api/history/{id}/status`
 - `POST /api/checkin/daily`
 
 ## 4.6 反馈与运营
@@ -219,7 +225,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 营销首页 | `/` | `GET /api/auth/session` | 首页导航、Hero、套餐区、页脚与最终 CTA 会根据登录态切换为“继续学习”，并跳转到 `/learn`、`/history` 或 `/onboarding` |
 | 登录页 | `/login` | `POST /api/auth/login`、`GET/PATCH /api/profile/me`、`POST /api/profile/avatar` | 当前已打通手机号验证码登录、微信 OAuth 跳转、用户档案读取与资料编辑 |
 | 新手引导 | `/onboarding` | `GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete` | 产出主工具、学习等级、学习模式、初始学习路径实例 |
-| 学习页 | `/learn` | `GET /api/learning/current-session`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status` | 当前已打通学习主界面 read model、消息提交与任务状态写入；AI 回复仍是服务端内置教学逻辑，尚未接通真实外部 provider |
+| 学习页 | `/learn` | `GET /api/learning/current-session`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status` | 当前已打通学习主界面 read model、历史消息分页、真实 AI provider 消息编排、SSE 与任务状态写入 |
 | 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
 | 成就页 | `/achievements` | `GET /api/achievement/summary` | 当前已打通成长总览 read model，并支持真实每日打卡 |
 | 历史页 | `/history` | `GET /api/history/recent`、`GET /api/history/{id}`、`POST /api/history/{id}/status` | 当前前端实际需要的是“历史学习计划列表 + 详情复盘 + 状态操作”，而不是“最近对话列表” |
@@ -518,8 +524,9 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 当前实现说明：
 
 - 当前接口已经真实落地并接入 `/learn`
-- 当前返回仍以服务端内置教学回复逻辑为主
-- 外部 provider、`conversation_sessions`、`agent_templates`、`agent_bindings`、`skill_packs` 等真实 AI 编排链路以后续 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准
+- 当前已接通真实 AI 编排链路：会话创建/复用、用户消息持久化、agent 解析、skill 上下文装配、provider 调用、assistant 消息持久化、`llm_invocations` 审计写入
+- 当前同时支持 `application/json` 与 `text/event-stream` 两种返回方式；当请求头 `Accept` 包含 `text/event-stream` 或请求体传 `stream=true` 时，返回 SSE
+- 当前消息返回与持久化都已显式包含 `structuredContent`，其中至少包含 `interactionType`、`variant`、`summary`、`blocks`、`sections`、`actions`
 
 请求体：
 
@@ -527,8 +534,11 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 {
   "conversationId": "uuid",
   "taskId": "uuid",
-  "inputType": "link",
-  "content": "https://example.com/tutorial",
+  "clientMessageId": "msg_client_20260331_xxx",
+  "interactionType": "blocked_help",
+  "inputType": "text",
+  "content": "我卡在这里了，命令执行后报错。",
+  "stream": false,
   "clientContext": {
     "pagePath": "/learn"
   }
@@ -541,8 +551,11 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 |------|------|------|
 | `conversationId` | 否 | 无则新建会话 |
 | `taskId` | 否 | 当前任务 ID |
+| `clientMessageId` | 否 | 前端幂等消息 ID；当前真实实现已支持并建议始终传入 |
+| `interactionType` | 否 | `teaching` / `blocked_help` / `task_review` / `completion_feedback` / `path_guidance`；为空时由服务端自动推断 |
 | `inputType` | 是 | `text` / `link` / `code` |
 | `content` | 是 | 用户输入内容 |
+| `stream` | 否 | `true` 时优先请求 SSE |
 | `clientContext` | 否 | 页面与调试上下文 |
 
 成功响应示例：
@@ -554,16 +567,38 @@ MVP 默认使用登录态 Session 或 Bearer Token。
   "data": {
     "conversationId": "uuid",
     "taskId": "uuid",
-    "assistantMessage": {
-      "messageId": "uuid",
-      "currentGoal": "熟悉 Cursor 的工作区",
-      "currentStep": "先打开 Cursor，并确认左侧文件树可见",
-      "whyThisStep": "先完成环境熟悉，后续 Prompt 才不会卡在界面操作",
-      "hintIfStuck": "如果左侧文件树没显示，尝试从 View 菜单恢复",
-      "knowledgePoints": ["工作区", "文件树", "基础界面"],
-      "nextStepPreview": "下一步会让你输入第一个 Prompt"
+    "message": {
+      "id": 101,
+      "role": "ai",
+      "kind": "coach",
+      "title": "排查建议",
+      "content": "先固定当前执行命令、终端输出和你预期的结果。",
+      "structuredContent": {
+        "interactionType": "blocked_help",
+        "variant": "blocked_help",
+        "summary": "先固定当前执行命令、终端输出和你预期的结果。",
+        "blocks": [],
+        "sections": [],
+        "actions": [
+          {
+            "label": "补充报错信息",
+            "prompt": "补充完整报错文本、触发步骤和最近一次修改内容",
+            "tone": "warning"
+          }
+        ]
+      },
+      "taskPatch": {
+        "taskId": "uuid",
+        "status": "blocked",
+        "suggestedNextAction": "补充完整报错文本、触发步骤和最近一次修改内容"
+      }
     },
-    "taskState": "in_progress"
+    "taskState": "blocked",
+    "taskPatch": {
+      "taskId": "uuid",
+      "status": "blocked",
+      "suggestedNextAction": "补充完整报错文本、触发步骤和最近一次修改内容"
+    }
   }
 }
 ```
@@ -571,8 +606,16 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 错误场景：
 
 - 链接解析失败
-- AI 输出结构化校验失败
+- provider 调用失败
 - 用户当前无有效学习路径
+
+SSE 事件补充：
+
+- `session_started`
+- `task_patch`
+- `assistant_delta`
+- `assistant_done`
+- `error`
 
 ## 7.2 `GET /api/learning/current-session`
 
@@ -708,7 +751,58 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `quickActions`、`supportOptions`、`tips`、`knowledgeTags.color` 等字段偏展示层，可在首期先由前端保留静态配置；如果服务端返回，也应视为可选扩展字段，而不是底层数据库实体。
 - `messages.role` 在服务端内部建议使用 `assistant`，若前端仍保留 `ai`，可在 BFF DTO 层做映射。
 
-## 7.3 规划中：`POST /api/learning/stuck-help`
+## 7.3 `GET /api/learning/messages`
+
+用途：
+
+- 分页读取当前学习会话中的更早消息，供 `/learn` 顶部“加载更早消息”入口使用
+
+查询参数：
+
+- `conversationId`
+- `beforeSequenceNo`
+- `limit`
+
+成功响应示例：
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "conversationId": "uuid",
+    "messages": [
+      {
+        "id": 98,
+        "role": "ai",
+        "kind": "coach",
+        "title": "下一步建议",
+        "content": "先做一个最小验证结果，再回来继续。",
+        "structuredContent": {
+          "interactionType": "path_guidance",
+          "variant": "path_guidance",
+          "summary": "先做一个最小验证结果，再回来继续。",
+          "blocks": [],
+          "sections": [],
+          "actions": []
+        }
+      }
+    ],
+    "pagination": {
+      "hasMore": true,
+      "nextBeforeSequenceNo": 37
+    }
+  }
+}
+```
+
+业务规则：
+
+- 仅允许读取当前登录用户自己的会话
+- `beforeSequenceNo` 和 `limit` 必须是正整数
+- assistant 历史消息若已落库存储 `structuredContent`，返回时应一并恢复；旧记录若缺失该字段，则服务端按兼容逻辑回填
+
+## 7.4 规划中：`POST /api/learning/stuck-help`
 
 用途：
 
@@ -1153,7 +1247,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 反馈提交后默认状态为 `submitted`
 - 提交时应快照用户昵称、手机号、联系邮箱，避免后续用户资料变化影响运营排查
 
-## 9.4 `GET /api/feedback/mine` 与 `GET /api/feedback/mine/{id}`
+## 9.6 `GET /api/feedback/mine` 与 `GET /api/feedback/mine/{id}`
 
 用途：
 
@@ -1194,7 +1288,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 用户侧只返回对用户可见的回复，不返回内部备注
 - `status` 当前支持 `submitted`、`in_review`、`replied`、`closed`
 
-## 9.5 `POST /api/checkin/daily`
+## 9.7 `POST /api/checkin/daily`
 
 用途：
 
@@ -1295,7 +1389,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 ---
 
-## 11. 接口权限矩阵
+## 12. 接口权限矩阵
 
 | 接口 | 是否需登录 | 说明 |
 |------|------|------|
@@ -1310,6 +1404,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | `POST /api/onboarding/complete` | 是 | 写用户引导结果 |
 | `POST /api/learning/message` | 是 | 核心学习数据 |
 | `GET /api/learning/current-session` | 是 | 恢复当前学习上下文 |
+| `GET /api/learning/messages` | 是 | 分页读取当前学习会话历史消息 |
 | `POST /api/learning/stuck-help` | 是，规划中 | 请求卡住帮助 |
 | `POST /api/task/complete` | 是 | 写任务完成、推进下一关、同步积分快照 |
 | `POST /api/task/update-status` | 是 | 更新当前关卡状态 |
@@ -1317,6 +1412,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | `GET /api/progress/map` | 是 | 当前路径地图 |
 | `GET /api/achievement/summary` | 是 | 私人成长总览 |
 | `GET /api/history/recent` | 是 | 私有历史 |
+| `GET /api/history/{id}` | 是 | 查看单条学习计划详情 |
+| `POST /api/history/{id}/status` | 是 | 更新学习计划状态 |
 | `POST /api/feedback` | 是 | 提交用户反馈 |
 | `GET /api/feedback/mine` | 是 | 查看我的反馈列表 |
 | `GET /api/feedback/mine/{id}` | 是 | 查看我的反馈详情 |
@@ -1326,9 +1423,9 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 ---
 
-## 12. 典型错误响应示例
+## 13. 典型错误响应示例
 
-## 12.1 未登录
+## 13.1 未登录
 
 ```json
 {
@@ -1338,7 +1435,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 }
 ```
 
-## 12.2 AI 服务异常
+## 13.2 AI 服务异常
 
 ```json
 {
@@ -1348,7 +1445,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 }
 ```
 
-## 12.3 任务重复完成
+## 13.3 任务重复完成
 
 ```json
 {
@@ -1360,7 +1457,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 ---
 
-## 13. 联调与测试建议
+## 14. 联调与测试建议
 
 - 所有接口至少提供一个成功响应示例
 - 关键接口必须覆盖失败响应示例
@@ -1369,7 +1466,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 ---
 
-## 14. 版本控制建议
+## 15. 版本控制建议
 
 - 当前文档对应 `v1 MVP API`
 - 后续新增支付、社区、多模态能力时，建议按模块新增接口版本说明
@@ -1377,7 +1474,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 ---
 
-## 15. 当前前端原型中不建议直接服务端化的字段
+## 16. 当前前端原型中不建议直接服务端化的字段
 
 以下字段当前存在于前端 mock 或 view model 中，但不建议在 MVP 首期直接作为服务端权威接口字段：
 
@@ -1392,6 +1489,6 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 ---
 
-## 16. 结论
+## 17. 结论
 
 这套 API 的核心原则，是让前端始终围绕“当前一步”这个业务中心组织体验，而让服务端统一承担鉴权、学习编排、状态推进和成长计算。只要接口边界清晰且幂等控制做稳，MVP 主链路的前后端协作就能保持稳定。

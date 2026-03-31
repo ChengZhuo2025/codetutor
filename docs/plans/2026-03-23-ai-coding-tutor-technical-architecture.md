@@ -58,13 +58,13 @@
 - 工作台左侧栏数据已提升到根级 Provider 缓存，跨工作台页面切换时不再重复请求并产生加载跳动
 - 用户资料读写、头像上传到 Supabase Storage
 - 用户反馈提交、我的反馈记录、管理员反馈接口
-- `POST /api/learning/message` 已存在真实接口，但当前仍以服务端内置教学回复逻辑为主，尚未真正接通外部 AI provider
+- `POST /api/learning/message`、`GET /api/learning/messages` 已接入真实 AI 编排链路，包含会话持久化、历史分页、SiliconFlow provider、JSON / SSE 双返回、结构化 `structuredContent` 与 `task_patch` 联动
 
 当前尚未落地的链路包括：
 
 - 事件埋点写接口
 - 管理员后台前端
-- 真实外部 AI provider 编排与会话持久化配置层
+- 通知设置落库
 - Redis / 队列等增强型基础设施
 
 ---
@@ -144,7 +144,7 @@ MVP 阶段采用模块化单体架构，而不是微服务架构。原因如下�
 
 - Vercel：部署与边缘分发
 - 阿里云 AnalyticDB PostgreSQL 版 Supabase：Postgres、认证、边缘函数与托管后台能力
-- 外部 AI provider 抽象层：模型推理，首期规划接入 SiliconFlow
+- 外部 AI provider 抽象层：模型推理，当前首版已接入 SiliconFlow，并保留多 provider 扩展边界
 
 ### 4.3 AI 是业务引擎的一部分，不是孤立外挂
 
@@ -181,7 +181,7 @@ AI 输出不能只作为一段聊天回复存在，而必须与以下结构绑�
 | 前端运行时与框架 | React 19.2 + TypeScript 5.9 + Tailwind CSS 4 | 与 Next.js 16 对齐，采用当前稳定代际 |
 | 数据库 | 阿里云 AnalyticDB PostgreSQL 版 Supabase | 延续 Supabase 范式，同时更贴近国内微信生态接入诉求 |
 | 认证 | 阿里云 Supabase Auth | 保留 Supabase Auth 范式，并优先使用其国内 OAuth 能力 |
-| AI 服务 | 外部 AI provider 抽象层（首期 SiliconFlow） | 当前架构已预留外部 AI provider 接入点，但代码尚未真正连通 |
+| AI 服务 | 外部 AI provider 抽象层（首期 SiliconFlow） | 当前已接通首版真实 provider，并通过抽象层保留多 provider / 多模型扩展能力 |
 | 状态管理 | 服务端主状态 + 前端轻状态 | 核心状态统一在服务端，避免任务状态漂移 |
 | 部署 | Vercel + 托管数据库 | 降低运维门槛 |
 | 观测 | 事件埋点 + 服务日志 + 前端错误监控 | 支撑产品验证与快速定位问题 |

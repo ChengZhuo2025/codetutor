@@ -62,7 +62,7 @@
 
 ## 1.2 当前代码实现状态快照
 
-截至 2026-03-30，当前仓库与 AI 编排直接相关的真实情况如下：
+截至 2026-03-31，当前仓库与 AI 编排直接相关的真实情况如下：
 
 - 已有学习消息入口：`POST /api/learning/message`
 - 已有学习会话恢复入口：`GET /api/learning/current-session`
@@ -71,6 +71,10 @@
 - 已落地 `ai_providers`、`ai_models`、`agent_templates`、`agent_bindings`、`skill_packs`、`agent_skill_bindings`、`llm_invocations`
 - `POST /api/learning/message` 已切到真实编排链路：会话创建/复用、消息持久化、agent 解析、skill 上下文装配、provider 调用、调用审计写入
 - 当前首版 provider 调用已同时支持非流式 JSON 与 `text/event-stream` SSE
+- 当前 assistant 消息已显式返回并持久化 `structuredContent`，其中包含 `interactionType / variant / summary / blocks / sections / actions`
+- 当前 prompt 已加入 agent 原生 Markdown 输出契约，要求模型按固定二级标题与 `动作文案｜点击后发送的话` 格式返回
+- 当前前端 `/learn` 已提升到 `interactionType` 级别展示驱动，再按 `variant` 做次级细分
+- 当前学习消息链路已覆盖 logic / HTTP / output-format 测试，以及真实 provider / database 参与的 live JSON、live SSE 集成测试
 - 当前真实外部 provider 联调还依赖环境变量 `SILICONFLOW_API_KEY`，若未配置会返回 `AI_PROVIDER_ERROR`
 - 当前仓库已经具备适合承载该能力的基础设施：`app/api`、`server/modules`、Supabase Auth、Database、Storage、远程迁移执行脚本
 
@@ -1408,12 +1412,12 @@ ai/skills/
     "accept": "text/event-stream"
   },
   "agentMeta": {
-    "agentCode": "cli-blocked-helper",
-    "profileCode": "sf-code-workflow",
+    "agentCode": "cli_blocked_helper",
+    "providerCode": "siliconflow",
+    "modelCode": "glm-5",
     "contextMessageLimit": 6,
     "maxOutputTokens": 2600,
-    "temperature": 0.2,
-    "topP": 0.8
+    "temperature": 0.2
   },
   "pathMeta": {
     "selectionMode": "preset_training",
@@ -1598,7 +1602,7 @@ ai/skills/
 | `interactionType` | 否 | `string` | `teaching` / `blocked_help` / `task_review` / `completion_feedback` / `path_guidance`；为空时由服务端自动推断 |
 | `inputType` | 是 | `string` | 第一阶段固定支持 `text` / `link` / `code` |
 | `content` | 是 | `string` | 用户输入内容 |
-| `stream` | 否 | `boolean` | 是否期望流式返回；默认 `true` |
+| `stream` | 否 | `boolean` | 是否期望流式返回；为 `true` 时优先返回 SSE |
 | `clientContext` | 否 | `object` | 前端当前页面与调试上下文，属于辅助手段，不是权威真源 |
 
 校验规则固定如下：
@@ -1634,38 +1638,38 @@ ai/skills/
   "message": "success",
   "data": {
     "conversationId": "uuid",
-    "sessionStatus": "active",
-    "interactionType": "blocked_help",
-    "agent": {
-      "code": "cli-blocked-helper",
-      "name": "CLI 卡点排查"
-    },
-    "model": {
-      "providerCode": "siliconflow",
-      "modelCode": "deepseek-v3-2",
-      "profileCode": "sf-code-workflow"
-    },
-    "userMessage": {
-      "messageId": "uuid",
-      "clientMessageId": "msg_client_20260330_xxx",
-      "role": "user",
-      "content": "我现在卡在这一步，不知道应该先检查什么"
-    },
-    "assistantMessage": {
-      "messageId": "uuid",
-      "role": "assistant",
+    "taskId": "uuid",
+    "message": {
+      "id": 101,
+      "role": "ai",
+      "kind": "coach",
+      "title": "排查建议",
       "content": "先固定问题，再检查当前目录、报错文本和最近一次命令输出。",
-      "finishReason": "stop"
+      "structuredContent": {
+        "interactionType": "blocked_help",
+        "variant": "blocked_help",
+        "summary": "先固定问题，再检查当前目录、报错文本和最近一次命令输出。",
+        "blocks": [],
+        "sections": [],
+        "actions": [
+          {
+            "label": "补充报错信息",
+            "prompt": "补充完整报错文本、触发步骤和最近一次修改内容",
+            "tone": "warning"
+          }
+        ]
+      },
+      "taskPatch": {
+        "taskId": "uuid",
+        "status": "blocked",
+        "suggestedNextAction": "补充完整报错文本、触发步骤和最近一次修改内容"
+      }
     },
+    "taskState": "blocked",
     "taskPatch": {
       "taskId": "uuid",
       "status": "blocked",
-      "suggestedNextAction": "补充报错文本和当前执行命令"
-    },
-    "usage": {
-      "promptTokens": 1240,
-      "completionTokens": 312,
-      "totalTokens": 1552
+      "suggestedNextAction": "补充完整报错文本、触发步骤和最近一次修改内容"
     }
   }
 }
@@ -1689,7 +1693,7 @@ ai/skills/
 
 ```text
 event: session_started
-data: {"conversationId":"uuid","interactionType":"teaching","agentCode":"claude-code-coach","profileCode":"sf-code-workflow"}
+data: {"conversationId":"uuid","interactionType":"teaching","agentCode":"coach_general","modelCode":"glm-5","providerCode":"siliconflow"}
 ```
 
 #### `assistant_delta`
@@ -1707,16 +1711,16 @@ data: {"delta":"先不要急着直接改代码，先固定当前报错的复现�
 
 ```text
 event: task_patch
-data: {"taskId":"uuid","status":"blocked"}
+data: {"taskId":"uuid","status":"blocked","suggestedNextAction":"补充完整报错文本、触发步骤和最近一次修改内容"}
 ```
 
 #### `assistant_done`
 
-表示本次 assistant 文本已经完成，并带回最终消息主键与 usage。
+表示本次 assistant 文本已经完成，并带回最终消息元数据、结构化内容与 usage。
 
 ```text
 event: assistant_done
-data: {"messageId":"uuid","finishReason":"stop","usage":{"promptTokens":1240,"completionTokens":312,"totalTokens":1552}}
+data: {"messageId":"uuid","title":"排查建议","kind":"coach","structuredContent":{"interactionType":"blocked_help","variant":"blocked_help","summary":"先固定问题，再检查当前目录、报错文本和最近一次命令输出。","blocks":[],"sections":[],"actions":[{"label":"补充报错信息","prompt":"补充完整报错文本、触发步骤和最近一次修改内容","tone":"warning"}]},"finishReason":"stop","usage":{"promptTokens":1240,"completionTokens":312,"totalTokens":1552}}
 ```
 
 #### `error`
@@ -1865,15 +1869,15 @@ data: {"code":"AI_PROVIDER_ERROR","message":"provider stream interrupted"}
 
 ### 15.1.1 当前迁移基线
 
-截至 2026-03-30，当前仓库真实基线如下：
+截至 2026-03-31，当前仓库真实基线如下：
 
-- `supabase/migrations/` 已到 `011_create_daily_checkins.sql`
-- `supabase/seeds/` 已到 `004_claude_codex_preset_curriculum.sql`
+- `supabase/migrations/` 已到 `016_create_llm_invocations.sql`
+- `supabase/seeds/` 已到 `007_ai_skill_registry.sql`
 
-因此，AI 编排相关数据库落地固定从以下编号继续：
+因此，AI 编排相关数据库首版已经按以下编号落地完成：
 
-- migration 从 `012_*.sql` 开始
-- seed 从 `005_*.sql` 开始
+- migration 为 `012_*.sql` 到 `016_*.sql`
+- seed 为 `005_*.sql` 到 `007_*.sql`
 
 ### 15.1.2 建议 migration 拆分顺序
 
@@ -2040,9 +2044,9 @@ data: {"code":"AI_PROVIDER_ERROR","message":"provider stream interrupted"}
 当前确认：
 
 1. `conversation_sessions`
-   不做历史回填。因为当前历史学习消息尚未真实持久化，不存在可信旧数据源。
+   不做历史回填。`012` 之后的新会话已按真实链路写入；早于迁移落地的前端临时态消息不回补。
 2. `conversation_messages`
-   不做历史回填。现有 `/learn` 的内置教学回复只用于前端当前态，不作为正式历史数据补写。
+   不做历史回填。仅以 `012` 迁移后真实持久化的消息为准，旧临时态消息不补写。
 3. `llm_invocations`
    不做历史回填。审计表从真实 provider 接入当天开始计。
 4. `agent_templates`、`agent_bindings`、`skill_packs`
@@ -2095,6 +2099,10 @@ data: {"code":"AI_PROVIDER_ERROR","message":"provider stream interrupted"}
 
 ## 15.2 第二阶段
 
+当前状态：
+
+- 尚未开始落地；当前代码仅完成第一阶段主链路，不应把本节内容视为已实现能力
+
 目标：
 
 - 让平台预设课程具备更细的 agent 控制
@@ -2106,6 +2114,10 @@ data: {"code":"AI_PROVIDER_ERROR","message":"provider stream interrupted"}
 3. 补 prompt 版本化管理
 
 ## 15.3 第三阶段
+
+当前状态：
+
+- 尚未开始落地；当前仍停留在设计预留，后台配置与运营可视化能力尚不存在
 
 目标：
 

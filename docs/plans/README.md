@@ -9,9 +9,9 @@
 ## 30 秒状态速览
 
 - 当前项目已不是纯原型仓库，而是“前端页面 + `app/api` + `server/modules` + Supabase migrations”的同仓 MVP。
-- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈。
-- 已落地数据侧：远程 Supabase、`001` 到 `011` 迁移、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表。
-- 仍待实现：外部 AI provider 接入、事件埋点写入、通知设置落库、管理员后台前端、订阅支付域。
+- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈。
+- 已落地数据侧：远程 Supabase、`001` 到 `016` 迁移、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表、AI 会话 / provider / agent / skill / invocation 表。
+- 仍待实现：事件埋点写入、通知设置落库、管理员后台前端、订阅支付域。
 - 若只想最快了解真实现状，优先读：
   1. `docs/plans/README.md`
   2. `docs/plans/2026-03-23-ai-coding-tutor-frontend-engineering-guide.md`
@@ -67,12 +67,14 @@
 
 - 当前仓库已经不是“纯前端 demo”，而是一个包含前端页面、`app/api` BFF、`server/modules` 服务层、Supabase 迁移与远程数据库接入脚本的同仓项目。
 - 当前真实页面为 7 个：`/`、`/login`、`/onboarding`、`/learn`、`/map`、`/achievements`、`/history`。
-- 当前已落地的真实接口包括：认证登录、认证会话摘要、用户档案、头像上传、onboarding、当前学习会话、任务完成与任务状态更新、每日打卡、地图/进度、成就汇总、历史学习计划、用户反馈与管理员反馈接口。
-- 当前已落地的数据库迁移为 `001` 到 `011`，其中已包含学习主线核心表、用户资料字段升级、运营导出视图、头像 Storage bucket、反馈工单表、学习计划 `interrupted` 状态，以及成长写模型表 `score_ledgers`、`user_ranks`、`daily_checkins`。
+- 当前已落地的真实接口包括：认证登录、认证会话摘要、用户档案、头像上传、onboarding、当前学习会话、学习消息发送、学习历史消息分页、任务完成与任务状态更新、每日打卡、地图/进度、成就汇总、历史学习计划、用户反馈与管理员反馈接口。
+- 当前已落地的数据库迁移为 `001` 到 `016`，其中已包含学习主线核心表、用户资料字段升级、运营导出视图、头像 Storage bucket、反馈工单表、学习计划 `interrupted` 状态、成长写模型表 `score_ledgers` / `user_ranks` / `daily_checkins`，以及 AI 会话、provider、agent、skill、调用审计相关表。
+- 当前主学习闭环已真实打通：学习消息链路首版已完成 `conversation_sessions`、`conversation_messages`、provider / agent / skill 配置表、`POST /api/learning/message`、`GET /api/learning/current-session`、`GET /api/learning/messages`、SSE 流式输出、前端增量渲染、`task_patch` 状态联动、结构化 `structuredContent`（`interactionType / variant / summary / blocks / sections / actions`）与对应测试链路。
+- AI Orchestration 当前仅第一阶段主链路已落地；`2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 中的 `15.2 第二阶段` 与 `15.3 第三阶段` 仍属后续开发计划，尚未开始实现。
 - 首页营销层已接入登录态恢复：顶部导航、Hero、套餐区、最终 CTA、页脚 CTA 会在用户已登录时切换为“继续学习”，并按真实用户状态跳转到 `/learn`、`/history` 或 `/onboarding`。
 - 工作台左侧栏数据已提升到根级 Provider 缓存，在 `/learn`、`/map`、`/achievements`、`/history` 间切换时不再重复请求并产生加载跳动。
 - 当前学习计划状态机已区分 `active`、`interrupted`、`completed`、`abandoned`、`archived`；其中 `interrupted` 为连续 7 天无学习行为后的系统自动中断，`abandoned` 为用户主动放弃。
-- 当前仍未落地的能力主要包括：外部 AI provider 接入、事件埋点写接口、管理员后台前端页面、通知设置落库、订阅支付域。
+- 当前仍未落地的能力主要包括：事件埋点写接口、管理员后台前端页面、通知设置落库、订阅支付域，以及 AI 域的更深层运营化与可视化配置能力。
 - 当前产品主线围绕 `user_learning_paths` 展开，`/learn`、`/map`、`/history` 共用这条主线。
 - 各文档如果同时包含“已实现”与“后续规划”两部分，应以文档中的“当前实现快照”或“已落地状态”说明为准；若与代码冲突，以代码和迁移为准，再回写文档。
 
@@ -80,28 +82,28 @@
 
 以下清单按“是否直接影响用户学习主闭环”排序，作为当前阶段的建议开发优先级。
 
-### P0：必须优先补齐
-
-- 学习消息链路运营化完善：当前 `conversation_sessions`、`conversation_messages`、provider / agent / skill 配置表、`POST /api/learning/message`、`GET /api/learning/current-session`、`GET /api/learning/messages`、SSE 流式输出、前端增量渲染、`task_patch` 状态联动、基础结构化状态提示卡，以及学习消息的纯逻辑测试、分页测试、HTTP 分发测试、路由级测试、真实 provider / database 参与的 live 集成测试已落地；当前消息协议已开始显式返回并持久化 `structuredContent`，且已扩展到 `variant / summary / blocks / sections / actions`，前端优先消费该结构化 payload，再回退到文本解析；当前 prompt 也已加入 agent 原生 Markdown 输出契约，要求模型按固定二级标题与 `动作文案｜点击后发送的话` 的格式返回建议动作，并且已细化到 `teaching / blocked_help / task_review / completion_feedback / path_guidance` 五类交互各自不同的 section 与动作模板；其中 live 测试已提供整体验证、`json-only`、`sse-only` 三种入口，便于区分普通回复链路与流式链路问题，但三条 live 命令应顺序执行，避免并发命中同一活跃会话的 `sequence_no` 唯一键；下一步优先补齐 interactionType 级别的更细粒度前端展示模板。
-
 ### P1：用户体验与运营能力完善
 
+- AI 第二阶段能力：按 `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 的 `15.2` 落地更细粒度的 agent 控制，包括按不同工具/路径补 agent seed、按不同 `interactionType` 补专用 agent、补 prompt 版本化管理。
 - 事件埋点写入：补齐 `POST /api/analytics/event` 与 `event_logs`，为激活、留存、转化和卡点分析提供真实数据。
 - 通知设置落库：把当前静态通知设置升级为真实用户偏好数据，避免设置只停留在前端展示层。
 - 管理员后台前端：在已有反馈后台接口基础上，补齐管理员登录、反馈工单列表/详情、用户列表、导出视图接入等页面。
 
 ### P2：商业化与基础设施增强
 
+- AI 第三阶段能力：按 `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 的 `15.3` 补齐后台前端配置页、调用日志查看、Prompt 灰度与回滚、成本与稳定性面板。
 - 订阅与支付域：补齐套餐权益、支付状态、订阅生命周期与前端订阅模块的真实接入。
 - 缓存与队列增强：按实际流量决定是否引入 Redis、异步队列、频控与更完整的服务端缓存。
 - 前端请求层与自动化测试增强：在必要时评估 React Query / SWR，并逐步补齐高频主链路自动化测试。
 
 ### 当前建议开发顺序
 
-1. 先继续完善学习消息链路的更高层级自动化测试与教练消息组件化呈现，让学习对话从“已可连续使用”升级为“稳定可维护”。
+1. 先补 `analytics + 通知设置落库 + 管理员后台前端`，把运营与运维能力接上。
+2. 再继续做学习消息链路的运营化增强，优先落 `15.2 第二阶段`，例如不同工具/路径/交互类型的 agent 拆分与 prompt 版本化管理。
    当前 AI 相关权威设计以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准。
-2. 再补 `analytics + 通知设置落库 + 管理员后台前端`，把运营和运维能力接上。
-3. 最后再进入 `订阅支付 + Redis/队列 + 更完整测试体系`。
+   其中第一阶段已完成；文档里的 `15.2 第二阶段`、`15.3 第三阶段` 目前都还没有开始。
+3. 然后再进入 `15.3 第三阶段` 的 AI 运营化后台与可视化配置能力。
+4. 最后再进入 `订阅支付 + Redis/队列 + 更完整测试体系`。
 
 ## 文档维护原则
 

@@ -35,6 +35,11 @@
 - `009_add_interrupted_learning_path_status.sql`
 - `010_create_growth_write_models.sql`
 - `011_create_daily_checkins.sql`
+- `012_create_ai_conversation_core.sql`
+- `013_create_ai_provider_registry.sql`
+- `014_create_ai_agent_registry.sql`
+- `015_create_ai_skill_registry.sql`
+- `016_create_llm_invocations.sql`
 
 当前数据库中已落地的核心业务表包括：
 
@@ -50,9 +55,6 @@
 - `daily_checkins`
 - `feedback_tickets`
 - `feedback_replies`
-
-当前尚未通过迁移落地、仍属于后续设计的表包括：
-
 - `conversation_sessions`
 - `conversation_messages`
 - `ai_providers`
@@ -62,11 +64,14 @@
 - `skill_packs`
 - `agent_skill_bindings`
 - `llm_invocations`
+
+当前尚未通过迁移落地、仍属于后续设计的表包括：
+
 - `achievements`
 - `user_achievements`
 - `event_logs`
 
-因此，本文档后续章节如果描述了上述未落地表，应视为“后续规划建模”，不是当前远程数据库中的既有对象。
+因此，本文档后续章节如果描述了 `achievements`、`user_achievements`、`event_logs` 等对象，应视为“后续规划建模”；其余 AI 会话 / provider / agent / skill / invocation 相关表已经是当前远程数据库中的既有对象。
 
 补充说明：
 
@@ -553,7 +558,7 @@ erDiagram
 说明：
 
 - 本节已按当前 AI 编排主文档的命名口径同步
-- 该表当前尚未落地迁移，后续以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 的字段级定义为主
+- 该表已通过 `012_create_ai_conversation_core.sql` 落地；字段级细化与运行时约束继续以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为主
 
 用途：
 

@@ -20,6 +20,7 @@
 - 七个页面分别位于哪里
 - 什么代码应该放在 `features/`，什么代码应该上提到顶层
 - 当前哪些页面已经接入真实接口，哪些仍是静态展示层
+- 当前学习消息链路已经细化到什么程度
 
 ---
 
@@ -39,6 +40,8 @@
 - `lib/supabase` 浏览器端 / 服务端 Supabase 封装
 - `providers/` 全局 Provider 入口
 - `types/` 顶层共享类型
+- `POST /api/learning/message` 已接入真实 SiliconFlow provider，并支持 JSON / SSE 双返回模式
+- `/learn` 已优先消费结构化 `structuredContent`，消息展示按 `interactionType` 驱动，再按 `variant` 做次级细分
 
 当前已可直接访问的页面：
 
@@ -253,9 +256,9 @@ features/<domain>/
 
 - 路由入口：`app/learn/page.tsx`
 - 页面装配：`features/learning/pages/learn-page.tsx`
-- 当前真实依赖：`GET /api/learning/current-session`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`
+- 当前真实依赖：`GET /api/learning/current-session`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`
 - 页面组件：`features/learning/components/*`
-- 当前职责补充：若当前用户没有 `active` 学习计划，页面会根据 `/api/auth/session` 的真实 gate 状态自动跳转到 `/history` 或 `/onboarding`；“我完成了”和求助类动作已接入真实任务写接口
+- 当前职责补充：若当前用户没有 `active` 学习计划，页面会根据 `/api/auth/session` 的真实 gate 状态自动跳转到 `/history` 或 `/onboarding`；“我完成了”和求助类动作已接入真实任务写接口；学习消息支持历史分页恢复、SSE 增量显示、`task_patch` 状态联动，以及 `interactionType` 级别的结构化消息展示
 
 ### 地图页
 

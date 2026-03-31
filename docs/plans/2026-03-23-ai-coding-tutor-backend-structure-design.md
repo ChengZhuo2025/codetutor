@@ -173,6 +173,7 @@ app/
     │   └── recent/route.ts
     ├── learning/
     │   ├── current-session/route.ts
+    │   ├── messages/route.ts
     │   └── message/route.ts
     ├── onboarding/
     │   ├── complete/route.ts
@@ -195,7 +196,7 @@ app/
 - 不在 `route.ts` 中写复杂数据库访问
 - `/history/recent` 在命名上保留原型兼容性，但实际承载“历史学习路径实例分页列表”
 - `/auth/session` 作为只读会话摘要接口，主要服务首页与营销层登录态恢复，不承担登录写入副作用
-- 当前尚未落地的主要接口为 `analytics/*`、`learning/stuck-help` 与后续 AI provider 编排相关接口
+- 当前尚未落地的主要接口主要为 `analytics/*` 与 `learning/stuck-help`
 
 ---
 
@@ -230,6 +231,7 @@ server/
 - 还没有拆出独立 `application / domain / infrastructure` 目录
 - `server/lib/` 负责公共响应、鉴权和 Supabase 错误处理
 - `server/modules/auth/service.ts` 当前同时承载登录结果组装与 `auth/session` 会话摘要读取
+- `server/modules/learning/` 已从单一 `service.ts` 演进为 `service + orchestration + provider + skills + output-format + logic + http-logic + history-logic + route-handler + errors` 的较完整结构，是当前最复杂的服务端业务域
 - 如果后续业务复杂度继续上升，再逐步演进到域内分层
 
 ---
@@ -242,21 +244,25 @@ server/
 server/modules/
 ├── achievement/
 ├── auth/
+├── checkins/
 ├── feedback/
+├── gamification/
 ├── history/
 ├── learning/
+├── learning-paths/
 ├── onboarding/
-└── progress/
+├── progress/
+└── tasks/
 ```
 
-当前每个模块的最小形态通常是：
+当前各模块并不完全同形态：
 
 ```text
 server/modules/<domain>/
 └── service.ts
 ```
 
-这是一种适合当前 MVP 阶段的“按域聚合、先保留单 service 入口”的结构。等单个域的复杂度明显上升后，再在域内继续细分 application、domain、repository。
+当前较简单的域仍主要以 `service.ts` 为入口；但 `learning`、`tasks`、`checkins`、`gamification` 已经拆出 `logic.ts`、`http-logic.ts`、`history-logic.ts`、`route-handler.ts`、`orchestration.ts`、`provider.ts` 等辅助文件。这仍属于“按域聚合”的同一策略，只是复杂域已经自然演进出域内分层雏形。等单个域复杂度继续上升后，再在域内继续细分 application、domain、repository。
 
 ---
 
@@ -768,9 +774,14 @@ supabase/
    - 成长总览 read model
 4. 已完成首版：`learning`
    - 当前学习会话恢复
+   - 历史学习消息分页
    - 消息提交接口
+   - `conversation_sessions` / `conversation_messages`
+   - provider / model / agent / skill 配置层
+   - 真实外部 AI provider 编排
+   - JSON / SSE 双通道输出
+   - `structuredContent` 与 `task_patch` 持久化与回放
    - 任务完成与任务状态更新
-   - 仍未接入真正的外部 AI provider 编排
 5. 已完成：`feedback`
    - 用户反馈提交
    - 我的反馈列表与详情
@@ -781,10 +792,6 @@ supabase/
    - XP、段位、打卡写入
 7. 待实现：`analytics`
    - 事件入库
-8. 待实现：`ai orchestration`
-   - `conversation_sessions` 与 `conversation_messages`
-   - provider / model / agent / skill 配置层
-   - 真实外部 AI provider 编排
 
 这样做的原因是：
 
