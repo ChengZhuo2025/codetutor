@@ -45,7 +45,7 @@
 - `POST /api/learning/message` 已接入真实 SiliconFlow provider，并支持 JSON / SSE 双返回模式
 - `/learn` 已优先消费结构化 `structuredContent`，消息展示按 `interactionType` 驱动，再按 `variant` 做次级细分
 
-当前已可直接访问的用户页面：
+当前已可直接访问的用户端页面：
 
 1. `/`：首页
 2. `/login`：登录页
@@ -55,9 +55,16 @@
 6. `/achievements`：成就页
 7. `/history`：学习记录页
 
+当前已可直接访问的管理端 Phase 1 页面：
+
+8. `/admin/login`：管理员登录页
+9. `/admin`：总览看板页
+10. `/admin/feedback`：反馈工单列表页
+11. `/admin/feedback/[id]`：反馈工单详情页
+
 另外还有一个内部开发调试页：
 
-8. `/api-docs`：Swagger UI 接口文档与调试面板
+12. `/api-docs`：Swagger UI 接口文档与调试面板
 
 ---
 
@@ -90,9 +97,12 @@ types/
 - `app/page.tsx` -> `features/marketing/pages/landing-page.tsx`
 - `app/login/page.tsx` -> `features/auth/pages/login-page.tsx`
 - `app/onboarding/page.tsx` -> `features/onboarding/pages/onboarding-page.tsx`
-- `app/learn/page.tsx` -> `features/learning/pages/learn-page.tsx`
-- `app/map/page.tsx` -> `features/progress/pages/map-page.tsx`
-- `app/achievements/page.tsx` -> `features/achievement/pages/achievements-page.tsx`
+- `app/(workspace)/learn/page.tsx` -> `features/learning/pages/learn-page.tsx`
+- `app/(workspace)/map/page.tsx` -> `features/progress/pages/map-page.tsx`
+- `app/(workspace)/achievements/page.tsx` -> `features/achievement/pages/achievements-page.tsx`
+- `app/(workspace)/history/page.tsx` -> `features/history/pages/history-page.tsx`
+- `app/admin/(login)/login/page.tsx` -> `features/admin-shell/components/admin-login-form.tsx`
+- `app/(admin-shell)/admin/page.tsx` -> `features/admin-dashboard/components/dashboard-page.tsx`
 
 规则：
 
@@ -117,6 +127,9 @@ types/
 - `features/progress`
 - `features/achievement`
 - `features/history`
+- `features/admin-shell`
+- `features/admin-dashboard`
+- `features/admin-feedback`
 
 每个业务域当前大致采用如下结构：
 
@@ -193,7 +206,8 @@ features/<domain>/
 
 当前状态：
 
-- 当前这里已统一承载全局包裹入口、`Analytics` 与工作台左侧栏共享数据缓存
+- `providers/app-providers.tsx` 当前承载全局包裹入口与 `Analytics`
+- 工作台左侧栏共享数据缓存当前挂在 `app/(workspace)/layout.tsx`，由 `WorkspaceSidebarDataProvider` 仅覆盖工作台路由组
 - 后续接入主题、认证 Session、数据请求缓存时，应继续在这里扩展
 
 ### 3.6 `types/`
@@ -297,7 +311,7 @@ features/<domain>/
 
 ### 学习页
 
-- 路由入口：`app/learn/page.tsx`
+- 路由入口：`app/(workspace)/learn/page.tsx`
 - 页面装配：`features/learning/pages/learn-page.tsx`
 - 当前真实依赖：`GET /api/learning/current-session`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`
 - 页面组件：`features/learning/components/*`
@@ -305,7 +319,7 @@ features/<domain>/
 
 ### 地图页
 
-- 路由入口：`app/map/page.tsx`
+- 路由入口：`app/(workspace)/map/page.tsx`
 - 页面装配：`features/progress/pages/map-page.tsx`
 - 当前真实依赖：`GET /api/progress/current`、`GET /api/progress/map`
 - 页面组件：`features/progress/components/*`
@@ -313,7 +327,7 @@ features/<domain>/
 
 ### 成就页
 
-- 路由入口：`app/achievements/page.tsx`
+- 路由入口：`app/(workspace)/achievements/page.tsx`
 - 页面装配：`features/achievement/pages/achievements-page.tsx`
 - 当前真实依赖：`GET /api/achievement/summary`
 - 页面组件：`features/achievement/components/*`
@@ -321,11 +335,31 @@ features/<domain>/
 
 ### 历史页
 
-- 路由入口：`app/history/page.tsx`
+- 路由入口：`app/(workspace)/history/page.tsx`
 - 页面装配：`features/history/pages/history-page.tsx`
 - 当前真实依赖：`GET /api/history/recent`、`GET /api/history/[id]`、`POST /api/history/[id]/status`，侧栏 FAQ 仍为本地静态数据
 - 页面组件：`features/history/components/*`
 - 当前职责：展示历史学习计划列表，而不是最近对话消息列表；支持复盘详情、放弃当前计划、重新激活中断计划、删除历史记录
+
+### 管理员登录页
+
+- 路由入口：`app/admin/(login)/login/page.tsx`
+- 路由守卫：`app/admin/(login)/layout.tsx`
+- 页面组件：`features/admin-shell/components/admin-login-form.tsx`
+- 当前真实依赖：`POST /api/admin/auth/login`
+
+### 管理后台总览页
+
+- 路由入口：`app/(admin-shell)/admin/page.tsx`
+- 路由守卫：`app/(admin-shell)/admin/layout.tsx`
+- 页面装配：`features/admin-dashboard/components/dashboard-page.tsx`
+- 当前真实依赖：`GET /api/admin/dashboard/overview`
+
+### 管理后台反馈页
+
+- 路由入口：`app/(admin-shell)/admin/feedback/page.tsx`、`app/(admin-shell)/admin/feedback/[id]/page.tsx`
+- 页面装配：`features/admin-feedback/components/feedback-list-page.tsx`、`features/admin-feedback/components/feedback-detail-page.tsx`
+- 当前真实依赖：`GET /api/admin/feedback`、`GET /api/admin/feedback/{id}`、`POST /api/admin/feedback/{id}/reply`、`POST /api/admin/feedback/{id}/status`
 
 ### 接口文档页
 
@@ -495,11 +529,11 @@ features/<domain>/
 当前前端工程已经完成主要页面和核心接口接入，但仍有以下边界需要明确：
 
 - 尚未引入 React Query / SWR 一类的数据请求缓存层
-- 当前已通过根级 Provider 为工作台左侧栏实现最小共享缓存，但还没有形成通用请求缓存体系
+- 当前已通过 `app/(workspace)/layout.tsx` 为工作台左侧栏实现最小共享缓存，但还没有形成通用请求缓存体系
 - 尚未形成系统性的前端自动化测试覆盖
 - 通知设置、订阅模块、FAQ 仍是静态或占位实现
-- 管理员后台前端页面尚未开始
-- 每日打卡和埋点写入等链路仍未接入到所有页面主流程；其中任务完成与任务状态更新已接入 `/learn`
+- 埋点写入与通知设置落库尚未接入真实后端
+- 管理员后台当前仅完成 Phase 1（认证、看板、反馈工单），Phase 2 运营模块仍未开始
 
 因此，当前阶段的目标仍然是：
 
@@ -539,9 +573,9 @@ features/<domain>/
 
 结合当前代码现状，前端下一步建议按以下顺序推进：
 
-1. 继续把剩余静态模块切到真实接口，优先级依次为任务完成写接口、每日打卡、埋点事件、通知设置。
+1. 继续把剩余静态模块切到真实接口，优先级依次为埋点事件、通知设置、订阅模块。
 2. 为已接接口的高频页面补充页面级自动化测试或最小交互测试。
 3. 在确认请求复杂度继续上升后，再评估是否引入 Query 缓存层，而不是过早全局化。
-4. 管理员后台开始前，先把用户侧 read model 稳定下来，避免后台列表和用户页使用两套口径。
+4. 继续推进管理员后台 Phase 2 前，先保持用户侧与管理侧鉴权分流口径一致，避免两端状态判断逻辑漂移。
 
 如果后续目录与本说明出现偏差，应优先更新本文档，再继续扩展代码。

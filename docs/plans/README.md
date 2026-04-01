@@ -9,12 +9,12 @@
 ## 30 秒状态速览
 
 - 当前项目已不是纯原型仓库，而是“前端页面 + `app/api` + `server/modules` + Supabase migrations”的同仓 MVP。
-- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈。
+- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、管理后台 Phase 1（管理员登录/退出、总览看板、反馈工单）。
 - 当前代码技术栈以 `package.json` 为准：`Next.js 16.2.0`、`React 19.2.4`、`TypeScript 5.7.3`、`Tailwind CSS 4.2`、`shadcn/ui`、`Zod + zod-to-openapi + Swagger UI`；当前本地验证环境为 `Node.js 22.18.0`。
 - 已补运行时接口文档：`/api/docs/openapi` 输出 OpenAPI 3.1 JSON，`/api-docs` 提供 Swagger UI 查看与调试。
 - `app/api` 当前已大量收敛为薄入口层，请求校验、统一响应、错误映射与部分路由编排已下沉到 `server/lib/*` 与各域 `route-handler.ts`。
-- 已落地数据侧：远程 Supabase、`001` 到 `016` 迁移、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表、AI 会话 / provider / agent / skill / invocation 表。
-- 仍待实现：事件埋点写入、通知设置落库、管理员后台前端、订阅支付域。
+- 已落地数据侧：远程 Supabase、`001` 到 `017` 迁移、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表、AI 会话 / provider / agent / skill / invocation 表，以及管理员账号/角色/审计日志表。
+- 仍待实现：事件埋点写入、通知设置落库、管理员后台 Phase 2（用户运营、学习运营、AI 运营深水区）、订阅支付域。
 - 若只想最快了解真实现状，优先读：
   1. `docs/plans/README.md`
   2. `docs/plans/2026-03-23-ai-coding-tutor-frontend-engineering-guide.md`
@@ -25,7 +25,7 @@
 1. [PRD](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-prd.md)
    当前产品范围、真实 MVP 边界、页面与能力口径。
 2. [页面级原型说明](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-page-prototype-spec.md)
-   当前 7 个前端页面的功能定位、信息结构与页面职责。
+   当前 7 个用户端页面的功能定位、信息结构与页面职责。
 3. [前端工程说明](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-frontend-engineering-guide.md)
    当前仓库代码结构、页面落位、真实接口接入情况与前端实现现状。
 4. [技术架构设计](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md)
@@ -42,6 +42,7 @@
 - [UI 视觉设计说明](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-ui-visual-design-spec.md)
 - [ADR 合集](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-adr-records.md)
 - [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md)
+- [自由学习模式教程链接自动拆解实施方案](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-04-01-ai-coding-tutor-free-mode-material-plan-implementation.md)
 - [管理后台设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-31-ai-coding-tutor-admin-console-design.md)
 
 ## 当前目录中各文档职责
@@ -66,13 +67,15 @@
   仍然有效的关键架构决策记录。
 - `2026-03-30-ai-coding-tutor-ai-orchestration-design.md`
   AI 编排模块的持久性设计主文档，用于说明 provider、agent、会话、消息、上下文与运行时链路。
+- `2026-04-01-ai-coding-tutor-free-mode-material-plan-implementation.md`
+  自由学习模式中“教程链接 -> 材料摄取 -> 自动生成学习计划草稿 -> 确认激活”的落地实施方案与验收机制。
 - `2026-03-31-ai-coding-tutor-admin-console-design.md`
   管理后台的运营需求、技术方案、后端契约、数据库扩展与推进顺序主文档。
 
 ## 当前项目事实摘要
 
 - 当前仓库已经不是“纯前端 demo”，而是一个包含前端页面、`app/api` BFF、`server/modules` 服务层、Supabase 迁移与远程数据库接入脚本的同仓项目。
-- 当前真实用户页面为 7 个：`/`、`/login`、`/onboarding`、`/learn`、`/map`、`/achievements`、`/history`；另有内部开发用接口文档页 `/api-docs`。
+- 当前真实用户端页面为 7 个：`/`、`/login`、`/onboarding`、`/learn`、`/map`、`/achievements`、`/history`；管理端 Phase 1 页面为 4 个：`/admin/login`、`/admin`、`/admin/feedback`、`/admin/feedback/[id]`；另有内部开发用接口文档页 `/api-docs`。
 - 当前已落地的真实接口包括：认证登录、认证会话摘要、用户档案、头像上传、onboarding、当前学习会话、学习消息发送、学习历史消息分页、任务完成与任务状态更新、每日打卡、地图/进度、成就汇总、历史学习计划、用户反馈与管理员反馈接口。
 - 当前运行时 API 文档已接入：`GET /api/docs/openapi` 返回 OpenAPI 3.1 文档，`/api-docs` 使用 Swagger UI 按标签展示接口，并补充常见响应示例与调试说明。
 - 当前接口文档不是“扫描整个 `app/api` 目录零维护生成”；新增或修改后端接口后，仍需同步更新 `server/modules/api-docs/openapi.ts` 与 `server/modules/api-docs/schemas.ts` 中的注册与 schema。
@@ -82,7 +85,8 @@
 - 当前主学习闭环已真实打通：学习消息链路首版已完成 `conversation_sessions`、`conversation_messages`、provider / agent / skill 配置表、`POST /api/learning/message`、`GET /api/learning/current-session`、`GET /api/learning/messages`、SSE 流式输出、前端增量渲染、`task_patch` 状态联动、结构化 `structuredContent`（`interactionType / variant / summary / blocks / sections / actions`）与对应测试链路。
 - AI Orchestration 当前仅第一阶段主链路已落地；`2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 中的 `15.2 第二阶段` 与 `15.3 第三阶段` 仍属后续开发计划，尚未开始实现。
 - 首页营销层已接入登录态恢复：顶部导航、Hero、套餐区、最终 CTA、页脚 CTA 会在用户已登录时切换为“继续学习”，并按真实用户状态跳转到 `/learn`、`/history` 或 `/onboarding`。
-- 工作台左侧栏数据已提升到根级 Provider 缓存，在 `/learn`、`/map`、`/achievements`、`/history` 间切换时不再重复请求并产生加载跳动。
+- 用户端与管理端登录态已完成分流：用户端使用 `app-user-session`，管理端使用 `admin-access-token` / `admin-refresh-token`，并由 `proxy.ts` 统一做入口路由守卫。
+- 工作台左侧栏数据缓存已收敛到 `app/(workspace)/layout.tsx` 的 `WorkspaceSidebarDataProvider`，在 `/learn`、`/map`、`/achievements`、`/history` 间切换时不再重复请求并产生加载跳动。
 - 当前学习计划状态机已区分 `active`、`interrupted`、`completed`、`abandoned`、`archived`；其中 `interrupted` 为连续 7 天无学习行为后的系统自动中断，`abandoned` 为用户主动放弃。
 - 当前仍未落地的能力主要包括：事件埋点写接口、管理员后台 Phase 2（用户运营、学习运营、AI 运营、细粒度权限控制）、通知设置落库、订阅支付域，以及 AI 域的更深层运营化与可视化配置能力。
 - 当前产品主线围绕 `user_learning_paths` 展开，`/learn`、`/map`、`/history` 共用这条主线。
@@ -108,7 +112,7 @@
 
 ### 当前建议开发顺序
 
-1. 先补 `analytics + 通知设置落库 + 管理员后台前端`，把运营与运维能力接上。
+1. 先补 `analytics + 通知设置落库 + 管理员后台 Phase 2`，把运营与运维能力接上。
 2. 再继续做学习消息链路的运营化增强，优先落 `15.2 第二阶段`，例如不同工具/路径/交互类型的 agent 拆分与 prompt 版本化管理。
    当前 AI 相关权威设计以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准。
    其中第一阶段已完成；文档里的 `15.2 第二阶段`、`15.3 第三阶段` 目前都还没有开始。

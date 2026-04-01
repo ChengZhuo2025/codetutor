@@ -1384,9 +1384,22 @@ SSE 事件补充：
 
 ---
 
-## 11. 管理员反馈接口
+## 11. 管理员后台接口
 
-管理员接口首期不提供后台页面，但先提供后端能力，默认使用 `x-admin-secret` 请求头做临时鉴权。
+管理员后台已实现完整前端页面与独立认证体系，采用 Cookie 鉴权（`admin-access-token`），与用户端完全分流。
+
+### 11.0 管理员认证
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `POST /api/admin/auth/login` | POST | 管理员登录（邮箱+密码） |
+| `GET /api/admin/auth/session` | GET | 获取当前管理员会话 |
+| `POST /api/admin/auth/logout` | POST | 管理员登出 |
+
+鉴权方式：
+- 登录成功后写入 `admin-access-token` Cookie（HttpOnly, SameSite=Lax）
+- 与用户端 `app-user-session` Cookie 完全隔离
+- 未登录访问 `/admin/*` 会被 `proxy.ts` 中间件重定向到 `/admin/login`
 
 ### 11.1 `GET /api/admin/feedback`
 
@@ -1451,6 +1464,10 @@ SSE 事件补充：
 | `GET /api/feedback/mine` | 是 | 查看我的反馈列表 |
 | `GET /api/feedback/mine/{id}` | 是 | 查看我的反馈详情 |
 | `GET /api/admin/feedback*` | 管理员 | 管理员反馈查询与回复 |
+| `POST /api/admin/auth/login` | 否 | 管理员登录入口 |
+| `GET /api/admin/auth/session` | 是 | 获取管理员会话摘要 |
+| `POST /api/admin/auth/logout` | 是 | 管理员登出 |
+| `GET /api/admin/dashboard/overview` | 是 | 管理员看板数据 |
 | `POST /api/checkin/daily` | 是 | 私人打卡写入 |
 | `POST /api/analytics/event` | 是，规划中 | 绑定用户事件 |
 

@@ -35,6 +35,10 @@
 - `/map`
 - `/achievements`
 - `/history`
+- `/admin/login`
+- `/admin`
+- `/admin/feedback`
+- `/admin/feedback/{id}`
 
 本次架构校准的核心约束：
 
@@ -58,12 +62,13 @@
 - 工作台左侧栏数据已提升到根级 Provider 缓存，跨工作台页面切换时不再重复请求并产生加载跳动
 - 用户资料读写、头像上传到 Supabase Storage
 - 用户反馈提交、我的反馈记录、管理员反馈接口
+- 管理员后台 Phase 1（管理员登录/退出、总览看板、反馈工单）
 - `POST /api/learning/message`、`GET /api/learning/messages` 已接入真实 AI 编排链路，包含会话持久化、历史分页、SiliconFlow provider、JSON / SSE 双返回、结构化 `structuredContent` 与 `task_patch` 联动
 
 当前尚未落地的链路包括：
 
 - 事件埋点写接口
-- 管理员后台前端
+- 管理员后台 Phase 2（用户运营、学习运营、AI 运营深水区）
 - 通知设置落库
 - Redis / 队列等增强型基础设施
 
@@ -640,6 +645,10 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 - `POST /api/feedback`
 - `GET /api/feedback/mine`
 - `GET /api/feedback/mine/{id}`
+- `POST /api/admin/auth/login`
+- `GET /api/admin/auth/session`
+- `POST /api/admin/auth/logout`
+- `GET /api/admin/dashboard/overview`
 - `GET /api/admin/feedback`
 - `GET /api/admin/feedback/{id}`
 - `POST /api/admin/feedback/{id}/reply`
@@ -672,6 +681,10 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 - `/map`
 - `/achievements`
 - `/history`
+- `/admin/login`
+- `/admin`
+- `/admin/feedback`
+- `/admin/feedback/{id}`
 
 ## 12.2 状态管理策略
 
@@ -681,7 +694,7 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 - 输入框内容
 - 浮层开关
 - 局部页面请求结果缓存
-- 工作台左侧栏共享缓存（根级 Provider）
+- 工作台左侧栏共享缓存（`app/(workspace)/layout.tsx` Provider）
 
 服务端权威状态包括：
 
