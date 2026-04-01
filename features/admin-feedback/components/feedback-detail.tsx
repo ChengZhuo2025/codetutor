@@ -1,11 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { feedbackStatusConfig } from "../data/status-config"
 import type { AdminFeedbackTicketDetailResponseData } from "@/lib/api/contracts/feedback"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
+import { ADMIN_ROUTES } from "@/constants/routes"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
@@ -14,7 +13,6 @@ interface FeedbackDetailProps {
 }
 
 export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
-  const router = useRouter()
   const [data, setData] = useState<AdminFeedbackTicketDetailResponseData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -25,16 +23,19 @@ export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
   useEffect(() => {
     async function fetchDetail() {
       try {
-        const response = await fetch(`/api/admin/feedback/${ticketId}`)
+        const response = await fetch(`/api/admin/feedback/${ticketId}`, {
+          cache: "no-store",
+        })
         const result = await response.json()
-        if (result.code === "OK") {
-          setData(result.data)
-          setNewStatus(result.data.status)
-        } else {
-          setError(result.message || "获取工单详情失败")
+
+        if (result.code !== "OK") {
+          throw new Error(result.message || "获取工单详情失败")
         }
-      } catch {
-        setError("网络请求失败")
+
+        setData(result.data as AdminFeedbackTicketDetailResponseData)
+        setNewStatus(result.data.status)
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "网络请求失败")
       } finally {
         setIsLoading(false)
       }
@@ -95,7 +96,7 @@ export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
   if (error) {
     return (
       <div className="space-y-4">
-        <Link href="/admin/feedback" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <Link href={ADMIN_ROUTES.feedback} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-4 h-4" />
           返回列表
         </Link>
@@ -107,7 +108,7 @@ export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
   if (isLoading || !data) {
     return (
       <div className="space-y-4">
-        <Link href="/admin/feedback" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <Link href={ADMIN_ROUTES.feedback} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-4 h-4" />
           返回列表
         </Link>
@@ -121,7 +122,7 @@ export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
 
   return (
     <div className="space-y-6">
-      <Link href="/admin/feedback" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+      <Link href={ADMIN_ROUTES.feedback} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="w-4 h-4" />
         返回列表
       </Link>
@@ -160,7 +161,7 @@ export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
       <div className="bg-card border border-border rounded-lg p-5">
         <h3 className="text-sm font-medium text-foreground mb-4">对话记录</h3>
         <div className="space-y-4">
-          {data.replies.map((reply, index) => (
+          {data.replies.map((reply) => (
             <div
               key={reply.id}
               className={`flex ${reply.authorType === "user" ? "justify-start" : "justify-end"}`}

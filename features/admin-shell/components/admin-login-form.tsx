@@ -3,8 +3,10 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { StatePanel } from "@/components/ui/state-panel"
+import { ADMIN_ROUTES, ROUTES } from "@/constants/routes"
 
 export function AdminLoginForm() {
   const router = useRouter()
@@ -15,7 +17,11 @@ export function AdminLoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email.trim() || !password.trim()) return
+
+    if (!email.trim() || !password.trim()) {
+      setError("请输入邮箱和密码")
+      return
+    }
 
     setIsLoading(true)
     setError(null)
@@ -26,17 +32,21 @@ export function AdminLoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       })
-
       const result = await response.json()
 
-      if (result.code === "OK") {
-        router.push("/admin")
-        router.refresh()
-      } else {
+      if (result.code !== "OK") {
         setError(result.message || "登录失败")
+        return
       }
-    } catch {
-      setError("网络请求失败")
+
+      router.replace(ADMIN_ROUTES.home)
+      router.refresh()
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message || "登录失败")
+      } else {
+        setError("网络请求失败")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -47,9 +57,9 @@ export function AdminLoginForm() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🔐</span>
+            <Shield className="h-6 w-6 text-primary-foreground" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-semibold text-foreground">管理后台登录</h1>
+          <h1 className="text-2xl font-semibold text-foreground">CodeTutor管理后台</h1>
           <p className="text-sm text-muted-foreground mt-2">AI编程学习教练运营管理系统</p>
         </div>
 
@@ -97,7 +107,7 @@ export function AdminLoginForm() {
 
           <Button
             type="submit"
-            disabled={isLoading || !email.trim() || !password.trim()}
+            disabled={isLoading}
             className="w-full"
           >
             {isLoading ? "登录中..." : "登录"}
@@ -106,7 +116,7 @@ export function AdminLoginForm() {
 
         <div className="mt-6 text-center">
           <Link
-            href="/"
+            href={ROUTES.home}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             返回用户端首页

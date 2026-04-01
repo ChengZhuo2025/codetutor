@@ -24,6 +24,12 @@ assert.match(
 
 assert.match(
   source,
+  /fetch\("\/api\/auth\/logout",\s*\{\s*method:\s*"POST"\s*\}\)/,
+  "SettingsPopover should clear the app auth session cookie during logout",
+)
+
+assert.match(
+  source,
   /supabase\.auth\.signOut\(\)/,
   "SettingsPopover should clear the Supabase session on logout",
 )
@@ -34,4 +40,4 @@ assert.match(
   "SettingsPopover should redirect to ROUTES.home after logout",
 )
 
-console.log("Settings logout behavior signs out Supabase session and redirects home.")
+console.log("Settings logout behavior clears app auth state, signs out Supabase, and redirects home.")

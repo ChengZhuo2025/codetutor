@@ -3,43 +3,30 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
+import { ADMIN_ROUTES } from "@/constants/routes"
 import { menuItems, brandIcon } from "../data/menu-config"
 import { cn } from "@/lib/utils"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { LogOut, ChevronDown, ChevronRight } from "lucide-react"
-import type { AdminSessionResponseData } from "@/lib/api/contracts/admin"
+import { useAdminSession } from "./admin-shell-client"
 
 const BrandIcon = brandIcon
 
 export function AdminSidebar() {
   const router = useRouter()
   const pathname = usePathname()
-  const [aiExpanded, setAiExpanded] = useState(pathname.startsWith("/admin/ai"))
-  const [session, setSession] = useState<AdminSessionResponseData | null>(null)
-
-  useEffect(() => {
-    async function fetchSession() {
-      try {
-        const response = await fetch("/api/admin/auth/session")
-        const result = await response.json()
-        if (result.code === "OK") {
-          setSession(result.data)
-        }
-      } catch {
-        setSession(null)
-      }
-    }
-    fetchSession()
-  }, [])
+  const [aiExpanded, setAiExpanded] = useState(pathname.startsWith(`${ADMIN_ROUTES.home}/ai`))
+  const { session } = useAdminSession()
 
   const handleLogout = async () => {
     try {
       await fetch("/api/admin/auth/logout", { method: "POST" })
-      router.push("/admin/login")
-      router.refresh()
     } catch {
-      console.error("登出失败")
+      console.error("管理员登出审计写入失败")
     }
+
+    router.replace(ADMIN_ROUTES.login)
+    router.refresh()
   }
 
   return (
@@ -61,13 +48,13 @@ export function AdminSidebar() {
       <nav className="flex-1 overflow-y-auto py-3 px-2">
         <ul className="space-y-0.5">
           {menuItems.map((item) => {
-            const isActive = item.href === "/admin"
-              ? pathname === "/admin"
-              : pathname.startsWith(item.href) && item.href !== "/admin"
+            const isActive = item.href === ADMIN_ROUTES.home
+              ? pathname === ADMIN_ROUTES.home
+              : pathname.startsWith(item.href) && item.href !== ADMIN_ROUTES.home
             const Icon = item.icon
 
             // 跳过未激活的菜单项
-            if (!item.active && item.href !== "/admin") {
+            if (!item.active && item.href !== ADMIN_ROUTES.home) {
               return null
             }
 
@@ -92,9 +79,9 @@ export function AdminSidebar() {
                   {aiExpanded && (
                     <ul className="mt-0.5 ml-3 pl-3 border-l border-sidebar-border space-y-0.5">
                       {item.children.map((child) => {
-                        const isChildActive = child.href === "/admin/ai"
-                          ? pathname === "/admin/ai"
-                          : pathname.startsWith(child.href) && child.href !== "/admin/ai"
+                        const isChildActive = child.href === `${ADMIN_ROUTES.home}/ai`
+                          ? pathname === `${ADMIN_ROUTES.home}/ai`
+                          : pathname.startsWith(child.href) && child.href !== `${ADMIN_ROUTES.home}/ai`
                         const ChildIcon = child.icon
 
                         // 跳过未激活的子菜单

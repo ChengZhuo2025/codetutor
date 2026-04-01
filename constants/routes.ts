@@ -10,6 +10,20 @@ export const ROUTES = {
   apiDocs: "/api-docs",
 } as const
 
+export const USER_PROTECTED_ROUTES = [
+  ROUTES.onboarding,
+  ROUTES.learn,
+  ROUTES.map,
+  ROUTES.achievements,
+  ROUTES.history,
+] as const
+
+export const ADMIN_ROUTES = {
+  login: "/admin/login",
+  home: "/admin",
+  feedback: "/admin/feedback",
+} as const
+
 export const MARKETING_SECTIONS = {
   home: "#home",
   how: "#how",

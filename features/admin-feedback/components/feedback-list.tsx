@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { feedbackStatusConfig, feedbackTypeLabels, feedbackPriorityLabels, feedbackPriorityColors } from "../data/status-config"
+import { feedbackTypeLabels, feedbackPriorityLabels } from "../data/status-config"
 import type { AdminFeedbackListResponseData } from "@/lib/api/contracts/feedback"
 import { StatePanel } from "@/components/ui/state-panel"
 
@@ -23,15 +23,18 @@ export function FeedbackList() {
         if (keyword) {
           params.append("keyword", keyword)
         }
-        const response = await fetch(`/api/admin/feedback?${params.toString()}`)
+        const response = await fetch(`/api/admin/feedback?${params.toString()}`, {
+          cache: "no-store",
+        })
         const result = await response.json()
-        if (result.code === "OK") {
-          setData(result.data)
-        } else {
-          setError(result.message || "获取反馈列表失败")
+
+        if (result.code !== "OK") {
+          throw new Error(result.message || "获取反馈列表失败")
         }
-      } catch {
-        setError("网络请求失败")
+
+        setData(result.data as AdminFeedbackListResponseData)
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "网络请求失败")
       } finally {
         setIsLoading(false)
       }

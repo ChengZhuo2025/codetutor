@@ -121,7 +121,12 @@ export function LoginPage() {
         data: { session },
       } = await supabase.auth.getSession()
 
-      if (!session?.access_token || cancelled) {
+      if (cancelled) {
+        return
+      }
+
+      if (!session?.access_token) {
+        await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined)
         return
       }
 
@@ -138,6 +143,9 @@ export function LoginPage() {
           router.replace(data.redirectTo)
         }
       } catch {
+        if (!cancelled) {
+          await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined)
+        }
         // let the user stay on login and retry manually
       }
     }

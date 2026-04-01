@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server"
 import { getRequestAuth, getRequestAuthHelpText } from "@/server/lib/request-auth"
+import { withNoStoreHeaders } from "@/server/lib/response-cache"
 import { createProfileMeGetHandler, createProfileMePatchHandler } from "@/server/modules/auth/route-handler"
 import { getProfileMe, updateProfileMe } from "@/server/modules/auth/service"
 
@@ -16,9 +17,9 @@ const patchHandler = createProfileMePatchHandler({
 })
 
 export async function GET(request: NextRequest) {
-  return getHandler(request)
+  return withNoStoreHeaders(await getHandler(request))
 }
 
 export async function PATCH(request: NextRequest) {
-  return patchHandler(request)
+  return withNoStoreHeaders(await patchHandler(request))
 }

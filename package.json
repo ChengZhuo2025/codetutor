@@ -27,6 +27,8 @@
     "test:request-validated-routes": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-request-validated-routes.ts",
     "test:openapi-document": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-openapi-document.ts",
     "test:openapi-docs-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-openapi-docs-route.ts",
+    "test:auth-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-auth-route.ts",
+    "test:admin-auth-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-admin-auth-route.ts",
     "test:map-page": "node scripts/check-map-page.mjs",
     "test:task-write-service": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-task-write-service.ts",
     "test:workspace-sidebar": "node scripts/check-workspace-sidebar.mjs",

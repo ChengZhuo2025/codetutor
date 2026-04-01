@@ -42,15 +42,18 @@ export function DashboardOverview() {
   useEffect(() => {
     async function fetchOverview() {
       try {
-        const response = await fetch("/api/admin/dashboard/overview")
+        const response = await fetch("/api/admin/dashboard/overview", {
+          cache: "no-store",
+        })
         const result = await response.json()
-        if (result.code === "OK") {
-          setData(result.data)
-        } else {
-          setError(result.message || "获取看板数据失败")
+
+        if (result.code !== "OK") {
+          throw new Error(result.message || "获取看板数据失败")
         }
-      } catch {
-        setError("网络请求失败")
+
+        setData(result.data as AdminDashboardOverviewResponseData)
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "网络请求失败")
       } finally {
         setIsLoading(false)
       }

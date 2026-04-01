@@ -1,4 +1,6 @@
 import type { User } from "@supabase/supabase-js"
+import { USER_SESSION_COOKIE } from "@/constants/auth-cookies"
+import { buildSessionCookieHeader } from "@/server/lib/session-cookie"
 import type {
   AuthLoginResponseData,
   AuthLoginType,
@@ -20,6 +22,16 @@ import {
   parseProfileAvatarFile,
   parseUpdateProfileMeBody,
 } from "../../lib/request-validation.ts"
+
+function appendUserSessionCookie(response: Response, userId: string) {
+  response.headers.append("Set-Cookie", buildSessionCookieHeader(USER_SESSION_COOKIE, userId))
+  return response
+}
+
+function appendUserLogoutCookie(response: Response) {
+  response.headers.append("Set-Cookie", buildSessionCookieHeader(USER_SESSION_COOKIE, "", 0))
+  return response
+}
 
 type RequestLike = {
   json: () => Promise<unknown>
@@ -53,10 +65,16 @@ export function createAuthLoginPostHandler(dependencies: {
 
       const data = await dependencies.finalizeAuthLogin(auth.user, input.data.loginType)
 
-      return jsonSuccess(data)
+      return appendUserSessionCookie(jsonSuccess(data), data.userId)
     } catch (error) {
       return jsonInternalErrorFromError(error, "登录流程处理失败")
     }
+  }
+}
+
+export function createAuthLogoutPostHandler() {
+  return async function POST() {
+    return appendUserLogoutCookie(jsonSuccess({ success: true }, "退出登录成功"))
   }
 }
 

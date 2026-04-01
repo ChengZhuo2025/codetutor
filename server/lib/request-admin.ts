@@ -1,8 +1,5 @@
 import type { NextRequest } from "next/server"
-
-const ADMIN_API_SECRET_HEADER = "x-admin-secret"
-const ADMIN_ID_HEADER = "x-admin-id"
-const DEFAULT_ADMIN_ID = "system-admin"
+import { getAdminSessionFromRequest } from "@/server/modules/admin-auth/service"
 
 export type RequestAdminResult =
   | {
@@ -15,31 +12,19 @@ export type RequestAdminResult =
       message: string
     }
 
-export function getRequestAdmin(request: NextRequest): RequestAdminResult {
-  const expectedSecret = process.env.ADMIN_API_SECRET
+export async function getRequestAdmin(request: NextRequest): Promise<RequestAdminResult> {
+  const session = await getAdminSessionFromRequest(request)
 
-  if (!expectedSecret) {
-    return {
-      ok: false,
-      reason: "missing-config",
-      message: "服务端缺少 ADMIN_API_SECRET，无法校验管理员接口。",
-    }
-  }
-
-  const providedSecret = request.headers.get(ADMIN_API_SECRET_HEADER)
-
-  if (!providedSecret || providedSecret !== expectedSecret) {
+  if (!session) {
     return {
       ok: false,
       reason: "forbidden",
-      message: "管理员凭证无效。",
+      message: "管理员登录态无效或已过期。",
     }
   }
 
-  const adminId = request.headers.get(ADMIN_ID_HEADER)?.trim() || DEFAULT_ADMIN_ID
-
   return {
     ok: true,
-    adminId,
+    adminId: session.adminAccountId,
   }
 }

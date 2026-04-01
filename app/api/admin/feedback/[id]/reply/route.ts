@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server"
 import { getRequestAdmin } from "@/server/lib/request-admin"
+import { withNoStoreHeaders } from "@/server/lib/response-cache"
 import { createAdminReplyFeedbackPostHandler } from "@/server/modules/feedback/route-handler"
 import { adminReplyFeedback } from "@/server/modules/feedback/service"
 
@@ -15,5 +16,5 @@ const postHandler = createAdminReplyFeedbackPostHandler({
 })
 
 export async function POST(request: NextRequest, context: RouteContext) {
-  return postHandler(request, context)
+  return withNoStoreHeaders(await postHandler(request, context))
 }

@@ -7,7 +7,6 @@ import {
 import { Analytics } from "@vercel/analytics/next"
 import { APP_EVENT_CHANNEL } from "@/constants/events"
 import type { AppEventName } from "@/constants/events"
-import { WorkspaceSidebarDataProvider } from "@/providers/workspace-sidebar-provider"
 
 type AppProvidersProps = {
   children: React.ReactNode
@@ -40,10 +39,8 @@ function trackEvent(name: AppEventName, payload?: TrackEventPayload) {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <AppEventContext.Provider value={{ trackEvent }}>
-      <WorkspaceSidebarDataProvider>
-        {children}
-        <Analytics />
-      </WorkspaceSidebarDataProvider>
+      {children}
+      <Analytics />
     </AppEventContext.Provider>
   )
 }

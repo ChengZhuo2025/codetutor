@@ -75,7 +75,8 @@ export function SettingsPopover({ onProfileSaved }: SettingsPopoverProps) {
 
       try {
         const supabase = createSupabaseBrowserClient()
-        await supabase.auth.signOut()
+        await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined)
+        await supabase.auth.signOut().catch(() => undefined)
       } finally {
         router.replace(ROUTES.home)
       }

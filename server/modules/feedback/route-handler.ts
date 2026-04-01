@@ -59,6 +59,8 @@ type RequestAdminResult =
       message: string
     }
 
+type Awaitable<T> = T | Promise<T>
+
 export function createCreateFeedbackPostHandler(dependencies: {
   getRequestAuth: (request: unknown) => Promise<{ userId: string } | null>
   getRequestAuthHelpText: () => string
@@ -120,7 +122,7 @@ export function createMyFeedbackDetailGetHandler(dependencies: {
 }
 
 export function createAdminFeedbackListGetHandler(dependencies: {
-  getRequestAdmin: (request: unknown) => RequestAdminResult
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
   getAdminFeedbackList: (filters: {
     status?: "submitted" | "in_review" | "replied" | "closed"
     feedbackType?: "visual_design" | "interaction_flow" | "feature_request" | "issue_report"
@@ -131,7 +133,7 @@ export function createAdminFeedbackListGetHandler(dependencies: {
 }) {
   return async function GET(request: GetRequestLike) {
     try {
-      const admin = dependencies.getRequestAdmin(request)
+      const admin = await dependencies.getRequestAdmin(request)
 
       if (!admin.ok) {
         return jsonAdminAuthError(admin as Exclude<RequestAdminResult, { ok: true }>)
@@ -153,12 +155,12 @@ export function createAdminFeedbackListGetHandler(dependencies: {
 }
 
 export function createAdminFeedbackDetailGetHandler(dependencies: {
-  getRequestAdmin: (request: unknown) => RequestAdminResult
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
   getAdminFeedbackDetail: (ticketId: string) => Promise<unknown>
 }) {
   return async function GET(request: unknown, context: RouteContext) {
     try {
-      const admin = dependencies.getRequestAdmin(request)
+      const admin = await dependencies.getRequestAdmin(request)
 
       if (!admin.ok) {
         return jsonAdminAuthError(admin as Exclude<RequestAdminResult, { ok: true }>)
@@ -185,7 +187,7 @@ export function createAdminFeedbackDetailGetHandler(dependencies: {
 }
 
 export function createAdminReplyFeedbackPostHandler(dependencies: {
-  getRequestAdmin: (request: unknown) => RequestAdminResult
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
   adminReplyFeedback: (
     ticketId: string,
     input: {
@@ -197,7 +199,7 @@ export function createAdminReplyFeedbackPostHandler(dependencies: {
 }) {
   return async function POST(request: RequestLike, context: RouteContext) {
     try {
-      const admin = dependencies.getRequestAdmin(request)
+      const admin = await dependencies.getRequestAdmin(request)
 
       if (!admin.ok) {
         return jsonAdminAuthError(admin as Exclude<RequestAdminResult, { ok: true }>)
@@ -233,7 +235,7 @@ export function createAdminReplyFeedbackPostHandler(dependencies: {
 }
 
 export function createAdminUpdateFeedbackStatusPostHandler(dependencies: {
-  getRequestAdmin: (request: unknown) => RequestAdminResult
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
   adminUpdateFeedbackStatus: (
     ticketId: string,
     input: {
@@ -243,7 +245,7 @@ export function createAdminUpdateFeedbackStatusPostHandler(dependencies: {
 }) {
   return async function POST(request: RequestLike, context: RouteContext) {
     try {
-      const admin = dependencies.getRequestAdmin(request)
+      const admin = await dependencies.getRequestAdmin(request)
 
       if (!admin.ok) {
         return jsonAdminAuthError(admin as Exclude<RequestAdminResult, { ok: true }>)
