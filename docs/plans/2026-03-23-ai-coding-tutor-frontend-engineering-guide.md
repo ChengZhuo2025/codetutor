@@ -368,6 +368,7 @@ features/<domain>/
 - 页面组件：`features/api-docs/components/swagger-api-viewer.tsx`
 - 当前真实依赖：`GET /api/docs/openapi`、`GET /api/docs/swagger-ui-bundle`
 - 当前职责：提供内部接口查看与调试面板，按标签分组展示接口，补充常见成功响应示例、错误说明、管理员接口调试提示和学习消息 SSE 调试说明
+- 当前鉴权行为：页面受管理员登录态保护；未登录访问 `/api-docs` 会重定向到 `/admin/login?next=/api-docs`，登录成功后回跳；文档里的管理员接口按 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback` 展示
 - 当前实现边界：该页面消费的是运行时注册出来的 OpenAPI 文档；新增后端接口后，需要同步维护 `server/modules/api-docs/openapi.ts` 与 `server/modules/api-docs/schemas.ts`，这里才会一起更新
 
 ### 当前已接真实接口的跨页组件

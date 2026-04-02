@@ -3,8 +3,10 @@ import { z } from "zod"
 import { ROUTE_ERROR_MESSAGES } from "@/server/lib/route-error-presets"
 import {
   achievementSummaryResponseDataSchema,
+  adminDashboardOverviewResponseDataSchema,
   adminChangePasswordRequestSchema,
-  adminOptionalHeadersSchema,
+  adminLoginRequestSchema,
+  adminSessionResponseDataSchema,
   adminFeedbackListQuerySchema,
   adminFeedbackListResponseDataSchema,
   adminFeedbackTicketDetailResponseDataSchema,
@@ -588,6 +590,21 @@ const successExamples = {
     updatedAt: EXAMPLE_LATEST,
     lastReplyAt: EXAMPLE_LATER,
     replies: [feedbackReplyExample],
+  },
+  adminSession: {
+    adminAccountId: "f34db0f3-dc90-45a6-9c66-ef8358cbd521",
+    userId: "8f0be367-2be6-4e40-838a-fbd643d16e29",
+    displayName: "管理员程左",
+    avatarUrl: "https://cdn.example.com/avatar/admin-1.png",
+    roles: ["super_admin"],
+    status: "active",
+  },
+  adminDashboardOverview: {
+    pendingFeedbackCount: 12,
+    todayNewUserCount: 7,
+    todayCompletedTaskCount: 38,
+    activeLearningPathCount: 116,
+    todayCheckinCount: 42,
   },
   adminFeedbackList: {
     items: [
@@ -1545,6 +1562,168 @@ registry.registerPath({
 })
 
 registry.registerPath({
+  method: "get",
+  path: "/api/admin/profile/me",
+  operationId: "getAdminProfileMe",
+  tags: ["admin-profile"],
+  summary: "获取管理员个人资料",
+  security: [],
+  responses: {
+    "200": successResponse(
+      profileMeResponseDataSchema,
+      "AdminProfileMeResponse",
+      "档案读取成功",
+      successExamples.profileMe,
+    ),
+    ...commonErrorResponses(["401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/profile/me",
+  operationId: "patchAdminProfileMe",
+  tags: ["admin-profile"],
+  summary: "更新管理员个人资料",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: updateProfileMeRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      profileMeResponseDataSchema,
+      "AdminProfileMeUpdateResponse",
+      "档案更新成功",
+      successExamples.profileMe,
+      "profile updated",
+    ),
+    ...commonErrorResponses(["400", "401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/profile/avatar",
+  operationId: "postAdminProfileAvatar",
+  tags: ["admin-profile"],
+  summary: "上传管理员头像",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "multipart/form-data": {
+          schema: uploadProfileAvatarRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      uploadProfileAvatarResponseDataSchema,
+      "AdminUploadProfileAvatarResponse",
+      "头像上传成功",
+      successExamples.profileAvatar,
+      "avatar uploaded",
+    ),
+    ...commonErrorResponses(["400", "401", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/auth/login",
+  operationId: "postAdminLogin",
+  tags: ["admin-auth"],
+  summary: "管理员登录",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminLoginRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminSessionResponseDataSchema,
+      "AdminLoginResponse",
+      "管理员登录成功",
+      successExamples.adminSession,
+      "登录成功",
+    ),
+    ...commonErrorResponses(["400", "401", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/auth/session",
+  operationId: "getAdminSession",
+  tags: ["admin-auth"],
+  summary: "获取当前管理员会话",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminSessionResponseDataSchema,
+      "AdminSessionResponse",
+      "获取会话成功",
+      successExamples.adminSession,
+      "获取会话成功",
+    ),
+    ...commonErrorResponses(["403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/auth/logout",
+  operationId: "postAdminLogout",
+  tags: ["admin-auth"],
+  summary: "管理员登出",
+  security: [],
+  responses: {
+    "200": successResponse(
+      z.object({ success: z.literal(true) }).openapi("AdminLogoutOkData"),
+      "AdminLogoutOkData",
+      "管理员登出成功",
+      { success: true },
+      "登出成功",
+    ),
+    ...commonErrorResponses(["500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/dashboard/overview",
+  operationId: "getAdminDashboardOverview",
+  tags: ["admin-dashboard"],
+  summary: "获取管理员总览看板数据",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminDashboardOverviewResponseDataSchema,
+      "AdminDashboardOverviewResponse",
+      "获取看板数据成功",
+      successExamples.adminDashboardOverview,
+      "获取看板数据成功",
+    ),
+    ...commonErrorResponses(["403", "500"]),
+  },
+})
+
+registry.registerPath({
   method: "post",
   path: "/api/admin/auth/change-password",
   operationId: "postAdminChangePassword",
@@ -1580,10 +1759,9 @@ registry.registerPath({
   operationId: "getAdminFeedbackList",
   tags: ["admin-feedback"],
   summary: "获取管理员反馈列表",
-  security: [{ adminSecretHeader: [] }],
+  security: [],
   request: {
     query: adminFeedbackListQuerySchema,
-    headers: adminOptionalHeadersSchema,
   },
   responses: {
     "200": successResponse(
@@ -1611,10 +1789,9 @@ registry.registerPath({
   operationId: "getAdminFeedbackDetail",
   tags: ["admin-feedback"],
   summary: "获取管理员反馈详情",
-  security: [{ adminSecretHeader: [] }],
+  security: [],
   request: {
     params: routeIdParamsSchema,
-    headers: adminOptionalHeadersSchema,
   },
   responses: {
     "200": successResponse(
@@ -1633,10 +1810,9 @@ registry.registerPath({
   operationId: "postAdminFeedbackReply",
   tags: ["admin-feedback"],
   summary: "管理员回复反馈",
-  security: [{ adminSecretHeader: [] }],
+  security: [],
   request: {
     params: routeIdParamsSchema,
-    headers: adminOptionalHeadersSchema,
     body: {
       required: true,
       content: {
@@ -1673,10 +1849,9 @@ registry.registerPath({
   operationId: "postAdminFeedbackStatus",
   tags: ["admin-feedback"],
   summary: "管理员更新反馈状态",
-  security: [{ adminSecretHeader: [] }],
+  security: [],
   request: {
     params: routeIdParamsSchema,
-    headers: adminOptionalHeadersSchema,
     body: {
       required: true,
       content: {

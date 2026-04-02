@@ -25,12 +25,16 @@ export function proxy(request: NextRequest) {
   const pathname = normalizePathname(request.nextUrl.pathname)
   const hasAdminSession = request.cookies.has(ADMIN_ACCESS_TOKEN_COOKIE)
   const hasUserSession = request.cookies.has(USER_SESSION_COOKIE)
+  const isAdminProtectedPath = pathname.startsWith(ADMIN_ROUTES.home) && pathname !== ADMIN_ROUTES.login
+  const isApiDocsPath = pathname === ROUTES.apiDocs
 
-  if (
-    pathname.startsWith(ADMIN_ROUTES.home) &&
-    pathname !== ADMIN_ROUTES.login &&
-    !hasAdminSession
-  ) {
+  if (isApiDocsPath && !hasAdminSession) {
+    const loginUrl = new URL(ADMIN_ROUTES.login, request.url)
+    loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  if (isAdminProtectedPath && !hasAdminSession) {
     return NextResponse.redirect(new URL(ADMIN_ROUTES.login, request.url))
   }
 
@@ -42,5 +46,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/onboarding", "/learn", "/map", "/history", "/achievements"],
+  matcher: ["/admin/:path*", "/api-docs", "/onboarding", "/learn", "/map", "/history", "/achievements"],
 }

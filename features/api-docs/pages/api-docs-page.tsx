@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { StatePanel } from "@/components/ui/state-panel"
-import { ROUTES } from "@/constants/routes"
+import { ADMIN_ROUTES, ROUTES } from "@/constants/routes"
 import { SwaggerApiViewer } from "@/features/api-docs/components/swagger-api-viewer"
 import { apiFetch } from "@/lib/api/client"
 
@@ -100,15 +100,28 @@ const TAG_GUIDES = [
     ],
   },
   {
+    tag: "admin-profile",
+    title: "管理员资料",
+    summary: "管理员本人资料读取、更新与头像上传。",
+    successExamples: [
+      "200 → `displayName/nickname`、`avatarUrl` 等资料字段",
+      "上传头像返回 `avatarUrl / storagePath / previousAvatarUrl`",
+    ],
+    errorNotes: [
+      "401：管理员登录态缺失或过期",
+      "400：昵称、邮箱、头像文件类型或大小校验失败",
+    ],
+  },
+  {
     tag: "admin-feedback",
     title: "管理员反馈",
     summary: "管理员筛选反馈、查看详情、回复和更新状态。",
     successExamples: [
       "200 → 带 `userSnapshot` 的反馈单详情",
-      "需在 Authorize 中填写 `x-admin-secret`",
+      "需携带管理员登录态（admin cookie）",
     ],
     errorNotes: [
-      "403：管理员密钥错误或未配置",
+      "403：管理员登录态无效或已过期",
       "400：筛选参数、回复体或状态更新体不合法",
     ],
   },
@@ -125,8 +138,8 @@ const DEBUG_TIPS = [
   {
     title: "管理员接口调试",
     lines: [
-      "管理员接口只认 `x-admin-secret`，不会继承普通用户 Bearer Token。",
-      "若返回 403，请先检查服务端 `ADMIN_API_SECRET` 与弹窗里填写的值是否一致。",
+      "管理员接口依赖后台登录态（admin-access-token cookie），不使用普通用户 Bearer Token。",
+      "若返回 403，请先确认是否已在 `/admin/login` 登录且会话未过期。",
     ],
   },
   {
@@ -204,7 +217,7 @@ export function ApiDocsPage() {
       }
 
       if (response.status === 401) {
-        router.replace(ROUTES.login)
+        router.replace(`${ADMIN_ROUTES.login}?next=${encodeURIComponent(ROUTES.apiDocs)}`)
         return
       }
 

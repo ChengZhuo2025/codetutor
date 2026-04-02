@@ -88,3 +88,20 @@ export async function getRequestAuthIncludingAdminCookie(
 export function getRequestAuthForProfileHelpText() {
   return "请先通过 Supabase Auth 登录并携带 Bearer Token，或使用已登录的管理后台（Cookie），或在开发环境配置 x-dev-user-id。"
 }
+
+export async function getRequestAuthFromAdminSession(
+  request: NextRequest,
+): Promise<{ userId: string } | null> {
+  const { getAdminSessionFromRequest } = await import("@/server/modules/admin-auth/service.ts")
+  const adminSession = await getAdminSessionFromRequest(request)
+
+  if (!adminSession || adminSession.status !== "active") {
+    return null
+  }
+
+  return { userId: adminSession.userId }
+}
+
+export function getRequestAuthForAdminProfileHelpText() {
+  return "请先登录管理后台后再操作管理员资料。"
+}

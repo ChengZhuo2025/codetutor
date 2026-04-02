@@ -1534,13 +1534,23 @@ SSE 事件补充：
 | `POST /api/admin/auth/login` | POST | 管理员登录（邮箱+密码） |
 | `GET /api/admin/auth/session` | GET | 获取当前管理员会话 |
 | `POST /api/admin/auth/logout` | POST | 管理员登出 |
+| `POST /api/admin/auth/change-password` | POST | 管理员修改登录密码（成功后清理管理员会话） |
 
 鉴权方式：
 - 登录成功后写入 `admin-access-token` Cookie（HttpOnly, SameSite=Lax）
 - 与用户端 `app-user-session` Cookie 完全隔离
 - 未登录访问 `/admin/*` 会被 `proxy.ts` 中间件重定向到 `/admin/login`
+- 未登录访问 `/api-docs` 会被重定向到 `/admin/login?next=/api-docs`，管理员登录成功后回跳到 `next`
 
-### 11.1 `GET /api/admin/feedback`
+### 11.1 管理员资料
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `GET /api/admin/profile/me` | GET | 获取当前管理员资料（复用用户资料读模型） |
+| `PATCH /api/admin/profile/me` | PATCH | 更新当前管理员资料（昵称/邮箱/头像等） |
+| `POST /api/admin/profile/avatar` | POST | 上传管理员头像 |
+
+### 11.2 `GET /api/admin/feedback`
 
 用途：
 
@@ -1554,19 +1564,19 @@ SSE 事件补充：
 - `userId`
 - `limit`
 
-### 11.2 `GET /api/admin/feedback/{id}`
+### 11.3 `GET /api/admin/feedback/{id}`
 
 用途：
 
 - 获取反馈单详情、用户快照和回复记录
 
-### 11.3 `POST /api/admin/feedback/{id}/reply`
+### 11.4 `POST /api/admin/feedback/{id}/reply`
 
 用途：
 
 - 以管理员身份追加回复，并可同步推进状态到 `replied` 或 `closed`
 
-### 11.4 `POST /api/admin/feedback/{id}/status`
+### 11.5 `POST /api/admin/feedback/{id}/status`
 
 用途：
 
@@ -1609,7 +1619,11 @@ SSE 事件补充：
 | `POST /api/admin/auth/login` | 否 | 管理员登录入口 |
 | `GET /api/admin/auth/session` | 是 | 获取管理员会话摘要 |
 | `POST /api/admin/auth/logout` | 是 | 管理员登出 |
+| `POST /api/admin/auth/change-password` | 是 | 管理员修改密码（成功后需重新登录） |
 | `GET /api/admin/dashboard/overview` | 是 | 管理员看板数据 |
+| `GET /api/admin/profile/me` | 是 | 管理员资料读取 |
+| `PATCH /api/admin/profile/me` | 是 | 管理员资料更新 |
+| `POST /api/admin/profile/avatar` | 是 | 管理员头像上传 |
 | `POST /api/checkin/daily` | 是 | 私人打卡写入 |
 | `POST /api/analytics/event` | 是，规划中 | 绑定用户事件 |
 

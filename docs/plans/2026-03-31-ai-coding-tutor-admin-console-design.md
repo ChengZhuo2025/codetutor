@@ -5,7 +5,7 @@
 > 版本：v0.3
 > 状态：Phase 1 已完成（2026-04-01），Phase 2 规划中
 > 创建日期：2026-03-31
-> 更新日期：2026-03-31
+> 更新日期：2026-04-02
 > 适用阶段：MVP 后续运营化阶段
 > 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md`、`docs/plans/2026-03-23-ai-coding-tutor-api-spec.md`、`docs/plans/2026-03-23-ai-coding-tutor-database-schema-design.md`、`docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md`、`docs/plans/2026-03-31-admin-console-phase1-design.md`、`docs/plans/2026-03-31-admin-console-phase1-implementation.md`
 
@@ -21,6 +21,13 @@
 
 ## 2. 当前代码基线
 
+> 2026-04-02 对齐说明（以代码为准）：
+>
+> - 管理后台 Phase 1 已落地管理员登录、会话、登出、改密、看板、反馈、管理员资料编辑（含头像上传）链路。
+> - 管理端鉴权主链路已切换为 `admin-access-token` / `admin-refresh-token` Cookie，会话守卫与 `/api-docs` 访问守卫已接入 `proxy.ts`。
+> - 运行时 API 文档（`/api/docs/openapi`、`/api-docs`）已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback` 分组。
+> - 本文中关于 `x-admin-secret` 的描述仅代表早期过渡方案背景，不再代表当前主实现。若与代码冲突，优先以 `docs/plans/2026-03-23-ai-coding-tutor-api-spec.md` 与实际代码为准。
+
 ### 2.1 已经落地的后台相关能力
 
 当前仓库里，真正已经落地的管理员能力只有一条主线：反馈工单后台接口。
@@ -35,8 +42,8 @@
 当前实现特征：
 
 - 统一挂在 `/api/admin/*` 命名空间
-- 使用 `x-admin-secret` 做临时管理员鉴权
-- 使用 `x-admin-id` 透传操作者标识，默认值为 `system-admin`
+- 使用 `admin-access-token` / `admin-refresh-token` Cookie 做管理员会话鉴权
+- 已有管理员能力覆盖：登录、会话读取、登出、改密、看板、反馈、管理员资料编辑
 - 复用现有 `server/lib/request-validation.ts`、`server/lib/route-response.ts`、`server/lib/route-error.ts`
 - 已补 OpenAPI 3.1 文档与 Swagger UI 调试入口
 
@@ -143,9 +150,8 @@
 
 实现原则：
 
-- 当前 `x-admin-secret` 只适合无 UI 的内部 API 调试，不适合长期用于后台浏览器会话。
-- 后台前端一旦落地，管理员认证应升级为“Supabase Auth + 后台角色表 + 服务端权限解析”。
-- `x-admin-secret` 可作为 Phase 0 到 Phase 1 的临时过渡方案，仅用于已有后台 API 或服务端内部调用。
+- 管理端认证主链路采用“Supabase Auth + `admin_accounts` / `admin_roles` / `admin_account_roles` + 服务端权限解析”。
+- 浏览器后台请求以管理员会话 Cookie 为准（`admin-access-token` / `admin-refresh-token`）。
 
 ### 5.2 总览看板
 
@@ -568,18 +574,12 @@ Agents 管理页必须补齐的辅助能力：
 
 ### 6.3 管理员认证演进
 
-建议分两阶段：
+当前已落地（Phase 1）：
 
-Phase 0：
-
-- 保留当前 `x-admin-secret`，继续服务已有反馈后台 API 和开发调试。
-
-Phase 1：
-
-- 建立 `admin_accounts`、`admin_roles`、`admin_account_roles`
-- 后台页面通过 Supabase Auth 登录
-- 服务端通过 `admin_accounts + admin_account_roles` 判断权限
-- `x-admin-secret` 退化为内部应急手段，不再作为后台主登录方式
+- 已建立 `admin_accounts`、`admin_roles`、`admin_account_roles`
+- 后台页面通过 Supabase Auth 登录，服务端通过管理员会话 Cookie 识别身份
+- 服务端通过 `admin_accounts + admin_account_roles` 做权限解析
+- `/api-docs` 已纳入管理员登录守卫，未登录会跳转 `/admin/login?next=/api-docs`
 
 ### 6.4 OpenAPI 与共享 schema
 
@@ -608,15 +608,9 @@ Phase 1：
 
 ### 7.2 认证规范
 
-过渡期：
-
-- 已有后台接口继续支持 `x-admin-secret`
-
-正式后台期：
-
-- 浏览器通过后台登录接口获取受控后台会话
-- API 服务端从 session 中解析管理员身份
-- 仅保留服务端内部工具使用 `x-admin-secret`
+- 浏览器通过后台登录接口获取受控管理员会话（Cookie）
+- API 服务端从管理员会话中解析管理员身份
+- 后台接口文档与调试以会话模式为准
 
 ### 7.3 查询规范
 
