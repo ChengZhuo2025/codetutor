@@ -1,4 +1,4 @@
-# AI 编程学习教练：自由学习模式“教程链接自动拆解学习计划”落地实施方案（规范对齐版 v1.1）
+# AI 编程学习教练：自由学习模式“教程链接自动拆解学习计划”落地实施方案（规范对齐版 v1.2）
 
 > 文档类型：实施设计方案（Implementation Plan）  
 > 适用范围：自由学习模式（`selection_mode=self_directed`）  
@@ -45,6 +45,18 @@
 4. **自学材料整理类 skill 已有雏形**
    - `ai/skills/learning-material-intake-skill/SKILL.md` 已定义“材料分组与最小步产出”方向。
 
+5. **当前学习主闭环高度依赖既有路径模型**
+   - `/learn`、`/map`、`/history` 当前都围绕 `user_learning_paths + user_tasks + path_steps` 运行。
+   - 现有任务推进、会话恢复、历史回放都假定“当前活动路径”已经具备真实 `path_steps` 和 `user_tasks`。
+
+6. **自由学习模式在 onboarding 完成时会先创建一条通用 active path**
+   - 当前 `selection_mode=self_directed` 不是“无路径占位”，而是会立即创建真实 `user_learning_path` 与首批 `user_tasks`。
+   - 因此本能力不能只停留在 draft 表层，必须定义“确认后如何替换当前自学 active path”。
+
+7. **首期不应复用聊天消息接口承载计划生成**
+   - 当前 `/learn` 聊天框仍固定走 `POST /api/learning/message`，前端发送时也仍默认 `inputType="text"`。
+   - 因此首期应走专用接口与专用草稿预览流程，而不是把“贴链接生成计划”混进普通对话流。
+
 结论：当前不需要重建学习体系，只需新增“材料摄取和计划生成”的能力层与数据流。
 
 ---
@@ -53,22 +65,24 @@
 
 ### 3.1 用户体验目标
 
-用户在自由学习模式输入教程链接后，系统应在 60-180 秒内给出：
+用户在自由学习模式输入教程链接后，系统应在首期支持范围内给出稳定反馈：
 
-1. 建议学习计划标题与范围
-2. 分阶段任务列表（例如 3-8 个任务）
-3. 每个任务的：
+1. 图文白名单链接场景下，优先在一次请求内返回计划草稿，目标 P95 在 10-25 秒内
+2. 若材料不可读、信息不足或超出首期支持范围，返回明确的降级提示，而不是长时间无响应
+3. 建议学习计划标题与范围
+4. 分阶段任务列表（例如 3-8 个任务）
+5. 每个任务的：
    - 学习目标
    - 输入材料片段（来源证据）
    - 实操动作
    - 完成标准（验收口径）
    - 预计耗时
-4. 风险提示（缺失信息、外部链接不可读、字幕质量差等）
+6. 风险提示（缺失信息、外部链接不可读、字幕质量差等）
 
 ### 3.2 系统能力目标
 
 1. 支持图文链接解析（首期必做）
-2. 支持视频链接解析（首期可做“有字幕优先”，无字幕降级）
+2. 支持视频链接解析（Phase B 做“有字幕优先”，无字幕降级）
 3. 支持多链接合并生成计划（首期限制上限，例如最多 5 条）
 4. 支持草稿确认后才写入正式学习路径
 5. 全流程可审计、可重试、可回放
@@ -120,12 +134,34 @@
 
 ---
 
-## 4.3 Skills 与 MCP 的定位决策
+## 4.3 与现有学习主线的兼容策略（首期冻结）
 
-### 4.3.1 首期决策
+为避免新能力与当前 `/learn`、`/map`、`/history` 主闭环脱节，首期实现冻结以下规则：
 
-1. **Skills 继续作为“教学拆解规则与模板”主路径**
+1. `learning_plan_drafts` 只承担“确认前草稿态”，不是正式学习执行真源。
+2. `confirm` 成功后，必须把草稿物化到现有主链路：
+   - 创建一条用户私有 `learning_paths` 记录，作为本次个性化计划模板快照。
+   - 为该模板创建对应 `path_steps`。
+   - 再创建新的 `user_learning_paths` 和 `user_tasks`。
+3. `confirm` 前不得修改当前 active path。
+4. `confirm` 时若用户当前存在 `selection_mode=self_directed` 且 `status=active` 的路径：
+   - 先归档旧路径。
+   - 再激活新路径。
+   - 两步需在同一服务编排中完成，避免出现双 active path。
+5. 旧路径上的历史会话、完成记录、历史页数据保留，不做硬删除。
+6. `regenerate` 只能影响 draft，不得修改 active path、user tasks 或历史消息。
+
+以上决策意味着：首期不改造 `/learn` 去直接读取 draft tasks，而是继续复用现有学习路径执行体系。
+
+---
+
+## 4.4 Skills 与 MCP 的定位决策
+
+### 4.4.1 首期决策
+
+1. **Skills 继续作为“辅助教学规则与模板”输入**
    - 例如：`learning-material-intake-skill`、`task-slicing-skill`
+   - 但首期计划生成的权威契约仍是 `planner prompt + JSON schema + validator`，不是现有 skill 文本本身。
 
 2. **材料读取能力不放在 skill 脚本中直接联网执行**
    - 遵守当前 skill 安全边界（首期禁止任意网络访问脚本）
@@ -133,13 +169,29 @@
 3. **首期不强依赖 MCP**
    - 先在服务端直接实现 `intake adapters`（快、可控、低耦合）
 
-### 4.3.2 中期演进（可选）
+4. **现有 skill 不足以单独承载多阶段计划生成**
+   - 当前 `learning-material-intake-skill` 更偏“材料整理”和“当前最小一步”，不应被当作整门计划输出规范。
+   - 如后续发现 planner prompt 过长或领域规则变复杂，再新增专用 planner skill 或 planner prompt 资源文件。
+
+### 4.4.2 中期演进（可选）
 
 当来源扩大到 YouTube / B 站 / 公众号 / Notion / 飞书 / PDF 时，再把 intake adapters 统一抽象为 MCP 工具层，复用权限、速率限制与可观测性。
 
 ---
 
-## 4.4 命名与落位冻结（避免实现偏差）
+## 4.5 前端入口与交互时序冻结（首期）
+
+1. 首期入口放在自由学习模式的 `/learn` 页面，不复用普通聊天消息发送链路。
+2. 首期交互形态采用：
+   - 自由模式用户在 `/learn` 顶部或右侧看到“粘贴教程链接，生成专属计划”入口。
+   - 提交后进入独立的生成 loading 状态。
+   - 成功后展示 draft 预览，不直接进入聊天流。
+   - 用户点击确认后，服务端完成路径切换，前端刷新当前 session。
+3. 首期不要求在普通聊天框里识别 URL 后自动切换到计划生成。
+4. 若当前用户已有正在进行的自学 active path，确认前页面必须明确提示：
+   - “确认后将替换当前自由学习计划，但保留历史记录。”
+
+## 4.6 命名与落位冻结（避免实现偏差）
 
 后续实现统一使用以下命名，不再自行变体：
 
@@ -172,11 +224,25 @@
 
 3. `learning_plan_drafts`
    - 记录 AI 生成的学习计划草稿
-   - 字段建议：`id`、`user_id`、`intake_id`、`title`、`goal`、`difficulty`、`estimated_total_minutes`、`status(draft/confirmed/rejected)`、`raw_plan_json`
+   - 字段建议：`id`、`user_id`、`intake_id`、`title`、`goal`、`difficulty`、`estimated_total_minutes`、`status(draft/confirmed/rejected/superseded)`、`raw_plan_json`
 
 4. `learning_plan_draft_tasks`
    - 记录草稿任务明细
    - 字段建议：`draft_id`、`task_no`、`title`、`objective`、`practice_steps`、`acceptance_criteria`、`estimated_minutes`、`source_refs`
+
+此外，正式激活阶段不新增第二套“执行中任务表”，而是继续复用现有模型：
+
+1. `learning_paths`
+   - `confirm` 时新增一条用户私有模板快照记录。
+   - `source_type` 仍使用 `self_directed`，并在 `metadata` 标注 `seed_source=plan_draft_confirmed`、`draft_id`、`intake_id`。
+
+2. `path_steps`
+   - `confirm` 时把草稿任务一一物化为正式步骤。
+   - `step_no`、`title`、`goal`、`completion_criteria`、`estimated_minutes`、`knowledge_points` 等字段需从 draft 映射。
+
+3. `user_learning_paths` / `user_tasks`
+   - 继续作为 `/learn`、`/map`、`/history` 的唯一执行真源。
+   - 不引入 `draft_tasks` 直读模式，避免页面和服务端出现双执行模型。
 
 说明：若希望最小改动，也可先将草稿存在 `metadata jsonb`，但不建议长期依赖 JSON 大字段承载主业务对象。
 
@@ -187,6 +253,15 @@
 3. 查询高频字段必须建索引（如 `user_id + status + updated_at`）
 4. 关键唯一约束必须显式定义（如 `unique(draft_id, task_no)`）
 5. 状态字段优先用 enum，不使用自由字符串
+
+补充冻结：
+
+1. `confirm` 服务必须是幂等的。
+   - 同一 `draft_id` 被重复确认时，只允许成功激活一次。
+   - 建议通过 `learning_plan_drafts.status` + `confirmed_path_id` 或等价字段保证。
+2. `confirm` 必须校验 draft 所属用户。
+3. `confirm` 成功后，draft 状态置为 `confirmed`，并记录落地的 `learning_path_id`。
+4. `regenerate` 成功后建议保留旧 draft 记录，置为 `superseded` 或在 `metadata` 标注被替代关系，避免审计断链。
 
 ## 5.2 新增接口契约（规范冻结）
 
@@ -202,9 +277,14 @@
      - `planSummary`
      - `tasks[]`
      - `warnings[]`
+     - `processingMode`
 
 2. `POST /api/learning/plan-drafts/{id}/confirm`
    - 功能：将草稿转为正式学习路径与任务
+   - 成功后返回：
+     - `learningPathId`
+     - `currentTaskId`
+     - `redirectTo`
 
 3. `POST /api/learning/plan-drafts/{id}/regenerate`
    - 功能：基于同一 intake 重新生成（可带偏好参数）
@@ -213,6 +293,28 @@
 
 1. 新接口响应必须遵循统一结构 `code/message/data`
 2. 新接口错误码需纳入统一错误映射，不在模块内自定义随意文案
+3. `plan-from-material` 首期固定为同步接口：
+   - 仅覆盖白名单图文链接。
+   - 目标是“一次请求内返回草稿”。
+   - 若超出超时或材料不可稳定抽取，则直接返回可恢复错误，不在 Phase A 引入异步 job/轮询。
+4. 视频链接不纳入 Phase A 的同步 SLA。
+
+## 5.3 错误码口径（建议冻结）
+
+建议新增以下业务错误码，并统一纳入 API 文档与 OpenAPI schema：
+
+1. `MATERIAL_UNSUPPORTED_DOMAIN`
+   - 当前链接域名不在首期支持范围内。
+2. `MATERIAL_FETCH_FAILED`
+   - 链接抓取失败、超时或正文抽取失败。
+3. `MATERIAL_INSUFFICIENT_CONTENT`
+   - 成功抓到页面，但有效内容不足以生成稳定计划。
+4. `PLAN_DRAFT_NOT_FOUND`
+   - 草稿不存在或不属于当前用户。
+5. `PLAN_DRAFT_ALREADY_CONFIRMED`
+   - 草稿已确认，不能重复激活。
+6. `AI_RESPONSE_INVALID`
+   - planner 输出未通过 schema 或业务校验。
 
 ---
 
@@ -221,9 +323,10 @@
 ## 6.1 输入约束
 
 1. 每次最多 5 条链接
-2. 限制允许域名白名单（首期先放常见平台）
-3. 限制抓取超时（例如单链接 15 秒）
-4. 限制最大内容体积（例如 1-2 MB 文本）
+2. Phase A 仅支持白名单图文域名，建议先冻结为 3 个站点，不用“任意网页”表述
+3. 限制抓取超时（例如单链接 8-10 秒，总链路 25 秒内）
+4. 限制最大内容体积（例如 500 KB-1 MB 纯文本）
+5. 不抓取需要登录、强反爬、动态渲染后才可见的正文页面
 
 ## 6.2 图文处理
 
@@ -232,7 +335,7 @@
 3. 提取标题、章节、小节、代码片段
 4. 生成 `material chunks`（便于模型消费）
 
-## 6.3 视频处理（首期建议）
+## 6.3 视频处理（Phase B 再开）
 
 1. 优先使用字幕源（如果可获得）
 2. 无字幕时回退为：
@@ -265,7 +368,8 @@
 1. 用户信息：等级、工具偏好、周可投入时长
 2. 材料摘要：分块内容 + 元数据 + 可读性质量分
 3. 计划约束：任务数范围、总周期范围、验收规则
-4. 风险策略：信息不足时返回追问项而非硬编造
+4. 现有执行模型约束：输出必须可映射到 `learning_paths/path_steps/user_tasks`
+5. 风险策略：信息不足时返回追问项而非硬编造
 
 ## 7.3 输出校验
 
@@ -285,7 +389,7 @@
 
 ## 8.1 Phase A：最小可用版本（建议 1-2 周）
 
-目标：图文链接可生成计划草稿并确认激活。
+目标：白名单图文链接可生成计划草稿并确认激活，且确认后能无缝接入当前学习主闭环。
 
 实施项：
 
@@ -293,14 +397,16 @@
 2. 新增 `POST /api/learning/plan-from-material`
 3. 图文链接抓取与正文抽取
 4. planner agent + 输出校验
-5. 草稿落库与确认接口
-6. 前端自由模式新增“链接生成计划”入口（草稿预览）
+5. `confirm` 时把 draft 物化为 `learning_paths + path_steps + user_learning_paths + user_tasks`
+6. 草稿落库与确认接口
+7. 前端自由模式新增“链接生成计划”入口（草稿预览）
 
 完成标准：
 
-1. 至少支持 3 个主流图文站点
-2. 计划生成成功率（内部样本）>= 85%
-3. 失败请求具备明确可重试提示
+1. 冻结至少 3 个首期图文站点，并写入白名单配置
+2. `confirm` 后 `/learn` 可直接恢复到新计划的第一关
+3. 计划生成成功率（内部样本）>= 85%
+4. 失败请求具备明确可重试提示
 
 ## 8.2 Phase B：视频增强版本（建议 1-2 周）
 
@@ -342,6 +448,7 @@
 4. **产品口径**
    - 草稿确认前不改动当前 active path
    - 用户可拒绝草稿并重新生成
+   - 用户确认草稿后，若当前存在 active 的自由学习路径，则替换为新路径并保留旧历史
 
 ---
 
@@ -360,7 +467,7 @@
    - 规避：任务时长区间约束 + 验收标准强校验 + 回归样本评测
 
 5. **成本和时延不可控**
-   - 规避：材料长度截断、分块策略、异步处理、调用配额与限流
+   - 规避：材料长度截断、分块策略、白名单域名、调用配额与限流；Phase A 不做长耗时异步链路
 
 6. **安全与隐私风险**
    - 规避：脱敏日志、禁止写入完整敏感正文到审计表、严格权限校验
@@ -385,6 +492,7 @@
 3. **Route/HTTP 测试**
    - `POST /api/learning/plan-from-material` 请求校验
    - 错误状态码与响应结构
+   - `POST /api/learning/plan-drafts/{id}/confirm` 的资源归属与幂等校验
 
 4. **Live 测试（可选，低频）**
    - 真 provider 联调冒烟
@@ -404,6 +512,7 @@
 2. 多链接合并 -> 去重并输出统一计划
 3. 链接不可读 -> 返回可操作错误提示
 4. AI 返回非法 JSON -> 触发重试/降级
+5. confirm 重复提交 -> 不产生第二条 active path
 
 ---
 
@@ -420,10 +529,11 @@
 1. 自动化测试通过（单测 + 集成 + route）
 2. `pnpm lint` 通过
 3. OpenAPI 文档同步更新（`server/modules/api-docs/openapi.ts` / `schemas.ts`）
+4. `/learn` 在确认后能读到新的 active path，会话刷新链路正常
 
 ## 12.3 业务验收
 
-1. 从输入链接到拿到计划草稿，P95 时延可接受（目标建议 < 30s，超时走异步提示）
+1. Phase A 图文白名单场景下，从输入链接到拿到计划草稿，P95 目标 10-25 秒
 2. 内部评审样本中，计划“可执行性”评分达到约定阈值
 3. 失败场景错误提示明确且可恢复
 
@@ -444,6 +554,7 @@
    - `prompt.ts`
    - `validator.ts`
    - `persistence.ts`
+   - `activation.ts`（draft -> active path 物化）
 
 3. `app/api/learning/plan-from-material/route.ts`
 4. `app/api/learning/plan-drafts/[id]/confirm/route.ts`
@@ -460,7 +571,7 @@
 
 1. 新迁移 + seed（如需）
 2. 新接口 + OpenAPI
-3. 草稿生成与确认
+3. 草稿生成、确认与 active path 切换
 4. 测试报告（单测/集成/route）
 
 ## M2：视频增强闭环
@@ -491,11 +602,12 @@
 
 ## 16. 下一步执行建议（可直接开工）
 
-1. 先出 migration 草案（intake + draft 两组表）
-2. 并行起草 `POST /api/learning/plan-from-material` 的 request/response schema
-3. 先实现图文 extractor + planner（最小可用）
-4. 用 10-20 条真实样本做计划质量回归，定下通过阈值
-5. 再扩视频场景，最后补运营化与灰度能力
+1. 先冻结“confirm 如何生成正式 path/steps/tasks”的落地规则
+2. 再出 migration 草案（intake + draft 两组表 + draft 激活关联字段）
+3. 并行起草 `POST /api/learning/plan-from-material` 与 `confirm` 的 request/response schema
+4. 先实现图文 extractor + planner（最小可用）
+5. 用 10-20 条真实样本做计划质量回归，定下通过阈值
+6. 再扩视频场景，最后补运营化与灰度能力
 
 ---
 
@@ -503,11 +615,13 @@
 
 1. [ ] 模块目录命名冻结（`learning-materials` / `learning-plans`）
 2. [ ] API 路由路径冻结（3 条新增接口）
-3. [ ] 状态字段是否新增枚举已决策并写入 migration 草案
-4. [ ] 错误码口径冻结并回写 `docs/plans/2026-03-23-ai-coding-tutor-api-spec.md`
-5. [ ] OpenAPI schema 草案已更新到 `server/modules/api-docs/openapi.ts` / `schemas.ts`
-6. [ ] TDD 用例清单已拆分到开发任务
-7. [ ] 验收 DoD 与指标阈值已确认
+3. [ ] `confirm` 是否归档旧自学 active path 已决策
+4. [ ] draft 是否必须物化为正式 `learning_paths/path_steps/user_tasks` 已冻结
+5. [ ] 状态字段是否新增枚举已决策并写入 migration 草案
+6. [ ] 错误码口径冻结并回写 `docs/plans/2026-03-23-ai-coding-tutor-api-spec.md`
+7. [ ] OpenAPI schema 草案已更新到 `server/modules/api-docs/openapi.ts` / `schemas.ts`
+8. [ ] TDD 用例清单已拆分到开发任务
+9. [ ] 验收 DoD 与指标阈值已确认
 
 ---
 

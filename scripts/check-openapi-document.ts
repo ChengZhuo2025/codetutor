@@ -3,7 +3,7 @@ import assert from "node:assert/strict"
 
 import { buildOpenApiDocument } from "../server/modules/api-docs/openapi.ts"
 
-test("openapi document covers all implemented api operations and special transports", () => {
+test("openapi document covers all registered api operations and special transports", () => {
   const document = buildOpenApiDocument()
   const paths = document.paths ?? {}
 
@@ -16,13 +16,16 @@ test("openapi document covers all implemented api operations and special transpo
     ),
   )
 
-  assert.equal(operations.length, 27)
+  assert.equal(operations.length, 30)
 
   assert.ok(paths["/api/auth/login"]?.post)
   assert.ok(paths["/api/profile/me"]?.get)
   assert.ok(paths["/api/profile/me"]?.patch)
   assert.ok(paths["/api/profile/avatar"]?.post)
   assert.ok(paths["/api/learning/message"]?.post)
+  assert.ok(paths["/api/learning/plan-from-material"]?.post)
+  assert.ok(paths["/api/learning/plan-drafts/{id}/confirm"]?.post)
+  assert.ok(paths["/api/learning/plan-drafts/{id}/regenerate"]?.post)
   assert.ok(paths["/api/admin/feedback/{id}/reply"]?.post)
 
   const avatarPost = paths["/api/profile/avatar"]?.post as

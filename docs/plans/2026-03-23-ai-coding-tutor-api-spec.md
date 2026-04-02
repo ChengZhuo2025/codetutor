@@ -156,6 +156,9 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 当前仍属于规划、尚未在代码中落地的接口包括：
 
 - `POST /api/profile/init`
+- `POST /api/learning/plan-from-material`
+- `POST /api/learning/plan-drafts/{id}/confirm`
+- `POST /api/learning/plan-drafts/{id}/regenerate`
 - `POST /api/learning/stuck-help`
 - `POST /api/analytics/event`
 
@@ -175,6 +178,12 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | `CONFLICT` | 状态冲突 |
 | `VALIDATION_FAILED` | 业务校验失败 |
 | `AI_PROVIDER_ERROR` | AI 服务异常 |
+| `MATERIAL_UNSUPPORTED_DOMAIN` | 当前链接来源不在支持范围内 |
+| `MATERIAL_FETCH_FAILED` | 教程材料抓取失败 |
+| `MATERIAL_INSUFFICIENT_CONTENT` | 材料内容不足，无法生成稳定计划 |
+| `PLAN_DRAFT_NOT_FOUND` | 学习计划草稿不存在 |
+| `PLAN_DRAFT_ALREADY_CONFIRMED` | 学习计划草稿已确认 |
+| `AI_RESPONSE_INVALID` | AI 返回结果未通过计划校验 |
 | `RATE_LIMITED` | 请求频率过高 |
 | `INTERNAL_ERROR` | 系统内部错误 |
 
@@ -212,6 +221,9 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 规划中：
 
+- `POST /api/learning/plan-from-material`
+- `POST /api/learning/plan-drafts/{id}/confirm`
+- `POST /api/learning/plan-drafts/{id}/regenerate`
 - `POST /api/learning/stuck-help`
 
 ## 4.4 任务与进度
@@ -258,7 +270,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 营销首页 | `/` | `GET /api/auth/session` | 首页导航、Hero、套餐区、页脚与最终 CTA 会根据登录态切换为“继续学习”，并跳转到 `/learn`、`/history` 或 `/onboarding` |
 | 登录页 | `/login` | `POST /api/auth/login`、`GET/PATCH /api/profile/me`、`POST /api/profile/avatar` | 当前已打通手机号验证码登录、微信 OAuth 跳转、用户档案读取与资料编辑 |
 | 新手引导 | `/onboarding` | `GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete` | 产出主工具、学习等级、学习模式、初始学习路径实例 |
-| 学习页 | `/learn` | `GET /api/learning/current-session`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status` | 当前已打通学习主界面 read model、历史消息分页、真实 AI provider 消息编排、SSE 与任务状态写入 |
+| 学习页 | `/learn` | `GET /api/learning/current-session`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`；规划补充 `POST /api/learning/plan-from-material`、`POST /api/learning/plan-drafts/{id}/confirm`、`POST /api/learning/plan-drafts/{id}/regenerate` | 当前已打通学习主界面 read model、历史消息分页、真实 AI provider 消息编排、SSE 与任务状态写入；自由模式教程链接生成计划能力仍在规划中 |
 | 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
 | 成就页 | `/achievements` | `GET /api/achievement/summary` | 当前已打通成长总览 read model，并支持真实每日打卡 |
 | 历史页 | `/history` | `GET /api/history/recent`、`GET /api/history/{id}`、`POST /api/history/{id}/status` | 当前前端实际需要的是“历史学习计划列表 + 详情复盘 + 状态操作”，而不是“最近对话列表” |
@@ -835,7 +847,149 @@ SSE 事件补充：
 - `beforeSequenceNo` 和 `limit` 必须是正整数
 - assistant 历史消息若已落库存储 `structuredContent`，返回时应一并恢复；旧记录若缺失该字段，则服务端按兼容逻辑回填
 
-## 7.4 规划中：`POST /api/learning/stuck-help`
+## 7.4 规划中：`POST /api/learning/plan-from-material`
+
+用途：
+
+- 在自由学习模式下，根据教程链接生成学习计划草稿
+
+当前规划说明：
+
+- 该接口面向 `selection_mode=self_directed`
+- Phase A 仅支持白名单图文链接，采用同步返回
+- 成功后只生成 draft，不会直接改动当前 active path
+
+请求体：
+
+```json
+{
+  "links": [
+    "https://example.com/tutorial/nextjs-first-page"
+  ],
+  "userGoal": "我想跟着教程做一个最小可运行的页面练习",
+  "targetToolCode": "cursor",
+  "weeklyHours": 6
+}
+```
+
+字段说明：
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `links` | 是 | 教程链接列表，首期 1-5 条 |
+| `userGoal` | 否 | 用户主动补充的学习目标 |
+| `targetToolCode` | 否 | 期望练习的工具，如 `cursor` / `claude-code` |
+| `weeklyHours` | 否 | 每周计划投入时长，首期建议 1-40 小时 |
+
+成功响应示例：
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "intakeId": "intake-001",
+    "draftId": "draft-001",
+    "planSummary": {
+      "title": "用官方教程完成第一个 Next.js 页面改造",
+      "goal": "基于教程内容完成一个可运行、可验收的最小页面练习闭环。",
+      "difficulty": "beginner",
+      "estimatedTotalMinutes": 180,
+      "taskCount": 4
+    },
+    "tasks": [
+      {
+        "taskNo": 1,
+        "title": "通读教程并跑通基础项目",
+        "objective": "先确认教程里的项目结构、依赖和运行方式都可复现。",
+        "practiceSteps": [
+          "阅读教程中的环境准备与启动步骤",
+          "本地运行项目并截图记录首页结果"
+        ],
+        "acceptanceCriteria": [
+          "项目可正常启动",
+          "能说明教程目标和当前项目结构"
+        ],
+        "estimatedMinutes": 30,
+        "sourceRefs": [
+          {
+            "url": "https://example.com/tutorial/nextjs-first-page",
+            "title": "Next.js 入门教程",
+            "excerpt": "Create and run your first page."
+          }
+        ]
+      }
+    ],
+    "warnings": [],
+    "processingMode": "sync"
+  }
+}
+```
+
+业务规则：
+
+- 首期固定为同步接口，不引入 job/轮询机制
+- 首期仅支持白名单图文域名；不承诺“任意网页”
+- 材料不可读、正文不足或 AI 输出非法时，返回明确错误码，不写 active path
+
+## 7.5 规划中：`POST /api/learning/plan-drafts/{id}/confirm`
+
+用途：
+
+- 将学习计划草稿确认并激活为正式学习路径
+
+当前规划说明：
+
+- 该接口是“draft -> active path” 的唯一激活入口
+- 成功后会把草稿物化到现有 `learning_paths + path_steps + user_learning_paths + user_tasks` 主链路
+- 若当前存在进行中的自由学习 active path，则归档旧路径后再激活新路径
+
+路径参数：
+
+- `id`: 学习计划草稿 ID
+
+成功响应示例：
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "learningPathId": "path-runtime-002",
+    "currentTaskId": "task-runtime-001",
+    "redirectTo": "/learn"
+  }
+}
+```
+
+业务规则：
+
+- 仅允许确认当前登录用户自己的 draft
+- 同一 `draftId` 只能成功确认一次，接口必须幂等
+- 确认前不改动当前 active path；确认成功后才切换
+
+## 7.6 规划中：`POST /api/learning/plan-drafts/{id}/regenerate`
+
+用途：
+
+- 基于同一 intake 重新生成学习计划草稿
+
+请求体示例：
+
+```json
+{
+  "userGoal": "我更希望任务聚焦页面实战，不想先看太多理论",
+  "weeklyHours": 4
+}
+```
+
+业务规则：
+
+- 仅允许重生成当前登录用户自己的 draft
+- `regenerate` 只能影响 draft，不得直接修改 active path 或现有 user tasks
+- 建议保留旧 draft 记录用于审计，并将其状态标记为 `superseded`
+
+## 7.7 规划中：`POST /api/learning/stuck-help`
 
 用途：
 
@@ -1451,6 +1605,9 @@ SSE 事件补充：
 | `POST /api/learning/message` | 是 | 核心学习数据 |
 | `GET /api/learning/current-session` | 是 | 恢复当前学习上下文 |
 | `GET /api/learning/messages` | 是 | 分页读取当前学习会话历史消息 |
+| `POST /api/learning/plan-from-material` | 是，规划中 | 自由模式根据教程链接生成学习计划草稿 |
+| `POST /api/learning/plan-drafts/{id}/confirm` | 是，规划中 | 确认当前用户的学习计划草稿并激活正式路径 |
+| `POST /api/learning/plan-drafts/{id}/regenerate` | 是，规划中 | 基于同一材料为当前用户重生成草稿 |
 | `POST /api/learning/stuck-help` | 是，规划中 | 请求卡住帮助 |
 | `POST /api/task/complete` | 是 | 写任务完成、推进下一关、同步积分快照 |
 | `POST /api/task/update-status` | 是 | 更新当前关卡状态 |

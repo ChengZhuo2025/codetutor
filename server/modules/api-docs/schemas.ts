@@ -14,6 +14,12 @@ export const ApiErrorCodeSchema = z
     "CONFLICT",
     "VALIDATION_FAILED",
     "AI_PROVIDER_ERROR",
+    "MATERIAL_UNSUPPORTED_DOMAIN",
+    "MATERIAL_FETCH_FAILED",
+    "MATERIAL_INSUFFICIENT_CONTENT",
+    "PLAN_DRAFT_NOT_FOUND",
+    "PLAN_DRAFT_ALREADY_CONFIRMED",
+    "AI_RESPONSE_INVALID",
     "RATE_LIMITED",
     "INTERNAL_ERROR",
   ])
@@ -408,6 +414,84 @@ export const learningMessagesResponseDataSchema = z
     pagination: learningHistoryPaginationSchema,
   })
   .openapi("LearningMessagesResponseData")
+
+export const learningPlanDraftDifficultySchema = z
+  .enum(["beginner", "intermediate", "advanced"])
+  .openapi("LearningPlanDraftDifficulty")
+
+export const learningPlanMaterialWarningSchema = z
+  .object({
+    code: z.string(),
+    message: z.string(),
+    sourceUrl: z.string().nullable().optional(),
+  })
+  .openapi("LearningPlanMaterialWarning")
+
+export const learningPlanDraftSourceRefSchema = z
+  .object({
+    url: z.string(),
+    title: z.string().nullable().optional(),
+    excerpt: z.string().nullable().optional(),
+  })
+  .openapi("LearningPlanDraftSourceRef")
+
+export const learningPlanDraftTaskSchema = z
+  .object({
+    taskNo: z.number().int().positive(),
+    title: z.string(),
+    objective: z.string(),
+    practiceSteps: z.array(z.string()),
+    acceptanceCriteria: z.array(z.string()),
+    estimatedMinutes: z.number().int().positive(),
+    sourceRefs: z.array(learningPlanDraftSourceRefSchema),
+  })
+  .openapi("LearningPlanDraftTask")
+
+export const learningPlanDraftSummarySchema = z
+  .object({
+    title: z.string(),
+    goal: z.string(),
+    difficulty: learningPlanDraftDifficultySchema,
+    estimatedTotalMinutes: z.number().int().positive(),
+    taskCount: z.number().int().positive(),
+  })
+  .openapi("LearningPlanDraftSummary")
+
+export const learningPlanFromMaterialRequestSchema = z
+  .object({
+    links: z.array(z.string().url()).min(1).max(5),
+    userGoal: z.string().trim().min(1).optional(),
+    targetToolCode: z.string().trim().min(1).optional(),
+    weeklyHours: z.number().int().positive().max(40).optional(),
+  })
+  .openapi("LearningPlanFromMaterialRequest")
+
+export const learningPlanFromMaterialResponseDataSchema = z
+  .object({
+    intakeId: z.string(),
+    draftId: z.string(),
+    planSummary: learningPlanDraftSummarySchema,
+    tasks: z.array(learningPlanDraftTaskSchema),
+    warnings: z.array(learningPlanMaterialWarningSchema),
+    processingMode: z.literal("sync"),
+  })
+  .openapi("LearningPlanFromMaterialResponseData")
+
+export const learningPlanDraftConfirmResponseDataSchema = z
+  .object({
+    learningPathId: z.string(),
+    currentTaskId: z.string(),
+    redirectTo: z.string(),
+  })
+  .openapi("LearningPlanDraftConfirmResponseData")
+
+export const learningPlanDraftRegenerateRequestSchema = z
+  .object({
+    userGoal: z.string().trim().min(1).optional(),
+    targetToolCode: z.string().trim().min(1).optional(),
+    weeklyHours: z.number().int().positive().max(40).optional(),
+  })
+  .openapi("LearningPlanDraftRegenerateRequest")
 
 export const quickActionSchema = z
   .object({

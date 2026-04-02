@@ -28,6 +28,10 @@ import {
   getOnboardingToolsResponseDataSchema,
   historyRecentQuerySchema,
   learningCurrentSessionResponseDataSchema,
+  learningPlanDraftConfirmResponseDataSchema,
+  learningPlanDraftRegenerateRequestSchema,
+  learningPlanFromMaterialRequestSchema,
+  learningPlanFromMaterialResponseDataSchema,
   learningMessageRequestSchema,
   learningMessageResponseDataSchema,
   learningMessagesQuerySchema,
@@ -339,6 +343,47 @@ const successExamples = {
       hasMore: false,
       nextBeforeSequenceNo: null,
     },
+  },
+  learningPlanFromMaterial: {
+    intakeId: "intake-1",
+    draftId: "draft-1",
+    planSummary: {
+      title: "用官方教程完成第一个 Next.js 页面改造",
+      goal: "基于教程内容完成一个可运行、可验收的最小页面练习闭环。",
+      difficulty: "beginner",
+      estimatedTotalMinutes: 180,
+      taskCount: 4,
+    },
+    tasks: [
+      {
+        taskNo: 1,
+        title: "通读教程并跑通基础项目",
+        objective: "先确认教程里的项目结构、依赖和运行方式都可复现。",
+        practiceSteps: [
+          "阅读教程中的环境准备与启动步骤",
+          "本地运行项目并截图记录首页结果",
+        ],
+        acceptanceCriteria: [
+          "项目可正常启动",
+          "能说明教程目标和当前项目结构",
+        ],
+        estimatedMinutes: 30,
+        sourceRefs: [
+          {
+            url: "https://example.com/tutorial",
+            title: "Next.js 入门教程",
+            excerpt: "Create and run your first page.",
+          },
+        ],
+      },
+    ],
+    warnings: [],
+    processingMode: "sync",
+  },
+  learningPlanDraftConfirm: {
+    learningPathId: "path-runtime-2",
+    currentTaskId: "task-runtime-1",
+    redirectTo: "/learn",
   },
   taskComplete: {
     taskId: "task-1",
@@ -1028,6 +1073,143 @@ registry.registerPath({
         example: {
           code: "VALIDATION_FAILED",
           message: "conversationId 不合法。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/learning/plan-from-material",
+  operationId: "postLearningPlanFromMaterial",
+  tags: ["learning"],
+  summary: "生成自由学习模式的学习计划草稿（规划中）",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: learningPlanFromMaterialRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      learningPlanFromMaterialResponseDataSchema,
+      "LearningPlanFromMaterialResponse",
+      "计划草稿生成成功",
+      successExamples.learningPlanFromMaterial,
+    ),
+    ...commonErrorResponses(["401", "422", "500", "502"], {
+      "422": {
+        description: "链接数量、域名、周学习时长或业务约束未通过校验。",
+        example: {
+          code: "MATERIAL_UNSUPPORTED_DOMAIN",
+          message: "当前链接域名暂不在首期支持范围内。",
+          data: null,
+        },
+      },
+      "502": {
+        description: "材料抓取或 AI 计划生成阶段失败。",
+        example: {
+          code: "MATERIAL_FETCH_FAILED",
+          message: "教程内容抓取失败，请稍后重试或补充摘要。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/learning/plan-drafts/{id}/confirm",
+  operationId: "postLearningPlanDraftConfirm",
+  tags: ["learning"],
+  summary: "确认学习计划草稿并激活为正式路径（规划中）",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: routeIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      learningPlanDraftConfirmResponseDataSchema,
+      "LearningPlanDraftConfirmResponse",
+      "草稿确认成功",
+      successExamples.learningPlanDraftConfirm,
+    ),
+    ...commonErrorResponses(["401", "404", "409", "500"], {
+      "404": {
+        description: "草稿不存在，或不属于当前用户。",
+        example: {
+          code: "PLAN_DRAFT_NOT_FOUND",
+          message: "当前学习计划草稿不存在。",
+          data: null,
+        },
+      },
+      "409": {
+        description: "草稿已确认，或当前状态不允许再次激活。",
+        example: {
+          code: "PLAN_DRAFT_ALREADY_CONFIRMED",
+          message: "当前学习计划草稿已确认，无需重复激活。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/learning/plan-drafts/{id}/regenerate",
+  operationId: "postLearningPlanDraftRegenerate",
+  tags: ["learning"],
+  summary: "基于同一材料重新生成学习计划草稿（规划中）",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: routeIdParamsSchema,
+    body: {
+      required: false,
+      content: {
+        "application/json": {
+          schema: learningPlanDraftRegenerateRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      learningPlanFromMaterialResponseDataSchema,
+      "LearningPlanDraftRegenerateResponse",
+      "草稿重新生成成功",
+      successExamples.learningPlanFromMaterial,
+    ),
+    ...commonErrorResponses(["401", "404", "422", "500", "502"], {
+      "404": {
+        description: "草稿不存在，或不属于当前用户。",
+        example: {
+          code: "PLAN_DRAFT_NOT_FOUND",
+          message: "当前学习计划草稿不存在。",
+          data: null,
+        },
+      },
+      "422": {
+        description: "重新生成偏好参数未通过校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "weeklyHours 必须是 1 到 40 之间的正整数。",
+          data: null,
+        },
+      },
+      "502": {
+        description: "AI 重新生成计划时返回非法结果或材料抽取失败。",
+        example: {
+          code: "AI_RESPONSE_INVALID",
+          message: "AI 返回结果未通过校验，请补充学习目标后重试。",
           data: null,
         },
       },
