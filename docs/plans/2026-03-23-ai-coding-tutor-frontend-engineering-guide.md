@@ -313,7 +313,7 @@ features/<domain>/
 
 - 路由入口：`app/(workspace)/learn/page.tsx`
 - 页面装配：`features/learning/pages/learn-page.tsx`
-- 当前真实依赖：`GET /api/learning/current-session`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`
+- 当前真实依赖：`GET /api/learning/current-session`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`；自学模式下另依赖 `POST /api/learning/plan-from-material`、`POST /api/learning/plan-drafts/{id}/confirm`、`POST /api/learning/plan-drafts/{id}/regenerate`（入口组件 `features/learning/components/material-plan-panel.tsx`，仅当 `planSummary.selectionMode === "self_directed"` 时展示）
 - 页面组件：`features/learning/components/*`
 - 当前职责补充：若当前用户没有 `active` 学习计划，页面会根据 `/api/auth/session` 的真实 gate 状态自动跳转到 `/history` 或 `/onboarding`；“我完成了”和求助类动作已接入真实任务写接口；学习消息支持历史分页恢复、SSE 增量显示、`task_patch` 状态联动，以及 `interactionType` 级别的结构化消息展示
 

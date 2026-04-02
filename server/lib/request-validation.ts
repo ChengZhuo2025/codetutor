@@ -524,6 +524,162 @@ export function parseRequiredRouteId(
   return ok(normalized)
 }
 
+const PLAN_FROM_MATERIAL_MAX_LINKS = 5
+
+function parseMaterialLinkArray(
+  links: unknown,
+  fieldLabel: string,
+): ValidationResult<string[]> {
+  if (!Array.isArray(links)) {
+    return fail("BAD_REQUEST", `${fieldLabel} 必须是字符串数组。`)
+  }
+
+  if (links.length === 0 || links.length > PLAN_FROM_MATERIAL_MAX_LINKS) {
+    return fail(
+      "VALIDATION_FAILED",
+      `${fieldLabel} 数量必须在 1 到 ${PLAN_FROM_MATERIAL_MAX_LINKS} 之间。`,
+    )
+  }
+
+  const normalized: string[] = []
+
+  for (const item of links) {
+    if (typeof item !== "string") {
+      return fail("VALIDATION_FAILED", `${fieldLabel} 仅支持字符串 URL。`)
+    }
+
+    const trimmed = item.trim()
+
+    if (!trimmed) {
+      return fail("VALIDATION_FAILED", `${fieldLabel} 不能为空字符串。`)
+    }
+
+    if (!isValidUrl(trimmed)) {
+      return fail("VALIDATION_FAILED", `${fieldLabel} 含非法 URL。`)
+    }
+
+    normalized.push(trimmed)
+  }
+
+  return ok([...new Set(normalized)])
+}
+
+export function parsePlanFromMaterialBody(input: unknown): ValidationResult<{
+  links: string[]
+  userGoal?: string | null
+  weeklyHours?: number | null
+}> {
+  if (!input || typeof input !== "object") {
+    return fail("BAD_REQUEST", "请求体必须是 JSON 对象。")
+  }
+
+  const body = input as Record<string, unknown>
+  const linksResult = parseMaterialLinkArray(body.links, "links")
+
+  if (!linksResult.ok) {
+    return linksResult
+  }
+
+  let userGoal: string | null | undefined
+  if (body.userGoal !== undefined && body.userGoal !== null) {
+    if (typeof body.userGoal !== "string") {
+      return fail("BAD_REQUEST", "userGoal 必须是字符串。")
+    }
+    const trimmed = body.userGoal.trim()
+    userGoal = trimmed.length > 0 ? trimmed : null
+  }
+
+  let weeklyHours: number | null | undefined
+  if (body.weeklyHours !== undefined && body.weeklyHours !== null) {
+    if (typeof body.weeklyHours !== "number" || !Number.isInteger(body.weeklyHours)) {
+      return fail("BAD_REQUEST", "weeklyHours 必须是整数。")
+    }
+    if (body.weeklyHours < 1 || body.weeklyHours > 40) {
+      return fail("VALIDATION_FAILED", "weeklyHours 必须在 1 到 40 之间。")
+    }
+    weeklyHours = body.weeklyHours
+  }
+
+  return ok({
+    links: linksResult.data,
+    userGoal,
+    weeklyHours,
+  })
+}
+
+export function parsePlanDraftRegenerateBody(input: unknown): ValidationResult<{
+  links?: string[]
+  userGoal?: string | null
+  weeklyHours?: number | null
+}> {
+  if (input === null || input === undefined) {
+    return ok({})
+  }
+
+  if (typeof input !== "object") {
+    return fail("BAD_REQUEST", "请求体必须是 JSON 对象。")
+  }
+
+  const body = input as Record<string, unknown>
+  let links: string[] | undefined
+
+  if (body.links !== undefined) {
+    const linksResult = parseMaterialLinkArray(body.links, "links")
+    if (!linksResult.ok) {
+      return linksResult
+    }
+    links = linksResult.data
+  }
+
+  let userGoal: string | null | undefined
+  if (body.userGoal !== undefined && body.userGoal !== null) {
+    if (typeof body.userGoal !== "string") {
+      return fail("BAD_REQUEST", "userGoal 必须是字符串。")
+    }
+    const trimmed = body.userGoal.trim()
+    userGoal = trimmed.length > 0 ? trimmed : null
+  }
+
+  let weeklyHours: number | null | undefined
+  if (body.weeklyHours !== undefined && body.weeklyHours !== null) {
+    if (typeof body.weeklyHours !== "number" || !Number.isInteger(body.weeklyHours)) {
+      return fail("BAD_REQUEST", "weeklyHours 必须是整数。")
+    }
+    if (body.weeklyHours < 1 || body.weeklyHours > 40) {
+      return fail("VALIDATION_FAILED", "weeklyHours 必须在 1 到 40 之间。")
+    }
+    weeklyHours = body.weeklyHours
+  }
+
+  const data: {
+    links?: string[]
+    userGoal?: string | null
+    weeklyHours?: number | null
+  } = {}
+
+  if (links !== undefined) {
+    data.links = links
+  }
+  if (userGoal !== undefined) {
+    data.userGoal = userGoal
+  }
+  if (weeklyHours !== undefined) {
+    data.weeklyHours = weeklyHours
+  }
+
+  return ok(data)
+}
+
+export function parsePlanDraftIdParam(id: string | null | undefined) {
+  const normalized = normalizeUuid(typeof id === "string" ? id.trim() : "")
+
+  if (!normalized) {
+    return fail("BAD_REQUEST", "学习计划草稿 ID 不合法。")
+  }
+
+  return ok(normalized)
+}
+
 export function parseProfileAvatarFile(file: unknown): ValidationResult<File> {
   if (!(file instanceof File)) {
     return fail("BAD_REQUEST", "请先选择要上传的头像图片。")

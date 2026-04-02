@@ -112,3 +112,44 @@ export type LearningCurrentSessionResponseData = {
   knowledgeTags: LearningKnowledgeTag[]
   tips: LearningTip[]
 }
+
+export type LearningPlanPreviewTaskContract = {
+  taskNo: number
+  title: string
+  objective: string
+  practiceSteps: string[]
+  acceptanceCriteria: string
+  estimatedMinutes?: number
+  sourceRefs: string[]
+}
+
+export type LearningPlanPreviewContract = {
+  title: string
+  goal: string
+  tasks: LearningPlanPreviewTaskContract[]
+}
+
+export type PlanFromMaterialRequestContract = {
+  links: string[]
+  userGoal?: string | null
+  weeklyHours?: number | null
+}
+
+export type PlanFromMaterialResponseData = {
+  processingMode: "sync"
+  draftId: string
+  intakeId: string
+  preview: LearningPlanPreviewContract
+}
+
+export type PlanDraftRegenerateRequestContract = {
+  links?: string[]
+  userGoal?: string | null
+  weeklyHours?: number | null
+}
+
+export type PlanDraftConfirmResponseData = {
+  learningPathId: string
+  currentTaskId: string
+  redirectTo: string
+}

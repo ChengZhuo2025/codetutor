@@ -232,6 +232,7 @@ const successExamples = {
       selectedToolName: "Cursor",
       learningLevelLabel: "入门",
       selectionModeLabel: "预设训练",
+      selectionMode: "preset_training" as const,
       pathName: "Cursor 入门训练营",
     },
     mission: {
@@ -345,40 +346,45 @@ const successExamples = {
     },
   },
   learningPlanFromMaterial: {
-    intakeId: "intake-1",
-    draftId: "draft-1",
-    planSummary: {
+    processingMode: "sync" as const,
+    draftId: "11111111-1111-4111-8111-111111111111",
+    intakeId: "22222222-2222-4222-8222-222222222222",
+    preview: {
       title: "用官方教程完成第一个 Next.js 页面改造",
       goal: "基于教程内容完成一个可运行、可验收的最小页面练习闭环。",
-      difficulty: "beginner",
-      estimatedTotalMinutes: 180,
-      taskCount: 4,
+      tasks: [
+        {
+          taskNo: 1,
+          title: "通读教程并跑通基础项目",
+          objective: "先确认教程里的项目结构、依赖和运行方式都可复现。",
+          practiceSteps: [
+            "阅读教程中的环境准备与启动步骤",
+            "本地运行项目并截图记录首页结果",
+          ],
+          acceptanceCriteria: "项目可正常启动；能说明教程目标和当前项目结构。",
+          estimatedMinutes: 30,
+          sourceRefs: ["chunk-1"],
+        },
+        {
+          taskNo: 2,
+          title: "完成首页改造",
+          objective: "按教程修改首页并验证渲染结果。",
+          practiceSteps: ["修改页面组件", "运行 dev 并检查控制台无报错"],
+          acceptanceCriteria: "页面展示符合教程要求。",
+          estimatedMinutes: 45,
+          sourceRefs: ["chunk-1"],
+        },
+        {
+          taskNo: 3,
+          title: "复盘与扩展",
+          objective: "总结本关收获并记录一个后续练习方向。",
+          practiceSteps: ["写三条收获", "列一个下一步小目标"],
+          acceptanceCriteria: "输出可复用的检查清单。",
+          estimatedMinutes: 30,
+          sourceRefs: ["chunk-1"],
+        },
+      ],
     },
-    tasks: [
-      {
-        taskNo: 1,
-        title: "通读教程并跑通基础项目",
-        objective: "先确认教程里的项目结构、依赖和运行方式都可复现。",
-        practiceSteps: [
-          "阅读教程中的环境准备与启动步骤",
-          "本地运行项目并截图记录首页结果",
-        ],
-        acceptanceCriteria: [
-          "项目可正常启动",
-          "能说明教程目标和当前项目结构",
-        ],
-        estimatedMinutes: 30,
-        sourceRefs: [
-          {
-            url: "https://example.com/tutorial",
-            title: "Next.js 入门教程",
-            excerpt: "Create and run your first page.",
-          },
-        ],
-      },
-    ],
-    warnings: [],
-    processingMode: "sync",
   },
   learningPlanDraftConfirm: {
     learningPathId: "path-runtime-2",
@@ -1085,7 +1091,7 @@ registry.registerPath({
   path: "/api/learning/plan-from-material",
   operationId: "postLearningPlanFromMaterial",
   tags: ["learning"],
-  summary: "生成自由学习模式的学习计划草稿（规划中）",
+  summary: "根据白名单教程链接生成学习计划草稿（同步）",
   security: [{ bearerAuth: [] }],
   request: {
     body: {
@@ -1114,10 +1120,10 @@ registry.registerPath({
         },
       },
       "502": {
-        description: "材料抓取或 AI 计划生成阶段失败。",
+        description: "上游 AI 提供方调用失败。",
         example: {
-          code: "MATERIAL_FETCH_FAILED",
-          message: "教程内容抓取失败，请稍后重试或补充摘要。",
+          code: "AI_PROVIDER_ERROR",
+          message: "AI 服务暂时不可用，请稍后重试。",
           data: null,
         },
       },
@@ -1130,7 +1136,7 @@ registry.registerPath({
   path: "/api/learning/plan-drafts/{id}/confirm",
   operationId: "postLearningPlanDraftConfirm",
   tags: ["learning"],
-  summary: "确认学习计划草稿并激活为正式路径（规划中）",
+  summary: "确认学习计划草稿并替换当前进行中的自学路径",
   security: [{ bearerAuth: [] }],
   request: {
     params: routeIdParamsSchema,
@@ -1168,7 +1174,7 @@ registry.registerPath({
   path: "/api/learning/plan-drafts/{id}/regenerate",
   operationId: "postLearningPlanDraftRegenerate",
   tags: ["learning"],
-  summary: "基于同一材料重新生成学习计划草稿（规划中）",
+  summary: "重新生成学习计划草稿（可选更换链接）",
   security: [{ bearerAuth: [] }],
   request: {
     params: routeIdParamsSchema,

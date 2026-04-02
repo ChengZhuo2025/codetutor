@@ -129,7 +129,7 @@ types/                # 跨 feature 共用的类型定义
 - ✅ 七个核心用户页面 + API 文档页
 - ✅ 共享 UI 组件库（shadcn/ui）
 - ✅ 布局组件和导航系统
-- �� 手机验证码登录与微信 OAuth 跳转
+- ✅ 手机验证码登录与微信 OAuth 跳转
 - ✅ 首页登录态恢复与真实推荐分流（`/learn`、`/history`、`/onboarding`）
 - ✅ onboarding / learn / map / achievements / history 的核心 read model API
 - ✅ `/api/task/complete` 与 `/api/task/update-status` 首版落地，学习页可真实推进关卡
@@ -138,8 +138,9 @@ types/                # 跨 feature 共用的类型定义
 - ✅ 历史学习计划详情、放弃/重新激活/删除记录状态操作
 - ✅ 用户资料编辑、头像上传、反馈系统
 - ✅ AI 学习消息链路第一阶段（SSE 流式输出 + 结构化 structuredContent）
+- ✅ 自学模式教程链接生成计划 Phase A（`plan-from-material` / `plan-drafts` confirm·regenerate，`learning-materials` + `learning-plans` 模块）
 - ✅ OpenAPI 3.1 文档（`/api/docs/openapi`）与 Swagger UI（`/api-docs`）
-- ✅ Supabase 迁移与远程数据库接入（当前已到 `017`）
+- ✅ Supabase 迁移与远程数据库接入（当前已到 `018`，含自学材料摄取与计划草稿表）
 - ✅ 管理后台 Phase 1（管理员认证、看板、反馈工单）
 
 **进行中/待完成：**

@@ -3,7 +3,7 @@
 > 文档类型：实施设计方案（Implementation Plan）  
 > 适用范围：自由学习模式（`selection_mode=self_directed`）  
 > 创建日期：2026-04-01  
-> 状态：待实施（用于开发接手与执行）  
+> 状态：**Phase A 已落地**（仓库内迁移 `018`、`server/modules/learning-materials` + `learning-plans`、三条 BFF 接口与 OpenAPI 已对齐）；Phase B/C 仍为后续规划  
 > 关联文档：  
 >
 > - `docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md`  
@@ -15,14 +15,15 @@
 
 ## 1. 背景与目标
 
-当前主链路已支持学习消息对话（`POST /api/learning/message`）和 AI 编排（agent / skill / provider / SSE），但用户在自由学习模式下提交教程链接（视频或图文）后，系统还不能自动完成以下闭环：
+当前主链路已支持学习消息对话（`POST /api/learning/message`）和 AI 编排（agent / skill / provider / SSE）。**Phase A 已落地**：在自学模式（`selection_mode=self_directed`）下，用户可通过专用接口对白名单 **图文** 教程链接完成材料摄取、计划生成、草稿预览与确认激活（确认后替换当前自学 active 路径并接入既有 `user_learning_paths` / `user_tasks` 主链路）。
 
-1. 读取教程内容（正文、字幕、关键步骤）
-2. 结构化抽取学习要点与实践动作
-3. 自动拆分为“可执行、可验收”的多阶段练习任务
-4. 生成并保存学习计划草稿，供用户确认后进入执行
+以下能力在 **Phase A 仍部分或未覆盖**，由后续阶段补齐：
 
-本方案目标是新增一条“材料摄取 -> 计划生成 -> 草稿确认 -> 激活执行”的完整业务能力，且保持与现有 AI Orchestration 分层一致。
+1. **视频**链接与字幕优先解析（Phase B）
+2. 非白名单域名的通用抓取（非目标，持续以白名单为主）
+3. 运营看板、灰度与异步长任务（Phase C）
+
+本方案持续描述整条“材料摄取 -> 计划生成 -> 草稿确认 -> 激活执行”的产品与技术边界，并与现有 AI Orchestration 分层保持一致。
 
 ---
 
@@ -389,6 +390,8 @@
 
 ## 8.1 Phase A：最小可用版本（建议 1-2 周）
 
+**状态：已在当前仓库完成主线交付**（含迁移、服务模块、BFF、`/learn` 自学入口、OpenAPI、`pnpm test:learning-plan-from-material`）。
+
 目标：白名单图文链接可生成计划草稿并确认激活，且确认后能无缝接入当前学习主闭环。
 
 实施项：
@@ -600,28 +603,28 @@
 
 ---
 
-## 16. 下一步执行建议（可直接开工）
+## 16. 下一步执行建议（Phase A 之后）
 
-1. 先冻结“confirm 如何生成正式 path/steps/tasks”的落地规则
-2. 再出 migration 草案（intake + draft 两组表 + draft 激活关联字段）
-3. 并行起草 `POST /api/learning/plan-from-material` 与 `confirm` 的 request/response schema
-4. 先实现图文 extractor + planner（最小可用）
-5. 用 10-20 条真实样本做计划质量回归，定下通过阈值
-6. 再扩视频场景，最后补运营化与灰度能力
+Phase A 已按上文目录与接口落地；后续建议优先级：
+
+1. 用 10–20 条真实白名单链接样本做计划质量回归，固化通过阈值与 prompt 迭代节奏
+2. 启动 **Phase B**：视频字幕优先、无字幕降级、材料质量提示增强
+3. 启动 **Phase C**：intake/draft 成功率看板、成本与时延监控、按用户分组的灰度开关
+4. 持续将契约变更同步到 `docs/plans/2026-03-23-ai-coding-tutor-api-spec.md` 与 `server/modules/api-docs/*`
 
 ---
 
-## 17. 实施前冻结清单（必须勾选）
+## 17. 实施前冻结清单（Phase A 已勾选）
 
-1. [ ] 模块目录命名冻结（`learning-materials` / `learning-plans`）
-2. [ ] API 路由路径冻结（3 条新增接口）
-3. [ ] `confirm` 是否归档旧自学 active path 已决策
-4. [ ] draft 是否必须物化为正式 `learning_paths/path_steps/user_tasks` 已冻结
-5. [ ] 状态字段是否新增枚举已决策并写入 migration 草案
-6. [ ] 错误码口径冻结并回写 `docs/plans/2026-03-23-ai-coding-tutor-api-spec.md`
-7. [ ] OpenAPI schema 草案已更新到 `server/modules/api-docs/openapi.ts` / `schemas.ts`
-8. [ ] TDD 用例清单已拆分到开发任务
-9. [ ] 验收 DoD 与指标阈值已确认
+1. [x] 模块目录命名冻结（`learning-materials` / `learning-plans`）
+2. [x] API 路由路径冻结（3 条新增接口）
+3. [x] `confirm` 是否归档旧自学 active path 已决策（与 onboarding 一致：归档全部 `active` 后再插入新 ULP）
+4. [x] draft 物化为正式 `learning_paths` / `path_steps` / `user_learning_paths` / `user_tasks` 已落地
+5. [x] 状态字段新增枚举已写入迁移 `018`
+6. [x] 错误码已回写 `docs/plans/2026-03-23-ai-coding-tutor-api-spec.md` 并与路由层映射一致
+7. [x] OpenAPI 已更新 `server/modules/api-docs/openapi.ts` / `schemas.ts`
+8. [x] TDD：`scripts/check-learning-plan-from-material-*.ts` + `pnpm test:learning-plan-from-material`
+9. [ ] 验收 DoD 与指标阈值（P95、内部样本可执行性）仍以运营侧日历为准，代码侧不强制写死数值
 
 ---
 
@@ -670,11 +673,11 @@
 
 ### 18.4 PR 验收门禁（建议写入评审模板）
 
-本能力相关 PR 在合并前必须满足：
+Phase A 合入时已完成下列项；后续变更本能力时仍建议按同口径自检：
 
-1. [ ] 实施文档已更新（本文件）
-2. [ ] API 主文档对应章节已同步
-3. [ ] AI 编排主文档对应章节已同步（若涉及）
-4. [ ] OpenAPI 运行时文档已同步
-5. [ ] 新增错误码已在统一错误映射层落地
-6. [ ] TDD 与验收用例已通过
+1. [x] 实施文档已更新（本文件）
+2. [x] API 主文档对应章节已同步（`2026-03-23-ai-coding-tutor-api-spec.md` §4、§7、§12 等）
+3. [x] AI 编排主文档已补充专用接口与 `self-study-material-planner` 快照（`2026-03-30-...` §1.2）
+4. [x] OpenAPI 运行时文档已同步（`openapi.ts` / `schemas.ts`）
+5. [x] 新增错误码已在服务层与 BFF 响应中落地（`MATERIAL_*`、`PLAN_DRAFT_*`、`AI_RESPONSE_INVALID`、`AI_PROVIDER_ERROR`）
+6. [x] `pnpm test:learning-plan-from-material` 与合入前 `lint` / `build` 已通过

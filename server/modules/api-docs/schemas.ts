@@ -415,65 +415,40 @@ export const learningMessagesResponseDataSchema = z
   })
   .openapi("LearningMessagesResponseData")
 
-export const learningPlanDraftDifficultySchema = z
-  .enum(["beginner", "intermediate", "advanced"])
-  .openapi("LearningPlanDraftDifficulty")
-
-export const learningPlanMaterialWarningSchema = z
+export const learningPlanPreviewTaskSchema = z
   .object({
-    code: z.string(),
-    message: z.string(),
-    sourceUrl: z.string().nullable().optional(),
-  })
-  .openapi("LearningPlanMaterialWarning")
-
-export const learningPlanDraftSourceRefSchema = z
-  .object({
-    url: z.string(),
-    title: z.string().nullable().optional(),
-    excerpt: z.string().nullable().optional(),
-  })
-  .openapi("LearningPlanDraftSourceRef")
-
-export const learningPlanDraftTaskSchema = z
-  .object({
-    taskNo: z.number().int().positive(),
+    taskNo: z.number().int(),
     title: z.string(),
     objective: z.string(),
     practiceSteps: z.array(z.string()),
-    acceptanceCriteria: z.array(z.string()),
-    estimatedMinutes: z.number().int().positive(),
-    sourceRefs: z.array(learningPlanDraftSourceRefSchema),
+    acceptanceCriteria: z.string(),
+    estimatedMinutes: z.number().int().optional(),
+    sourceRefs: z.array(z.string()),
   })
-  .openapi("LearningPlanDraftTask")
+  .openapi("LearningPlanPreviewTask")
 
-export const learningPlanDraftSummarySchema = z
+export const learningPlanPreviewSchema = z
   .object({
     title: z.string(),
     goal: z.string(),
-    difficulty: learningPlanDraftDifficultySchema,
-    estimatedTotalMinutes: z.number().int().positive(),
-    taskCount: z.number().int().positive(),
+    tasks: z.array(learningPlanPreviewTaskSchema),
   })
-  .openapi("LearningPlanDraftSummary")
+  .openapi("LearningPlanPreview")
 
 export const learningPlanFromMaterialRequestSchema = z
   .object({
     links: z.array(z.string().url()).min(1).max(5),
-    userGoal: z.string().trim().min(1).optional(),
-    targetToolCode: z.string().trim().min(1).optional(),
-    weeklyHours: z.number().int().positive().max(40).optional(),
+    userGoal: z.string().trim().optional(),
+    weeklyHours: z.number().int().min(1).max(40).optional(),
   })
   .openapi("LearningPlanFromMaterialRequest")
 
 export const learningPlanFromMaterialResponseDataSchema = z
   .object({
-    intakeId: z.string(),
-    draftId: z.string(),
-    planSummary: learningPlanDraftSummarySchema,
-    tasks: z.array(learningPlanDraftTaskSchema),
-    warnings: z.array(learningPlanMaterialWarningSchema),
     processingMode: z.literal("sync"),
+    draftId: z.string().uuid(),
+    intakeId: z.string().uuid(),
+    preview: learningPlanPreviewSchema,
   })
   .openapi("LearningPlanFromMaterialResponseData")
 
@@ -487,9 +462,9 @@ export const learningPlanDraftConfirmResponseDataSchema = z
 
 export const learningPlanDraftRegenerateRequestSchema = z
   .object({
-    userGoal: z.string().trim().min(1).optional(),
-    targetToolCode: z.string().trim().min(1).optional(),
-    weeklyHours: z.number().int().positive().max(40).optional(),
+    links: z.array(z.string().url()).min(1).max(5).optional(),
+    userGoal: z.string().trim().optional(),
+    weeklyHours: z.number().int().min(1).max(40).optional(),
   })
   .openapi("LearningPlanDraftRegenerateRequest")
 
@@ -527,6 +502,7 @@ export const learningPlanSummarySchema = z
     selectedToolName: z.string(),
     learningLevelLabel: z.string(),
     selectionModeLabel: z.string(),
+    selectionMode: z.enum(["self_directed", "preset_training"]),
     pathName: z.string().optional(),
   })
   .openapi("LearningPlanSummary")

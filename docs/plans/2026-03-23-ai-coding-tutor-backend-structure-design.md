@@ -222,7 +222,7 @@ app/
 - `/history/recent` 在命名上保留原型兼容性，但实际承载“历史学习路径实例分页列表”
 - `/auth/session` 作为只读会话摘要接口，主要服务首页与营销层登录态恢复，不承担登录写入副作用
 - `/api/docs/openapi` 与 `/api-docs` 只服务开发与联调用途，不是面向终端用户的产品页面
-- 当前尚未落地的主要接口主要为 `analytics/*` 与 `learning/stuck-help`
+- 当前尚未落地的主要接口主要为 `analytics/*` 与 `learning/stuck-help`；`learning/plan-from-material` 与 `learning/plan-drafts/*` 已在 Phase A 落地（自学模式材料计划）
 
 ---
 
@@ -264,6 +264,7 @@ server/
 - `server/modules/auth/service.ts` 当前同时承载登录结果组装与 `auth/session` 会话摘要读取
 - `server/modules/api-docs/` 当前负责 OpenAPI schema、接口注册与运行时文档生成
 - `server/modules/learning/` 已从单一 `service.ts` 演进为 `service + orchestration + provider + skills + output-format + logic + http-logic + history-logic + route-handler + errors` 的较完整结构，是当前最复杂的服务端业务域
+- `server/modules/learning-materials/`、`server/modules/learning-plans/` 承担自学模式教程链接摄取与计划草稿生成/确认，由 `app/api/learning/plan-*` 薄入口 + `learning-plans/route-handler.ts` 接入
 - 如果后续业务复杂度继续上升，再逐步演进到域内分层
 
 ---
@@ -282,7 +283,9 @@ server/modules/
 ├── gamification/
 ├── history/
 ├── learning/
+├── learning-materials/
 ├── learning-paths/
+├── learning-plans/
 ├── onboarding/
 ├── progress/
 └── tasks/
@@ -296,7 +299,7 @@ server/modules/<domain>/
 └── service.ts
 ```
 
-当前较简单的域仍主要以 `service.ts` 为核心；但 `auth`、`onboarding`、`feedback`、`history`、`tasks`、`learning`、`api-docs` 已经拆出 `route-handler.ts`，`learning`、`checkins`、`gamification` 还继续拆出了 `logic.ts`、`http-logic.ts`、`history-logic.ts`、`orchestration.ts`、`provider.ts`、`errors.ts` 等辅助文件。这仍属于“按域聚合”的同一策略，只是复杂域已经自然演进出域内分层雏形。等单个域复杂度继续上升后，再在域内继续细分 application、domain、repository。
+当前较简单的域仍主要以 `service.ts` 为核心；但 `auth`、`onboarding`、`feedback`、`history`、`tasks`、`learning`、`learning-plans`、`api-docs` 已经拆出 `route-handler.ts`，`learning`、`checkins`、`gamification` 还继续拆出了 `logic.ts`、`http-logic.ts`、`history-logic.ts`、`orchestration.ts`、`provider.ts`、`errors.ts` 等辅助文件。这仍属于“按域聚合”的同一策略，只是复杂域已经自然演进出域内分层雏形。等单个域复杂度继续上升后，再在域内继续细分 application、domain、repository。
 
 ---
 
@@ -723,6 +726,9 @@ app/
     ├── learning/current-session/route.ts
     ├── learning/message/route.ts
     ├── learning/messages/route.ts
+    ├── learning/plan-from-material/route.ts
+    ├── learning/plan-drafts/[id]/confirm/route.ts
+    ├── learning/plan-drafts/[id]/regenerate/route.ts
     ├── onboarding/complete/route.ts
     ├── onboarding/path-options/route.ts
     ├── onboarding/tools/route.ts
@@ -768,6 +774,8 @@ server/
 │   ├── feedback/service.ts
 │   ├── history/route-handler.ts
 │   ├── history/service.ts
+│   ├── learning-materials/
+│   ├── learning-plans/
 │   ├── learning/errors.ts
 │   ├── learning/history-logic.ts
 │   ├── learning/http-logic.ts

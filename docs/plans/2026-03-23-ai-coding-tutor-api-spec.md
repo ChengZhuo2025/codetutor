@@ -143,6 +143,9 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `GET /api/admin/feedback/{id}`
 - `POST /api/admin/feedback/{id}/reply`
 - `POST /api/admin/feedback/{id}/status`
+- `POST /api/learning/plan-from-material`
+- `POST /api/learning/plan-drafts/{id}/confirm`
+- `POST /api/learning/plan-drafts/{id}/regenerate`
 
 当前这些已实现接口，已经开始复用一套共享的请求与响应基础设施：
 
@@ -156,9 +159,6 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 当前仍属于规划、尚未在代码中落地的接口包括：
 
 - `POST /api/profile/init`
-- `POST /api/learning/plan-from-material`
-- `POST /api/learning/plan-drafts/{id}/confirm`
-- `POST /api/learning/plan-drafts/{id}/regenerate`
 - `POST /api/learning/stuck-help`
 - `POST /api/analytics/event`
 
@@ -218,12 +218,12 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `POST /api/learning/message`
 - `GET /api/learning/current-session`
 - `GET /api/learning/messages`
+- `POST /api/learning/plan-from-material`（自学模式白名单教程链接 → 同步生成计划草稿）
+- `POST /api/learning/plan-drafts/{id}/confirm`（草稿确认并物化到主路径链路，幂等）
+- `POST /api/learning/plan-drafts/{id}/regenerate`（仅替换草稿，可选更换链接）
 
 规划中：
 
-- `POST /api/learning/plan-from-material`
-- `POST /api/learning/plan-drafts/{id}/confirm`
-- `POST /api/learning/plan-drafts/{id}/regenerate`
 - `POST /api/learning/stuck-help`
 
 ## 4.4 任务与进度
@@ -270,7 +270,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 营销首页 | `/` | `GET /api/auth/session` | 首页导航、Hero、套餐区、页脚与最终 CTA 会根据登录态切换为“继续学习”，并跳转到 `/learn`、`/history` 或 `/onboarding` |
 | 登录页 | `/login` | `POST /api/auth/login`、`GET/PATCH /api/profile/me`、`POST /api/profile/avatar` | 当前已打通手机号验证码登录、微信 OAuth 跳转、用户档案读取与资料编辑 |
 | 新手引导 | `/onboarding` | `GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete` | 产出主工具、学习等级、学习模式、初始学习路径实例 |
-| 学习页 | `/learn` | `GET /api/learning/current-session`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`；规划补充 `POST /api/learning/plan-from-material`、`POST /api/learning/plan-drafts/{id}/confirm`、`POST /api/learning/plan-drafts/{id}/regenerate` | 当前已打通学习主界面 read model、历史消息分页、真实 AI provider 消息编排、SSE 与任务状态写入；自由模式教程链接生成计划能力仍在规划中 |
+| 学习页 | `/learn` | `GET /api/learning/current-session`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`、`POST /api/learning/plan-from-material`、`POST /api/learning/plan-drafts/{id}/confirm`、`POST /api/learning/plan-drafts/{id}/regenerate` | 已打通学习主界面 read model、历史消息分页、真实 AI provider 消息编排、SSE 与任务状态写入；自学模式（`selection_mode=self_directed`）已支持白名单教程链接生成计划草稿并确认后替换当前 active 路径 |
 | 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
 | 成就页 | `/achievements` | `GET /api/achievement/summary` | 当前已打通成长总览 read model，并支持真实每日打卡 |
 | 历史页 | `/history` | `GET /api/history/recent`、`GET /api/history/{id}`、`POST /api/history/{id}/status` | 当前前端实际需要的是“历史学习计划列表 + 详情复盘 + 状态操作”，而不是“最近对话列表” |
@@ -699,6 +699,7 @@ SSE 事件补充：
       "selectedToolName": "Cursor",
       "learningLevelLabel": "完全入门",
       "selectionModeLabel": "平台训练模式",
+      "selectionMode": "preset_training",
       "pathName": "Cursor 零基础起步营"
     },
     "resume": {
@@ -793,6 +794,7 @@ SSE 事件补充：
 实现约束：
 
 - 当前前端原型确实消费了 `planSummary`、`mission`、`resume`、`rightPanel`、`tasks` 等 read model，因此服务端首期可以直接聚合返回。
+- `planSummary.selectionMode` 为机器可读枚举：`self_directed`（自学模式）或 `preset_training`（预设训练），与 `selectionModeLabel` 同时返回；自学模式下前端可展示「教程链接生成计划」入口。
 - `quickActions`、`supportOptions`、`tips`、`knowledgeTags.color` 等字段偏展示层，可在首期先由前端保留静态配置；如果服务端返回，也应视为可选扩展字段，而不是底层数据库实体。
 - `messages.role` 在服务端内部建议使用 `assistant`，若前端仍保留 `ai`，可在 BFF DTO 层做映射。
 
@@ -847,27 +849,27 @@ SSE 事件补充：
 - `beforeSequenceNo` 和 `limit` 必须是正整数
 - assistant 历史消息若已落库存储 `structuredContent`，返回时应一并恢复；旧记录若缺失该字段，则服务端按兼容逻辑回填
 
-## 7.4 规划中：`POST /api/learning/plan-from-material`
+## 7.4 `POST /api/learning/plan-from-material`
 
 用途：
 
-- 在自由学习模式下，根据教程链接生成学习计划草稿
+- 在自学模式（`selection_mode=self_directed`）下，根据白名单教程链接同步生成学习计划草稿
 
-当前规划说明：
+实现说明：
 
-- 该接口面向 `selection_mode=self_directed`
-- Phase A 仅支持白名单图文链接，采用同步返回
-- 成功后只生成 draft，不会直接改动当前 active path
+- Phase A 仅支持白名单域名（如 `developer.mozilla.org`、`nextjs.org`、`web.dev`），同步返回
+- 成功后只写入 `learning_material_intakes` / `sources` 与 `learning_plan_drafts` / `learning_plan_draft_tasks`，不直接改动当前 active path
+- 主工具与等级来自 `user_profiles`，无需在请求中传 `targetToolCode`
+- 运行时契约与 Swagger：`GET /api/docs/openapi`（operationId `postLearningPlanFromMaterial` 等）、调试页 `/api-docs`
 
 请求体：
 
 ```json
 {
   "links": [
-    "https://example.com/tutorial/nextjs-first-page"
+    "https://web.dev/learn/"
   ],
   "userGoal": "我想跟着教程做一个最小可运行的页面练习",
-  "targetToolCode": "cursor",
   "weeklyHours": 6
 }
 ```
@@ -876,10 +878,9 @@ SSE 事件补充：
 
 | 字段 | 必填 | 说明 |
 |------|------|------|
-| `links` | 是 | 教程链接列表，首期 1-5 条 |
-| `userGoal` | 否 | 用户主动补充的学习目标 |
-| `targetToolCode` | 否 | 期望练习的工具，如 `cursor` / `claude-code` |
-| `weeklyHours` | 否 | 每周计划投入时长，首期建议 1-40 小时 |
+| `links` | 是 | 教程链接列表，1–5 条，须为 http(s) URL |
+| `userGoal` | 否 | 用户补充的学习目标 |
+| `weeklyHours` | 否 | 每周计划投入时长，1–40（整数） |
 
 成功响应示例：
 
@@ -888,65 +889,50 @@ SSE 事件补充：
   "code": "OK",
   "message": "success",
   "data": {
-    "intakeId": "intake-001",
-    "draftId": "draft-001",
-    "planSummary": {
+    "processingMode": "sync",
+    "intakeId": "22222222-2222-4222-8222-222222222222",
+    "draftId": "11111111-1111-4111-8111-111111111111",
+    "preview": {
       "title": "用官方教程完成第一个 Next.js 页面改造",
       "goal": "基于教程内容完成一个可运行、可验收的最小页面练习闭环。",
-      "difficulty": "beginner",
-      "estimatedTotalMinutes": 180,
-      "taskCount": 4
-    },
-    "tasks": [
-      {
-        "taskNo": 1,
-        "title": "通读教程并跑通基础项目",
-        "objective": "先确认教程里的项目结构、依赖和运行方式都可复现。",
-        "practiceSteps": [
-          "阅读教程中的环境准备与启动步骤",
-          "本地运行项目并截图记录首页结果"
-        ],
-        "acceptanceCriteria": [
-          "项目可正常启动",
-          "能说明教程目标和当前项目结构"
-        ],
-        "estimatedMinutes": 30,
-        "sourceRefs": [
-          {
-            "url": "https://example.com/tutorial/nextjs-first-page",
-            "title": "Next.js 入门教程",
-            "excerpt": "Create and run your first page."
-          }
-        ]
-      }
-    ],
-    "warnings": [],
-    "processingMode": "sync"
+      "tasks": [
+        {
+          "taskNo": 1,
+          "title": "通读教程并跑通基础项目",
+          "objective": "先确认教程里的项目结构、依赖和运行方式都可复现。",
+          "practiceSteps": [
+            "阅读教程中的环境准备与启动步骤",
+            "本地运行项目并截图记录首页结果"
+          ],
+          "acceptanceCriteria": "项目可正常启动；能说明教程目标和当前项目结构。",
+          "estimatedMinutes": 30,
+          "sourceRefs": ["chunk-1"]
+        }
+      ]
+    }
   }
 }
 ```
 
 业务规则：
 
-- 首期固定为同步接口，不引入 job/轮询机制
-- 首期仅支持白名单图文域名；不承诺“任意网页”
-- 材料不可读、正文不足或 AI 输出非法时，返回明确错误码，不写 active path
+- 同步接口；材料抓取失败、域名不在白名单、AI JSON 校验失败等返回明确错误码（如 `MATERIAL_UNSUPPORTED_DOMAIN`、`MATERIAL_FETCH_FAILED`、`AI_RESPONSE_INVALID`）；上游模型失败返回 `AI_PROVIDER_ERROR`（502）
+- 确认学习计划须调用 7.5，本接口不写 `user_learning_paths`
 
-## 7.5 规划中：`POST /api/learning/plan-drafts/{id}/confirm`
+## 7.5 `POST /api/learning/plan-drafts/{id}/confirm`
 
 用途：
 
-- 将学习计划草稿确认并激活为正式学习路径
+- 将学习计划草稿确认并激活为正式学习路径实例
 
-当前规划说明：
+实现说明：
 
-- 该接口是“draft -> active path” 的唯一激活入口
-- 成功后会把草稿物化到现有 `learning_paths + path_steps + user_learning_paths + user_tasks` 主链路
-- 若当前存在进行中的自由学习 active path，则归档旧路径后再激活新路径
+- 物化到 `learning_paths` + `path_steps` + `user_learning_paths` + `user_tasks`，与 onboarding 一致：先将用户所有 `active` 的 `user_learning_paths` 置为 `archived`，再插入新路径与任务，并更新 `current_task_id` / `last_active_task_id`
+- 同一草稿重复确认幂等：返回已确认的 `learningPathId` 与 `currentTaskId`
 
 路径参数：
 
-- `id`: 学习计划草稿 ID
+- `id`: 学习计划草稿 UUID
 
 成功响应示例：
 
@@ -964,20 +950,20 @@ SSE 事件补充：
 
 业务规则：
 
-- 仅允许确认当前登录用户自己的 draft
-- 同一 `draftId` 只能成功确认一次，接口必须幂等
-- 确认前不改动当前 active path；确认成功后才切换
+- 仅允许确认当前登录用户自己的、`status=draft` 的草稿；已确认再调返回 `409 PLAN_DRAFT_ALREADY_CONFIRMED`（并发下亦可能因状态冲突得到该码）
+- `learningPathId` 为 **用户路径实例** `user_learning_paths.id`（非模板 `learning_paths.id`）
 
-## 7.6 规划中：`POST /api/learning/plan-drafts/{id}/regenerate`
+## 7.6 `POST /api/learning/plan-drafts/{id}/regenerate`
 
 用途：
 
-- 基于同一 intake 重新生成学习计划草稿
+- 重新生成学习计划草稿；可选更换 `links`，不传则复用原 intake 中保存的链接列表
 
 请求体示例：
 
 ```json
 {
+  "links": ["https://developer.mozilla.org/en-US/docs/Learn"],
   "userGoal": "我更希望任务聚焦页面实战，不想先看太多理论",
   "weeklyHours": 4
 }
@@ -985,9 +971,8 @@ SSE 事件补充：
 
 业务规则：
 
-- 仅允许重生成当前登录用户自己的 draft
-- `regenerate` 只能影响 draft，不得直接修改 active path 或现有 user tasks
-- 建议保留旧 draft 记录用于审计，并将其状态标记为 `superseded`
+- 仅允许对当前用户名下 `status=draft` 的草稿操作；旧草稿标记为 `superseded` 并写入 `superseded_by_draft_id` 指向新草稿
+- 不直接修改当前 active path；仅插入新 intake（若重新抓取）与新 draft
 
 ## 7.7 规划中：`POST /api/learning/stuck-help`
 
@@ -1605,9 +1590,9 @@ SSE 事件补充：
 | `POST /api/learning/message` | 是 | 核心学习数据 |
 | `GET /api/learning/current-session` | 是 | 恢复当前学习上下文 |
 | `GET /api/learning/messages` | 是 | 分页读取当前学习会话历史消息 |
-| `POST /api/learning/plan-from-material` | 是，规划中 | 自由模式根据教程链接生成学习计划草稿 |
-| `POST /api/learning/plan-drafts/{id}/confirm` | 是，规划中 | 确认当前用户的学习计划草稿并激活正式路径 |
-| `POST /api/learning/plan-drafts/{id}/regenerate` | 是，规划中 | 基于同一材料为当前用户重生成草稿 |
+| `POST /api/learning/plan-from-material` | 是 | 自学模式（`selection_mode=self_directed`）下按白名单链接同步生成学习计划草稿 |
+| `POST /api/learning/plan-drafts/{id}/confirm` | 是 | 确认当前用户草稿并物化为 `learning_paths` / `path_steps` / `user_learning_paths` / `user_tasks`，幂等 |
+| `POST /api/learning/plan-drafts/{id}/regenerate` | 是 | 为当前用户重生成草稿；旧草稿标记 `superseded`，不直接改 active path |
 | `POST /api/learning/stuck-help` | 是，规划中 | 请求卡住帮助 |
 | `POST /api/task/complete` | 是 | 写任务完成、推进下一关、同步积分快照 |
 | `POST /api/task/update-status` | 是 | 更新当前关卡状态 |

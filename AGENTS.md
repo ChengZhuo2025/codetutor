@@ -12,13 +12,13 @@ If you need a fast orientation to the project and its current authoritative docu
 - `components/`: shared layout and UI primitives
 - `lib/api/`: API contracts and client wrappers
 - `lib/supabase/`: browser/server Supabase clients and storage helpers
-- `server/modules/`: current domain services such as auth, onboarding, learning, progress, achievement, history, feedback
+- `server/modules/`: current domain services such as auth, onboarding, learning, learning-materials, learning-plans, progress, achievement, history, feedback
 - `supabase/migrations/`: checked-in database migrations
 - `constants/`, `types/`, `providers/`, `public/`: shared frontend support code and assets
 - `scripts/`: lightweight verification scripts for key demo pages and layout rules
 - `docs/plans/`: dated planning artifacts; keep using `YYYY-MM-DD-topic-name.md`
 
-Current implemented backend/data pieces include auth login flow integration, homepage session-summary redirecting, profile read/update, avatar upload, onboarding APIs, current learning/progress/history/achievement read models, task completion and task status write APIs, daily check-in APIs, score ledger and rank snapshot write models, history plan detail and status actions, feedback APIs, and checked-in Supabase migrations through `011`. Still-planned items include analytics ingestion, admin frontend pages, real AI provider orchestration, and subscription/payment.
+Current implemented backend/data pieces include auth login flow integration, homepage session-summary redirecting, profile read/update, avatar upload, onboarding APIs, current learning/progress/history/achievement read models, task completion and task status write APIs, daily check-in APIs, score ledger and rank snapshot write models, history plan detail and status actions, feedback APIs, self-directed tutorial link plan generation (`/api/learning/plan-from-material` and plan draft confirm/regenerate), and checked-in Supabase migrations through `018`. Still-planned items include analytics ingestion, admin Phase 2+ beyond the shipped Phase 1 console, later AI orchestration phases (e.g. prompt versioning and ops UI), and subscription/payment.
 
 ## Build, Test, and Development Commands
 
@@ -33,6 +33,7 @@ Use `pnpm` for local work in this repository.
 - `pnpm test:settings-logout`
 - `pnpm test:workspace-layout-widths`
 - `pnpm test:workspace-aside-styles`
+- `pnpm test:learning-plan-from-material`
 
 For documentation-only changes, continue using lightweight checks such as `rg --files docs/plans` and `sed -n '1,80p' docs/plans/<file>.md`.
 
@@ -69,4 +70,4 @@ Prefer updating an existing plan doc before creating a duplicate. When assumptio
 
 For quick project understanding, read `docs/plans/README.md` first, then follow its recommended reading order.
 
-Do not describe planned backend or database capabilities as already implemented. Today the repository reflects a partially implemented full-stack MVP: several user-facing flows already use real `app/api` + Supabase, including auth, homepage redirect recovery, onboarding, learning/progress/history read models, history plan management, profile/avatar, and feedback, while some write-side, AI orchestration, and admin capabilities are still only planned.
+Do not describe planned backend or database capabilities as already implemented. Today the repository reflects a partially implemented full-stack MVP: several user-facing flows already use real `app/api` + Supabase, including auth, homepage redirect recovery, onboarding, learning/progress/history read models, history plan management, profile/avatar, feedback, the main learning message AI path, and Phase A self-directed material plan APIs, while analytics ingestion, admin Phase 2, later orchestration ops, and subscription/payment remain planned or partial.

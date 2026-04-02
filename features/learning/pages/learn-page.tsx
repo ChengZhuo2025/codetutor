@@ -8,6 +8,7 @@ import { StatePanel } from "@/components/ui/state-panel"
 import { ROUTES } from "@/constants/routes"
 import { WORKSPACE_ASIDE_WIDTH_CLASS } from "@/constants/workspace-layout"
 import { LearnChat } from "@/features/learning/components/chat"
+import { MaterialPlanPanel } from "@/features/learning/components/material-plan-panel"
 import { LearnRightPanel } from "@/features/learning/components/right-panel"
 import { resolveAuthenticatedRedirectTo } from "@/lib/auth/client-session"
 import { apiClient } from "@/lib/api/client"
@@ -109,12 +110,24 @@ export function LearnPage() {
       asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
     >
       {sessionState.status === "success" ? (
-        <LearnChat
-          learningData={sessionState.data}
-          onRequestRefresh={() => {
-            setRefreshNonce((current) => current + 1)
-          }}
-        />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+          {sessionState.data.planSummary.selectionMode === "self_directed" ? (
+            <MaterialPlanPanel
+              className="mx-4 shrink-0 sm:mx-6"
+              onSessionRefresh={() => {
+                setRefreshNonce((current) => current + 1)
+              }}
+            />
+          ) : null}
+          <div className="min-h-0 min-w-0 flex-1">
+            <LearnChat
+              learningData={sessionState.data}
+              onRequestRefresh={() => {
+                setRefreshNonce((current) => current + 1)
+              }}
+            />
+          </div>
+        </div>
       ) : (
         <div className="flex min-h-0 flex-1 items-center justify-center p-4 sm:p-6">
           <div className="w-full max-w-3xl">

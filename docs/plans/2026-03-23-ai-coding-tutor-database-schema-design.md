@@ -2,7 +2,7 @@
 
 > 文档类型：数据库 Schema 设计文档  
 > 产品名称：AI编程学习教练  
-> 版本：v1.1  
+> 版本：v1.2  
 > 状态：已按当前迁移与代码实现同步  
 > 创建日期：2026-03-23  
 > 适用阶段：MVP  
@@ -40,6 +40,8 @@
 - `014_create_ai_agent_registry.sql`
 - `015_create_ai_skill_registry.sql`
 - `016_create_llm_invocations.sql`
+- `017_create_admin_accounts.sql`
+- `018_create_learning_material_plan_tables.sql`
 
 当前数据库中已落地的核心业务表包括：
 
@@ -64,6 +66,10 @@
 - `skill_packs`
 - `agent_skill_bindings`
 - `llm_invocations`
+- `learning_material_intakes`
+- `learning_material_sources`
+- `learning_plan_drafts`
+- `learning_plan_draft_tasks`
 
 当前尚未通过迁移落地、仍属于后续设计的表包括：
 
@@ -143,6 +149,10 @@
 - `public.user_tasks`
 - `public.feedback_tickets`
 - `public.feedback_replies`
+- `public.learning_material_intakes`
+- `public.learning_material_sources`
+- `public.learning_plan_drafts`
+- `public.learning_plan_draft_tasks`
 
 后续规划核心表：
 
@@ -184,7 +194,16 @@ erDiagram
     USERS ||--o{ FEEDBACK_TICKETS : submits
     FEEDBACK_TICKETS ||--o{ FEEDBACK_REPLIES : contains
     USERS ||--o{ EVENT_LOGS : triggers
+    USERS ||--o{ LEARNING_MATERIAL_INTAKES : creates
+    LEARNING_MATERIAL_INTAKES ||--o{ LEARNING_MATERIAL_SOURCES : sources
+    LEARNING_MATERIAL_INTAKES ||--o{ LEARNING_PLAN_DRAFTS : intake_for
+    USERS ||--o{ LEARNING_PLAN_DRAFTS : owns_draft
+    LEARNING_PLAN_DRAFTS ||--o{ LEARNING_PLAN_DRAFT_TASKS : tasks
+    LEARNING_PLAN_DRAFTS }o--o| LEARNING_PATHS : confirmed_template
+    LEARNING_PLAN_DRAFTS }o--o| USER_LEARNING_PATHS : confirmed_instance
 ```
+
+说明：`learning_plan_drafts.superseded_by_draft_id` 为草稿自引用外键（再生稿替换旧稿），上图未单独画出自环边。
 
 ---
 
@@ -299,6 +318,33 @@ erDiagram
 - `user`
 - `admin`
 - `system`
+
+## 5.15 `learning_material_intake_status`
+
+- `pending`
+- `processing`
+- `succeeded`
+- `failed`
+
+## 5.16 `learning_material_source_type`
+
+- `article`
+- `video`
+- `unknown`
+
+## 5.17 `learning_material_fetch_status`
+
+- `succeeded`
+- `failed`
+- `unsupported`
+- `timeout`
+
+## 5.18 `learning_plan_draft_status`
+
+- `draft`：可确认或可再生成
+- `confirmed`：已物化到 `learning_paths` / `user_learning_paths`，接口幂等短路
+- `rejected`：预留，当前业务流较少使用
+- `superseded`：被同用户新草稿替换，`superseded_by_draft_id` 指向新草稿
 
 ---
 
@@ -822,6 +868,132 @@ erDiagram
 - 用户侧详情页只展示 `is_internal_note = false` 的回复
 - 后续若要做真实后台，可在此表继续扩展内部备注、处理人交接记录等能力，不必改动用户侧主链路
 
+## 6.18 `learning_material_intakes`
+
+用途：
+
+- 记录一次「教程链接材料摄取」请求的生命周期与归一化摘要
+- 与 `learning_plan_drafts` 一对多（再生稿可产生新 intake，见业务层策略）
+
+字段建议：
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | `uuid` | PK | 主键 |
+| `user_id` | `uuid` | FK，关联 `auth.users.id`，`on delete cascade` | 提交用户 |
+| `status` | `learning_material_intake_status` | not null default `pending` | 摄取状态 |
+| `input_links` | `jsonb` | not null default `'[]'` | 本次请求的 URL 列表（字符串数组） |
+| `normalized_summary` | `text` | nullable | 多源合并后的短摘要，供审计或降级展示 |
+| `error_code` | `varchar(64)` | nullable | 失败时的稳定错误码片段，如 `MATERIAL_FETCH_FAILED` |
+| `metadata` | `jsonb` | not null default `'{}'` | 扩展字段 |
+| `created_at` | `timestamptz` | not null | 创建时间 |
+| `updated_at` | `timestamptz` | not null | 更新时间，`update_updated_at` 触发器维护 |
+
+索引建议：
+
+- `idx_learning_material_intakes_user_created_at`：`user_id`, `created_at desc`
+- `idx_learning_material_intakes_user_status`：`user_id`, `status`
+
+## 6.19 `learning_material_sources`
+
+用途：
+
+- 按 URL 粒度记录单次 intake 下每个链接的抓取结果与摘录
+- 支撑白名单抓取失败时逐源诊断，不把多源混成一行
+
+字段建议：
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | `uuid` | PK | 主键 |
+| `intake_id` | `uuid` | FK，关联 `learning_material_intakes.id`，`on delete cascade` | 所属摄取批次 |
+| `url` | `text` | not null | 原始请求 URL |
+| `source_type` | `learning_material_source_type` | not null default `unknown` | 来源类型，Phase A 以 `article` 为主 |
+| `fetch_status` | `learning_material_fetch_status` | not null default `failed` | 单链抓取结果 |
+| `title` | `text` | nullable | 页面标题（若可解析） |
+| `language` | `varchar(16)` | nullable | 检测或声明的语言 |
+| `content_excerpt` | `text` | nullable | 正文摘录（控制长度，非全量镜像） |
+| `token_estimate` | `integer` | nullable | 粗略 token 估算，供成本与截断参考 |
+| `metadata` | `jsonb` | not null default `'{}'` | 错误信息、原始状态码等 |
+| `created_at` | `timestamptz` | not null | 创建时间 |
+| `updated_at` | `timestamptz` | not null | 更新时间 |
+
+约束建议：
+
+- `unique(intake_id, url)`：同一批次同一 URL 仅一行
+
+索引建议：
+
+- `idx_learning_material_sources_intake_id`：`intake_id`
+
+## 6.20 `learning_plan_drafts`
+
+用途：
+
+- 保存 AI planner 输出的学习计划草稿（JSON + 结构化字段）
+- 用户确认前不写入正式 `user_learning_paths`；确认后写入 `confirmed_*` 并改 `status`
+
+字段建议：
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | `uuid` | PK | 草稿主键 |
+| `user_id` | `uuid` | FK，关联 `auth.users.id`，`on delete cascade` | 归属用户 |
+| `intake_id` | `uuid` | FK，关联 `learning_material_intakes.id`，`on delete cascade` | 材料来源批次 |
+| `title` | `varchar(256)` | not null | 计划标题 |
+| `goal` | `text` | nullable | 总目标 |
+| `difficulty` | `varchar(32)` | nullable | 预留难度标签 |
+| `estimated_total_minutes` | `integer` | nullable | 各任务预估分钟汇总 |
+| `status` | `learning_plan_draft_status` | not null default `draft` | 草稿生命周期状态 |
+| `raw_plan_json` | `jsonb` | not null default `'{}'` | 校验通过的 planner 输出快照 |
+| `confirmed_template_path_id` | `uuid` | FK nullable，`learning_paths.id`，`on delete set null` | 确认后生成的路径模板 |
+| `confirmed_user_learning_path_id` | `uuid` | FK nullable，`user_learning_paths.id`，`on delete set null` | 确认后的用户路径实例 |
+| `superseded_by_draft_id` | `uuid` | FK nullable，自引用 `learning_plan_drafts.id`，`on delete set null` | 被哪条新草稿替换 |
+| `metadata` | `jsonb` | not null default `'{}'` | 扩展字段 |
+| `created_at` | `timestamptz` | not null | 创建时间 |
+| `updated_at` | `timestamptz` | not null | 更新时间 |
+
+索引建议：
+
+- `idx_learning_plan_drafts_user_status_updated_at`：`user_id`, `status`, `updated_at desc`
+- `idx_learning_plan_drafts_intake_id`：`intake_id`
+
+说明：
+
+- `regenerate` 仅影响草稿行：旧行 `superseded` + `superseded_by_draft_id`，新行 `draft`，不直接修改已 active 的 `user_learning_paths`
+- 确认成功前不得依赖 `confirmed_*` 作为学习主链路唯一来源；主链路仍以 `user_learning_paths` / `user_tasks` 为准
+
+## 6.21 `learning_plan_draft_tasks`
+
+用途：
+
+- 草稿级任务明细，确认时映射写入 `path_steps`（及实例侧 `user_tasks`）
+
+字段建议：
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | `uuid` | PK | 主键 |
+| `draft_id` | `uuid` | FK，关联 `learning_plan_drafts.id`，`on delete cascade` | 所属草稿 |
+| `task_no` | `integer` | not null | 任务序号，从 1 连续递增（与 planner 业务规则一致） |
+| `title` | `varchar(256)` | not null | 任务标题 |
+| `objective` | `text` | not null | 学习目标，确认后映射 `path_steps.goal` |
+| `practice_steps` | `jsonb` | not null default `'[]'` | 实操步骤字符串数组，确认后多映射入 `path_steps.summary` 等 |
+| `acceptance_criteria` | `text` | not null | 验收口径，确认后映射 `path_steps.completion_criteria` |
+| `estimated_minutes` | `integer` | nullable | 预计耗时（分钟） |
+| `source_refs` | `jsonb` | not null default `'[]'` | 材料块 id 引用数组，与 prompt 契约对齐 |
+| `metadata` | `jsonb` | not null default `'{}'` | 扩展字段 |
+| `created_at` | `timestamptz` | not null | 创建时间 |
+| `updated_at` | `timestamptz` | not null | 更新时间 |
+
+约束建议：
+
+- `unique(draft_id, task_no)`
+
+索引建议：
+
+- `idx_learning_plan_draft_tasks_draft_id`：`draft_id`, `task_no`
+
 ---
 
 ## 7. 关键约束与一致性规则
@@ -862,6 +1034,13 @@ erDiagram
 - 每个用户每天最多一条打卡记录
 - 使用 `unique(user_id, checkin_date)` 保障
 
+## 7.7 自学材料摄取与计划草稿
+
+- **摄取与草稿分离**：一次 `plan-from-material` 至少产生一行 `learning_material_intakes`、多行 `learning_material_sources`（按 URL）、一行 `learning_plan_drafts` 与多行 `learning_plan_draft_tasks`；全部成功前不应写入正式 `user_learning_paths`
+- **确认幂等**：同一 `learning_plan_drafts.id` 在 `status = confirmed` 后重复确认应返回同一 `confirmed_user_learning_path_id`，不得产生第二条并发的 `active` 自学路径（业务层须与「先归档用户全部 `active` ULP 再插入」同事务或使用等价约束）
+- **再生稿**：仅允许对 `status = draft` 的归属草稿调用 regenerate；旧草稿置 `superseded` 并写 `superseded_by_draft_id`，新草稿独立 `intake_id` 策略以代码为准（可新 intake 复用链接列表）
+- **外键语义**：`confirmed_template_path_id` / `confirmed_user_learning_path_id` 在确认成功后写入；若用户路径或模板被清理，可 `on delete set null`，不反向级联删除草稿历史
+
 ---
 
 ## 8. 索引策略
@@ -874,6 +1053,7 @@ erDiagram
 4. 查询任务列表与地图
 5. 查询成就与积分流水
 6. 查询用户反馈记录与管理员待处理工单
+7. 按用户与状态查询计划草稿、按 intake 拉取材料源
 
 建议重点索引：
 
@@ -886,6 +1066,10 @@ erDiagram
 - `feedback_tickets(status, updated_at desc)`
 - `feedback_replies(ticket_id, created_at asc)`
 - `event_logs(event_name, occurred_at desc)`
+- `learning_material_intakes(user_id, created_at desc)`、`(user_id, status)`
+- `learning_material_sources(intake_id)`
+- `learning_plan_drafts(user_id, status, updated_at desc)`、`(intake_id)`
+- `learning_plan_draft_tasks(draft_id, task_no)`
 
 ---
 
@@ -957,6 +1141,25 @@ erDiagram
 - `feedback_replies`
 - 可选 `event_logs`
 
+## 9.8 教程链接生成学习计划（Phase A）
+
+需要写入：
+
+- `learning_material_intakes`、`learning_material_sources`（摄取与逐链结果）
+- `learning_plan_drafts`、`learning_plan_draft_tasks`（校验后的 planner 输出）
+
+需要读取（生成 prompt 与确认物化）：
+
+- `user_profiles`（`primary_tool_id`、`learning_level` 等）
+- `learning_tools`（工具名称等）
+
+确认时需要写入（与 onboarding 策略一致，在同一业务事务内）：
+
+- 新建 `learning_paths`、`path_steps`
+- 归档用户既有 `active` 的 `user_learning_paths`，再插入新 `user_learning_paths` 与 `user_tasks`
+- 更新 `learning_plan_drafts` 为 `confirmed` 并写入 `confirmed_*`
+- 可选更新 `user_profiles.last_active_task_id`
+
 ---
 
 ## 10. RLS 与权限建议
@@ -978,6 +1181,12 @@ erDiagram
 - `feedback_tickets`
 - `feedback_replies`
 - `event_logs`
+- `learning_material_intakes`
+- `learning_material_sources`
+- `learning_plan_drafts`
+- `learning_plan_draft_tasks`
+
+说明：迁移 `018` 未为上述四表启用 RLS；当前 BFF 多通过服务端特权客户端访问。若与 `user_tasks` 等表统一启用 RLS，需按 `user_id` / `intake_id` 归属补齐 policy，并验证 seed 与集成测试路径。
 
 ### 策略原则
 
@@ -1012,6 +1221,7 @@ MVP 阶段建议谨慎使用软删除：
 
 - 会话消息与代码片段属于敏感数据，应控制日志暴露范围
 - `conversation_messages.content_text` 不应进入公开监控系统
+- `learning_material_sources.content_excerpt` 可能含第三方教程正文摘录，应限制长度、避免全页镜像入审计日志，并遵守来源站点条款
 - 必要时对原始输入进行脱敏
 - 用户删除账号时需预留级联清理或匿名化策略
 
@@ -1047,7 +1257,11 @@ MVP 阶段建议谨慎使用软删除：
 14. `user_achievements`
 15. `feedback_tickets`
 16. `feedback_replies`
-17. `event_logs`
+17. `learning_material_intakes`（依赖 `auth.users`）
+18. `learning_material_sources`（依赖 `learning_material_intakes`）
+19. `learning_plan_drafts`（依赖 `auth.users`、`learning_material_intakes`，并引用 `learning_paths` / `user_learning_paths` 的确认外键仅在确认阶段写入，建表顺序上需晚于 `learning_paths` 与 `user_learning_paths`）
+20. `learning_plan_draft_tasks`（依赖 `learning_plan_drafts`）
+21. `event_logs`
 
 ---
 
@@ -1060,3 +1274,5 @@ MVP 阶段建议谨慎使用软删除：
 - 用户当前成长结果
 
 只要这三个对象的建模、流水和约束设计稳定，MVP 的 AI 导师、任务推进和激励系统就能保持一致性，并为后续支付、社区、推荐和多模态扩展打下基础。
+
+自学模式下，教程链接摄取表与计划草稿表（`018`）在确认前保持与主路径实例解耦，确认后通过外键与 `learning_paths` / `user_learning_paths` 建立可追溯关联，避免草稿态污染权威任务状态。

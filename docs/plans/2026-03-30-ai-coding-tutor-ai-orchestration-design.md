@@ -77,6 +77,7 @@
 - 当前学习消息链路已覆盖 logic / HTTP / output-format 测试，以及真实 provider / database 参与的 live JSON、live SSE 集成测试
 - 当前真实外部 provider 联调还依赖环境变量 `SILICONFLOW_API_KEY`，若未配置会返回 `AI_PROVIDER_ERROR`
 - 当前仓库已经具备适合承载该能力的基础设施：`app/api`、`server/modules`、Supabase Auth、Database、Storage、远程迁移执行脚本
+- **教程链接生成学习计划（Phase A）**：已落地专用接口 `POST /api/learning/plan-from-material`（及草稿 `confirm` / `regenerate`），计划生成使用 `agent_templates.code = self-study-material-planner` 与 `invokeAIProvider` 非流式 JSON，不经过 `POST /api/learning/message` 主消息编排
 
 因此，本文档既是后续扩展规范，也是当前首版真实实现的权威快照
 

@@ -46,6 +46,7 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
         selectedToolName: currentLearningPlan.tool.label,
         learningLevelLabel: getLearningLevelLabel("beginner"),
         selectionModeLabel: getSelectionModeLabel("preset_training"),
+        selectionMode: "preset_training",
         pathName: currentLearningPlan.pathName,
       },
       resume: {

@@ -14,6 +14,8 @@ import {
   parseRequiredRouteId,
   parseLearningMessagesQuery,
   parseHistoryRecentQuery,
+  parsePlanDraftRegenerateBody,
+  parsePlanFromMaterialBody,
   parseUpdateHistoryStatusBody,
   parseUpdateProfileMeBody,
   parseUpdateTaskStatusBody,
@@ -204,4 +206,29 @@ test("parseProfileAvatarFile preserves avatar upload validation messages", () =>
     new File(["avatar"], "avatar.png", { type: "image/png" }),
   )
   assert.equal(valid.ok, true)
+})
+
+test("parsePlanFromMaterialBody validates links and optional fields", () => {
+  const bad = parsePlanFromMaterialBody({ links: [] })
+  assert.equal(bad.ok, false)
+
+  const okParsed = parsePlanFromMaterialBody({
+    links: ["https://web.dev/learn/"],
+    userGoal: "  ",
+    weeklyHours: 6,
+  })
+  assert.equal(okParsed.ok, true)
+  if (okParsed.ok) {
+    assert.deepEqual(okParsed.data.links, ["https://web.dev/learn/"])
+    assert.equal(okParsed.data.userGoal, null)
+    assert.equal(okParsed.data.weeklyHours, 6)
+  }
+})
+
+test("parsePlanDraftRegenerateBody allows empty object", () => {
+  const empty = parsePlanDraftRegenerateBody({})
+  assert.equal(empty.ok, true)
+  if (empty.ok) {
+    assert.deepEqual(empty.data, {})
+  }
 })

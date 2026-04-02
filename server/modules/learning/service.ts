@@ -544,6 +544,7 @@ export async function getLearningCurrentSessionData(
       selectedToolName: state.tool.name,
       learningLevelLabel: getLearningLevelLabel(state.activePath.learning_level),
       selectionModeLabel: getSelectionModeLabel(state.activePath.selection_mode),
+      selectionMode: state.activePath.selection_mode,
       pathName: state.activePath.path_name_snapshot,
     },
     resume: {

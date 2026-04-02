@@ -65,6 +65,7 @@ export type LearningPlanSummary = {
   selectedToolName: string
   learningLevelLabel: string
   selectionModeLabel: string
+  selectionMode: "self_directed" | "preset_training"
   pathName?: string
 }
 
