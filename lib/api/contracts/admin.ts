@@ -28,6 +28,7 @@ export type AdminSessionResponseData = {
   adminAccountId: string
   userId: string
   displayName: string
+  avatarUrl: string | null
   roles: AdminRoleCode[]
   status: AdminAccountStatus
 }
@@ -45,6 +46,7 @@ export type AdminDashboardOverviewResponseData = {
 export const ADMIN_AUDIT_ACTIONS = [
   "login",
   "logout",
+  "password_change",
   "feedback_reply",
   "feedback_status_update",
   "user_note_create",

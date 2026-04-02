@@ -5,6 +5,7 @@ import { cookies } from "next/headers"
 import {
   ADMIN_ACCESS_TOKEN_COOKIE,
 } from "@/constants/auth-cookies"
+import { createSupabaseAnonServerClient } from "@/lib/supabase/anon-server"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import type { AdminAccountStatus, AdminRoleCode, AdminSessionResponseData } from "@/lib/api/contracts/admin"
@@ -21,6 +22,7 @@ type AdminAccountRow = {
   display_name: string
   status: AdminAccountStatus
   last_login_at: string | null
+  avatar_url: string | null
   admin_account_roles: Array<{
     admin_roles: {
       code: AdminRoleCode
@@ -50,7 +52,29 @@ async function loadAdminAccountByUserId(userId: string) {
 
   assertSupabaseSuccess(adminError, "failed to query admin account")
 
-  return adminAccount as unknown as AdminAccountRow | null
+  if (!adminAccount) {
+    return null
+  }
+
+  const typed = adminAccount as unknown as Omit<AdminAccountRow, "avatar_url">
+
+  const { data: profileRow, error: profileError } = await supabase
+    .from("user_profiles")
+    .select("avatar_url")
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  assertSupabaseSuccess(profileError, "failed to query user profile avatar for admin session")
+
+  const avatarUrl =
+    typeof (profileRow as { avatar_url?: string | null } | null)?.avatar_url === "string"
+      ? (profileRow as { avatar_url: string }).avatar_url
+      : null
+
+  return {
+    ...typed,
+    avatar_url: avatarUrl,
+  }
 }
 
 function toAdminSessionData(account: AdminAccountRow): AdminSessionResponseData {
@@ -60,6 +84,7 @@ function toAdminSessionData(account: AdminAccountRow): AdminSessionResponseData 
     adminAccountId: account.id,
     userId: account.user_id,
     displayName: account.display_name,
+    avatarUrl: account.avatar_url,
     roles,
     status: account.status,
   }
@@ -67,7 +92,7 @@ function toAdminSessionData(account: AdminAccountRow): AdminSessionResponseData 
 
 async function writeAdminAuditLog(input: {
   adminAccountId: string
-  action: "login" | "logout"
+  action: "login" | "logout" | "password_change"
   requestContext: Record<string, unknown>
 }) {
   const supabase = createSupabaseAdminClient()
@@ -210,6 +235,76 @@ export async function getAdminSessionFromRequest(
   }
 
   return getAdminSessionByAccessToken(accessToken)
+}
+
+function validateAdminNewPassword(password: string): string | null {
+  if (password.length < 8) {
+    return "新密码至少需要 8 位字符。"
+  }
+
+  if (!/[a-zA-Z]/.test(password)) {
+    return "新密码需包含至少一个英文字母。"
+  }
+
+  if (!/[0-9]/.test(password)) {
+    return "新密码需包含至少一个数字。"
+  }
+
+  return null
+}
+
+/**
+ * 修改当前管理员登录账号的密码（需验证原密码）。
+ */
+export async function adminChangePassword(input: {
+  session: AdminSessionResponseData
+  currentPassword: string
+  newPassword: string
+}): Promise<void> {
+  const policyError = validateAdminNewPassword(input.newPassword)
+
+  if (policyError) {
+    throw new Error(`PASSWORD_POLICY:${policyError}`)
+  }
+
+  if (input.currentPassword === input.newPassword) {
+    throw new Error("PASSWORD_POLICY:新密码不能与当前密码相同。")
+  }
+
+  const supabaseAdmin = createSupabaseAdminClient()
+  const { data: userData, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(
+    input.session.userId,
+  )
+
+  assertSupabaseSuccess(getUserError, "failed to get auth user for password change")
+
+  const email = userData.user?.email?.trim()
+
+  if (!email) {
+    throw new Error("ADMIN_AUTH_EMAIL_MISSING")
+  }
+
+  const anon = createSupabaseAnonServerClient()
+  const { error: signInError } = await anon.auth.signInWithPassword({
+    email,
+    password: input.currentPassword,
+  })
+
+  if (signInError) {
+    throw new Error("INVALID_CURRENT_PASSWORD")
+  }
+
+  const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(input.session.userId, {
+    password: input.newPassword,
+  })
+
+  assertSupabaseSuccess(updateError, "failed to update admin password")
+
+  await writeAdminAuditLog({
+    adminAccountId: input.session.adminAccountId,
+    action: "password_change",
+    requestContext: { userId: input.session.userId },
+  })
 }
 
 /**

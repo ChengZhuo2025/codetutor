@@ -16,7 +16,7 @@ test("openapi document covers all registered api operations and special transpor
     ),
   )
 
-  assert.equal(operations.length, 30)
+  assert.equal(operations.length, 31)
 
   assert.ok(paths["/api/auth/login"]?.post)
   assert.ok(paths["/api/profile/me"]?.get)
@@ -27,6 +27,7 @@ test("openapi document covers all registered api operations and special transpor
   assert.ok(paths["/api/learning/plan-drafts/{id}/confirm"]?.post)
   assert.ok(paths["/api/learning/plan-drafts/{id}/regenerate"]?.post)
   assert.ok(paths["/api/admin/feedback/{id}/reply"]?.post)
+  assert.ok(paths["/api/admin/auth/change-password"]?.post)
 
   const avatarPost = paths["/api/profile/avatar"]?.post as
     | {

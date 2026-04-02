@@ -1082,11 +1082,19 @@ export const adminLoginRequestSchema = z
   })
   .openapi("AdminLoginRequest")
 
+export const adminChangePasswordRequestSchema = z
+  .object({
+    currentPassword: nonEmptyStringSchema,
+    newPassword: z.string().min(1),
+  })
+  .openapi("AdminChangePasswordRequest")
+
 export const adminSessionResponseDataSchema = z
   .object({
     adminAccountId: z.string().uuid(),
     userId: z.string().uuid(),
     displayName: nonEmptyStringSchema,
+    avatarUrl: z.string().nullable(),
     roles: z.array(adminRoleCodeSchema),
     status: adminAccountStatusSchema,
   })

@@ -12,6 +12,7 @@ export type ApiCode =
   | "ADMIN_FORBIDDEN"
   | "ADMIN_INVALID_CREDENTIALS"
   | "ADMIN_INACTIVE_ACCOUNT"
+  | "ADMIN_PASSWORD_CHANGE_UNSUPPORTED"
 
 export type ApiSuccessResponse<T> = {
   code: "OK"

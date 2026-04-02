@@ -8,7 +8,7 @@ import {
 import type { AdminSessionResponseData } from "@/lib/api/contracts/admin"
 import { buildSessionCookieHeader } from "@/server/lib/session-cookie"
 import { jsonError, jsonSuccess } from "@/server/lib/route-response"
-import { adminLoginRequestSchema } from "@/server/modules/api-docs/schemas"
+import { adminChangePasswordRequestSchema, adminLoginRequestSchema } from "@/server/modules/api-docs/schemas"
 import type { AdminLoginResult } from "./service.ts"
 
 function appendAdminSessionCookies(response: Response, result: AdminLoginResult) {
@@ -27,7 +27,7 @@ function appendAdminSessionCookies(response: Response, result: AdminLoginResult)
   return response
 }
 
-function appendAdminLogoutCookies(response: Response) {
+export function appendAdminLogoutCookies(response: Response) {
   response.headers.append(
     "Set-Cookie",
     buildSessionCookieHeader(ADMIN_ACCESS_TOKEN_COOKIE, "", 0),
@@ -122,6 +122,63 @@ export function createAdminLogoutPostHandler(dependencies: {
   }
 }
 
+export function createAdminChangePasswordPostHandler(dependencies: {
+  getAdminSessionFromRequest: (request: NextRequest) => Promise<AdminSessionResponseData | null>
+  adminChangePassword: (input: {
+    session: AdminSessionResponseData
+    currentPassword: string
+    newPassword: string
+  }) => Promise<void>
+}) {
+  return async function POST(request: NextRequest) {
+    try {
+      const sessionData = await dependencies.getAdminSessionFromRequest(request)
+
+      if (!sessionData) {
+        return jsonError("ADMIN_FORBIDDEN", "未登录或会话已过期", 403)
+      }
+
+      const body = await (request as RequestLike).json()
+      const validationResult = adminChangePasswordRequestSchema.safeParse(body)
+
+      if (!validationResult.success) {
+        return jsonError("VALIDATION_FAILED", "请求参数验证失败", 400)
+      }
+
+      const { currentPassword, newPassword } = validationResult.data
+
+      await dependencies.adminChangePassword({
+        session: sessionData,
+        currentPassword,
+        newPassword,
+      })
+
+      return appendAdminLogoutCookies(
+        jsonSuccess({ success: true }, "密码已更新，请使用新密码重新登录"),
+      )
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.startsWith("PASSWORD_POLICY:")) {
+          return jsonError(
+            "VALIDATION_FAILED",
+            error.message.slice("PASSWORD_POLICY:".length),
+            400,
+          )
+        }
+
+        switch (error.message) {
+          case "INVALID_CURRENT_PASSWORD":
+            return jsonError("ADMIN_INVALID_CREDENTIALS", "当前密码不正确", 401)
+          case "ADMIN_AUTH_EMAIL_MISSING":
+            return jsonError("ADMIN_PASSWORD_CHANGE_UNSUPPORTED", "该账号未绑定邮箱，无法在此修改密码", 400)
+        }
+      }
+
+      return jsonError("INTERNAL_ERROR", "修改密码失败", 500)
+    }
+  }
+}
+
 /**
  * POST /api/admin/auth/login
  * 管理员登录
@@ -161,4 +218,18 @@ export async function POST_logout(request: NextRequest) {
   })
 
   return logoutHandler(request)
+}
+
+/**
+ * POST /api/admin/auth/change-password
+ * 管理员修改登录密码
+ */
+export async function POST_change_password(request: NextRequest) {
+  const service = await import("./service.ts")
+  const handler = createAdminChangePasswordPostHandler({
+    getAdminSessionFromRequest: service.getAdminSessionFromRequest,
+    adminChangePassword: service.adminChangePassword,
+  })
+
+  return handler(request)
 }

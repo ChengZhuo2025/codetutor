@@ -2,6 +2,8 @@
 
 import { Bell, Search } from "lucide-react"
 import { usePathname } from "next/navigation"
+import type { AdminSessionResponseData } from "@/lib/api/contracts/admin"
+import { AdminAccountMenu } from "./admin-account-menu"
 
 const breadcrumbMap: Record<string, string> = {
   "/admin": "总览看板",
@@ -19,10 +21,13 @@ const breadcrumbMap: Record<string, string> = {
   "/admin/settings": "系统设置",
 }
 
-export function AdminHeader() {
+type AdminHeaderProps = {
+  session: AdminSessionResponseData
+}
+
+export function AdminHeader({ session }: AdminHeaderProps) {
   const pathname = usePathname()
 
-  // 处理动态路由��例如 /admin/feedback/123
   let title = breadcrumbMap[pathname] ?? "管理后台"
   if (!breadcrumbMap[pathname]) {
     const segments = pathname.split("/")
@@ -36,12 +41,12 @@ export function AdminHeader() {
   }
 
   return (
-    <header className="h-14 flex items-center justify-between px-6 border-b border-border bg-background flex-shrink-0">
-      <div>
-        <p className="text-sm font-medium text-foreground">{title}</p>
+    <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-background px-6">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground truncate">{title}</p>
       </div>
-      <div className="flex items-center gap-3">
-        <div className="relative">
+      <div className="flex items-center gap-3 shrink-0">
+        <div className="relative hidden md:block">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <input
             type="search"
@@ -49,10 +54,15 @@ export function AdminHeader() {
             className="h-8 pl-8 pr-3 text-xs rounded-md bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring w-48"
           />
         </div>
-        <button className="relative w-8 h-8 flex items-center justify-center rounded-md hover:bg-accent transition-colors text-muted-foreground">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-destructive" />
+        <button
+          type="button"
+          className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-muted/60"
+          aria-label="通知"
+        >
+          <Bell className="size-4" aria-hidden />
+          <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-destructive ring-2 ring-background" />
         </button>
+        <AdminAccountMenu session={session} />
       </div>
     </header>
   )

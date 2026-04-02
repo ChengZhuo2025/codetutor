@@ -1,11 +1,14 @@
 import type { NextRequest } from "next/server"
-import { getRequestAuth, getRequestAuthHelpText } from "@/server/lib/request-auth"
+import {
+  getRequestAuthForProfileHelpText,
+  getRequestAuthIncludingAdminCookie,
+} from "@/server/lib/request-auth"
 import { createProfileAvatarPostHandler } from "@/server/modules/auth/route-handler"
 import { uploadProfileAvatar } from "@/server/modules/auth/service"
 
 const postHandler = createProfileAvatarPostHandler({
-  getRequestAuth: (request) => getRequestAuth(request as NextRequest),
-  getRequestAuthHelpText,
+  getRequestAuth: (request) => getRequestAuthIncludingAdminCookie(request as NextRequest),
+  getRequestAuthHelpText: getRequestAuthForProfileHelpText,
   uploadProfileAvatar,
 })
 

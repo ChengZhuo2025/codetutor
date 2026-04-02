@@ -1,107 +1,160 @@
 "use client"
 
+import type { ReactElement } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
+import { useState } from "react"
+import { ChevronDown, ChevronRight, PanelLeftClose, PanelLeft } from "lucide-react"
 import { ADMIN_ROUTES } from "@/constants/routes"
 import { menuItems, brandIcon } from "../data/menu-config"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
-import { LogOut, ChevronDown, ChevronRight } from "lucide-react"
-import { useAdminSession } from "./admin-shell-client"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 const BrandIcon = brandIcon
 
-export function AdminSidebar() {
-  const router = useRouter()
-  const pathname = usePathname()
-  const [aiExpanded, setAiExpanded] = useState(pathname.startsWith(`${ADMIN_ROUTES.home}/ai`))
-  const { session } = useAdminSession()
+const navItemBase =
+  "flex items-center rounded-lg text-sm font-medium transition-[color,background-color,box-shadow] duration-150 ease-out outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar"
 
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/admin/auth/logout", { method: "POST" })
-    } catch {
-      console.error("管理员登出审计写入失败")
-    }
+type AdminSidebarProps = {
+  collapsed: boolean
+  onToggleCollapsed: () => void
+}
 
-    router.replace(ADMIN_ROUTES.login)
-    router.refresh()
+function withCollapsedTooltip(collapsed: boolean, label: string, node: ReactElement) {
+  if (!collapsed) {
+    return node
   }
 
   return (
-    <aside className="w-56 flex-shrink-0 bg-sidebar border-r border-sidebar-border flex flex-col">
-      {/* Logo */}
-      <div className="h-14 flex items-center gap-2.5 px-4 border-b border-sidebar-border">
-        <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
-          <BrandIcon className="w-4 h-4 text-primary-foreground" />
+    <Tooltip>
+      <TooltipTrigger asChild>{node}</TooltipTrigger>
+      <TooltipContent side="right" sideOffset={10} className="font-medium">
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps) {
+  const pathname = usePathname()
+  const [aiExpanded, setAiExpanded] = useState(pathname.startsWith(`${ADMIN_ROUTES.home}/ai`))
+
+  return (
+    <aside
+      className={cn(
+        "flex shrink-0 flex-col border-r border-sidebar-border/80 bg-sidebar shadow-sm",
+        "transition-[width] duration-200 ease-[cubic-bezier(0.33,1,0.68,1)]",
+        collapsed ? "w-[72px]" : "w-56",
+      )}
+    >
+      {/* Brand */}
+      <div
+        className={cn(
+          "flex h-13 shrink-0 items-center border-b border-sidebar-border/70 bg-sidebar/50",
+          collapsed ? "justify-center px-2" : "gap-2.5 px-3.5",
+        )}
+      >
+        <div
+          className={cn(
+            "flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground",
+            "shadow-sm ring-1 ring-primary/20",
+          )}
+        >
+          <BrandIcon className="size-4" aria-hidden />
         </div>
-        <div className="flex flex-col min-w-0">
-          <span className="text-sm font-semibold text-sidebar-foreground leading-tight truncate">
-            AI 编程教练
-          </span>
-          <span className="text-[10px] text-muted-foreground leading-tight">管理后台</span>
-        </div>
+        {!collapsed ? (
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold tracking-tight text-sidebar-foreground">CodeTutor</p>
+            <p className="truncate text-[10px] leading-tight text-muted-foreground">系统管理后台 v1.0.0</p>
+          </div>
+        ) : null}
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2">
-        <ul className="space-y-0.5">
+      <nav
+        className={cn(
+          "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain",
+          collapsed ? "px-1.5 py-3" : "px-2 py-3",
+        )}
+        aria-label="管理后台主导航"
+      >
+        <ul className="space-y-1">
           {menuItems.map((item) => {
             const isActive = item.href === ADMIN_ROUTES.home
               ? pathname === ADMIN_ROUTES.home
               : pathname.startsWith(item.href) && item.href !== ADMIN_ROUTES.home
             const Icon = item.icon
 
-            // 跳过未激活的菜单项
             if (!item.active && item.href !== ADMIN_ROUTES.home) {
               return null
             }
 
             if (item.children) {
+              const parentLink = (
+                <button
+                  type="button"
+                  onClick={() => setAiExpanded(!aiExpanded)}
+                  className={cn(
+                    navItemBase,
+                    "w-full text-sidebar-foreground",
+                    collapsed ? "min-h-10 justify-center px-0 py-2" : "gap-2.5 px-3 py-2.5",
+                    "hover:bg-sidebar-accent/90 hover:text-sidebar-accent-foreground",
+                    isActive && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm",
+                  )}
+                  aria-expanded={aiExpanded}
+                >
+                  <Icon className="size-4 shrink-0 opacity-90" />
+                  {!collapsed ? (
+                    <>
+                      <span className="min-w-0 flex-1 text-left">{item.label}</span>
+                      {aiExpanded
+                        ? <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+                        : <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
+                      }
+                    </>
+                  ) : null}
+                </button>
+              )
+
               return (
                 <li key={item.href}>
-                  <button
-                    onClick={() => setAiExpanded(!aiExpanded)}
-                    className={cn(
-                      "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors",
-                      "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                      isActive && "bg-sidebar-accent text-sidebar-accent-foreground"
-                    )}
-                  >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
-                    <span className="flex-1 text-left">{item.label}</span>
-                    {aiExpanded
-                      ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-                      : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                    }
-                  </button>
+                  {withCollapsedTooltip(collapsed, item.label, parentLink)}
                   {aiExpanded && (
-                    <ul className="mt-0.5 ml-3 pl-3 border-l border-sidebar-border space-y-0.5">
+                    <ul
+                      className={cn(
+                        "mt-1 space-y-0.5 border-sidebar-border/80",
+                        collapsed ? "border-l-0 pl-0" : "ml-2.5 border-l-2 border-l-primary/15 pl-3",
+                      )}
+                    >
                       {item.children.map((child) => {
                         const isChildActive = child.href === `${ADMIN_ROUTES.home}/ai`
                           ? pathname === `${ADMIN_ROUTES.home}/ai`
                           : pathname.startsWith(child.href) && child.href !== `${ADMIN_ROUTES.home}/ai`
                         const ChildIcon = child.icon
 
-                        // 跳过未激活的子菜单
                         if (!child.active) {
                           return null
                         }
 
+                        const childLink = (
+                          <Link
+                            href={child.href}
+                            className={cn(
+                              navItemBase,
+                              "text-muted-foreground",
+                              collapsed ? "min-h-9 justify-center px-0 py-2" : "gap-2 px-2 py-2 text-xs",
+                              "hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground",
+                              isChildActive
+                                && "bg-primary/12 font-semibold text-primary shadow-sm ring-1 ring-primary/15",
+                            )}
+                          >
+                            <ChildIcon className="size-3.5 shrink-0" />
+                            {!collapsed ? <span className="truncate">{child.label}</span> : null}
+                          </Link>
+                        )
+
                         return (
                           <li key={child.href}>
-                            <Link
-                              href={child.href}
-                              className={cn(
-                                "flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors",
-                                "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                                isChildActive && "bg-sidebar-accent text-sidebar-foreground font-medium"
-                              )}
-                            >
-                              <ChildIcon className="w-3.5 h-3.5 flex-shrink-0" />
-                              {child.label}
-                            </Link>
+                            {withCollapsedTooltip(collapsed, child.label, childLink)}
                           </li>
                         )
                       })}
@@ -111,49 +164,61 @@ export function AdminSidebar() {
               )
             }
 
+            const link = (
+              <Link
+                href={item.href}
+                className={cn(
+                  navItemBase,
+                  "text-sidebar-foreground",
+                  collapsed ? "min-h-10 justify-center px-0 py-2" : "gap-2.5 px-3 py-2.5",
+                  "hover:bg-sidebar-accent/90 hover:text-sidebar-accent-foreground",
+                  isActive
+                    && "bg-primary/[0.14] font-semibold text-primary shadow-sm ring-1 ring-primary/20",
+                )}
+              >
+                <Icon
+                  className={cn("size-4 shrink-0", isActive ? "text-primary" : "opacity-90")}
+                  aria-hidden
+                />
+                {!collapsed ? <span className="truncate">{item.label}</span> : null}
+              </Link>
+            )
+
             return (
               <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors",
-                    "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                    isActive && "bg-primary/15 text-primary font-medium"
-                  )}
-                >
-                  <Icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-primary")} />
-                  {item.label}
-                </Link>
+                {withCollapsedTooltip(collapsed, item.label, link)}
               </li>
             )
           })}
         </ul>
       </nav>
 
-      {/* Bottom user info */}
-      <div className="border-t border-sidebar-border p-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-semibold text-primary">
-              {session?.displayName?.charAt(0).toUpperCase() || "A"}
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-sidebar-foreground truncate">
-              {session?.displayName || "管理员"}
-            </p>
-            <p className="text-[10px] text-muted-foreground">
-              {session?.roles?.[0] || "super_admin"}
-            </p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="text-muted-foreground hover:text-sidebar-foreground transition-colors"
-            title="登出"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-          </button>
-        </div>
+      {/* Collapse control */}
+      <div className="shrink-0 border-t border-sidebar-border/70 bg-sidebar/40 p-2">
+        <button
+          type="button"
+          onClick={onToggleCollapsed}
+          className={cn(
+            "flex w-full items-center justify-center gap-2 rounded-lg border border-transparent",
+            "text-muted-foreground transition-[color,background-color,border-color,box-shadow] duration-150",
+            "hover:border-border/60 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
+            "active:bg-sidebar-accent/90",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
+            collapsed ? "min-h-10 px-0 py-2" : "px-2 py-2.5",
+          )}
+          title={collapsed ? "展开侧栏" : "收起侧栏"}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? "展开侧栏" : "收起侧栏"}
+        >
+          {collapsed ? (
+            <PanelLeft className="size-4 shrink-0" aria-hidden />
+          ) : (
+            <>
+              <PanelLeftClose className="size-4 shrink-0" aria-hidden />
+              <span className="text-xs font-medium">收起侧栏</span>
+            </>
+          )}
+        </button>
       </div>
     </aside>
   )

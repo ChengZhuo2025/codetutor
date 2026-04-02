@@ -3,6 +3,7 @@ import { z } from "zod"
 import { ROUTE_ERROR_MESSAGES } from "@/server/lib/route-error-presets"
 import {
   achievementSummaryResponseDataSchema,
+  adminChangePasswordRequestSchema,
   adminOptionalHeadersSchema,
   adminFeedbackListQuerySchema,
   adminFeedbackListResponseDataSchema,
@@ -1540,6 +1541,36 @@ registry.registerPath({
       successExamples.feedbackDetail,
     ),
     ...commonErrorResponses(["400", "401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/auth/change-password",
+  operationId: "postAdminChangePassword",
+  tags: ["admin-auth"],
+  summary: "管理员修改登录密码",
+  description: "需携带管理后台登录 Cookie。成功后清除会话 Cookie，应重新登录。",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminChangePasswordRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      z.object({ success: z.literal(true) }).openapi("AdminChangePasswordOkData"),
+      "AdminChangePasswordOkData",
+      "密码已更新，请使用新密码重新登录",
+      { success: true },
+      "密码已更新，请使用新密码重新登录",
+    ),
+    ...commonErrorResponses(["400", "401", "403", "500"]),
   },
 })
 

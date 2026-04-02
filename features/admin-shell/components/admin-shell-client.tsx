@@ -32,7 +32,7 @@ export function AdminShellClient({ session, children }: AdminShellClientProps) {
 
   return (
     <AdminSessionContext.Provider value={contextValue}>
-      <AdminLayout>{children}</AdminLayout>
+      <AdminLayout session={session}>{children}</AdminLayout>
     </AdminSessionContext.Provider>
   )
 }

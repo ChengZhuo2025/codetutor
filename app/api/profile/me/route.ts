@@ -1,18 +1,21 @@
 import type { NextRequest } from "next/server"
-import { getRequestAuth, getRequestAuthHelpText } from "@/server/lib/request-auth"
+import {
+  getRequestAuthForProfileHelpText,
+  getRequestAuthIncludingAdminCookie,
+} from "@/server/lib/request-auth"
 import { withNoStoreHeaders } from "@/server/lib/response-cache"
 import { createProfileMeGetHandler, createProfileMePatchHandler } from "@/server/modules/auth/route-handler"
 import { getProfileMe, updateProfileMe } from "@/server/modules/auth/service"
 
 const getHandler = createProfileMeGetHandler({
-  getRequestAuth: (request) => getRequestAuth(request as NextRequest),
-  getRequestAuthHelpText,
+  getRequestAuth: (request) => getRequestAuthIncludingAdminCookie(request as NextRequest),
+  getRequestAuthHelpText: getRequestAuthForProfileHelpText,
   getProfileMe,
 })
 
 const patchHandler = createProfileMePatchHandler({
-  getRequestAuth: (request) => getRequestAuth(request as NextRequest),
-  getRequestAuthHelpText,
+  getRequestAuth: (request) => getRequestAuthIncludingAdminCookie(request as NextRequest),
+  getRequestAuthHelpText: getRequestAuthForProfileHelpText,
   updateProfileMe,
 })
 

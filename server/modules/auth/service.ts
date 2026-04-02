@@ -127,6 +127,97 @@ async function getAuthUserById(userId: string) {
   return data.user ?? null
 }
 
+/**
+ * 为仅有管理员账号、尚未走过用户端登录链路的 user_id 补齐 user_profiles，便于复用资料 API。
+ */
+async function ensureUserProfileRowForUserId(userId: string): Promise<void> {
+  const supabase = createSupabaseAdminClient()
+
+  const { data: existing, error: existingError } = await supabase
+    .from("user_profiles")
+    .select("user_id")
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  assertSupabaseSuccess(existingError, "failed to query user profile existence")
+
+  if (existing) {
+    return
+  }
+
+  const authUser = await getAuthUserById(userId)
+
+  if (!authUser) {
+    return
+  }
+
+  const { data: adminAccount, error: adminError } = await supabase
+    .from("admin_accounts")
+    .select("display_name")
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  assertSupabaseSuccess(adminError, "failed to query admin account for profile bootstrap")
+
+  const now = new Date().toISOString()
+  const adminDisplay =
+    typeof (adminAccount as { display_name?: string } | null)?.display_name === "string"
+      ? (adminAccount as { display_name: string }).display_name.trim()
+      : ""
+
+  const nickname =
+    adminDisplay.length > 0 ? adminDisplay : buildDefaultNickname(authUser) ?? "新用户"
+
+  const { error: insertProfileError } = await supabase.from("user_profiles").insert({
+    user_id: userId,
+    nickname,
+    avatar_url: buildDefaultAvatar(authUser),
+    signup_provider: "email",
+    last_login_provider: "email",
+    last_login_at: now,
+    learning_level: "beginner",
+    current_rank_code: "rookie",
+    current_score: 0,
+    streak_days: 0,
+    created_at: now,
+    updated_at: now,
+  })
+
+  assertSupabaseSuccess(insertProfileError, "failed to create user profile row")
+
+  await ensureUserRankSnapshot(supabase, {
+    userId,
+    currentScore: 0,
+    updatedAt: now,
+  })
+}
+
+async function syncAdminAccountDisplayNameFromNickname(userId: string, nickname: string): Promise<void> {
+  const supabase = createSupabaseAdminClient()
+
+  const { data: row, error } = await supabase
+    .from("admin_accounts")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  assertSupabaseSuccess(error, "failed to query admin account for display name sync")
+
+  if (!row) {
+    return
+  }
+
+  const { error: updateError } = await supabase
+    .from("admin_accounts")
+    .update({
+      display_name: nickname.trim().slice(0, 100),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+
+  assertSupabaseSuccess(updateError, "failed to sync admin display name")
+}
+
 async function loadUserGateState(userId: string) {
   const supabase = createSupabaseAdminClient()
 
@@ -291,6 +382,8 @@ export async function getAuthSessionSummary(
 }
 
 export async function getProfileMe(userId: string): Promise<ProfileMeResponseData | null> {
+  await ensureUserProfileRowForUserId(userId)
+
   const supabase = createSupabaseAdminClient()
 
   const { data: profile, error: profileError } = await supabase
@@ -361,6 +454,8 @@ export async function updateProfileMe(
   userId: string,
   input: UpdateProfileMeRequest,
 ): Promise<ProfileMeResponseData | null> {
+  await ensureUserProfileRowForUserId(userId)
+
   const supabase = createSupabaseAdminClient()
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
@@ -388,6 +483,8 @@ export async function updateProfileMe(
 
   assertSupabaseSuccess(updateError, "failed to update user profile")
 
+  await syncAdminAccountDisplayNameFromNickname(userId, input.nickname)
+
   return getProfileMe(userId)
 }
 
@@ -395,6 +492,8 @@ export async function uploadProfileAvatar(
   userId: string,
   file: File,
 ): Promise<UploadProfileAvatarResponseData> {
+  await ensureUserProfileRowForUserId(userId)
+
   const bytes = await file.arrayBuffer()
   const supabase = createSupabaseAdminClient()
   const extension = getFileExtension(file)
