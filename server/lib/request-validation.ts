@@ -1,5 +1,16 @@
 import { z } from "zod"
-import { FEEDBACK_SOURCES, FEEDBACK_STATUSES, FEEDBACK_TYPES, type AdminReplyFeedbackRequest, type AdminUpdateFeedbackStatusRequest, type CreateFeedbackRequest, type FeedbackStatus, type FeedbackType } from "@/lib/api/contracts/feedback"
+import {
+  FEEDBACK_PRIORITIES,
+  FEEDBACK_SOURCES,
+  FEEDBACK_STATUSES,
+  FEEDBACK_TYPES,
+  type AdminReplyFeedbackRequest,
+  type AdminUpdateFeedbackStatusRequest,
+  type CreateFeedbackRequest,
+  type FeedbackPriority,
+  type FeedbackStatus,
+  type FeedbackType,
+} from "@/lib/api/contracts/feedback"
 import type { AuthLoginType } from "@/lib/api/contracts/auth"
 import type { UpdateLearningHistoryStatusRequest } from "@/lib/api/contracts/history"
 import type { CompleteOnboardingRequest } from "@/lib/api/contracts/onboarding"
@@ -452,7 +463,9 @@ export function parseHistoryRecentQuery(searchParams: URLSearchParams): Validati
 export function parseAdminFeedbackListQuery(searchParams: URLSearchParams) {
   const rawStatus = searchParams.get("status")
   const rawFeedbackType = searchParams.get("feedbackType")
+  const rawPriority = searchParams.get("priority")
   const rawLimit = searchParams.get("limit")
+  const rawPage = searchParams.get("page")
 
   const status: FeedbackStatus | null =
     rawStatus && FEEDBACK_STATUSES.includes(rawStatus as (typeof FEEDBACK_STATUSES)[number])
@@ -464,10 +477,20 @@ export function parseAdminFeedbackListQuery(searchParams: URLSearchParams) {
       ? (rawFeedbackType as FeedbackType)
       : null
 
+  const priority: FeedbackPriority | null =
+    rawPriority && FEEDBACK_PRIORITIES.includes(rawPriority as (typeof FEEDBACK_PRIORITIES)[number])
+      ? (rawPriority as FeedbackPriority)
+      : null
+
   const limit = rawLimit ? Number.parseInt(rawLimit, 10) : 50
+  const page = rawPage ? Number.parseInt(rawPage, 10) : 1
 
   if (!Number.isFinite(limit) || limit < 1 || limit > 100) {
     return fail("VALIDATION_FAILED", "limit 必须在 1 到 100 之间。")
+  }
+
+  if (!Number.isFinite(page) || page < 1) {
+    return fail("VALIDATION_FAILED", "page 必须是大于等于 1 的整数。")
   }
 
   if (rawStatus && !status) {
@@ -478,12 +501,18 @@ export function parseAdminFeedbackListQuery(searchParams: URLSearchParams) {
     return fail("VALIDATION_FAILED", "feedbackType 参数不合法。")
   }
 
+  if (rawPriority && !priority) {
+    return fail("VALIDATION_FAILED", "priority 参数不合法。")
+  }
+
   return ok({
     status: status ?? undefined,
     feedbackType: feedbackType ?? undefined,
+    priority: priority ?? undefined,
     keyword: searchParams.get("keyword")?.trim() || undefined,
     userId: searchParams.get("userId")?.trim() || undefined,
     limit,
+    page,
   })
 }
 

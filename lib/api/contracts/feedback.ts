@@ -84,14 +84,26 @@ export type FeedbackTicketDetailResponseData = FeedbackTicketDetail
 export type AdminFeedbackListItem = FeedbackTicketListItem & {
   userId: string
   userNicknameSnapshot: string | null
+  userAvatarUrl: string | null
   userPhoneSnapshot: string | null
   userContactEmailSnapshot: string | null
   priority: FeedbackPriority
   source: string | null
 }
 
+export type AdminFeedbackListStats = {
+  ticketTotal: number
+  pending: number
+  inReview: number
+  highPriority: number
+}
+
 export type AdminFeedbackListResponseData = {
   items: AdminFeedbackListItem[]
+  total: number
+  page: number
+  limit: number
+  stats: AdminFeedbackListStats
 }
 
 export type AdminFeedbackTicketDetailResponseData = FeedbackTicketDetail & {

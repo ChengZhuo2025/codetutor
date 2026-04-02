@@ -1,11 +1,13 @@
 import type {
   AdminFeedbackListResponseData,
+  AdminFeedbackListStats,
   AdminFeedbackTicketDetailResponseData,
   AdminReplyFeedbackRequest,
   AdminUpdateFeedbackStatusRequest,
   CreateFeedbackRequest,
   CreateFeedbackResponseData,
   FeedbackMineListResponseData,
+  FeedbackPriority,
   FeedbackReplyItem,
   FeedbackStatus,
   FeedbackTicketDetailResponseData,
@@ -60,6 +62,25 @@ const FEEDBACK_STATUS_LABEL_MAP: Record<FeedbackStatus, string> = {
   in_review: "处理中",
   replied: "已回复",
   closed: "已关闭",
+}
+
+const ADMIN_FEEDBACK_STATUS_LABEL_MAP: Record<FeedbackStatus, string> = {
+  submitted: "待处理",
+  in_review: "处理中",
+  replied: "已解决",
+  closed: "已关闭",
+}
+
+const FEEDBACK_TICKET_UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function buildAdminFeedbackKeywordOrClause(keyword: string) {
+  const kw = keyword.trim()
+  if (FEEDBACK_TICKET_UUID.test(kw)) {
+    return `id.eq.${kw},title.ilike.%${kw}%,content.ilike.%${kw}%,user_nickname_snapshot.ilike.%${kw}%`
+  }
+
+  return `title.ilike.%${kw}%,content.ilike.%${kw}%,user_nickname_snapshot.ilike.%${kw}%`
 }
 
 function normalizeOptionalString(value: string | null | undefined) {
@@ -263,61 +284,160 @@ export async function getMyFeedbackDetail(
   }
 }
 
+async function getAdminFeedbackGlobalStats(): Promise<AdminFeedbackListStats> {
+  const supabase = createSupabaseAdminClient()
+  const [totalRes, pendingRes, inReviewRes, highRes] = await Promise.all([
+    supabase.from("feedback_tickets").select("*", { count: "exact", head: true }),
+    supabase
+      .from("feedback_tickets")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "submitted"),
+    supabase
+      .from("feedback_tickets")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "in_review"),
+    supabase
+      .from("feedback_tickets")
+      .select("*", { count: "exact", head: true })
+      .eq("priority", "high"),
+  ])
+
+  assertSupabaseSuccess(totalRes.error, "failed to count admin feedback tickets")
+  assertSupabaseSuccess(pendingRes.error, "failed to count pending feedback tickets")
+  assertSupabaseSuccess(inReviewRes.error, "failed to count in_review feedback tickets")
+  assertSupabaseSuccess(highRes.error, "failed to count high priority feedback tickets")
+
+  return {
+    ticketTotal: totalRes.count ?? 0,
+    pending: pendingRes.count ?? 0,
+    inReview: inReviewRes.count ?? 0,
+    highPriority: highRes.count ?? 0,
+  }
+}
+
+async function getUserAvatarByUserIds(userIds: string[]): Promise<Map<string, string | null>> {
+  const map = new Map<string, string | null>()
+  if (userIds.length === 0) {
+    return map
+  }
+
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .select("user_id, avatar_url")
+    .in("user_id", userIds)
+
+  assertSupabaseSuccess(error, "failed to query user avatars for admin feedback list")
+
+  for (const row of (data ?? []) as { user_id: string; avatar_url: string | null }[]) {
+    map.set(row.user_id, normalizeOptionalString(row.avatar_url))
+  }
+
+  return map
+}
+
 type AdminFeedbackFilters = {
   status?: FeedbackStatus
   feedbackType?: FeedbackType
+  priority?: FeedbackPriority
   keyword?: string
   userId?: string
   limit?: number
+  page?: number
 }
 
 export async function getAdminFeedbackList(
   filters: AdminFeedbackFilters,
 ): Promise<AdminFeedbackListResponseData> {
   const supabase = createSupabaseAdminClient()
-  let query = supabase
-    .from("feedback_tickets")
-    .select(
-      "id, user_id, feedback_type, status, priority, source, title, content, contact_method, user_nickname_snapshot, user_phone_snapshot, user_contact_email_snapshot, submitted_at, updated_at, last_reply_at",
-    )
-    .order("updated_at", { ascending: false })
-    .limit(filters.limit ?? 50)
+  const limit = filters.limit ?? 50
+  const page = filters.page && filters.page > 0 ? filters.page : 1
+  const from = (page - 1) * limit
+  const to = from + limit - 1
 
+  let countQuery = supabase.from("feedback_tickets").select("*", { count: "exact", head: true })
   if (filters.status) {
-    query = query.eq("status", filters.status)
+    countQuery = countQuery.eq("status", filters.status)
   }
 
   if (filters.feedbackType) {
-    query = query.eq("feedback_type", filters.feedbackType)
+    countQuery = countQuery.eq("feedback_type", filters.feedbackType)
+  }
+
+  if (filters.priority) {
+    countQuery = countQuery.eq("priority", filters.priority)
   }
 
   if (filters.userId) {
-    query = query.eq("user_id", filters.userId)
+    countQuery = countQuery.eq("user_id", filters.userId)
   }
 
   if (filters.keyword) {
-    query = query.or(
-      `title.ilike.%${filters.keyword}%,content.ilike.%${filters.keyword}%,user_nickname_snapshot.ilike.%${filters.keyword}%`,
-    )
+    countQuery = countQuery.or(buildAdminFeedbackKeywordOrClause(filters.keyword))
   }
 
-  const { data, error } = await query
+  const [stats, countResult, ticketsResult] = await Promise.all([
+    getAdminFeedbackGlobalStats(),
+    countQuery,
+    (async () => {
+      let listQuery = supabase
+        .from("feedback_tickets")
+        .select(
+          "id, user_id, feedback_type, status, priority, source, title, content, contact_method, user_nickname_snapshot, user_phone_snapshot, user_contact_email_snapshot, submitted_at, updated_at, last_reply_at",
+        )
+        .order("updated_at", { ascending: false })
+        .range(from, to)
+
+      if (filters.status) {
+        listQuery = listQuery.eq("status", filters.status)
+      }
+
+      if (filters.feedbackType) {
+        listQuery = listQuery.eq("feedback_type", filters.feedbackType)
+      }
+
+      if (filters.priority) {
+        listQuery = listQuery.eq("priority", filters.priority)
+      }
+
+      if (filters.userId) {
+        listQuery = listQuery.eq("user_id", filters.userId)
+      }
+
+      if (filters.keyword) {
+        listQuery = listQuery.or(buildAdminFeedbackKeywordOrClause(filters.keyword))
+      }
+
+      return await listQuery
+    })(),
+  ])
+
+  assertSupabaseSuccess(countResult.error, "failed to count filtered admin feedback list")
+
+  const { data, error } = ticketsResult
 
   assertSupabaseSuccess(error, "failed to query admin feedback list")
 
   const tickets = (data ?? []) as FeedbackTicketRow[]
   const repliesByTicketId = await getFeedbackReplies(tickets.map((item) => item.id))
+  const avatarByUserId = await getUserAvatarByUserIds([...new Set(tickets.map((t) => t.user_id))])
 
   return {
     items: tickets.map((ticket) => ({
       ...mapListItem(ticket, repliesByTicketId.get(ticket.id) ?? []),
+      statusLabel: ADMIN_FEEDBACK_STATUS_LABEL_MAP[ticket.status],
       userId: ticket.user_id,
       userNicknameSnapshot: normalizeOptionalString(ticket.user_nickname_snapshot),
+      userAvatarUrl: avatarByUserId.get(ticket.user_id) ?? null,
       userPhoneSnapshot: normalizeOptionalString(ticket.user_phone_snapshot),
       userContactEmailSnapshot: normalizeOptionalString(ticket.user_contact_email_snapshot),
       priority: ticket.priority,
       source: normalizeOptionalString(ticket.source),
     })),
+    total: countResult.count ?? 0,
+    page,
+    limit,
+    stats,
   }
 }
 
@@ -348,7 +468,7 @@ export async function getAdminFeedbackDetail(
     feedbackType: ticket.feedback_type,
     feedbackTypeLabel: FEEDBACK_TYPE_LABEL_MAP[ticket.feedback_type],
     status: ticket.status,
-    statusLabel: FEEDBACK_STATUS_LABEL_MAP[ticket.status],
+    statusLabel: ADMIN_FEEDBACK_STATUS_LABEL_MAP[ticket.status],
     priority: ticket.priority,
     source: normalizeOptionalString(ticket.source),
     title: ticket.title,
@@ -441,4 +561,17 @@ export async function adminUpdateFeedbackStatus(
   assertSupabaseSuccess(updateError, "failed to update feedback ticket status")
 
   return getAdminFeedbackDetail(ticketId)
+}
+
+export async function adminDeleteFeedback(ticketId: string): Promise<boolean> {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("feedback_tickets")
+    .delete()
+    .eq("id", ticketId)
+    .select("id")
+
+  assertSupabaseSuccess(error, "failed to delete feedback ticket")
+
+  return Array.isArray(data) && data.length > 0
 }

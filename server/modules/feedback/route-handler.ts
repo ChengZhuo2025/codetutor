@@ -126,9 +126,11 @@ export function createAdminFeedbackListGetHandler(dependencies: {
   getAdminFeedbackList: (filters: {
     status?: "submitted" | "in_review" | "replied" | "closed"
     feedbackType?: "visual_design" | "interaction_flow" | "feature_request" | "issue_report"
+    priority?: "low" | "medium" | "high"
     keyword?: string
     userId?: string
     limit?: number
+    page?: number
   }) => Promise<unknown>
 }) {
   return async function GET(request: GetRequestLike) {
@@ -268,6 +270,38 @@ export function createAdminUpdateFeedbackStatusPostHandler(dependencies: {
       return jsonSuccess(data, "feedback status updated")
     } catch (error) {
       return jsonInternalErrorFromError(error, "管理员更新反馈状态失败")
+    }
+  }
+}
+
+export function createAdminFeedbackDeleteHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  adminDeleteFeedback: (ticketId: string) => Promise<boolean>
+}) {
+  return async function DELETE(_request: unknown, context: RouteContext) {
+    try {
+      const admin = await dependencies.getRequestAdmin(_request)
+
+      if (!admin.ok) {
+        return jsonAdminAuthError(admin as Exclude<RequestAdminResult, { ok: true }>)
+      }
+
+      const { id } = await context.params
+      const routeId = parseRequiredRouteId(id, ROUTE_ERROR_MESSAGES.invalidFeedbackTicketId)
+
+      if (!routeId.ok) {
+        return jsonInvalidFeedbackTicketId()
+      }
+
+      const deleted = await dependencies.adminDeleteFeedback(routeId.data)
+
+      if (!deleted) {
+        return jsonFeedbackTicketNotFound()
+      }
+
+      return jsonSuccess({ deleted: true }, "feedback deleted")
+    } catch (error) {
+      return jsonInternalErrorFromError(error, "管理员删除反馈失败")
     }
   }
 }

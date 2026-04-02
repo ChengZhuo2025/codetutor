@@ -1004,6 +1004,7 @@ export const adminFeedbackListItemSchema = z
     lastReplyAt: z.string().nullable(),
     userId: z.string(),
     userNicknameSnapshot: z.string().nullable(),
+    userAvatarUrl: z.string().nullable(),
     userPhoneSnapshot: z.string().nullable(),
     userContactEmailSnapshot: z.string().nullable(),
     priority: feedbackPrioritySchema,
@@ -1011,9 +1012,22 @@ export const adminFeedbackListItemSchema = z
   })
   .openapi("AdminFeedbackListItem")
 
+export const adminFeedbackListStatsSchema = z
+  .object({
+    ticketTotal: z.number().int().nonnegative(),
+    pending: z.number().int().nonnegative(),
+    inReview: z.number().int().nonnegative(),
+    highPriority: z.number().int().nonnegative(),
+  })
+  .openapi("AdminFeedbackListStats")
+
 export const adminFeedbackListResponseDataSchema = z
   .object({
     items: z.array(adminFeedbackListItemSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().min(1),
+    limit: z.number().int().min(1),
+    stats: adminFeedbackListStatsSchema,
   })
   .openapi("AdminFeedbackListResponseData")
 
@@ -1044,9 +1058,11 @@ export const adminFeedbackListQuerySchema = z
   .object({
     status: feedbackStatusSchema.optional(),
     feedbackType: feedbackTypeSchema.optional(),
+    priority: feedbackPrioritySchema.optional(),
     keyword: z.string().optional(),
     userId: z.string().optional(),
     limit: z.number().int().min(1).max(100).optional(),
+    page: z.number().int().min(1).optional(),
   })
   .openapi("AdminFeedbackListQuery")
 
@@ -1062,6 +1078,10 @@ export const adminUpdateFeedbackStatusRequestSchema = z
     status: feedbackStatusSchema,
   })
   .openapi("AdminUpdateFeedbackStatusRequest")
+
+export const adminFeedbackDeleteOkDataSchema = z
+  .object({ deleted: z.literal(true) })
+  .openapi("AdminFeedbackDeleteOkData")
 
 export const openApiStreamResponseSchema = z
   .string()

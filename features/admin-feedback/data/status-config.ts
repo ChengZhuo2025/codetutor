@@ -7,7 +7,7 @@ export const feedbackStatusConfig: Record<
 > = {
   submitted: { label: "待处理", color: "bg-chart-2" },
   in_review: { label: "处理中", color: "bg-chart-3" },
-  replied: { label: "已回复", color: "bg-primary" },
+  replied: { label: "已解决", color: "bg-primary" },
   closed: { label: "已关闭", color: "bg-muted-foreground" },
 }
 

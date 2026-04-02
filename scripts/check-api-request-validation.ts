@@ -70,7 +70,9 @@ test("parseAdminFeedbackListQuery validates enums and limit", () => {
   })
 
   const valid = parseAdminFeedbackListQuery(
-    new URLSearchParams("status=submitted&feedbackType=issue_report&keyword=%20bug%20&userId=%20user-1%20&limit=20"),
+    new URLSearchParams(
+      "status=submitted&feedbackType=issue_report&keyword=%20bug%20&userId=%20user-1%20&limit=20&page=2&priority=high",
+    ),
   )
 
   assert.equal(valid.ok, true)
@@ -81,9 +83,18 @@ test("parseAdminFeedbackListQuery validates enums and limit", () => {
   assert.deepEqual(valid.data, {
     status: "submitted",
     feedbackType: "issue_report",
+    priority: "high",
     keyword: "bug",
     userId: "user-1",
     limit: 20,
+    page: 2,
+  })
+
+  const badPage = parseAdminFeedbackListQuery(new URLSearchParams("page=0&limit=10"))
+  assert.deepEqual(badPage, {
+    ok: false,
+    code: "VALIDATION_FAILED",
+    message: "page 必须是大于等于 1 的整数。",
   })
 })
 
