@@ -2,6 +2,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 
 import {
+  parseAdminFeedbackBatchDeleteBody,
   parseAdminFeedbackListQuery,
   parseAdminReplyFeedbackBody,
   parseAdminUpdateFeedbackStatusBody,
@@ -95,6 +96,41 @@ test("parseAdminFeedbackListQuery validates enums and limit", () => {
     ok: false,
     code: "VALIDATION_FAILED",
     message: "page 必须是大于等于 1 的整数。",
+  })
+})
+
+test("parseAdminFeedbackBatchDeleteBody validates selected ids", () => {
+  const empty = parseAdminFeedbackBatchDeleteBody({
+    ids: [],
+  })
+
+  assert.deepEqual(empty, {
+    ok: false,
+    code: "VALIDATION_FAILED",
+    message: "至少选择 1 条工单。",
+  })
+
+  const invalid = parseAdminFeedbackBatchDeleteBody({
+    ids: ["ticket-1", "   "],
+  })
+
+  assert.deepEqual(invalid, {
+    ok: false,
+    code: "VALIDATION_FAILED",
+    message: "ids 中存在不合法的工单 ID。",
+  })
+
+  const valid = parseAdminFeedbackBatchDeleteBody({
+    ids: ["  ticket-1  ", "ticket-2"],
+  })
+
+  assert.equal(valid.ok, true)
+  if (!valid.ok) {
+    return
+  }
+
+  assert.deepEqual(valid.data, {
+    ids: ["ticket-1", "ticket-2"],
   })
 })
 

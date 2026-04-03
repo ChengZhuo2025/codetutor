@@ -14,8 +14,12 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { StatePanel } from "@/components/ui/state-panel"
 import { ADMIN_ROUTES } from "@/constants/routes"
-import { adminBffFetch } from "@/lib/api/admin-bff-client"
-import type { ApiResponse } from "@/lib/api/types"
+import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
+import {
+  adminRequestData,
+  getAdminApiErrorMessage,
+  isAdminSessionExpiredError,
+} from "@/lib/api/admin-bff-client"
 
 type AdminChangePasswordDialogProps = {
   open: boolean
@@ -29,6 +33,9 @@ export function AdminChangePasswordDialog({ open, onOpenChange }: AdminChangePas
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [authExpired, setAuthExpired] = useState(false)
+
+  useAdminSessionExpiryRedirect(authExpired)
 
   const resetForm = () => {
     setCurrentPassword("")
@@ -55,24 +62,22 @@ export function AdminChangePasswordDialog({ open, onOpenChange }: AdminChangePas
     setIsSubmitting(true)
 
     try {
-      const response = await adminBffFetch("/admin/auth/change-password", {
-        method: "POST",
-        body: JSON.stringify({ currentPassword, newPassword }),
-      })
-
-      const json = (await response.json()) as ApiResponse<{ success: true }>
-
-      if (json.code !== "OK") {
-        setErrorMessage(json.message || "修改失败")
-        return
-      }
+      await adminRequestData<{ success: true }>(
+        "/admin/auth/change-password",
+        {
+          method: "POST",
+          body: JSON.stringify({ currentPassword, newPassword }),
+        },
+        "修改失败",
+      )
 
       resetForm()
       onOpenChange(false)
       router.replace(ADMIN_ROUTES.login)
       router.refresh()
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : "修改失败")
+      setAuthExpired(isAdminSessionExpiredError(e))
+      setErrorMessage(getAdminApiErrorMessage(e, "修改失败"))
     } finally {
       setIsSubmitting(false)
     }

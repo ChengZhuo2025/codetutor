@@ -1,5 +1,6 @@
 import { z } from "zod"
 import {
+  type AdminFeedbackBatchDeleteRequest,
   FEEDBACK_PRIORITIES,
   FEEDBACK_SOURCES,
   FEEDBACK_STATUSES,
@@ -316,6 +317,40 @@ export function parseAdminUpdateFeedbackStatusBody(
 
   return ok({
     status: shape.data.status as (typeof FEEDBACK_STATUSES)[number],
+  })
+}
+
+const adminFeedbackBatchDeleteBodyShapeSchema = z.object({
+  ids: z.array(z.unknown()),
+})
+
+export function parseAdminFeedbackBatchDeleteBody(
+  input: unknown,
+): ValidationResult<AdminFeedbackBatchDeleteRequest> {
+  const shape = adminFeedbackBatchDeleteBodyShapeSchema.safeParse(input)
+
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "管理员批量删除请求体不合法。")
+  }
+
+  const ids = shape.data.ids
+    .map((value) => (typeof value === "string" ? value.trim() : ""))
+    .filter((value) => value.length > 0)
+
+  if (ids.length === 0) {
+    return fail("VALIDATION_FAILED", "至少选择 1 条工单。")
+  }
+
+  if (ids.length !== shape.data.ids.length) {
+    return fail("VALIDATION_FAILED", "ids 中存在不合法的工单 ID。")
+  }
+
+  if (ids.length > 100) {
+    return fail("VALIDATION_FAILED", "单次最多只能删除 100 条工单。")
+  }
+
+  return ok({
+    ids,
   })
 }
 

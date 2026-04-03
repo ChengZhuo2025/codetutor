@@ -106,6 +106,22 @@ export type AdminFeedbackListResponseData = {
   stats: AdminFeedbackListStats
 }
 
+export type AdminFeedbackUserSnapshot = {
+  avatarUrl: string | null
+  nickname: string | null
+  email: string | null
+  currentScore: number
+  currentRank: string | null
+  streakDays: number
+  activePlanName: string | null
+  primaryToolName: string | null
+  learningLevelLabel: string | null
+  completedTaskCount: number
+  lastLearningAt: string | null
+  totalTicketCount: number
+  createdAt: string | null
+}
+
 export type AdminFeedbackTicketDetailResponseData = FeedbackTicketDetail & {
   userId: string
   userNicknameSnapshot: string | null
@@ -113,6 +129,7 @@ export type AdminFeedbackTicketDetailResponseData = FeedbackTicketDetail & {
   userContactEmailSnapshot: string | null
   priority: FeedbackPriority
   source: string | null
+  userSnapshot: AdminFeedbackUserSnapshot
 }
 
 export type AdminReplyFeedbackRequest = {
@@ -122,4 +139,19 @@ export type AdminReplyFeedbackRequest = {
 
 export type AdminUpdateFeedbackStatusRequest = {
   status: FeedbackStatus
+}
+
+export type AdminFeedbackBatchDeleteRequest = {
+  ids: string[]
+}
+
+export type AdminFeedbackBatchDeleteResponseData = {
+  deletedCount: number
+  deletedIds: string[]
+}
+
+export type AdminFeedbackUserSnapshotResponseData = {
+  ticketId: string
+  userId: string
+  userSnapshot: AdminFeedbackUserSnapshot
 }

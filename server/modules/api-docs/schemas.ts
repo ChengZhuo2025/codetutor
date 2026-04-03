@@ -1031,6 +1031,24 @@ export const adminFeedbackListResponseDataSchema = z
   })
   .openapi("AdminFeedbackListResponseData")
 
+export const adminFeedbackUserSnapshotSchema = z
+  .object({
+    avatarUrl: z.string().nullable(),
+    nickname: z.string().nullable(),
+    email: z.string().nullable(),
+    currentScore: z.number().int().nonnegative(),
+    currentRank: z.string().nullable(),
+    streakDays: z.number().int().nonnegative(),
+    activePlanName: z.string().nullable(),
+    primaryToolName: z.string().nullable(),
+    learningLevelLabel: z.string().nullable(),
+    completedTaskCount: z.number().int().nonnegative(),
+    lastLearningAt: z.string().nullable(),
+    totalTicketCount: z.number().int().nonnegative(),
+    createdAt: z.string().nullable(),
+  })
+  .openapi("AdminFeedbackUserSnapshot")
+
 export const adminFeedbackTicketDetailResponseDataSchema = z
   .object({
     id: z.string(),
@@ -1051,6 +1069,7 @@ export const adminFeedbackTicketDetailResponseDataSchema = z
     userContactEmailSnapshot: z.string().nullable(),
     priority: feedbackPrioritySchema,
     source: z.string().nullable(),
+    userSnapshot: adminFeedbackUserSnapshotSchema,
   })
   .openapi("AdminFeedbackTicketDetailResponseData")
 
@@ -1079,9 +1098,30 @@ export const adminUpdateFeedbackStatusRequestSchema = z
   })
   .openapi("AdminUpdateFeedbackStatusRequest")
 
+export const adminFeedbackBatchDeleteRequestSchema = z
+  .object({
+    ids: z.array(z.string()).min(1),
+  })
+  .openapi("AdminFeedbackBatchDeleteRequest")
+
 export const adminFeedbackDeleteOkDataSchema = z
   .object({ deleted: z.literal(true) })
   .openapi("AdminFeedbackDeleteOkData")
+
+export const adminFeedbackBatchDeleteResponseDataSchema = z
+  .object({
+    deletedCount: z.number().int().nonnegative(),
+    deletedIds: z.array(z.string()),
+  })
+  .openapi("AdminFeedbackBatchDeleteResponseData")
+
+export const adminFeedbackUserSnapshotResponseDataSchema = z
+  .object({
+    ticketId: z.string(),
+    userId: z.string(),
+    userSnapshot: adminFeedbackUserSnapshotSchema,
+  })
+  .openapi("AdminFeedbackUserSnapshotResponseData")
 
 export const openApiStreamResponseSchema = z
   .string()

@@ -8,6 +8,12 @@ import { feedbackPriorityLabels, feedbackTypeLabels } from "../data/status-confi
 import type { AdminFeedbackListResponseData } from "@/lib/api/contracts/feedback"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
+import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
+import {
+  adminRequestData,
+  getAdminApiErrorMessage,
+  isAdminSessionExpiredError,
+} from "@/lib/api/admin-bff-client"
 
 function formatSubmittedAt(iso: string) {
   const d = new Date(iso)
@@ -39,6 +45,9 @@ export function FeedbackList() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [batchDeleting, setBatchDeleting] = useState(false)
+  const [authExpired, setAuthExpired] = useState(false)
+
+  useAdminSessionExpiryRedirect(authExpired)
 
   const listItems = data?.items ?? []
   const stats = data?.stats ?? EMPTY_STATS
@@ -65,20 +74,19 @@ export function FeedbackList() {
       }
       params.append("limit", limit)
       params.append("page", String(page))
-      const response = await fetch(`/api/admin/feedback?${params.toString()}`, {
-        cache: "no-store",
-        credentials: "include",
-      })
-      const result = await response.json()
+      const result = await adminRequestData<AdminFeedbackListResponseData>(
+        `/admin/feedback?${params.toString()}`,
+        {
+          method: "GET",
+        },
+        "获取反馈列表失败",
+      )
 
-      if (result.code !== "OK") {
-        throw new Error(result.message || "获取反馈列表失败")
-      }
-
-      setData(result.data as AdminFeedbackListResponseData)
+      setData(result)
       setSelectedIds([])
     } catch (fetchError) {
-      setError(fetchError instanceof Error ? fetchError.message : "网络请求失败")
+      setAuthExpired(isAdminSessionExpiredError(fetchError))
+      setError(getAdminApiErrorMessage(fetchError, "网络请求失败"))
     } finally {
       setIsLoading(false)
     }
@@ -121,17 +129,17 @@ export function FeedbackList() {
     }
     setDeletingId(ticketId)
     try {
-      const response = await fetch(`/api/admin/feedback/${ticketId}`, {
-        method: "DELETE",
-        credentials: "include",
-      })
-      const result = await response.json()
-      if (result.code !== "OK") {
-        throw new Error(result.message || "删除失败")
-      }
+      await adminRequestData<{ deleted: boolean }>(
+        `/admin/feedback/${ticketId}`,
+        {
+          method: "DELETE",
+        },
+        "删除失败",
+      )
       await fetchList()
     } catch (deleteError) {
-      window.alert(deleteError instanceof Error ? deleteError.message : "删除失败")
+      setAuthExpired(isAdminSessionExpiredError(deleteError))
+      window.alert(getAdminApiErrorMessage(deleteError, "删除失败"))
     } finally {
       setDeletingId(null)
     }
@@ -146,19 +154,21 @@ export function FeedbackList() {
     }
     setBatchDeleting(true)
     try {
-      for (const id of selectedIds) {
-        const response = await fetch(`/api/admin/feedback/${id}`, {
-          method: "DELETE",
-          credentials: "include",
-        })
-        const result = await response.json()
-        if (result.code !== "OK") {
-          throw new Error(result.message || `删除工单 ${id} 失败`)
-        }
-      }
+      await adminRequestData<{ deletedCount: number; deletedIds: string[] }>(
+        "/admin/feedback/batch-delete",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            ids: selectedIds,
+          }),
+        },
+        "批量删除失败",
+      )
+      setSelectedIds([])
       await fetchList()
     } catch (batchError) {
-      window.alert(batchError instanceof Error ? batchError.message : "批量删除失败")
+      setAuthExpired(isAdminSessionExpiredError(batchError))
+      window.alert(getAdminApiErrorMessage(batchError, "批量删除失败"))
     } finally {
       setBatchDeleting(false)
     }
@@ -232,19 +242,19 @@ export function FeedbackList() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <div className="rounded-lg border border-border bg-card px-4 py-3">
-          <p className="text-xs text-muted-foreground">总工单</p>
+          <p className="text-sm text-muted-foreground">总工单</p>
           <p className="mt-1 text-xl font-semibold text-foreground">{stats.ticketTotal}</p>
         </div>
         <div className="rounded-lg border border-border bg-card px-4 py-3">
-          <p className="text-xs text-muted-foreground">待处理</p>
+          <p className="text-sm text-muted-foreground">待处理</p>
           <p className="mt-1 text-xl font-semibold text-chart-2">{stats.pending}</p>
         </div>
         <div className="rounded-lg border border-border bg-card px-4 py-3">
-          <p className="text-xs text-muted-foreground">处理中</p>
+          <p className="text-sm text-muted-foreground">处理中</p>
           <p className="mt-1 text-xl font-semibold text-chart-3">{stats.inReview}</p>
         </div>
         <div className="rounded-lg border border-border bg-card px-4 py-3">
-          <p className="text-xs text-muted-foreground">高优先级</p>
+          <p className="text-sm text-muted-foreground">高优先级</p>
           <p className="mt-1 text-xl font-semibold text-destructive">{stats.highPriority}</p>
         </div>
       </div>
@@ -336,14 +346,14 @@ export function FeedbackList() {
                     aria-label="全选当前列表"
                   />
                 </th>
-                <th className="w-[14%] px-3 py-3 text-left text-xs font-medium text-muted-foreground">工单号</th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground">标题</th>
-                <th className="w-[14%] px-3 py-3 text-left text-xs font-medium text-muted-foreground">用户</th>
-                <th className="w-[10%] px-3 py-3 text-left text-xs font-medium text-muted-foreground">类型</th>
-                <th className="w-[8%] px-3 py-3 text-left text-xs font-medium text-muted-foreground">优先级</th>
-                <th className="w-[9%] px-3 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
-                <th className="w-[11%] px-3 py-3 text-left text-xs font-medium text-muted-foreground">创建时间</th>
-                <th className="w-[120px] px-3 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
+                <th className="w-[12%] px-3 py-3 text-left text-sm font-medium text-muted-foreground">工单号</th>
+                <th className="px-3 py-3 text-left text-sm font-medium text-muted-foreground">标题</th>
+                <th className="w-[12%] px-3 py-3 text-left text-sm font-medium text-muted-foreground">用户</th>
+                <th className="w-[10%] px-3 py-3 text-left text-sm font-medium text-muted-foreground">类型</th>
+                <th className="w-[8%] px-3 py-3 text-left text-sm font-medium text-muted-foreground">优先级</th>
+                <th className="w-[9%] px-3 py-3 text-left text-sm font-medium text-muted-foreground">状态</th>
+                <th className="w-[10%] px-3 py-3 text-left text-sm font-medium text-muted-foreground">创建时间</th>
+                <th className="w-[130px] px-3 py-3 text-right text-sm font-medium text-muted-foreground">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -360,7 +370,7 @@ export function FeedbackList() {
                   </td>
                   <td className="px-3 py-3 align-middle">
                     <span
-                      className="font-mono text-[11px] text-muted-foreground break-all"
+                      className="font-mono text-sm line-clamp-1 text-muted-foreground break-all"
                       title={item.id}
                     >
                       {item.id}
@@ -388,17 +398,17 @@ export function FeedbackList() {
                           {(item.userNicknameSnapshot || "?").slice(0, 1)}
                         </div>
                       )}
-                      <span className="truncate text-xs text-muted-foreground">
+                      <span className="truncate text-sm text-muted-foreground">
                         {item.userNicknameSnapshot || "未知用户"}
                       </span>
                     </div>
                   </td>
-                  <td className="px-3 py-3 align-middle text-xs text-muted-foreground">
+                  <td className="px-3 py-3 align-middle text-sm text-muted-foreground">
                     {feedbackTypeLabels[item.feedbackType]}
                   </td>
                   <td className="px-3 py-3 align-middle">
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-sm font-medium ${
                         item.priority === "high"
                           ? "bg-destructive/15 text-destructive"
                           : item.priority === "medium"
@@ -411,7 +421,7 @@ export function FeedbackList() {
                   </td>
                   <td className="px-3 py-3 align-middle">
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-sm font-medium ${
                         item.status === "submitted"
                           ? "bg-chart-2/20 text-chart-2"
                           : item.status === "in_review"
@@ -424,7 +434,7 @@ export function FeedbackList() {
                       {item.statusLabel}
                     </span>
                   </td>
-                  <td className="px-3 py-3 align-middle text-xs text-muted-foreground whitespace-nowrap">
+                  <td className="px-3 py-3 align-middle text-sm text-muted-foreground whitespace-nowrap">
                     {formatSubmittedAt(item.submittedAt)}
                   </td>
                   <td className="px-3 py-3 align-middle text-right">
@@ -432,7 +442,7 @@ export function FeedbackList() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 px-2 text-xs hover:bg-primary/15 hover:border-primary/40"
+                        className="h-8 px-2 text-sm hover:bg-primary/15 hover:border-primary/40"
                         asChild
                       >
                         <Link href={`/admin/feedback/${item.id}`}>详情</Link>
@@ -440,7 +450,7 @@ export function FeedbackList() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 px-2 text-xs text-destructive hover:border-destructive/40 hover:bg-destructive/12 hover:text-destructive"
+                        className="h-8 px-2 text-sm text-destructive hover:border-destructive/40 hover:bg-destructive/12 hover:text-destructive"
                         disabled={deletingId === item.id}
                         onClick={() => void handleDeleteOne(item.id)}
                       >
@@ -454,7 +464,7 @@ export function FeedbackList() {
           </table>
 
           <div className="flex flex-col gap-3 border-t border-border bg-muted/20 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <span>
                 每页
                 <select
@@ -463,7 +473,7 @@ export function FeedbackList() {
                     setPage(1)
                     setLimit(e.target.value)
                   }}
-                  className="mx-1 h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground"
+                  className="mx-1 h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground"
                 >
                   <option value="20">20</option>
                   <option value="50">50</option>

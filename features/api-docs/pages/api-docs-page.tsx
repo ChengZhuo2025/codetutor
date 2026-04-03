@@ -1,11 +1,14 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
 import { StatePanel } from "@/components/ui/state-panel"
-import { ADMIN_ROUTES, ROUTES } from "@/constants/routes"
 import { SwaggerApiViewer } from "@/features/api-docs/components/swagger-api-viewer"
-import { apiFetch } from "@/lib/api/client"
+import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
+import {
+  adminBffFetch,
+  getAdminApiErrorMessage,
+  isAdminSessionExpiredError,
+} from "@/lib/api/admin-bff-client"
 
 const TAG_GUIDES = [
   {
@@ -174,10 +177,12 @@ type ApiDocsState =
     }
 
 export function ApiDocsPage() {
-  const router = useRouter()
   const [state, setState] = useState<ApiDocsState>({
     status: "loading",
   })
+  const [authExpired, setAuthExpired] = useState(false)
+
+  useAdminSessionExpiryRedirect(authExpired)
   const tagOperationCounts = useMemo(() => {
     if (state.status !== "success") {
       return new Map<string, number>()
@@ -208,48 +213,40 @@ export function ApiDocsPage() {
     let cancelled = false
 
     async function loadSpec() {
-      const response = await apiFetch("/docs/openapi", {
-        method: "GET",
-      })
+      try {
+        const response = await adminBffFetch(
+          "/docs/openapi",
+          {
+            method: "GET",
+          },
+          "加载接口文档失败。",
+        )
 
-      if (cancelled) {
-        return
-      }
+        if (cancelled) {
+          return
+        }
 
-      if (response.status === 401) {
-        router.replace(`${ADMIN_ROUTES.login}?next=${encodeURIComponent(ROUTES.apiDocs)}`)
-        return
-      }
+        const spec = (await response.json()) as Record<string, unknown>
 
-      if (!response.ok) {
-        let message = "加载接口文档失败。"
-
-        try {
-          const body = (await response.json()) as { message?: string }
-          if (typeof body.message === "string" && body.message.trim()) {
-            message = body.message
-          }
-        } catch {
-          // Ignore JSON parsing errors and keep fallback message.
+        if (cancelled) {
+          return
         }
 
         setState({
-          status: "error",
-          message,
+          status: "success",
+          spec,
         })
-        return
+      } catch (error) {
+        if (cancelled) {
+          return
+        }
+
+        setAuthExpired(isAdminSessionExpiredError(error))
+        setState({
+          status: "error",
+          message: getAdminApiErrorMessage(error, "加载接口文档失败。"),
+        })
       }
-
-      const spec = (await response.json()) as Record<string, unknown>
-
-      if (cancelled) {
-        return
-      }
-
-      setState({
-        status: "success",
-        spec,
-      })
     }
 
     void loadSpec()
@@ -257,7 +254,7 @@ export function ApiDocsPage() {
     return () => {
       cancelled = true
     }
-  }, [router])
+  }, [])
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.14),_transparent_32%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] px-4 py-8 sm:px-6 lg:px-8">

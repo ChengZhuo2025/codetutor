@@ -2,20 +2,21 @@
 
 ## Purpose
 
-This folder captures the SQL needed to bring the MVP Postgres schema live inside the Aliyun Supabase project. The Supabase dashboard (SQL editor) is the current runner for these scripts.
+This folder captures the SQL needed to bring the MVP Postgres schema live inside the Aliyun Supabase project.
 
 ## How to apply
 
-1. Open the Supabase dashboard for your project and navigate to **SQL Editor**.
+1. Prefer the repo helper command: `pnpm db:run:file -- <sql-file>`.
 2. Execute each migration file in sequence, starting with `supabase/migrations/001_init.sql`.
 3. For an existing project that has already run `001_init.sql`, execute only the next unapplied file, such as `002_fix_update_updated_at_search_path.sql`.
-4. Confirm no errors appear and then refresh `Table Editor` or rerun Security Advisor to verify the change.
+4. If you need manual execution, you can also open the Supabase dashboard and run the same SQL in **SQL Editor**.
+5. Confirm no errors appear and then refresh `Table Editor` or rerun Security Advisor to verify the change.
 
 Repeat the same steps for later migrations, keeping a new sequential file under this directory and updating this README if the workflow changes.
 
 ## Current sequence
 
-As of the current AI orchestration work, the migration sequence now continues through:
+As of the current MVP snapshot, the migration sequence now continues through:
 
 1. `001_init.sql`
 2. `002_fix_update_updated_at_search_path.sql`
@@ -33,3 +34,5 @@ As of the current AI orchestration work, the migration sequence now continues th
 14. `014_create_ai_agent_registry.sql`
 15. `015_create_ai_skill_registry.sql`
 16. `016_create_llm_invocations.sql`
+17. `017_create_admin_accounts.sql`
+18. `018_create_learning_material_plan_tables.sql`

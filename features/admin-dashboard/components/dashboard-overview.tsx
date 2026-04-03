@@ -4,6 +4,12 @@ import { useEffect, useState } from "react"
 import type { AdminDashboardOverviewResponseData } from "@/lib/api/contracts/admin"
 import { LayoutDashboard, Users, CheckSquare, BookOpen, Calendar } from "lucide-react"
 import { StatePanel } from "@/components/ui/state-panel"
+import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
+import {
+  adminRequestData,
+  getAdminApiErrorMessage,
+  isAdminSessionExpiredError,
+} from "@/lib/api/admin-bff-client"
 
 interface MetricCardProps {
   title: string
@@ -38,28 +44,30 @@ export function DashboardOverview() {
   const [data, setData] = useState<AdminDashboardOverviewResponseData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [authExpired, setAuthExpired] = useState(false)
+
+  useAdminSessionExpiryRedirect(authExpired)
 
   useEffect(() => {
     async function fetchOverview() {
       try {
-        const response = await fetch("/api/admin/dashboard/overview", {
-          cache: "no-store",
-        })
-        const result = await response.json()
-
-        if (result.code !== "OK") {
-          throw new Error(result.message || "获取看板数据失败")
-        }
-
-        setData(result.data as AdminDashboardOverviewResponseData)
+        const result = await adminRequestData<AdminDashboardOverviewResponseData>(
+          "/admin/dashboard/overview",
+          {
+            method: "GET",
+          },
+          "获取看板数据失败",
+        )
+        setData(result)
       } catch (error) {
-        setError(error instanceof Error ? error.message : "网络请求失败")
+        setAuthExpired(isAdminSessionExpiredError(error))
+        setError(getAdminApiErrorMessage(error, "网络请求失败"))
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchOverview()
+    void fetchOverview()
   }, [])
 
   if (error) {

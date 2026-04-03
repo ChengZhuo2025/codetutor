@@ -1,7 +1,10 @@
 import type {
+  AdminFeedbackBatchDeleteResponseData,
   AdminFeedbackListResponseData,
   AdminFeedbackListStats,
   AdminFeedbackTicketDetailResponseData,
+  AdminFeedbackUserSnapshot,
+  AdminFeedbackUserSnapshotResponseData,
   AdminReplyFeedbackRequest,
   AdminUpdateFeedbackStatusRequest,
   CreateFeedbackRequest,
@@ -14,6 +17,8 @@ import type {
   FeedbackTicketListItem,
   FeedbackType,
 } from "@/lib/api/contracts/feedback"
+import { getLearningLevelLabel } from "@/constants/learning-taxonomy"
+import { getRankName } from "@/constants/ranks"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
 
@@ -48,6 +53,13 @@ type FeedbackReplyRow = {
 type UserProfileSnapshotRow = {
   nickname: string | null
   contact_email: string | null
+  avatar_url?: string | null
+  primary_tool_id?: string | null
+  learning_level?: "beginner" | "intermediate" | "advanced" | null
+  current_rank_code?: string | null
+  current_score?: number | null
+  streak_days?: number | null
+  last_learning_at?: string | null
 }
 
 const FEEDBACK_TYPE_LABEL_MAP: Record<FeedbackType, string> = {
@@ -109,6 +121,105 @@ async function getAuthUserSnapshot(userId: string) {
   return {
     phone: normalizeOptionalString(data.user?.phone),
     email: normalizeOptionalString(data.user?.email),
+  }
+}
+
+async function buildAdminFeedbackUserSnapshot(
+  userId: string,
+  fallbacks: {
+    nicknameSnapshot: string | null
+    emailSnapshot: string | null
+  },
+): Promise<AdminFeedbackUserSnapshot> {
+  const supabase = createSupabaseAdminClient()
+
+  const [profileRes, countRes, activePathRes, completedCountRes, authUserRes] = await Promise.all([
+    supabase
+      .from("user_profiles")
+      .select(
+        "nickname, contact_email, avatar_url, primary_tool_id, learning_level, current_rank_code, current_score, streak_days, last_learning_at",
+      )
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("feedback_tickets")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId),
+    supabase
+      .from("user_learning_paths")
+      .select("path_name_snapshot")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("user_tasks")
+      .select("id", {
+        count: "exact",
+        head: true,
+      })
+      .eq("user_id", userId)
+      .eq("status", "completed"),
+    supabase.auth.admin.getUserById(userId),
+  ])
+
+  assertSupabaseSuccess(profileRes.error, "failed to query user profile for admin feedback detail")
+  assertSupabaseSuccess(countRes.error, "failed to count user feedback tickets for admin detail")
+  assertSupabaseSuccess(activePathRes.error, "failed to query active learning path for admin detail")
+  assertSupabaseSuccess(completedCountRes.error, "failed to count completed tasks for admin detail")
+  assertSupabaseSuccess(authUserRes.error, "failed to query auth user for admin feedback detail")
+
+  const profile = profileRes.data as
+    | UserProfileSnapshotRow
+    | null
+  const activePath = activePathRes.data as { path_name_snapshot: string | null } | null
+
+  const authEmail = normalizeOptionalString(authUserRes.data.user?.email)
+  const createdRaw = authUserRes.data.user?.created_at
+  const createdAt =
+    createdRaw != null && createdRaw !== ""
+      ? toIsoDate(typeof createdRaw === "string" ? createdRaw : String(createdRaw))
+      : null
+  const lastLearningAt = profile?.last_learning_at ? toIsoDate(profile.last_learning_at) : null
+  const currentScore = profile?.current_score ?? 0
+  const streakDays = profile?.streak_days ?? 0
+  const currentRank = profile?.current_rank_code
+    ? getRankName(profile.current_rank_code)
+    : null
+  const learningLevelLabel = profile?.learning_level
+    ? getLearningLevelLabel(profile.learning_level, "short")
+    : null
+  let primaryToolName: string | null = null
+
+  if (profile?.primary_tool_id) {
+    const { data: tool, error: toolError } = await supabase
+      .from("learning_tools")
+      .select("name")
+      .eq("id", profile.primary_tool_id)
+      .maybeSingle()
+
+    assertSupabaseSuccess(toolError, "failed to query primary tool for admin feedback detail")
+    primaryToolName = normalizeOptionalString((tool as { name?: string | null } | null)?.name)
+  }
+
+  return {
+    avatarUrl: normalizeOptionalString(profile?.avatar_url),
+    nickname: normalizeOptionalString(profile?.nickname) ?? fallbacks.nicknameSnapshot,
+    email:
+      normalizeOptionalString(profile?.contact_email)
+      ?? authEmail
+      ?? fallbacks.emailSnapshot,
+    currentScore,
+    currentRank,
+    streakDays,
+    activePlanName: normalizeOptionalString(activePath?.path_name_snapshot),
+    primaryToolName,
+    learningLevelLabel,
+    completedTaskCount: completedCountRes.count ?? 0,
+    lastLearningAt,
+    totalTicketCount: countRes.count ?? 0,
+    createdAt,
   }
 }
 
@@ -462,6 +573,14 @@ export async function getAdminFeedbackDetail(
   const ticket = data as FeedbackTicketRow
   const repliesByTicketId = await getFeedbackReplies([ticket.id])
 
+  const nicknameSnapshot = normalizeOptionalString(ticket.user_nickname_snapshot)
+  const emailSnapshot = normalizeOptionalString(ticket.user_contact_email_snapshot)
+
+  const userSnapshot = await buildAdminFeedbackUserSnapshot(ticket.user_id, {
+    nicknameSnapshot,
+    emailSnapshot,
+  })
+
   return {
     id: ticket.id,
     userId: ticket.user_id,
@@ -474,13 +593,14 @@ export async function getAdminFeedbackDetail(
     title: ticket.title,
     content: ticket.content,
     contactMethod: normalizeOptionalString(ticket.contact_method),
-    userNicknameSnapshot: normalizeOptionalString(ticket.user_nickname_snapshot),
+    userNicknameSnapshot: nicknameSnapshot,
     userPhoneSnapshot: normalizeOptionalString(ticket.user_phone_snapshot),
-    userContactEmailSnapshot: normalizeOptionalString(ticket.user_contact_email_snapshot),
+    userContactEmailSnapshot: emailSnapshot,
     submittedAt: toIsoDate(ticket.submitted_at),
     updatedAt: toIsoDate(ticket.updated_at),
     lastReplyAt: ticket.last_reply_at ? toIsoDate(ticket.last_reply_at) : null,
     replies: (repliesByTicketId.get(ticket.id) ?? []).map(mapReplyRow),
+    userSnapshot,
   }
 }
 
@@ -574,4 +694,65 @@ export async function adminDeleteFeedback(ticketId: string): Promise<boolean> {
   assertSupabaseSuccess(error, "failed to delete feedback ticket")
 
   return Array.isArray(data) && data.length > 0
+}
+
+export async function adminBatchDeleteFeedback(
+  ticketIds: string[],
+): Promise<AdminFeedbackBatchDeleteResponseData> {
+  const supabase = createSupabaseAdminClient()
+  const normalizedIds = Array.from(
+    new Set(ticketIds.map((id) => id.trim()).filter((id) => id.length > 0)),
+  )
+
+  const { data, error } = await supabase
+    .from("feedback_tickets")
+    .delete()
+    .in("id", normalizedIds)
+    .select("id")
+
+  assertSupabaseSuccess(error, "failed to batch delete feedback tickets")
+
+  const deletedIds = Array.isArray(data)
+    ? (data as Array<{ id: string }>).map((item) => item.id)
+    : []
+
+  return {
+    deletedCount: deletedIds.length,
+    deletedIds,
+  }
+}
+
+export async function getAdminFeedbackUserSnapshot(
+  ticketId: string,
+): Promise<AdminFeedbackUserSnapshotResponseData | null> {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("feedback_tickets")
+    .select("id, user_id, user_nickname_snapshot, user_contact_email_snapshot")
+    .eq("id", ticketId)
+    .maybeSingle()
+
+  assertSupabaseSuccess(error, "failed to query admin feedback user snapshot")
+
+  if (!data) {
+    return null
+  }
+
+  const ticket = data as {
+    id: string
+    user_id: string
+    user_nickname_snapshot: string | null
+    user_contact_email_snapshot: string | null
+  }
+
+  const userSnapshot = await buildAdminFeedbackUserSnapshot(ticket.user_id, {
+    nicknameSnapshot: normalizeOptionalString(ticket.user_nickname_snapshot),
+    emailSnapshot: normalizeOptionalString(ticket.user_contact_email_snapshot),
+  })
+
+  return {
+    ticketId: ticket.id,
+    userId: ticket.user_id,
+    userSnapshot,
+  }
 }

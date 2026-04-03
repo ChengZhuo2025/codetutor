@@ -9,9 +9,11 @@ import {
   createProfileMePatchHandler,
 } from "../server/modules/auth/route-handler.ts"
 import {
+  createAdminFeedbackBatchDeletePostHandler,
   createAdminFeedbackDetailGetHandler,
   createAdminFeedbackListGetHandler,
   createAdminReplyFeedbackPostHandler,
+  createAdminFeedbackUserSnapshotGetHandler,
   createAdminUpdateFeedbackStatusPostHandler,
   createCreateFeedbackPostHandler,
   createMyFeedbackDetailGetHandler,
@@ -478,6 +480,64 @@ test("admin feedback detail route preserves route id validation", async () => {
   assert.deepEqual(await response.json(), {
     code: "BAD_REQUEST",
     message: "反馈单 ID 不合法。",
+    data: null,
+  })
+})
+
+test("admin feedback user-snapshot route preserves route id validation", async () => {
+  const handler = createAdminFeedbackUserSnapshotGetHandler({
+    getRequestAdmin: () => ({
+      ok: true,
+      adminId: "admin-1",
+    }),
+    getAdminFeedbackUserSnapshot: async () => {
+      throw new Error("should not load user snapshot when route id is invalid")
+    },
+  })
+
+  const response = await handler(
+    new Request("http://localhost:3000/api/admin/feedback/%20/user-snapshot", {
+      method: "GET",
+    }) as never,
+    {
+      params: Promise.resolve({
+        id: "   ",
+      }),
+    },
+  )
+
+  assert.equal(response.status, 400)
+  assert.deepEqual(await response.json(), {
+    code: "BAD_REQUEST",
+    message: "反馈单 ID 不合法。",
+    data: null,
+  })
+})
+
+test("admin feedback batch-delete route preserves validation message for empty ids", async () => {
+  const handler = createAdminFeedbackBatchDeletePostHandler({
+    getRequestAdmin: () => ({
+      ok: true,
+      adminId: "admin-1",
+    }),
+    adminBatchDeleteFeedback: async () => {
+      throw new Error("should not batch delete when payload is invalid")
+    },
+  })
+
+  const response = await handler(
+    createJsonRequest(
+      "http://localhost:3000/api/admin/feedback/batch-delete",
+      JSON.stringify({
+        ids: [],
+      }),
+    ),
+  )
+
+  assert.equal(response.status, 400)
+  assert.deepEqual(await response.json(), {
+    code: "VALIDATION_FAILED",
+    message: "至少选择 1 条工单。",
     data: null,
   })
 })

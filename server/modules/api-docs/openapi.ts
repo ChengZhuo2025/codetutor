@@ -9,7 +9,10 @@ import {
   adminSessionResponseDataSchema,
   adminFeedbackListQuerySchema,
   adminFeedbackListResponseDataSchema,
+  adminFeedbackBatchDeleteRequestSchema,
+  adminFeedbackBatchDeleteResponseDataSchema,
   adminFeedbackTicketDetailResponseDataSchema,
+  adminFeedbackUserSnapshotResponseDataSchema,
   adminReplyFeedbackRequestSchema,
   adminFeedbackDeleteOkDataSchema,
   adminUpdateFeedbackStatusRequestSchema,
@@ -137,6 +140,32 @@ const adminFeedbackDetailExample = {
   userContactEmailSnapshot: "bao@example.com",
   priority: "medium",
   source: "settings_popover",
+  userSnapshot: {
+    avatarUrl: "https://cdn.example.com/avatar/user-123.png",
+    nickname: "Bao",
+    email: "bao@example.com",
+    currentScore: 1240,
+    currentRank: "AI 建造者",
+    streakDays: 6,
+    activePlanName: "Cursor 入门训练营",
+    primaryToolName: "Cursor",
+    learningLevelLabel: "零基础",
+    completedTaskCount: 12,
+    lastLearningAt: EXAMPLE_LATER,
+    totalTicketCount: 3,
+    createdAt: EXAMPLE_NOW,
+  },
+}
+
+const adminFeedbackUserSnapshotExample = {
+  ticketId: "ticket-1",
+  userId: "user-123",
+  userSnapshot: adminFeedbackDetailExample.userSnapshot,
+}
+
+const adminFeedbackBatchDeleteExample = {
+  deletedCount: 2,
+  deletedIds: ["ticket-1", "ticket-2"],
 }
 
 const successExamples = {
@@ -1795,6 +1824,44 @@ registry.registerPath({
 })
 
 registry.registerPath({
+  method: "post",
+  path: "/api/admin/feedback/batch-delete",
+  operationId: "postAdminFeedbackBatchDelete",
+  tags: ["admin-feedback"],
+  summary: "批量删除反馈工单",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminFeedbackBatchDeleteRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminFeedbackBatchDeleteResponseDataSchema,
+      "AdminFeedbackBatchDeleteResponse",
+      "反馈工单批量删除成功",
+      adminFeedbackBatchDeleteExample,
+      "feedback batch deleted",
+    ),
+    ...commonErrorResponses(["400", "403", "500"], {
+      "400": {
+        description: "批量删除请求体格式不正确，或 ids 未通过校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "至少选择 1 条工单。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
   method: "get",
   path: "/api/admin/feedback/{id}",
   operationId: "getAdminFeedbackDetail",
@@ -1810,6 +1877,27 @@ registry.registerPath({
       "AdminFeedbackDetailResponse",
       "管理员反馈详情读取成功",
       successExamples.adminFeedbackDetail,
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/feedback/{id}/user-snapshot",
+  operationId: "getAdminFeedbackUserSnapshot",
+  tags: ["admin-feedback"],
+  summary: "获取反馈关联用户快照",
+  security: [],
+  request: {
+    params: routeIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminFeedbackUserSnapshotResponseDataSchema,
+      "AdminFeedbackUserSnapshotResponse",
+      "反馈关联用户快照读取成功",
+      adminFeedbackUserSnapshotExample,
     ),
     ...commonErrorResponses(["400", "403", "404", "500"]),
   },

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { Camera, Loader2 } from "lucide-react"
 import {
   Dialog,
@@ -19,11 +20,16 @@ import type {
   UploadProfileAvatarResponseData,
   UpdateProfileMeRequest,
 } from "@/lib/api/contracts/auth"
-import { adminBffFetch, adminRequestData } from "@/lib/api/admin-bff-client"
+import {
+  adminRequestData,
+  getAdminApiErrorMessage,
+  isAdminSessionExpiredError,
+} from "@/lib/api/admin-bff-client"
 import {
   PROFILE_AVATAR_ALLOWED_TYPES,
   PROFILE_AVATAR_MAX_BYTES,
 } from "@/lib/supabase/storage"
+import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 
 type AdminProfileEditDialogProps = {
   open: boolean
@@ -32,6 +38,7 @@ type AdminProfileEditDialogProps = {
 }
 
 export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminProfileEditDialogProps) {
+  const router = useRouter()
   const [nickname, setNickname] = useState("")
   const [email, setEmail] = useState("")
   const [avatarUrl, setAvatarUrl] = useState("")
@@ -41,7 +48,10 @@ export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminPro
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [authExpired, setAuthExpired] = useState(false)
   const avatarFileInputRef = useRef<HTMLInputElement>(null)
+
+  useAdminSessionExpiryRedirect(authExpired)
 
   useEffect(() => {
     if (!open) {
@@ -55,7 +65,14 @@ export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminPro
       setIsLoading(true)
       setErrorMessage(null)
       try {
-        const data = await adminRequestData<ProfileMeResponseData>("/profile/me")
+        const data = await adminRequestData<ProfileMeResponseData>(
+          "/profile/me",
+          {
+            method: "GET",
+          },
+          "加载资料失败",
+        )
+
         if (cancelled) {
           return
         }
@@ -66,7 +83,8 @@ export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminPro
         setPreservedBio(data.bio ?? null)
       } catch (e) {
         if (!cancelled) {
-          setErrorMessage(e instanceof Error ? e.message : "加载资料失败")
+          setAuthExpired(isAdminSessionExpiredError(e))
+          setErrorMessage(getAdminApiErrorMessage(e, "加载资料失败"))
         }
       } finally {
         if (!cancelled) {
@@ -109,24 +127,19 @@ export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminPro
       const formData = new FormData()
       formData.append("file", file)
 
-      const response = await adminBffFetch("/profile/avatar", {
-        method: "POST",
-        body: formData,
-      })
+      const result = await adminRequestData<UploadProfileAvatarResponseData>(
+        "/profile/avatar",
+        {
+          method: "POST",
+          body: formData,
+        },
+        "头像上传失败",
+      )
 
-      const result = (await response.json()) as {
-        code: string
-        message: string
-        data: UploadProfileAvatarResponseData | null
-      }
-
-      if (result.code !== "OK" || !result.data) {
-        throw new Error(result.message || "头像上传失败")
-      }
-
-      setAvatarUrl(result.data.avatarUrl)
+      setAvatarUrl(result.avatarUrl)
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : "头像上传失败")
+      setAuthExpired(isAdminSessionExpiredError(e))
+      setErrorMessage(getAdminApiErrorMessage(e, "头像上传失败"))
     } finally {
       setIsUploadingAvatar(false)
     }
@@ -160,14 +173,21 @@ export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminPro
     }
 
     try {
-      await adminRequestData<ProfileMeResponseData>("/profile/me", {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-      })
+      await adminRequestData<ProfileMeResponseData>(
+        "/profile/me",
+        {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        },
+        "保存失败",
+      )
+
       onOpenChange(false)
       onSaved?.()
+      router.refresh()
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : "保存失败")
+      setAuthExpired(isAdminSessionExpiredError(e))
+      setErrorMessage(getAdminApiErrorMessage(e, "保存失败"))
     } finally {
       setIsSaving(false)
     }

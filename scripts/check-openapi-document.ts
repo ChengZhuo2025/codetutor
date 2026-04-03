@@ -16,7 +16,7 @@ test("openapi document covers all registered api operations and special transpor
     ),
   )
 
-  assert.equal(operations.length, 39)
+  assert.equal(operations.length, 41)
 
   assert.ok(paths["/api/auth/login"]?.post)
   assert.ok(paths["/api/profile/me"]?.get)
@@ -34,7 +34,9 @@ test("openapi document covers all registered api operations and special transpor
   assert.ok(paths["/api/admin/profile/me"]?.patch)
   assert.ok(paths["/api/admin/profile/avatar"]?.post)
   assert.ok(paths["/api/admin/feedback/{id}"]?.delete)
+  assert.ok(paths["/api/admin/feedback/batch-delete"]?.post)
   assert.ok(paths["/api/admin/feedback/{id}/reply"]?.post)
+  assert.ok(paths["/api/admin/feedback/{id}/user-snapshot"]?.get)
   assert.ok(paths["/api/admin/auth/change-password"]?.post)
 
   const avatarPost = paths["/api/profile/avatar"]?.post as

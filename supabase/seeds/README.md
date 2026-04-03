@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This folder holds the idempotent SQL scripts that populate the MVP dictionary tables (`learning_tools`, `learning_paths`, `path_steps`) and a reference developer record that exercises the main `/learn`, `/progress`, and `/history` flows.
+This folder holds the idempotent SQL scripts that populate the MVP dictionary tables (`learning_tools`, `learning_paths`, `path_steps`), demo user data, AI registry bootstrap data, and the planner agent used by the self-directed material-plan flow.
 
-## Execution order
+## Default execution order
 
 1. `supabase/seeds/001_dictionary.sql` – run once (or whenever you refresh the dictionary). It is safe to rerun because each `INSERT` uses `ON CONFLICT` to update the existing rows.
 2. `supabase/seeds/003_onboarding_tool_expansion.sql` – run after `001_dictionary.sql` when you want the onboarding tool list to match the full 9-tool frontend prototype. It adds the missing CLI / online tools plus a minimal preset path and self-study path for each tool.
@@ -13,6 +13,17 @@ This folder holds the idempotent SQL scripts that populate the MVP dictionary ta
 5. `supabase/seeds/005_ai_provider_and_model_registry.sql` – run after `012-016` AI migrations are applied. It seeds the first SiliconFlow provider row plus the phase-1 model registry (`deepseek-v3-2`, `glm-5`, `deepseek-r1`).
 6. `supabase/seeds/006_ai_agent_and_binding_registry.sql` – run after `005_ai_provider_and_model_registry.sql`. It seeds the first batch of teaching agents, helper agents, and path / tool-level binding rules.
 7. `supabase/seeds/007_ai_skill_registry.sql` – run after `006_ai_agent_and_binding_registry.sql`. It seeds the first batch of built-in skill packs plus agent-to-skill bindings. Make sure the local `ai/skills/` directory exists and stays aligned with the seeded paths.
+8. `supabase/seeds/008_material_plan_planner_agent.sql` – run after `018_create_learning_material_plan_tables.sql` and after the AI provider/model registry is ready. It seeds `agent_templates.code = self-study-material-planner`, which is required by `POST /api/learning/plan-from-material` and the plan draft regenerate/confirm flow.
+
+Recommended execution command:
+
+- `pnpm db:run:file -- <sql-file>`
+
+## Optional manual seeds
+
+- `supabase/seeds/001_create_admin_seeds.sql` is not part of the default bootstrap chain. Run it only after `017_create_admin_accounts.sql` is applied and after you have manually created a real Supabase Auth admin user.
+- Before running `001_create_admin_seeds.sql`, replace the placeholder `v_test_user_id` in the file with the real `auth.users.id`. Otherwise the insert will fail or point at a non-existent test user.
+- After the admin seed is applied, you may later change the admin display name, email, or password through normal admin/Auth operations. When verifying whether equivalent seed data already exists, do not rely on the default display name `测试管理员`; instead, check whether `public.admin_accounts` contains a valid admin row and whether it is bound to `super_admin` in `public.admin_account_roles`.
 
 ## 改种子数据还是写迁移？
 
@@ -32,5 +43,8 @@ This folder holds the idempotent SQL scripts that populate the MVP dictionary ta
 - `005_ai_provider_and_model_registry.sql` seeds the first AI provider registry used by the planned learning orchestration backend. `deepseek-r1` is intentionally marked for manual test use only and should not become the default production route.
 - `006_ai_agent_and_binding_registry.sql` seeds the first batch of agent templates and routing bindings for current seeded paths and tools. It intentionally does not seed skill packs yet; those will follow once the local `ai/skills` directory structure is created.
 - `007_ai_skill_registry.sql` seeds the first batch of built-in skill packs and agent skill bindings. The database paths in that seed point to the checked-in `ai/skills/` directory in this repository.
+- `008_material_plan_planner_agent.sql` seeds the dedicated planner agent for the current self-directed material-plan flow. If it is missing, the planner runtime will fail with `planner agent self-study-material-planner not configured`.
+- `001_create_admin_seeds.sql` is a manual helper script for a test admin account. It intentionally is not safe to run blindly because it depends on a real Auth user ID outside the repository.
+- For admin seed verification, the authoritative check is whether the remote database already has usable `admin_accounts` data plus the expected role binding, not whether the original seed nickname is unchanged.
 - The user script inserts `user_profiles`, `user_learning_preferences`, `user_learning_paths`, and `user_tasks`; it assumes the referenced path and tools already exist (hence the execution order).
 - Rerun the user script only when you want to reset the demo user’s progress—it updates the same rows via `ON CONFLICT`.

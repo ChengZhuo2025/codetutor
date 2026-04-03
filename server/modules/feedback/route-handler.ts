@@ -1,4 +1,8 @@
 import {
+  jsonError,
+  jsonSuccess,
+} from "../../lib/route-response.ts"
+import {
   jsonFeedbackRecordNotFound,
   jsonFeedbackTicketNotFound,
   jsonInvalidAdminReplyBody,
@@ -6,16 +10,10 @@ import {
   jsonInvalidFeedbackTicketId,
   ROUTE_ERROR_MESSAGES,
 } from "../../lib/route-error-presets.ts"
+import { jsonInternalErrorFromError } from "../../lib/route-error.ts"
+import { jsonAdminAuthError, jsonAuthRequired } from "../../lib/route-response.ts"
 import {
-  jsonInternalErrorFromError,
-} from "../../lib/route-error.ts"
-import {
-  jsonAdminAuthError,
-  jsonAuthRequired,
-  jsonError,
-  jsonSuccess,
-} from "../../lib/route-response.ts"
-import {
+  parseAdminFeedbackBatchDeleteBody,
   parseAdminFeedbackListQuery,
   parseAdminReplyFeedbackBody,
   parseAdminUpdateFeedbackStatusBody,
@@ -302,6 +300,69 @@ export function createAdminFeedbackDeleteHandler(dependencies: {
       return jsonSuccess({ deleted: true }, "feedback deleted")
     } catch (error) {
       return jsonInternalErrorFromError(error, "管理员删除反馈失败")
+    }
+  }
+}
+
+export function createAdminFeedbackBatchDeletePostHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  adminBatchDeleteFeedback: (ticketIds: string[]) => Promise<unknown>
+}) {
+  return async function POST(request: RequestLike) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+
+      if (!admin.ok) {
+        return jsonAdminAuthError(admin as Exclude<RequestAdminResult, { ok: true }>)
+      }
+
+      const input = parseAdminFeedbackBatchDeleteBody(await request.json())
+
+      if (!input.ok && input.code === "VALIDATION_FAILED") {
+        return jsonError(input.code, input.message, 400)
+      }
+
+      if (!input.ok) {
+        return jsonError("BAD_REQUEST", "管理员批量删除请求体不合法。", 400)
+      }
+
+      const data = await dependencies.adminBatchDeleteFeedback(input.data.ids)
+
+      return jsonSuccess(data, "feedback batch deleted")
+    } catch (error) {
+      return jsonInternalErrorFromError(error, "管理员批量删除反馈失败")
+    }
+  }
+}
+
+export function createAdminFeedbackUserSnapshotGetHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  getAdminFeedbackUserSnapshot: (ticketId: string) => Promise<unknown>
+}) {
+  return async function GET(request: unknown, context: RouteContext) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+
+      if (!admin.ok) {
+        return jsonAdminAuthError(admin as Exclude<RequestAdminResult, { ok: true }>)
+      }
+
+      const { id } = await context.params
+      const routeId = parseRequiredRouteId(id, ROUTE_ERROR_MESSAGES.invalidFeedbackTicketId)
+
+      if (!routeId.ok) {
+        return jsonInvalidFeedbackTicketId()
+      }
+
+      const data = await dependencies.getAdminFeedbackUserSnapshot(routeId.data)
+
+      if (!data) {
+        return jsonFeedbackTicketNotFound()
+      }
+
+      return jsonSuccess(data)
+    } catch (error) {
+      return jsonInternalErrorFromError(error, "加载管理员用户快照失败")
     }
   }
 }
