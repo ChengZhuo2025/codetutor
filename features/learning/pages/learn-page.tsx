@@ -110,7 +110,7 @@ export function LearnPage() {
       asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
     >
       {sessionState.status === "success" ? (
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden">
           {sessionState.data.planSummary.selectionMode === "self_directed" ? (
             <MaterialPlanPanel
               className="mx-4 shrink-0 sm:mx-6"
@@ -119,7 +119,7 @@ export function LearnPage() {
               }}
             />
           ) : null}
-          <div className="min-h-0 min-w-0 flex-1">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <LearnChat
               learningData={sessionState.data}
               onRequestRefresh={() => {
