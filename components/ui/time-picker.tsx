@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Clock } from "lucide-react"
+import { FLOATING_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
 
 type TimePickerProps = {
@@ -65,7 +66,7 @@ export function TimePicker({ id, value, onChange, className }: TimePickerProps) 
       </button>
 
       {open ? (
-        <div className="absolute left-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-white/10 bg-[oklch(0.2_0.015_250/0.98)] shadow-[0_28px_80px_-36px_rgba(0,0,0,0.95)]">
+        <div className={cn(FLOATING_DARK_PANEL_CLASS, "absolute left-0 top-full z-50 mt-2 overflow-hidden rounded-2xl")}>
           <div className="grid grid-cols-[96px_96px] divide-x divide-white/8">
             <div className="max-h-64 overflow-y-auto scrollbar-none p-2">
               {hourOptions.map((hour) => {

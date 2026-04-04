@@ -47,11 +47,19 @@ export type AdminUserExportViewRow = {
 
 export type AdminUserListItem = AdminUserExportViewRow
 
+export type AdminUserListStats = {
+  totalUsers: number
+  activePlanUsers: number
+  streakingUsers: number
+  deletedUsers: number
+}
+
 export type AdminUserListResponseData = {
   items: AdminUserListItem[]
   total: number
   page: number
   limit: number
+  stats: AdminUserListStats
 }
 
 export type AdminUserDetailResponseData = AdminUserExportViewRow

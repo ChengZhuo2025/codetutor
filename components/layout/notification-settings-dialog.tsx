@@ -12,7 +12,9 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { DIALOG_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
 import { TimePicker } from "@/components/ui/time-picker"
+import { cn } from "@/lib/utils"
 
 type NotificationSettingsDialogProps = {
   open: boolean
@@ -57,7 +59,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl border-white/10 bg-[oklch(0.2_0.015_250/0.98)] p-0 text-foreground shadow-[0_36px_100px_-48px_rgba(0,0,0,0.88)] sm:max-w-[480px]">
+      <DialogContent className={cn(DIALOG_DARK_PANEL_CLASS, "max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-[480px]")}>
         <div className="overflow-hidden rounded-2xl">
           <div className="border-b border-white/10 px-5 py-4">
             <DialogHeader>

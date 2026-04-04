@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 import { FeedbackDialog } from "@/components/layout/feedback-dialog"
 import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog"
 import { NotificationSettingsDialog } from "@/components/layout/notification-settings-dialog"
+import { FLOATING_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth"
 
 const settingsItems: Array<{
@@ -106,7 +107,7 @@ export function SettingsPopover({ onProfileSaved }: SettingsPopoverProps) {
         </button>
 
         {open && (
-          <div className="absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-[20px] border border-white/10 bg-[oklch(0.2_0.015_250/0.98)] shadow-[0_32px_80px_-36px_rgba(0,0,0,0.9)]">
+          <div className={cn(FLOATING_DARK_PANEL_CLASS, "absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-[20px]")}>
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
               <span className="text-sm font-semibold">设置</span>
               <button

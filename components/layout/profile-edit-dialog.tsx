@@ -28,6 +28,8 @@ import {
   getAvatarStoragePathFromUrl,
 } from "@/lib/supabase/storage"
 import { dispatchProfileUpdated } from "@/lib/profile/events"
+import { DIALOG_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
+import { cn } from "@/lib/utils"
 
 type ProfileEditDialogProps = {
   open: boolean
@@ -302,7 +304,7 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl border-white/10 bg-[oklch(0.2_0.015_250/0.98)] p-0 text-foreground shadow-[0_36px_100px_-48px_rgba(0,0,0,0.88)] sm:max-w-[560px]">
+      <DialogContent className={cn(DIALOG_DARK_PANEL_CLASS, "max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-[560px]")}>
         <div className="overflow-hidden rounded-2xl">
           <div className="border-b border-white/10 px-5 py-4">
             <DialogHeader>

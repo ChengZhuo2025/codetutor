@@ -82,6 +82,12 @@ test("admin user list returns 200 with mock data", async () => {
       total: 1,
       page: 1,
       limit: 20,
+      stats: {
+        totalUsers: 10,
+        activePlanUsers: 6,
+        streakingUsers: 4,
+        deletedUsers: 1,
+      },
     }),
   })
   const res = await handler(new Request("http://localhost/api/admin/users"))
@@ -89,6 +95,7 @@ test("admin user list returns 200 with mock data", async () => {
   const body = await res.json()
   assert.equal(body.code, "OK")
   assert.equal(body.data.items.length, 1)
+  assert.equal(body.data.stats.totalUsers, 10)
 })
 
 test("admin user export returns csv", async () => {

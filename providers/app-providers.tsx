@@ -5,6 +5,8 @@ import {
   useContext,
 } from "react"
 import { Analytics } from "@vercel/analytics/next"
+import { AppConfirmProvider } from "@/components/app-feedback/app-confirm-provider"
+import { AppToastProvider } from "@/components/app-feedback/app-toast-provider"
 import { APP_EVENT_CHANNEL } from "@/constants/events"
 import type { AppEventName } from "@/constants/events"
 
@@ -39,8 +41,12 @@ function trackEvent(name: AppEventName, payload?: TrackEventPayload) {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <AppEventContext.Provider value={{ trackEvent }}>
-      {children}
-      <Analytics />
+      <AppToastProvider>
+        <AppConfirmProvider>
+          {children}
+          <Analytics />
+        </AppConfirmProvider>
+      </AppToastProvider>
     </AppEventContext.Provider>
   )
 }

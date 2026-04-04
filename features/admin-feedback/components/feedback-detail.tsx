@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import type { AdminFeedbackTicketDetailResponseData, FeedbackStatus } from "@/lib/api/contracts/feedback"
 import { FEEDBACK_SOURCES } from "@/lib/api/contracts/feedback"
+import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
 import { ADMIN_ROUTES } from "@/constants/routes"
@@ -72,6 +73,7 @@ const SOURCE_LABEL: Record<(typeof FEEDBACK_SOURCES)[number], string> = {
 }
 
 export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
+  const confirm = useAppConfirm()
   const router = useRouter()
   const [data, setData] = useState<AdminFeedbackTicketDetailResponseData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -172,9 +174,18 @@ export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
   }
 
   const handleDelete = async () => {
-    if (!window.confirm("确定删除该工单？删除后不可恢复。")) {
+    const confirmed = await confirm.confirm({
+      title: "确定删除该工单？",
+      description: "删除后不可恢复，请确认是否继续。",
+      confirmText: "删除工单",
+      cancelText: "取消",
+      destructive: true,
+    })
+
+    if (!confirmed) {
       return
     }
+
     setIsDeleting(true)
     setError(null)
     try {

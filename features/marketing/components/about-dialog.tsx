@@ -14,6 +14,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { DIALOG_DARK_GRADIENT_PANEL_CLASS } from "@/components/ui/surface-styles"
+import { cn } from "@/lib/utils"
 
 type AboutDialogProps = {
   triggerClassName?: string
@@ -56,7 +58,7 @@ export function AboutDialog({
           {triggerLabel}
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl rounded-[32px] border-white/10 bg-[linear-gradient(180deg,oklch(0.22_0.02_235/0.98),oklch(0.17_0.015_250/0.98))] p-0 text-foreground shadow-[0_36px_100px_-48px_rgba(0,0,0,0.88)] sm:max-w-[680px]">
+      <DialogContent className={cn(DIALOG_DARK_GRADIENT_PANEL_CLASS, "max-w-4xl rounded-[32px] sm:max-w-[680px]")}>
         <div className="overflow-hidden rounded-[32px]">
           <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.16),transparent_46%)] px-6 py-5 sm:px-8">
             <DialogHeader>

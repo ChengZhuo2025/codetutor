@@ -6,6 +6,9 @@ import type { AdminFeedbackListItem } from "@/lib/api/contracts/feedback"
 import {
   buildUserDetailFeedbackSummary,
   buildUserListStats,
+  formatAdminLearningLevelLabel,
+  formatAdminRankLabel,
+  formatAdminSelectionModeLabel,
   getUserTaskCompletionPercent,
 } from "@/features/admin-users/lib/view-model"
 
@@ -164,4 +167,10 @@ test("buildUserDetailFeedbackSummary computes totals and latest ticket from feed
   assert.equal(summary.pending, 2)
   assert.equal(summary.latestTicket?.id, "ticket-3")
   assert.equal(summary.latestTicket?.title, "任务判题有误")
+})
+
+test("admin user enum formatters map raw codes to Chinese labels", () => {
+  assert.equal(formatAdminLearningLevelLabel("intermediate"), "有基础")
+  assert.equal(formatAdminSelectionModeLabel("preset_training"), "闯关模式")
+  assert.equal(formatAdminRankLabel("apprentice"), "AI 学徒")
 })

@@ -8,7 +8,6 @@ import {
   BookOpen,
   Flame,
   Loader2,
-  Mail,
   MessageSquare,
   ShieldAlert,
   Target,
@@ -16,12 +15,11 @@ import {
 } from "lucide-react"
 import type { AdminUserDetailResponseData } from "@/lib/api/contracts/admin-users"
 import type { AdminFeedbackListResponseData } from "@/lib/api/contracts/feedback"
+import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider"
+import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
 import { ADMIN_ROUTES } from "@/constants/routes"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
@@ -29,7 +27,13 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
-import { buildUserDetailFeedbackSummary, getUserTaskCompletionPercent } from "../lib/view-model"
+import {
+  buildUserDetailFeedbackSummary,
+  formatAdminLearningLevelLabel,
+  formatAdminRankLabel,
+  formatAdminSelectionModeLabel,
+  getUserTaskCompletionPercent,
+} from "../lib/view-model"
 
 type UserDetailProps = {
   userId: string
@@ -107,30 +111,6 @@ function getPlanStatusMeta(data: AdminUserDetailResponseData) {
   }
 }
 
-function formatSelectionModeLabel(selectionMode: string | null) {
-  switch (selectionMode) {
-    case "self_directed":
-      return "自学模式"
-    case "preset_training":
-      return "预设训练"
-    default:
-      return selectionMode ?? "未标注"
-  }
-}
-
-function formatLearningLevelLabel(learningLevel: string | null) {
-  switch (learningLevel) {
-    case "beginner":
-      return "初级"
-    case "intermediate":
-      return "中级"
-    case "advanced":
-      return "高级"
-    default:
-      return learningLevel ?? "未标注"
-  }
-}
-
 function SummaryCard({
   label,
   value,
@@ -164,6 +144,8 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 export function UserDetail({ userId }: UserDetailProps) {
+  const confirm = useAppConfirm()
+  const toast = useAppToast()
   const [data, setData] = useState<AdminUserDetailResponseData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -174,27 +156,10 @@ export function UserDetail({ userId }: UserDetailProps) {
   const [feedbackLoading, setFeedbackLoading] = useState(true)
   const [feedbackError, setFeedbackError] = useState<string | null>(null)
 
-  const [nickname, setNickname] = useState("")
-  const [bio, setBio] = useState("")
-  const [contactEmail, setContactEmail] = useState("")
-  const [wechat, setWechat] = useState("")
-  const [contentLanguage, setContentLanguage] = useState("")
-  const [onboardingCompleted, setOnboardingCompleted] = useState(false)
-
-  const [saving, setSaving] = useState(false)
   const [softDeleting, setSoftDeleting] = useState(false)
   const [restoring, setRestoring] = useState(false)
 
   useAdminSessionExpiryRedirect(authExpired)
-
-  const hydrateForm = useCallback((detail: AdminUserDetailResponseData) => {
-    setNickname(detail.nickname ?? "")
-    setBio(detail.bio ?? "")
-    setContactEmail(detail.contactEmail ?? "")
-    setWechat(detail.wechat ?? "")
-    setContentLanguage(detail.contentLanguage ?? "zh-CN")
-    setOnboardingCompleted(Boolean(detail.onboardingCompleted))
-  }, [])
 
   const fetchDetail = useCallback(async () => {
     setIsLoading(true)
@@ -206,14 +171,13 @@ export function UserDetail({ userId }: UserDetailProps) {
         "获取用户详情失败",
       )
       setData(result)
-      hydrateForm(result)
     } catch (fetchError) {
       setAuthExpired(isAdminSessionExpiredError(fetchError))
       setError(getAdminApiErrorMessage(fetchError, "网络请求失败"))
     } finally {
       setIsLoading(false)
     }
-  }, [hydrateForm, userId])
+  }, [userId])
 
   const fetchFeedbackSummary = useCallback(async () => {
     setFeedbackLoading(true)
@@ -238,67 +202,58 @@ export function UserDetail({ userId }: UserDetailProps) {
     void fetchFeedbackSummary()
   }, [fetchDetail, fetchFeedbackSummary])
 
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      const result = await adminRequestData<AdminUserDetailResponseData>(
-        `/admin/users/${userId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nickname: nickname.trim(),
-            bio: bio.trim() || null,
-            contactEmail: contactEmail.trim() || null,
-            wechat: wechat.trim() || null,
-            contentLanguage: contentLanguage.trim() || undefined,
-            onboardingCompleted,
-          }),
-        },
-        "保存失败",
-      )
-      setData(result)
-      hydrateForm(result)
-      window.alert("已保存")
-    } catch (saveError) {
-      setAuthExpired(isAdminSessionExpiredError(saveError))
-      window.alert(getAdminApiErrorMessage(saveError, "保存失败"))
-    } finally {
-      setSaving(false)
-    }
-  }
-
   const handleSoftDelete = async () => {
-    const reason = window.prompt("软删除原因（可选）") ?? ""
-    if (!window.confirm("确认软删除该用户？其将无法再使用主站功能。")) {
+    const promptResult = await confirm.prompt({
+      title: "确认软删除该用户？",
+      description: "软删除后，该用户将无法继续使用主站功能。你可以补充本次删除原因。",
+      confirmText: "确认软删除",
+      cancelText: "取消",
+      destructive: true,
+      input: {
+        label: "软删除原因（可选）",
+        placeholder: "可填写本次删除原因，留空也可继续",
+        defaultValue: "",
+        multiline: true,
+      },
+    })
+
+    if (!promptResult.confirmed) {
       return
     }
+
     setSoftDeleting(true)
     try {
-      const result = await adminRequestData<AdminUserDetailResponseData>(
+      const response = await adminRequestData<AdminUserDetailResponseData>(
         `/admin/users/${userId}/soft-delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reason: reason.trim() || null }),
+          body: JSON.stringify({ reason: promptResult.value.trim() || null }),
         },
         "软删除失败",
       )
-      setData(result)
-      hydrateForm(result)
-      window.alert("已软删除")
+      setData(response)
+      toast.success("已软删除")
     } catch (softDeleteError) {
       setAuthExpired(isAdminSessionExpiredError(softDeleteError))
-      window.alert(getAdminApiErrorMessage(softDeleteError, "软删除失败"))
+      toast.error(getAdminApiErrorMessage(softDeleteError, "软删除失败"))
     } finally {
       setSoftDeleting(false)
     }
   }
 
   const handleRestore = async () => {
-    if (!window.confirm("确认恢复该用户？")) {
+    const confirmed = await confirm.confirm({
+      title: "确认恢复该用户？",
+      description: "恢复后，该用户将重新获得主站使用权限。",
+      confirmText: "确认恢复",
+      cancelText: "取消",
+    })
+
+    if (!confirmed) {
       return
     }
+
     setRestoring(true)
     try {
       const result = await adminRequestData<AdminUserDetailResponseData>(
@@ -311,11 +266,10 @@ export function UserDetail({ userId }: UserDetailProps) {
         "恢复失败",
       )
       setData(result)
-      hydrateForm(result)
-      window.alert("已恢复")
+      toast.success("已恢复")
     } catch (restoreError) {
       setAuthExpired(isAdminSessionExpiredError(restoreError))
-      window.alert(getAdminApiErrorMessage(restoreError, "恢复失败"))
+      toast.error(getAdminApiErrorMessage(restoreError, "恢复失败"))
     } finally {
       setRestoring(false)
     }
@@ -394,7 +348,7 @@ export function UserDetail({ userId }: UserDetailProps) {
               ) : null}
             </div>
             <div className="mt-2 space-y-1">
-              <p className="font-mono text-xs text-muted-foreground break-all">{data.userId}</p>
+              <p className="font-mono text-xs break-all text-muted-foreground">{data.userId}</p>
               <p className="text-sm text-muted-foreground">
                 {data.contactEmail || data.authEmail || "暂无邮箱"}
                 {data.authPhone ? ` · ${data.authPhone}` : ""}
@@ -428,7 +382,7 @@ export function UserDetail({ userId }: UserDetailProps) {
         <SummaryCard
           label="当前积分"
           value={data.currentScore ?? 0}
-          hint={`当前段位 ${data.currentRankCode ?? "未定级"}`}
+          hint={`当前段位 ${formatAdminRankLabel(data.currentRankCode)}`}
           icon={Target}
         />
         <SummaryCard
@@ -473,11 +427,12 @@ export function UserDetail({ userId }: UserDetailProps) {
               <div className="rounded-2xl border border-border bg-card p-5">
                 <div className="flex items-center gap-2">
                   <UserRound className="h-4 w-4 text-primary" />
-                  <h2 className="text-base font-semibold text-foreground">运营概览</h2>
+                  <h2 className="text-base font-semibold text-foreground">用户概览</h2>
                 </div>
                 <dl className="mt-4 divide-y divide-border">
                   <InfoRow label="主工具" value={data.primaryToolName ?? "未设置"} />
                   <InfoRow label="内容语言" value={data.contentLanguage ?? "zh-CN"} />
+                  <InfoRow label="当前段位" value={formatAdminRankLabel(data.currentRankCode)} />
                   <InfoRow label="最近学习" value={formatDateTime(data.lastLearningAt)} />
                   <InfoRow label="注册时间" value={formatDateTime(data.profileCreatedAt)} />
                   <InfoRow label="资料更新时间" value={formatDateTime(data.profileUpdatedAt)} />
@@ -506,7 +461,7 @@ export function UserDetail({ userId }: UserDetailProps) {
                       {data.activePathName ?? "暂无进行中计划"}
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {formatLearningLevelLabel(data.activePathLearningLevel)} · {formatSelectionModeLabel(data.activePathSelectionMode)}
+                      {formatAdminLearningLevelLabel(data.activePathLearningLevel)} · {formatAdminSelectionModeLabel(data.activePathSelectionMode)}
                     </p>
                   </div>
                   <div>
@@ -581,10 +536,10 @@ export function UserDetail({ userId }: UserDetailProps) {
                       当前完成率 {completionPercent}%
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      学习等级：{formatLearningLevelLabel(data.activePathLearningLevel)}
+                      学习等级：{formatAdminLearningLevelLabel(data.activePathLearningLevel)}
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      路径模式：{formatSelectionModeLabel(data.activePathSelectionMode)}
+                      路径模式：{formatAdminSelectionModeLabel(data.activePathSelectionMode)}
                     </p>
                   </div>
                 </div>
@@ -700,64 +655,11 @@ export function UserDetail({ userId }: UserDetailProps) {
 
         <div className="space-y-4">
           <div className="rounded-2xl border border-border bg-card p-5">
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-primary" />
-              <h2 className="text-base font-semibold text-foreground">运营侧资料编辑</h2>
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              保留管理员修正入口，但不再作为详情页主视图。
-            </p>
-            <div className="mt-4 space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="nickname">昵称</Label>
-                <Input id="nickname" value={nickname} onChange={(event) => setNickname(event.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="bio">简介</Label>
-                <Textarea id="bio" rows={4} value={bio} onChange={(event) => setBio(event.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="contactEmail">联系邮箱</Label>
-                <Input
-                  id="contactEmail"
-                  type="email"
-                  value={contactEmail}
-                  onChange={(event) => setContactEmail(event.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="wechat">微信</Label>
-                <Input id="wechat" value={wechat} onChange={(event) => setWechat(event.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="contentLanguage">界面语言</Label>
-                <Input
-                  id="contentLanguage"
-                  value={contentLanguage}
-                  onChange={(event) => setContentLanguage(event.target.value)}
-                />
-              </div>
-              <label className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
-                <input
-                  type="checkbox"
-                  checked={onboardingCompleted}
-                  onChange={(event) => setOnboardingCompleted(event.target.checked)}
-                  className="h-4 w-4 rounded border-border"
-                />
-                已完成新手引导
-              </label>
-              <Button type="button" className="w-full" onClick={() => void handleSave()} disabled={saving}>
-                {saving ? "保存中…" : "保存修改"}
-              </Button>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-border bg-card p-5">
             <h2 className="text-base font-semibold text-foreground">只读快照</h2>
             <dl className="mt-4 space-y-1">
               <InfoRow label="当前计划" value={data.activePathName ?? "暂无"} />
-              <InfoRow label="计划模式" value={formatSelectionModeLabel(data.activePathSelectionMode)} />
-              <InfoRow label="学习等级" value={formatLearningLevelLabel(data.activePathLearningLevel)} />
+              <InfoRow label="计划模式" value={formatAdminSelectionModeLabel(data.activePathSelectionMode)} />
+              <InfoRow label="学习等级" value={formatAdminLearningLevelLabel(data.activePathLearningLevel)} />
               <InfoRow label="主工具" value={data.primaryToolName ?? "未设置"} />
             </dl>
           </div>
@@ -765,7 +667,7 @@ export function UserDetail({ userId }: UserDetailProps) {
           <div className="rounded-2xl border border-border bg-card p-5">
             <h2 className="text-base font-semibold text-foreground">账号操作</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              仅保留受控的软删除与恢复动作，避免误操作影响学习主链路。
+              编辑入口已独立到列表页抽屉，这里只保留受控的账号状态操作。
             </p>
             <Separator className="my-4" />
             {!data.deletedAt ? (

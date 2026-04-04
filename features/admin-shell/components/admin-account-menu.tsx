@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { ChevronRight, KeyRound, LogOut, UserPen } from "lucide-react"
 import type { AdminSessionResponseData } from "@/lib/api/contracts/admin"
 import { ADMIN_ROUTES } from "@/constants/routes"
+import { FLOATING_LIGHT_PANEL_CLASS } from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
 import { AdminProfileEditDialog } from "./admin-profile-edit-dialog"
 import { AdminChangePasswordDialog } from "./admin-change-password-dialog"
@@ -128,7 +129,10 @@ export function AdminAccountMenu({ session }: AdminAccountMenuProps) {
 
       {menuOpen ? (
         <div
-          className="absolute right-0 top-[calc(100%+6px)] z-50 w-44 min-w-[10.5rem] overflow-hidden rounded-xl border border-border/80 bg-popover p-1 shadow-lg shadow-black/20"
+          className={cn(
+            FLOATING_LIGHT_PANEL_CLASS,
+            "absolute right-0 top-[calc(100%+6px)] z-50 w-44 min-w-[10.5rem] overflow-hidden rounded-xl p-1",
+          )}
           role="menu"
         >
           <MenuRow

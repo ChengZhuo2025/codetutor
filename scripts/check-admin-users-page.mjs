@@ -11,16 +11,27 @@ const detailSource = readFileSync(
   "utf8",
 )
 
-assert.match(
-  listSource,
-  /当前筛选用户/,
-  "The admin users list should expose the top-level filtered user metric card",
+const editSheetSource = readFileSync(
+  new URL("../features/admin-users/components/user-edit-sheet.tsx", import.meta.url),
+  "utf8",
 )
 
 assert.match(
   listSource,
-  /本页已完成引导/,
-  "The admin users list should surface onboarding completion stats in the top card row",
+  /总用户数/,
+  "The admin users list should expose a global total-users metric card",
+)
+
+assert.match(
+  listSource,
+  /进行中计划/,
+  "The admin users list should surface global active-plan stats in the top card row",
+)
+
+assert.doesNotMatch(
+  listSource,
+  /本页样本|本页有进行中计划|本页连续打卡|本页已删除/,
+  "The admin users list top cards should no longer present page-sample wording",
 )
 
 assert.match(
@@ -31,8 +42,38 @@ assert.match(
 
 assert.match(
   listSource,
-  /查看工单|工单/,
-  "The admin users list should expose an operation entry to the feedback workspace",
+  /item\.authPhone \|\| "暂无手机号"/,
+  "The admin users list should prioritize phone number over user id in the user column",
+)
+
+assert.match(
+  listSource,
+  /item\.primaryToolName \?\? "未设置工具".*formatAdminLearningLevelLabel.*formatAdminSelectionModeLabel/s,
+  "The current plan column should render tool, level, and mode on the same metadata line",
+)
+
+assert.doesNotMatch(
+  listSource,
+  /全部引导状态|已完成引导|引导<\/|引导状态/,
+  "The admin users list should remove the redundant onboarding column and onboarding filter",
+)
+
+assert.match(
+  listSource,
+  /编辑/,
+  "The admin users list should expose an edit action",
+)
+
+assert.match(
+  editSheetSource,
+  /SheetContent side="right" className="w-full sm:max-w-md xl:max-w-\[26vw\]"/,
+  "The admin users edit action should open in a right-side sheet",
+)
+
+assert.match(
+  editSheetSource,
+  /手机号|当前头像仅展示，不可在此处修改。/,
+  "The admin users edit sheet should show read-only phone and avatar fields",
 )
 
 assert.match(
@@ -55,8 +96,14 @@ assert.match(
 
 assert.match(
   detailSource,
+  /账号操作|只读快照/,
+  "The admin user detail page should focus on overview content instead of embedding the edit form",
+)
+
+assert.doesNotMatch(
+  detailSource,
   /运营侧资料编辑/,
-  "The admin user detail page should keep the editable profile area as a side card instead of the main view",
+  "The admin user detail page should no longer embed the edit form directly",
 )
 
 assert.match(

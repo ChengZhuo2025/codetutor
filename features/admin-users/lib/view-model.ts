@@ -1,3 +1,5 @@
+import { getLearningLevelLabel, getSelectionModeLabel } from "@/constants/learning-taxonomy"
+import { getRankName } from "@/constants/ranks"
 import type { AdminFeedbackListItem } from "@/lib/api/contracts/feedback"
 import type { AdminUserDetailResponseData, AdminUserListItem } from "@/lib/api/contracts/admin-users"
 
@@ -50,6 +52,18 @@ export function buildUserListStats(items: AdminUserListItem[], totalMatchingUser
     streakingUsers: items.filter((item) => (item.streakDays ?? 0) > 0).length,
     deletedUsers: items.filter((item) => Boolean(item.deletedAt)).length,
   }
+}
+
+export function formatAdminLearningLevelLabel(code: string | null) {
+  return code ? getLearningLevelLabel(code, "short") : "未标注"
+}
+
+export function formatAdminSelectionModeLabel(code: string | null) {
+  return code ? getSelectionModeLabel(code, "short") : "未标注"
+}
+
+export function formatAdminRankLabel(code: string | null) {
+  return code ? getRankName(code) : "未定级"
 }
 
 export function buildUserDetailFeedbackSummary(

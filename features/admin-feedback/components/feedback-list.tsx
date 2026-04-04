@@ -6,6 +6,8 @@ import Link from "next/link"
 import { Download, Search } from "lucide-react"
 import { feedbackPriorityLabels, feedbackTypeLabels } from "../data/status-config"
 import type { AdminFeedbackListResponseData } from "@/lib/api/contracts/feedback"
+import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider"
+import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
@@ -33,6 +35,8 @@ const EMPTY_STATS = {
 }
 
 export function FeedbackList() {
+  const confirm = useAppConfirm()
+  const toast = useAppToast()
   const [data, setData] = useState<AdminFeedbackListResponseData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -125,9 +129,18 @@ export function FeedbackList() {
   }
 
   const handleDeleteOne = async (ticketId: string) => {
-    if (!window.confirm("确定删除该工单？此操作不可恢复。")) {
+    const confirmed = await confirm.confirm({
+      title: "确定删除该工单？",
+      description: "删除后不可恢复，请确认是否继续。",
+      confirmText: "删除工单",
+      cancelText: "取消",
+      destructive: true,
+    })
+
+    if (!confirmed) {
       return
     }
+
     setDeletingId(ticketId)
     try {
       await adminRequestData<{ deleted: boolean }>(
@@ -140,7 +153,7 @@ export function FeedbackList() {
       await fetchList()
     } catch (deleteError) {
       setAuthExpired(isAdminSessionExpiredError(deleteError))
-      window.alert(getAdminApiErrorMessage(deleteError, "删除失败"))
+      toast.error(getAdminApiErrorMessage(deleteError, "删除失败"))
     } finally {
       setDeletingId(null)
     }
@@ -150,9 +163,19 @@ export function FeedbackList() {
     if (selectedIds.length === 0) {
       return
     }
-    if (!window.confirm(`确定删除已选的 ${selectedIds.length} 条工单？此操作不可恢复。`)) {
+
+    const confirmed = await confirm.confirm({
+      title: `确定删除已选的 ${selectedIds.length} 条工单？`,
+      description: "批量删除后不可恢复，请确认是否继续。",
+      confirmText: "批量删除",
+      cancelText: "取消",
+      destructive: true,
+    })
+
+    if (!confirmed) {
       return
     }
+
     setBatchDeleting(true)
     try {
       await adminRequestData<{ deletedCount: number; deletedIds: string[] }>(
@@ -169,7 +192,7 @@ export function FeedbackList() {
       await fetchList()
     } catch (batchError) {
       setAuthExpired(isAdminSessionExpiredError(batchError))
-      window.alert(getAdminApiErrorMessage(batchError, "批量删除失败"))
+      toast.error(getAdminApiErrorMessage(batchError, "批量删除失败"))
     } finally {
       setBatchDeleting(false)
     }
@@ -262,7 +285,7 @@ export function FeedbackList() {
 
       <div className="rounded-lg border border-border bg-card p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-48 max-w-md">
+          <div className="relative flex-1 min-w-32 max-w-md">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               type="search"

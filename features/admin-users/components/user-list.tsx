@@ -1,22 +1,16 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import {
-  Download,
-  Flame,
-  FolderKanban,
-  Search,
-  ShieldAlert,
-  UserCheck,
-  Users,
-} from "lucide-react"
+import { Download, Flame, FolderKanban, Search, ShieldAlert, Users } from "lucide-react"
 import type {
   AdminUserDetailResponseData,
   AdminUserListItem,
   AdminUserListResponseData,
 } from "@/lib/api/contracts/admin-users"
+import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider"
+import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,11 +23,13 @@ import {
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
 import { ADMIN_ROUTES } from "@/constants/routes"
-import { buildUserListStats, getUserTaskCompletionPercent } from "../lib/view-model"
-
-function shortUserId(id: string) {
-  return `${id.replace(/-/g, "").slice(0, 8)}…`
-}
+import {
+  formatAdminLearningLevelLabel,
+  formatAdminRankLabel,
+  formatAdminSelectionModeLabel,
+  getUserTaskCompletionPercent,
+} from "../lib/view-model"
+import { UserEditSheet } from "./user-edit-sheet"
 
 function formatDateTime(iso: string | null) {
   if (!iso) {
@@ -46,20 +42,6 @@ function formatDateTime(iso: string | null) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(iso))
-}
-
-function getOnboardingMeta(onboardingCompleted: boolean | null) {
-  if (onboardingCompleted) {
-    return {
-      label: "已完成",
-      className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-    }
-  }
-
-  return {
-    label: "未完成",
-    className: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  }
 }
 
 function getPlanStatusMeta(user: AdminUserListItem) {
@@ -101,18 +83,16 @@ function getPlanStatusMeta(user: AdminUserListItem) {
         label: "有计划",
         className: "border-primary/20 bg-primary/10 text-primary",
       }
-  }
+    }
 }
 
 function ListStatCard({
   label,
   value,
-  hint,
   icon: Icon,
 }: {
   label: string
   value: number
-  hint: string
   icon: typeof Users
 }) {
   return (
@@ -122,7 +102,6 @@ function ListStatCard({
         <p className="text-xs">{label}</p>
       </div>
       <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{value}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
     </div>
   )
 }
@@ -130,42 +109,43 @@ function ListStatCard({
 function ListRowActions({
   item,
   deletingUserId,
+  onEdit,
   onSoftDelete,
 }: {
   item: AdminUserListItem
   deletingUserId: string | null
+  onEdit: (item: AdminUserListItem) => void
   onSoftDelete: (userId: string) => Promise<void>
 }) {
-  const feedbackHref = `${ADMIN_ROUTES.feedback}?userId=${encodeURIComponent(item.userId)}`
-
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
       <Button type="button" variant="outline" size="sm" className="h-8 px-2.5" asChild>
         <Link href={`${ADMIN_ROUTES.users}/${item.userId}`}>详情</Link>
       </Button>
-      <Button type="button" variant="ghost" size="sm" className="h-8 px-2.5" asChild>
-        <Link href={feedbackHref}>工单</Link>
+      <Button type="button" variant="outline" size="sm" className="h-8 px-2.5" onClick={() => onEdit(item)}>
+        编辑
       </Button>
       <Button
         type="button"
-        variant="ghost"
+        variant="outline"
         size="sm"
-        className="h-8 px-2.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        className="h-8 px-2.5 text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
         disabled={Boolean(item.deletedAt) || deletingUserId === item.userId}
         onClick={() => void onSoftDelete(item.userId)}
       >
-        {item.deletedAt ? "已软删" : deletingUserId === item.userId ? "处理中…" : "软删"}
+        {item.deletedAt ? "已删除" : deletingUserId === item.userId ? "处理中…" : "删除"}
       </Button>
     </div>
   )
 }
 
 export function UserList() {
+  const confirm = useAppConfirm()
+  const toast = useAppToast()
   const [data, setData] = useState<AdminUserListResponseData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [accountStatus, setAccountStatus] = useState<string>("active")
-  const [onboardingFilter, setOnboardingFilter] = useState<string>("all")
   const [pathFilter, setPathFilter] = useState<string>("all")
   const [keyword, setKeyword] = useState("")
   const [keywordApplied, setKeywordApplied] = useState("")
@@ -174,14 +154,21 @@ export function UserList() {
   const [exporting, setExporting] = useState(false)
   const [authExpired, setAuthExpired] = useState(false)
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
+  const [editingUser, setEditingUser] = useState<AdminUserListItem | null>(null)
+  const [editSheetOpen, setEditSheetOpen] = useState(false)
 
   useAdminSessionExpiryRedirect(authExpired)
 
   const listItems = data?.items ?? []
+  const stats = data?.stats ?? {
+    totalUsers: 0,
+    activePlanUsers: 0,
+    streakingUsers: 0,
+    deletedUsers: 0,
+  }
   const total = data?.total ?? 0
   const pageSize = Number.parseInt(limit, 10) || 20
   const totalPages = Math.max(1, Math.ceil(total / pageSize) || 1)
-  const listStats = useMemo(() => buildUserListStats(data?.items ?? [], total), [data?.items, total])
 
   const fetchList = useCallback(async () => {
     setIsLoading(true)
@@ -190,11 +177,6 @@ export function UserList() {
       const params = new URLSearchParams()
       if (accountStatus !== "active") {
         params.append("accountStatus", accountStatus)
-      }
-      if (onboardingFilter === "true") {
-        params.append("onboardingCompleted", "true")
-      } else if (onboardingFilter === "false") {
-        params.append("onboardingCompleted", "false")
       }
       if (pathFilter === "true") {
         params.append("hasActiveLearningPath", "true")
@@ -218,7 +200,7 @@ export function UserList() {
     } finally {
       setIsLoading(false)
     }
-  }, [accountStatus, keywordApplied, limit, onboardingFilter, page, pathFilter])
+  }, [accountStatus, keywordApplied, limit, page, pathFilter])
 
   useEffect(() => {
     void fetchList()
@@ -230,11 +212,6 @@ export function UserList() {
       const params = new URLSearchParams()
       if (accountStatus !== "active") {
         params.append("accountStatus", accountStatus)
-      }
-      if (onboardingFilter === "true") {
-        params.append("onboardingCompleted", "true")
-      } else if (onboardingFilter === "false") {
-        params.append("onboardingCompleted", "false")
       }
       if (pathFilter === "true") {
         params.append("hasActiveLearningPath", "true")
@@ -260,20 +237,31 @@ export function UserList() {
       URL.revokeObjectURL(url)
     } catch (exportError) {
       setAuthExpired(isAdminSessionExpiredError(exportError))
-      window.alert(getAdminApiErrorMessage(exportError, "导出失败"))
+      toast.error(getAdminApiErrorMessage(exportError, "导出失败"))
     } finally {
       setExporting(false)
     }
   }
 
   const handleSoftDeleteUser = async (userId: string) => {
-    const reason = window.prompt("软删除原因（可选）")
-    if (reason === null) {
+    const result = await confirm.prompt({
+      title: "确认删除该用户？",
+      description: "删除后该用户将无法继续使用主站功能。",
+      confirmText: "确认删除",
+      cancelText: "取消",
+      destructive: true,
+      input: {
+        label: "删除原因（可选）",
+        placeholder: "可填写本次删除原因，留空也可继续",
+        defaultValue: "",
+        multiline: true,
+      },
+    })
+
+    if (!result.confirmed) {
       return
     }
-    if (!window.confirm("确认软删除该用户？其将无法再使用主站功能。")) {
-      return
-    }
+
     setDeletingUserId(userId)
     try {
       await adminRequestData<AdminUserDetailResponseData>(
@@ -281,14 +269,15 @@ export function UserList() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reason: reason.trim() || null }),
+          body: JSON.stringify({ reason: result.value.trim() || null }),
         },
-        "软删除失败",
+        "删除失败",
       )
       await fetchList()
+      toast.success("用户已删除")
     } catch (softDeleteError) {
       setAuthExpired(isAdminSessionExpiredError(softDeleteError))
-      window.alert(getAdminApiErrorMessage(softDeleteError, "软删除失败"))
+      toast.error(getAdminApiErrorMessage(softDeleteError, "删除失败"))
     } finally {
       setDeletingUserId(null)
     }
@@ -317,9 +306,7 @@ export function UserList() {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-foreground">用户运营</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            当前筛选共 {total} 人。列表聚焦引导状态、学习计划活跃度与最近学习表现。
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">当前筛选共 {total} 人</p>
         </div>
         <Button
           type="button"
@@ -333,43 +320,33 @@ export function UserList() {
         </Button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <ListStatCard
-          label="当前筛选用户"
-          value={listStats.totalMatchingUsers}
-          hint="符合当前搜索与筛选条件"
+          label="总用户数"
+          value={stats.totalUsers}
           icon={Users}
         />
         <ListStatCard
-          label="本页样本"
-          value={listStats.visibleUsers}
-          hint="当前分页实际载入人数"
-          icon={ShieldAlert}
-        />
-        <ListStatCard
-          label="本页已完成引导"
-          value={listStats.onboardingCompletedUsers}
-          hint="可直接进入学习主链路"
-          icon={UserCheck}
-        />
-        <ListStatCard
-          label="本页有进行中计划"
-          value={listStats.activePlanUsers}
-          hint="已有 active path 的用户"
+          label="进行中计划"
+          value={stats.activePlanUsers}
           icon={FolderKanban}
         />
         <ListStatCard
-          label="本页连续打卡"
-          value={listStats.streakingUsers}
-          hint={`已软删 ${listStats.deletedUsers} 人`}
+          label="连续打卡"
+          value={stats.streakingUsers}
           icon={Flame}
+        />
+        <ListStatCard
+          label="已删除"
+          value={stats.deletedUsers}
+          icon={ShieldAlert}
         />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-56 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative flex-1 min-w-32 max-w-md">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
               placeholder="搜索昵称、邮箱、手机号、用户 UUID"
@@ -380,7 +357,7 @@ export function UserList() {
                   applySearch()
                 }
               }}
-              className="pl-9"
+              className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
           <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applySearch}>
@@ -394,21 +371,9 @@ export function UserList() {
             }}
             className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring/40"
           >
-            <option value="active">未软删</option>
-            <option value="deleted">已软删</option>
+            <option value="active">未删除</option>
+            <option value="deleted">已删除</option>
             <option value="all">全部账号</option>
-          </select>
-          <select
-            value={onboardingFilter}
-            onChange={(event) => {
-              setPage(1)
-              setOnboardingFilter(event.target.value)
-            }}
-            className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring/40"
-          >
-            <option value="all">全部引导状态</option>
-            <option value="true">已完成引导</option>
-            <option value="false">未完成引导</option>
           </select>
           <select
             value={pathFilter}
@@ -437,25 +402,22 @@ export function UserList() {
             <table className="w-full min-w-[1080px] table-fixed">
               <thead className="bg-muted/40">
                 <tr className="border-b border-border">
-                  <th className="w-[26%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                  <th className="w-[22%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">
                     用户
                   </th>
-                  <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-                    引导
-                  </th>
-                  <th className="w-[20%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                  <th className="w-[22%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">
                     当前计划
                   </th>
-                  <th className="w-[9%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                  <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">
                     连续打卡
                   </th>
-                  <th className="w-[13%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                  <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">
                     任务完成率
                   </th>
-                  <th className="w-[11%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                  <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">
                     积分 / 段位
                   </th>
-                  <th className="w-[11%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                  <th className="w-[15%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">
                     最近学习
                   </th>
                   <th className="w-[20%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
@@ -465,7 +427,6 @@ export function UserList() {
               </thead>
               <tbody className="divide-y divide-border">
                 {listItems.map((item) => {
-                  const onboardingMeta = getOnboardingMeta(item.onboardingCompleted)
                   const planStatusMeta = getPlanStatusMeta(item)
                   const completionPercent = getUserTaskCompletionPercent(item)
 
@@ -494,33 +455,23 @@ export function UserList() {
                               </p>
                               {item.deletedAt ? (
                                 <span className="rounded-full border border-destructive/20 bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
-                                  已软删
+                                  已删除
                                 </span>
                               ) : null}
                             </div>
                             <p className="truncate font-mono text-[11px] text-muted-foreground">
-                              {shortUserId(item.userId)}
+                              {item.authPhone || "暂无手机号"}
                             </p>
                             <p className="truncate text-xs text-muted-foreground">
                               {item.contactEmail || item.authEmail || item.authPhone || "暂无联系方式"}
-                            </p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              主工具：{item.primaryToolName ?? "未设置"}
                             </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-4 align-top">
-                        <span
-                          className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-medium ${onboardingMeta.className}`}
-                        >
-                          {onboardingMeta.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 align-top">
                         <div className="space-y-2">
                           <span
-                            className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-medium ${planStatusMeta.className}`}
+                            className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${planStatusMeta.className}`}
                           >
                             {planStatusMeta.label}
                           </span>
@@ -529,8 +480,7 @@ export function UserList() {
                               {item.activePathName ?? "暂无进行中计划"}
                             </p>
                             <p className="truncate text-xs text-muted-foreground">
-                              {item.activePathLearningLevel ?? "未标注等级"}
-                              {item.activePathSelectionMode ? ` · ${item.activePathSelectionMode}` : ""}
+                              {item.primaryToolName ?? "未设置工具"} · {formatAdminLearningLevelLabel(item.activePathLearningLevel)} · {formatAdminSelectionModeLabel(item.activePathSelectionMode)}
                             </p>
                           </div>
                         </div>
@@ -541,8 +491,10 @@ export function UserList() {
                             className={`h-4 w-4 ${(item.streakDays ?? 0) > 0 ? "text-orange-500" : "text-muted-foreground/40"}`}
                           />
                           <div>
-                            <p className="text-sm font-medium text-foreground">{item.streakDays ?? 0}</p>
-                            <p className="text-[11px] text-muted-foreground">连续天数</p>
+                            <p className="text-sm font-medium text-foreground">
+                              {item.streakDays ?? 0}
+                              <span className="ml-1 text-xs text-muted-foreground">天</span>
+                            </p>
                           </div>
                         </div>
                       </td>
@@ -562,7 +514,9 @@ export function UserList() {
                       </td>
                       <td className="px-4 py-4 align-top">
                         <p className="text-sm font-semibold text-foreground">{item.currentScore ?? 0}</p>
-                        <p className="text-xs text-muted-foreground">{item.currentRankCode ?? "未定级"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatAdminRankLabel(item.currentRankCode)}
+                        </p>
                       </td>
                       <td className="px-4 py-4 align-top">
                         <p className="text-sm text-foreground">{formatDateTime(item.lastLearningAt)}</p>
@@ -574,6 +528,10 @@ export function UserList() {
                         <ListRowActions
                           item={item}
                           deletingUserId={deletingUserId}
+                          onEdit={(targetUser) => {
+                            setEditingUser(targetUser)
+                            setEditSheetOpen(true)
+                          }}
                           onSoftDelete={handleSoftDeleteUser}
                         />
                       </td>
@@ -597,12 +555,27 @@ export function UserList() {
             isLoading={isLoading}
             onPrevPage={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
             onNextPage={() => setPage((currentPage) => currentPage + 1)}
-            centerContent={<span>本页显示 {listStats.visibleUsers} 人</span>}
+            centerContent={<span>当前页显示 {listItems.length} 人</span>}
           />
         </div>
       ) : (
         <StatePanel status="empty" title="暂无用户" description="尝试调整筛选条件或关键词。" />
       )}
+
+      <UserEditSheet
+        user={editingUser}
+        open={editSheetOpen}
+        onOpenChange={(open) => {
+          setEditSheetOpen(open)
+          if (!open) {
+            setEditingUser(null)
+          }
+        }}
+        onSaved={async () => {
+          await fetchList()
+        }}
+        onAuthExpired={() => setAuthExpired(true)}
+      />
     </div>
   )
 }

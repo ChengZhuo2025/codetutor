@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { DIALOG_DARK_GRADIENT_PANEL_CLASS } from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
 import type { SubscriptionSnapshot } from "@/types/profile"
 
@@ -31,7 +32,7 @@ export function SubscriptionDetailDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-h-[90vh] max-w-4xl rounded-2xl border-white/10 bg-[linear-gradient(180deg,oklch(0.22_0.02_235/0.98),oklch(0.17_0.015_250/0.98))] p-0 text-foreground shadow-[0_36px_100px_-48px_rgba(0,0,0,0.88)] overflow-y-auto scrollbar-none sm:max-w-[860px]">
+      <DialogContent className={cn(DIALOG_DARK_GRADIENT_PANEL_CLASS, "max-h-[90vh] max-w-4xl overflow-y-auto rounded-2xl scrollbar-none sm:max-w-[860px]")}>
         <div className="overflow-hidden rounded-2xl">
           {/* 头部 */}
           <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.16),transparent_46%)] px-5 py-4">

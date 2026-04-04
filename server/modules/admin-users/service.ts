@@ -2,11 +2,13 @@ import type {
   AdminUpdateUserRequest,
   AdminUserDetailResponseData,
   AdminUserListResponseData,
+  AdminUserListStats,
 } from "@/lib/api/contracts/admin-users"
 import type { AdminAuditAction } from "@/lib/api/contracts/admin"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import { isUuid } from "@/server/lib/identifiers"
+import { buildAdminUsersExportCsv } from "./export"
 
 const EXPORT_VIEW = "user_profile_export_view"
 export const ADMIN_USER_EXPORT_MAX_ROWS = 10_000
@@ -153,6 +155,29 @@ async function writeAdminUserAudit(input: {
   }
 }
 
+async function getAdminUserListStats(): Promise<AdminUserListStats> {
+  const supabase = createSupabaseAdminClient()
+
+  const [totalResult, activePlanResult, streakingResult, deletedResult] = await Promise.all([
+    supabase.from(EXPORT_VIEW).select("*", { count: "exact", head: true }),
+    supabase.from(EXPORT_VIEW).select("*", { count: "exact", head: true }).not("active_path_code", "is", null),
+    supabase.from(EXPORT_VIEW).select("*", { count: "exact", head: true }).gt("streak_days", 0),
+    supabase.from(EXPORT_VIEW).select("*", { count: "exact", head: true }).not("deleted_at", "is", null),
+  ])
+
+  assertSupabaseSuccess(totalResult.error, "failed to count total admin users")
+  assertSupabaseSuccess(activePlanResult.error, "failed to count admin users with active plans")
+  assertSupabaseSuccess(streakingResult.error, "failed to count streaking admin users")
+  assertSupabaseSuccess(deletedResult.error, "failed to count deleted admin users")
+
+  return {
+    totalUsers: totalResult.count ?? 0,
+    activePlanUsers: activePlanResult.count ?? 0,
+    streakingUsers: streakingResult.count ?? 0,
+    deletedUsers: deletedResult.count ?? 0,
+  }
+}
+
 export async function getAdminUserList(filters: ListFilters): Promise<AdminUserListResponseData> {
   const supabase = createSupabaseAdminClient()
   const limit = filters.limit
@@ -170,7 +195,7 @@ export async function getAdminUserList(filters: ListFilters): Promise<AdminUserL
   let countQuery = supabase.from(EXPORT_VIEW).select("*", { count: "exact", head: true })
   countQuery = applyViewFilters(countQuery, filterPayload) as typeof countQuery
 
-  const countResult = await countQuery
+  const [countResult, stats] = await Promise.all([countQuery, getAdminUserListStats()])
   assertSupabaseSuccess(countResult.error, "failed to count admin user list")
 
   let listQuery = supabase.from(EXPORT_VIEW).select("*").order("profile_updated_at", {
@@ -189,6 +214,7 @@ export async function getAdminUserList(filters: ListFilters): Promise<AdminUserL
     total: countResult.count ?? 0,
     page,
     limit,
+    stats,
   }
 }
 
@@ -243,50 +269,7 @@ export async function getAdminUsersExportCsv(
 
   const rows = (data ?? []) as ExportViewRow[]
 
-  const headers = [
-    "用户ID",
-    "昵称",
-    "联系邮箱",
-    "微信",
-    "Auth邮箱",
-    "Auth手机",
-    "完成引导",
-    "语言",
-    "当前计划",
-    "学分",
-    "段位代码",
-    "软删时间",
-    "软删原因",
-    "资料更新时间",
-  ]
-
-  const csvEscape = (value: string) => `"${String(value).replace(/"/g, '""')}"`
-
-  const lines = [
-    headers.join(","),
-    ...rows.map((row) => {
-      const m = mapExportRow(row)
-      const cells = [
-        m.userId,
-        m.nickname ?? "",
-        m.contactEmail ?? "",
-        m.wechat ?? "",
-        m.authEmail ?? "",
-        m.authPhone ?? "",
-        m.onboardingCompleted == null ? "" : m.onboardingCompleted ? "是" : "否",
-        m.contentLanguage ?? "",
-        m.activePathName ?? "",
-        String(m.currentScore ?? ""),
-        m.currentRankCode ?? "",
-        m.deletedAt ?? "",
-        m.deletedReason ?? "",
-        m.profileUpdatedAt ?? "",
-      ]
-      return cells.map(csvEscape).join(",")
-    }),
-  ]
-
-  const csv = `\uFEFF${lines.join("\n")}`
+  const csv = buildAdminUsersExportCsv(rows.map((row) => mapExportRow(row)))
   const ts = new Date().toISOString().slice(0, 19).replace(/:/g, "-")
   return { csv, filename: `admin-users-export-${ts}.csv` }
 }

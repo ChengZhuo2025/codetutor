@@ -22,7 +22,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { DIALOG_DARK_GRADIENT_PANEL_CLASS } from "@/components/ui/surface-styles"
 import { MockQr } from "@/features/marketing/components/mock-qr"
+import { cn } from "@/lib/utils"
 
 type ContactDialogProps = {
   triggerClassName?: string
@@ -133,7 +135,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
       <DialogTrigger asChild>
         <button className={triggerClassName}>联系我们</button>
       </DialogTrigger>
-      <DialogContent className="w-[min(900px,calc(100vw-1rem))] max-h-[calc(100dvh-1rem)] overflow-hidden rounded-[30px] border-white/10 bg-[linear-gradient(180deg,oklch(0.22_0.02_235/0.98),oklch(0.17_0.015_250/0.98))] p-0 text-foreground shadow-[0_36px_100px_-48px_rgba(0,0,0,0.88)] sm:max-w-[980px]">
+      <DialogContent className={cn(DIALOG_DARK_GRADIENT_PANEL_CLASS, "w-[min(900px,calc(100vw-1rem))] max-h-[calc(100dvh-1rem)] overflow-hidden rounded-[30px] sm:max-w-[980px]")}>
         <div className="flex max-h-[calc(100dvh-1rem)] flex-col overflow-hidden rounded-[30px]">
           <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top,oklch(0.78_0.15_180/0.16),transparent_52%)] px-5 py-4 sm:px-7 sm:py-5">
             <DialogHeader className="gap-3">

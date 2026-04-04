@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { StatePanel } from "@/components/ui/state-panel"
+import { DIALOG_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
@@ -290,7 +291,7 @@ export function FeedbackDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto rounded-2xl border-white/10 bg-[oklch(0.2_0.015_250/0.98)] p-0 text-foreground shadow-[0_36px_100px_-48px_rgba(0,0,0,0.88)] sm:max-w-[750px]">
+      <DialogContent className={cn(DIALOG_DARK_PANEL_CLASS, "max-h-[92vh] overflow-y-auto rounded-2xl sm:max-w-[750px]")}>
         <div className="overflow-hidden rounded-2xl">
           <div className="border-b border-white/10 px-5 py-4">
             <DialogHeader>
