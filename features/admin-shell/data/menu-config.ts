@@ -28,7 +28,7 @@ export const menuItems: MenuItem[] = [
     label: "用户运营",
     href: "/admin/users",
     icon: Users,
-    active: false,
+    active: true,
   },
   {
     label: "反馈工单",

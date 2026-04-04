@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Download, Search } from "lucide-react"
+import { Download, Search } from "lucide-react"
 import { feedbackPriorityLabels, feedbackTypeLabels } from "../data/status-config"
 import type { AdminFeedbackListResponseData } from "@/lib/api/contracts/feedback"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
+import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
   adminRequestData,
@@ -463,34 +464,26 @@ export function FeedbackList() {
             </tbody>
           </table>
 
-          <div className="flex flex-col gap-3 border-t border-border bg-muted/20 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span>
-                每页
-                <select
-                  value={limit}
-                  onChange={(e) => {
-                    setPage(1)
-                    setLimit(e.target.value)
-                  }}
-                  className="mx-1 h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                >
-                  <option value="20">20</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
-                </select>
-                条
-              </span>
-              <span className="text-border">|</span>
+          <AdminListPaginationFooter
+            limit={limit}
+            onLimitChange={(value) => {
+              setPage(1)
+              setLimit(value)
+            }}
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            canPrev={canPrev}
+            canNext={canNext}
+            isLoading={isLoading}
+            onPrevPage={() => setPage((p) => Math.max(1, p - 1))}
+            onNextPage={() => setPage((p) => p + 1)}
+            centerContent={
               <span>
                 已选 <span className="font-medium text-foreground">{selectedIds.length}</span> 条
               </span>
-              <span className="text-border">|</span>
-              <span>
-                第 {page} / {totalPages} 页 · 共 {total} 条
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
+            }
+            endActions={
               <Button
                 type="button"
                 variant="outline"
@@ -501,32 +494,8 @@ export function FeedbackList() {
               >
                 {batchDeleting ? "批量删除中…" : "批量删除"}
               </Button>
-              <div className="flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={!canPrev || isLoading}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  aria-label="上一页"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={!canNext || isLoading}
-                  onClick={() => setPage((p) => p + 1)}
-                  aria-label="下一页"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
+            }
+          />
         </div>
       ) : (
         <StatePanel status="empty" title="暂无反馈工单" description="目前没有匹配筛选条件的反馈工单" />

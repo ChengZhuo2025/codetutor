@@ -1173,3 +1173,94 @@ export const adminDashboardOverviewResponseDataSchema = z
     todayCheckinCount: z.number().int().nonnegative(),
   })
   .openapi("AdminDashboardOverviewResponseData")
+
+const adminNullableString = z.string().nullable()
+
+export const adminUserExportViewDataSchema = z
+  .object({
+    userId: z.string().uuid(),
+    nickname: adminNullableString,
+    avatarUrl: adminNullableString,
+    wechat: adminNullableString,
+    contactEmail: adminNullableString,
+    bio: adminNullableString,
+    signupProvider: adminNullableString,
+    lastLoginProvider: adminNullableString,
+    lastLoginAt: adminNullableString,
+    authPhone: adminNullableString,
+    authEmail: adminNullableString,
+    onboardingCompleted: z.boolean().nullable(),
+    contentLanguage: adminNullableString,
+    primaryToolCode: adminNullableString,
+    primaryToolName: adminNullableString,
+    activePathStatus: adminNullableString,
+    activePathSelectionMode: adminNullableString,
+    activePathLearningLevel: adminNullableString,
+    activePathCode: adminNullableString,
+    activePathName: adminNullableString,
+    activePathStartedAt: adminNullableString,
+    activePathLastActivityAt: adminNullableString,
+    activePathTotalSteps: z.number().int().nullable(),
+    activePathCompletedSteps: z.number().int().nullable(),
+    activePathCompletionPercent: z.number().int().nullable(),
+    activePathCompletedTaskCount: z.number().int(),
+    activePathInProgressTaskCount: z.number().int(),
+    activePathPendingTaskCount: z.number().int(),
+    activePathBlockedTaskCount: z.number().int(),
+    completedTaskCountTotal: z.number().int(),
+    inProgressTaskCountTotal: z.number().int(),
+    pendingTaskCountTotal: z.number().int(),
+    blockedTaskCountTotal: z.number().int(),
+    currentScore: z.number().int().nullable(),
+    currentRankCode: adminNullableString,
+    streakDays: z.number().int().nullable(),
+    lastLearningAt: adminNullableString,
+    profileCreatedAt: adminNullableString,
+    profileUpdatedAt: adminNullableString,
+    deletedAt: adminNullableString,
+    deletedReason: adminNullableString,
+  })
+  .openapi("AdminUserExportViewData")
+
+export const adminUserListResponseDataSchema = z
+  .object({
+    items: z.array(adminUserExportViewDataSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().min(1),
+    limit: z.number().int().min(1).max(100),
+  })
+  .openapi("AdminUserListResponseData")
+
+export const adminUserListQuerySchema = z
+  .object({
+    accountStatus: z.enum(["active", "deleted", "all"]).optional(),
+    onboardingCompleted: z.enum(["true", "false"]).optional(),
+    hasActiveLearningPath: z.enum(["true", "false"]).optional(),
+    keyword: z.string().optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+  })
+  .openapi("AdminUserListQuery")
+
+export const adminUserIdParamsSchema = z
+  .object({
+    userId: z.string().uuid(),
+  })
+  .openapi("AdminUserIdParams")
+
+export const adminUpdateUserRequestSchema = z
+  .object({
+    nickname: z.string().optional(),
+    bio: z.string().nullable().optional(),
+    contactEmail: z.string().nullable().optional(),
+    wechat: z.string().nullable().optional(),
+    contentLanguage: z.string().optional(),
+    onboardingCompleted: z.boolean().optional(),
+  })
+  .openapi("AdminUpdateUserRequest")
+
+export const adminSoftDeleteUserRequestSchema = z
+  .object({
+    reason: z.string().nullable().optional(),
+  })
+  .openapi("AdminSoftDeleteUserRequest")

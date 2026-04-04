@@ -16,6 +16,7 @@ import type { AuthLoginType } from "@/lib/api/contracts/auth"
 import type { UpdateLearningHistoryStatusRequest } from "@/lib/api/contracts/history"
 import type { CompleteOnboardingRequest } from "@/lib/api/contracts/onboarding"
 import type { CompleteTaskRequest, UpdateTaskStatusRequest } from "@/lib/api/contracts/task"
+import type { AdminUpdateUserRequest } from "@/lib/api/contracts/admin-users"
 import { normalizeUuid } from "@/server/lib/identifiers"
 import type { HistoryFilter } from "@/features/history/types"
 import type { Level } from "@/features/onboarding/types"
@@ -549,6 +550,196 @@ export function parseAdminFeedbackListQuery(searchParams: URLSearchParams) {
     limit,
     page,
   })
+}
+
+const ADMIN_USER_ACCOUNT_STATUSES = ["active", "deleted", "all"] as const
+
+export function parseAdminUserListQuery(searchParams: URLSearchParams) {
+  const rawLimit = searchParams.get("limit")
+  const rawPage = searchParams.get("page")
+  const rawAccountStatus = searchParams.get("accountStatus")
+  const rawOnboarding = searchParams.get("onboardingCompleted")
+  const rawHasPath = searchParams.get("hasActiveLearningPath")
+
+  const limit = rawLimit ? Number.parseInt(rawLimit, 10) : 50
+  const page = rawPage ? Number.parseInt(rawPage, 10) : 1
+
+  if (!Number.isFinite(limit) || limit < 1 || limit > 100) {
+    return fail("VALIDATION_FAILED", "limit 必须在 1 到 100 之间。")
+  }
+
+  if (!Number.isFinite(page) || page < 1) {
+    return fail("VALIDATION_FAILED", "page 必须是大于等于 1 的整数。")
+  }
+
+  let accountStatus: (typeof ADMIN_USER_ACCOUNT_STATUSES)[number] = "active"
+  if (rawAccountStatus) {
+    if (!ADMIN_USER_ACCOUNT_STATUSES.includes(rawAccountStatus as (typeof ADMIN_USER_ACCOUNT_STATUSES)[number])) {
+      return fail("VALIDATION_FAILED", "accountStatus 参数不合法。")
+    }
+    accountStatus = rawAccountStatus as (typeof ADMIN_USER_ACCOUNT_STATUSES)[number]
+  }
+
+  let onboardingCompleted: boolean | undefined
+  if (rawOnboarding === "true") {
+    onboardingCompleted = true
+  } else if (rawOnboarding === "false") {
+    onboardingCompleted = false
+  } else if (rawOnboarding != null && rawOnboarding !== "") {
+    return fail("VALIDATION_FAILED", "onboardingCompleted 参数不合法。")
+  }
+
+  let hasActiveLearningPath: boolean | undefined
+  if (rawHasPath === "true") {
+    hasActiveLearningPath = true
+  } else if (rawHasPath === "false") {
+    hasActiveLearningPath = false
+  } else if (rawHasPath != null && rawHasPath !== "") {
+    return fail("VALIDATION_FAILED", "hasActiveLearningPath 参数不合法。")
+  }
+
+  return ok({
+    accountStatus,
+    onboardingCompleted,
+    hasActiveLearningPath,
+    keyword: searchParams.get("keyword")?.trim() || undefined,
+    limit,
+    page,
+  })
+}
+
+const adminUserPatchShapeSchema = z
+  .object({
+    nickname: z.string().optional(),
+    bio: z.unknown().optional(),
+    contactEmail: z.unknown().optional(),
+    wechat: z.unknown().optional(),
+    contentLanguage: z.string().optional(),
+    onboardingCompleted: z.boolean().optional(),
+  })
+  .strict()
+
+export function parseAdminUserPatchBody(input: unknown): ValidationResult<AdminUpdateUserRequest> {
+  const shape = adminUserPatchShapeSchema.safeParse(input)
+
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "用户更新请求体不合法。")
+  }
+
+  const data: AdminUpdateUserRequest = {}
+  const raw = shape.data
+
+  if (raw.nickname !== undefined) {
+    const nickname = raw.nickname.trim()
+    if (nickname.length < 1) {
+      return fail("VALIDATION_FAILED", "昵称不能为空。")
+    }
+    if (nickname.length > 64) {
+      return fail("VALIDATION_FAILED", "昵称最多 64 个字符。")
+    }
+    data.nickname = nickname
+  }
+
+  if (raw.bio !== undefined) {
+    if (raw.bio === null) {
+      data.bio = null
+    } else if (typeof raw.bio === "string") {
+      const bio = raw.bio.trim()
+      if (bio.length > 2000) {
+        return fail("VALIDATION_FAILED", "个人简介最多 2000 个字符。")
+      }
+      data.bio = bio.length > 0 ? bio : null
+    } else {
+      return fail("VALIDATION_FAILED", "bio 必须是字符串或 null。")
+    }
+  }
+
+  if (raw.contactEmail !== undefined) {
+    if (raw.contactEmail === null) {
+      data.contactEmail = null
+    } else if (typeof raw.contactEmail === "string") {
+      const email = raw.contactEmail.trim()
+      if (email.length > 255) {
+        return fail("VALIDATION_FAILED", "联系邮箱过长。")
+      }
+      if (email.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return fail("VALIDATION_FAILED", "联系邮箱格式不正确。")
+      }
+      data.contactEmail = email.length > 0 ? email : null
+    } else {
+      return fail("VALIDATION_FAILED", "contactEmail 必须是字符串或 null。")
+    }
+  }
+
+  if (raw.wechat !== undefined) {
+    if (raw.wechat === null) {
+      data.wechat = null
+    } else if (typeof raw.wechat === "string") {
+      const wechat = raw.wechat.trim()
+      if (wechat.length > 64) {
+        return fail("VALIDATION_FAILED", "微信号最多 64 个字符。")
+      }
+      data.wechat = wechat.length > 0 ? wechat : null
+    } else {
+      return fail("VALIDATION_FAILED", "wechat 必须是字符串或 null。")
+    }
+  }
+
+  if (raw.contentLanguage !== undefined) {
+    const lang = raw.contentLanguage.trim()
+    if (lang.length < 1 || lang.length > 16) {
+      return fail("VALIDATION_FAILED", "contentLanguage 长度应在 1 到 16 之间。")
+    }
+    data.contentLanguage = lang
+  }
+
+  if (raw.onboardingCompleted !== undefined) {
+    data.onboardingCompleted = raw.onboardingCompleted
+  }
+
+  if (Object.keys(data).length === 0) {
+    return fail("VALIDATION_FAILED", "请至少提供一个要更新的字段。")
+  }
+
+  return ok(data)
+}
+
+const adminUserSoftDeleteShapeSchema = z.object({
+  reason: z.unknown().optional(),
+})
+
+export function parseAdminUserSoftDeleteBody(input: unknown): ValidationResult<{ reason?: string | null }> {
+  if (input === null || input === undefined || (typeof input === "object" && Object.keys(input as object).length === 0)) {
+    return ok({})
+  }
+
+  const shape = adminUserSoftDeleteShapeSchema.safeParse(input)
+
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "软删除请求体不合法。")
+  }
+
+  const reasonRaw = shape.data.reason
+
+  if (reasonRaw === undefined) {
+    return ok({})
+  }
+
+  if (reasonRaw === null) {
+    return ok({ reason: null })
+  }
+
+  if (typeof reasonRaw !== "string") {
+    return fail("VALIDATION_FAILED", "reason 必须是字符串。")
+  }
+
+  const reason = reasonRaw.trim()
+
+  if (reason.length > 500) {
+    return fail("VALIDATION_FAILED", "reason 最多 500 个字符。")
+  }
+
+  return ok({ reason: reason.length > 0 ? reason : null })
 }
 
 export function parseOnboardingPathOptionsQuery(searchParams: URLSearchParams): ValidationResult<{

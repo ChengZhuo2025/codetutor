@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server"
 import { fail, ok } from "@/server/lib/api-response"
 import { withNoStoreHeaders } from "@/server/lib/response-cache"
 import { getRequestAuth, getRequestAuthHelpText } from "@/server/lib/request-auth"
+import { isUserAccountDisabledError } from "@/server/lib/user-account-disabled"
 import { getAuthSessionSummary } from "@/server/modules/auth/service"
 
 export async function GET(request: NextRequest) {
@@ -16,6 +17,9 @@ export async function GET(request: NextRequest) {
 
     return withNoStoreHeaders(ok(data))
   } catch (error) {
+    if (isUserAccountDisabledError(error)) {
+      return withNoStoreHeaders(fail(error.code, error.message, 403))
+    }
     return withNoStoreHeaders(
       fail(
         "INTERNAL_ERROR",

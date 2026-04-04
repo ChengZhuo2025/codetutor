@@ -12,6 +12,7 @@ import { jsonUserProfileNotFound } from "../../lib/route-error-presets.ts"
 import {
   jsonInternalErrorFromError,
 } from "../../lib/route-error.ts"
+import { isUserAccountDisabledError } from "../../lib/user-account-disabled.ts"
 import {
   jsonAuthRequired,
   jsonError,
@@ -67,6 +68,9 @@ export function createAuthLoginPostHandler(dependencies: {
 
       return appendUserSessionCookie(jsonSuccess(data), data.userId)
     } catch (error) {
+      if (isUserAccountDisabledError(error)) {
+        return jsonError(error.code, error.message, 403)
+      }
       return jsonInternalErrorFromError(error, "登录流程处理失败")
     }
   }
@@ -99,6 +103,9 @@ export function createProfileMeGetHandler(dependencies: {
 
       return jsonSuccess(data)
     } catch (error) {
+      if (isUserAccountDisabledError(error)) {
+        return jsonError(error.code, error.message, 403)
+      }
       return jsonInternalErrorFromError(error, "加载用户档案失败")
     }
   }
@@ -134,6 +141,9 @@ export function createProfileMePatchHandler(dependencies: {
 
       return jsonSuccess(data, "profile updated")
     } catch (error) {
+      if (isUserAccountDisabledError(error)) {
+        return jsonError(error.code, error.message, 403)
+      }
       return jsonInternalErrorFromError(error, "保存用户档案失败")
     }
   }
@@ -166,6 +176,9 @@ export function createProfileAvatarPostHandler(dependencies: {
 
       return jsonSuccess(data, "avatar uploaded")
     } catch (error) {
+      if (isUserAccountDisabledError(error)) {
+        return jsonError(error.code, error.message, 403)
+      }
       return jsonInternalErrorFromError(error, "头像上传失败")
     }
   }

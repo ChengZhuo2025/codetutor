@@ -16,6 +16,12 @@ import {
   adminReplyFeedbackRequestSchema,
   adminFeedbackDeleteOkDataSchema,
   adminUpdateFeedbackStatusRequestSchema,
+  adminUserExportViewDataSchema,
+  adminUserListQuerySchema,
+  adminUserListResponseDataSchema,
+  adminUserIdParamsSchema,
+  adminUpdateUserRequestSchema,
+  adminSoftDeleteUserRequestSchema,
   ApiErrorResponseSchema,
   authLoginRequestSchema,
   authLoginResponseDataSchema,
@@ -166,6 +172,50 @@ const adminFeedbackUserSnapshotExample = {
 const adminFeedbackBatchDeleteExample = {
   deletedCount: 2,
   deletedIds: ["ticket-1", "ticket-2"],
+}
+
+const adminUserExportRowExample = {
+  userId: "550e8400-e29b-41d4-a716-446655440001",
+  nickname: "Bao",
+  avatarUrl: null,
+  wechat: "wx_bao",
+  contactEmail: "bao@example.com",
+  bio: null,
+  signupProvider: "phone",
+  lastLoginProvider: "phone",
+  lastLoginAt: EXAMPLE_NOW,
+  authPhone: "13800000000",
+  authEmail: null,
+  onboardingCompleted: true,
+  contentLanguage: "zh-CN",
+  primaryToolCode: "cursor",
+  primaryToolName: "Cursor",
+  activePathStatus: "active",
+  activePathSelectionMode: "preset_training",
+  activePathLearningLevel: "beginner",
+  activePathCode: "cursor-beginner-01",
+  activePathName: "Cursor 入门训练营",
+  activePathStartedAt: EXAMPLE_NOW,
+  activePathLastActivityAt: EXAMPLE_LATEST,
+  activePathTotalSteps: 5,
+  activePathCompletedSteps: 2,
+  activePathCompletionPercent: 40,
+  activePathCompletedTaskCount: 2,
+  activePathInProgressTaskCount: 1,
+  activePathPendingTaskCount: 2,
+  activePathBlockedTaskCount: 0,
+  completedTaskCountTotal: 10,
+  inProgressTaskCountTotal: 1,
+  pendingTaskCountTotal: 3,
+  blockedTaskCountTotal: 0,
+  currentScore: 120,
+  currentRankCode: "rookie",
+  streakDays: 3,
+  lastLearningAt: EXAMPLE_LATER,
+  profileCreatedAt: EXAMPLE_NOW,
+  profileUpdatedAt: EXAMPLE_LATEST,
+  deletedAt: null,
+  deletedReason: null,
 }
 
 const successExamples = {
@@ -672,6 +722,13 @@ const successExamples = {
     },
   },
   adminFeedbackDetail: adminFeedbackDetailExample,
+  adminUserExportRow: adminUserExportRowExample,
+  adminUserList: {
+    items: [adminUserExportRowExample],
+    total: 1,
+    page: 1,
+    limit: 20,
+  },
 } as const
 
 const defaultErrorResponses = {
@@ -736,6 +793,14 @@ const defaultErrorResponses = {
     example: {
       code: "AI_PROVIDER_ERROR",
       message: "AI 服务暂时不可用，请稍后再试。",
+      data: null,
+    },
+  },
+  "413": {
+    description: "导出结果超过允许的最大行数。",
+    example: {
+      code: "USER_EXPORT_LIMIT_EXCEEDED",
+      message: "导出行数超过上限，请缩小筛选条件（最多 10000 行）。",
       data: null,
     },
   },
@@ -1996,6 +2061,174 @@ registry.registerPath({
         example: {
           code: "BAD_REQUEST",
           message: ROUTE_ERROR_MESSAGES.invalidAdminStatusBody,
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/users",
+  operationId: "getAdminUserList",
+  tags: ["admin-users"],
+  summary: "管理端用户列表（需管理端 Cookie）",
+  description: "基于 user_profile_export_view；accountStatus 默认 active。",
+  security: [],
+  request: {
+    query: adminUserListQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminUserListResponseDataSchema,
+      "AdminUserListResponse",
+      "用户列表读取成功",
+      successExamples.adminUserList,
+      "用户列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"], {
+      "400": {
+        description: "列表筛选参数未通过校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "limit 必须在 1 到 100 之间。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/users/export",
+  operationId: "getAdminUsersExport",
+  tags: ["admin-users"],
+  summary: "导出用户 CSV（与列表相同筛选，最多 10000 行）",
+  security: [],
+  request: {
+    query: adminUserListQuerySchema,
+  },
+  responses: {
+    "200": {
+      description: "UTF-8 CSV（含 BOM），Content-Disposition 为附件。",
+      content: {
+        "text/csv": {
+          schema: z.string(),
+          example: "用户ID,昵称\n550e8400-e29b-41d4-a716-446655440001,Bao",
+        },
+      },
+    },
+    ...commonErrorResponses(["400", "403", "413", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/users/{userId}",
+  operationId: "getAdminUserDetail",
+  tags: ["admin-users"],
+  summary: "管理端用户详情",
+  security: [],
+  request: {
+    params: adminUserIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminUserExportViewDataSchema,
+      "AdminUserDetailResponse",
+      "用户详情读取成功",
+      successExamples.adminUserExportRow,
+      "用户详情读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/users/{userId}",
+  operationId: "patchAdminUser",
+  tags: ["admin-users"],
+  summary: "管理端更新用户资料（白名单字段）",
+  security: [],
+  request: {
+    params: adminUserIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminUpdateUserRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminUserExportViewDataSchema,
+      "AdminUserPatchResponse",
+      "用户资料已更新",
+      successExamples.adminUserExportRow,
+      "用户资料已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/users/{userId}/soft-delete",
+  operationId: "postAdminUserSoftDelete",
+  tags: ["admin-users"],
+  summary: "软删除用户（幂等）",
+  security: [],
+  request: {
+    params: adminUserIdParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: adminSoftDeleteUserRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminUserExportViewDataSchema,
+      "AdminUserSoftDeleteResponse",
+      "用户已软删除",
+      successExamples.adminUserExportRow,
+      "用户已软删除",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/users/{userId}/restore",
+  operationId: "postAdminUserRestore",
+  tags: ["admin-users"],
+  summary: "恢复已软删除用户",
+  security: [],
+  request: {
+    params: adminUserIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminUserExportViewDataSchema,
+      "AdminUserRestoreResponse",
+      "用户已恢复",
+      successExamples.adminUserExportRow,
+      "用户已恢复",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"], {
+      "409": {
+        description: "用户未处于软删除状态。",
+        example: {
+          code: "USER_NOT_SOFT_DELETED",
+          message: "该用户未处于软删除状态，无需恢复。",
           data: null,
         },
       },

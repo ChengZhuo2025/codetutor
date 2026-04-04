@@ -36,3 +36,4 @@ As of the current MVP snapshot, the migration sequence now continues through:
 16. `016_create_llm_invocations.sql`
 17. `017_create_admin_accounts.sql`
 18. `018_create_learning_material_plan_tables.sql`
+19. `019_admin_user_soft_delete.sql`

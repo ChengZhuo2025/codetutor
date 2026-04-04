@@ -17,6 +17,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { ensureUserRankSnapshot } from "@/server/modules/gamification/service"
 import { getLearningPathStatusSummary } from "@/server/modules/learning-paths/service"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
+import { UserAccountDisabledError } from "@/server/lib/user-account-disabled"
 
 type JsonRecord = Record<string, unknown>
 
@@ -40,6 +41,7 @@ type UserProfileRow = {
   streak_days: number
   last_learning_at: string | null
   primary_tool_id?: string | null
+  deleted_at?: string | null
 }
 
 type ToolRow = {
@@ -258,12 +260,16 @@ export async function finalizeAuthLogin(
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
     .select(
-      "user_id, nickname, avatar_url, learning_level, current_rank_code, current_score, streak_days, last_learning_at",
+      "user_id, nickname, avatar_url, learning_level, current_rank_code, current_score, streak_days, last_learning_at, deleted_at",
     )
     .eq("user_id", user.id)
     .maybeSingle()
 
   assertSupabaseSuccess(profileError, "failed to query user profile during auth login")
+
+  if (profile && (profile as UserProfileRow).deleted_at) {
+    throw new UserAccountDisabledError()
+  }
 
   const { data: preference, error: preferenceError } = await supabase
     .from("user_learning_preferences")
@@ -367,11 +373,15 @@ export async function getAuthSessionSummary(
 
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
-    .select("nickname")
+    .select("nickname, deleted_at")
     .eq("user_id", userId)
     .maybeSingle()
 
   assertSupabaseSuccess(profileError, "failed to query auth session profile")
+
+  if ((profile as UserProfileRow | null)?.deleted_at) {
+    throw new UserAccountDisabledError()
+  }
 
   return {
     userId,
@@ -389,7 +399,7 @@ export async function getProfileMe(userId: string): Promise<ProfileMeResponseDat
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
     .select(
-      "user_id, nickname, avatar_url, wechat, contact_email, bio, signup_provider, last_login_provider, last_login_at, primary_tool_id, learning_level, current_rank_code, current_score, streak_days, last_learning_at",
+      "user_id, nickname, avatar_url, wechat, contact_email, bio, signup_provider, last_login_provider, last_login_at, primary_tool_id, learning_level, current_rank_code, current_score, streak_days, last_learning_at, deleted_at",
     )
     .eq("user_id", userId)
     .maybeSingle()
@@ -401,6 +411,10 @@ export async function getProfileMe(userId: string): Promise<ProfileMeResponseDat
   }
 
   const typedProfile = profile as UserProfileRow
+
+  if (typedProfile.deleted_at) {
+    throw new UserAccountDisabledError()
+  }
   const authUser = await getAuthUserById(userId)
   let primaryTool: ToolRow = {
     code: "unselected",
@@ -459,7 +473,7 @@ export async function updateProfileMe(
   const supabase = createSupabaseAdminClient()
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
-    .select("user_id, avatar_url")
+    .select("user_id, avatar_url, deleted_at")
     .eq("user_id", userId)
     .maybeSingle()
 
@@ -467,6 +481,10 @@ export async function updateProfileMe(
 
   if (!profile) {
     return null
+  }
+
+  if ((profile as UserProfileRow).deleted_at) {
+    throw new UserAccountDisabledError()
   }
 
   const { error: updateError } = await supabase
@@ -500,11 +518,15 @@ export async function uploadProfileAvatar(
   const objectPath = `${getAvatarStoragePrefix(userId)}${Date.now()}-${crypto.randomUUID()}.${extension}`
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
-    .select("avatar_url")
+    .select("avatar_url, deleted_at")
     .eq("user_id", userId)
     .maybeSingle()
 
   assertSupabaseSuccess(profileError, "failed to query existing avatar before upload")
+
+  if ((profile as UserProfileRow | null)?.deleted_at) {
+    throw new UserAccountDisabledError()
+  }
 
   const { error: uploadError } = await supabase.storage
     .from(PROFILE_AVATAR_BUCKET)
