@@ -55,16 +55,18 @@
 6. `/achievements`：成就页
 7. `/history`：学习记录页
 
-当前已可直接访问的管理端 Phase 1 页面：
+当前已可直接访问的管理端页面（Phase 1 + 用户运营）：
 
 8. `/admin/login`：管理员登录页
 9. `/admin`：总览看板页
-10. `/admin/feedback`：反馈工单列表页
-11. `/admin/feedback/[id]`：反馈工单详情页
+10. `/admin/users`：用户运营列表页（筛选、导出、行内编辑抽屉）
+11. `/admin/users/[userId]`：用户详情页
+12. `/admin/feedback`：反馈工单列表页
+13. `/admin/feedback/[id]`：反馈工单详情页
 
 另外还有一个内部开发调试页：
 
-12. `/api-docs`：Swagger UI 接口文档与调试面板
+14. `/api-docs`：Swagger UI 接口文档与调试面板
 
 ---
 
@@ -103,6 +105,8 @@ types/
 - `app/(workspace)/history/page.tsx` -> `features/history/pages/history-page.tsx`
 - `app/admin/(login)/login/page.tsx` -> `features/admin-shell/components/admin-login-form.tsx`
 - `app/(admin-shell)/admin/page.tsx` -> `features/admin-dashboard/components/dashboard-page.tsx`
+- `app/(admin-shell)/admin/users/page.tsx` -> `features/admin-users/components/user-list-page.tsx`
+- `app/(admin-shell)/admin/users/[userId]/page.tsx` -> `features/admin-users/components/user-detail-page.tsx`
 
 规则：
 
@@ -129,6 +133,7 @@ types/
 - `features/history`
 - `features/admin-shell`
 - `features/admin-dashboard`
+- `features/admin-users`
 - `features/admin-feedback`
 
 每个业务域当前大致采用如下结构：
@@ -355,6 +360,13 @@ features/<domain>/
 - 页面装配：`features/admin-dashboard/components/dashboard-page.tsx`
 - 当前真实依赖：`GET /api/admin/dashboard/overview`
 
+### 管理后台用户运营页
+
+- 路由入口：`app/(admin-shell)/admin/users/page.tsx`、`app/(admin-shell)/admin/users/[userId]/page.tsx`
+- 页面装配：`features/admin-users/components/user-list-page.tsx`、`features/admin-users/components/user-detail-page.tsx`
+- 当前真实依赖：`GET/PATCH /api/admin/users`、`GET /api/admin/users/export`、`GET /api/admin/users/{userId}`、`POST .../soft-delete`、`POST .../restore`；详情页另拉 `GET /api/admin/feedback?userId=...` 展示最近工单
+- 页面组件：`features/admin-users/components/user-list.tsx`、`user-detail.tsx`、`user-edit-sheet.tsx` 等
+
 ### 管理后台反馈页
 
 - 路由入口：`app/(admin-shell)/admin/feedback/page.tsx`、`app/(admin-shell)/admin/feedback/[id]/page.tsx`
@@ -368,7 +380,7 @@ features/<domain>/
 - 页面组件：`features/api-docs/components/swagger-api-viewer.tsx`
 - 当前真实依赖：`GET /api/docs/openapi`、`GET /api/docs/swagger-ui-bundle`
 - 当前职责：提供内部接口查看与调试面板，按标签分组展示接口，补充常见成功响应示例、错误说明、管理员接口调试提示和学习消息 SSE 调试说明
-- 当前鉴权行为：页面受管理员登录态保护；未登录访问 `/api-docs` 会重定向到 `/admin/login?next=/api-docs`，登录成功后回跳；文档里的管理员接口按 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback` 展示
+- 当前鉴权行为：页面受管理员登录态保护；未登录访问 `/api-docs` 会重定向到 `/admin/login?next=/api-docs`，登录成功后回跳；文档里的管理员接口按 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users` 等标签展示
 - 当前实现边界：该页面消费的是运行时注册出来的 OpenAPI 文档；新增后端接口后，需要同步维护 `server/modules/api-docs/openapi.ts` 与 `server/modules/api-docs/schemas.ts`，这里才会一起更新
 
 ### 当前已接真实接口的跨页组件
@@ -577,6 +589,6 @@ features/<domain>/
 1. 继续把剩余静态模块切到真实接口，优先级依次为埋点事件、通知设置、订阅模块。
 2. 为已接接口的高频页面补充页面级自动化测试或最小交互测试。
 3. 在确认请求复杂度继续上升后，再评估是否引入 Query 缓存层，而不是过早全局化。
-4. 继续推进管理员后台 Phase 2 前，先保持用户侧与管理侧鉴权分流口径一致，避免两端状态判断逻辑漂移。
+4. 继续推进管理员后台 Phase 2 余下能力前，先保持用户侧与管理侧鉴权分流口径一致，避免两端状态判断逻辑漂移。（用户运营页面与接口已交付，新增后台域时继续遵守 `features/admin-*` 与 `server/modules/admin-*` 约定。）
 
 如果后续目录与本说明出现偏差，应优先更新本文档，再继续扩展代码。

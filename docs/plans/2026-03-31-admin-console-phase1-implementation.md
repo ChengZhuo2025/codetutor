@@ -8,6 +8,8 @@
 
 **Tech Stack:** Next.js 16.2.0 App Router, React 19.2.4, TypeScript 5.7.3, Supabase Auth, shadcn/ui, Tailwind CSS 4.2
 
+**2026-04-04 代码对齐说明：** 同仓在 Phase 1 完成后已追加 **用户运营**（`features/admin-users`、`server/modules/admin-users`、`/admin/users`）；本文中的菜单示例已将「用户运营」`active` 设为 `true`。实施任务清单仍以 Phase 1 为界，用户运营不在下列 Task 编号范围内。
+
 ---
 
 ## Task 1: 数据库迁移
@@ -889,7 +891,7 @@ export const menuItems: MenuItem[] = [
     label: "用户运营",
     href: "/admin/users",
     icon: Users,
-    active: false,
+    active: true,
   },
   {
     label: "反馈工单",

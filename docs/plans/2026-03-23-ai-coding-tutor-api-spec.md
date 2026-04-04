@@ -1550,7 +1550,22 @@ SSE 事件补充：
 | `PATCH /api/admin/profile/me` | PATCH | 更新当前管理员资料（昵称/邮箱/头像等） |
 | `POST /api/admin/profile/avatar` | POST | 上传管理员头像 |
 
-### 11.2 `GET /api/admin/feedback`
+### 11.2 用户运营（终端用户）
+
+以下接口均需管理员会话；路径参数均为用户主键 UUID（与路由目录 `[userId]` 一致）。
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `GET /api/admin/users` | GET | 分页用户列表；支持 `keyword`、账号状态、onboarding、是否具备进行中计划等筛选（以 OpenAPI 查询参数为准） |
+| `GET /api/admin/users/export` | GET | 导出 CSV，数据源为 `user_profile_export_view` |
+| `GET /api/admin/users/{userId}` | GET | 用户详情 read model（与导出视图同构字段及学习/任务聚合） |
+| `PATCH /api/admin/users/{userId}` | PATCH | 受控更新资料：昵称、简介、联系邮箱、微信、内容语言等（白名单字段，不修改 Auth 凭证） |
+| `POST /api/admin/users/{userId}/soft-delete` | POST | 软删除用户，可选 `reason` |
+| `POST /api/admin/users/{userId}/restore` | POST | 恢复已软删用户 |
+
+尚未在本阶段约定的接口（仍以设计文档为规划，**未实现**）：如用户内部备注、人工积分调整等。
+
+### 11.3 `GET /api/admin/feedback`
 
 用途：
 
@@ -1564,19 +1579,19 @@ SSE 事件补充：
 - `userId`
 - `limit`
 
-### 11.3 `GET /api/admin/feedback/{id}`
+### 11.4 `GET /api/admin/feedback/{id}`
 
 用途：
 
 - 获取反馈单详情、用户快照和回复记录
 
-### 11.4 `POST /api/admin/feedback/{id}/reply`
+### 11.5 `POST /api/admin/feedback/{id}/reply`
 
 用途：
 
 - 以管理员身份追加回复，并可同步推进状态到 `replied` 或 `closed`
 
-### 11.5 `POST /api/admin/feedback/{id}/status`
+### 11.6 `POST /api/admin/feedback/{id}/status`
 
 用途：
 
@@ -1615,6 +1630,10 @@ SSE 事件补充：
 | `POST /api/feedback` | 是 | 提交用户反馈 |
 | `GET /api/feedback/mine` | 是 | 查看我的反馈列表 |
 | `GET /api/feedback/mine/{id}` | 是 | 查看我的反馈详情 |
+| `GET /api/admin/users*` | 管理员 | 用户列表、导出、详情 |
+| `PATCH /api/admin/users/{userId}` | 管理员 | 受控更新终端用户资料 |
+| `POST /api/admin/users/{userId}/soft-delete` | 管理员 | 软删除终端用户 |
+| `POST /api/admin/users/{userId}/restore` | 管理员 | 恢复终端用户 |
 | `GET /api/admin/feedback*` | 管理员 | 管理员反馈查询与回复 |
 | `POST /api/admin/auth/login` | 否 | 管理员登录入口 |
 | `GET /api/admin/auth/session` | 是 | 获取管理员会话摘要 |

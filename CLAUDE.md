@@ -57,6 +57,7 @@ features/              # 前端主工作目录，按业务域组织
   ├── api-docs/       # Swagger UI API 文档页
   ├── admin-shell/    # 管理后台壳层（布局、侧边栏、头部）
   ├── admin-dashboard/ # 管理后台看板
+  ├── admin-users/    # 管理后台用户运营（列表、详情、导出、资料编辑）
   └── admin-feedback/ # 管理后台反馈工单
 hooks/                 # 自定义 React Hooks
 lib/                   # 工具函数、API 契约与 mock client
@@ -75,6 +76,7 @@ server/                # 服务端逻辑
     ├── feedback/     # 反馈域
     ├── admin-auth/   # 管理员认证域
     ├── admin-dashboard/ # 管理员看板域
+    ├── admin-users/  # 管理员用户运营域
     └── api-docs/     # OpenAPI 文档注册
 supabase/              # 数据库迁移与相关 SQL
 providers/            # 全局 Provider 入口
@@ -93,7 +95,9 @@ types/                # 跨 feature 共用的类型定义
 | `/achievements` | 成就页 | `features/achievement/pages/achievements-page.tsx` |
 | `/history` | 历史学习页 | `features/history/pages/history-page.tsx` |
 | `/api-docs` | Swagger UI API 文档 | `features/api-docs/pages/api-docs-page.tsx` |
-| `/admin` | 管理后台看板 | `features/admin-dashboard/components/dashboard-overview.tsx` |
+| `/admin` | 管理后台看板 | `features/admin-dashboard/components/dashboard-page.tsx` |
+| `/admin/users` | 用户运营列表 | `features/admin-users/components/user-list-page.tsx` |
+| `/admin/users/[userId]` | 用户详情 | `features/admin-users/components/user-detail-page.tsx` |
 | `/admin/feedback` | 反馈工单列表 | `features/admin-feedback/components/feedback-list.tsx` |
 | `/admin/feedback/[id]` | 反馈工单详情 | `features/admin-feedback/components/feedback-detail.tsx` |
 
@@ -142,10 +146,11 @@ types/                # 跨 feature 共用的类型定义
 - ✅ OpenAPI 3.1 文档（`/api/docs/openapi`）与 Swagger UI（`/api-docs`）
 - ✅ Supabase 迁移与远程数据库接入（当前已到 `018`，含自学材料摄取与计划草稿表）
 - ✅ 管理后台 Phase 1（管理员认证、看板、反馈工单）
+- ✅ 管理后台用户运营（`/admin/users`、`/admin/users/[userId]`：列表筛选、CSV 导出、详情聚合、受控资料 PATCH、软删除/恢复；`server/modules/admin-users`、`OpenAPI` 分组 `admin-users`）
 
 **进行中/待完成：**
 - ⏳ analytics 事件入库
-- ⏳ 管理员后台 Phase 2（用户运营、学习运营、AI 运营、细粒度权限控制）
+- ⏳ 管理员后台 Phase 2 余下能力（学习运营、AI 运营、细粒度权限；用户域后续如内部备注、人工积分调整等以设计文档与代码为准）
 - ⏳ AI 编排第二阶段（更细粒度 agent 控制、prompt 版本化管理）
 - ⏳ 通知设置落库
 
@@ -224,7 +229,7 @@ types/                # 跨 feature 共用的类型定义
 - `2026-03-23-ai-coding-tutor-ui-visual-design-spec.md` - UI 视觉设计
 - `2026-03-23-ai-coding-tutor-adr-records.md` - 架构决策记录
 - `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` - AI 编排设计（第一阶段已完成）
-- `2026-03-31-ai-coding-tutor-admin-console-design.md` - 管理后台设计（Phase 1 已完成）
+- `2026-03-31-ai-coding-tutor-admin-console-design.md` - 管理后台设计（Phase 1 + 用户运营已落地；余下模块见文档）
 - `2026-03-31-admin-console-phase1-design.md` - 管理后台 Phase 1 详细设计
 - `2026-03-31-admin-console-phase1-implementation.md` - 管理后台 Phase 1 实施计划
 

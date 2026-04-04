@@ -2,10 +2,10 @@
 
 > 文档类型：管理后台设计文档
 > 产品名称：AI编程学习教练
-> 版本：v0.3
-> 状态：Phase 1 已完成（2026-04-01），Phase 2 规划中
+> 版本：v0.4
+> 状态：Phase 1 已完成；**用户运营（终端用户列表/详情/导出/资料维护/软删恢复）已落地**；AI 核心配置与学习运营等仍为后续阶段
 > 创建日期：2026-03-31
-> 更新日期：2026-04-02
+> 更新日期：2026-04-04
 > 适用阶段：MVP 后续运营化阶段
 > 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md`、`docs/plans/2026-03-23-ai-coding-tutor-api-spec.md`、`docs/plans/2026-03-23-ai-coding-tutor-database-schema-design.md`、`docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md`、`docs/plans/2026-03-31-admin-console-phase1-design.md`、`docs/plans/2026-03-31-admin-console-phase1-implementation.md`
 
@@ -21,29 +21,43 @@
 
 ## 2. 当前代码基线
 
-> 2026-04-02 对齐说明（以代码为准）：
+> 2026-04-04 对齐说明（以代码为准）：
 >
 > - 管理后台 Phase 1 已落地管理员登录、会话、登出、改密、看板、反馈、管理员资料编辑（含头像上传）链路。
+> - **用户运营**已落地：用户列表、详情、导出、受控资料更新、软删除与恢复、与反馈列表联动；路由为 `app/(admin-shell)/admin/users/*`，业务域为 `features/admin-users`，服务层为 `server/modules/admin-users`，OpenAPI 分组为 `admin-users`。
 > - 管理端鉴权主链路已切换为 `admin-access-token` / `admin-refresh-token` Cookie，会话守卫与 `/api-docs` 访问守卫已接入 `proxy.ts`。
-> - 运行时 API 文档（`/api/docs/openapi`、`/api-docs`）已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback` 分组。
+> - 运行时 API 文档（`/api/docs/openapi`、`/api-docs`）已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users` 分组。
 > - 本文中关于 `x-admin-secret` 的描述仅代表早期过渡方案背景，不再代表当前主实现。若与代码冲突，优先以 `docs/plans/2026-03-23-ai-coding-tutor-api-spec.md` 与实际代码为准。
 
 ### 2.1 已经落地的后台相关能力
 
-当前仓库里，真正已经落地的管理员能力只有一条主线：反馈工单后台接口。
+当前仓库里，已落地的管理员能力按模块包括：
 
-已实现接口：
+**认证、看板与资料**
+
+- `POST /api/admin/auth/login`、`GET /api/admin/auth/session`、`POST /api/admin/auth/logout`、`POST /api/admin/auth/change-password`
+- `GET /api/admin/dashboard/overview`
+- `GET /api/admin/profile/me`、`PATCH /api/admin/profile/me`、`POST /api/admin/profile/avatar`
+
+**反馈工单**
 
 - `GET /api/admin/feedback`
 - `GET /api/admin/feedback/{id}`
 - `POST /api/admin/feedback/{id}/reply`
 - `POST /api/admin/feedback/{id}/status`
 
+**用户运营（终端用户）**
+
+- `GET /api/admin/users`：分页列表，支持关键词与筛选（账号状态、onboarding、是否具备进行中的学习计划等，以查询参数与 OpenAPI 为准）
+- `GET /api/admin/users/export`：基于 `user_profile_export_view` 的 CSV 导出
+- `GET /api/admin/users/{userId}`：详情 read model（与导出视图同构字段 + 学习/任务聚合）
+- `PATCH /api/admin/users/{userId}`：受控更新昵称、简介、联系邮箱、微信、内容语言等（非任意字段、不替代 Supabase Auth 凭证管理）
+- `POST /api/admin/users/{userId}/soft-delete`、`POST /api/admin/users/{userId}/restore`：软删除与恢复
+
 当前实现特征：
 
 - 统一挂在 `/api/admin/*` 命名空间
 - 使用 `admin-access-token` / `admin-refresh-token` Cookie 做管理员会话鉴权
-- 已有管理员能力覆盖：登录、会话读取、登出、改密、看板、反馈、管理员资料编辑
 - 复用现有 `server/lib/request-validation.ts`、`server/lib/route-response.ts`、`server/lib/route-error.ts`
 - 已补 OpenAPI 3.1 文档与 Swagger UI 调试入口
 
@@ -66,20 +80,17 @@
 - `public.llm_invocations`
   已具备 AI 调用审计基础，可用于成功率、延迟、错误码、模型分布与成本代理分析。
 
-### 2.3 当前仍缺失的后台基础设施
+### 2.3 当前仍缺失或仅部分具备的后台能力
 
-当前代码还没有以下后台必要基础：
+以下条目表示**截至 2026-04-04** 与代码对照后仍不足或未开工的部分（已落地项不再重复列举）：
 
-- 管理员登录页面与后台页面
-- 真正的管理员账号体系、角色体系、权限体系
-- 管理员操作审计日志
-- 通用后台 dashboard 聚合接口
-- 用户运营读写接口
-- 学习计划运营接口
-- AI 运营读接口与测试接口
-- 事件埋点写入链路与 `event_logs` 实际迁移
+- **细粒度 UI/API 权限**：库表与角色模型已有雏形，菜单上仍有大量「占位/禁用」项；按角色隐藏能力、接口级授权与完整审计覆盖仍在演进中。
+- **用户域后续能力**：内部备注（`user_admin_notes` 等）、人工积分调整（`score_ledgers` + 审计）等**尚未**按设计文档中的独立 API 交付。
+- **学习计划运营**：专用列表/详情/状态运营 API 与页面仍待建设。
+- **AI 运营读写**：provider/model/agent 等后台 CRUD、调用日志只读面板、健康看板等仍待建设。
+- **事件埋点写入链路与 `event_logs` 实际迁移**仍待落地。
 
-因此，管理后台设计必须建立在“反馈后台已存在，其余能力仍待补齐”的现实之上。
+因此，管理后台后续迭代应建立在「Phase 1 + 用户运营 + 反馈」已可用，其余模块按优先级补齐的现实之上。
 
 ---
 
@@ -173,25 +184,22 @@
 
 ### 5.3 用户运营
 
-用户运营模块首期应具备：
+#### 已落地（与代码对齐，2026-04）
 
-- 用户列表
-- 用户搜索
-  支持按 `user_id`、手机号、邮箱、昵称、主工具、路径状态筛选。
-- 用户详情
-  聚合用户资料、引导状态、当前学习路径、任务统计、积分段位、打卡、最近反馈。
-- 用户导出
-  复用 `user_profile_export_view`，支持 CSV 导出。
-- 用户备注
-  支持后台内部备注，不面向用户展示。
-- 人工积分调整
-  写入 `score_ledgers`，事件类型使用现有 `manual_adjustment`，并要求补充审计日志。
+- **用户列表**：分页、`keyword`、账号状态（含已软删）、onboarding、是否具备进行中计划等筛选；列表行内打开资料编辑抽屉。
+- **用户详情**（`/admin/users/[userId]`）：单页纵向信息架构——身份与徽章、运营摘要、可点击跳转的指标摘要卡、资料与登录渠道字段、当前学习计划与任务分布、累计任务统计、最近反馈工单与跳转全量列表；顶栏提供刷新、复制 ID/邮箱/手机、编辑资料、跳转工单列表；侧栏提供锚点导航与软删除/恢复。
+- **用户导出**：`GET /api/admin/users/export`，数据源为 `user_profile_export_view`。
+- **受控资料更新**：`PATCH /api/admin/users/{userId}` 限定白名单字段（昵称、简介、联系邮箱、微信、内容语言等），**不**承担修改 Supabase Auth 手机/邮箱或任意列覆盖。
+- **账号状态**：`POST .../soft-delete`（可选原因）、`POST .../restore`。
 
-首期不建议直接提供：
+#### 仍属后续规划（未作为当前里程碑验收）
 
-- 任意修改用户资料字段
-- 任意删除学习主数据
-- 绕过领域规则直接改任务状态
+- **用户备注**：后台内部备注、独立 `notes` API 与表（若与设计中的 `user_admin_notes` 一致，以未来迁移为准）。
+- **人工积分调整**：`POST .../score-adjustments` 写入 `score_ledgers`（如 `manual_adjustment`）并强制审计。
+
+#### 原则（仍然有效）
+
+- 不提供任意删除学习主数据、不提供绕过领域规则直接改任务状态的后台入口；软删除为**账号级**受控能力，与学习路径数据删除分离。
 
 ### 5.4 反馈工单
 
@@ -521,11 +529,11 @@ Agents 管理页必须补齐的辅助能力：
 
 ### 6.2 路由与目录建议
 
-建议新增后台前端路由：
+建议新增后台前端路由（与当前实现对齐时用 `(admin-shell)` 分组亦可）：
 
-- `app/admin/page.tsx`
-- `app/admin/users/*`
-- `app/admin/feedback/*`
+- `app/(admin-shell)/admin/page.tsx`（或 `app/admin/page.tsx`）
+- `app/(admin-shell)/admin/users/*`（**已落地**）
+- `app/(admin-shell)/admin/feedback/*`
 - `app/admin/learning/*`
 - `app/admin/ai/*`
 - `app/admin/settings/*`
@@ -537,8 +545,8 @@ Agents 管理页必须补齐的辅助能力：
 | `app/admin/page.tsx` | 后台首页，总览值班面板 |
 | `app/admin/feedback/page.tsx` | 反馈列表 |
 | `app/admin/feedback/[id]/page.tsx` | 工单详情、回复、状态切换 |
-| `app/admin/users/page.tsx` | 用户列表与导出 |
-| `app/admin/users/[id]/page.tsx` | 用户详情、备注、积分调整入口 |
+| `app/(admin-shell)/admin/users/page.tsx` | 用户列表、筛选、导出、行内编辑抽屉 |
+| `app/(admin-shell)/admin/users/[userId]/page.tsx` | 用户详情（资料/学习/工单/软删恢复）；备注与积分调整入口仍待后续 API |
 | `app/admin/learning/page.tsx` | 学习计划列表 |
 | `app/admin/learning/[id]/page.tsx` | 学习计划详情与状态运营 |
 | `app/admin/ai/page.tsx` | AI 运营首页 |
@@ -648,9 +656,9 @@ Agents 管理页必须补齐的辅助能力：
 |------|------|------|
 | 管理员认证 | `POST /api/admin/auth/login`、`GET /api/admin/session`、`POST /api/admin/auth/logout` | 新增 |
 | 总览看板 | `GET /api/admin/dashboard/overview` | 新增 |
-| 用户运营 | `GET /api/admin/users`、`GET /api/admin/users/{id}`、`GET /api/admin/users/export` | 新增 |
-| 用户备注 | `GET /api/admin/users/{id}/notes`、`POST /api/admin/users/{id}/notes` | 新增 |
-| 积分调整 | `POST /api/admin/users/{id}/score-adjustments` | 新增 |
+| 用户运营 | `GET /api/admin/users`、`GET /api/admin/users/export`、`GET /api/admin/users/{userId}`、`PATCH /api/admin/users/{userId}`、`POST /api/admin/users/{userId}/soft-delete`、`POST /api/admin/users/{userId}/restore` | **已落地** |
+| 用户备注 | `GET /api/admin/users/{userId}/notes`、`POST /api/admin/users/{userId}/notes` | 规划中 |
+| 积分调整 | `POST /api/admin/users/{userId}/score-adjustments` | 规划中 |
 | 反馈工单 | `GET /api/admin/feedback`、`GET /api/admin/feedback/{id}`、`POST /api/admin/feedback/{id}/reply`、`POST /api/admin/feedback/{id}/status` | 已有 |
 | 学习运营 | `GET /api/admin/learning-paths`、`GET /api/admin/learning-paths/{id}`、`POST /api/admin/learning-paths/{id}/status` | 新增 |
 | AI 运营 | `GET /api/admin/ai/invocations`、`GET /api/admin/ai/invocations/{id}` | 新增 |
@@ -1082,6 +1090,25 @@ AI 核心配置变更既要可追踪，也要尽量少引入额外配置真源�
 详细设计：`docs/plans/2026-03-31-admin-console-phase1-design.md`
 实施计划：`docs/plans/2026-03-31-admin-console-phase1-implementation.md`
 
+### 用户运营（终端用户）✅ 已完成
+
+目标：
+
+- 让运营与客服能检索用户、查看聚合详情、导出 CSV，并在受控范围内维护资料与账号可用性。
+
+范围（已实现）：
+
+- 前端：`features/admin-users`（列表、详情、编辑抽屉、与 `admin-shell` 菜单联动）
+- 后端：`server/modules/admin-users` + `app/api/admin/users/*`
+- 数据：读模型基于 `user_profile_export_view`；写模型为资料 PATCH、软删除标记与恢复
+- 文档：OpenAPI `admin-users` 分组
+
+完成日期：2026-04（以仓库提交为准）
+
+明确未包含在本阶段：
+
+- 用户内部备注 API、人工积分调整 API（仍见 §5.3「仍属后续规划」）
+
 ### Phase 2：AI 核心配置后台
 
 目标：
@@ -1098,21 +1125,20 @@ AI 核心配置变更既要可追踪，也要尽量少引入额外配置真源�
 - AI 调用日志列表与详情
 - 最小 AI 健康面板
 
-### Phase 3：用户运营与学习运营
+### Phase 3：学习运营与用户域深化
 
 目标：
 
-- 让运营能查用户、导用户、看学习状态
+- 在已有用户运营与看板基础上，补齐「学习路径级」运营能力与用户域剩余写能力
 
 范围：
 
-- dashboard overview
-- 用户列表、详情、导出
-- 用户备注
-- 人工积分调整
-- `user_admin_notes`
-- 学习计划列表、详情、状态运营
-- 必要读视图
+- 学习计划列表、详情、状态运营（专用 API + 页面）
+- 用户内部备注、`user_admin_notes`（若采用独立表）及对应 API
+- 人工积分调整与审计
+- 必要读视图与列表性能优化
+
+说明：**用户列表、详情、导出、资料 PATCH、软删/恢复**已在「用户运营（终端用户）✅」阶段交付，不再重复列入本阶段范围。
 
 ### Phase 4：高级运营配置
 
@@ -1134,10 +1160,10 @@ AI 核心配置变更既要可追踪，也要尽量少引入额外配置真源�
 
 建议按以下顺序推进：
 
-1. 先做管理员认证、后台壳层和反馈工单页面，因为这部分已有 API 基础，最容易先落地。
+1. 管理员认证、后台壳层、反馈工单与用户运营（列表/详情/导出/资料/软删）已在当前仓库交付，可作为后续模块的基础。
 2. 紧接着优先做 LLM 管理和 agents 管理，把 provider、model、自由学习模式 agent、平台预设不同工具/路径 agent 的可视化配置能力接上。
 3. 再做 AI 调用日志和最小 AI 健康面板，让 AI 运营能把“配置微调”与“线上效果”连起来看。
-4. 然后补用户列表、用户详情、导出、学习计划运营和积分人工调整，形成客服与运营的完整闭环。
+4. 用户列表、详情、导出与资料维护已交付；继续补学习计划运营、用户备注与积分人工调整等，形成更深运营闭环。
 5. 最后再补 `event_logs`、AI agent test、Prompt 灰度与回滚，以及通知/订阅等更重的后台能力。
 
 ---
@@ -1175,9 +1201,9 @@ AI registry、agent、skill、prompt 的后台配置能力必须遵守 `2026-03-
 
 ## 13. 结论
 
-当前项目已经具备管理后台的第一批可落地基础，但真实成熟的后台能力只有反馈工单一条线。接下来最关键的不是先把后台做成通用运营工作台，而是优先把 LLM 管理与 agents 管理做成核心主业务，因为 AI 导师效果直接取决于这些配置的持续微调。
+当前项目已具备管理后台多条可用链路：**反馈工单**、**用户运营（列表/详情/导出/资料/软删恢复）**以及与 Phase 1 一体的认证与看板。若要继续提升「AI 导师质量」的可运营性，仍应优先把 **LLM 管理与 agents 管理** 做成核心主业务；用户侧运营主数据检索与导出已不再阻塞客服日常工作。
 
-因此，最合理的路径不是平均推进所有后台模块，而是按“反馈工单与后台壳层 -> LLM 管理与 agents 管理 -> AI 调用观测 -> 用户与学习运营 -> 高级配置”的顺序逐步扩展。
+因此，推荐推进顺序可调整为「反馈 + 壳层 + 用户运营（已交付）-> LLM/agents 管理 -> AI 调用观测 -> 学习运营与用户域深化（备注、积分等）-> 高级配置」。
 
 后台设计必须继续建立在当前同仓架构上，复用：
 
@@ -1186,4 +1212,4 @@ AI registry、agent、skill、prompt 的后台配置能力必须遵守 `2026-03-
 - `server/modules/*` 领域服务
 - Supabase 现有业务表、写模型表、导出视图和 AI 调用审计表
 
-在此基础上，先补管理员身份、审计、导出和 read model，再逐步补更重的配置化能力，才能在不破坏主链路完整性的前提下，把后台真正做成运营可用的系统。
+在此基础上，管理员身份与基础审计、用户 read model 与导出已可用；后续再逐步补更重的 AI 配置与学习路径运营能力，才能在不破坏主链路完整性的前提下，把后台真正做成运营可用的系统。

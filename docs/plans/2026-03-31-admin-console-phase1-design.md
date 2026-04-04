@@ -7,6 +7,8 @@
 > 创建日期：2026-03-31
 > 适用阶段：Phase 1 - 管理员认证 + 后台壳层 + 反馈工单
 > 关联文档：`docs/plans/2026-03-31-ai-coding-tutor-admin-console-design.md`
+>
+> **2026-04-04 补充**：同仓已追加**用户运营**路由与功能（`/admin/users`、`/admin/users/[userId]`），不属于 Phase 1 原始验收包，但以代码为准；详见总设计文档 §5.3 与 `features/admin-users`。
 
 ---
 
@@ -27,10 +29,12 @@
 | `/admin` | 总览看板 | 简化版，4-5 个核心指标 |
 | `/admin/feedback` | 反馈工单列表 | 搜索、筛选、分页 |
 | `/admin/feedback/[id]` | 反馈工单详情 | 详情、回复、状态切换 |
+| `/admin/users` | 用户运营列表 | **Phase 1 之后已落地**：筛选、导出、编辑抽屉 |
+| `/admin/users/[userId]` | 用户详情 | **Phase 1 之后已落地**：聚合资料/学习/工单、软删恢复 |
 
-### 1.3 不包含（留到后续阶段）
+### 1.3 不包含（Phase 1 原始范围内未承诺；部分已由后续迭代补齐）
 
-- 用户运营模块
+- ~~用户运营模块~~（已在后续迭代交付，见总设计文档 §5.3）
 - 学习运营模块
 - AI 运营模块
 - 细粒度 UI 权限控制
@@ -277,12 +281,12 @@ app/
 
 ### 4.3 侧边栏菜单
 
-Phase 1 只显示可访问的菜单项（未实现的显示为禁用）：
+Phase 1 只显示可访问的菜单项（未实现的显示为禁用）。**2026-04 代码对齐**：`用户运营` 已与 `features/admin-shell/data/menu-config.ts` 一致设为可点通。
 
 ```typescript
 const menuItems = [
   { label: "总览看板", href: "/admin", icon: LayoutDashboard, active: true },
-  { label: "用户运营", href: "/admin/users", icon: Users, active: false },
+  { label: "用户运营", href: "/admin/users", icon: Users, active: true },
   { label: "反馈工单", href: "/admin/feedback", icon: MessageSquare, active: true },
   { label: "学习运营", href: "/admin/learning", icon: BookOpen, active: false },
   {
