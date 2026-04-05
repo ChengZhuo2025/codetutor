@@ -26,6 +26,10 @@ import {
 } from "@/lib/api/admin-bff-client"
 import { prettyJson, safeJsonParse } from "@/features/admin-ai/lib/view-model"
 
+/** 与抽屉内 Input / select 同系：底色、边框与内阴影一致 */
+const MODEL_BOOL_TILE_CLASS =
+  "flex min-h-9 shrink-0 cursor-pointer items-center gap-2.5 rounded-md border border-border/90 bg-muted/45 px-3 py-2 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)] has-[:focus-visible]:outline-none has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/50"
+
 const EMPTY_FORM = {
   providerCode: "",
   code: "",
@@ -204,7 +208,7 @@ export function ModelFormSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl">
+      <SheetContent side="right" className="w-full sm:max-w-xl">
         <SheetHeader className="border-b border-border px-6 py-5">
           <SheetTitle>{modelId ? "编辑 Model" : "新建 Model"}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
@@ -217,7 +221,7 @@ export function ModelFormSheet({
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="model-providerCode">Provider</Label>
-                  <select id="model-providerCode" value={form.providerCode} onChange={(event) => setForm((prev) => ({ ...prev, providerCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground">
+                  <select id="model-providerCode" value={form.providerCode} onChange={(event) => setForm((prev) => ({ ...prev, providerCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
                     <option value="">请选择 Provider</option>
                     {providers?.items.map((item) => (
                       <option key={item.providerId} value={item.code}>{item.name} ({item.code})</option>
@@ -253,22 +257,42 @@ export function ModelFormSheet({
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-4">
-                <label className="flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-3 text-sm text-foreground">
-                  <input type="checkbox" checked={form.supportsStream} onChange={(event) => setForm((prev) => ({ ...prev, supportsStream: event.target.checked }))} />
-                  支持流式
+              <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-2">
+                <label className={MODEL_BOOL_TILE_CLASS}>
+                  <input
+                    type="checkbox"
+                    className="shrink-0 rounded border-border accent-primary"
+                    checked={form.supportsStream}
+                    onChange={(event) => setForm((prev) => ({ ...prev, supportsStream: event.target.checked }))}
+                  />
+                  <span className="whitespace-nowrap">支持流式</span>
                 </label>
-                <label className="flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-3 text-sm text-foreground">
-                  <input type="checkbox" checked={form.supportsJsonMode} onChange={(event) => setForm((prev) => ({ ...prev, supportsJsonMode: event.target.checked }))} />
-                  支持 JSON
+                <label className={MODEL_BOOL_TILE_CLASS}>
+                  <input
+                    type="checkbox"
+                    className="shrink-0 rounded border-border accent-primary"
+                    checked={form.supportsJsonMode}
+                    onChange={(event) => setForm((prev) => ({ ...prev, supportsJsonMode: event.target.checked }))}
+                  />
+                  <span className="whitespace-nowrap">支持 JSON</span>
                 </label>
-                <label className="flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-3 text-sm text-foreground">
-                  <input type="checkbox" checked={form.supportsToolCalling} onChange={(event) => setForm((prev) => ({ ...prev, supportsToolCalling: event.target.checked }))} />
-                  支持 Tool Calling
+                <label className={MODEL_BOOL_TILE_CLASS}>
+                  <input
+                    type="checkbox"
+                    className="shrink-0 rounded border-border accent-primary"
+                    checked={form.supportsToolCalling}
+                    onChange={(event) => setForm((prev) => ({ ...prev, supportsToolCalling: event.target.checked }))}
+                  />
+                  <span className="whitespace-nowrap">支持 Tool Calling</span>
                 </label>
-                <label className="flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-3 text-sm text-foreground">
-                  <input type="checkbox" checked={form.isActive} onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))} />
-                  启用
+                <label className={MODEL_BOOL_TILE_CLASS}>
+                  <input
+                    type="checkbox"
+                    className="shrink-0 rounded border-border accent-primary"
+                    checked={form.isActive}
+                    onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))}
+                  />
+                  <span className="whitespace-nowrap">启用</span>
                 </label>
               </div>
 

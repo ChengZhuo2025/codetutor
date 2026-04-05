@@ -156,7 +156,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
                             )}
                           >
                             <ChildIcon className="size-3.5 shrink-0" />
-                            {!collapsed ? <span className="truncate">{child.label}</span> : null}
+                            {!collapsed ? <span className="truncate text-sm">{child.label}</span> : null}
                           </Link>
                         )
 

@@ -137,7 +137,7 @@ export function BindingFormSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl">
+      <SheetContent side="right" className="w-full sm:max-w-xl">
         <SheetHeader className="border-b border-border px-6 py-5">
           <SheetTitle>{bindingItem ? "编辑命中规则" : "新建命中规则"}</SheetTitle>
           <SheetDescription>维护不同工具、路径、等级与交互类型下命中的 Agent。</SheetDescription>
@@ -147,7 +147,7 @@ export function BindingFormSheet({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="binding-agentCode">Agent</Label>
-                <select id="binding-agentCode" value={form.agentCode} onChange={(event) => setForm((prev) => ({ ...prev, agentCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground">
+                <select id="binding-agentCode" value={form.agentCode} onChange={(event) => setForm((prev) => ({ ...prev, agentCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
                   <option value="">请选择 Agent</option>
                   {options?.agentOptions?.map((item) => (
                     <option key={item.code} value={item.code}>{item.name}</option>
@@ -160,7 +160,7 @@ export function BindingFormSheet({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="binding-toolId">Tool</Label>
-                <select id="binding-toolId" value={form.toolId} onChange={(event) => setForm((prev) => ({ ...prev, toolId: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground">
+                <select id="binding-toolId" value={form.toolId} onChange={(event) => setForm((prev) => ({ ...prev, toolId: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
                   <option value="">全部 Tool</option>
                   {options?.toolOptions?.map((item) => (
                     <option key={item.id} value={item.id}>{item.name} ({item.code})</option>
@@ -169,7 +169,7 @@ export function BindingFormSheet({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="binding-pathId">Path</Label>
-                <select id="binding-pathId" value={form.pathId} onChange={(event) => setForm((prev) => ({ ...prev, pathId: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground">
+                <select id="binding-pathId" value={form.pathId} onChange={(event) => setForm((prev) => ({ ...prev, pathId: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
                   <option value="">全部 Path</option>
                   {options?.pathOptions?.map((item) => (
                     <option key={item.id} value={item.id}>{item.name} ({item.code})</option>
@@ -178,7 +178,7 @@ export function BindingFormSheet({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="binding-learningLevel">学习等级</Label>
-                <select id="binding-learningLevel" value={form.learningLevel} onChange={(event) => setForm((prev) => ({ ...prev, learningLevel: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground">
+                <select id="binding-learningLevel" value={form.learningLevel} onChange={(event) => setForm((prev) => ({ ...prev, learningLevel: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
                   <option value="">全部等级</option>
                   <option value="beginner">beginner</option>
                   <option value="intermediate">intermediate</option>
@@ -187,7 +187,7 @@ export function BindingFormSheet({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="binding-selectionMode">学习模式</Label>
-                <select id="binding-selectionMode" value={form.selectionMode} onChange={(event) => setForm((prev) => ({ ...prev, selectionMode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground">
+                <select id="binding-selectionMode" value={form.selectionMode} onChange={(event) => setForm((prev) => ({ ...prev, selectionMode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
                   <option value="">全部模式</option>
                   <option value="self_directed">self_directed</option>
                   <option value="preset_training">preset_training</option>
@@ -202,7 +202,7 @@ export function BindingFormSheet({
                 <Input id="binding-priority" type="number" value={String(form.priority)} onChange={(event) => setForm((prev) => ({ ...prev, priority: Number(event.target.value) || 0 }))} />
               </div>
             </div>
-            <label className="flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-3 text-sm text-foreground">
+            <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]">
               <input type="checkbox" checked={form.isActive} onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))} />
               启用
             </label>

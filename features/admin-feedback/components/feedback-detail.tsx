@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button"
 import { ADMIN_ROUTES } from "@/constants/routes"
 import { feedbackPriorityLabels } from "../data/status-config"
 import { cn } from "@/lib/utils"
+import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
   adminRequestData,
@@ -435,16 +436,17 @@ export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">回复后状态</span>
-                <select
+                <AdminSelect
                   value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value)}
-                  className="h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="submitted">待处理</option>
-                  <option value="in_review">处理中</option>
-                  <option value="replied">已解决</option>
-                  <option value="closed">已关闭</option>
-                </select>
+                  onValueChange={setNewStatus}
+                  options={[
+                    { value: "submitted", label: "待处理" },
+                    { value: "in_review", label: "处理中" },
+                    { value: "replied", label: "已解决" },
+                    { value: "closed", label: "已关闭" },
+                  ]}
+                  triggerClassName="h-8 min-w-[6.5rem] px-2"
+                />
               </div>
               <Button
                 type="button"

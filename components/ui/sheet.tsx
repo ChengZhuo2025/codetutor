@@ -58,7 +58,11 @@ function SheetContent({
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
-          'bg-background/96 data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 border-border/70 backdrop-blur-xl shadow-[0_32px_80px_-40px_rgba(15,23,42,0.45)] transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500',
+          'bg-card text-card-foreground data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex min-h-0 flex-col gap-0 border-border/80 backdrop-blur-xl shadow-[0_32px_80px_-40px_rgba(0,0,0,0.55)] transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500',
+          '[&_[data-slot=input]]:border-border/90 [&_[data-slot=input]]:bg-muted/45 [&_[data-slot=input]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.22)]',
+          '[&_[data-slot=textarea]]:border-border/90 [&_[data-slot=textarea]]:bg-muted/45 [&_[data-slot=textarea]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.22)]',
+          '[&_select]:border-border/90 [&_select]:bg-muted/45 [&_select]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.22)]',
+          '[&_label.flex.items-center.gap-2.rounded-xl.border]:border-border/80 [&_label.flex.items-center.gap-2.rounded-xl.border]:bg-muted/30 [&_label.flex.items-center.gap-2.rounded-xl.border]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]',
           side === 'right' &&
             'data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm',
           side === 'left' &&
@@ -85,7 +89,7 @@ function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="sheet-header"
-      className={cn('flex flex-col gap-1.5 p-4', className)}
+      className={cn('flex flex-col gap-1.5 border-b border-border/70 bg-muted/15 p-4', className)}
       {...props}
     />
   )
@@ -95,7 +99,7 @@ function SheetFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="sheet-footer"
-      className={cn('mt-auto flex flex-col gap-2 p-4', className)}
+      className={cn('mt-auto flex flex-col gap-2 border-t border-border/70 bg-muted/15 p-4', className)}
       {...props}
     />
   )

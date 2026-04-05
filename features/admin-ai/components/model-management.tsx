@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatePanel } from "@/components/ui/state-panel"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
+import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
   adminRequestData,
@@ -124,14 +125,18 @@ export function ModelManagement() {
                     className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
-                <select value={status} onChange={(event) => {
-                  setPage(1)
-                  setStatus(event.target.value)
-                }} className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground">
-                  <option value="all">全部状态</option>
-                  <option value="active">仅启用</option>
-                  <option value="inactive">仅停用</option>
-                </select>
+                <AdminSelect
+                  value={status}
+                  onValueChange={(next) => {
+                    setPage(1)
+                    setStatus(next)
+                  }}
+                  options={[
+                    { value: "all", label: "全部状态" },
+                    { value: "active", label: "仅启用" },
+                    { value: "inactive", label: "仅停用" },
+                  ]}
+                />
                 <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applySearch}>
                   搜索
                 </Button>

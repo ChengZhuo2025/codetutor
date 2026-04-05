@@ -3,6 +3,7 @@
 import type { ReactNode } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 
 export type AdminListPaginationFooterProps = {
   limit: string
@@ -41,17 +42,18 @@ export function AdminListPaginationFooter({
   return (
     <div className="flex flex-col gap-3 border-t border-border bg-muted/20 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <span>
+        <span className="inline-flex flex-wrap items-center gap-x-1">
           每页
-          <select
+          <AdminSelect
             value={limit}
-            onChange={(e) => onLimitChange(e.target.value)}
-            className="mx-1 h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-          >
-            <option value="20">20</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
+            onValueChange={onLimitChange}
+            options={[
+              { value: "20", label: "20" },
+              { value: "50", label: "50" },
+              { value: "100", label: "100" },
+            ]}
+            triggerClassName="mx-0.5 h-8 min-w-[3rem] w-[3rem] justify-center px-2"
+          />
           条
         </span>
         {centerContent ? (

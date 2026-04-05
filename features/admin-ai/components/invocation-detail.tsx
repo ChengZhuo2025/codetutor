@@ -80,19 +80,32 @@ export function InvocationDetail({ invocationId }: InvocationDetailProps) {
       />
 
       {isLoading && !data ? (
-        <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-          <div className="h-64 animate-pulse rounded-2xl border border-border bg-muted/30" />
-          <div className="h-64 animate-pulse rounded-2xl border border-border bg-muted/30" />
+        <div className="flex flex-col gap-6">
+          <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr] xl:items-stretch">
+            <div className="min-h-64 animate-pulse rounded-2xl border border-border bg-muted/30 xl:min-h-80" />
+            <div className="min-h-64 animate-pulse rounded-2xl border border-border bg-muted/30 xl:min-h-80" />
+          </div>
+          <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr] xl:items-stretch">
+            <div className="min-h-48 animate-pulse rounded-2xl border border-border bg-muted/30" />
+            <div className="min-h-48 animate-pulse rounded-2xl border border-border bg-muted/30" />
+          </div>
         </div>
       ) : data ? (
-        <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-          <div className="space-y-6">
-            <PageSection title="基础信息" description="本次调用的主体、状态与会话定位。">
-              <div className="mb-4">
-                {meta ? (
-                  <Badge className={meta.className}>{meta.label}</Badge>
-                ) : null}
-              </div>
+        <div className="flex flex-col gap-6">
+          <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr] xl:items-stretch">
+            <PageSection
+              title="基础信息"
+              description="本次调用的主体、状态与会话定位。"
+              className="h-full min-h-0"
+              bodyClassName="flex min-h-0 flex-1 flex-col"
+              action={
+                meta ? (
+                  <Badge className={meta.className} size="lg">
+                    {meta.label}
+                  </Badge>
+                ) : null
+              }
+            >
               <dl className="divide-y divide-border">
                 <InfoRow label="Invocation ID" value={data.invocation.invocationId} />
                 <InfoRow label="Session ID" value={data.invocation.sessionId} />
@@ -105,7 +118,26 @@ export function InvocationDetail({ invocationId }: InvocationDetailProps) {
               </dl>
             </PageSection>
 
-            <PageSection title="Token 与耗时" description="统计当前调用的耗时、首包和 Token 用量。">
+            <PageSection
+              title="Request Payload"
+              description="脱敏后的请求载荷。"
+              className="h-full min-h-0"
+              bodyClassName="flex min-h-0 flex-1 flex-col"
+            >
+              <JsonPreview
+                value={data.invocation.requestPayloadRedacted}
+                className="min-h-0 flex-1 overflow-auto max-h-none"
+              />
+            </PageSection>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr] xl:items-stretch">
+            <PageSection
+              title="Token 与耗时"
+              description="统计当前调用的耗时、首包和 Token 用量。"
+              className="h-full min-h-0"
+              bodyClassName="flex min-h-0 flex-1 flex-col"
+            >
               <dl className="divide-y divide-border">
                 <InfoRow label="Prompt Tokens" value={formatNumber(data.invocation.promptTokens)} />
                 <InfoRow label="Completion Tokens" value={formatNumber(data.invocation.completionTokens)} />
@@ -117,14 +149,17 @@ export function InvocationDetail({ invocationId }: InvocationDetailProps) {
                 <InfoRow label="Error Message" value={data.invocation.errorMessage ?? "暂无"} />
               </dl>
             </PageSection>
-          </div>
 
-          <div className="space-y-6">
-            <PageSection title="Request Payload" description="脱敏后的请求载荷。">
-              <JsonPreview value={data.invocation.requestPayloadRedacted} />
-            </PageSection>
-            <PageSection title="Response Payload" description="脱敏后的响应载荷。">
-              <JsonPreview value={data.invocation.responsePayloadRedacted} />
+            <PageSection
+              title="Response Payload"
+              description="脱敏后的响应载荷。"
+              className="h-full min-h-0"
+              bodyClassName="flex min-h-0 flex-1 flex-col"
+            >
+              <JsonPreview
+                value={data.invocation.responsePayloadRedacted}
+                className="min-h-0 flex-1 overflow-auto max-h-none"
+              />
             </PageSection>
           </div>
         </div>

@@ -240,7 +240,7 @@ export function AgentFormSheet({
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="agent-scenarioType">场景类型</Label>
-                  <select id="agent-scenarioType" value={form.scenarioType} onChange={(event) => setForm((prev) => ({ ...prev, scenarioType: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground">
+                  <select id="agent-scenarioType" value={form.scenarioType} onChange={(event) => setForm((prev) => ({ ...prev, scenarioType: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
                     <option value="teaching">teaching</option>
                     <option value="blocked_help">blocked_help</option>
                     <option value="task_review">task_review</option>
@@ -250,7 +250,7 @@ export function AgentFormSheet({
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="agent-defaultProviderCode">默认 Provider</Label>
-                  <select id="agent-defaultProviderCode" value={form.defaultProviderCode} onChange={(event) => setForm((prev) => ({ ...prev, defaultProviderCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground">
+                  <select id="agent-defaultProviderCode" value={form.defaultProviderCode} onChange={(event) => setForm((prev) => ({ ...prev, defaultProviderCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
                     <option value="">请选择</option>
                     {providers?.items.map((item) => (
                       <option key={item.providerId} value={item.code}>{item.name} ({item.code})</option>
@@ -259,7 +259,7 @@ export function AgentFormSheet({
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="agent-defaultModelCode">默认 Model</Label>
-                  <select id="agent-defaultModelCode" value={form.defaultModelCode} onChange={(event) => setForm((prev) => ({ ...prev, defaultModelCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground">
+                  <select id="agent-defaultModelCode" value={form.defaultModelCode} onChange={(event) => setForm((prev) => ({ ...prev, defaultModelCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
                     <option value="">请选择</option>
                     {models?.items.map((item) => (
                       <option key={item.modelId} value={item.code}>{item.displayName} ({item.code})</option>
@@ -303,11 +303,11 @@ export function AgentFormSheet({
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-3 text-sm text-foreground">
+                <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]">
                   <input type="checkbox" checked={form.streamEnabled} onChange={(event) => setForm((prev) => ({ ...prev, streamEnabled: event.target.checked }))} />
                   启用流式输出
                 </label>
-                <label className="flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-3 text-sm text-foreground">
+                <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]">
                   <input type="checkbox" checked={form.isActive} onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))} />
                   启用
                 </label>

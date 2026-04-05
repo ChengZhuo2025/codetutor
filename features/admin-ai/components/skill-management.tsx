@@ -114,11 +114,156 @@ export function SkillManagement() {
           }
         />
 
+        <nav
+          className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground xl:hidden"
+          aria-label="页面区块跳转"
+        >
+          <a href="#admin-ai-skill-bindings" className="text-primary underline-offset-4 hover:underline">
+            跳到 Skill 绑定
+          </a>
+          <a href="#admin-ai-skill-registry" className="text-primary underline-offset-4 hover:underline">
+            跳到 Skill Registry
+          </a>
+        </nav>
+
         {error && !skillData && !bindingData ? (
           <StatePanel status="error" title="获取 Skill 管理数据失败" description={error} actionLabel="重试" onAction={() => void fetchAll()} />
         ) : (
-          <>
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-8 xl:grid xl:grid-cols-2 xl:items-stretch xl:gap-6">
+            {/* Skill 绑定优先：窄屏首屏可见；宽屏左栏 */}
+            <section
+              id="admin-ai-skill-bindings"
+              className="flex min-h-0 scroll-mt-28 flex-col gap-3 xl:h-[calc(100vh-11rem)] xl:min-h-[min(420px,80vh)] xl:max-h-[calc(100vh-11rem)]"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">Skill 绑定</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    维护 Agent 到 Skill 的上下文挂载关系。
+                    {typeof bindingData?.total === "number" ? ` · 当前筛选共 ${bindingData.total} 条` : ""}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  className="w-full shrink-0 gap-1.5 sm:w-auto"
+                  onClick={() => {
+                    setEditingItem(null)
+                    setSheetOpen(true)
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  新建绑定
+                </Button>
+              </div>
+              <ListFilterCard>
+              <div className="flex flex-col gap-3 md:flex-row">
+                <div className="relative flex-1 min-w-32 max-w-md">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={bindingKeyword}
+                      onChange={(event) => setBindingKeyword(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          applyBindingSearch()
+                        }
+                      }}
+                      placeholder="关键词：agent / skill"
+                      className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                    />
+                  </div>
+                  <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applyBindingSearch}>
+                    搜索
+                  </Button>
+                </div>
+              </ListFilterCard>
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
+                <div className="min-h-0 flex-1 overflow-auto">
+                  {isLoading && !bindingData ? (
+                    <div className="space-y-3 p-4">
+                      {[1, 2, 3].map((item) => (
+                        <div key={item} className="h-24 animate-pulse rounded-xl border border-border bg-muted/40" />
+                      ))}
+                    </div>
+                  ) : bindingData?.items.length ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[1100px] table-fixed">
+                        <thead className="sticky top-0 z-1 bg-muted/40 backdrop-blur-sm">
+                          <tr className="border-b border-border">
+                            <th className="w-[22%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Agent</th>
+                            <th className="w-[22%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Skill</th>
+                            <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">优先级</th>
+                            <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">必选</th>
+                            <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">预算</th>
+                            <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
+                            <th className="w-[10%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {bindingData.items.map((item) => (
+                            <tr key={item.bindingId} className="transition-colors hover:bg-muted/20">
+                              <td className="px-4 py-4 align-top">
+                                <p className="text-sm font-medium text-foreground">{item.agentName}</p>
+                              </td>
+                              <td className="px-4 py-4 align-top">
+                                <p className="text-sm text-foreground">{item.skillName}</p>
+                                <p className="mt-1 text-xs text-muted-foreground">{item.skillCode}</p>
+                              </td>
+                              <td className="px-4 py-4 align-top text-sm text-foreground">{item.priority}</td>
+                              <td className="px-4 py-4 align-top text-sm text-foreground">{item.isRequired ? "必需" : "可选"}</td>
+                              <td className="px-4 py-4 align-top text-sm text-foreground">{item.contextBudgetTokens ?? "未设置"}</td>
+                              <td className="px-4 py-4 align-top">
+                                <ActiveStateBadge active={item.isActive} />
+                              </td>
+                              <td className="px-4 py-4 align-top">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 px-2.5"
+                                    onClick={() => {
+                                      setEditingItem(item)
+                                      setSheetOpen(true)
+                                    }}
+                                  >
+                                    编辑
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-4">
+                      <StatePanel status="empty" title="暂无 Skill 绑定" description="当前筛选条件下没有匹配的 Skill 绑定。" />
+                    </div>
+                  )}
+                </div>
+                <AdminListPaginationFooter
+                  limit={bindingLimit}
+                  onLimitChange={(value) => {
+                    setBindingLimit(value)
+                    setBindingPage(1)
+                  }}
+                  page={bindingPage}
+                  totalPages={bindingTotalPages}
+                  total={bindingData?.total ?? 0}
+                  canPrev={bindingPage > 1}
+                  canNext={bindingPage < bindingTotalPages}
+                  isLoading={isLoading}
+                  onPrevPage={() => setBindingPage((prev) => Math.max(1, prev - 1))}
+                  onNextPage={() => setBindingPage((prev) => Math.min(bindingTotalPages, prev + 1))}
+                  centerContent={<span>当前页显示 {bindingData?.items.length ?? 0} 条</span>}
+                />
+              </div>
+            </section>
+
+            <section
+              id="admin-ai-skill-registry"
+              className="flex min-h-0 scroll-mt-28 flex-col gap-3 xl:h-[calc(100vh-11rem)] xl:min-h-[min(420px,80vh)] xl:max-h-[calc(100vh-11rem)]"
+            >
               <div>
                 <h2 className="text-base font-semibold text-foreground">Skill Registry</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -126,214 +271,92 @@ export function SkillManagement() {
                   {typeof skillData?.total === "number" ? ` · 当前筛选共 ${skillData.total} 条` : ""}
                 </p>
               </div>
-            </div>
-            <ListFilterCard>
-              <div className="flex flex-col gap-3 md:flex-row">
-                <div className="relative flex-1 min-w-32 max-w-md">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={keyword}
-                    onChange={(event) => setKeyword(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        applySkillSearch()
-                      }
-                    }}
-                    placeholder="关键词：code / name / source / trust"
-                    className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                  />
+              <ListFilterCard>
+                <div className="flex flex-col gap-3 md:flex-row">
+                  <div className="relative min-w-0 flex-1 max-w-md">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={keyword}
+                      onChange={(event) => setKeyword(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          applySkillSearch()
+                        }
+                      }}
+                      placeholder="关键词：code / name / source / trust"
+                      className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                    />
+                  </div>
+                  <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applySkillSearch}>
+                    搜索
+                  </Button>
                 </div>
-                <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applySkillSearch}>
-                  搜索
-                </Button>
-              </div>
-            </ListFilterCard>
-            <div className="overflow-hidden rounded-xl border border-border bg-card">
-              {isLoading && !skillData ? (
-                <div className="grid gap-3 p-4 xl:grid-cols-2">
-                  {[1, 2, 3, 4].map((item) => (
-                    <div key={item} className="h-20 animate-pulse rounded-xl border border-border bg-muted/40" />
-                  ))}
-                </div>
-              ) : skillData?.items.length ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[1200px] table-fixed">
-                    <thead className="bg-muted/40">
-                      <tr className="border-b border-border">
-                        <th className="w-[28%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Skill</th>
-                        <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">来源</th>
-                        <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">信任级别</th>
-                        <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">关联 Agent</th>
-                        <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
-                        <th className="w-[38%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">资源路径</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {skillData.items.map((item) => (
-                        <tr key={item.skillId} className="transition-colors hover:bg-muted/20">
-                          <td className="px-4 py-4 align-top">
-                            <p className="text-sm font-medium text-foreground">{item.name}</p>
-                            <p className="mt-1 font-mono text-[11px] text-muted-foreground">{item.code}</p>
-                          </td>
-                          <td className="px-4 py-4 align-top text-sm text-foreground">{item.sourceType}</td>
-                          <td className="px-4 py-4 align-top text-sm text-foreground">{item.trustLevel}</td>
-                          <td className="px-4 py-4 align-top text-sm text-foreground">{item.linkedAgentCount}</td>
-                          <td className="px-4 py-4 align-top">
-                            <ActiveStateBadge active={item.isActive} />
-                          </td>
-                          <td className="px-4 py-4 align-top break-all text-xs text-muted-foreground">{item.entryResourcePath ?? item.manifestPath}</td>
-                        </tr>
+              </ListFilterCard>
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
+                <div className="min-h-0 flex-1 overflow-auto">
+                  {isLoading && !skillData ? (
+                    <div className="grid gap-3 p-4 xl:grid-cols-1">
+                      {[1, 2, 3, 4].map((item) => (
+                        <div key={item} className="h-20 animate-pulse rounded-xl border border-border bg-muted/40" />
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  ) : skillData?.items.length ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[1200px] table-fixed">
+                        <thead className="sticky top-0 z-1 bg-muted/40 backdrop-blur-sm">
+                          <tr className="border-b border-border">
+                            <th className="w-[28%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Skill</th>
+                            <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">来源</th>
+                            <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">信任级别</th>
+                            <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">关联 Agent</th>
+                            <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
+                            <th className="w-[38%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">资源路径</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {skillData.items.map((item) => (
+                            <tr key={item.skillId} className="transition-colors hover:bg-muted/20">
+                              <td className="px-4 py-4 align-top">
+                                <p className="text-sm font-medium text-foreground">{item.name}</p>
+                                <p className="mt-1 font-mono text-[11px] text-muted-foreground">{item.code}</p>
+                              </td>
+                              <td className="px-4 py-4 align-top text-sm text-foreground">{item.sourceType}</td>
+                              <td className="px-4 py-4 align-top text-sm text-foreground">{item.trustLevel}</td>
+                              <td className="px-4 py-4 align-top text-sm text-foreground">{item.linkedAgentCount}</td>
+                              <td className="px-4 py-4 align-top">
+                                <ActiveStateBadge active={item.isActive} />
+                              </td>
+                              <td className="px-4 py-4 align-top break-all text-xs text-muted-foreground">{item.entryResourcePath ?? item.manifestPath}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-4">
+                      <StatePanel status="empty" title="暂无 Skill" description="当前筛选条件下没有匹配的 Skill。" />
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="p-4">
-                  <StatePanel status="empty" title="暂无 Skill" description="当前筛选条件下没有匹配的 Skill。" />
-                </div>
-              )}
-
-              <AdminListPaginationFooter
-                limit={skillLimit}
-                onLimitChange={(value) => {
-                  setSkillLimit(value)
-                  setSkillPage(1)
-                }}
-                page={skillPage}
-                totalPages={skillTotalPages}
-                total={skillData?.total ?? 0}
-                canPrev={skillPage > 1}
-                canNext={skillPage < skillTotalPages}
-                isLoading={isLoading}
-                onPrevPage={() => setSkillPage((prev) => Math.max(1, prev - 1))}
-                onNextPage={() => setSkillPage((prev) => Math.min(skillTotalPages, prev + 1))}
-                centerContent={<span>当前页显示 {skillData?.items.length ?? 0} 条</span>}
-              />
-            </div>
-
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-foreground">Skill 绑定</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  维护 Agent 到 Skill 的上下文挂载关系。
-                  {typeof bindingData?.total === "number" ? ` · 当前筛选共 ${bindingData.total} 条` : ""}
-                </p>
+                <AdminListPaginationFooter
+                  limit={skillLimit}
+                  onLimitChange={(value) => {
+                    setSkillLimit(value)
+                    setSkillPage(1)
+                  }}
+                  page={skillPage}
+                  totalPages={skillTotalPages}
+                  total={skillData?.total ?? 0}
+                  canPrev={skillPage > 1}
+                  canNext={skillPage < skillTotalPages}
+                  isLoading={isLoading}
+                  onPrevPage={() => setSkillPage((prev) => Math.max(1, prev - 1))}
+                  onNextPage={() => setSkillPage((prev) => Math.min(skillTotalPages, prev + 1))}
+                  centerContent={<span>当前页显示 {skillData?.items.length ?? 0} 条</span>}
+                />
               </div>
-              <Button
-                type="button"
-                className="gap-1.5"
-                onClick={() => {
-                  setEditingItem(null)
-                  setSheetOpen(true)
-                }}
-              >
-                <Plus className="h-4 w-4" />
-                新建绑定
-              </Button>
-            </div>
-            <ListFilterCard>
-              <div className="flex flex-col gap-3 md:flex-row">
-                <div className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={bindingKeyword}
-                    onChange={(event) => setBindingKeyword(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        applyBindingSearch()
-                      }
-                    }}
-                    placeholder="关键词：agent / skill"
-                    className="h-9 pl-9"
-                  />
-                </div>
-                <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applyBindingSearch}>
-                  搜索
-                </Button>
-              </div>
-            </ListFilterCard>
-            <div className="overflow-hidden rounded-xl border border-border bg-card">
-              {isLoading && !bindingData ? (
-                <div className="space-y-3 p-4">
-                  {[1, 2, 3].map((item) => (
-                    <div key={item} className="h-24 animate-pulse rounded-xl border border-border bg-muted/40" />
-                  ))}
-                </div>
-              ) : bindingData?.items.length ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[1100px] table-fixed">
-                    <thead className="bg-muted/40">
-                      <tr className="border-b border-border">
-                        <th className="w-[22%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Agent</th>
-                        <th className="w-[22%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Skill</th>
-                        <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">优先级</th>
-                        <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">必选</th>
-                        <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">预算</th>
-                        <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
-                        <th className="w-[10%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {bindingData.items.map((item) => (
-                        <tr key={item.bindingId} className="transition-colors hover:bg-muted/20">
-                          <td className="px-4 py-4 align-top">
-                            <p className="text-sm font-medium text-foreground">{item.agentName}</p>
-                          </td>
-                          <td className="px-4 py-4 align-top">
-                            <p className="text-sm text-foreground">{item.skillName}</p>
-                            <p className="mt-1 text-xs text-muted-foreground">{item.skillCode}</p>
-                          </td>
-                          <td className="px-4 py-4 align-top text-sm text-foreground">{item.priority}</td>
-                          <td className="px-4 py-4 align-top text-sm text-foreground">{item.isRequired ? "必需" : "可选"}</td>
-                          <td className="px-4 py-4 align-top text-sm text-foreground">{item.contextBudgetTokens ?? "未设置"}</td>
-                          <td className="px-4 py-4 align-top">
-                            <ActiveStateBadge active={item.isActive} />
-                          </td>
-                          <td className="px-4 py-4 align-top">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-8 px-2.5"
-                                onClick={() => {
-                                  setEditingItem(item)
-                                  setSheetOpen(true)
-                                }}
-                              >
-                                编辑
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="p-4">
-                  <StatePanel status="empty" title="暂无 Skill 绑定" description="当前筛选条件下没有匹配的 Skill 绑定。" />
-                </div>
-              )}
-
-              <AdminListPaginationFooter
-                limit={bindingLimit}
-                onLimitChange={(value) => {
-                  setBindingLimit(value)
-                  setBindingPage(1)
-                }}
-                page={bindingPage}
-                totalPages={bindingTotalPages}
-                total={bindingData?.total ?? 0}
-                canPrev={bindingPage > 1}
-                canNext={bindingPage < bindingTotalPages}
-                isLoading={isLoading}
-                onPrevPage={() => setBindingPage((prev) => Math.max(1, prev - 1))}
-                onNextPage={() => setBindingPage((prev) => Math.min(bindingTotalPages, prev + 1))}
-                centerContent={<span>当前页显示 {bindingData?.items.length ?? 0} 条</span>}
-              />
-            </div>
-          </>
+            </section>
+          </div>
         )}
       </div>
 

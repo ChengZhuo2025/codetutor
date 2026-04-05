@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { RefreshCw, Search } from "lucide-react"
 import type { AdminAIInvocationListResponseData } from "@/lib/api/contracts/admin-ai"
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatePanel } from "@/components/ui/state-panel"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
+import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
   adminRequestData,
@@ -79,6 +80,52 @@ export function InvocationLog() {
     setKeywordApplied(keyword.trim())
   }
 
+  const invocationStatusOptions = useMemo(
+    () => [
+      { value: "all", label: "全部状态" },
+      { value: "succeeded", label: "succeeded" },
+      { value: "failed", label: "failed" },
+      { value: "timed_out", label: "timed_out" },
+      { value: "cancelled", label: "cancelled" },
+      { value: "streaming", label: "streaming" },
+    ],
+    [],
+  )
+
+  const providerFilterOptions = useMemo(
+    () => [
+      { value: "", label: "全部 Provider" },
+      ...(data?.providerOptions?.map((item) => ({ value: item.code, label: item.name })) ?? []),
+    ],
+    [data?.providerOptions],
+  )
+
+  const modelFilterOptions = useMemo(
+    () => [
+      { value: "", label: "全部 Model" },
+      ...(data?.modelOptions?.map((item) => ({ value: item.code, label: item.name })) ?? []),
+    ],
+    [data?.modelOptions],
+  )
+
+  const agentFilterOptions = useMemo(
+    () => [
+      { value: "", label: "全部 Agent" },
+      ...(data?.agentOptions?.map((item) => ({ value: item.code, label: item.name })) ?? []),
+    ],
+    [data?.agentOptions],
+  )
+
+  const dateRangeOptions = useMemo(
+    () => [
+      { value: "24h", label: "24h" },
+      { value: "7d", label: "7d" },
+      { value: "30d", label: "30d" },
+      { value: "90d", label: "90d" },
+    ],
+    [],
+  )
+
   return (
     <>
       <div className="space-y-6">
@@ -114,53 +161,46 @@ export function InvocationLog() {
                     className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
-                <select value={status} onChange={(event) => {
-                  setPage(1)
-                  setStatus(event.target.value)
-                }} className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground">
-                  <option value="all">全部状态</option>
-                  <option value="succeeded">succeeded</option>
-                  <option value="failed">failed</option>
-                  <option value="timed_out">timed_out</option>
-                  <option value="cancelled">cancelled</option>
-                  <option value="streaming">streaming</option>
-                </select>
-                <select value={providerCode} onChange={(event) => {
-                  setPage(1)
-                  setProviderCode(event.target.value)
-                }} className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground">
-                  <option value="">全部 Provider</option>
-                  {data?.providerOptions?.map((item) => (
-                    <option key={item.code} value={item.code}>{item.name}</option>
-                  ))}
-                </select>
-                <select value={modelCode} onChange={(event) => {
-                  setPage(1)
-                  setModelCode(event.target.value)
-                }} className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground">
-                  <option value="">全部 Model</option>
-                  {data?.modelOptions?.map((item) => (
-                    <option key={item.code} value={item.code}>{item.name}</option>
-                  ))}
-                </select>
-                <select value={agentCode} onChange={(event) => {
-                  setPage(1)
-                  setAgentCode(event.target.value)
-                }} className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground">
-                  <option value="">全部 Agent</option>
-                  {data?.agentOptions?.map((item) => (
-                    <option key={item.code} value={item.code}>{item.name}</option>
-                  ))}
-                </select>
-                <select value={dateRange} onChange={(event) => {
-                  setPage(1)
-                  setDateRange(event.target.value)
-                }} className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground">
-                  <option value="24h">24h</option>
-                  <option value="7d">7d</option>
-                  <option value="30d">30d</option>
-                  <option value="90d">90d</option>
-                </select>
+                <AdminSelect
+                  value={status}
+                  onValueChange={(next) => {
+                    setPage(1)
+                    setStatus(next)
+                  }}
+                  options={invocationStatusOptions}
+                />
+                <AdminSelect
+                  value={providerCode}
+                  onValueChange={(next) => {
+                    setPage(1)
+                    setProviderCode(next)
+                  }}
+                  options={providerFilterOptions}
+                />
+                <AdminSelect
+                  value={modelCode}
+                  onValueChange={(next) => {
+                    setPage(1)
+                    setModelCode(next)
+                  }}
+                  options={modelFilterOptions}
+                />
+                <AdminSelect
+                  value={agentCode}
+                  onValueChange={(next) => {
+                    setPage(1)
+                    setAgentCode(next)
+                  }}
+                  options={agentFilterOptions}
+                />
+                <AdminSelect
+                  value={dateRange}
+                  onValueChange={(next) => {
+                    setPage(1)
+                    setDateRange(next)
+                  }}
+                  options={dateRangeOptions}
+                />
                 <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applySearch}>
                   搜索
                 </Button>

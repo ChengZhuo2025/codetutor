@@ -494,6 +494,33 @@ test("admin ai model detail get returns 200", async () => {
   assert.equal(res.status, 200)
 })
 
+test("admin ai model detail get accepts UUID with version digit outside 1-5", async () => {
+  const handler = createAdminAIModelDetailHandlers({
+    getRequestAdmin: async () => okAdmin,
+    getAdminAIModelDetail: async () => sampleModelDetail,
+    updateAdminAIModel: async () => sampleModelDetail,
+  })
+
+  const id = "018e1234-5678-7abc-8def-0123456789ab"
+  const res = await handler.GET(new Request(`http://localhost/api/admin/ai/models/${id}`), {
+    params: Promise.resolve({ modelId: id }),
+  })
+  assert.equal(res.status, 200)
+})
+
+test("admin ai model detail get accepts model code as route id", async () => {
+  const handler = createAdminAIModelDetailHandlers({
+    getRequestAdmin: async () => okAdmin,
+    getAdminAIModelDetail: async () => sampleModelDetail,
+    updateAdminAIModel: async () => sampleModelDetail,
+  })
+
+  const res = await handler.GET(new Request("http://localhost/api/admin/ai/models/claude-3-5-sonnet"), {
+    params: Promise.resolve({ modelId: "claude-3-5-sonnet" }),
+  })
+  assert.equal(res.status, 200)
+})
+
 test("admin ai agent list returns 200", async () => {
   const handler = createAdminAIAgentListHandler({
     getRequestAdmin: async () => okAdmin,

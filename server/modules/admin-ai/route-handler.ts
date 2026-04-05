@@ -307,12 +307,12 @@ export function createAdminAIModelDetailHandlers(dependencies: {
         }
 
         const { modelId: rawId } = await routeContext.params
-        const modelId = parseUuidRoute(rawId, "Model ID")
-        if (typeof modelId !== "string") {
-          return modelId
+        const parsedId = parseRequiredRouteId(rawId, "Model ID 不合法。")
+        if (!parsedId.ok) {
+          return jsonError(parsedId.code, parsedId.message, 400)
         }
 
-        const data = await dependencies.getAdminAIModelDetail(admin.adminId, modelId)
+        const data = await dependencies.getAdminAIModelDetail(admin.adminId, parsedId.data)
         if (!data) {
           return jsonError("NOT_FOUND", "Model 不存在。", 404)
         }
@@ -330,9 +330,9 @@ export function createAdminAIModelDetailHandlers(dependencies: {
         }
 
         const { modelId: rawId } = await routeContext.params
-        const modelId = parseUuidRoute(rawId, "Model ID")
-        if (typeof modelId !== "string") {
-          return modelId
+        const parsedId = parseRequiredRouteId(rawId, "Model ID 不合法。")
+        if (!parsedId.ok) {
+          return jsonError(parsedId.code, parsedId.message, 400)
         }
 
         const parsed = parseAdminAIModelBody(await request.json())
@@ -341,7 +341,7 @@ export function createAdminAIModelDetailHandlers(dependencies: {
         }
 
         try {
-          const data = await dependencies.updateAdminAIModel(admin.adminId, modelId, parsed.data)
+          const data = await dependencies.updateAdminAIModel(admin.adminId, parsedId.data, parsed.data)
           if (!data) {
             return jsonError("NOT_FOUND", "Model 不存在。", 404)
           }

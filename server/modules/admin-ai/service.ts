@@ -370,6 +370,21 @@ function findProviderByIdentifier(providers: ProviderRow[], providerIdentifier: 
   return providers.find((row) => row.id === providerIdentifier || row.code === providerIdentifier) ?? null
 }
 
+/** 路由参数可为 UUID（id）或业务 code（与 `ai_models.code` 唯一约束一致） */
+function resolveModelRow(models: ModelRow[], modelIdOrCode: string): ModelRow | null {
+  const key = modelIdOrCode.trim()
+  if (!key) {
+    return null
+  }
+  if (isUuid(key)) {
+    const byId = models.find((row) => row.id === key)
+    if (byId) {
+      return byId
+    }
+  }
+  return models.find((row) => row.code === key) ?? null
+}
+
 function mapModelListItem(
   row: ModelRow,
   providerById: Map<string, ProviderRow>,
@@ -889,13 +904,10 @@ export async function getAdminAIModelDetail(
   modelId: string,
 ): Promise<AdminAIModelDetailResponseData | null> {
   await assertCanAccessAI(adminAccountId)
-  if (!isUuid(modelId)) {
-    return null
-  }
 
   const [providers, models, agents] = await Promise.all([loadProviders(), loadModels(), loadAgents()])
   const providerById = new Map(providers.map((row) => [row.id, row]))
-  const model = models.find((row) => row.id === modelId)
+  const model = resolveModelRow(models, modelId)
   if (!model) {
     return null
   }
@@ -999,6 +1011,8 @@ export async function updateAdminAIModel(
     throwNamedError("VALIDATION_FAILED", "Provider 不存在。")
   }
 
+  const rowId = existing.model.modelId
+
   const supabase = createSupabaseAdminClient()
   const { error } = await supabase
     .from("ai_models")
@@ -1017,7 +1031,7 @@ export async function updateAdminAIModel(
       is_active: input.isActive,
       metadata: input.metadata,
     })
-    .eq("id", modelId)
+    .eq("id", rowId)
 
   mapWriteError(error, "Model code")
 
@@ -1025,7 +1039,7 @@ export async function updateAdminAIModel(
     adminAccountId,
     action: "ai_model_update",
     targetType: "ai_model",
-    targetId: modelId,
+    targetId: rowId,
     beforeSnapshot: existing.model,
     afterSnapshot: {
       ...existing.model,
@@ -1046,7 +1060,7 @@ export async function updateAdminAIModel(
     reason: input.changeReason,
   })
 
-  return getAdminAIModelDetail(adminAccountId, modelId)
+  return getAdminAIModelDetail(adminAccountId, rowId)
 }
 
 export async function getAdminAIAgentList(filters: {

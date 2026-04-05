@@ -241,7 +241,7 @@ export function ProviderFormSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl">
+      <SheetContent side="right" className="w-full sm:max-w-xl">
         <SheetHeader className="border-b border-border px-6 py-5">
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
@@ -278,7 +278,7 @@ export function ProviderFormSheet({
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="provider-type">Provider 类型</Label>
-                  <select id="provider-type" value={form.providerType} onChange={(event) => setForm((prev) => ({ ...prev, providerType: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground">
+                  <select id="provider-type" value={form.providerType} onChange={(event) => setForm((prev) => ({ ...prev, providerType: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
                     <option value="openai_compatible">openai_compatible</option>
                     <option value="siliconflow">siliconflow</option>
                     <option value="anthropic">anthropic</option>
@@ -286,7 +286,7 @@ export function ProviderFormSheet({
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="provider-authMode">鉴权方式</Label>
-                  <select id="provider-authMode" value={form.authMode} onChange={(event) => setForm((prev) => ({ ...prev, authMode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground">
+                  <select id="provider-authMode" value={form.authMode} onChange={(event) => setForm((prev) => ({ ...prev, authMode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
                     <option value="bearer">bearer</option>
                     <option value="api_key_header">api_key_header</option>
                   </select>
@@ -314,15 +314,15 @@ export function ProviderFormSheet({
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
-                <label className="flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-3 text-sm text-foreground">
+                <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]">
                   <input type="checkbox" checked={form.supportsStream} onChange={(event) => setForm((prev) => ({ ...prev, supportsStream: event.target.checked }))} />
                   支持流式输出
                 </label>
-                <label className="flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-3 text-sm text-foreground">
+                <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]">
                   <input type="checkbox" checked={form.supportsJsonMode} onChange={(event) => setForm((prev) => ({ ...prev, supportsJsonMode: event.target.checked }))} />
                   支持 JSON mode
                 </label>
-                <label className="flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-3 text-sm text-foreground">
+                <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]">
                   <input type="checkbox" checked={form.isActive} onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))} />
                   启用
                 </label>

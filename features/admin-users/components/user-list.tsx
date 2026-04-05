@@ -16,6 +16,7 @@ import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
+import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
   adminBffFetch,
@@ -364,30 +365,32 @@ export function UserList() {
           <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applySearch}>
             搜索
           </Button>
-          <select
+          <AdminSelect
             value={accountStatus}
-            onChange={(event) => {
+            onValueChange={(next) => {
               setPage(1)
-              setAccountStatus(event.target.value)
+              setAccountStatus(next)
             }}
-            className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring/40"
-          >
-            <option value="active">未删除</option>
-            <option value="deleted">已删除</option>
-            <option value="all">全部账号</option>
-          </select>
-          <select
+            options={[
+              { value: "active", label: "未删除" },
+              { value: "deleted", label: "已删除" },
+              { value: "all", label: "全部账号" },
+            ]}
+            triggerClassName="min-w-[7.5rem]"
+          />
+          <AdminSelect
             value={pathFilter}
-            onChange={(event) => {
+            onValueChange={(next) => {
               setPage(1)
-              setPathFilter(event.target.value)
+              setPathFilter(next)
             }}
-            className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring/40"
-          >
-            <option value="all">全部计划状态</option>
-            <option value="true">有进行中计划</option>
-            <option value="false">无进行中计划</option>
-          </select>
+            options={[
+              { value: "all", label: "全部计划状态" },
+              { value: "true", label: "有进行中计划" },
+              { value: "false", label: "无进行中计划" },
+            ]}
+            triggerClassName="min-w-[10rem]"
+          />
         </div>
       </div>
 

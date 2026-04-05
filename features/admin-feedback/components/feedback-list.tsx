@@ -13,6 +13,7 @@ import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
+import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import { ADMIN_ROUTES } from "@/constants/routes"
 import {
@@ -317,47 +318,50 @@ export function FeedbackList() {
           <Button type="button" variant="secondary" size="sm" className="h-9" onClick={handleApplySearch}>
             搜索
           </Button>
-          <select
+          <AdminSelect
             value={statusFilter}
-            onChange={(e) => {
+            onValueChange={(next) => {
               setPage(1)
-              setStatusFilter(e.target.value)
+              setStatusFilter(next)
             }}
-            className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-          >
-            <option value="all">全部状态</option>
-            <option value="submitted">待处理</option>
-            <option value="in_review">处理中</option>
-            <option value="replied">已解决</option>
-            <option value="closed">已关闭</option>
-          </select>
-          <select
+            options={[
+              { value: "all", label: "全部状态" },
+              { value: "submitted", label: "待处理" },
+              { value: "in_review", label: "处理中" },
+              { value: "replied", label: "已解决" },
+              { value: "closed", label: "已关闭" },
+            ]}
+            triggerClassName="min-w-[7rem]"
+          />
+          <AdminSelect
             value={typeFilter}
-            onChange={(e) => {
+            onValueChange={(next) => {
               setPage(1)
-              setTypeFilter(e.target.value)
+              setTypeFilter(next)
             }}
-            className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-          >
-            <option value="all">全部类型</option>
-            <option value="feature_request">功能建议</option>
-            <option value="issue_report">Bug 报告</option>
-            <option value="interaction_flow">交互流程</option>
-            <option value="visual_design">界面视觉</option>
-          </select>
-          <select
+            options={[
+              { value: "all", label: "全部类型" },
+              { value: "feature_request", label: "功能建议" },
+              { value: "issue_report", label: "Bug 报告" },
+              { value: "interaction_flow", label: "交互流程" },
+              { value: "visual_design", label: "界面视觉" },
+            ]}
+            triggerClassName="min-w-[7rem]"
+          />
+          <AdminSelect
             value={priorityFilter}
-            onChange={(e) => {
+            onValueChange={(next) => {
               setPage(1)
-              setPriorityFilter(e.target.value)
+              setPriorityFilter(next)
             }}
-            className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-          >
-            <option value="all">全部优先级</option>
-            <option value="high">高</option>
-            <option value="medium">中</option>
-            <option value="low">低</option>
-          </select>
+            options={[
+              { value: "all", label: "全部优先级" },
+              { value: "high", label: "高" },
+              { value: "medium", label: "中" },
+              { value: "low", label: "低" },
+            ]}
+            triggerClassName="min-w-[7rem]"
+          />
         </div>
         {userIdFilter ? (
           <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-primary/15 bg-primary/5 px-3 py-2">

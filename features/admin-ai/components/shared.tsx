@@ -5,28 +5,37 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 export function PageSection({
   title,
   description,
   action,
   children,
+  className,
+  bodyClassName,
 }: {
   title: string
   description?: string
   action?: ReactNode
   children: ReactNode
+  /** 根节点：用于 h-full、flex 等与栅格等高布局配合 */
+  className?: string
+  /** 内容区：例如 flex-1 min-h-0 与内部可滚动区域配合 */
+  bodyClassName?: string
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-card">
-      <div className="flex flex-col gap-3 border-b border-border px-4 py-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
+    <section className={cn("flex min-h-0 flex-col rounded-2xl border border-border bg-card", className)}>
+      <div className="flex shrink-0 flex-col gap-3 border-b border-border px-4 py-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
           <h2 className="text-base font-semibold text-foreground">{title}</h2>
           {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
         </div>
-        {action}
+        {action ? (
+          <div className="flex shrink-0 items-center justify-end gap-2 lg:pt-0.5">{action}</div>
+        ) : null}
       </div>
-      <div className="p-4">{children}</div>
+      <div className={cn("min-h-0 p-4", bodyClassName)}>{children}</div>
     </section>
   )
 }
@@ -117,9 +126,14 @@ export function SaveActionRow({
   )
 }
 
-export function JsonPreview({ value }: { value: unknown }) {
+export function JsonPreview({ value, className }: { value: unknown; className?: string }) {
   return (
-    <pre className="max-h-80 overflow-auto rounded-xl border border-border bg-muted/30 p-3 text-xs text-foreground">
+    <pre
+      className={cn(
+        "max-h-80 overflow-auto rounded-xl border border-border bg-muted/30 p-3 text-xs text-foreground",
+        className,
+      )}
+    >
       {JSON.stringify(value ?? {}, null, 2)}
     </pre>
   )

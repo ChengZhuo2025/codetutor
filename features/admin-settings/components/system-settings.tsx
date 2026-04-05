@@ -30,6 +30,7 @@ import { StatePanel } from "@/components/ui/state-panel"
 import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
+import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
   adminRequestData,
@@ -510,19 +511,20 @@ export function SystemSettings() {
                   placeholder="搜索管理员姓名、邮箱、用户 ID"
                 />
               </div>
-              <select
+              <AdminSelect
                 value={accountStatus}
-                onChange={(event) => {
-                  setAccountStatus(event.target.value)
+                onValueChange={(next) => {
+                  setAccountStatus(next)
                   setAccountPage(1)
                 }}
-                className="h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground"
-              >
-                <option value="all">全部状态</option>
-                <option value="active">启用</option>
-                <option value="inactive">停用</option>
-                <option value="suspended">冻结</option>
-              </select>
+                options={[
+                  { value: "all", label: "全部状态" },
+                  { value: "active", label: "启用" },
+                  { value: "inactive", label: "停用" },
+                  { value: "suspended", label: "冻结" },
+                ]}
+                triggerClassName="h-10 min-w-[7rem] shrink-0"
+              />
             </div>
             <div className="flex items-center gap-2">
               <Button type="button" variant="outline" onClick={() => {
@@ -699,38 +701,40 @@ export function SystemSettings() {
                   placeholder="搜索操作审计、原因、目标类型"
                 />
               </div>
-              <select
+              <AdminSelect
                 value={auditAction}
-                onChange={(event) => {
-                  setAuditAction(event.target.value)
+                onValueChange={(next) => {
+                  setAuditAction(next)
                   setAuditPage(1)
                 }}
-                className="h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground"
-              >
-                <option value="all">全部操作</option>
-                <option value="login">登录</option>
-                <option value="logout">登出</option>
-                <option value="password_change">修改密码</option>
-                <option value="admin_account_activate">启用管理员</option>
-                <option value="admin_account_deactivate">停用管理员</option>
-                <option value="user_profile_update">更新用户资料</option>
-                <option value="user_soft_delete">软删除用户</option>
-                <option value="user_restore">恢复用户</option>
-                <option value="learning_path_status_update">学习计划状态调整</option>
-              </select>
-              <select
+                options={[
+                  { value: "all", label: "全部操作" },
+                  { value: "login", label: "登录" },
+                  { value: "logout", label: "登出" },
+                  { value: "password_change", label: "修改密码" },
+                  { value: "admin_account_activate", label: "启用管理员" },
+                  { value: "admin_account_deactivate", label: "停用管理员" },
+                  { value: "user_profile_update", label: "更新用户资料" },
+                  { value: "user_soft_delete", label: "软删除用户" },
+                  { value: "user_restore", label: "恢复用户" },
+                  { value: "learning_path_status_update", label: "学习计划状态调整" },
+                ]}
+                triggerClassName="h-10 min-w-[9rem] max-w-[14rem] shrink-0"
+              />
+              <AdminSelect
                 value={auditTargetType}
-                onChange={(event) => {
-                  setAuditTargetType(event.target.value)
+                onValueChange={(next) => {
+                  setAuditTargetType(next)
                   setAuditPage(1)
                 }}
-                className="h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground"
-              >
-                <option value="all">全部目标类型</option>
-                <option value="admin_account">管理员账号</option>
-                <option value="user_profile">用户资料</option>
-                <option value="user_learning_path">学习计划</option>
-              </select>
+                options={[
+                  { value: "all", label: "全部目标类型" },
+                  { value: "admin_account", label: "管理员账号" },
+                  { value: "user_profile", label: "用户资料" },
+                  { value: "user_learning_path", label: "学习计划" },
+                ]}
+                triggerClassName="h-10 min-w-[9rem] shrink-0"
+              />
             </div>
             <Button
               type="button"
