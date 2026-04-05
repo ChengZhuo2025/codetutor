@@ -3,6 +3,38 @@ import { z } from "zod"
 import { ROUTE_ERROR_MESSAGES } from "@/server/lib/route-error-presets"
 import {
   achievementSummaryResponseDataSchema,
+  adminAIAgentBindingListResponseDataSchema,
+  adminAIAgentBindingListItemSchema,
+  adminAIAgentBindingUpsertRequestSchema,
+  adminAIAgentDetailResponseDataSchema,
+  adminAIAgentIdParamsSchema,
+  adminAIAgentListQuerySchema,
+  adminAIAgentListResponseDataSchema,
+  adminAIAgentSkillBindingListItemSchema,
+  adminAIAgentSkillBindingListResponseDataSchema,
+  adminAIAgentSkillBindingUpsertRequestSchema,
+  adminAIAgentUpsertRequestSchema,
+  adminAIBindingIdParamsSchema,
+  adminAIInvocationDetailResponseDataSchema,
+  adminAIInvocationIdParamsSchema,
+  adminAIInvocationListQuerySchema,
+  adminAIInvocationListResponseDataSchema,
+  adminAIListQuerySchema,
+  adminAIModelDetailResponseDataSchema,
+  adminAIModelIdParamsSchema,
+  adminAIModelListResponseDataSchema,
+  adminAIModelUpsertRequestSchema,
+  adminAIOverviewResponseDataSchema,
+  adminAIProviderDetailResponseDataSchema,
+  adminAIProviderIdParamsSchema,
+  adminAIProviderListResponseDataSchema,
+  adminAIProviderUpsertRequestSchema,
+  adminAIQuerySchema,
+  adminAIResolvePreviewRequestSchema,
+  adminAIResolvePreviewResponseDataSchema,
+  adminAISkillListResponseDataSchema,
+  adminAITestRequestSchema,
+  adminAITestResponseDataSchema,
   adminDashboardOverviewResponseDataSchema,
   adminChangePasswordRequestSchema,
   adminLoginRequestSchema,
@@ -427,6 +459,398 @@ const adminSettingsAuditLogListExample = {
   total: 1,
   page: 1,
   limit: 20,
+}
+
+const adminAIOverviewExample = {
+  permissions: {
+    canView: true,
+    canManage: true,
+  },
+  stats: {
+    totalProviders: 2,
+    activeProviders: 2,
+    totalModels: 4,
+    activeModels: 4,
+    totalAgents: 5,
+    activeAgents: 5,
+    totalSkills: 6,
+    activeSkills: 5,
+    invocationCountLast7Days: 218,
+    failedInvocationCountLast7Days: 9,
+    successRateLast7Days: 0.9587,
+  },
+  topAgents: [
+    {
+      agentCode: "learning_coach_default",
+      agentName: "默认学习教练",
+      invocationCount: 102,
+      failedInvocationCount: 3,
+    },
+  ],
+  recentFailures: [
+    {
+      invocationId: "550e8400-e29b-41d4-a716-446655440501",
+      agentCode: "blocked_help_default",
+      providerCode: "anthropic_prod",
+      modelCode: "claude-3-7-sonnet",
+      errorMessage: "provider request timed out",
+      createdAt: EXAMPLE_LATEST,
+    },
+  ],
+}
+
+const adminAIProviderListExample = {
+  items: [
+    {
+      providerId: "550e8400-e29b-41d4-a716-446655440510",
+      code: "anthropic_prod",
+      name: "Anthropic 生产环境",
+      providerType: "anthropic",
+      baseUrl: "https://api.anthropic.com",
+      authMode: "bearer",
+      secretRef: "vault://ai/anthropic/prod",
+      supportsStream: true,
+      supportsJsonMode: true,
+      timeoutMs: 60000,
+      retryCount: 2,
+      isActive: true,
+      modelCount: 2,
+      createdAt: EXAMPLE_NOW,
+      updatedAt: EXAMPLE_LATEST,
+    },
+  ],
+  total: 1,
+  page: 1,
+  limit: 20,
+}
+
+const adminAIProviderDetailExample = {
+  provider: {
+    ...adminAIProviderListExample.items[0],
+    metadata: {
+      env: "production",
+    },
+  },
+  linkedModelCodes: ["claude-3-7-sonnet", "claude-3-5-haiku"],
+  linkedAgentCodes: ["learning_coach_default", "blocked_help_default"],
+}
+
+const adminAIModelListExample = {
+  items: [
+    {
+      modelId: "550e8400-e29b-41d4-a716-446655440520",
+      providerId: "550e8400-e29b-41d4-a716-446655440510",
+      providerCode: "anthropic_prod",
+      code: "claude-3-7-sonnet",
+      displayName: "Claude 3.7 Sonnet",
+      modelName: "claude-3-7-sonnet-latest",
+      supportsStream: true,
+      supportsJsonMode: true,
+      supportsToolCalling: false,
+      maxContextTokens: 200000,
+      defaultMaxOutputTokens: 8192,
+      recommendedTemperature: 0.2,
+      isActive: true,
+      linkedAgentCount: 3,
+      createdAt: EXAMPLE_NOW,
+      updatedAt: EXAMPLE_LATEST,
+    },
+  ],
+  total: 1,
+  page: 1,
+  limit: 20,
+}
+
+const adminAIModelDetailExample = {
+  model: {
+    ...adminAIModelListExample.items[0],
+    pricingMetadata: {
+      inputPerMillionUsd: 3,
+      outputPerMillionUsd: 15,
+    },
+    metadata: {
+      tier: "prod",
+    },
+  },
+  linkedAgentCodes: ["learning_coach_default", "task_review_default"],
+}
+
+const adminAIAgentBindingListExample = {
+  items: [
+    {
+      bindingId: "550e8400-e29b-41d4-a716-446655440530",
+      agentCode: "learning_coach_default",
+      agentName: "默认学习教练",
+      toolId: "550e8400-e29b-41d4-a716-446655440540",
+      toolCode: "cursor",
+      toolName: "Cursor",
+      learningLevel: "beginner",
+      selectionMode: "preset_training",
+      pathId: "550e8400-e29b-41d4-a716-446655440550",
+      pathCode: "cursor-beginner-01",
+      pathName: "Cursor 入门训练营",
+      stepNo: 1,
+      interactionType: "teaching",
+      priority: 100,
+      isActive: true,
+      metadata: {
+        reason: "默认首关命中规则",
+      },
+      createdAt: EXAMPLE_NOW,
+      updatedAt: EXAMPLE_LATEST,
+    },
+  ],
+  total: 1,
+  page: 1,
+  limit: 20,
+  agentOptions: [
+    {
+      code: "learning_coach_default",
+      name: "默认学习教练",
+    },
+  ],
+  toolOptions: [
+    {
+      id: "550e8400-e29b-41d4-a716-446655440540",
+      code: "cursor",
+      name: "Cursor",
+    },
+  ],
+  pathOptions: [
+    {
+      id: "550e8400-e29b-41d4-a716-446655440550",
+      code: "cursor-beginner-01",
+      name: "Cursor 入门训练营",
+    },
+  ],
+}
+
+const adminAIAgentSkillBindingListExample = {
+  items: [
+    {
+      bindingId: "550e8400-e29b-41d4-a716-446655440560",
+      agentCode: "learning_coach_default",
+      agentName: "默认学习教练",
+      skillCode: "repo_context_reader",
+      skillName: "仓库上下文读取",
+      priority: 100,
+      isRequired: true,
+      contextBudgetTokens: 1200,
+      isActive: true,
+      metadata: {
+        stage: "default",
+      },
+      createdAt: EXAMPLE_NOW,
+      updatedAt: EXAMPLE_LATEST,
+    },
+  ],
+  total: 1,
+  page: 1,
+  limit: 20,
+  agentOptions: [
+    {
+      code: "learning_coach_default",
+      name: "默认学习教练",
+    },
+  ],
+  skillOptions: [
+    {
+      code: "repo_context_reader",
+      name: "仓库上下文读取",
+    },
+  ],
+}
+
+const adminAIAgentListExample = {
+  items: [
+    {
+      agentId: "550e8400-e29b-41d4-a716-446655440570",
+      code: "learning_coach_default",
+      name: "默认学习教练",
+      scenarioType: "teaching",
+      providerCode: "anthropic_prod",
+      modelCode: "claude-3-7-sonnet",
+      streamEnabled: true,
+      isActive: true,
+      bindingCount: 2,
+      skillCount: 2,
+      updatedAt: EXAMPLE_LATEST,
+    },
+  ],
+  total: 1,
+  page: 1,
+  limit: 20,
+}
+
+const adminAIAgentDetailExample = {
+  agent: {
+    agentId: "550e8400-e29b-41d4-a716-446655440570",
+    code: "learning_coach_default",
+    name: "默认学习教练",
+    scenarioType: "teaching",
+    description: "主学习路径默认教练。",
+    systemPromptTemplate: "你是中文 AI 编程学习教练，请结合当前任务上下文指导用户。",
+    developerPromptTemplate: "优先按步骤输出，不要跳步。",
+    defaultProviderCode: "anthropic_prod",
+    defaultModelCode: "claude-3-7-sonnet",
+    contextMessageLimit: 12,
+    maxOutputTokens: 4096,
+    temperature: 0.2,
+    topP: 0.9,
+    streamEnabled: true,
+    isActive: true,
+    metadata: {
+      owner: "ai_ops",
+    },
+    version: 3,
+    createdAt: EXAMPLE_NOW,
+    updatedAt: EXAMPLE_LATEST,
+  },
+  bindings: adminAIAgentBindingListExample.items,
+  skillBindings: adminAIAgentSkillBindingListExample.items,
+}
+
+const adminAISkillListExample = {
+  items: [
+    {
+      skillId: "550e8400-e29b-41d4-a716-446655440580",
+      code: "repo_context_reader",
+      name: "仓库上下文读取",
+      version: "1.0.0",
+      sourceType: "built_in",
+      trustLevel: "internal_verified",
+      rootPath: "/skills/repo_context_reader",
+      manifestPath: "/skills/repo_context_reader/SKILL.md",
+      entryResourcePath: null,
+      scriptsEnabled: true,
+      isActive: true,
+      metadata: {
+        category: "context",
+      },
+      linkedAgentCount: 3,
+      createdAt: EXAMPLE_NOW,
+      updatedAt: EXAMPLE_LATEST,
+    },
+  ],
+  total: 1,
+  page: 1,
+  limit: 20,
+}
+
+const adminAIInvocationListExample = {
+  items: [
+    {
+      invocationId: "550e8400-e29b-41d4-a716-446655440590",
+      sessionId: "550e8400-e29b-41d4-a716-446655440591",
+      userId: "550e8400-e29b-41d4-a716-446655440001",
+      providerCode: "anthropic_prod",
+      modelCode: "claude-3-7-sonnet",
+      agentCode: "learning_coach_default",
+      status: "succeeded",
+      streamEnabled: true,
+      totalTokens: 1680,
+      latencyMs: 1830,
+      finishReason: "stop",
+      errorCode: null,
+      createdAt: EXAMPLE_LATEST,
+    },
+  ],
+  total: 1,
+  page: 1,
+  limit: 20,
+  providerOptions: [
+    {
+      code: "anthropic_prod",
+      name: "Anthropic 生产环境",
+    },
+  ],
+  modelOptions: [
+    {
+      code: "claude-3-7-sonnet",
+      name: "Claude 3.7 Sonnet",
+    },
+  ],
+  agentOptions: [
+    {
+      code: "learning_coach_default",
+      name: "默认学习教练",
+    },
+  ],
+}
+
+const adminAIInvocationDetailExample = {
+  invocation: {
+    invocationId: "550e8400-e29b-41d4-a716-446655440590",
+    sessionId: "550e8400-e29b-41d4-a716-446655440591",
+    assistantMessageId: "550e8400-e29b-41d4-a716-446655440592",
+    userMessageId: "550e8400-e29b-41d4-a716-446655440593",
+    userId: "550e8400-e29b-41d4-a716-446655440001",
+    providerCode: "anthropic_prod",
+    modelCode: "claude-3-7-sonnet",
+    agentCode: "learning_coach_default",
+    status: "succeeded",
+    streamEnabled: true,
+    promptTokens: 1280,
+    completionTokens: 400,
+    totalTokens: 1680,
+    latencyMs: 1830,
+    firstChunkLatencyMs: 420,
+    finishReason: "stop",
+    errorCode: null,
+    errorMessage: null,
+    requestPayloadRedacted: {
+      messages: ["..."],
+    },
+    responsePayloadRedacted: {
+      content: "先确认你当前报错发生在哪一步。",
+    },
+    createdAt: EXAMPLE_LATEST,
+  },
+}
+
+const adminAIResolvePreviewExample = {
+  matchedBinding: {
+    bindingId: "550e8400-e29b-41d4-a716-446655440530",
+    agentCode: "learning_coach_default",
+    priority: 100,
+    specificityScore: 5.5,
+  },
+  agent: {
+    code: "learning_coach_default",
+    name: "默认学习教练",
+    providerCode: "anthropic_prod",
+    modelCode: "claude-3-7-sonnet",
+  },
+  matchedSkills: [
+    {
+      bindingId: "550e8400-e29b-41d4-a716-446655440560",
+      skillCode: "repo_context_reader",
+      skillName: "仓库上下文读取",
+      priority: 100,
+    },
+  ],
+}
+
+const adminAITestExample = {
+  invocationId: "550e8400-e29b-41d4-a716-446655440594",
+  providerCode: "anthropic_prod",
+  modelCode: "claude-3-7-sonnet",
+  agentCode: "learning_coach_default",
+  status: "succeeded",
+  content: "建议先确认项目目录是否已正确索引，再继续执行下一步命令。",
+  finishReason: "stop",
+  usage: {
+    promptTokens: 98,
+    completionTokens: 135,
+    totalTokens: 233,
+  },
+  latencyMs: 1510,
+  requestPayloadRedacted: {
+    prompt: "[redacted]",
+  },
+  responsePayloadRedacted: {
+    outputText: "建议先确认项目目录是否已正确索引，再继续执行下一步命令。",
+  },
 }
 
 const successExamples = {
@@ -953,6 +1377,20 @@ const successExamples = {
     status: "inactive",
   },
   adminSettingsAuditLogList: adminSettingsAuditLogListExample,
+  adminAIOverview: adminAIOverviewExample,
+  adminAIProviderList: adminAIProviderListExample,
+  adminAIProviderDetail: adminAIProviderDetailExample,
+  adminAIModelList: adminAIModelListExample,
+  adminAIModelDetail: adminAIModelDetailExample,
+  adminAIAgentList: adminAIAgentListExample,
+  adminAIAgentDetail: adminAIAgentDetailExample,
+  adminAIAgentBindingList: adminAIAgentBindingListExample,
+  adminAISkillList: adminAISkillListExample,
+  adminAIAgentSkillBindingList: adminAIAgentSkillBindingListExample,
+  adminAIInvocationList: adminAIInvocationListExample,
+  adminAIInvocationDetail: adminAIInvocationDetailExample,
+  adminAIResolvePreview: adminAIResolvePreviewExample,
+  adminAITest: adminAITestExample,
 } as const
 
 const defaultErrorResponses = {
@@ -2658,6 +3096,620 @@ registry.registerPath({
       "操作审计列表读取成功",
     ),
     ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/ai/overview",
+  operationId: "getAdminAIOverview",
+  tags: ["admin-ai"],
+  summary: "AI 运营概览",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminAIOverviewResponseDataSchema,
+      "AdminAIOverviewResponse",
+      "AI 运营概览读取成功",
+      successExamples.adminAIOverview,
+      "AI 运营概览读取成功",
+    ),
+    ...commonErrorResponses(["403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/ai/providers",
+  operationId: "getAdminAIProviderList",
+  tags: ["admin-ai"],
+  summary: "Provider 列表",
+  security: [],
+  request: {
+    query: adminAIListQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminAIProviderListResponseDataSchema,
+      "AdminAIProviderListResponse",
+      "Provider 列表读取成功",
+      successExamples.adminAIProviderList,
+      "Provider 列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/ai/providers",
+  operationId: "postAdminAIProvider",
+  tags: ["admin-ai"],
+  summary: "创建 Provider",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIProviderUpsertRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIProviderDetailResponseDataSchema,
+      "AdminAIProviderCreateResponse",
+      "Provider 创建成功",
+      successExamples.adminAIProviderDetail,
+      "Provider 创建成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/ai/providers/{providerId}",
+  operationId: "getAdminAIProviderDetail",
+  tags: ["admin-ai"],
+  summary: "Provider 详情",
+  security: [],
+  request: {
+    params: adminAIProviderIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminAIProviderDetailResponseDataSchema,
+      "AdminAIProviderDetailResponse",
+      "Provider 详情读取成功",
+      successExamples.adminAIProviderDetail,
+      "Provider 详情读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/ai/providers/{providerId}",
+  operationId: "patchAdminAIProvider",
+  tags: ["admin-ai"],
+  summary: "更新 Provider",
+  security: [],
+  request: {
+    params: adminAIProviderIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIProviderUpsertRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIProviderDetailResponseDataSchema,
+      "AdminAIProviderPatchResponse",
+      "Provider 已更新",
+      successExamples.adminAIProviderDetail,
+      "Provider 已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/ai/models",
+  operationId: "getAdminAIModelList",
+  tags: ["admin-ai"],
+  summary: "Model 列表",
+  security: [],
+  request: {
+    query: adminAIListQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminAIModelListResponseDataSchema,
+      "AdminAIModelListResponse",
+      "Model 列表读取成功",
+      successExamples.adminAIModelList,
+      "Model 列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/ai/models",
+  operationId: "postAdminAIModel",
+  tags: ["admin-ai"],
+  summary: "创建 Model",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIModelUpsertRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIModelDetailResponseDataSchema,
+      "AdminAIModelCreateResponse",
+      "Model 创建成功",
+      successExamples.adminAIModelDetail,
+      "Model 创建成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/ai/models/{modelId}",
+  operationId: "getAdminAIModelDetail",
+  tags: ["admin-ai"],
+  summary: "Model 详情",
+  security: [],
+  request: {
+    params: adminAIModelIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminAIModelDetailResponseDataSchema,
+      "AdminAIModelDetailResponse",
+      "Model 详情读取成功",
+      successExamples.adminAIModelDetail,
+      "Model 详情读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/ai/models/{modelId}",
+  operationId: "patchAdminAIModel",
+  tags: ["admin-ai"],
+  summary: "更新 Model",
+  security: [],
+  request: {
+    params: adminAIModelIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIModelUpsertRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIModelDetailResponseDataSchema,
+      "AdminAIModelPatchResponse",
+      "Model 已更新",
+      successExamples.adminAIModelDetail,
+      "Model 已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/ai/agents",
+  operationId: "getAdminAIAgentList",
+  tags: ["admin-ai"],
+  summary: "Agent 列表",
+  security: [],
+  request: {
+    query: adminAIAgentListQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminAIAgentListResponseDataSchema,
+      "AdminAIAgentListResponse",
+      "Agent 列表读取成功",
+      successExamples.adminAIAgentList,
+      "Agent 列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/ai/agents",
+  operationId: "postAdminAIAgent",
+  tags: ["admin-ai"],
+  summary: "创建 Agent",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIAgentUpsertRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIAgentDetailResponseDataSchema,
+      "AdminAIAgentCreateResponse",
+      "Agent 创建成功",
+      successExamples.adminAIAgentDetail,
+      "Agent 创建成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/ai/agents/{agentId}",
+  operationId: "getAdminAIAgentDetail",
+  tags: ["admin-ai"],
+  summary: "Agent 详情",
+  security: [],
+  request: {
+    params: adminAIAgentIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminAIAgentDetailResponseDataSchema,
+      "AdminAIAgentDetailResponse",
+      "Agent 详情读取成功",
+      successExamples.adminAIAgentDetail,
+      "Agent 详情读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/ai/agents/{agentId}",
+  operationId: "patchAdminAIAgent",
+  tags: ["admin-ai"],
+  summary: "更新 Agent",
+  security: [],
+  request: {
+    params: adminAIAgentIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIAgentUpsertRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIAgentDetailResponseDataSchema,
+      "AdminAIAgentPatchResponse",
+      "Agent 已更新",
+      successExamples.adminAIAgentDetail,
+      "Agent 已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/ai/agent-bindings",
+  operationId: "getAdminAIAgentBindingList",
+  tags: ["admin-ai"],
+  summary: "Agent 命中规则列表",
+  security: [],
+  request: {
+    query: adminAIQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminAIAgentBindingListResponseDataSchema,
+      "AdminAIAgentBindingListResponse",
+      "Agent 命中规则列表读取成功",
+      successExamples.adminAIAgentBindingList,
+      "Agent 命中规则列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/ai/agent-bindings",
+  operationId: "postAdminAIAgentBinding",
+  tags: ["admin-ai"],
+  summary: "创建 Agent 命中规则",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIAgentBindingUpsertRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIAgentBindingListItemSchema,
+      "AdminAIAgentBindingCreateResponse",
+      "Agent 命中规则创建成功",
+      successExamples.adminAIAgentBindingList.items[0],
+      "Agent 命中规则创建成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/ai/agent-bindings/{bindingId}",
+  operationId: "patchAdminAIAgentBinding",
+  tags: ["admin-ai"],
+  summary: "更新 Agent 命中规则",
+  security: [],
+  request: {
+    params: adminAIBindingIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIAgentBindingUpsertRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIAgentBindingListItemSchema,
+      "AdminAIAgentBindingPatchResponse",
+      "命中规则已更新",
+      successExamples.adminAIAgentBindingList.items[0],
+      "命中规则已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/ai/skills",
+  operationId: "getAdminAISkillList",
+  tags: ["admin-ai"],
+  summary: "Skill 列表",
+  security: [],
+  request: {
+    query: adminAIQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminAISkillListResponseDataSchema,
+      "AdminAISkillListResponse",
+      "Skill 列表读取成功",
+      successExamples.adminAISkillList,
+      "Skill 列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/ai/agent-skill-bindings",
+  operationId: "getAdminAIAgentSkillBindingList",
+  tags: ["admin-ai"],
+  summary: "Agent Skill 绑定列表",
+  security: [],
+  request: {
+    query: adminAIQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminAIAgentSkillBindingListResponseDataSchema,
+      "AdminAIAgentSkillBindingListResponse",
+      "Agent Skill 绑定列表读取成功",
+      successExamples.adminAIAgentSkillBindingList,
+      "Agent Skill 绑定列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/ai/agent-skill-bindings",
+  operationId: "postAdminAIAgentSkillBinding",
+  tags: ["admin-ai"],
+  summary: "创建 Agent Skill 绑定",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIAgentSkillBindingUpsertRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIAgentSkillBindingListItemSchema,
+      "AdminAIAgentSkillBindingCreateResponse",
+      "Agent Skill 绑定创建成功",
+      successExamples.adminAIAgentSkillBindingList.items[0],
+      "Agent Skill 绑定创建成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/ai/agent-skill-bindings/{bindingId}",
+  operationId: "patchAdminAIAgentSkillBinding",
+  tags: ["admin-ai"],
+  summary: "更新 Agent Skill 绑定",
+  security: [],
+  request: {
+    params: adminAIBindingIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIAgentSkillBindingUpsertRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIAgentSkillBindingListItemSchema,
+      "AdminAIAgentSkillBindingPatchResponse",
+      "Skill 绑定已更新",
+      successExamples.adminAIAgentSkillBindingList.items[0],
+      "Skill 绑定已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/ai/invocations",
+  operationId: "getAdminAIInvocationList",
+  tags: ["admin-ai"],
+  summary: "调用日志列表",
+  security: [],
+  request: {
+    query: adminAIInvocationListQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminAIInvocationListResponseDataSchema,
+      "AdminAIInvocationListResponse",
+      "调用日志列表读取成功",
+      successExamples.adminAIInvocationList,
+      "调用日志列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/ai/invocations/{invocationId}",
+  operationId: "getAdminAIInvocationDetail",
+  tags: ["admin-ai"],
+  summary: "调用日志详情",
+  security: [],
+  request: {
+    params: adminAIInvocationIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminAIInvocationDetailResponseDataSchema,
+      "AdminAIInvocationDetailResponse",
+      "调用日志详情读取成功",
+      successExamples.adminAIInvocationDetail,
+      "调用日志详情读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/ai/resolve-preview",
+  operationId: "postAdminAIResolvePreview",
+  tags: ["admin-ai"],
+  summary: "命中预览",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIResolvePreviewRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIResolvePreviewResponseDataSchema,
+      "AdminAIResolvePreviewResponse",
+      "命中预览成功",
+      successExamples.adminAIResolvePreview,
+      "命中预览成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/ai/agent/test",
+  operationId: "postAdminAITest",
+  tags: ["admin-ai"],
+  summary: "执行 AI 测试",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAITestRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAITestResponseDataSchema,
+      "AdminAITestResponse",
+      "AI 测试执行成功",
+      successExamples.adminAITest,
+      "AI 测试执行成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
   },
 })
 

@@ -57,6 +57,17 @@ export const ADMIN_AUDIT_ACTIONS = [
   "user_soft_delete",
   "user_restore",
   "learning_path_status_update",
+  "ai_provider_create",
+  "ai_provider_update",
+  "ai_model_create",
+  "ai_model_update",
+  "ai_agent_create",
+  "ai_agent_update",
+  "ai_agent_binding_create",
+  "ai_agent_binding_update",
+  "ai_agent_skill_binding_create",
+  "ai_agent_skill_binding_update",
+  "ai_test_run",
 ] as const
 
 export type AdminAuditAction = (typeof ADMIN_AUDIT_ACTIONS)[number]

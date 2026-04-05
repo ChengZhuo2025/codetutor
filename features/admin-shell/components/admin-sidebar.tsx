@@ -9,6 +9,8 @@ import { ADMIN_ROUTES } from "@/constants/routes"
 import { menuItems, brandIcon } from "../data/menu-config"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { useAdminSession } from "./admin-shell-client"
+import { canAccessAdminAI } from "@/features/admin-ai/lib/access"
 
 const BrandIcon = brandIcon
 
@@ -37,7 +39,9 @@ function withCollapsedTooltip(collapsed: boolean, label: string, node: ReactElem
 
 export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps) {
   const pathname = usePathname()
+  const { session } = useAdminSession()
   const [aiExpanded, setAiExpanded] = useState(pathname.startsWith(`${ADMIN_ROUTES.home}/ai`))
+  const aiAccessible = canAccessAdminAI(session.roles)
 
   return (
     <aside
@@ -85,6 +89,10 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
             const Icon = item.icon
 
             if (!item.active && item.href !== ADMIN_ROUTES.home) {
+              return null
+            }
+
+            if (item.href === ADMIN_ROUTES.ai && !aiAccessible) {
               return null
             }
 

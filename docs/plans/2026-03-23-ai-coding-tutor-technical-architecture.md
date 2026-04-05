@@ -62,13 +62,13 @@
 - 工作台左侧栏数据已提升到根级 Provider 缓存，跨工作台页面切换时不再重复请求并产生加载跳动
 - 用户资料读写、头像上传到 Supabase Storage
 - 用户反馈提交、我的反馈记录、管理员反馈接口
-- 管理员后台 Phase 1（管理员登录/退出、总览看板、反馈工单）及**用户运营**（`/admin/users`、`/admin/users/[userId]`：列表筛选、详情、CSV 导出、受控资料更新、软删除/恢复）与**学习运营**（`/admin/learning`、`/admin/learning/[pathId]`：学习路径列表/导出、详情、最近会话摘要、`reactivate/archive` 状态操作）
+- 管理员后台 Phase 1（管理员登录/退出、总览看板、反馈工单）及**用户运营**（`/admin/users`、`/admin/users/[userId]`：列表筛选、详情、CSV 导出、受控资料更新、软删除/恢复）、**学习运营**（`/admin/learning`、`/admin/learning/[pathId]`：学习路径列表/导出、详情、最近会话摘要、`reactivate/archive` 状态操作）、**AI 运营 MVP**（`/admin/ai*`：概览、Provider/Model/Agent 管理、Bindings/Skills、Invocation 日志、resolve preview、agent test）与**系统设置**（`/admin/settings`：管理员治理概览、账号启停、审计日志）
 - `POST /api/learning/message`、`GET /api/learning/messages` 已接入真实 AI 编排链路，包含会话持久化、历史分页、SiliconFlow provider、JSON / SSE 双返回、结构化 `structuredContent` 与 `task_patch` 联动
 
 当前尚未落地的链路包括：
 
 - 事件埋点写接口
-- 管理员后台 Phase 2 余下能力（AI 运营深水区、细粒度权限、内部备注/人工积分调整等；**终端用户运营与学习运营已交付**）
+- 管理员后台后续能力（AI 运营深水区、细粒度权限、内部备注/人工积分调整等；**终端用户运营、学习运营、AI 运营 MVP 与系统设置已交付**）
 - 通知设置落库
 - Redis / 队列等增强型基础设施
 

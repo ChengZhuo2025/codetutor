@@ -34,7 +34,25 @@ import {
   type AdminSettingsAuditTargetType,
   type AdminUpdateAdminAccountStatusRequest,
 } from "@/lib/api/contracts/admin-settings"
-import { normalizeUuid } from "@/server/lib/identifiers"
+import {
+  ADMIN_AI_ACTIVE_STATUS_OPTIONS,
+  ADMIN_AI_AGENT_SCENARIO_TYPES,
+  ADMIN_AI_AUTH_MODES,
+  ADMIN_AI_INVOCATION_DATE_RANGES,
+  ADMIN_AI_INVOCATION_STATUS_OPTIONS,
+  ADMIN_AI_PROVIDER_TYPES,
+  type AdminAIAgentScenarioType,
+  type AdminAIAgentUpsertRequest,
+  type AdminAIAgentBindingUpsertRequest,
+  type AdminAIAgentSkillBindingUpsertRequest,
+  type AdminAIInvocationDateRange,
+  type AdminAIInvocationStatusOption,
+  type AdminAIModelUpsertRequest,
+  type AdminAIProviderUpsertRequest,
+  type AdminAIResolvePreviewRequest,
+  type AdminAITestRequest,
+} from "@/lib/api/contracts/admin-ai"
+import { isUuid, normalizeUuid } from "@/server/lib/identifiers"
 import type { HistoryFilter } from "@/features/history/types"
 import type { Level } from "@/features/onboarding/types"
 import { PROFILE_AVATAR_ALLOWED_TYPES, PROFILE_AVATAR_MAX_BYTES } from "@/lib/supabase/storage"
@@ -571,6 +589,137 @@ export function parseAdminFeedbackListQuery(searchParams: URLSearchParams) {
 
 const ADMIN_USER_ACCOUNT_STATUSES = ["active", "deleted", "all"] as const
 const ADMIN_LEARNING_LEVELS = ["beginner", "intermediate", "advanced"] as const
+const ADMIN_SELECTION_MODES = ["self_directed", "preset_training"] as const
+
+function parseJsonRecord(
+  value: unknown,
+  fieldName: string,
+): ValidationResult<Record<string, unknown>> {
+  if (value == null) {
+    return ok({})
+  }
+
+  if (typeof value !== "object" || Array.isArray(value)) {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是对象。`)
+  }
+
+  return ok(value as Record<string, unknown>)
+}
+
+function parseTrimmedRequiredString(
+  value: unknown,
+  fieldName: string,
+  minLength = 1,
+  maxLength = 5000,
+): ValidationResult<string> {
+  if (typeof value !== "string") {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是字符串。`)
+  }
+
+  const normalized = value.trim()
+  if (normalized.length < minLength || normalized.length > maxLength) {
+    return fail("VALIDATION_FAILED", `${fieldName} 长度不合法。`)
+  }
+
+  return ok(normalized)
+}
+
+function parseTrimmedNullableString(
+  value: unknown,
+  fieldName: string,
+  maxLength = 5000,
+): ValidationResult<string | null> {
+  if (value == null) {
+    return ok(null)
+  }
+
+  if (typeof value !== "string") {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是字符串或 null。`)
+  }
+
+  const normalized = value.trim()
+  if (normalized.length > maxLength) {
+    return fail("VALIDATION_FAILED", `${fieldName} 长度不合法。`)
+  }
+
+  return ok(normalized.length > 0 ? normalized : null)
+}
+
+function parsePositiveInteger(
+  value: unknown,
+  fieldName: string,
+  minValue = 1,
+  maxValue = 1_000_000,
+): ValidationResult<number> {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < minValue || value > maxValue) {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是 ${minValue} 到 ${maxValue} 之间的整数。`)
+  }
+
+  return ok(value)
+}
+
+function parseNullableNumber(
+  value: unknown,
+  fieldName: string,
+  minValue = 0,
+  maxValue = 10,
+): ValidationResult<number | null> {
+  if (value == null) {
+    return ok(null)
+  }
+
+  if (typeof value !== "number" || !Number.isFinite(value) || value < minValue || value > maxValue) {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是 ${minValue} 到 ${maxValue} 之间的数字。`)
+  }
+
+  return ok(value)
+}
+
+function parseBooleanField(value: unknown, fieldName: string): ValidationResult<boolean> {
+  if (typeof value !== "boolean") {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是布尔值。`)
+  }
+
+  return ok(value)
+}
+
+function parseUuidOrNull(value: unknown, fieldName: string): ValidationResult<string | null> {
+  if (value == null) {
+    return ok(null)
+  }
+
+  if (typeof value !== "string" || !isUuid(value.trim())) {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是 UUID 或 null。`)
+  }
+
+  return ok(value.trim())
+}
+
+function parseChangeReason(value: unknown) {
+  const parsed = parseTrimmedRequiredString(value, "changeReason", 2, 500)
+  if (!parsed.ok) {
+    return fail(parsed.code, "changeReason 至少 2 个字符且最多 500 个字符。")
+  }
+
+  return parsed
+}
+
+function parseSharedListPagination(searchParams: URLSearchParams, defaults?: { limit?: number }) {
+  const rawLimit = searchParams.get("limit")
+  const rawPage = searchParams.get("page")
+  const limit = rawLimit ? Number.parseInt(rawLimit, 10) : (defaults?.limit ?? 20)
+  const page = rawPage ? Number.parseInt(rawPage, 10) : 1
+
+  if (!Number.isFinite(limit) || limit < 1 || limit > 100) {
+    return fail("VALIDATION_FAILED", "limit 必须在 1 到 100 之间。")
+  }
+
+  if (!Number.isFinite(page) || page < 1) {
+    return fail("VALIDATION_FAILED", "page 必须是大于等于 1 的整数。")
+  }
+
+  return ok({ limit, page })
+}
 
 export function parseAdminSettingsAccountListQuery(searchParams: URLSearchParams) {
   const rawLimit = searchParams.get("limit")
@@ -747,6 +896,498 @@ export function parseAdminLearningPathListQuery(searchParams: URLSearchParams) {
     updatedWithin,
     limit,
     page,
+  })
+}
+
+export function parseAdminAIAgentListQuery(
+  searchParams: URLSearchParams,
+  options?: {
+    allowScenario?: boolean
+    allowStatus?: boolean
+  },
+) {
+  const pagination = parseSharedListPagination(searchParams)
+  if (!pagination.ok) {
+    return pagination
+  }
+
+  const allowScenario = options?.allowScenario ?? true
+  const allowStatus = options?.allowStatus ?? true
+  const rawScenarioType = searchParams.get("scenarioType")
+  const rawStatus = searchParams.get("status")
+
+  let scenarioType: AdminAIAgentScenarioType | undefined
+  if (allowScenario && rawScenarioType) {
+    if (!ADMIN_AI_AGENT_SCENARIO_TYPES.includes(rawScenarioType as AdminAIAgentScenarioType)) {
+      return fail("VALIDATION_FAILED", "scenarioType 参数不合法。")
+    }
+    scenarioType = rawScenarioType as AdminAIAgentScenarioType
+  }
+
+  let status: "all" | "active" | "inactive" = "all"
+  if (allowStatus && rawStatus) {
+    if (!ADMIN_AI_ACTIVE_STATUS_OPTIONS.includes(rawStatus as (typeof ADMIN_AI_ACTIVE_STATUS_OPTIONS)[number])) {
+      return fail("VALIDATION_FAILED", "status 参数不合法。")
+    }
+    status = rawStatus as "all" | "active" | "inactive"
+  }
+
+  return ok({
+    keyword: searchParams.get("keyword")?.trim() || undefined,
+    ...(allowScenario ? { scenarioType } : {}),
+    ...(allowStatus ? { status } : {}),
+    ...pagination.data,
+  })
+}
+
+export function parseAdminAIInvocationListQuery(searchParams: URLSearchParams) {
+  const pagination = parseSharedListPagination(searchParams)
+  if (!pagination.ok) {
+    return pagination
+  }
+
+  const rawStatus = searchParams.get("status")
+  const rawDateRange = searchParams.get("dateRange")
+  let status: AdminAIInvocationStatusOption = "all"
+  if (rawStatus) {
+    if (!ADMIN_AI_INVOCATION_STATUS_OPTIONS.includes(rawStatus as AdminAIInvocationStatusOption)) {
+      return fail("VALIDATION_FAILED", "status 参数不合法。")
+    }
+    status = rawStatus as AdminAIInvocationStatusOption
+  }
+
+  let dateRange: AdminAIInvocationDateRange = "7d"
+  if (rawDateRange) {
+    if (!ADMIN_AI_INVOCATION_DATE_RANGES.includes(rawDateRange as AdminAIInvocationDateRange)) {
+      return fail("VALIDATION_FAILED", "dateRange 参数不合法。")
+    }
+    dateRange = rawDateRange as AdminAIInvocationDateRange
+  }
+
+  return ok({
+    keyword: searchParams.get("keyword")?.trim() || undefined,
+    status,
+    providerCode: searchParams.get("providerCode")?.trim() || undefined,
+    modelCode: searchParams.get("modelCode")?.trim() || undefined,
+    agentCode: searchParams.get("agentCode")?.trim() || undefined,
+    dateRange,
+    ...pagination.data,
+  })
+}
+
+const adminAIProviderShapeSchema = z.object({
+  code: z.unknown(),
+  name: z.unknown(),
+  providerType: z.unknown(),
+  baseUrl: z.unknown(),
+  authMode: z.unknown(),
+  secretRef: z.unknown(),
+  supportsStream: z.unknown(),
+  supportsJsonMode: z.unknown(),
+  timeoutMs: z.unknown(),
+  retryCount: z.unknown(),
+  isActive: z.unknown(),
+  metadata: z.unknown().optional(),
+  changeReason: z.unknown(),
+}).strict()
+
+export function parseAdminAIProviderBody(input: unknown): ValidationResult<AdminAIProviderUpsertRequest> {
+  const shape = adminAIProviderShapeSchema.safeParse(input)
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "Provider 请求体不合法。")
+  }
+
+  const code = parseTrimmedRequiredString(shape.data.code, "code", 2, 64)
+  const name = parseTrimmedRequiredString(shape.data.name, "name", 2, 128)
+  const baseUrl = parseTrimmedRequiredString(shape.data.baseUrl, "baseUrl", 8, 500)
+  const secretRef = parseTrimmedRequiredString(shape.data.secretRef, "secretRef", 2, 128)
+  const timeoutMs = parsePositiveInteger(shape.data.timeoutMs, "timeoutMs", 1000, 300_000)
+  const retryCount = parsePositiveInteger(shape.data.retryCount, "retryCount", 1, 10)
+  const supportsStream = parseBooleanField(shape.data.supportsStream, "supportsStream")
+  const supportsJsonMode = parseBooleanField(shape.data.supportsJsonMode, "supportsJsonMode")
+  const isActive = parseBooleanField(shape.data.isActive, "isActive")
+  const metadata = parseJsonRecord(shape.data.metadata, "metadata")
+  const changeReason = parseChangeReason(shape.data.changeReason)
+
+  if (!code.ok || !name.ok || !baseUrl.ok || !secretRef.ok || !timeoutMs.ok || !retryCount.ok || !supportsStream.ok || !supportsJsonMode.ok || !isActive.ok || !metadata.ok || !changeReason.ok) {
+    return fail("VALIDATION_FAILED", "Provider 请求体字段不合法。")
+  }
+
+  if (!ADMIN_AI_PROVIDER_TYPES.includes(shape.data.providerType as (typeof ADMIN_AI_PROVIDER_TYPES)[number])) {
+    return fail("VALIDATION_FAILED", "providerType 参数不合法。")
+  }
+
+  if (!ADMIN_AI_AUTH_MODES.includes(shape.data.authMode as (typeof ADMIN_AI_AUTH_MODES)[number])) {
+    return fail("VALIDATION_FAILED", "authMode 参数不合法。")
+  }
+
+  if (!isValidUrl(baseUrl.data)) {
+    return fail("VALIDATION_FAILED", "baseUrl 必须是合法 URL。")
+  }
+
+  return ok({
+    code: code.data.toLowerCase(),
+    name: name.data,
+    providerType: shape.data.providerType as AdminAIProviderUpsertRequest["providerType"],
+    baseUrl: baseUrl.data,
+    authMode: shape.data.authMode as AdminAIProviderUpsertRequest["authMode"],
+    secretRef: secretRef.data,
+    supportsStream: supportsStream.data,
+    supportsJsonMode: supportsJsonMode.data,
+    timeoutMs: timeoutMs.data,
+    retryCount: retryCount.data,
+    isActive: isActive.data,
+    metadata: metadata.data,
+    changeReason: changeReason.data,
+  })
+}
+
+const adminAIModelShapeSchema = z.object({
+  providerCode: z.unknown(),
+  code: z.unknown(),
+  displayName: z.unknown(),
+  modelName: z.unknown(),
+  supportsStream: z.unknown(),
+  supportsJsonMode: z.unknown(),
+  supportsToolCalling: z.unknown(),
+  maxContextTokens: z.unknown(),
+  defaultMaxOutputTokens: z.unknown(),
+  recommendedTemperature: z.unknown().optional(),
+  pricingMetadata: z.unknown().optional(),
+  isActive: z.unknown(),
+  metadata: z.unknown().optional(),
+  changeReason: z.unknown(),
+}).strict()
+
+export function parseAdminAIModelBody(input: unknown): ValidationResult<AdminAIModelUpsertRequest> {
+  const shape = adminAIModelShapeSchema.safeParse(input)
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "Model 请求体不合法。")
+  }
+
+  const providerCode = parseTrimmedRequiredString(shape.data.providerCode, "providerCode", 2, 64)
+  const code = parseTrimmedRequiredString(shape.data.code, "code", 2, 64)
+  const displayName = parseTrimmedRequiredString(shape.data.displayName, "displayName", 2, 128)
+  const modelName = parseTrimmedRequiredString(shape.data.modelName, "modelName", 2, 256)
+  const supportsStream = parseBooleanField(shape.data.supportsStream, "supportsStream")
+  const supportsJsonMode = parseBooleanField(shape.data.supportsJsonMode, "supportsJsonMode")
+  const supportsToolCalling = parseBooleanField(shape.data.supportsToolCalling, "supportsToolCalling")
+  const maxContextTokens = parsePositiveInteger(shape.data.maxContextTokens, "maxContextTokens", 256, 10_000_000)
+  const defaultMaxOutputTokens = parsePositiveInteger(shape.data.defaultMaxOutputTokens, "defaultMaxOutputTokens", 1, 1_000_000)
+  const recommendedTemperature = parseNullableNumber(shape.data.recommendedTemperature, "recommendedTemperature", 0, 2)
+  const pricingMetadata = parseJsonRecord(shape.data.pricingMetadata, "pricingMetadata")
+  const isActive = parseBooleanField(shape.data.isActive, "isActive")
+  const metadata = parseJsonRecord(shape.data.metadata, "metadata")
+  const changeReason = parseChangeReason(shape.data.changeReason)
+
+  if (!providerCode.ok || !code.ok || !displayName.ok || !modelName.ok || !supportsStream.ok || !supportsJsonMode.ok || !supportsToolCalling.ok || !maxContextTokens.ok || !defaultMaxOutputTokens.ok || !recommendedTemperature.ok || !pricingMetadata.ok || !isActive.ok || !metadata.ok || !changeReason.ok) {
+    return fail("VALIDATION_FAILED", "Model 请求体字段不合法。")
+  }
+
+  return ok({
+    providerCode: providerCode.data.toLowerCase(),
+    code: code.data.toLowerCase(),
+    displayName: displayName.data,
+    modelName: modelName.data,
+    supportsStream: supportsStream.data,
+    supportsJsonMode: supportsJsonMode.data,
+    supportsToolCalling: supportsToolCalling.data,
+    maxContextTokens: maxContextTokens.data,
+    defaultMaxOutputTokens: defaultMaxOutputTokens.data,
+    recommendedTemperature: recommendedTemperature.data,
+    pricingMetadata: pricingMetadata.data,
+    isActive: isActive.data,
+    metadata: metadata.data,
+    changeReason: changeReason.data,
+  })
+}
+
+const adminAIAgentShapeSchema = z.object({
+  code: z.unknown(),
+  name: z.unknown(),
+  scenarioType: z.unknown(),
+  description: z.unknown().optional(),
+  systemPromptTemplate: z.unknown(),
+  developerPromptTemplate: z.unknown().optional(),
+  defaultProviderCode: z.unknown(),
+  defaultModelCode: z.unknown(),
+  contextMessageLimit: z.unknown(),
+  maxOutputTokens: z.unknown(),
+  temperature: z.unknown(),
+  topP: z.unknown().optional(),
+  streamEnabled: z.unknown(),
+  isActive: z.unknown(),
+  metadata: z.unknown().optional(),
+  changeReason: z.unknown(),
+}).strict()
+
+export function parseAdminAIAgentBody(input: unknown): ValidationResult<AdminAIAgentUpsertRequest> {
+  const shape = adminAIAgentShapeSchema.safeParse(input)
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "Agent 请求体不合法。")
+  }
+
+  if (!ADMIN_AI_AGENT_SCENARIO_TYPES.includes(shape.data.scenarioType as AdminAIAgentScenarioType)) {
+    return fail("VALIDATION_FAILED", "scenarioType 参数不合法。")
+  }
+
+  const code = parseTrimmedRequiredString(shape.data.code, "code", 2, 64)
+  const name = parseTrimmedRequiredString(shape.data.name, "name", 2, 128)
+  const description = parseTrimmedNullableString(shape.data.description, "description", 5000)
+  const systemPromptTemplate = parseTrimmedRequiredString(shape.data.systemPromptTemplate, "systemPromptTemplate", 10, 50_000)
+  const developerPromptTemplate = parseTrimmedNullableString(shape.data.developerPromptTemplate, "developerPromptTemplate", 50_000)
+  const defaultProviderCode = parseTrimmedRequiredString(shape.data.defaultProviderCode, "defaultProviderCode", 2, 64)
+  const defaultModelCode = parseTrimmedRequiredString(shape.data.defaultModelCode, "defaultModelCode", 2, 64)
+  const contextMessageLimit = parsePositiveInteger(shape.data.contextMessageLimit, "contextMessageLimit", 1, 100)
+  const maxOutputTokens = parsePositiveInteger(shape.data.maxOutputTokens, "maxOutputTokens", 1, 100_000)
+  const temperature = parseNullableNumber(shape.data.temperature, "temperature", 0, 2)
+  const topP = parseNullableNumber(shape.data.topP, "topP", 0, 1)
+  const streamEnabled = parseBooleanField(shape.data.streamEnabled, "streamEnabled")
+  const isActive = parseBooleanField(shape.data.isActive, "isActive")
+  const metadata = parseJsonRecord(shape.data.metadata, "metadata")
+  const changeReason = parseChangeReason(shape.data.changeReason)
+
+  if (!code.ok || !name.ok || !description.ok || !systemPromptTemplate.ok || !developerPromptTemplate.ok || !defaultProviderCode.ok || !defaultModelCode.ok || !contextMessageLimit.ok || !maxOutputTokens.ok || !temperature.ok || !topP.ok || !streamEnabled.ok || !isActive.ok || !metadata.ok || !changeReason.ok) {
+    return fail("VALIDATION_FAILED", "Agent 请求体字段不合法。")
+  }
+
+  return ok({
+    code: code.data.toLowerCase(),
+    name: name.data,
+    scenarioType: shape.data.scenarioType as AdminAIAgentScenarioType,
+    description: description.data,
+    systemPromptTemplate: systemPromptTemplate.data,
+    developerPromptTemplate: developerPromptTemplate.data,
+    defaultProviderCode: defaultProviderCode.data.toLowerCase(),
+    defaultModelCode: defaultModelCode.data.toLowerCase(),
+    contextMessageLimit: contextMessageLimit.data,
+    maxOutputTokens: maxOutputTokens.data,
+    temperature: temperature.data ?? 0,
+    topP: topP.data,
+    streamEnabled: streamEnabled.data,
+    isActive: isActive.data,
+    metadata: metadata.data,
+    changeReason: changeReason.data,
+  })
+}
+
+const adminAIAgentBindingShapeSchema = z.object({
+  agentCode: z.unknown(),
+  toolId: z.unknown().optional(),
+  learningLevel: z.unknown().optional(),
+  selectionMode: z.unknown().optional(),
+  pathId: z.unknown().optional(),
+  stepNo: z.unknown().optional(),
+  interactionType: z.unknown(),
+  priority: z.unknown(),
+  isActive: z.unknown(),
+  metadata: z.unknown().optional(),
+  changeReason: z.unknown(),
+}).strict()
+
+export function parseAdminAIAgentBindingBody(input: unknown): ValidationResult<AdminAIAgentBindingUpsertRequest> {
+  const shape = adminAIAgentBindingShapeSchema.safeParse(input)
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "Agent 命中规则请求体不合法。")
+  }
+
+  const agentCode = parseTrimmedRequiredString(shape.data.agentCode, "agentCode", 2, 64)
+  const toolId = parseUuidOrNull(shape.data.toolId, "toolId")
+  const pathId = parseUuidOrNull(shape.data.pathId, "pathId")
+  const interactionType = parseTrimmedRequiredString(shape.data.interactionType, "interactionType", 2, 32)
+  const priority = parsePositiveInteger(shape.data.priority, "priority", 1, 1000)
+  const isActive = parseBooleanField(shape.data.isActive, "isActive")
+  const metadata = parseJsonRecord(shape.data.metadata, "metadata")
+  const changeReason = parseChangeReason(shape.data.changeReason)
+
+  if (!agentCode.ok || !toolId.ok || !pathId.ok || !interactionType.ok || !priority.ok || !isActive.ok || !metadata.ok || !changeReason.ok) {
+    return fail("VALIDATION_FAILED", "Agent 命中规则字段不合法。")
+  }
+
+  let learningLevel: "beginner" | "intermediate" | "advanced" | null = null
+  if (shape.data.learningLevel != null) {
+    if (!ADMIN_LEARNING_LEVELS.includes(shape.data.learningLevel as (typeof ADMIN_LEARNING_LEVELS)[number])) {
+      return fail("VALIDATION_FAILED", "learningLevel 参数不合法。")
+    }
+    learningLevel = shape.data.learningLevel as "beginner" | "intermediate" | "advanced"
+  }
+
+  let selectionMode: "self_directed" | "preset_training" | null = null
+  if (shape.data.selectionMode != null) {
+    if (!ADMIN_SELECTION_MODES.includes(shape.data.selectionMode as (typeof ADMIN_SELECTION_MODES)[number])) {
+      return fail("VALIDATION_FAILED", "selectionMode 参数不合法。")
+    }
+    selectionMode = shape.data.selectionMode as "self_directed" | "preset_training"
+  }
+
+  let stepNo: number | null = null
+  if (shape.data.stepNo != null) {
+    const parsedStep = parsePositiveInteger(shape.data.stepNo, "stepNo", 1, 10_000)
+    if (!parsedStep.ok) {
+      return parsedStep
+    }
+    stepNo = parsedStep.data
+  }
+
+  return ok({
+    agentCode: agentCode.data.toLowerCase(),
+    toolId: toolId.data,
+    learningLevel,
+    selectionMode,
+    pathId: pathId.data,
+    stepNo,
+    interactionType: interactionType.data,
+    priority: priority.data,
+    isActive: isActive.data,
+    metadata: metadata.data,
+    changeReason: changeReason.data,
+  })
+}
+
+const adminAIAgentSkillBindingShapeSchema = z.object({
+  agentCode: z.unknown(),
+  skillCode: z.unknown(),
+  priority: z.unknown(),
+  isRequired: z.unknown(),
+  contextBudgetTokens: z.unknown().optional(),
+  isActive: z.unknown(),
+  metadata: z.unknown().optional(),
+  changeReason: z.unknown(),
+}).strict()
+
+export function parseAdminAIAgentSkillBindingBody(
+  input: unknown,
+): ValidationResult<AdminAIAgentSkillBindingUpsertRequest> {
+  const shape = adminAIAgentSkillBindingShapeSchema.safeParse(input)
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "Agent Skill 绑定请求体不合法。")
+  }
+
+  const agentCode = parseTrimmedRequiredString(shape.data.agentCode, "agentCode", 2, 64)
+  const skillCode = parseTrimmedRequiredString(shape.data.skillCode, "skillCode", 2, 64)
+  const priority = parsePositiveInteger(shape.data.priority, "priority", 1, 1000)
+  const isRequired = parseBooleanField(shape.data.isRequired, "isRequired")
+  const isActive = parseBooleanField(shape.data.isActive, "isActive")
+  const metadata = parseJsonRecord(shape.data.metadata, "metadata")
+  const changeReason = parseChangeReason(shape.data.changeReason)
+
+  if (!agentCode.ok || !skillCode.ok || !priority.ok || !isRequired.ok || !isActive.ok || !metadata.ok || !changeReason.ok) {
+    return fail("VALIDATION_FAILED", "Agent Skill 绑定字段不合法。")
+  }
+
+  let contextBudgetTokens: number | null = null
+  if (shape.data.contextBudgetTokens != null) {
+    const parsedBudget = parsePositiveInteger(shape.data.contextBudgetTokens, "contextBudgetTokens", 1, 100_000)
+    if (!parsedBudget.ok) {
+      return parsedBudget
+    }
+    contextBudgetTokens = parsedBudget.data
+  }
+
+  return ok({
+    agentCode: agentCode.data.toLowerCase(),
+    skillCode: skillCode.data.toLowerCase(),
+    priority: priority.data,
+    isRequired: isRequired.data,
+    contextBudgetTokens,
+    isActive: isActive.data,
+    metadata: metadata.data,
+    changeReason: changeReason.data,
+  })
+}
+
+const adminAIResolvePreviewShapeSchema = z.object({
+  interactionType: z.unknown(),
+  toolId: z.unknown().optional(),
+  learningLevel: z.unknown().optional(),
+  selectionMode: z.unknown().optional(),
+  pathId: z.unknown().optional(),
+  stepNo: z.unknown().optional(),
+}).strict()
+
+export function parseAdminAIResolvePreviewBody(
+  input: unknown,
+): ValidationResult<AdminAIResolvePreviewRequest> {
+  const shape = adminAIResolvePreviewShapeSchema.safeParse(input)
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "命中预览请求体不合法。")
+  }
+
+  const interactionType = parseTrimmedRequiredString(shape.data.interactionType, "interactionType", 2, 32)
+  const toolId = parseUuidOrNull(shape.data.toolId, "toolId")
+  const pathId = parseUuidOrNull(shape.data.pathId, "pathId")
+  if (!interactionType.ok || !toolId.ok || !pathId.ok) {
+    return fail("VALIDATION_FAILED", "命中预览请求体字段不合法。")
+  }
+
+  let learningLevel: "beginner" | "intermediate" | "advanced" | null = null
+  if (shape.data.learningLevel != null) {
+    if (!ADMIN_LEARNING_LEVELS.includes(shape.data.learningLevel as (typeof ADMIN_LEARNING_LEVELS)[number])) {
+      return fail("VALIDATION_FAILED", "learningLevel 参数不合法。")
+    }
+    learningLevel = shape.data.learningLevel as "beginner" | "intermediate" | "advanced"
+  }
+
+  let selectionMode: "self_directed" | "preset_training" | null = null
+  if (shape.data.selectionMode != null) {
+    if (!ADMIN_SELECTION_MODES.includes(shape.data.selectionMode as (typeof ADMIN_SELECTION_MODES)[number])) {
+      return fail("VALIDATION_FAILED", "selectionMode 参数不合法。")
+    }
+    selectionMode = shape.data.selectionMode as "self_directed" | "preset_training"
+  }
+
+  let stepNo: number | null = null
+  if (shape.data.stepNo != null) {
+    const parsedStep = parsePositiveInteger(shape.data.stepNo, "stepNo", 1, 10_000)
+    if (!parsedStep.ok) {
+      return parsedStep
+    }
+    stepNo = parsedStep.data
+  }
+
+  return ok({
+    interactionType: interactionType.data,
+    toolId: toolId.data,
+    learningLevel,
+    selectionMode,
+    pathId: pathId.data,
+    stepNo,
+  })
+}
+
+const adminAITestShapeSchema = z.object({
+  agentCode: z.unknown(),
+  providerCode: z.unknown(),
+  modelCode: z.unknown(),
+  prompt: z.unknown(),
+  stream: z.unknown(),
+  changeReason: z.unknown(),
+}).strict()
+
+export function parseAdminAITestBody(input: unknown): ValidationResult<AdminAITestRequest> {
+  const shape = adminAITestShapeSchema.safeParse(input)
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "AI 测试请求体不合法。")
+  }
+
+  const agentCode = parseTrimmedRequiredString(shape.data.agentCode, "agentCode", 2, 64)
+  const providerCode = parseTrimmedRequiredString(shape.data.providerCode, "providerCode", 2, 64)
+  const modelCode = parseTrimmedRequiredString(shape.data.modelCode, "modelCode", 2, 64)
+  const prompt = parseTrimmedRequiredString(shape.data.prompt, "prompt", 2, 20_000)
+  const stream = parseBooleanField(shape.data.stream, "stream")
+  const changeReason = parseChangeReason(shape.data.changeReason)
+
+  if (!agentCode.ok || !providerCode.ok || !modelCode.ok || !prompt.ok || !stream.ok || !changeReason.ok) {
+    return fail("VALIDATION_FAILED", "AI 测试请求体字段不合法。")
+  }
+
+  return ok({
+    agentCode: agentCode.data.toLowerCase(),
+    providerCode: providerCode.data.toLowerCase(),
+    modelCode: modelCode.data.toLowerCase(),
+    prompt: prompt.data,
+    stream: stream.data,
+    changeReason: changeReason.data,
   })
 }
 

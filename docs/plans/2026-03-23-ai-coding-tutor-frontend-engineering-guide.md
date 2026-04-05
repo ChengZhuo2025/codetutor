@@ -55,7 +55,7 @@
 6. `/achievements`：成就页
 7. `/history`：学习记录页
 
-当前已可直接访问的管理端页面（Phase 1 + 用户运营 + 学习运营）：
+当前已可直接访问的管理端页面（Phase 1 + 用户运营 + 学习运营 + AI 运营 + 系统设置）：
 
 8. `/admin/login`：管理员登录页
 9. `/admin`：总览看板页
@@ -63,8 +63,17 @@
 11. `/admin/users/[userId]`：用户详情页
 12. `/admin/learning`：学习运营列表页（学习路径实例筛选、导出、详情跳转）
 13. `/admin/learning/[pathId]`：学习路径详情页（时间线、步骤、最近会话、状态操作）
-14. `/admin/feedback`：反馈工单列表页
-15. `/admin/feedback/[id]`：反馈工单详情页
+14. `/admin/ai`：AI 运营概览页
+15. `/admin/ai/providers`：Provider 管理页
+16. `/admin/ai/models`：Model 管理页
+17. `/admin/ai/agents`：Agent 管理页
+18. `/admin/ai/bindings`：命中规则页
+19. `/admin/ai/skills`：Skill 管理页
+20. `/admin/ai/invocations`：调用日志页
+21. `/admin/ai/test`：AI 测试与命中预览页
+22. `/admin/settings`：系统设置页
+23. `/admin/feedback`：反馈工单列表页
+24. `/admin/feedback/[id]`：反馈工单详情页
 
 另外还有一个内部开发调试页：
 
@@ -139,6 +148,8 @@ types/
 - `features/admin-dashboard`
 - `features/admin-users`
 - `features/admin-learning`
+- `features/admin-ai`
+- `features/admin-settings`
 - `features/admin-feedback`
 
 每个业务域当前大致采用如下结构：
@@ -562,7 +573,7 @@ features/<domain>/
 - 尚未形成系统性的前端自动化测试覆盖
 - 通知设置、订阅模块、FAQ 仍是静态或占位实现
 - 埋点写入与通知设置落库尚未接入真实后端
-- 管理员后台当前已完成 Phase 1，并已落地用户运营与学习运营；AI 运营与更深用户运营写能力仍未开始
+- 管理员后台当前已完成 Phase 1，并已落地用户运营、学习运营、AI 运营 MVP 与系统设置；更深用户运营写能力、细粒度权限与 AI 深水区能力仍未开始
 
 因此，当前阶段的目标仍然是：
 
@@ -605,6 +616,6 @@ features/<domain>/
 1. 继续把剩余静态模块切到真实接口，优先级依次为埋点事件、通知设置、订阅模块。
 2. 为已接接口的高频页面补充页面级自动化测试或最小交互测试。
 3. 在确认请求复杂度继续上升后，再评估是否引入 Query 缓存层，而不是过早全局化。
-4. 继续推进管理员后台 Phase 2 余下能力前，先保持用户侧与管理侧鉴权分流口径一致，避免两端状态判断逻辑漂移。（用户运营与学习运营页面/API 已交付，新增后台域时继续遵守 `features/admin-*` 与 `server/modules/admin-*` 约定。）
+4. 继续推进管理员后台后续能力前，先保持用户侧与管理侧鉴权分流口径一致，避免两端状态判断逻辑漂移。（用户运营、学习运营、AI 运营 MVP 与系统设置页面/API 已交付，新增后台域时继续遵守 `features/admin-*` 与 `server/modules/admin-*` 约定。）
 
 如果后续目录与本说明出现偏差，应优先更新本文档，再继续扩展代码。

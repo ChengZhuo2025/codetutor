@@ -16,7 +16,7 @@ test("openapi document covers all registered api operations and special transpor
     ),
   )
 
-  assert.equal(operations.length, 55)
+  assert.equal(operations.length, 79)
 
   assert.ok(paths["/api/auth/login"]?.post)
   assert.ok(paths["/api/profile/me"]?.get)
@@ -52,6 +52,30 @@ test("openapi document covers all registered api operations and special transpor
   assert.ok(paths["/api/admin/settings/admin-accounts"]?.get)
   assert.ok(paths["/api/admin/settings/admin-accounts/{adminAccountId}/status"]?.post)
   assert.ok(paths["/api/admin/settings/audit-logs"]?.get)
+  assert.ok(paths["/api/admin/ai/overview"]?.get)
+  assert.ok(paths["/api/admin/ai/providers"]?.get)
+  assert.ok(paths["/api/admin/ai/providers"]?.post)
+  assert.ok(paths["/api/admin/ai/providers/{providerId}"]?.get)
+  assert.ok(paths["/api/admin/ai/providers/{providerId}"]?.patch)
+  assert.ok(paths["/api/admin/ai/models"]?.get)
+  assert.ok(paths["/api/admin/ai/models"]?.post)
+  assert.ok(paths["/api/admin/ai/models/{modelId}"]?.get)
+  assert.ok(paths["/api/admin/ai/models/{modelId}"]?.patch)
+  assert.ok(paths["/api/admin/ai/agents"]?.get)
+  assert.ok(paths["/api/admin/ai/agents"]?.post)
+  assert.ok(paths["/api/admin/ai/agents/{agentId}"]?.get)
+  assert.ok(paths["/api/admin/ai/agents/{agentId}"]?.patch)
+  assert.ok(paths["/api/admin/ai/agent-bindings"]?.get)
+  assert.ok(paths["/api/admin/ai/agent-bindings"]?.post)
+  assert.ok(paths["/api/admin/ai/agent-bindings/{bindingId}"]?.patch)
+  assert.ok(paths["/api/admin/ai/skills"]?.get)
+  assert.ok(paths["/api/admin/ai/agent-skill-bindings"]?.get)
+  assert.ok(paths["/api/admin/ai/agent-skill-bindings"]?.post)
+  assert.ok(paths["/api/admin/ai/agent-skill-bindings/{bindingId}"]?.patch)
+  assert.ok(paths["/api/admin/ai/invocations"]?.get)
+  assert.ok(paths["/api/admin/ai/invocations/{invocationId}"]?.get)
+  assert.ok(paths["/api/admin/ai/resolve-preview"]?.post)
+  assert.ok(paths["/api/admin/ai/agent/test"]?.post)
 
   const avatarPost = paths["/api/profile/avatar"]?.post as
     | {

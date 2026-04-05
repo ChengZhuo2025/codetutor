@@ -59,6 +59,7 @@ features/              # 前端主工作目录，按业务域组织
   ├── admin-dashboard/ # 管理后台看板
   ├── admin-users/    # 管理后台用户运营（列表、详情、导出、资料编辑）
   ├── admin-learning/ # 管理后台学习运营（路径列表、详情、状态操作）
+  ├── admin-ai/       # 管理后台 AI 运营（概览、Provider/Model/Agent、规则、日志、测试）
   ├── admin-settings/ # 管理后台系统设置（资料、安全、管理员账号、审计）
   └── admin-feedback/ # 管理后台反馈工单
 hooks/                 # 自定义 React Hooks
@@ -80,6 +81,7 @@ server/                # 服务端逻辑
     ├── admin-dashboard/ # 管理员看板域
     ├── admin-users/  # 管理员用户运营域
     ├── admin-learning/ # 管理员学习运营域
+    ├── admin-ai/     # 管理员 AI 运营域
     ├── admin-settings/ # 管理员系统设置域
     └── api-docs/     # OpenAPI 文档注册
 supabase/              # 数据库迁移与相关 SQL
@@ -104,6 +106,14 @@ types/                # 跨 feature 共用的类型定义
 | `/admin/users/[userId]` | 用户详情 | `features/admin-users/components/user-detail-page.tsx` |
 | `/admin/learning` | 学习运营列表 | `features/admin-learning/components/learning-path-list-page.tsx` |
 | `/admin/learning/[pathId]` | 学习路径详情 | `features/admin-learning/components/learning-path-detail-page.tsx` |
+| `/admin/ai` | AI 运营概览 | `features/admin-ai/components/ai-overview-page.tsx` |
+| `/admin/ai/providers` | Provider 管理 | `features/admin-ai/components/provider-management-page.tsx` |
+| `/admin/ai/models` | Model 管理 | `features/admin-ai/components/model-management-page.tsx` |
+| `/admin/ai/agents` | Agent 管理 | `features/admin-ai/components/agent-management-page.tsx` |
+| `/admin/ai/bindings` | 命中规则 | `features/admin-ai/components/binding-management-page.tsx` |
+| `/admin/ai/skills` | Skill 管理 | `features/admin-ai/components/skill-management-page.tsx` |
+| `/admin/ai/invocations` | 调用日志 | `features/admin-ai/components/invocation-log-page.tsx` |
+| `/admin/ai/test` | 测试调试 | `features/admin-ai/components/ai-test-console-page.tsx` |
 | `/admin/settings` | 系统设置 | `features/admin-settings/components/system-settings-page.tsx` |
 | `/admin/feedback` | 反馈工单列表 | `features/admin-feedback/components/feedback-list.tsx` |
 | `/admin/feedback/[id]` | 反馈工单详情 | `features/admin-feedback/components/feedback-detail.tsx` |
@@ -155,11 +165,12 @@ types/                # 跨 feature 共用的类型定义
 - ✅ 管理后台 Phase 1（管理员认证、看板、反馈工单）
 - ✅ 管理后台用户运营（`/admin/users`、`/admin/users/[userId]`：列表筛选、CSV 导出、详情聚合、受控资料 PATCH、软删除/恢复；`server/modules/admin-users`、`OpenAPI` 分组 `admin-users`）
 - ✅ 管理后台学习运营（`/admin/learning`、`/admin/learning/[pathId]`：学习路径列表筛选、CSV 导出、详情聚合、最近会话回看、`reactivate/archive` 状态操作；`server/modules/admin-learning`、`OpenAPI` 分组 `admin-learning`）
+- ✅ 管理后台 AI 运营（`/admin/ai`、`/admin/ai/providers`、`/admin/ai/models`、`/admin/ai/agents`、`/admin/ai/bindings`、`/admin/ai/skills`、`/admin/ai/invocations`、`/admin/ai/test`；对应 `/api/admin/ai/*`、`server/modules/admin-ai`、`OpenAPI` 分组 `admin-ai`）
 - ✅ 管理后台系统设置（`/admin/settings`：我的资料、安全设置、管理员账号列表与启停、角色权限说明、操作审计、系统信息；`server/modules/admin-settings`、`OpenAPI` 分组 `admin-settings`）
 
 **进行中/待完成：**
 - ⏳ analytics 事件入库
-- ⏳ 管理员后台 Phase 2 余下能力（AI 运营、细粒度权限深化；用户域后续如内部备注、人工积分调整等以设计文档与代码为准）
+- ⏳ 管理员后台后续能力（细粒度权限深化；用户域后续如内部备注、人工积分调整；AI 域更深能力如 prompt 版本化、灰度/回滚、成本与稳定性面板等以设计文档与代码为准）
 - ⏳ AI 编排第二阶段（更细粒度 agent 控制、prompt 版本化管理）
 - ⏳ 通知设置落库
 

@@ -7,6 +7,17 @@ import {
   ADMIN_SETTINGS_ACCOUNT_STATUS_ACTIONS,
   ADMIN_SETTINGS_AUDIT_TARGET_TYPES,
 } from "@/lib/api/contracts/admin-settings"
+import {
+  ADMIN_AI_ACTIVE_STATUS_OPTIONS,
+  ADMIN_AI_AGENT_SCENARIO_TYPES,
+  ADMIN_AI_AUTH_MODES,
+  ADMIN_AI_INVOCATION_DATE_RANGES,
+  ADMIN_AI_INVOCATION_STATUSES,
+  ADMIN_AI_INVOCATION_STATUS_OPTIONS,
+  ADMIN_AI_PROVIDER_TYPES,
+  ADMIN_AI_SKILL_SOURCE_TYPES,
+  ADMIN_AI_SKILL_TRUST_LEVELS,
+} from "@/lib/api/contracts/admin-ai"
 
 extendZodWithOpenApi(z)
 
@@ -1597,3 +1608,630 @@ export const adminUpdateLearningPathStatusResponseDataSchema = z
     status: adminLearningPathStatusSchema,
   })
   .openapi("AdminUpdateLearningPathStatusResponseData")
+
+export const adminAIProviderTypeSchema = z.enum(ADMIN_AI_PROVIDER_TYPES).openapi("AdminAIProviderType")
+
+export const adminAIAuthModeSchema = z.enum(ADMIN_AI_AUTH_MODES).openapi("AdminAIAuthMode")
+
+export const adminAIAgentScenarioTypeSchema = z
+  .enum(ADMIN_AI_AGENT_SCENARIO_TYPES)
+  .openapi("AdminAIAgentScenarioType")
+
+export const adminAISkillSourceTypeSchema = z
+  .enum(ADMIN_AI_SKILL_SOURCE_TYPES)
+  .openapi("AdminAISkillSourceType")
+
+export const adminAISkillTrustLevelSchema = z
+  .enum(ADMIN_AI_SKILL_TRUST_LEVELS)
+  .openapi("AdminAISkillTrustLevel")
+
+export const adminAIInvocationStatusSchema = z
+  .enum(ADMIN_AI_INVOCATION_STATUSES)
+  .openapi("AdminAIInvocationStatus")
+
+export const adminAIActiveStatusOptionSchema = z
+  .enum(ADMIN_AI_ACTIVE_STATUS_OPTIONS)
+  .openapi("AdminAIActiveStatusOption")
+
+export const adminAIInvocationStatusOptionSchema = z
+  .enum(ADMIN_AI_INVOCATION_STATUS_OPTIONS)
+  .openapi("AdminAIInvocationStatusOption")
+
+export const adminAIInvocationDateRangeSchema = z
+  .enum(ADMIN_AI_INVOCATION_DATE_RANGES)
+  .openapi("AdminAIInvocationDateRange")
+
+export const adminAIPermissionsSchema = z
+  .object({
+    canView: z.boolean(),
+    canManage: z.boolean(),
+  })
+  .openapi("AdminAIPermissions")
+
+export const adminAIOverviewTopAgentSchema = z
+  .object({
+    agentCode: z.string(),
+    agentName: z.string(),
+    invocationCount: z.number().int().nonnegative(),
+    failedInvocationCount: z.number().int().nonnegative(),
+  })
+  .openapi("AdminAIOverviewTopAgent")
+
+export const adminAIOverviewRecentFailureSchema = z
+  .object({
+    invocationId: z.string().uuid(),
+    agentCode: z.string(),
+    providerCode: z.string(),
+    modelCode: z.string(),
+    errorMessage: nullableStringSchema,
+    createdAt: z.string(),
+  })
+  .openapi("AdminAIOverviewRecentFailure")
+
+export const adminAIOverviewResponseDataSchema = z
+  .object({
+    permissions: adminAIPermissionsSchema,
+    stats: z.object({
+      totalProviders: z.number().int().nonnegative(),
+      activeProviders: z.number().int().nonnegative(),
+      totalModels: z.number().int().nonnegative(),
+      activeModels: z.number().int().nonnegative(),
+      totalAgents: z.number().int().nonnegative(),
+      activeAgents: z.number().int().nonnegative(),
+      totalSkills: z.number().int().nonnegative(),
+      activeSkills: z.number().int().nonnegative(),
+      invocationCountLast7Days: z.number().int().nonnegative(),
+      failedInvocationCountLast7Days: z.number().int().nonnegative(),
+      successRateLast7Days: z.number().min(0).max(1),
+    }),
+    topAgents: z.array(adminAIOverviewTopAgentSchema),
+    recentFailures: z.array(adminAIOverviewRecentFailureSchema),
+  })
+  .openapi("AdminAIOverviewResponseData")
+
+export const adminAIQuerySchema = z
+  .object({
+    keyword: z.string().optional(),
+    page: paginationPositiveIntSchema.optional(),
+    limit: paginationPositiveIntSchema.optional(),
+  })
+  .openapi("AdminAIQuery")
+
+export const adminAIListQuerySchema = z
+  .object({
+    keyword: z.string().optional(),
+    status: adminAIActiveStatusOptionSchema.optional(),
+    page: paginationPositiveIntSchema.optional(),
+    limit: paginationPositiveIntSchema.optional(),
+  })
+  .openapi("AdminAIListQuery")
+
+export const adminAIAgentListQuerySchema = z
+  .object({
+    keyword: z.string().optional(),
+    scenarioType: adminAIAgentScenarioTypeSchema.optional(),
+    status: adminAIActiveStatusOptionSchema.optional(),
+    page: paginationPositiveIntSchema.optional(),
+    limit: paginationPositiveIntSchema.optional(),
+  })
+  .openapi("AdminAIAgentListQuery")
+
+export const adminAIInvocationListQuerySchema = z
+  .object({
+    keyword: z.string().optional(),
+    status: adminAIInvocationStatusOptionSchema.optional(),
+    providerCode: z.string().optional(),
+    modelCode: z.string().optional(),
+    agentCode: z.string().optional(),
+    dateRange: adminAIInvocationDateRangeSchema.optional(),
+    page: paginationPositiveIntSchema.optional(),
+    limit: paginationPositiveIntSchema.optional(),
+  })
+  .openapi("AdminAIInvocationListQuery")
+
+export const adminAIProviderIdParamsSchema = z
+  .object({
+    providerId: z.string().uuid(),
+  })
+  .openapi("AdminAIProviderIdParams")
+
+export const adminAIModelIdParamsSchema = z
+  .object({
+    modelId: z.string().uuid(),
+  })
+  .openapi("AdminAIModelIdParams")
+
+export const adminAIAgentIdParamsSchema = z
+  .object({
+    agentId: z.string().uuid(),
+  })
+  .openapi("AdminAIAgentIdParams")
+
+export const adminAIBindingIdParamsSchema = z
+  .object({
+    bindingId: z.string().uuid(),
+  })
+  .openapi("AdminAIBindingIdParams")
+
+export const adminAIInvocationIdParamsSchema = z
+  .object({
+    invocationId: z.string().uuid(),
+  })
+  .openapi("AdminAIInvocationIdParams")
+
+export const adminAIJsonRecordSchema = z.record(z.unknown()).openapi("AdminAIJsonRecord")
+
+export const adminAIProviderListItemSchema = z
+  .object({
+    providerId: z.string().uuid(),
+    code: z.string(),
+    name: z.string(),
+    providerType: adminAIProviderTypeSchema,
+    baseUrl: z.string(),
+    authMode: adminAIAuthModeSchema,
+    secretRef: z.string(),
+    supportsStream: z.boolean(),
+    supportsJsonMode: z.boolean(),
+    timeoutMs: z.number().int().positive(),
+    retryCount: z.number().int().positive(),
+    isActive: z.boolean(),
+    modelCount: z.number().int().nonnegative(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .openapi("AdminAIProviderListItem")
+
+export const adminAIProviderListResponseDataSchema = z
+  .object({
+    items: z.array(adminAIProviderListItemSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().positive(),
+    limit: z.number().int().positive(),
+  })
+  .openapi("AdminAIProviderListResponseData")
+
+export const adminAIProviderDetailSchema = adminAIProviderListItemSchema
+  .omit({
+    modelCount: true,
+  })
+  .extend({
+    metadata: adminAIJsonRecordSchema,
+  })
+  .openapi("AdminAIProviderDetail")
+
+export const adminAIProviderDetailResponseDataSchema = z
+  .object({
+    provider: adminAIProviderDetailSchema,
+    linkedModelCodes: z.array(z.string()),
+    linkedAgentCodes: z.array(z.string()),
+  })
+  .openapi("AdminAIProviderDetailResponseData")
+
+export const adminAIProviderUpsertRequestSchema = z
+  .object({
+    code: z.string().min(2).max(64),
+    name: z.string().min(2).max(128),
+    providerType: adminAIProviderTypeSchema,
+    baseUrl: z.string().url(),
+    authMode: adminAIAuthModeSchema,
+    secretRef: z.string().min(2).max(128),
+    supportsStream: z.boolean(),
+    supportsJsonMode: z.boolean(),
+    timeoutMs: z.number().int().min(1000).max(300000),
+    retryCount: z.number().int().min(1).max(10),
+    isActive: z.boolean(),
+    metadata: adminAIJsonRecordSchema,
+    changeReason: z.string().min(2).max(200),
+  })
+  .openapi("AdminAIProviderUpsertRequest")
+
+export const adminAIModelListItemSchema = z
+  .object({
+    modelId: z.string().uuid(),
+    providerId: z.string().uuid(),
+    providerCode: z.string(),
+    code: z.string(),
+    displayName: z.string(),
+    modelName: z.string(),
+    supportsStream: z.boolean(),
+    supportsJsonMode: z.boolean(),
+    supportsToolCalling: z.boolean(),
+    maxContextTokens: z.number().int().positive(),
+    defaultMaxOutputTokens: z.number().int().positive(),
+    recommendedTemperature: z.number().nullable(),
+    isActive: z.boolean(),
+    linkedAgentCount: z.number().int().nonnegative(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .openapi("AdminAIModelListItem")
+
+export const adminAIModelListResponseDataSchema = z
+  .object({
+    items: z.array(adminAIModelListItemSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().positive(),
+    limit: z.number().int().positive(),
+  })
+  .openapi("AdminAIModelListResponseData")
+
+export const adminAIModelDetailSchema = adminAIModelListItemSchema
+  .omit({
+    linkedAgentCount: true,
+  })
+  .extend({
+    pricingMetadata: adminAIJsonRecordSchema,
+    metadata: adminAIJsonRecordSchema,
+  })
+  .openapi("AdminAIModelDetail")
+
+export const adminAIModelDetailResponseDataSchema = z
+  .object({
+    model: adminAIModelDetailSchema,
+    linkedAgentCodes: z.array(z.string()),
+  })
+  .openapi("AdminAIModelDetailResponseData")
+
+export const adminAIModelUpsertRequestSchema = z
+  .object({
+    providerCode: z.string().min(2).max(64),
+    code: z.string().min(2).max(64),
+    displayName: z.string().min(2).max(128),
+    modelName: z.string().min(2).max(256),
+    supportsStream: z.boolean(),
+    supportsJsonMode: z.boolean(),
+    supportsToolCalling: z.boolean(),
+    maxContextTokens: z.number().int().min(256).max(10000000),
+    defaultMaxOutputTokens: z.number().int().min(1).max(1000000),
+    recommendedTemperature: z.number().min(0).max(2).nullable(),
+    pricingMetadata: adminAIJsonRecordSchema,
+    isActive: z.boolean(),
+    metadata: adminAIJsonRecordSchema,
+    changeReason: z.string().min(2).max(200),
+  })
+  .openapi("AdminAIModelUpsertRequest")
+
+export const adminAIAgentBindingListItemSchema = z
+  .object({
+    bindingId: z.string().uuid(),
+    agentCode: z.string(),
+    agentName: z.string(),
+    toolId: z.string().uuid().nullable(),
+    toolCode: nullableStringSchema,
+    toolName: nullableStringSchema,
+    learningLevel: learningLevelSchema.nullable(),
+    selectionMode: selectionModeSchema.nullable(),
+    pathId: z.string().uuid().nullable(),
+    pathCode: nullableStringSchema,
+    pathName: nullableStringSchema,
+    stepNo: z.number().int().positive().nullable(),
+    interactionType: z.string(),
+    priority: z.number().int().positive(),
+    isActive: z.boolean(),
+    metadata: adminAIJsonRecordSchema,
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .openapi("AdminAIAgentBindingListItem")
+
+export const adminAICodeNameOptionSchema = z
+  .object({
+    code: z.string(),
+    name: z.string(),
+  })
+  .openapi("AdminAICodeNameOption")
+
+export const adminAIToolOptionSchema = z
+  .object({
+    id: z.string().uuid(),
+    code: z.string(),
+    name: z.string(),
+  })
+  .openapi("AdminAIToolOption")
+
+export const adminAIPathOptionSchema = z
+  .object({
+    id: z.string().uuid(),
+    code: z.string(),
+    name: z.string(),
+  })
+  .openapi("AdminAIPathOption")
+
+export const adminAIAgentBindingListResponseDataSchema = z
+  .object({
+    items: z.array(adminAIAgentBindingListItemSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().positive(),
+    limit: z.number().int().positive(),
+    agentOptions: z.array(adminAICodeNameOptionSchema).optional(),
+    toolOptions: z.array(adminAIToolOptionSchema).optional(),
+    pathOptions: z.array(adminAIPathOptionSchema).optional(),
+  })
+  .openapi("AdminAIAgentBindingListResponseData")
+
+export const adminAIAgentDetailSchema = z
+  .object({
+    agentId: z.string().uuid(),
+    code: z.string(),
+    name: z.string(),
+    scenarioType: adminAIAgentScenarioTypeSchema,
+    description: nullableStringSchema,
+    systemPromptTemplate: z.string(),
+    developerPromptTemplate: nullableStringSchema,
+    defaultProviderCode: z.string(),
+    defaultModelCode: z.string(),
+    contextMessageLimit: z.number().int().positive(),
+    maxOutputTokens: z.number().int().positive(),
+    temperature: z.number(),
+    topP: z.number().nullable(),
+    streamEnabled: z.boolean(),
+    isActive: z.boolean(),
+    metadata: adminAIJsonRecordSchema,
+    version: z.number().int().positive(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .openapi("AdminAIAgentDetail")
+
+export const adminAIAgentListItemSchema = z
+  .object({
+    agentId: z.string().uuid(),
+    code: z.string(),
+    name: z.string(),
+    scenarioType: adminAIAgentScenarioTypeSchema,
+    providerCode: z.string(),
+    modelCode: z.string(),
+    streamEnabled: z.boolean(),
+    isActive: z.boolean(),
+    bindingCount: z.number().int().nonnegative(),
+    skillCount: z.number().int().nonnegative(),
+    updatedAt: z.string(),
+  })
+  .openapi("AdminAIAgentListItem")
+
+export const adminAIAgentListResponseDataSchema = z
+  .object({
+    items: z.array(adminAIAgentListItemSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().positive(),
+    limit: z.number().int().positive(),
+  })
+  .openapi("AdminAIAgentListResponseData")
+
+export const adminAISkillListItemSchema = z
+  .object({
+    skillId: z.string().uuid(),
+    code: z.string(),
+    name: z.string(),
+    version: z.string(),
+    sourceType: adminAISkillSourceTypeSchema,
+    trustLevel: adminAISkillTrustLevelSchema,
+    rootPath: z.string(),
+    manifestPath: z.string(),
+    entryResourcePath: nullableStringSchema,
+    scriptsEnabled: z.boolean(),
+    isActive: z.boolean(),
+    metadata: adminAIJsonRecordSchema,
+    linkedAgentCount: z.number().int().nonnegative(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .openapi("AdminAISkillListItem")
+
+export const adminAISkillListResponseDataSchema = z
+  .object({
+    items: z.array(adminAISkillListItemSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().positive(),
+    limit: z.number().int().positive(),
+  })
+  .openapi("AdminAISkillListResponseData")
+
+export const adminAIAgentSkillBindingListItemSchema = z
+  .object({
+    bindingId: z.string().uuid(),
+    agentCode: z.string(),
+    agentName: z.string(),
+    skillCode: z.string(),
+    skillName: z.string(),
+    priority: z.number().int().positive(),
+    isRequired: z.boolean(),
+    contextBudgetTokens: z.number().int().positive().nullable(),
+    isActive: z.boolean(),
+    metadata: adminAIJsonRecordSchema,
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .openapi("AdminAIAgentSkillBindingListItem")
+
+export const adminAIAgentSkillBindingListResponseDataSchema = z
+  .object({
+    items: z.array(adminAIAgentSkillBindingListItemSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().positive(),
+    limit: z.number().int().positive(),
+    agentOptions: z.array(adminAICodeNameOptionSchema).optional(),
+    skillOptions: z.array(adminAICodeNameOptionSchema).optional(),
+  })
+  .openapi("AdminAIAgentSkillBindingListResponseData")
+
+export const adminAIAgentDetailResponseDataSchema = z
+  .object({
+    agent: adminAIAgentDetailSchema,
+    bindings: z.array(adminAIAgentBindingListItemSchema),
+    skillBindings: z.array(adminAIAgentSkillBindingListItemSchema),
+  })
+  .openapi("AdminAIAgentDetailResponseData")
+
+export const adminAIAgentUpsertRequestSchema = z
+  .object({
+    code: z.string().min(2).max(64),
+    name: z.string().min(2).max(128),
+    scenarioType: adminAIAgentScenarioTypeSchema,
+    description: z.string().nullable(),
+    systemPromptTemplate: z.string().min(10).max(50000),
+    developerPromptTemplate: z.string().nullable(),
+    defaultProviderCode: z.string().min(2).max(64),
+    defaultModelCode: z.string().min(2).max(64),
+    contextMessageLimit: z.number().int().min(1).max(100),
+    maxOutputTokens: z.number().int().min(1).max(100000),
+    temperature: z.number().min(0).max(2),
+    topP: z.number().min(0).max(1).nullable(),
+    streamEnabled: z.boolean(),
+    isActive: z.boolean(),
+    metadata: adminAIJsonRecordSchema,
+    changeReason: z.string().min(2).max(200),
+  })
+  .openapi("AdminAIAgentUpsertRequest")
+
+export const adminAIAgentBindingUpsertRequestSchema = z
+  .object({
+    agentCode: z.string().min(2).max(64),
+    toolId: z.string().uuid().nullable(),
+    learningLevel: learningLevelSchema.nullable(),
+    selectionMode: selectionModeSchema.nullable(),
+    pathId: z.string().uuid().nullable(),
+    stepNo: z.number().int().min(1).max(10000).nullable(),
+    interactionType: z.string().min(2).max(32),
+    priority: z.number().int().min(1).max(1000),
+    isActive: z.boolean(),
+    metadata: adminAIJsonRecordSchema,
+    changeReason: z.string().min(2).max(200),
+  })
+  .openapi("AdminAIAgentBindingUpsertRequest")
+
+export const adminAIAgentSkillBindingUpsertRequestSchema = z
+  .object({
+    agentCode: z.string().min(2).max(64),
+    skillCode: z.string().min(2).max(64),
+    priority: z.number().int().min(1).max(1000),
+    isRequired: z.boolean(),
+    contextBudgetTokens: z.number().int().min(1).max(100000).nullable(),
+    isActive: z.boolean(),
+    metadata: adminAIJsonRecordSchema,
+    changeReason: z.string().min(2).max(200),
+  })
+  .openapi("AdminAIAgentSkillBindingUpsertRequest")
+
+export const adminAIInvocationListItemSchema = z
+  .object({
+    invocationId: z.string().uuid(),
+    sessionId: z.string().uuid(),
+    userId: z.string().uuid(),
+    providerCode: z.string(),
+    modelCode: z.string(),
+    agentCode: z.string(),
+    status: adminAIInvocationStatusSchema,
+    streamEnabled: z.boolean(),
+    totalTokens: z.number().int().nullable(),
+    latencyMs: z.number().int().nullable(),
+    finishReason: nullableStringSchema,
+    errorCode: nullableStringSchema,
+    createdAt: z.string(),
+  })
+  .openapi("AdminAIInvocationListItem")
+
+export const adminAIInvocationListResponseDataSchema = z
+  .object({
+    items: z.array(adminAIInvocationListItemSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().positive(),
+    limit: z.number().int().positive(),
+    providerOptions: z.array(adminAICodeNameOptionSchema).optional(),
+    modelOptions: z.array(adminAICodeNameOptionSchema).optional(),
+    agentOptions: z.array(adminAICodeNameOptionSchema).optional(),
+  })
+  .openapi("AdminAIInvocationListResponseData")
+
+export const adminAIInvocationDetailResponseDataSchema = z
+  .object({
+    invocation: z.object({
+      invocationId: z.string().uuid(),
+      sessionId: z.string().uuid(),
+      assistantMessageId: nullableStringSchema,
+      userMessageId: nullableStringSchema,
+      userId: z.string().uuid(),
+      providerCode: z.string(),
+      modelCode: z.string(),
+      agentCode: z.string(),
+      status: adminAIInvocationStatusSchema,
+      streamEnabled: z.boolean(),
+      promptTokens: z.number().int().nullable(),
+      completionTokens: z.number().int().nullable(),
+      totalTokens: z.number().int().nullable(),
+      latencyMs: z.number().int().nullable(),
+      firstChunkLatencyMs: z.number().int().nullable(),
+      finishReason: nullableStringSchema,
+      errorCode: nullableStringSchema,
+      errorMessage: nullableStringSchema,
+      requestPayloadRedacted: adminAIJsonRecordSchema,
+      responsePayloadRedacted: adminAIJsonRecordSchema,
+      createdAt: z.string(),
+    }),
+  })
+  .openapi("AdminAIInvocationDetailResponseData")
+
+export const adminAIResolvePreviewRequestSchema = z
+  .object({
+    interactionType: z.string().min(2).max(32),
+    toolId: z.string().uuid().nullable(),
+    learningLevel: learningLevelSchema.nullable(),
+    selectionMode: selectionModeSchema.nullable(),
+    pathId: z.string().uuid().nullable(),
+    stepNo: z.number().int().min(1).max(10000).nullable(),
+  })
+  .openapi("AdminAIResolvePreviewRequest")
+
+export const adminAIResolvePreviewResponseDataSchema = z
+  .object({
+    matchedBinding: z.object({
+      bindingId: z.string().uuid(),
+      agentCode: z.string(),
+      priority: z.number().int().positive(),
+      specificityScore: z.number(),
+    }).nullable(),
+    agent: z.object({
+      code: z.string(),
+      name: z.string(),
+      providerCode: z.string(),
+      modelCode: z.string(),
+    }).nullable(),
+    matchedSkills: z.array(z.object({
+      bindingId: z.string().uuid(),
+      skillCode: z.string(),
+      skillName: z.string(),
+      priority: z.number().int().positive(),
+    })),
+  })
+  .openapi("AdminAIResolvePreviewResponseData")
+
+export const adminAITestRequestSchema = z
+  .object({
+    agentCode: z.string().min(2).max(64),
+    providerCode: z.string().min(2).max(64),
+    modelCode: z.string().min(2).max(64),
+    prompt: z.string().min(2).max(20000),
+    stream: z.boolean(),
+    changeReason: z.string().min(2).max(200),
+  })
+  .openapi("AdminAITestRequest")
+
+export const adminAITestResponseDataSchema = z
+  .object({
+    invocationId: z.string().uuid(),
+    providerCode: z.string(),
+    modelCode: z.string(),
+    agentCode: z.string(),
+    status: z.enum(["succeeded", "failed", "timed_out"]),
+    content: z.string(),
+    finishReason: nullableStringSchema,
+    usage: z.object({
+      promptTokens: z.number().int().nonnegative(),
+      completionTokens: z.number().int().nonnegative(),
+      totalTokens: z.number().int().nonnegative(),
+    }),
+    latencyMs: z.number().int().nullable(),
+    requestPayloadRedacted: adminAIJsonRecordSchema,
+    responsePayloadRedacted: adminAIJsonRecordSchema,
+  })
+  .openapi("AdminAITestResponseData")

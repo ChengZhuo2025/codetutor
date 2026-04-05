@@ -1,0 +1,195 @@
+import test from "node:test"
+import assert from "node:assert/strict"
+
+import {
+  parseAdminAIAgentBindingBody,
+  parseAdminAIAgentListQuery,
+  parseAdminAIAgentSkillBindingBody,
+  parseAdminAIInvocationListQuery,
+  parseAdminAIModelBody,
+  parseAdminAIProviderBody,
+  parseAdminAIResolvePreviewBody,
+  parseAdminAITestBody,
+} from "../server/lib/request-validation.ts"
+
+test("parseAdminAIInvocationListQuery applies defaults", () => {
+  const r = parseAdminAIInvocationListQuery(new URLSearchParams())
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.equal(r.data.status, "all")
+    assert.equal(r.data.limit, 20)
+    assert.equal(r.data.page, 1)
+    assert.equal(r.data.dateRange, "7d")
+  }
+})
+
+test("parseAdminAIInvocationListQuery accepts structured filters", () => {
+  const r = parseAdminAIInvocationListQuery(new URLSearchParams([
+    ["keyword", "codex"],
+    ["status", "failed"],
+    ["providerCode", "siliconflow"],
+    ["modelCode", "deepseek-v3-2"],
+    ["agentCode", "codex-cli-coach"],
+    ["dateRange", "30d"],
+    ["page", "2"],
+    ["limit", "50"],
+  ]))
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.deepEqual(r.data, {
+      keyword: "codex",
+      status: "failed",
+      providerCode: "siliconflow",
+      modelCode: "deepseek-v3-2",
+      agentCode: "codex-cli-coach",
+      dateRange: "30d",
+      page: 2,
+      limit: 50,
+    })
+  }
+})
+
+test("parseAdminAIAgentListQuery accepts scenario and status filters", () => {
+  const r = parseAdminAIAgentListQuery(new URLSearchParams([
+    ["keyword", "coach"],
+    ["scenarioType", "teaching"],
+    ["status", "active"],
+    ["page", "3"],
+    ["limit", "10"],
+  ]))
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.deepEqual(r.data, {
+      keyword: "coach",
+      scenarioType: "teaching",
+      status: "active",
+      page: 3,
+      limit: 10,
+    })
+  }
+})
+
+test("parseAdminAIProviderBody trims strings and preserves booleans", () => {
+  const r = parseAdminAIProviderBody({
+    code: " custom-openai ",
+    name: " Custom OpenAI ",
+    providerType: "openai_compatible",
+    baseUrl: " https://api.example.com/v1 ",
+    authMode: "bearer",
+    secretRef: " CUSTOM_API_KEY ",
+    supportsStream: true,
+    supportsJsonMode: false,
+    timeoutMs: 45000,
+    retryCount: 2,
+    isActive: true,
+    metadata: { owner: "ai-team" },
+    changeReason: " 新增 provider ",
+  })
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.equal(r.data.code, "custom-openai")
+    assert.equal(r.data.baseUrl, "https://api.example.com/v1")
+    assert.equal(r.data.secretRef, "CUSTOM_API_KEY")
+    assert.equal(r.data.changeReason, "新增 provider")
+  }
+})
+
+test("parseAdminAIModelBody rejects missing changeReason", () => {
+  const r = parseAdminAIModelBody({
+    providerCode: "siliconflow",
+    code: "deepseek-v3-2",
+    displayName: "DeepSeek V3.2",
+    modelName: "Pro/deepseek-ai/DeepSeek-V3.2",
+    supportsStream: true,
+    supportsJsonMode: false,
+    supportsToolCalling: false,
+    maxContextTokens: 64000,
+    defaultMaxOutputTokens: 4096,
+    recommendedTemperature: 0.3,
+    pricingMetadata: {},
+    isActive: true,
+    metadata: {},
+  })
+
+  assert.equal(r.ok, false)
+})
+
+test("parseAdminAIAgentBindingBody accepts nullable targeting filters", () => {
+  const r = parseAdminAIAgentBindingBody({
+    agentCode: "codex-cli-coach",
+    toolId: null,
+    learningLevel: "intermediate",
+    selectionMode: null,
+    pathId: null,
+    stepNo: null,
+    interactionType: "teaching",
+    priority: 15,
+    isActive: true,
+    metadata: { bindingKind: "manual_override" },
+    changeReason: " 调整默认命中顺序 ",
+  })
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.equal(r.data.agentCode, "codex-cli-coach")
+    assert.equal(r.data.learningLevel, "intermediate")
+    assert.equal(r.data.priority, 15)
+    assert.equal(r.data.changeReason, "调整默认命中顺序")
+  }
+})
+
+test("parseAdminAIAgentSkillBindingBody accepts required skill binding", () => {
+  const r = parseAdminAIAgentSkillBindingBody({
+    agentCode: "codex-cli-coach",
+    skillCode: "codex-cli-basics-skill",
+    priority: 10,
+    isRequired: true,
+    contextBudgetTokens: 900,
+    isActive: true,
+    metadata: {},
+    changeReason: "补齐技能上下文",
+  })
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.equal(r.data.skillCode, "codex-cli-basics-skill")
+    assert.equal(r.data.contextBudgetTokens, 900)
+  }
+})
+
+test("parseAdminAIResolvePreviewBody accepts preview context", () => {
+  const r = parseAdminAIResolvePreviewBody({
+    interactionType: "blocked_help",
+    toolId: "550e8400-e29b-41d4-a716-446655440021",
+    learningLevel: "intermediate",
+    selectionMode: "preset_training",
+    pathId: "550e8400-e29b-41d4-a716-446655440022",
+    stepNo: 2,
+  })
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.equal(r.data.interactionType, "blocked_help")
+    assert.equal(r.data.stepNo, 2)
+  }
+})
+
+test("parseAdminAITestBody requires prompt and changeReason", () => {
+  const r = parseAdminAITestBody({
+    agentCode: "codex-cli-coach",
+    providerCode: "siliconflow",
+    modelCode: "deepseek-v3-2",
+    prompt: "  请帮我审查这段 CLI 工作流  ",
+    stream: false,
+    changeReason: " 发布前联调 ",
+  })
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.equal(r.data.prompt, "请帮我审查这段 CLI 工作流")
+    assert.equal(r.data.changeReason, "发布前联调")
+  }
+})

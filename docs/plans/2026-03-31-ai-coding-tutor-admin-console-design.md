@@ -3,7 +3,7 @@
 > 文档类型：管理后台设计文档
 > 产品名称：AI编程学习教练
 > 版本：v0.4
-> 状态：Phase 1 已完成；**用户运营**与**学习运营**已落地；AI 核心配置、细粒度权限与更深用户域运营能力仍为后续阶段
+> 状态：Phase 1 已完成；**用户运营**、**学习运营**、**AI 运营 MVP** 与 **系统设置**已落地；细粒度权限、AI 深水区能力与更深用户域运营能力仍为后续阶段
 > 创建日期：2026-03-31
 > 更新日期：2026-04-05
 > 适用阶段：MVP 后续运营化阶段
@@ -26,9 +26,10 @@
 > - 管理后台 Phase 1 已落地管理员登录、会话、登出、改密、看板、反馈、管理员资料编辑（含头像上传）链路。
 > - **用户运营**已落地：用户列表、详情、导出、受控资料更新、软删除与恢复、与反馈列表联动；路由为 `app/(admin-shell)/admin/users/*`，业务域为 `features/admin-users`，服务层为 `server/modules/admin-users`，OpenAPI 分组为 `admin-users`。
 > - **学习运营**已落地：学习路径实例列表、详情、CSV 导出、最近会话摘要、`reactivate / archive` 状态操作；路由为 `app/(admin-shell)/admin/learning/*`，业务域为 `features/admin-learning`，服务层为 `server/modules/admin-learning`，OpenAPI 分组为 `admin-learning`。
+> - **AI 运营 MVP**已落地：`/admin/ai` 概览、Provider/Model/Agent 管理、命中规则、Skill 绑定、调用日志、命中预览与真实 provider 测试；路由为 `app/(admin-shell)/admin/ai/*`，业务域为 `features/admin-ai`，服务层为 `server/modules/admin-ai`，OpenAPI 分组为 `admin-ai`。
 > - **系统设置**已落地：资料与安全入口复用、管理员账号列表与启停、角色权限说明、操作审计列表、系统信息；路由为 `app/(admin-shell)/admin/settings`，业务域为 `features/admin-settings`，服务层为 `server/modules/admin-settings`，OpenAPI 分组为 `admin-settings`。
 > - 管理端鉴权主链路已切换为 `admin-access-token` / `admin-refresh-token` Cookie，会话守卫与 `/api-docs` 访问守卫已接入 `proxy.ts`。
-> - 运行时 API 文档（`/api/docs/openapi`、`/api-docs`）已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning`、`admin-settings` 分组。
+> - 运行时 API 文档（`/api/docs/openapi`、`/api-docs`）已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning`、`admin-ai`、`admin-settings` 分组。
 > - 本文中关于 `x-admin-secret` 的描述仅代表早期过渡方案背景，不再代表当前主实现。若与代码冲突，优先以 `docs/plans/2026-03-23-ai-coding-tutor-api-spec.md` 与实际代码为准。
 
 ### 2.1 已经落地的后台相关能力
@@ -95,10 +96,10 @@
 
 - **细粒度 UI/API 权限**：库表与角色模型已有雏形；`/admin/settings` 已提供角色说明、管理员账号启停与审计基础，但按角色隐藏能力、角色分配写接口、接口级授权与完整审计覆盖仍在演进中。
 - **用户域后续能力**：内部备注（`user_admin_notes` 等）、人工积分调整（`score_ledgers` + 审计）等**尚未**按设计文档中的独立 API 交付。
-- **AI 运营读写**：provider/model/agent 等后台 CRUD、调用日志只读面板、健康看板等仍待建设。
+- **AI 深水区能力**：当前已完成 provider/model/agent 后台 CRUD、调用日志只读面板、命中规则与测试调试；但 prompt 版本化、灰度/回滚、成本与稳定性可视化面板等仍待建设。
 - **事件埋点写入链路与 `event_logs` 实际迁移**仍待落地。
 
-因此，管理后台后续迭代应建立在「Phase 1 + 用户运营 + 学习运营 + 系统设置 + 反馈」已可用，其余模块按优先级补齐的现实之上。
+因此，管理后台后续迭代应建立在「Phase 1 + 用户运营 + 学习运营 + AI 运营 MVP + 系统设置 + 反馈」已可用，其余深水区模块按优先级补齐的现实之上。
 
 ---
 
@@ -543,8 +544,8 @@ Agents 管理页必须补齐的辅助能力：
 - `app/(admin-shell)/admin/users/*`（**已落地**）
 - `app/(admin-shell)/admin/learning/*`（**已落地**）
 - `app/(admin-shell)/admin/feedback/*`
-- `app/admin/ai/*`
-- `app/admin/settings/*`
+- `app/(admin-shell)/admin/ai/*`（**已落地**）
+- `app/(admin-shell)/admin/settings/*`（**已落地**）
 
 建议首期按下列页面职责落目录，而不是只建空壳路由：
 
@@ -557,21 +558,15 @@ Agents 管理页必须补齐的辅助能力：
 | `app/(admin-shell)/admin/users/[userId]/page.tsx` | 用户详情（资料/学习/工单/软删恢复）；备注与积分调整入口仍待后续 API |
 | `app/(admin-shell)/admin/learning/page.tsx` | 学习路径实例列表、筛选、导出 |
 | `app/(admin-shell)/admin/learning/[pathId]/page.tsx` | 学习路径详情、时间线、最近会话、状态运营 |
-| `app/admin/ai/page.tsx` | AI 运营首页 |
-| `app/admin/ai/providers/page.tsx` | provider 列表 |
-| `app/admin/ai/providers/new/page.tsx` | provider 新建 |
-| `app/admin/ai/providers/[id]/page.tsx` | provider 详情/编辑 |
-| `app/admin/ai/models/page.tsx` | model 列表 |
-| `app/admin/ai/models/new/page.tsx` | model 新建 |
-| `app/admin/ai/models/[id]/page.tsx` | model 详情/编辑 |
-| `app/admin/ai/agents/page.tsx` | agent 模板列表 |
-| `app/admin/ai/agents/new/page.tsx` | agent 新建 |
-| `app/admin/ai/agents/[id]/page.tsx` | agent 详情/编辑 |
-| `app/admin/ai/bindings/page.tsx` | 命中规则列表与排序 |
-| `app/admin/ai/skills/page.tsx` | skill 绑定管理 |
-| `app/admin/ai/invocations/page.tsx` | 调用日志列表 |
-| `app/admin/ai/invocations/[id]/page.tsx` | 调用日志详情 |
-| `app/admin/ai/test/page.tsx` | resolve preview 与 agent test |
+| `app/(admin-shell)/admin/ai/page.tsx` | AI 运营首页 |
+| `app/(admin-shell)/admin/ai/providers/page.tsx` | Provider 列表与编辑抽屉 |
+| `app/(admin-shell)/admin/ai/models/page.tsx` | Model 列表与编辑抽屉 |
+| `app/(admin-shell)/admin/ai/agents/page.tsx` | Agent 列表与编辑抽屉 |
+| `app/(admin-shell)/admin/ai/bindings/page.tsx` | 命中规则列表与排序 |
+| `app/(admin-shell)/admin/ai/skills/page.tsx` | Skill 绑定管理 |
+| `app/(admin-shell)/admin/ai/invocations/page.tsx` | 调用日志列表与详情抽屉 |
+| `app/(admin-shell)/admin/ai/test/page.tsx` | resolve preview 与 agent test |
+| `app/(admin-shell)/admin/settings/page.tsx` | 系统设置 |
 
 建议新增后台前端业务域：
 
@@ -678,17 +673,17 @@ Agents 管理页必须补齐的辅助能力：
 
 | 分组 | 接口 | 状态 |
 |------|------|------|
-| 管理员认证 | `POST /api/admin/auth/login`、`GET /api/admin/session`、`POST /api/admin/auth/logout` | 新增 |
-| 总览看板 | `GET /api/admin/dashboard/overview` | 新增 |
+| 管理员认证 | `POST /api/admin/auth/login`、`GET /api/admin/auth/session`、`POST /api/admin/auth/logout` | 已有 |
+| 总览看板 | `GET /api/admin/dashboard/overview` | 已有 |
 | 用户运营 | `GET /api/admin/users`、`GET /api/admin/users/export`、`GET /api/admin/users/{userId}`、`PATCH /api/admin/users/{userId}`、`POST /api/admin/users/{userId}/soft-delete`、`POST /api/admin/users/{userId}/restore` | **已落地** |
 | 用户备注 | `GET /api/admin/users/{userId}/notes`、`POST /api/admin/users/{userId}/notes` | 规划中 |
 | 积分调整 | `POST /api/admin/users/{userId}/score-adjustments` | 规划中 |
 | 反馈工单 | `GET /api/admin/feedback`、`GET /api/admin/feedback/{id}`、`POST /api/admin/feedback/{id}/reply`、`POST /api/admin/feedback/{id}/status` | 已有 |
 | 学习运营 | `GET /api/admin/learning-paths`、`GET /api/admin/learning-paths/export`、`GET /api/admin/learning-paths/{pathId}`、`POST /api/admin/learning-paths/{pathId}/status` | **已落地** |
-| AI 运营 | `GET /api/admin/ai/invocations`、`GET /api/admin/ai/invocations/{id}` | 新增 |
-| LLM 管理 | `GET /api/admin/ai/providers`、`POST /api/admin/ai/providers`、`GET /api/admin/ai/providers/{id}`、`PATCH /api/admin/ai/providers/{id}`、`GET /api/admin/ai/models`、`POST /api/admin/ai/models`、`GET /api/admin/ai/models/{id}`、`PATCH /api/admin/ai/models/{id}` | 新增 |
-| Agents 管理 | `GET /api/admin/ai/agents`、`POST /api/admin/ai/agents`、`GET /api/admin/ai/agents/{id}`、`PATCH /api/admin/ai/agents/{id}`、`GET /api/admin/ai/agent-bindings`、`POST /api/admin/ai/agent-bindings`、`PATCH /api/admin/ai/agent-bindings/{id}`、`GET /api/admin/ai/agent-skill-bindings`、`POST /api/admin/ai/agent-skill-bindings`、`PATCH /api/admin/ai/agent-skill-bindings/{id}`、`GET /api/admin/ai/skills` | 新增 |
-| AI 测试 | `POST /api/admin/ai/resolve-preview`、`POST /api/admin/ai/agent/test` | 参考 AI 文档，后续新增 |
+| AI 运营 | `GET /api/admin/ai/overview`、`GET /api/admin/ai/invocations`、`GET /api/admin/ai/invocations/{id}` | **已落地** |
+| LLM 管理 | `GET /api/admin/ai/providers`、`POST /api/admin/ai/providers`、`GET /api/admin/ai/providers/{id}`、`PATCH /api/admin/ai/providers/{id}`、`GET /api/admin/ai/models`、`POST /api/admin/ai/models`、`GET /api/admin/ai/models/{id}`、`PATCH /api/admin/ai/models/{id}` | **已落地** |
+| Agents 管理 | `GET /api/admin/ai/agents`、`POST /api/admin/ai/agents`、`GET /api/admin/ai/agents/{id}`、`PATCH /api/admin/ai/agents/{id}`、`GET /api/admin/ai/agent-bindings`、`POST /api/admin/ai/agent-bindings`、`PATCH /api/admin/ai/agent-bindings/{id}`、`GET /api/admin/ai/agent-skill-bindings`、`POST /api/admin/ai/agent-skill-bindings`、`PATCH /api/admin/ai/agent-skill-bindings/{id}`、`GET /api/admin/ai/skills` | **已落地** |
+| AI 测试 | `POST /api/admin/ai/resolve-preview`、`POST /api/admin/ai/agent/test` | **已落地** |
 | 审计 | `GET /api/admin/audit-logs` | 新增 |
 
 ### 7.5 写接口规范
