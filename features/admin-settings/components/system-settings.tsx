@@ -496,8 +496,8 @@ export function SystemSettings() {
         <div className="rounded-2xl border border-border bg-card">
           <div className="flex flex-col gap-3 border-b border-border px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
-              <div className="relative max-w-md flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <div className="relative flex-1 min-w-32 max-w-md">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={accountKeyword}
                   onChange={(event) => setAccountKeyword(event.target.value)}
@@ -507,7 +507,7 @@ export function SystemSettings() {
                       setAccountKeywordApplied(accountKeyword.trim())
                     }
                   }}
-                  className="pl-9"
+                  className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="搜索管理员姓名、邮箱、用户 ID"
                 />
               </div>
@@ -525,8 +525,6 @@ export function SystemSettings() {
                 ]}
                 triggerClassName="h-10 min-w-[7rem] shrink-0"
               />
-            </div>
-            <div className="flex items-center gap-2">
               <Button type="button" variant="outline" onClick={() => {
                 setAccountPage(1)
                 setAccountKeywordApplied(accountKeyword.trim())

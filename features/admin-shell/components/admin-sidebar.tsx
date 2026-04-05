@@ -201,32 +201,41 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
         </ul>
       </nav>
 
-      {/* Collapse control */}
+      {/* Footer: brand + collapse */}
       <div className="shrink-0 border-t border-sidebar-border/70 bg-sidebar/40 p-2">
-        <button
-          type="button"
-          onClick={onToggleCollapsed}
+        <div
           className={cn(
-            "flex w-full items-center justify-center gap-2 rounded-lg border border-transparent",
-            "text-muted-foreground transition-[color,background-color,border-color,box-shadow] duration-150",
-            "hover:border-border/60 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
-            "active:bg-sidebar-accent/90",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
-            collapsed ? "min-h-10 px-0 py-2" : "px-2 py-2.5",
+            "flex min-h-10 items-center",
+            collapsed ? "justify-center" : "justify-between gap-2",
           )}
-          title={collapsed ? "展开侧栏" : "收起侧栏"}
-          aria-expanded={!collapsed}
-          aria-label={collapsed ? "展开侧栏" : "收起侧栏"}
         >
-          {collapsed ? (
-            <PanelLeft className="size-4 shrink-0" aria-hidden />
-          ) : (
-            <>
+          {!collapsed ? (
+            <span className="min-w-0 pl-2 truncate text-xs leading-tight text-muted-foreground">
+              © 智酷数能科技 版权所有
+            </span>
+          ) : null}
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            className={cn(
+              "flex shrink-0 items-center justify-center rounded-lg border border-transparent",
+              "text-muted-foreground transition-[color,background-color,border-color,box-shadow] duration-150",
+              "hover:border-border/60 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
+              "active:bg-sidebar-accent/90",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
+              "size-10",
+            )}
+            title={collapsed ? "展开侧栏" : "收起侧栏"}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? "展开侧栏" : "收起侧栏"}
+          >
+            {collapsed ? (
+              <PanelLeft className="size-4 shrink-0" aria-hidden />
+            ) : (
               <PanelLeftClose className="size-4 shrink-0" aria-hidden />
-              <span className="text-xs font-medium">收起侧栏</span>
-            </>
-          )}
-        </button>
+            )}
+          </button>
+        </div>
       </div>
     </aside>
   )

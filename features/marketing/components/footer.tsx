@@ -58,7 +58,7 @@ export function LandingFooter() {
         </div>
       </section>
 
-      <footer className="px-6 pt-10">
+      <footer className="pt-10">
         <div className="mx-auto max-w-6xl">
           <div>
             <div className="flex items-center justify-center gap-4">
@@ -98,8 +98,8 @@ export function LandingFooter() {
               ))}
             </div>
           </div>
-
-          <div className="mt-8 py-6 border-t border-border/50 bg-surface-2 flex flex-col items-center justify-between gap-6 md:flex-row">
+        </div>
+        <div className="mt-8 px-26 py-6 border-t border-border/50 bg-surface-2 flex flex-col items-center justify-between gap-6 md:flex-row">
             <div className="flex items-center gap-2 text-muted-foreground">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-brand-foreground">
                 <Code2 className="h-3.5 w-3.5" />
@@ -120,7 +120,6 @@ export function LandingFooter() {
               © {APP_COPYRIGHT_YEAR} {APP_NAME}. All rights reserved.
             </p>
           </div>
-        </div>
       </footer>
     </>
   )
