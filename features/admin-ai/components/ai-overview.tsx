@@ -5,7 +5,6 @@ import { Activity, Bot, Cpu, Layers, Server, TriangleAlert } from "lucide-react"
 import type { AdminAIOverviewResponseData } from "@/lib/api/contracts/admin-ai"
 import { Badge } from "@/components/ui/badge"
 import { StatePanel } from "@/components/ui/state-panel"
-import { AIAccessGate } from "./ai-access-gate"
 import { MetricCard, PageSection } from "./shared"
 import { formatDateTime, formatPercent } from "@/features/admin-ai/lib/view-model"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
@@ -46,7 +45,7 @@ export function AIOverview() {
   }, [refresh])
 
   return (
-    <AIAccessGate>
+    <>
       {error && !data ? (
         <StatePanel
           status="error"
@@ -158,6 +157,6 @@ export function AIOverview() {
           </div>
         </div>
       )}
-    </AIAccessGate>
+    </>
   )
 }

@@ -17,7 +17,6 @@ import {
 } from "@/lib/api/admin-bff-client"
 import { ADMIN_ROUTES } from "@/constants/routes"
 import { formatDateTime } from "@/features/admin-ai/lib/view-model"
-import { AIAccessGate } from "./ai-access-gate"
 import { ModelFormSheet } from "./model-form-sheet"
 import { ActiveStateBadge, ListFilterCard, ListPageHeader } from "./shared"
 
@@ -74,7 +73,7 @@ export function ModelManagement() {
   }
 
   return (
-    <AIAccessGate>
+    <>
       <div className="space-y-6">
         <ListPageHeader
           title="Model 管理"
@@ -253,6 +252,6 @@ export function ModelManagement() {
         }}
         onAuthExpired={() => setAuthExpired(true)}
       />
-    </AIAccessGate>
+    </>
   )
 }

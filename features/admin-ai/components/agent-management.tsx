@@ -17,7 +17,6 @@ import {
 } from "@/lib/api/admin-bff-client"
 import { ADMIN_ROUTES } from "@/constants/routes"
 import { formatDateTime } from "@/features/admin-ai/lib/view-model"
-import { AIAccessGate } from "./ai-access-gate"
 import { AgentFormSheet } from "./agent-form-sheet"
 import { ActiveStateBadge, ListFilterCard, ListPageHeader } from "./shared"
 
@@ -78,7 +77,7 @@ export function AgentManagement() {
   }
 
   return (
-    <AIAccessGate>
+    <>
       <div className="space-y-6">
         <ListPageHeader
           title="Agent 管理"
@@ -268,6 +267,6 @@ export function AgentManagement() {
         }}
         onAuthExpired={() => setAuthExpired(true)}
       />
-    </AIAccessGate>
+    </>
   )
 }

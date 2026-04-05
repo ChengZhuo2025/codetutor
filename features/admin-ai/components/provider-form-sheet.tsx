@@ -23,7 +23,17 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
-import { prettyJson, safeJsonParse } from "@/features/admin-ai/lib/view-model"
+import {
+  isValidProviderBaseUrl,
+  parseProviderMetadataJson,
+  PROVIDER_BASE_URL_MAX_LENGTH,
+  PROVIDER_BASE_URL_MIN_LENGTH,
+  PROVIDER_RETRY_COUNT_MAX,
+  PROVIDER_RETRY_COUNT_MIN,
+  PROVIDER_TIMEOUT_MS_MAX,
+  PROVIDER_TIMEOUT_MS_MIN,
+} from "@/features/admin-ai/lib/provider-form-constraints"
+import { prettyJson } from "@/features/admin-ai/lib/view-model"
 
 const EMPTY_FORM = {
   code: "",
@@ -136,22 +146,65 @@ export function ProviderFormSheet({
     return `关联 Models ${detail.linkedModelCodes.length} 个，关联 Agents ${detail.linkedAgentCodes.length} 个。`
   }, [detail])
 
+  const codeLocked = Boolean(providerId && detail && detail.linkedAgentCodes.length > 0)
+
   const handleSave = async () => {
     setSaving(true)
     try {
+      const baseUrlTrimmed = form.baseUrl.trim()
+      if (
+        baseUrlTrimmed.length < PROVIDER_BASE_URL_MIN_LENGTH
+        || baseUrlTrimmed.length > PROVIDER_BASE_URL_MAX_LENGTH
+      ) {
+        toast.error(
+          `Base URL 长度须在 ${PROVIDER_BASE_URL_MIN_LENGTH}–${PROVIDER_BASE_URL_MAX_LENGTH} 字符之间。`,
+        )
+        return
+      }
+      if (!isValidProviderBaseUrl(baseUrlTrimmed)) {
+        toast.error("Base URL 必须是合法的 http(s) 地址。")
+        return
+      }
+
+      const timeoutMs = Math.trunc(Number(form.timeoutMs))
+      if (
+        !Number.isFinite(timeoutMs)
+        || timeoutMs < PROVIDER_TIMEOUT_MS_MIN
+        || timeoutMs > PROVIDER_TIMEOUT_MS_MAX
+      ) {
+        toast.error(`超时须在 ${PROVIDER_TIMEOUT_MS_MIN}–${PROVIDER_TIMEOUT_MS_MAX} ms 之间。`)
+        return
+      }
+
+      const retryCount = Math.trunc(Number(form.retryCount))
+      if (
+        !Number.isFinite(retryCount)
+        || retryCount < PROVIDER_RETRY_COUNT_MIN
+        || retryCount > PROVIDER_RETRY_COUNT_MAX
+      ) {
+        toast.error(`重试次数须在 ${PROVIDER_RETRY_COUNT_MIN}–${PROVIDER_RETRY_COUNT_MAX} 之间。`)
+        return
+      }
+
+      const metadataParsed = parseProviderMetadataJson(form.metadataText)
+      if (!metadataParsed.ok) {
+        toast.error(metadataParsed.message)
+        return
+      }
+
       const payload: AdminAIProviderUpsertRequest = {
-        code: form.code,
-        name: form.name,
+        code: form.code.trim().toLowerCase(),
+        name: form.name.trim(),
         providerType: form.providerType as AdminAIProviderUpsertRequest["providerType"],
-        baseUrl: form.baseUrl,
+        baseUrl: baseUrlTrimmed,
         authMode: form.authMode as AdminAIProviderUpsertRequest["authMode"],
-        secretRef: form.secretRef,
+        secretRef: form.secretRef.trim(),
         supportsStream: form.supportsStream,
         supportsJsonMode: form.supportsJsonMode,
-        timeoutMs: Number(form.timeoutMs),
-        retryCount: Number(form.retryCount),
+        timeoutMs,
+        retryCount,
         isActive: form.isActive,
-        metadata: safeJsonParse(form.metadataText),
+        metadata: metadataParsed.data,
         changeReason: form.changeReason,
       }
 
@@ -201,7 +254,23 @@ export function ProviderFormSheet({
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="provider-code">Code</Label>
-                  <Input id="provider-code" value={form.code} onChange={(event) => setForm((prev) => ({ ...prev, code: event.target.value }))} />
+                  <Input
+                    id="provider-code"
+                    value={form.code}
+                    readOnly={codeLocked}
+                    className={codeLocked ? "bg-muted/50" : undefined}
+                    onChange={(event) => {
+                      if (codeLocked) {
+                        return
+                      }
+                      setForm((prev) => ({ ...prev, code: event.target.value }))
+                    }}
+                  />
+                  {codeLocked ? (
+                    <p className="text-xs text-muted-foreground">
+                      当前有 Agent 将本 Provider 设为默认，不能修改 Code。请先在 Agent 管理中调整默认 Provider。
+                    </p>
+                  ) : null}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="provider-name">名称</Label>

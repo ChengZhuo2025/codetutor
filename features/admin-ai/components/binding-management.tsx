@@ -16,7 +16,6 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
-import { AIAccessGate } from "./ai-access-gate"
 import { BindingFormSheet } from "./binding-form-sheet"
 import { ActiveStateBadge, ListFilterCard, ListPageHeader } from "./shared"
 
@@ -81,7 +80,7 @@ export function BindingManagement() {
   }
 
   return (
-    <AIAccessGate>
+    <>
       <div className="space-y-6">
         <ListPageHeader
           title="命中规则"
@@ -233,6 +232,6 @@ export function BindingManagement() {
         onSaved={fetchList}
         onAuthExpired={() => setAuthExpired(true)}
       />
-    </AIAccessGate>
+    </>
   )
 }

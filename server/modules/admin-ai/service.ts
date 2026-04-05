@@ -803,6 +803,13 @@ export async function updateAdminAIProvider(
     throwNamedError("CONFLICT", "当前 Provider 仍被 Agent 引用，不能直接停用。")
   }
 
+  if (existing.linkedAgentCodes.length > 0 && input.code !== existing.provider.code) {
+    throwNamedError(
+      "CONFLICT",
+      "当前 Provider 仍被 Agent 作为默认 Provider 引用，不能修改 Code。请先在 Agent 管理中调整默认 Provider 后再改。",
+    )
+  }
+
   const supabase = createSupabaseAdminClient()
   const { error } = await supabase
     .from("ai_providers")

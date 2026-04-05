@@ -21,7 +21,6 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
-import { AIAccessGate } from "./ai-access-gate"
 import { JsonPreview, PageSection } from "./shared"
 import { formatNumber, getInvocationStatusMeta } from "@/features/admin-ai/lib/view-model"
 
@@ -138,7 +137,7 @@ export function AITestConsole() {
   }
 
   return (
-    <AIAccessGate>
+    <>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">测试调试</h1>
@@ -348,6 +347,6 @@ export function AITestConsole() {
           </>
         )}
       </div>
-    </AIAccessGate>
+    </>
   )
 }

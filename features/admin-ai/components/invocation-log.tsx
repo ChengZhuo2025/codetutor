@@ -16,7 +16,6 @@ import {
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
 import { ADMIN_ROUTES } from "@/constants/routes"
-import { AIAccessGate } from "./ai-access-gate"
 import {
   formatDateTime,
   formatNumber,
@@ -81,7 +80,7 @@ export function InvocationLog() {
   }
 
   return (
-    <AIAccessGate>
+    <>
       <div className="space-y-6">
         <ListPageHeader
           title="调用日志"
@@ -261,6 +260,6 @@ export function InvocationLog() {
           </>
         )}
       </div>
-    </AIAccessGate>
+    </>
   )
 }

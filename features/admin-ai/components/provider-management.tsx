@@ -17,7 +17,6 @@ import {
 } from "@/lib/api/admin-bff-client"
 import { ADMIN_ROUTES } from "@/constants/routes"
 import { formatDateTime } from "@/features/admin-ai/lib/view-model"
-import { AIAccessGate } from "./ai-access-gate"
 import { ProviderFormSheet } from "./provider-form-sheet"
 import { ActiveStateBadge, ListFilterCard, ListPageHeader } from "./shared"
 
@@ -74,7 +73,7 @@ export function ProviderManagement() {
   }
 
   return (
-    <AIAccessGate>
+    <>
       <div className="space-y-6">
         <ListPageHeader
           title="Provider 管理"
@@ -267,6 +266,6 @@ export function ProviderManagement() {
         }}
         onAuthExpired={() => setAuthExpired(true)}
       />
-    </AIAccessGate>
+    </>
   )
 }

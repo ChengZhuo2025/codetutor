@@ -17,7 +17,6 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
-import { AIAccessGate } from "./ai-access-gate"
 import { SkillBindingSheet } from "./skill-binding-sheet"
 import { ActiveStateBadge, ListFilterCard, ListPageHeader } from "./shared"
 
@@ -102,7 +101,7 @@ export function SkillManagement() {
   }
 
   return (
-    <AIAccessGate>
+    <>
       <div className="space-y-6">
         <ListPageHeader
           title="Skill 管理"
@@ -346,6 +345,6 @@ export function SkillManagement() {
         onSaved={fetchAll}
         onAuthExpired={() => setAuthExpired(true)}
       />
-    </AIAccessGate>
+    </>
   )
 }
