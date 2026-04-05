@@ -59,25 +59,29 @@
 
 8. `/admin/login`：管理员登录页
 9. `/admin`：总览看板页
-10. `/admin/users`：用户运营列表页（筛选、导出、行内编辑抽屉）
+10. `/admin/users`：用户管理列表页（筛选、导出、行内编辑抽屉）
 11. `/admin/users/[userId]`：用户详情页
 12. `/admin/learning`：学习运营列表页（学习路径实例筛选、导出、详情跳转）
 13. `/admin/learning/[pathId]`：学习路径详情页（时间线、步骤、最近会话、状态操作）
 14. `/admin/ai`：AI 运营概览页
 15. `/admin/ai/providers`：Provider 管理页
-16. `/admin/ai/models`：Model 管理页
-17. `/admin/ai/agents`：Agent 管理页
-18. `/admin/ai/bindings`：命中规则页
-19. `/admin/ai/skills`：Skill 管理页
-20. `/admin/ai/invocations`：调用日志页
-21. `/admin/ai/test`：AI 测试与命中预览页
-22. `/admin/settings`：系统设置页
-23. `/admin/feedback`：反馈工单列表页
-24. `/admin/feedback/[id]`：反馈工单详情页
+16. `/admin/ai/providers/[providerId]`：Provider 详情页
+17. `/admin/ai/models`：Model 管理页
+18. `/admin/ai/models/[modelId]`：Model 详情页
+19. `/admin/ai/agents`：Agent 管理页
+20. `/admin/ai/agents/[agentId]`：Agent 详情页
+21. `/admin/ai/bindings`：命中规则页
+22. `/admin/ai/skills`：Skill 管理页
+23. `/admin/ai/invocations`：调用日志页
+24. `/admin/ai/invocations/[invocationId]`：调用日志详情页
+25. `/admin/ai/test`：AI 测试与命中预览页
+26. `/admin/settings`：系统设置页
+27. `/admin/feedback`：反馈工单列表页
+28. `/admin/feedback/[id]`：反馈工单详情页
 
 另外还有一个内部开发调试页：
 
-16. `/api-docs`：Swagger UI 接口文档与调试面板
+29. `/api-docs`：Swagger UI 接口文档与调试面板
 
 ---
 
@@ -376,7 +380,7 @@ features/<domain>/
 - 页面装配：`features/admin-dashboard/components/dashboard-page.tsx`
 - 当前真实依赖：`GET /api/admin/dashboard/overview`
 
-### 管理后台用户运营页
+### 管理后台用户管理页
 
 - 路由入口：`app/(admin-shell)/admin/users/page.tsx`、`app/(admin-shell)/admin/users/[userId]/page.tsx`
 - 页面装配：`features/admin-users/components/user-list-page.tsx`、`features/admin-users/components/user-detail-page.tsx`
@@ -393,6 +397,63 @@ features/<domain>/
   - 列表页进入学习路径详情页
   - 详情页右侧展示用户快照，并可继续跳到 `/admin/users/[userId]`
   - 状态操作仅允许 `reactivate / archive`，统一走后台 API，而不是页面层直接改写
+
+### 管理后台 AI 运营页
+
+- 路由入口：
+  `app/(admin-shell)/admin/ai/page.tsx`、
+  `app/(admin-shell)/admin/ai/providers/page.tsx`、
+  `app/(admin-shell)/admin/ai/providers/[providerId]/page.tsx`、
+  `app/(admin-shell)/admin/ai/models/page.tsx`、
+  `app/(admin-shell)/admin/ai/models/[modelId]/page.tsx`、
+  `app/(admin-shell)/admin/ai/agents/page.tsx`、
+  `app/(admin-shell)/admin/ai/agents/[agentId]/page.tsx`、
+  `app/(admin-shell)/admin/ai/bindings/page.tsx`、
+  `app/(admin-shell)/admin/ai/skills/page.tsx`、
+  `app/(admin-shell)/admin/ai/invocations/page.tsx`、
+  `app/(admin-shell)/admin/ai/invocations/[invocationId]/page.tsx`、
+  `app/(admin-shell)/admin/ai/test/page.tsx`
+- 页面装配：
+  `features/admin-ai/components/ai-overview-page.tsx`、
+  `provider-management-page.tsx`、
+  `provider-detail-page.tsx`、
+  `model-management-page.tsx`、
+  `model-detail-page.tsx`、
+  `agent-management-page.tsx`、
+  `agent-detail-page.tsx`、
+  `binding-management-page.tsx`、
+  `skill-management-page.tsx`、
+  `invocation-log-page.tsx`、
+  `invocation-detail-page.tsx`、
+  `ai-test-console-page.tsx`
+- 当前真实依赖：
+  `GET /api/admin/ai/overview`、
+  `GET/POST/PATCH /api/admin/ai/providers*`、
+  `GET/POST/PATCH /api/admin/ai/models*`、
+  `GET/POST/PATCH /api/admin/ai/agents*`、
+  `GET/POST/PATCH /api/admin/ai/agent-bindings*`、
+  `GET /api/admin/ai/skills`、
+  `GET/POST/PATCH /api/admin/ai/agent-skill-bindings*`、
+  `GET /api/admin/ai/invocations`、
+  `GET /api/admin/ai/invocations/{invocationId}`、
+  `POST /api/admin/ai/resolve-preview`、
+  `POST /api/admin/ai/agent/test`
+- 页面组件：
+  `features/admin-ai/components/ai-overview.tsx`、`provider-management.tsx`、`provider-detail.tsx`、`model-management.tsx`、`model-detail.tsx`、`agent-management.tsx`、`agent-detail.tsx`、`binding-management.tsx`、`skill-management.tsx`、`invocation-log.tsx`、`invocation-detail.tsx`、`ai-test-console.tsx`
+- 页面联动：
+  - Provider / Model / Agent / Invocation 采用“列表页 + 独立详情页”结构，新增与编辑通过抽屉完成，避免双栏长页布局。
+  - AI 侧边栏子菜单与实际页面路由一致，当前 `AI 概览 / Provider 管理 / Model 管理 / Agent 管理 / 命中规则 / Skill 管理 / 调用日志 / 测试调试` 全部可点通。
+  - 调用日志详情、Provider 详情、Model 详情、Agent 详情统一复用后台壳层、breadcrumb、管理员会话守卫与 BFF 错误处理。
+
+### 管理后台系统设置页
+
+- 路由入口：`app/(admin-shell)/admin/settings/page.tsx`
+- 页面装配：`features/admin-settings/components/system-settings-page.tsx`
+- 当前真实依赖：`GET /api/admin/settings/overview`、`GET /api/admin/settings/admin-accounts`、`POST /api/admin/settings/admin-accounts/{adminAccountId}/status`、`GET /api/admin/settings/audit-logs`
+- 页面组件：`features/admin-settings/components/system-settings.tsx`
+- 页面联动：
+  - 页面内部按“我的资料 / 安全设置 / 管理员账号 / 角色权限 / 操作审计 / 系统信息”分 tab 展示。
+  - 资料编辑与修改密码复用 `admin-shell` 域通用弹框组件，管理员账号启停操作统一写入审计。
 
 ### 管理后台反馈页
 
@@ -573,7 +634,7 @@ features/<domain>/
 - 尚未形成系统性的前端自动化测试覆盖
 - 通知设置、订阅模块、FAQ 仍是静态或占位实现
 - 埋点写入与通知设置落库尚未接入真实后端
-- 管理员后台当前已完成 Phase 1，并已落地用户运营、学习运营、AI 运营 MVP 与系统设置；更深用户运营写能力、细粒度权限与 AI 深水区能力仍未开始
+- 管理员后台当前已完成 Phase 1，并已落地用户运营、学习运营、AI 运营与系统设置；更深用户运营写能力、细粒度权限与 AI 深水区能力仍未开始
 
 因此，当前阶段的目标仍然是：
 
@@ -616,6 +677,6 @@ features/<domain>/
 1. 继续把剩余静态模块切到真实接口，优先级依次为埋点事件、通知设置、订阅模块。
 2. 为已接接口的高频页面补充页面级自动化测试或最小交互测试。
 3. 在确认请求复杂度继续上升后，再评估是否引入 Query 缓存层，而不是过早全局化。
-4. 继续推进管理员后台后续能力前，先保持用户侧与管理侧鉴权分流口径一致，避免两端状态判断逻辑漂移。（用户运营、学习运营、AI 运营 MVP 与系统设置页面/API 已交付，新增后台域时继续遵守 `features/admin-*` 与 `server/modules/admin-*` 约定。）
+4. 继续推进管理员后台后续能力前，先保持用户侧与管理侧鉴权分流口径一致，避免两端状态判断逻辑漂移。（用户运营、学习运营、AI 运营与系统设置页面/API 已交付，新增后台域时继续遵守 `features/admin-*` 与 `server/modules/admin-*` 约定。）
 
 如果后续目录与本说明出现偏差，应优先更新本文档，再继续扩展代码。

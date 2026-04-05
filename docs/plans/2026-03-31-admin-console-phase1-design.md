@@ -8,7 +8,9 @@
 > 适用阶段：Phase 1 - 管理员认证 + 后台壳层 + 反馈工单
 > 关联文档：`docs/plans/2026-03-31-ai-coding-tutor-admin-console-design.md`
 >
-> **2026-04-04 补充**：同仓已追加**用户运营**路由与功能（`/admin/users`、`/admin/users/[userId]`），不属于 Phase 1 原始验收包，但以代码为准；详见总设计文档 §5.3 与 `features/admin-users`。
+> 历史说明：本文聚焦 **Phase 1 原始范围**，用于保留当时的设计边界；**不作为当前管理后台完整能力的权威来源**。当前真实现状请优先查看 `docs/plans/README.md` 与 `docs/plans/2026-03-31-ai-coding-tutor-admin-console-design.md`。
+>
+> **2026-04-05 补充**：同仓已在 Phase 1 之后继续追加**用户管理**、**学习运营**、**AI 运营** 与 **系统设置**，这些后续模块不属于 Phase 1 原始验收包，但以代码与总设计文档为准。
 
 ---
 
@@ -29,7 +31,7 @@
 | `/admin` | 总览看板 | 简化版，4-5 个核心指标 |
 | `/admin/feedback` | 反馈工单列表 | 搜索、筛选、分页 |
 | `/admin/feedback/[id]` | 反馈工单详情 | 详情、回复、状态切换 |
-| `/admin/users` | 用户运营列表 | **Phase 1 之后已落地**：筛选、导出、编辑抽屉 |
+| `/admin/users` | 用户管理列表 | **Phase 1 之后已落地**：筛选、导出、编辑抽屉 |
 | `/admin/users/[userId]` | 用户详情 | **Phase 1 之后已落地**：聚合资料/学习/工单、软删恢复 |
 
 ### 1.3 不包含（Phase 1 原始范围内未承诺；部分已由后续迭代补齐）
@@ -281,22 +283,22 @@ app/
 
 ### 4.3 侧边栏菜单
 
-Phase 1 只显示可访问的菜单项（未实现的显示为禁用）。**2026-04-05 代码对齐**：`用户运营`、`学习运营` 与 `系统设置` 已与 `features/admin-shell/data/menu-config.ts` 一致设为可点通。
+Phase 1 只显示可访问的菜单项（未实现的显示为禁用）。**2026-04-05 代码对齐**：`用户管理`、`学习运营`、`AI 运营` 与 `系统设置` 已与 `features/admin-shell/data/menu-config.ts` 一致设为可点通。
 
 ```typescript
 const menuItems = [
   { label: "总览看板", href: "/admin", icon: LayoutDashboard, active: true },
-  { label: "用户运营", href: "/admin/users", icon: Users, active: true },
+  { label: "用户管理", href: "/admin/users", icon: Users, active: true },
   { label: "反馈工单", href: "/admin/feedback", icon: MessageSquare, active: true },
   { label: "学习运营", href: "/admin/learning", icon: BookOpen, active: true },
   {
     label: "AI 运营",
     href: "/admin/ai",
     icon: Bot,
-    active: false,
+    active: true,
     children: [
-      { label: "AI 概览", href: "/admin/ai", active: false },
-      { label: "Provider 管理", href: "/admin/ai/providers", active: false },
+      { label: "AI 概览", href: "/admin/ai", active: true },
+      { label: "Provider 管理", href: "/admin/ai/providers", active: true },
       // ...
     ]
   },

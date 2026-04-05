@@ -1,5 +1,7 @@
 # 管理后台 Phase 1 实施计划
 
+> 历史说明：本文是 **Phase 1 实施过程文档**，只用于保留当时的拆解与执行记录；**不作为当前代码现状的权威来源**。当前真实实现范围请优先以 `docs/plans/README.md`、`docs/plans/2026-03-31-ai-coding-tutor-admin-console-design.md`、`AGENTS.md`、`CLAUDE.md` 和代码本身为准。
+>
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** 建立管理后台基础能力，实现管理员认证（Supabase Auth + 角色表）、后台布局壳层、反馈工单处理功能、简化版总览看板。
@@ -8,7 +10,7 @@
 
 **Tech Stack:** Next.js 16.2.0 App Router, React 19.2.4, TypeScript 5.7.3, Supabase Auth, shadcn/ui, Tailwind CSS 4.2
 
-**2026-04-04 代码对齐说明：** 同仓在 Phase 1 完成后已追加 **用户运营**（`features/admin-users`、`server/modules/admin-users`、`/admin/users`）；本文中的菜单示例已将「用户运营」`active` 设为 `true`。实施任务清单仍以 Phase 1 为界，用户运营不在下列 Task 编号范围内。
+**2026-04-05 历史补充：** 同仓在 Phase 1 完成后，已继续追加 **用户管理**、**学习运营**、**AI 运营** 与 **系统设置**。这些后续模块不在本文任务编号范围内，后续阅读请转到总设计文档与 README。
 
 ---
 

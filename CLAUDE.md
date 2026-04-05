@@ -102,17 +102,21 @@ types/                # 跨 feature 共用的类型定义
 | `/history` | 历史学习页 | `features/history/pages/history-page.tsx` |
 | `/api-docs` | Swagger UI API 文档 | `features/api-docs/pages/api-docs-page.tsx` |
 | `/admin` | 管理后台看板 | `features/admin-dashboard/components/dashboard-page.tsx` |
-| `/admin/users` | 用户运营列表 | `features/admin-users/components/user-list-page.tsx` |
+| `/admin/users` | 用户管理列表 | `features/admin-users/components/user-list-page.tsx` |
 | `/admin/users/[userId]` | 用户详情 | `features/admin-users/components/user-detail-page.tsx` |
 | `/admin/learning` | 学习运营列表 | `features/admin-learning/components/learning-path-list-page.tsx` |
 | `/admin/learning/[pathId]` | 学习路径详情 | `features/admin-learning/components/learning-path-detail-page.tsx` |
 | `/admin/ai` | AI 运营概览 | `features/admin-ai/components/ai-overview-page.tsx` |
 | `/admin/ai/providers` | Provider 管理 | `features/admin-ai/components/provider-management-page.tsx` |
+| `/admin/ai/providers/[providerId]` | Provider 详情 | `features/admin-ai/components/provider-detail-page.tsx` |
 | `/admin/ai/models` | Model 管理 | `features/admin-ai/components/model-management-page.tsx` |
+| `/admin/ai/models/[modelId]` | Model 详情 | `features/admin-ai/components/model-detail-page.tsx` |
 | `/admin/ai/agents` | Agent 管理 | `features/admin-ai/components/agent-management-page.tsx` |
+| `/admin/ai/agents/[agentId]` | Agent 详情 | `features/admin-ai/components/agent-detail-page.tsx` |
 | `/admin/ai/bindings` | 命中规则 | `features/admin-ai/components/binding-management-page.tsx` |
 | `/admin/ai/skills` | Skill 管理 | `features/admin-ai/components/skill-management-page.tsx` |
 | `/admin/ai/invocations` | 调用日志 | `features/admin-ai/components/invocation-log-page.tsx` |
+| `/admin/ai/invocations/[invocationId]` | 调用日志详情 | `features/admin-ai/components/invocation-detail-page.tsx` |
 | `/admin/ai/test` | 测试调试 | `features/admin-ai/components/ai-test-console-page.tsx` |
 | `/admin/settings` | 系统设置 | `features/admin-settings/components/system-settings-page.tsx` |
 | `/admin/feedback` | 反馈工单列表 | `features/admin-feedback/components/feedback-list.tsx` |
@@ -165,7 +169,7 @@ types/                # 跨 feature 共用的类型定义
 - ✅ 管理后台 Phase 1（管理员认证、看板、反馈工单）
 - ✅ 管理后台用户运营（`/admin/users`、`/admin/users/[userId]`：列表筛选、CSV 导出、详情聚合、受控资料 PATCH、软删除/恢复；`server/modules/admin-users`、`OpenAPI` 分组 `admin-users`）
 - ✅ 管理后台学习运营（`/admin/learning`、`/admin/learning/[pathId]`：学习路径列表筛选、CSV 导出、详情聚合、最近会话回看、`reactivate/archive` 状态操作；`server/modules/admin-learning`、`OpenAPI` 分组 `admin-learning`）
-- ✅ 管理后台 AI 运营（`/admin/ai`、`/admin/ai/providers`、`/admin/ai/models`、`/admin/ai/agents`、`/admin/ai/bindings`、`/admin/ai/skills`、`/admin/ai/invocations`、`/admin/ai/test`；对应 `/api/admin/ai/*`、`server/modules/admin-ai`、`OpenAPI` 分组 `admin-ai`）
+- ✅ 管理后台 AI 运营（`/admin/ai`、`/admin/ai/providers`、`/admin/ai/providers/[providerId]`、`/admin/ai/models`、`/admin/ai/models/[modelId]`、`/admin/ai/agents`、`/admin/ai/agents/[agentId]`、`/admin/ai/bindings`、`/admin/ai/skills`、`/admin/ai/invocations`、`/admin/ai/invocations/[invocationId]`、`/admin/ai/test`；对应 `/api/admin/ai/*`、`server/modules/admin-ai`、`OpenAPI` 分组 `admin-ai`）
 - ✅ 管理后台系统设置（`/admin/settings`：我的资料、安全设置、管理员账号列表与启停、角色权限说明、操作审计、系统信息；`server/modules/admin-settings`、`OpenAPI` 分组 `admin-settings`）
 
 **进行中/待完成：**
@@ -249,7 +253,7 @@ types/                # 跨 feature 共用的类型定义
 - `2026-03-23-ai-coding-tutor-ui-visual-design-spec.md` - UI 视觉设计
 - `2026-03-23-ai-coding-tutor-adr-records.md` - 架构决策记录
 - `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` - AI 编排设计（第一阶段已完成）
-- `2026-03-31-ai-coding-tutor-admin-console-design.md` - 管理后台设计（Phase 1 + 用户运营 + 学习运营 + 系统设置已落地；余下模块见文档）
+- `2026-03-31-ai-coding-tutor-admin-console-design.md` - 管理后台设计（Phase 1 + 用户运营 + 学习运营 + AI 运营 + 系统设置已落地；余下深水区能力见文档）
 - `2026-03-31-admin-console-phase1-design.md` - 管理后台 Phase 1 详细设计
 - `2026-03-31-admin-console-phase1-implementation.md` - 管理后台 Phase 1 实施计划
 
