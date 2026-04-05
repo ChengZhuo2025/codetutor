@@ -155,6 +155,23 @@ async function writeAdminUserAudit(input: {
   }
 }
 
+async function assertUserNotLinkedToAdminAccount(userId: string) {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("admin_accounts")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  assertSupabaseSuccess(error, "failed to query admin account relation before soft delete")
+
+  if (data) {
+    const conflict = new Error("管理员关联的用户档案不允许软删除。")
+    conflict.name = "CONFLICT"
+    throw conflict
+  }
+}
+
 async function getAdminUserListStats(): Promise<AdminUserListStats> {
   const supabase = createSupabaseAdminClient()
 
@@ -385,6 +402,8 @@ export async function softDeleteAdminUser(
   if (before.deletedAt) {
     return before
   }
+
+  await assertUserNotLinkedToAdminAccount(userId)
 
   const now = new Date().toISOString()
   const { error } = await supabase

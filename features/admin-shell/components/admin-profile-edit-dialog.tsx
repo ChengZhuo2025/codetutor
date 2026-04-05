@@ -66,7 +66,7 @@ export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminPro
       setErrorMessage(null)
       try {
         const data = await adminRequestData<ProfileMeResponseData>(
-          "/profile/me",
+          "/admin/profile/me",
           {
             method: "GET",
           },
@@ -128,7 +128,7 @@ export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminPro
       formData.append("file", file)
 
       const result = await adminRequestData<UploadProfileAvatarResponseData>(
-        "/profile/avatar",
+        "/admin/profile/avatar",
         {
           method: "POST",
           body: formData,
@@ -174,7 +174,7 @@ export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminPro
 
     try {
       await adminRequestData<ProfileMeResponseData>(
-        "/profile/me",
+        "/admin/profile/me",
         {
           method: "PATCH",
           body: JSON.stringify(payload),

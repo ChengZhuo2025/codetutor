@@ -220,6 +220,15 @@ async function syncAdminAccountDisplayNameFromNickname(userId: string, nickname:
   assertSupabaseSuccess(updateError, "failed to sync admin display name")
 }
 
+function assertUserProfileEnabled(
+  profile: Pick<UserProfileRow, "deleted_at"> | null,
+  options?: { allowSoftDeleted?: boolean },
+) {
+  if (!options?.allowSoftDeleted && profile?.deleted_at) {
+    throw new UserAccountDisabledError()
+  }
+}
+
 async function loadUserGateState(userId: string) {
   const supabase = createSupabaseAdminClient()
 
@@ -392,6 +401,13 @@ export async function getAuthSessionSummary(
 }
 
 export async function getProfileMe(userId: string): Promise<ProfileMeResponseData | null> {
+  return getProfileMeByAccess(userId)
+}
+
+async function getProfileMeByAccess(
+  userId: string,
+  options?: { allowSoftDeleted?: boolean },
+): Promise<ProfileMeResponseData | null> {
   await ensureUserProfileRowForUserId(userId)
 
   const supabase = createSupabaseAdminClient()
@@ -412,9 +428,7 @@ export async function getProfileMe(userId: string): Promise<ProfileMeResponseDat
 
   const typedProfile = profile as UserProfileRow
 
-  if (typedProfile.deleted_at) {
-    throw new UserAccountDisabledError()
-  }
+  assertUserProfileEnabled(typedProfile, options)
   const authUser = await getAuthUserById(userId)
   let primaryTool: ToolRow = {
     code: "unselected",
@@ -464,9 +478,23 @@ export async function getProfileMe(userId: string): Promise<ProfileMeResponseDat
   }
 }
 
+export async function getAdminProfileMe(
+  userId: string,
+): Promise<ProfileMeResponseData | null> {
+  return getProfileMeByAccess(userId, { allowSoftDeleted: true })
+}
+
 export async function updateProfileMe(
   userId: string,
   input: UpdateProfileMeRequest,
+): Promise<ProfileMeResponseData | null> {
+  return updateProfileMeByAccess(userId, input)
+}
+
+async function updateProfileMeByAccess(
+  userId: string,
+  input: UpdateProfileMeRequest,
+  options?: { allowSoftDeleted?: boolean },
 ): Promise<ProfileMeResponseData | null> {
   await ensureUserProfileRowForUserId(userId)
 
@@ -483,9 +511,7 @@ export async function updateProfileMe(
     return null
   }
 
-  if ((profile as UserProfileRow).deleted_at) {
-    throw new UserAccountDisabledError()
-  }
+  assertUserProfileEnabled(profile as UserProfileRow, options)
 
   const { error: updateError } = await supabase
     .from("user_profiles")
@@ -503,12 +529,27 @@ export async function updateProfileMe(
 
   await syncAdminAccountDisplayNameFromNickname(userId, input.nickname)
 
-  return getProfileMe(userId)
+  return getProfileMeByAccess(userId, options)
+}
+
+export async function updateAdminProfileMe(
+  userId: string,
+  input: UpdateProfileMeRequest,
+): Promise<ProfileMeResponseData | null> {
+  return updateProfileMeByAccess(userId, input, { allowSoftDeleted: true })
 }
 
 export async function uploadProfileAvatar(
   userId: string,
   file: File,
+): Promise<UploadProfileAvatarResponseData> {
+  return uploadProfileAvatarByAccess(userId, file)
+}
+
+async function uploadProfileAvatarByAccess(
+  userId: string,
+  file: File,
+  options?: { allowSoftDeleted?: boolean },
 ): Promise<UploadProfileAvatarResponseData> {
   await ensureUserProfileRowForUserId(userId)
 
@@ -524,9 +565,7 @@ export async function uploadProfileAvatar(
 
   assertSupabaseSuccess(profileError, "failed to query existing avatar before upload")
 
-  if ((profile as UserProfileRow | null)?.deleted_at) {
-    throw new UserAccountDisabledError()
-  }
+  assertUserProfileEnabled(profile as UserProfileRow | null, options)
 
   const { error: uploadError } = await supabase.storage
     .from(PROFILE_AVATAR_BUCKET)
@@ -549,4 +588,11 @@ export async function uploadProfileAvatar(
         ? ((profile as { avatar_url?: string | null }).avatar_url ?? null)
         : null,
   }
+}
+
+export async function uploadAdminProfileAvatar(
+  userId: string,
+  file: File,
+): Promise<UploadProfileAvatarResponseData> {
+  return uploadProfileAvatarByAccess(userId, file, { allowSoftDeleted: true })
 }

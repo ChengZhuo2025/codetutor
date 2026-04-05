@@ -5,18 +5,18 @@ import {
 } from "@/server/lib/request-auth"
 import { withNoStoreHeaders } from "@/server/lib/response-cache"
 import { createProfileMeGetHandler, createProfileMePatchHandler } from "@/server/modules/auth/route-handler"
-import { getProfileMe, updateProfileMe } from "@/server/modules/auth/service"
+import { getAdminProfileMe, updateAdminProfileMe } from "@/server/modules/auth/service"
 
 const getHandler = createProfileMeGetHandler({
   getRequestAuth: (request) => getRequestAuthFromAdminSession(request as NextRequest),
   getRequestAuthHelpText: getRequestAuthForAdminProfileHelpText,
-  getProfileMe,
+  getProfileMe: getAdminProfileMe,
 })
 
 const patchHandler = createProfileMePatchHandler({
   getRequestAuth: (request) => getRequestAuthFromAdminSession(request as NextRequest),
   getRequestAuthHelpText: getRequestAuthForAdminProfileHelpText,
-  updateProfileMe,
+  updateProfileMe: updateAdminProfileMe,
 })
 
 export async function GET(request: NextRequest) {

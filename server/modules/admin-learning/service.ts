@@ -162,17 +162,18 @@ async function findKeywordMatchedUserIds(keyword: string) {
   return (data ?? []).map((row) => String((row as { user_id: string }).user_id))
 }
 
-function applyLearningKeywordFilter<T extends { or: (clause: string) => T }>(
-  query: T,
+function applyLearningKeywordFilter(
+  query: unknown,
   keyword: string | undefined,
   matchedUserIds: string[],
 ) {
+  const q = query as { or: (clause: string) => unknown }
   const normalized = keyword?.trim()
   if (!normalized) {
-    return query
+    return q
   }
 
-  return query.or(buildLearningKeywordOrClause(normalized, matchedUserIds))
+  return q.or(buildLearningKeywordOrClause(normalized, matchedUserIds))
 }
 
 function applyLearningPathFilters(
@@ -332,39 +333,41 @@ async function fetchLearningPathRows(filters: ListFilters, forExport = false) {
   const keyword = filters.keyword?.trim()
   const matchedUserIds = keyword ? await findKeywordMatchedUserIds(keyword) : []
 
-  let countQuery = supabase.from("user_learning_paths").select("*", { count: "exact", head: true })
+  const baseCountQuery = supabase.from("user_learning_paths").select("*", { count: "exact", head: true })
+  let countQuery: unknown = baseCountQuery
   countQuery = applyLearningPathFilters(countQuery, {
     status: filters.status,
     toolCode: filters.toolCode,
     learningLevel: filters.learningLevel,
     updatedWithin: filters.updatedWithin,
     toolIdByCode,
-  }) as typeof countQuery
-  countQuery = applyLearningKeywordFilter(countQuery, keyword, matchedUserIds) as typeof countQuery
+  })
+  countQuery = applyLearningKeywordFilter(countQuery, keyword, matchedUserIds)
 
-  const countResult = await countQuery
+  const countResult = await countQuery as Awaited<typeof baseCountQuery>
   assertSupabaseSuccess(countResult.error, "failed to count admin learning paths")
 
   if (forExport && (countResult.count ?? 0) > ADMIN_LEARNING_EXPORT_MAX_ROWS) {
     throw new Error("LEARNING_EXPORT_LIMIT_EXCEEDED")
   }
 
-  let query = supabase
+  const baseQuery = supabase
     .from("user_learning_paths")
     .select("id, user_id, tool_id, path_code_snapshot, path_name_snapshot, path_summary_snapshot, learning_level, selection_mode, status, total_steps, completed_steps, started_at, last_activity_at, completed_at, abandoned_at, updated_at, interrupted_at")
     .order("updated_at", { ascending: false })
     .range(from, to)
 
+  let query: unknown = baseQuery
   query = applyLearningPathFilters(query, {
     status: filters.status,
     toolCode: filters.toolCode,
     learningLevel: filters.learningLevel,
     updatedWithin: filters.updatedWithin,
     toolIdByCode,
-  }) as typeof query
-  query = applyLearningKeywordFilter(query, keyword, matchedUserIds) as typeof query
+  })
+  query = applyLearningKeywordFilter(query, keyword, matchedUserIds)
 
-  const { data, error } = await query
+  const { data, error } = await query as Awaited<typeof baseQuery>
   assertSupabaseSuccess(error, "failed to query admin learning paths")
 
   const rows = (data ?? []) as LearningPathRow[]

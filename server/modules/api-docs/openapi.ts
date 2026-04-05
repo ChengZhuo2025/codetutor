@@ -7,6 +7,12 @@ import {
   adminChangePasswordRequestSchema,
   adminLoginRequestSchema,
   adminSessionResponseDataSchema,
+  adminSettingsAdminAccountIdParamsSchema,
+  adminSettingsAdminAccountListQuerySchema,
+  adminSettingsAdminAccountListResponseDataSchema,
+  adminSettingsAuditLogListQuerySchema,
+  adminSettingsAuditLogListResponseDataSchema,
+  adminSettingsOverviewResponseDataSchema,
   adminFeedbackListQuerySchema,
   adminFeedbackListResponseDataSchema,
   adminFeedbackBatchDeleteRequestSchema,
@@ -22,6 +28,8 @@ import {
   adminLearningPathListResponseDataSchema,
   adminUpdateLearningPathStatusRequestSchema,
   adminUpdateLearningPathStatusResponseDataSchema,
+  adminUpdateAdminAccountStatusRequestSchema,
+  adminUpdateAdminAccountStatusResponseDataSchema,
   adminUserExportViewDataSchema,
   adminUserListQuerySchema,
   adminUserListResponseDataSchema,
@@ -331,6 +339,94 @@ const adminLearningPathDetailExample = {
       latestAssistantSummary: "先确认项目索引完成，再继续下一步修复。",
     },
   ],
+}
+
+const adminSettingsOverviewExample = {
+  currentAdmin: {
+    adminAccountId: "550e8400-e29b-41d4-a716-446655440011",
+    userId: "550e8400-e29b-41d4-a716-446655440001",
+    displayName: "超级管理员",
+    avatarUrl: "https://cdn.example.com/avatar/admin-1.png",
+    email: "admin@example.com",
+    status: "active",
+    roles: ["super_admin"],
+    lastLoginAt: EXAMPLE_LATEST,
+  },
+  stats: {
+    totalAdminAccounts: 4,
+    activeAdminAccounts: 3,
+    inactiveAdminAccounts: 1,
+    suspendedAdminAccounts: 0,
+    auditLogCountLast7Days: 12,
+  },
+  roleDefinitions: [
+    {
+      code: "super_admin",
+      name: "超级管理员",
+      description: "拥有全部后台权限。",
+      accountCount: 1,
+    },
+    {
+      code: "ops_admin",
+      name: "运营管理员",
+      description: "负责用户与学习运营。",
+      accountCount: 1,
+    },
+  ],
+  systemInfo: {
+    appName: "AI编程学习教练管理后台",
+    appVersion: "0.1.0",
+    environment: "production",
+    nextVersion: "16.2.0",
+    reactVersion: "19.2.4",
+    adminAuthMode: "Supabase Auth + admin_accounts",
+    database: "Supabase PostgreSQL",
+    storage: "Supabase Storage",
+    auth: "Supabase Auth",
+  },
+}
+
+const adminSettingsAccountListExample = {
+  items: [
+    {
+      adminAccountId: "550e8400-e29b-41d4-a716-446655440011",
+      userId: "550e8400-e29b-41d4-a716-446655440001",
+      displayName: "超级管理员",
+      avatarUrl: "https://cdn.example.com/avatar/admin-1.png",
+      email: "admin@example.com",
+      roles: ["super_admin"],
+      status: "active",
+      lastLoginAt: EXAMPLE_LATEST,
+      createdAt: EXAMPLE_NOW,
+    },
+  ],
+  total: 1,
+  page: 1,
+  limit: 20,
+  stats: {
+    totalAdminAccounts: 4,
+    activeAdminAccounts: 3,
+    inactiveAdminAccounts: 1,
+    suspendedAdminAccounts: 0,
+  },
+}
+
+const adminSettingsAuditLogListExample = {
+  items: [
+    {
+      id: "550e8400-e29b-41d4-a716-446655440031",
+      action: "admin_account_deactivate",
+      targetType: "admin_account",
+      targetId: "550e8400-e29b-41d4-a716-446655440015",
+      actorAdminAccountId: "550e8400-e29b-41d4-a716-446655440011",
+      actorDisplayName: "超级管理员",
+      reason: "离职停用",
+      createdAt: EXAMPLE_LATEST,
+    },
+  ],
+  total: 1,
+  page: 1,
+  limit: 20,
 }
 
 const successExamples = {
@@ -850,6 +946,13 @@ const successExamples = {
     pathId: "550e8400-e29b-41d4-a716-446655440100",
     status: "archived",
   },
+  adminSettingsOverview: adminSettingsOverviewExample,
+  adminSettingsAccountList: adminSettingsAccountListExample,
+  adminSettingsAccountStatusUpdate: {
+    adminAccountId: "550e8400-e29b-41d4-a716-446655440015",
+    status: "inactive",
+  },
+  adminSettingsAuditLogList: adminSettingsAuditLogListExample,
 } as const
 
 const defaultErrorResponses = {
@@ -2322,7 +2425,16 @@ registry.registerPath({
       successExamples.adminUserExportRow,
       "用户已软删除",
     ),
-    ...commonErrorResponses(["400", "403", "404", "500"]),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"], {
+      "409": {
+        description: "管理员关联用户不允许软删除。",
+        example: {
+          code: "CONFLICT",
+          message: "管理员关联的用户档案不允许软删除。",
+          data: null,
+        },
+      },
+    }),
   },
 })
 
@@ -2453,6 +2565,99 @@ registry.registerPath({
       "学习路径状态已更新",
     ),
     ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/settings/overview",
+  operationId: "getAdminSettingsOverview",
+  tags: ["admin-settings"],
+  summary: "系统设置概览",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminSettingsOverviewResponseDataSchema,
+      "AdminSettingsOverviewResponse",
+      "系统设置概览读取成功",
+      successExamples.adminSettingsOverview,
+      "系统设置概览读取成功",
+    ),
+    ...commonErrorResponses(["403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/settings/admin-accounts",
+  operationId: "getAdminSettingsAdminAccountList",
+  tags: ["admin-settings"],
+  summary: "管理员账号列表",
+  security: [],
+  request: {
+    query: adminSettingsAdminAccountListQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminSettingsAdminAccountListResponseDataSchema,
+      "AdminSettingsAdminAccountListResponse",
+      "管理员账号列表读取成功",
+      successExamples.adminSettingsAccountList,
+      "管理员账号列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/settings/admin-accounts/{adminAccountId}/status",
+  operationId: "postAdminSettingsAdminAccountStatus",
+  tags: ["admin-settings"],
+  summary: "启用或停用管理员账号",
+  security: [],
+  request: {
+    params: adminSettingsAdminAccountIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminUpdateAdminAccountStatusRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminUpdateAdminAccountStatusResponseDataSchema,
+      "AdminSettingsAdminAccountStatusResponse",
+      "管理员账号状态已更新",
+      successExamples.adminSettingsAccountStatusUpdate,
+      "管理员账号状态已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/settings/audit-logs",
+  operationId: "getAdminSettingsAuditLogList",
+  tags: ["admin-settings"],
+  summary: "系统设置操作审计列表",
+  security: [],
+  request: {
+    query: adminSettingsAuditLogListQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminSettingsAuditLogListResponseDataSchema,
+      "AdminSettingsAuditLogListResponse",
+      "操作审计列表读取成功",
+      successExamples.adminSettingsAuditLogList,
+      "操作审计列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
   },
 })
 

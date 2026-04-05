@@ -24,6 +24,7 @@ export const ADMIN_ROUTES = {
   feedback: "/admin/feedback",
   users: "/admin/users",
   learning: "/admin/learning",
+  settings: "/admin/settings",
 } as const
 
 export const MARKETING_SECTIONS = {

@@ -26,8 +26,9 @@
 > - 管理后台 Phase 1 已落地管理员登录、会话、登出、改密、看板、反馈、管理员资料编辑（含头像上传）链路。
 > - **用户运营**已落地：用户列表、详情、导出、受控资料更新、软删除与恢复、与反馈列表联动；路由为 `app/(admin-shell)/admin/users/*`，业务域为 `features/admin-users`，服务层为 `server/modules/admin-users`，OpenAPI 分组为 `admin-users`。
 > - **学习运营**已落地：学习路径实例列表、详情、CSV 导出、最近会话摘要、`reactivate / archive` 状态操作；路由为 `app/(admin-shell)/admin/learning/*`，业务域为 `features/admin-learning`，服务层为 `server/modules/admin-learning`，OpenAPI 分组为 `admin-learning`。
+> - **系统设置**已落地：资料与安全入口复用、管理员账号列表与启停、角色权限说明、操作审计列表、系统信息；路由为 `app/(admin-shell)/admin/settings`，业务域为 `features/admin-settings`，服务层为 `server/modules/admin-settings`，OpenAPI 分组为 `admin-settings`。
 > - 管理端鉴权主链路已切换为 `admin-access-token` / `admin-refresh-token` Cookie，会话守卫与 `/api-docs` 访问守卫已接入 `proxy.ts`。
-> - 运行时 API 文档（`/api/docs/openapi`、`/api-docs`）已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning` 分组。
+> - 运行时 API 文档（`/api/docs/openapi`、`/api-docs`）已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning`、`admin-settings` 分组。
 > - 本文中关于 `x-admin-secret` 的描述仅代表早期过渡方案背景，不再代表当前主实现。若与代码冲突，优先以 `docs/plans/2026-03-23-ai-coding-tutor-api-spec.md` 与实际代码为准。
 
 ### 2.1 已经落地的后台相关能力
@@ -39,6 +40,13 @@
 - `POST /api/admin/auth/login`、`GET /api/admin/auth/session`、`POST /api/admin/auth/logout`、`POST /api/admin/auth/change-password`
 - `GET /api/admin/dashboard/overview`
 - `GET /api/admin/profile/me`、`PATCH /api/admin/profile/me`、`POST /api/admin/profile/avatar`
+
+**系统设置（管理员治理）**
+
+- `GET /api/admin/settings/overview`
+- `GET /api/admin/settings/admin-accounts`
+- `POST /api/admin/settings/admin-accounts/{adminAccountId}/status`
+- `GET /api/admin/settings/audit-logs`
 
 **反馈工单**
 
@@ -85,12 +93,12 @@
 
 以下条目表示**截至 2026-04-04** 与代码对照后仍不足或未开工的部分（已落地项不再重复列举）：
 
-- **细粒度 UI/API 权限**：库表与角色模型已有雏形，菜单上仍有大量「占位/禁用」项；按角色隐藏能力、接口级授权与完整审计覆盖仍在演进中。
+- **细粒度 UI/API 权限**：库表与角色模型已有雏形；`/admin/settings` 已提供角色说明、管理员账号启停与审计基础，但按角色隐藏能力、角色分配写接口、接口级授权与完整审计覆盖仍在演进中。
 - **用户域后续能力**：内部备注（`user_admin_notes` 等）、人工积分调整（`score_ledgers` + 审计）等**尚未**按设计文档中的独立 API 交付。
 - **AI 运营读写**：provider/model/agent 等后台 CRUD、调用日志只读面板、健康看板等仍待建设。
 - **事件埋点写入链路与 `event_logs` 实际迁移**仍待落地。
 
-因此，管理后台后续迭代应建立在「Phase 1 + 用户运营 + 学习运营 + 反馈」已可用，其余模块按优先级补齐的现实之上。
+因此，管理后台后续迭代应建立在「Phase 1 + 用户运营 + 学习运营 + 系统设置 + 反馈」已可用，其余模块按优先级补齐的现实之上。
 
 ---
 

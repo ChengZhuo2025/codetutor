@@ -1,7 +1,12 @@
 import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi"
 import { z } from "zod"
 import { FEEDBACK_PRIORITIES, FEEDBACK_REPLY_AUTHOR_TYPES, FEEDBACK_STATUSES, FEEDBACK_SOURCES, FEEDBACK_TYPES } from "@/lib/api/contracts/feedback"
-import { ADMIN_ACCOUNT_STATUSES, ADMIN_ROLE_CODES } from "@/lib/api/contracts/admin"
+import { ADMIN_ACCOUNT_STATUSES, ADMIN_AUDIT_ACTIONS, ADMIN_ROLE_CODES } from "@/lib/api/contracts/admin"
+import {
+  ADMIN_SETTINGS_ACCOUNT_LIST_STATUSES,
+  ADMIN_SETTINGS_ACCOUNT_STATUS_ACTIONS,
+  ADMIN_SETTINGS_AUDIT_TARGET_TYPES,
+} from "@/lib/api/contracts/admin-settings"
 
 extendZodWithOpenApi(z)
 
@@ -1135,6 +1140,8 @@ export const adminAccountStatusSchema = z.enum(ADMIN_ACCOUNT_STATUSES).openapi("
 
 export const adminRoleCodeSchema = z.enum(ADMIN_ROLE_CODES).openapi("AdminRoleCode")
 
+export const adminAuditActionSchema = z.enum(ADMIN_AUDIT_ACTIONS).openapi("AdminAuditAction")
+
 export const adminLoginRequestSchema = z
   .object({
     email: z.string().email(),
@@ -1159,6 +1166,159 @@ export const adminSessionResponseDataSchema = z
     status: adminAccountStatusSchema,
   })
   .openapi("AdminSessionResponseData")
+
+export const adminSettingsAccountListStatusSchema = z
+  .enum(ADMIN_SETTINGS_ACCOUNT_LIST_STATUSES)
+  .openapi("AdminSettingsAccountListStatus")
+
+export const adminSettingsAccountStatusActionSchema = z
+  .enum(ADMIN_SETTINGS_ACCOUNT_STATUS_ACTIONS)
+  .openapi("AdminSettingsAccountStatusAction")
+
+export const adminSettingsAuditTargetTypeSchema = z
+  .enum(ADMIN_SETTINGS_AUDIT_TARGET_TYPES)
+  .openapi("AdminSettingsAuditTargetType")
+
+export const adminSettingsCurrentAdminSchema = z
+  .object({
+    adminAccountId: z.string().uuid(),
+    userId: z.string().uuid(),
+    displayName: nonEmptyStringSchema,
+    avatarUrl: z.string().nullable(),
+    email: z.string().nullable(),
+    status: adminAccountStatusSchema,
+    roles: z.array(adminRoleCodeSchema),
+    lastLoginAt: z.string().nullable(),
+  })
+  .openapi("AdminSettingsCurrentAdmin")
+
+export const adminSettingsStatsSchema = z
+  .object({
+    totalAdminAccounts: z.number().int().nonnegative(),
+    activeAdminAccounts: z.number().int().nonnegative(),
+    inactiveAdminAccounts: z.number().int().nonnegative(),
+    suspendedAdminAccounts: z.number().int().nonnegative(),
+  })
+  .openapi("AdminSettingsStats")
+
+export const adminSettingsRoleDefinitionSchema = z
+  .object({
+    code: adminRoleCodeSchema,
+    name: z.string(),
+    description: z.string().nullable(),
+    accountCount: z.number().int().nonnegative(),
+  })
+  .openapi("AdminSettingsRoleDefinition")
+
+export const adminSettingsSystemInfoSchema = z
+  .object({
+    appName: z.string(),
+    appVersion: z.string(),
+    environment: z.string(),
+    nextVersion: z.string().nullable(),
+    reactVersion: z.string().nullable(),
+    adminAuthMode: z.string(),
+    database: z.string(),
+    storage: z.string(),
+    auth: z.string(),
+  })
+  .openapi("AdminSettingsSystemInfo")
+
+export const adminSettingsOverviewResponseDataSchema = z
+  .object({
+    currentAdmin: adminSettingsCurrentAdminSchema,
+    stats: adminSettingsStatsSchema.extend({
+      auditLogCountLast7Days: z.number().int().nonnegative(),
+    }),
+    roleDefinitions: z.array(adminSettingsRoleDefinitionSchema),
+    systemInfo: adminSettingsSystemInfoSchema,
+  })
+  .openapi("AdminSettingsOverviewResponseData")
+
+export const adminSettingsAdminAccountListItemSchema = z
+  .object({
+    adminAccountId: z.string().uuid(),
+    userId: z.string().uuid(),
+    displayName: z.string(),
+    avatarUrl: z.string().nullable(),
+    email: z.string().nullable(),
+    roles: z.array(adminRoleCodeSchema),
+    status: adminAccountStatusSchema,
+    lastLoginAt: z.string().nullable(),
+    createdAt: z.string(),
+  })
+  .openapi("AdminSettingsAdminAccountListItem")
+
+export const adminSettingsAdminAccountListResponseDataSchema = z
+  .object({
+    items: z.array(adminSettingsAdminAccountListItemSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().min(1),
+    limit: z.number().int().min(1).max(100),
+    stats: adminSettingsStatsSchema,
+  })
+  .openapi("AdminSettingsAdminAccountListResponseData")
+
+export const adminSettingsAdminAccountListQuerySchema = z
+  .object({
+    keyword: z.string().optional(),
+    status: adminSettingsAccountListStatusSchema.optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+  })
+  .openapi("AdminSettingsAdminAccountListQuery")
+
+export const adminSettingsAdminAccountIdParamsSchema = z
+  .object({
+    adminAccountId: z.string().uuid(),
+  })
+  .openapi("AdminSettingsAdminAccountIdParams")
+
+export const adminUpdateAdminAccountStatusRequestSchema = z
+  .object({
+    action: adminSettingsAccountStatusActionSchema,
+    reason: z.string().nullable().optional(),
+  })
+  .openapi("AdminUpdateAdminAccountStatusRequest")
+
+export const adminUpdateAdminAccountStatusResponseDataSchema = z
+  .object({
+    adminAccountId: z.string().uuid(),
+    status: adminAccountStatusSchema,
+  })
+  .openapi("AdminUpdateAdminAccountStatusResponseData")
+
+export const adminSettingsAuditLogListItemSchema = z
+  .object({
+    id: z.string().uuid(),
+    action: adminAuditActionSchema,
+    targetType: z.enum(["admin_account", "user_profile", "user_learning_path"]),
+    targetId: z.string().nullable(),
+    actorAdminAccountId: z.string(),
+    actorDisplayName: z.string(),
+    reason: z.string().nullable(),
+    createdAt: z.string(),
+  })
+  .openapi("AdminSettingsAuditLogListItem")
+
+export const adminSettingsAuditLogListResponseDataSchema = z
+  .object({
+    items: z.array(adminSettingsAuditLogListItemSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().min(1),
+    limit: z.number().int().min(1).max(100),
+  })
+  .openapi("AdminSettingsAuditLogListResponseData")
+
+export const adminSettingsAuditLogListQuerySchema = z
+  .object({
+    keyword: z.string().optional(),
+    action: z.string().optional(),
+    targetType: adminSettingsAuditTargetTypeSchema.optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+  })
+  .openapi("AdminSettingsAuditLogListQuery")
 
 // ============================================
 // 管理员看板 API Schemas

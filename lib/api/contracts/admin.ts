@@ -47,6 +47,8 @@ export const ADMIN_AUDIT_ACTIONS = [
   "login",
   "logout",
   "password_change",
+  "admin_account_activate",
+  "admin_account_deactivate",
   "feedback_reply",
   "feedback_status_update",
   "user_note_create",

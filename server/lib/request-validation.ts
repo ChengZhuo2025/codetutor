@@ -25,6 +25,15 @@ import {
   type AdminLearningPathStatusAction,
   type AdminLearningUpdatedWithin,
 } from "@/lib/api/contracts/admin-learning"
+import {
+  ADMIN_SETTINGS_ACCOUNT_LIST_STATUSES,
+  ADMIN_SETTINGS_ACCOUNT_STATUS_ACTIONS,
+  ADMIN_SETTINGS_AUDIT_TARGET_TYPES,
+  type AdminSettingsAccountListStatus,
+  type AdminSettingsAccountStatusAction,
+  type AdminSettingsAuditTargetType,
+  type AdminUpdateAdminAccountStatusRequest,
+} from "@/lib/api/contracts/admin-settings"
 import { normalizeUuid } from "@/server/lib/identifiers"
 import type { HistoryFilter } from "@/features/history/types"
 import type { Level } from "@/features/onboarding/types"
@@ -563,6 +572,77 @@ export function parseAdminFeedbackListQuery(searchParams: URLSearchParams) {
 const ADMIN_USER_ACCOUNT_STATUSES = ["active", "deleted", "all"] as const
 const ADMIN_LEARNING_LEVELS = ["beginner", "intermediate", "advanced"] as const
 
+export function parseAdminSettingsAccountListQuery(searchParams: URLSearchParams) {
+  const rawLimit = searchParams.get("limit")
+  const rawPage = searchParams.get("page")
+  const rawStatus = searchParams.get("status")
+
+  const limit = rawLimit ? Number.parseInt(rawLimit, 10) : 20
+  const page = rawPage ? Number.parseInt(rawPage, 10) : 1
+
+  if (!Number.isFinite(limit) || limit < 1 || limit > 100) {
+    return fail("VALIDATION_FAILED", "limit 必须在 1 到 100 之间。")
+  }
+
+  if (!Number.isFinite(page) || page < 1) {
+    return fail("VALIDATION_FAILED", "page 必须是大于等于 1 的整数。")
+  }
+
+  let status: AdminSettingsAccountListStatus = "all"
+  if (rawStatus) {
+    if (!ADMIN_SETTINGS_ACCOUNT_LIST_STATUSES.includes(rawStatus as AdminSettingsAccountListStatus)) {
+      return fail("VALIDATION_FAILED", "status 参数不合法。")
+    }
+    status = rawStatus as AdminSettingsAccountListStatus
+  }
+
+  return ok({
+    keyword: searchParams.get("keyword")?.trim() || undefined,
+    status,
+    limit,
+    page,
+  })
+}
+
+export function parseAdminSettingsAuditListQuery(searchParams: URLSearchParams) {
+  const rawLimit = searchParams.get("limit")
+  const rawPage = searchParams.get("page")
+  const rawAction = searchParams.get("action")
+  const rawTargetType = searchParams.get("targetType")
+
+  const limit = rawLimit ? Number.parseInt(rawLimit, 10) : 20
+  const page = rawPage ? Number.parseInt(rawPage, 10) : 1
+
+  if (!Number.isFinite(limit) || limit < 1 || limit > 100) {
+    return fail("VALIDATION_FAILED", "limit 必须在 1 到 100 之间。")
+  }
+
+  if (!Number.isFinite(page) || page < 1) {
+    return fail("VALIDATION_FAILED", "page 必须是大于等于 1 的整数。")
+  }
+
+  const action = rawAction?.trim() || "all"
+  if (action !== "all" && !action.match(/^[a-z_]+$/)) {
+    return fail("VALIDATION_FAILED", "action 参数不合法。")
+  }
+
+  let targetType: AdminSettingsAuditTargetType = "all"
+  if (rawTargetType) {
+    if (!ADMIN_SETTINGS_AUDIT_TARGET_TYPES.includes(rawTargetType as AdminSettingsAuditTargetType)) {
+      return fail("VALIDATION_FAILED", "targetType 参数不合法。")
+    }
+    targetType = rawTargetType as AdminSettingsAuditTargetType
+  }
+
+  return ok({
+    keyword: searchParams.get("keyword")?.trim() || undefined,
+    action,
+    targetType,
+    limit,
+    page,
+  })
+}
+
 export function parseAdminUserListQuery(searchParams: URLSearchParams) {
   const rawLimit = searchParams.get("limit")
   const rawPage = searchParams.get("page")
@@ -806,6 +886,47 @@ export function parseAdminLearningPathStatusBody(
 
   return ok({
     action: shape.data.action as AdminLearningPathStatusAction,
+    reason,
+  })
+}
+
+const adminSettingsAccountStatusShapeSchema = z
+  .object({
+    action: z.string(),
+    reason: z.unknown().optional(),
+  })
+  .strict()
+
+export function parseAdminSettingsAccountStatusBody(
+  input: unknown,
+): ValidationResult<AdminUpdateAdminAccountStatusRequest> {
+  const shape = adminSettingsAccountStatusShapeSchema.safeParse(input)
+
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "管理员账号状态更新请求体不合法。")
+  }
+
+  if (!ADMIN_SETTINGS_ACCOUNT_STATUS_ACTIONS.includes(shape.data.action as AdminSettingsAccountStatusAction)) {
+    return fail("VALIDATION_FAILED", "action 参数不合法。")
+  }
+
+  let reason: string | null | undefined
+  if (shape.data.reason !== undefined) {
+    if (shape.data.reason === null) {
+      reason = null
+    } else if (typeof shape.data.reason === "string") {
+      const normalized = shape.data.reason.trim()
+      if (normalized.length > 500) {
+        return fail("VALIDATION_FAILED", "reason 最多 500 个字符。")
+      }
+      reason = normalized.length > 0 ? normalized : null
+    } else {
+      return fail("VALIDATION_FAILED", "reason 必须是字符串或 null。")
+    }
+  }
+
+  return ok({
+    action: shape.data.action as AdminSettingsAccountStatusAction,
     reason,
   })
 }

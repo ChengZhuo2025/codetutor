@@ -62,7 +62,7 @@ export const menuItems: MenuItem[] = [
     label: "系统设置",
     href: "/admin/settings",
     icon: Settings,
-    active: false,
+    active: true,
   },
 ]
 

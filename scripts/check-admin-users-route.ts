@@ -176,3 +176,28 @@ test("admin user soft-delete returns 200", async () => {
   )
   assert.equal(res.status, 200)
 })
+
+test("admin user soft-delete returns 409 for admin-linked user", async () => {
+  const handler = createAdminUserSoftDeletePostHandler({
+    getRequestAdmin: async () => okAdmin,
+    softDeleteAdminUser: async () => {
+      const error = new Error("管理员关联的用户档案不允许软删除。")
+      error.name = "CONFLICT"
+      throw error
+    },
+  })
+  const res = await handler(
+    new Request("http://localhost/api/admin/users/550e8400-e29b-41d4-a716-446655440001/soft-delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: "spam" }),
+    }),
+    { params: Promise.resolve({ userId: "550e8400-e29b-41d4-a716-446655440001" }) },
+  )
+  assert.equal(res.status, 409)
+  assert.deepEqual(await res.json(), {
+    code: "CONFLICT",
+    message: "管理员关联的用户档案不允许软删除。",
+    data: null,
+  })
+})

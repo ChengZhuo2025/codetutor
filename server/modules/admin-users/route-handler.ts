@@ -243,7 +243,10 @@ export function createAdminUserSoftDeletePostHandler(dependencies: {
       }
 
       return jsonSuccess(data, "用户已软删除")
-    } catch {
+    } catch (error) {
+      if (error instanceof Error && error.name === "CONFLICT") {
+        return jsonError("CONFLICT", error.message, 409)
+      }
       return jsonError("INTERNAL_ERROR", "软删除失败", 500)
     }
   }

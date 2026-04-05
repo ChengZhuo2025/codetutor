@@ -59,6 +59,7 @@ features/              # 前端主工作目录，按业务域组织
   ├── admin-dashboard/ # 管理后台看板
   ├── admin-users/    # 管理后台用户运营（列表、详情、导出、资料编辑）
   ├── admin-learning/ # 管理后台学习运营（路径列表、详情、状态操作）
+  ├── admin-settings/ # 管理后台系统设置（资料、安全、管理员账号、审计）
   └── admin-feedback/ # 管理后台反馈工单
 hooks/                 # 自定义 React Hooks
 lib/                   # 工具函数、API 契约与 mock client
@@ -79,6 +80,7 @@ server/                # 服务端逻辑
     ├── admin-dashboard/ # 管理员看板域
     ├── admin-users/  # 管理员用户运营域
     ├── admin-learning/ # 管理员学习运营域
+    ├── admin-settings/ # 管理员系统设置域
     └── api-docs/     # OpenAPI 文档注册
 supabase/              # 数据库迁移与相关 SQL
 providers/            # 全局 Provider 入口
@@ -102,6 +104,7 @@ types/                # 跨 feature 共用的类型定义
 | `/admin/users/[userId]` | 用户详情 | `features/admin-users/components/user-detail-page.tsx` |
 | `/admin/learning` | 学习运营列表 | `features/admin-learning/components/learning-path-list-page.tsx` |
 | `/admin/learning/[pathId]` | 学习路径详情 | `features/admin-learning/components/learning-path-detail-page.tsx` |
+| `/admin/settings` | 系统设置 | `features/admin-settings/components/system-settings-page.tsx` |
 | `/admin/feedback` | 反馈工单列表 | `features/admin-feedback/components/feedback-list.tsx` |
 | `/admin/feedback/[id]` | 反馈工单详情 | `features/admin-feedback/components/feedback-detail.tsx` |
 
@@ -152,10 +155,11 @@ types/                # 跨 feature 共用的类型定义
 - ✅ 管理后台 Phase 1（管理员认证、看板、反馈工单）
 - ✅ 管理后台用户运营（`/admin/users`、`/admin/users/[userId]`：列表筛选、CSV 导出、详情聚合、受控资料 PATCH、软删除/恢复；`server/modules/admin-users`、`OpenAPI` 分组 `admin-users`）
 - ✅ 管理后台学习运营（`/admin/learning`、`/admin/learning/[pathId]`：学习路径列表筛选、CSV 导出、详情聚合、最近会话回看、`reactivate/archive` 状态操作；`server/modules/admin-learning`、`OpenAPI` 分组 `admin-learning`）
+- ✅ 管理后台系统设置（`/admin/settings`：我的资料、安全设置、管理员账号列表与启停、角色权限说明、操作审计、系统信息；`server/modules/admin-settings`、`OpenAPI` 分组 `admin-settings`）
 
 **进行中/待完成：**
 - ⏳ analytics 事件入库
-- ⏳ 管理员后台 Phase 2 余下能力（AI 运营、细粒度权限；用户域后续如内部备注、人工积分调整等以设计文档与代码为准）
+- ⏳ 管理员后台 Phase 2 余下能力（AI 运营、细粒度权限深化；用户域后续如内部备注、人工积分调整等以设计文档与代码为准）
 - ⏳ AI 编排第二阶段（更细粒度 agent 控制、prompt 版本化管理）
 - ⏳ 通知设置落库
 
@@ -234,7 +238,7 @@ types/                # 跨 feature 共用的类型定义
 - `2026-03-23-ai-coding-tutor-ui-visual-design-spec.md` - UI 视觉设计
 - `2026-03-23-ai-coding-tutor-adr-records.md` - 架构决策记录
 - `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` - AI 编排设计（第一阶段已完成）
-- `2026-03-31-ai-coding-tutor-admin-console-design.md` - 管理后台设计（Phase 1 + 用户运营已落地；余下模块见文档）
+- `2026-03-31-ai-coding-tutor-admin-console-design.md` - 管理后台设计（Phase 1 + 用户运营 + 学习运营 + 系统设置已落地；余下模块见文档）
 - `2026-03-31-admin-console-phase1-design.md` - 管理后台 Phase 1 详细设计
 - `2026-03-31-admin-console-phase1-implementation.md` - 管理后台 Phase 1 实施计划
 

@@ -9,12 +9,12 @@
 ## 30 秒状态速览
 
 - 当前项目已不是纯原型仓库，而是“前端页面 + `app/api` + `server/modules` + Supabase migrations”的同仓 MVP。
-- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息、自学模式白名单教程链接生成学习计划草稿（`plan-from-material` / `plan-drafts` confirm·regenerate）、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、管理后台 Phase 1（管理员登录/退出、总览看板、反馈工单）、**用户运营**（`/admin/users` 列表与筛选、`/admin/users/[userId]` 详情、CSV 导出、受控资料编辑、软删除/恢复、关联反馈工单）以及 **学习运营**（`/admin/learning` 列表与筛选、`/admin/learning/[pathId]` 详情、CSV 导出、最近会话摘要、`reactivate/archive` 状态操作）。
+- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息、自学模式白名单教程链接生成学习计划草稿（`plan-from-material` / `plan-drafts` confirm·regenerate）、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、管理后台 Phase 1（管理员登录/退出、总览看板、反馈工单）、**用户运营**（`/admin/users` 列表与筛选、`/admin/users/[userId]` 详情、CSV 导出、受控资料编辑、软删除/恢复、关联反馈工单）、**学习运营**（`/admin/learning` 列表与筛选、`/admin/learning/[pathId]` 详情、CSV 导出、最近会话摘要、`reactivate/archive` 状态操作）以及 **系统设置**（`/admin/settings`：资料、安全、管理员账号列表与启停、角色权限说明、操作审计、系统信息）。
 - 当前代码技术栈以 `package.json` 为准：`Next.js 16.2.0`、`React 19.2.4`、`TypeScript 5.7.3`、`Tailwind CSS 4.2`、`shadcn/ui`、`Zod + zod-to-openapi + Swagger UI`；当前本地验证环境为 `Node.js 22.18.0`。
 - 已补运行时接口文档：`/api/docs/openapi` 输出 OpenAPI 3.1 JSON，`/api-docs` 提供 Swagger UI 查看与调试。
 - `app/api` 当前已大量收敛为薄入口层，请求校验、统一响应、错误映射与部分路由编排已下沉到 `server/lib/*` 与各域 `route-handler.ts`。
 - 已落地数据侧：远程 Supabase、`001` 到 `018` 迁移（含 `018` 材料摄取与计划草稿表）、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表、AI 会话 / provider / agent / skill / invocation 表，以及管理员账号/角色/审计日志表。
-- 仍待实现：事件埋点写入、通知设置落库、管理员后台 Phase 2 余下能力（AI 运营深水区、细粒度权限与更多审计、用户域更深写能力如内部备注 / 人工积分调整）、订阅支付域。（**用户运营**与**学习运营**已在代码中落地，不再归入「待实现」。）
+- 仍待实现：事件埋点写入、通知设置落库、管理员后台 Phase 2 余下能力（AI 运营深水区、细粒度权限深化、用户域更深写能力如内部备注 / 人工积分调整）、订阅支付域。（**用户运营**、**学习运营**与**系统设置**已在代码中落地，不再归入「待实现」。）
 - 若只想最快了解真实现状，优先读：
   1. `docs/plans/README.md`
   2. `docs/plans/2026-03-23-ai-coding-tutor-frontend-engineering-guide.md`
@@ -75,10 +75,10 @@
 ## 当前项目事实摘要
 
 - 当前仓库已经不是“纯前端 demo”，而是一个包含前端页面、`app/api` BFF、`server/modules` 服务层、Supabase 迁移与远程数据库接入脚本的同仓项目。
-- 当前真实用户端页面为 7 个：`/`、`/login`、`/onboarding`、`/learn`、`/map`、`/achievements`、`/history`；管理端已落地页面包括：`/admin/login`、`/admin`（总览）、`/admin/users`（用户列表）、`/admin/users/[userId]`（用户详情）、`/admin/learning`（学习路径列表）、`/admin/learning/[pathId]`（学习路径详情）、`/admin/feedback`、`/admin/feedback/[id]`；另有内部开发用接口文档页 `/api-docs`。
+- 当前真实用户端页面为 7 个：`/`、`/login`、`/onboarding`、`/learn`、`/map`、`/achievements`、`/history`；管理端已落地页面包括：`/admin/login`、`/admin`（总览）、`/admin/users`（用户列表）、`/admin/users/[userId]`（用户详情）、`/admin/learning`（学习路径列表）、`/admin/learning/[pathId]`（学习路径详情）、`/admin/settings`、`/admin/feedback`、`/admin/feedback/[id]`；另有内部开发用接口文档页 `/api-docs`。
 - 当前已落地的真实接口包括：认证登录、认证会话摘要、用户档案、头像上传、onboarding、当前学习会话、学习消息发送、学习历史消息分页、任务完成与任务状态更新、自学模式教程链接计划生成与草稿确认/重生成、每日打卡、地图/进度、成就汇总、历史学习计划、用户反馈与管理员反馈接口。
 - 当前运行时 API 文档已接入：`GET /api/docs/openapi` 返回 OpenAPI 3.1 文档，`/api-docs` 使用 Swagger UI 按标签展示接口，并补充常见响应示例与调试说明。
-- `/api-docs` 当前纳入管理员路由守卫：未登录会跳转到 `/admin/login?next=/api-docs`，登录后回跳；运行时文档已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning` 等管理端点分组。
+- `/api-docs` 当前纳入管理员路由守卫：未登录会跳转到 `/admin/login?next=/api-docs`，登录后回跳；运行时文档已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning`、`admin-settings` 等管理端点分组。
 - 当前接口文档不是“扫描整个 `app/api` 目录零维护生成”；新增或修改后端接口后，仍需同步更新 `server/modules/api-docs/openapi.ts` 与 `server/modules/api-docs/schemas.ts` 中的注册与 schema。
 - 当前 `app/api` 路由文件已不再普遍手写请求解析；请求体/查询参数校验、统一成功/失败响应、常见 `NOT_FOUND` / `BAD_REQUEST` 文案与错误映射，正在集中收敛到 `server/lib/request-validation.ts`、`server/lib/route-response.ts`、`server/lib/route-error.ts`、`server/lib/route-error-presets.ts` 以及各域 `route-handler.ts`。
 - 当前仓库顶层真实目录除了页面和服务端主目录外，还包含 `lib/auth`、`lib/learning`、`lib/mocks`、`server/services`、`server/utils`、`supabase/seeds` 等辅助或预留目录；目录阅读应以当前代码树为准，不再按最早设计稿假定不存在的层级。
@@ -89,7 +89,7 @@
 - 用户端与管理端登录态已完成分流：用户端使用 `app-user-session`，管理端使用 `admin-access-token` / `admin-refresh-token`，并由 `proxy.ts` 统一做入口路由守卫。
 - 工作台左侧栏数据缓存已收敛到 `app/(workspace)/layout.tsx` 的 `WorkspaceSidebarDataProvider`，在 `/learn`、`/map`、`/achievements`、`/history` 间切换时不再重复请求并产生加载跳动。
 - 当前学习计划状态机已区分 `active`、`interrupted`、`completed`、`abandoned`、`archived`；其中 `interrupted` 为连续 7 天无学习行为后的系统自动中断，`abandoned` 为用户主动放弃。
-- 当前仍未落地的能力主要包括：事件埋点写接口、管理员后台 Phase 2 **余下**部分（AI 运营、细粒度权限控制、内部备注 / 人工积分调整等更深用户运营能力；**用户运营与学习运营已交付**）、通知设置落库、订阅支付域，以及 AI 域的更深层运营化与可视化配置能力。
+- 当前仍未落地的能力主要包括：事件埋点写接口、管理员后台 Phase 2 **余下**部分（AI 运营、细粒度权限控制深化、内部备注 / 人工积分调整等更深用户运营能力；**用户运营、学习运营与系统设置已交付**）、通知设置落库、订阅支付域，以及 AI 域的更深层运营化与可视化配置能力。
 - 当前产品主线围绕 `user_learning_paths` 展开，`/learn`、`/map`、`/history` 共用这条主线。
 - 各文档如果同时包含“已实现”与“后续规划”两部分，应以文档中的“当前实现快照”或“已落地状态”说明为准；若与代码冲突，以代码和迁移为准，再回写文档。
 
@@ -102,7 +102,7 @@
 - AI 第二阶段能力：按 `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 的 `15.2` 落地更细粒度的 agent 控制，包括按不同工具/路径补 agent seed、按不同 `interactionType` 补专用 agent、补 prompt 版本化管理。
 - 事件埋点写入：补齐 `POST /api/analytics/event` 与 `event_logs`，为激活、留存、转化和卡点分析提供真实数据。
 - 通知设置落库：把当前静态通知设置升级为真实用户偏好数据，避免设置只停留在前端展示层。
-- 管理员后台后续阶段：在 Phase 1、用户运营与学习运营已交付的基础上，继续补齐 AI 运营、细粒度权限控制，以及用户域的后续能力（如内部备注、人工积分调整等，以代码与 OpenAPI 为准）。
+- 管理员后台后续阶段：在 Phase 1、用户运营、学习运营与系统设置已交付的基础上，继续补齐 AI 运营、细粒度权限控制深化，以及用户域的后续能力（如内部备注、人工积分调整等，以代码与 OpenAPI 为准）。
 
 ### P2：商业化与基础设施增强
 
@@ -113,7 +113,7 @@
 
 ### 当前建议开发顺序
 
-1. 先补 `analytics + 通知设置落库 + 管理员后台 Phase 2 余下能力`（用户运营与学习运营已交付；重点转为 AI 运营、权限与审计深化，以及更深用户运营写能力），把运营与运维能力接上。
+1. 先补 `analytics + 通知设置落库 + 管理员后台 Phase 2 余下能力`（用户运营、学习运营与系统设置已交付；重点转为 AI 运营、权限与审计深化，以及更深用户运营写能力），把运营与运维能力接上。
 2. 再继续做学习消息链路的运营化增强，优先落 `15.2 第二阶段`，例如不同工具/路径/交互类型的 agent 拆分与 prompt 版本化管理。
    当前 AI 相关权威设计以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准。
    其中第一阶段已完成；文档里的 `15.2 第二阶段`、`15.3 第三阶段` 目前都还没有开始。

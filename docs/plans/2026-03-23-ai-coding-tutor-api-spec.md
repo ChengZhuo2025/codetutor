@@ -314,6 +314,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 管理后台总览 | `/admin` | `GET /api/admin/dashboard/overview` | 当前已落地管理员会话守卫、总览看板与资料区 |
 | 用户运营 | `/admin/users`、`/admin/users/[userId]` | `GET /api/admin/users`、`GET /api/admin/users/export`、`GET /api/admin/users/{userId}`、`PATCH /api/admin/users/{userId}`、`POST /api/admin/users/{userId}/soft-delete`、`POST /api/admin/users/{userId}/restore` | 当前已落地列表筛选、导出、详情、资料维护、软删恢复与工单联动 |
 | 学习运营 | `/admin/learning`、`/admin/learning/[pathId]` | `GET /api/admin/learning-paths`、`GET /api/admin/learning-paths/export`、`GET /api/admin/learning-paths/{pathId}`、`POST /api/admin/learning-paths/{pathId}/status` | 当前已落地学习路径实例列表、详情、最近会话摘要与 `reactivate/archive` 状态操作 |
+| 系统设置 | `/admin/settings` | `GET /api/admin/settings/overview`、`GET /api/admin/settings/admin-accounts`、`POST /api/admin/settings/admin-accounts/{adminAccountId}/status`、`GET /api/admin/settings/audit-logs` | 当前已落地资料/安全入口复用、管理员账号列表与启停、角色权限说明、操作审计与系统信息 |
 | 管理端反馈 | `/admin/feedback`、`/admin/feedback/[id]` | `GET /api/admin/feedback`、`GET /api/admin/feedback/{id}`、`POST /api/admin/feedback/{id}/reply`、`POST /api/admin/feedback/{id}/status` | 当前已落地列表筛选、详情回复与状态流转 |
 
 以下内容继续保留前端本地静态配置，不进入 MVP 首期后端：
@@ -1589,6 +1590,23 @@ SSE 事件补充：
 | `GET /api/admin/profile/me` | GET | 获取当前管理员资料（复用用户资料读模型） |
 | `PATCH /api/admin/profile/me` | PATCH | 更新当前管理员资料（昵称/邮箱/头像等） |
 | `POST /api/admin/profile/avatar` | POST | 上传管理员头像 |
+
+### 11.1A 系统设置（管理员治理设置）
+
+以下接口均需管理员会话；`adminAccountId` 对应 `admin_accounts.id`。
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `GET /api/admin/settings/overview` | GET | 获取系统设置页概览：当前管理员摘要、账号统计、角色定义、系统信息 |
+| `GET /api/admin/settings/admin-accounts` | GET | 分页管理员账号列表；支持 `keyword`、`status`、`page`、`limit` |
+| `POST /api/admin/settings/admin-accounts/{adminAccountId}/status` | POST | 受控启用 / 停用管理员账号；当前仅支持 `activate`、`deactivate` |
+| `GET /api/admin/settings/audit-logs` | GET | 分页读取操作审计列表；支持 `keyword`、`action`、`targetType`、`page`、`limit` |
+
+当前约束：
+
+- 管理员账号状态调整首版仅允许 `super_admin` 执行。
+- 不允许停用当前登录账号。
+- 角色权限在系统设置中当前为只读说明，不支持后台自定义或在线改角色。
 
 ### 11.2 用户运营（终端用户）
 
