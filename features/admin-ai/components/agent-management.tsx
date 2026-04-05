@@ -113,9 +113,9 @@ export function AgentManagement() {
         ) : (
           <>
             <ListFilterCard>
-              <div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto]">
-                <div className="relative min-w-0">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <div className="flex flex-col gap-3 md:flex-row">
+                <div className="relative flex-1 min-w-32 max-w-md">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={keyword}
                     onChange={(event) => setKeyword(event.target.value)}
@@ -125,7 +125,7 @@ export function AgentManagement() {
                       }
                     }}
                     placeholder="关键词：code / 名称 / provider / model"
-                    className="h-9 pl-9"
+                    className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
                 <select value={scenarioType} onChange={(event) => {
@@ -167,11 +167,11 @@ export function AgentManagement() {
                       <tr className="border-b border-border">
                         <th className="w-[24%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Agent</th>
                         <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">场景</th>
-                        <th className="w-[18%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">默认 Provider / Model</th>
-                        <th className="w-[14%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">规则 / 技能</th>
+                        <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">默认 Provider / Model</th>
+                        <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">规则 / 技能</th>
                         <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">流式 / 状态</th>
                         <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">最近更新</th>
-                        <th className="w-[12%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
+                        <th className="w-[16%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">

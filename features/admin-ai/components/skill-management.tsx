@@ -129,8 +129,8 @@ export function SkillManagement() {
             </div>
             <ListFilterCard>
               <div className="flex flex-col gap-3 md:flex-row">
-                <div className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <div className="relative flex-1 min-w-32 max-w-md">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={keyword}
                     onChange={(event) => setKeyword(event.target.value)}
@@ -140,7 +140,7 @@ export function SkillManagement() {
                       }
                     }}
                     placeholder="关键词：code / name / source / trust"
-                    className="h-9 pl-9"
+                    className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
                 <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applySkillSearch}>
@@ -160,12 +160,12 @@ export function SkillManagement() {
                   <table className="w-full min-w-[1200px] table-fixed">
                     <thead className="bg-muted/40">
                       <tr className="border-b border-border">
-                        <th className="w-[22%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Skill</th>
+                        <th className="w-[28%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Skill</th>
                         <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">来源</th>
-                        <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">信任级别</th>
+                        <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">信任级别</th>
                         <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">关联 Agent</th>
                         <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
-                        <th className="w-[34%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">资源路径</th>
+                        <th className="w-[38%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">资源路径</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">

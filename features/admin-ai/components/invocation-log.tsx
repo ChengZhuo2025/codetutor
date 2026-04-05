@@ -99,9 +99,9 @@ export function InvocationLog() {
         ) : (
           <>
             <ListFilterCard>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                <div className="relative md:col-span-2 xl:col-span-3">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <div className="flex flex-col gap-3 md:flex-row">
+                <div className="relative flex-1 min-w-32 max-w-md">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={keyword}
                     onChange={(event) => setKeyword(event.target.value)}
@@ -111,7 +111,7 @@ export function InvocationLog() {
                       }
                     }}
                     placeholder="关键词：invocation / session / user / provider / model / agent / errorCode"
-                    className="h-9 pl-9"
+                    className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
                 <select value={status} onChange={(event) => {
@@ -176,17 +176,17 @@ export function InvocationLog() {
                 </div>
               ) : data?.items.length ? (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[1200px] table-fixed">
+                  <table className="w-full min-w-[1100px] table-fixed">
                     <thead className="bg-muted/40">
                       <tr className="border-b border-border">
-                        <th className="w-[22%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">调用</th>
-                        <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
-                        <th className="w-[18%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Agent</th>
-                        <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Provider / Model</th>
-                        <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Tokens</th>
-                        <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">耗时 / 结果</th>
-                        <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">时间</th>
-                        <th className="w-[12%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
+                        <th className="w-[24%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">调用</th>
+                        <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
+                        <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Agent</th>
+                        <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Provider / Model</th>
+                        <th className="w-[9%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Tokens</th>
+                        <th className="w-[9%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">耗时 / 结果</th>
+                        <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">时间</th>
+                        <th className="w-[8%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">

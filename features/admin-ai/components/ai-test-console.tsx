@@ -280,8 +280,11 @@ export function AITestConsole() {
                           ))}
                         </select>
                       </label>
-                      <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground">
-                        <input type="checkbox" checked={testForm.stream} onChange={(event) => setTestForm((prev) => ({ ...prev, stream: event.target.checked }))} />
+                      <label className="space-y-1">
+                        <span className="text-sm text-muted-foreground">流式调用</span>
+                        <input type="checkbox"
+                          checked={testForm.stream} onChange={(event) => setTestForm((prev) => ({ ...prev, stream: event.target.checked }))}
+                          className="flex flex-inline gap-2 rounded-md border border-border bg-background px-3 py-3 text-sm text-foreground" />
                         流式调用
                       </label>
                     </div>
