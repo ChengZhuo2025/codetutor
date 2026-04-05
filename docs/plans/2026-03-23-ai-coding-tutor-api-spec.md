@@ -161,6 +161,12 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `GET /api/admin/learning-paths/export`
 - `GET /api/admin/learning-paths/{pathId}`
 - `POST /api/admin/learning-paths/{pathId}/status`
+- `POST /api/analytics/event`
+- `GET /api/notifications/settings`
+- `PATCH /api/notifications/settings`
+- `GET /api/notifications/in-app`
+- `POST /api/notifications/{id}/read`
+- `POST /api/notifications/{id}/dismiss`
 - `POST /api/learning/plan-from-material`
 - `POST /api/learning/plan-drafts/{id}/confirm`
 - `POST /api/learning/plan-drafts/{id}/regenerate`
@@ -178,7 +184,6 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - `POST /api/profile/init`
 - `POST /api/learning/stuck-help`
-- `POST /api/analytics/event`
 
 除明确标注“规划中”的接口外，本文件中描述的现状应以当前代码为准。
 
@@ -291,11 +296,16 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `GET /api/admin/learning-paths/{pathId}`
 - `POST /api/admin/learning-paths/{pathId}/status`
 
-## 4.7 数据事件
+## 4.7 数据事件与通知
 
-规划中：
+当前已实现：
 
 - `POST /api/analytics/event`
+- `GET /api/notifications/settings`
+- `PATCH /api/notifications/settings`
+- `GET /api/notifications/in-app`
+- `POST /api/notifications/{id}/read`
+- `POST /api/notifications/{id}/dismiss`
 
 ## 4.8 当前前端页面与接口映射
 
@@ -310,6 +320,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
 | 成就页 | `/achievements` | `GET /api/achievement/summary` | 当前已打通成长总览 read model，并支持真实每日打卡 |
 | 历史页 | `/history` | `GET /api/history/recent`、`GET /api/history/{id}`、`POST /api/history/{id}/status` | 当前前端实际需要的是“历史学习计划列表 + 详情复盘 + 状态操作”，而不是“最近对话列表” |
+| 通知设置 / 工作台提醒 | 设置菜单、`/learn`、`/map`、`/achievements`、`/history` 左侧栏 | `GET/PATCH /api/notifications/settings`、`GET /api/notifications/in-app`、`POST /api/notifications/{id}/read`、`POST /api/notifications/{id}/dismiss` | 当前已落地真实通知偏好、站内提醒记录、侧边栏提醒卡与关键时机 toast；邮件/微信仅保存偏好，暂未接真实下发通道 |
 | 反馈弹窗 | 设置菜单 / `/history` 侧栏 | `POST /api/feedback`、`GET /api/feedback/mine`、`GET /api/feedback/mine/{id}` | 用户可提交反馈并查看管理员回复 |
 | 管理后台总览 | `/admin` | `GET /api/admin/dashboard/overview` | 当前已落地管理员会话守卫、总览看板与资料区 |
 | 用户运营 | `/admin/users`、`/admin/users/[userId]` | `GET /api/admin/users`、`GET /api/admin/users/export`、`GET /api/admin/users/{userId}`、`PATCH /api/admin/users/{userId}`、`POST /api/admin/users/{userId}/soft-delete`、`POST /api/admin/users/{userId}/restore` | 当前已落地列表筛选、导出、详情、资料维护、软删恢复与工单联动 |
@@ -1538,7 +1549,7 @@ SSE 事件补充：
 
 ## 10. 数据事件接口
 
-## 10.1 规划中：`POST /api/analytics/event`
+## 10.1 `POST /api/analytics/event`
 
 用途：
 
@@ -1560,8 +1571,73 @@ SSE 事件补充：
 
 业务规则：
 
-- 服务端应补齐 `user_id`
-- 非关键事件可异步入库
+- 服务端会在登录场景自动补齐 `user_id`；未登录场景允许匿名写入
+- 当前仅接受受控事件名（与前端 `constants/events.ts` 保持一致）
+- 当前真实写入 `event_logs`，并在服务层提供按事件名、页面、日期与去重用户数的基础聚合能力
+
+## 10.2 `GET /api/notifications/settings`
+
+用途：
+
+- 读取当前用户通知偏好
+
+当前实现说明：
+
+- 若用户尚未保存过通知设置，服务端会返回默认值
+- 当前真实生效的发送渠道只有 `站内提醒`
+- `邮件通知`、`微信通知` 当前仅保存偏好，不触发真实外发
+
+## 10.3 `PATCH /api/notifications/settings`
+
+用途：
+
+- 更新当前用户通知偏好
+
+请求体：
+
+```json
+{
+  "checkinReminder": true,
+  "checkinTime": "09:00",
+  "progressPush": true,
+  "remindMethods": {
+    "app": true,
+    "email": false,
+    "wechat": false
+  },
+  "doNotDisturb": false,
+  "doNotDisturbStart": "22:00",
+  "doNotDisturbEnd": "08:00"
+}
+```
+
+业务规则：
+
+- 时间字段当前使用 `HH:mm`
+- `doNotDisturbStart` 与 `doNotDisturbEnd` 支持跨天静默时段
+
+## 10.4 `GET /api/notifications/in-app`
+
+用途：
+
+- 读取当前用户站内提醒列表
+
+当前实现说明：
+
+- 返回工作台左侧栏提醒卡所需的最近提醒列表与未读数
+- 读取时会按用户偏好与当天打卡状态，幂等生成当日 `daily_checkin_reminder`
+
+## 10.5 `POST /api/notifications/{id}/read`
+
+用途：
+
+- 把一条站内提醒标记为已读
+
+## 10.6 `POST /api/notifications/{id}/dismiss`
+
+用途：
+
+- 忽略一条站内提醒
 
 ---
 
@@ -1722,7 +1798,12 @@ SSE 事件补充：
 | `PATCH /api/admin/profile/me` | 是 | 管理员资料更新 |
 | `POST /api/admin/profile/avatar` | 是 | 管理员头像上传 |
 | `POST /api/checkin/daily` | 是 | 私人打卡写入 |
-| `POST /api/analytics/event` | 是，规划中 | 绑定用户事件 |
+| `POST /api/analytics/event` | 否 | 绑定用户事件 |
+| `GET /api/notifications/settings` | 是 | 读取通知偏好 |
+| `PATCH /api/notifications/settings` | 是 | 更新通知偏好 |
+| `GET /api/notifications/in-app` | 是 | 读取站内提醒列表 |
+| `POST /api/notifications/{id}/read` | 是 | 标记提醒已读 |
+| `POST /api/notifications/{id}/dismiss` | 是 | 忽略提醒 |
 
 ---
 

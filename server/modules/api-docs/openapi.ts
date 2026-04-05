@@ -62,6 +62,8 @@ import {
   adminUpdateLearningPathStatusResponseDataSchema,
   adminUpdateAdminAccountStatusRequestSchema,
   adminUpdateAdminAccountStatusResponseDataSchema,
+  analyticsTrackEventRequestSchema,
+  analyticsTrackEventResponseDataSchema,
   adminUserExportViewDataSchema,
   adminUserListQuerySchema,
   adminUserListResponseDataSchema,
@@ -97,6 +99,9 @@ import {
   learningMessagesResponseDataSchema,
   learningHistoryDetailResponseDataSchema,
   learningHistoryResponseDataSchema,
+  notificationInAppListResponseDataSchema,
+  notificationMutationResponseDataSchema,
+  notificationSettingsDataSchema,
   openApiStreamResponseSchema,
   profileMeResponseDataSchema,
   progressCurrentResponseDataSchema,
@@ -853,6 +858,56 @@ const adminAITestExample = {
   },
 }
 
+const analyticsTrackEventExample = {
+  eventId: "550e8400-e29b-41d4-a716-446655440601",
+  accepted: true,
+}
+
+const notificationSettingsExample = {
+  checkinReminder: true,
+  checkinTime: "09:00",
+  progressPush: true,
+  remindMethods: {
+    app: true,
+    email: false,
+    wechat: false,
+  },
+  doNotDisturb: false,
+  doNotDisturbStart: "22:00",
+  doNotDisturbEnd: "08:00",
+}
+
+const notificationListExample = {
+  items: [
+    {
+      id: "550e8400-e29b-41d4-a716-446655440602",
+      type: "daily_checkin_reminder",
+      title: "今天还没打卡",
+      content: "现在已经到 09:00 了，去完成今天的学习打卡，保持连续进度。",
+      status: "unread",
+      payload: {
+        actionHref: "/achievements",
+        actionLabel: "立即打卡",
+      },
+      createdAt: EXAMPLE_NOW,
+      updatedAt: EXAMPLE_NOW,
+      scheduledFor: EXAMPLE_NOW,
+      readAt: null,
+      dismissedAt: null,
+      actionHref: "/achievements",
+      actionLabel: "立即打卡",
+    },
+  ],
+  unreadCount: 1,
+}
+
+const notificationMutationExample = {
+  id: "550e8400-e29b-41d4-a716-446655440602",
+  status: "read",
+  readAt: EXAMPLE_LATER,
+  dismissedAt: null,
+}
+
 const successExamples = {
   authLogin: {
     userId: "user-123",
@@ -1137,6 +1192,10 @@ const successExamples = {
     currentRank: "新手学徒",
     rankChanged: false,
   },
+  analyticsTrackEvent: analyticsTrackEventExample,
+  notificationSettings: notificationSettingsExample,
+  notificationList: notificationListExample,
+  notificationMutation: notificationMutationExample,
   progressCurrent: {
     currentTool: {
       id: "tool-cursor",
@@ -2248,6 +2307,164 @@ registry.registerPath({
         },
       },
     }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/analytics/event",
+  operationId: "postAnalyticsEvent",
+  tags: ["analytics"],
+  summary: "写入前端业务事件",
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: analyticsTrackEventRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      analyticsTrackEventResponseDataSchema,
+      "AnalyticsTrackEventResponse",
+      "事件写入成功",
+      successExamples.analyticsTrackEvent,
+    ),
+    ...commonErrorResponses(["400", "500"], {
+      "400": {
+        description: "eventName、pagePath、properties 或 occurredAt 未通过校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "eventName 不合法。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/notifications/settings",
+  operationId: "getNotificationSettings",
+  tags: ["notifications"],
+  summary: "获取当前用户通知设置",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      notificationSettingsDataSchema,
+      "NotificationSettingsResponse",
+      "通知设置读取成功",
+      successExamples.notificationSettings,
+    ),
+    ...commonErrorResponses(["401", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/notifications/settings",
+  operationId: "patchNotificationSettings",
+  tags: ["notifications"],
+  summary: "更新当前用户通知设置",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: notificationSettingsDataSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      notificationSettingsDataSchema,
+      "NotificationSettingsPatchResponse",
+      "通知设置更新成功",
+      successExamples.notificationSettings,
+      "notification settings updated",
+    ),
+    ...commonErrorResponses(["400", "401", "500"], {
+      "400": {
+        description: "通知设置字段未通过校验。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "checkinTime 必须是 HH:mm 格式。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/notifications/in-app",
+  operationId: "getInAppNotifications",
+  tags: ["notifications"],
+  summary: "获取当前用户站内提醒列表",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      notificationInAppListResponseDataSchema,
+      "NotificationInAppListResponse",
+      "站内提醒读取成功",
+      successExamples.notificationList,
+    ),
+    ...commonErrorResponses(["401", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/notifications/{id}/read",
+  operationId: "postNotificationRead",
+  tags: ["notifications"],
+  summary: "标记站内提醒为已读",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: routeIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      notificationMutationResponseDataSchema,
+      "NotificationReadResponse",
+      "提醒状态已更新",
+      successExamples.notificationMutation,
+      "notification read",
+    ),
+    ...commonErrorResponses(["400", "401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/notifications/{id}/dismiss",
+  operationId: "postNotificationDismiss",
+  tags: ["notifications"],
+  summary: "忽略一条站内提醒",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: routeIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      notificationMutationResponseDataSchema,
+      "NotificationDismissResponse",
+      "提醒已忽略",
+      {
+        ...successExamples.notificationMutation,
+        status: "dismissed",
+        dismissedAt: EXAMPLE_LATER,
+      },
+      "notification dismissed",
+    ),
+    ...commonErrorResponses(["400", "401", "404", "500"]),
   },
 })
 

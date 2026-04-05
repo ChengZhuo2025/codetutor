@@ -18,6 +18,10 @@ import {
   ADMIN_AI_SKILL_SOURCE_TYPES,
   ADMIN_AI_SKILL_TRUST_LEVELS,
 } from "@/lib/api/contracts/admin-ai"
+import {
+  USER_NOTIFICATION_STATUSES,
+  USER_NOTIFICATION_TYPES,
+} from "@/lib/api/contracts/notifications"
 
 extendZodWithOpenApi(z)
 
@@ -825,6 +829,113 @@ export const checkinDailyResponseDataSchema = z
     rankChanged: z.boolean(),
   })
   .openapi("CheckinDailyResponseData")
+
+export const analyticsEventPropertiesSchema = z
+  .record(z.unknown())
+  .openapi("AnalyticsEventProperties")
+
+export const analyticsTrackEventRequestSchema = z
+  .object({
+    eventName: z.enum([
+      "landing_cta_click",
+      "login_submit",
+      "onboarding_submit",
+      "learning_input_send",
+      "learning_quick_help",
+      "session_resumed",
+      "stuck_help_requested",
+      "task_completed",
+      "daily_checkin",
+      "map_stage_click",
+      "achievement_cta_click",
+    ]),
+    pagePath: z.string().nullable().optional(),
+    properties: analyticsEventPropertiesSchema.optional(),
+    occurredAt: z.string().nullable().optional(),
+  })
+  .openapi("AnalyticsTrackEventRequest")
+
+export const analyticsTrackEventResponseDataSchema = z
+  .object({
+    eventId: z.string(),
+    accepted: z.literal(true),
+  })
+  .openapi("AnalyticsTrackEventResponseData")
+
+export const analyticsAggregateBucketSchema = z
+  .object({
+    key: z.string(),
+    count: z.number().int().nonnegative(),
+  })
+  .openapi("AnalyticsAggregateBucket")
+
+export const analyticsDailyTrendPointSchema = z
+  .object({
+    date: z.string(),
+    count: z.number().int().nonnegative(),
+    uniqueUsers: z.number().int().nonnegative(),
+  })
+  .openapi("AnalyticsDailyTrendPoint")
+
+export const analyticsAggregateSummarySchema = z
+  .object({
+    totalEvents: z.number().int().nonnegative(),
+    uniqueUsers: z.number().int().nonnegative(),
+    byEventName: z.array(analyticsAggregateBucketSchema),
+    byPagePath: z.array(analyticsAggregateBucketSchema),
+    dailyTrend: z.array(analyticsDailyTrendPointSchema),
+  })
+  .openapi("AnalyticsAggregateSummary")
+
+export const notificationSettingsDataSchema = z
+  .object({
+    checkinReminder: z.boolean(),
+    checkinTime: z.string(),
+    progressPush: z.boolean(),
+    remindMethods: z.object({
+      app: z.boolean(),
+      email: z.boolean(),
+      wechat: z.boolean(),
+    }),
+    doNotDisturb: z.boolean(),
+    doNotDisturbStart: z.string(),
+    doNotDisturbEnd: z.string(),
+  })
+  .openapi("NotificationSettingsData")
+
+export const notificationInAppItemSchema = z
+  .object({
+    id: z.string(),
+    type: z.enum(USER_NOTIFICATION_TYPES),
+    title: z.string(),
+    content: z.string(),
+    status: z.enum(USER_NOTIFICATION_STATUSES),
+    payload: z.record(z.unknown()),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    scheduledFor: z.string().nullable(),
+    readAt: z.string().nullable(),
+    dismissedAt: z.string().nullable(),
+    actionHref: z.string().nullable(),
+    actionLabel: z.string().nullable(),
+  })
+  .openapi("NotificationInAppItem")
+
+export const notificationInAppListResponseDataSchema = z
+  .object({
+    items: z.array(notificationInAppItemSchema),
+    unreadCount: z.number().int().nonnegative(),
+  })
+  .openapi("NotificationInAppListResponseData")
+
+export const notificationMutationResponseDataSchema = z
+  .object({
+    id: z.string(),
+    status: z.enum(USER_NOTIFICATION_STATUSES),
+    readAt: z.string().nullable(),
+    dismissedAt: z.string().nullable(),
+  })
+  .openapi("NotificationMutationResponseData")
 
 export const historyFilterSchema = z
   .enum(["all", "completed", "in_progress", "interrupted", "abandoned"])

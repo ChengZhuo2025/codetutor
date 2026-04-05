@@ -42,6 +42,8 @@
 - `016_create_llm_invocations.sql`
 - `017_create_admin_accounts.sql`
 - `018_create_learning_material_plan_tables.sql`
+- `019_admin_user_soft_delete.sql`
+- `020_create_analytics_and_notifications.sql`
 
 当前数据库中已落地的核心业务表包括：
 
@@ -70,14 +72,16 @@
 - `learning_material_sources`
 - `learning_plan_drafts`
 - `learning_plan_draft_tasks`
+- `event_logs`
+- `user_notification_settings`
+- `user_notifications`
 
 当前尚未通过迁移落地、仍属于后续设计的表包括：
 
 - `achievements`
 - `user_achievements`
-- `event_logs`
 
-因此，本文档后续章节如果描述了 `achievements`、`user_achievements`、`event_logs` 等对象，应视为“后续规划建模”；其余 AI 会话 / provider / agent / skill / invocation 相关表已经是当前远程数据库中的既有对象。
+因此，本文档后续章节如果描述了 `achievements`、`user_achievements` 等对象，应视为“后续规划建模”；其余 AI 会话 / provider / agent / skill / invocation / analytics / notifications 相关表已经是当前远程数据库中的既有对象。
 
 补充说明：
 
@@ -799,6 +803,60 @@ erDiagram
 
 - `idx_event_logs_event_name_occurred_at`
 - `idx_event_logs_user_id_occurred_at`
+
+## 6.15A `user_notification_settings`
+
+用途：
+
+- 保存用户通知偏好真源
+
+当前实现说明：
+
+- 当前已通过 `020_create_analytics_and_notifications.sql` 落地
+- `channel_in_app_enabled` 为当前唯一真实生效的发送渠道
+- `channel_email_enabled`、`channel_wechat_enabled` 当前仅保存偏好，不直接驱动外发
+
+核心字段：
+
+- `user_id`
+- `checkin_reminder_enabled`
+- `checkin_reminder_time`
+- `progress_push_enabled`
+- `channel_in_app_enabled`
+- `channel_email_enabled`
+- `channel_wechat_enabled`
+- `do_not_disturb_enabled`
+- `do_not_disturb_start`
+- `do_not_disturb_end`
+- `created_at`
+- `updated_at`
+
+## 6.15B `user_notifications`
+
+用途：
+
+- 保存用户站内提醒记录
+
+当前实现说明：
+
+- 当前已通过 `020_create_analytics_and_notifications.sql` 落地
+- 当前 `type` 已落地 `daily_checkin_reminder`、`progress_milestone`
+- 当前 `status` 已落地 `unread`、`read`、`dismissed`
+
+核心字段：
+
+- `id`
+- `user_id`
+- `type`
+- `title`
+- `content`
+- `payload`
+- `status`
+- `scheduled_for`
+- `read_at`
+- `dismissed_at`
+- `created_at`
+- `updated_at`
 
 ## 6.16 `feedback_tickets`
 

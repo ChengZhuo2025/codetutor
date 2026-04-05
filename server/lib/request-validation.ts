@@ -13,8 +13,10 @@ import {
   type FeedbackType,
 } from "@/lib/api/contracts/feedback"
 import type { AuthLoginType } from "@/lib/api/contracts/auth"
+import type { AnalyticsTrackEventRequest } from "@/lib/api/contracts/analytics"
 import type { UpdateLearningHistoryStatusRequest } from "@/lib/api/contracts/history"
 import type { CompleteOnboardingRequest } from "@/lib/api/contracts/onboarding"
+import type { UpdateNotificationSettingsRequest } from "@/lib/api/contracts/notifications"
 import type { CompleteTaskRequest, UpdateTaskStatusRequest } from "@/lib/api/contracts/task"
 import type { AdminUpdateUserRequest } from "@/lib/api/contracts/admin-users"
 import {
@@ -56,6 +58,7 @@ import { isUuid, normalizeUuid } from "@/server/lib/identifiers"
 import type { HistoryFilter } from "@/features/history/types"
 import type { Level } from "@/features/onboarding/types"
 import { PROFILE_AVATAR_ALLOWED_TYPES, PROFILE_AVATAR_MAX_BYTES } from "@/lib/supabase/storage"
+import { APP_EVENTS } from "@/constants/events"
 
 type ValidationSuccess<T> = {
   ok: true
@@ -224,6 +227,149 @@ export function parseUpdateProfileMeBody(input: unknown) {
   }
 
   return ok(data)
+}
+
+function parseTimeField(value: unknown, fieldName: string): ValidationResult<string> {
+  if (typeof value !== "string") {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是 HH:mm 格式。`)
+  }
+
+  const normalized = value.trim()
+  if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(normalized)) {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是 HH:mm 格式。`)
+  }
+
+  return ok(normalized)
+}
+
+export function parseAnalyticsTrackEventBody(
+  input: unknown,
+): ValidationResult<AnalyticsTrackEventRequest> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return fail("BAD_REQUEST", "请求体必须是 JSON 对象。")
+  }
+
+  const body = input as Record<string, unknown>
+
+  if (
+    typeof body.eventName !== "string"
+    || !Object.values(APP_EVENTS).includes(body.eventName as (typeof APP_EVENTS)[keyof typeof APP_EVENTS])
+  ) {
+    return fail("VALIDATION_FAILED", "eventName 不合法。")
+  }
+
+  let pagePath: string | null | undefined
+  if (body.pagePath !== undefined) {
+    if (body.pagePath !== null && typeof body.pagePath !== "string") {
+      return fail("VALIDATION_FAILED", "pagePath 必须是字符串或 null。")
+    }
+
+    const normalized = typeof body.pagePath === "string" ? body.pagePath.trim() : ""
+    if (normalized.length > 256) {
+      return fail("VALIDATION_FAILED", "pagePath 长度不能超过 256 个字符。")
+    }
+    pagePath = normalized.length > 0 ? normalized : null
+  }
+
+  const properties = parseJsonRecord(body.properties, "properties")
+  if (!properties.ok) {
+    return properties
+  }
+
+  let occurredAt: string | null | undefined
+  if (body.occurredAt !== undefined) {
+    if (body.occurredAt !== null && typeof body.occurredAt !== "string") {
+      return fail("VALIDATION_FAILED", "occurredAt 必须是 ISO 8601 时间字符串。")
+    }
+
+    if (typeof body.occurredAt === "string" && body.occurredAt.trim().length > 0) {
+      const normalized = body.occurredAt.trim()
+      if (Number.isNaN(Date.parse(normalized))) {
+        return fail("VALIDATION_FAILED", "occurredAt 必须是 ISO 8601 时间字符串。")
+      }
+      occurredAt = normalized
+    } else {
+      occurredAt = null
+    }
+  }
+
+  return ok({
+    eventName: body.eventName as AnalyticsTrackEventRequest["eventName"],
+    pagePath,
+    properties: properties.data,
+    occurredAt,
+  })
+}
+
+export function parseNotificationSettingsBody(
+  input: unknown,
+): ValidationResult<UpdateNotificationSettingsRequest> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return fail("BAD_REQUEST", "通知设置请求体不合法。")
+  }
+
+  const body = input as Record<string, unknown>
+  const checkinReminder = parseBooleanField(body.checkinReminder, "checkinReminder")
+  if (!checkinReminder.ok) {
+    return checkinReminder
+  }
+
+  const checkinTime = parseTimeField(body.checkinTime, "checkinTime")
+  if (!checkinTime.ok) {
+    return checkinTime
+  }
+
+  const progressPush = parseBooleanField(body.progressPush, "progressPush")
+  if (!progressPush.ok) {
+    return progressPush
+  }
+
+  if (!body.remindMethods || typeof body.remindMethods !== "object" || Array.isArray(body.remindMethods)) {
+    return fail("VALIDATION_FAILED", "remindMethods 必须是对象。")
+  }
+
+  const remindMethodsBody = body.remindMethods as Record<string, unknown>
+  const app = parseBooleanField(remindMethodsBody.app, "remindMethods.app")
+  if (!app.ok) {
+    return app
+  }
+  const email = parseBooleanField(remindMethodsBody.email, "remindMethods.email")
+  if (!email.ok) {
+    return email
+  }
+  const wechat = parseBooleanField(remindMethodsBody.wechat, "remindMethods.wechat")
+  if (!wechat.ok) {
+    return wechat
+  }
+
+  const doNotDisturb = parseBooleanField(body.doNotDisturb, "doNotDisturb")
+  if (!doNotDisturb.ok) {
+    return doNotDisturb
+  }
+
+  const doNotDisturbStart = parseTimeField(body.doNotDisturbStart, "doNotDisturbStart")
+  if (!doNotDisturbStart.ok) {
+    return doNotDisturbStart
+  }
+
+  const doNotDisturbEnd = parseTimeField(body.doNotDisturbEnd, "doNotDisturbEnd")
+  if (!doNotDisturbEnd.ok) {
+    return doNotDisturbEnd
+  }
+
+  return ok({
+    checkinReminder: checkinReminder.data,
+    checkinTime: checkinTime.data,
+    progressPush: progressPush.data,
+    remindMethods: {
+      app: app.data,
+      email: email.data,
+      wechat: wechat.data,
+    },
+    doNotDisturb: doNotDisturb.data,
+    doNotDisturbStart: doNotDisturbStart.data,
+    doNotDisturbEnd: doNotDisturbEnd.data,
+  })
 }
 
 const createFeedbackBodyShapeSchema = z.object({

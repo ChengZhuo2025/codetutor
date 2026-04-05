@@ -7,6 +7,7 @@ import {
   ensureUserRankSnapshot,
 } from "@/server/modules/gamification/service"
 import { reconcileInterruptedLearningPaths } from "@/server/modules/learning-paths/service"
+import { createProgressMilestoneNotification } from "@/server/modules/notifications/service"
 import {
   DAILY_CHECKIN_SCORE,
   getCheckinDateKey,
@@ -166,6 +167,18 @@ export async function createDailyCheckin(userId: string): Promise<CheckinDailyRe
 
     assertSupabaseSuccess(pathError, "failed to touch active path after daily checkin")
   }
+
+  await createProgressMilestoneNotification(userId, {
+    title: "今日打卡成功",
+    content: `获得 +${DAILY_CHECKIN_SCORE} XP，当前已连续学习 ${streakResult.nextStreakDays} 天。`,
+    actionHref: "/achievements",
+    actionLabel: "查看成长",
+    payload: {
+      checkinDate: todayDate,
+      streakDays: streakResult.nextStreakDays,
+      scoreDelta: DAILY_CHECKIN_SCORE,
+    },
+  })
 
   return {
     checkedIn: true,

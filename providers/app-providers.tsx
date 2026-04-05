@@ -9,6 +9,7 @@ import { AppConfirmProvider } from "@/components/app-feedback/app-confirm-provid
 import { AppToastProvider } from "@/components/app-feedback/app-toast-provider"
 import { APP_EVENT_CHANNEL } from "@/constants/events"
 import type { AppEventName } from "@/constants/events"
+import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
 type AppProvidersProps = {
   children: React.ReactNode
@@ -23,14 +24,47 @@ type AppEventContextValue = {
 const AppEventContext = createContext<AppEventContextValue | null>(null)
 
 function trackEvent(name: AppEventName, payload?: TrackEventPayload) {
+  const occurredAt = new Date().toISOString()
+  const pagePath = typeof window !== "undefined" ? window.location.pathname : undefined
   const detail = {
     name,
     payload: payload ?? {},
-    occurredAt: new Date().toISOString(),
+    pagePath,
+    occurredAt,
   }
 
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent(APP_EVENT_CHANNEL, { detail }))
+
+    void (async () => {
+      try {
+        const headers = new Headers({
+          "Content-Type": "application/json",
+        })
+        const supabase = createSupabaseBrowserClient()
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        if (session?.access_token) {
+          headers.set("Authorization", `Bearer ${session.access_token}`)
+        }
+
+        await fetch("/api/analytics/event", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            eventName: name,
+            pagePath,
+            properties: payload ?? {},
+            occurredAt,
+          }),
+          keepalive: true,
+        })
+      } catch {
+        // 埋点写入不阻塞主流程。
+      }
+    })()
   }
 
   if (process.env.NODE_ENV !== "production") {

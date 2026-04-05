@@ -10,6 +10,11 @@ import {
 } from "react"
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth"
 import type { LearningCurrentSessionResponseData } from "@/lib/api/contracts/learning"
+import type {
+  NotificationInAppItem,
+  NotificationInAppListResponseData,
+  NotificationMutationResponseData,
+} from "@/lib/api/contracts/notifications"
 import { requestData } from "@/lib/api/client"
 import { PROFILE_UPDATED_EVENT } from "@/lib/profile/events"
 import type { RecentPracticeRound } from "@/features/learning/types"
@@ -18,12 +23,53 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 type WorkspaceSidebarDataState = {
   profile: ProfileMeResponseData | null
   recentPracticeRounds: RecentPracticeRound[]
+  notifications: NotificationInAppItem[]
+  unreadNotificationCount: number
   hasLoaded: boolean
 }
 
 type WorkspaceSidebarDataContextValue = WorkspaceSidebarDataState & {
   updateProfile: (profile: ProfileMeResponseData) => void
   refresh: () => Promise<void>
+  markNotificationRead: (notificationId: string) => Promise<NotificationMutationResponseData | null>
+  dismissNotification: (notificationId: string) => Promise<NotificationMutationResponseData | null>
+}
+
+function applyNotificationMutation(
+  current: WorkspaceSidebarDataState,
+  mutation: NotificationMutationResponseData,
+): WorkspaceSidebarDataState {
+  const nextNotifications = current.notifications
+    .map((item) => {
+      if (item.id !== mutation.id) {
+        return item
+      }
+
+      return {
+        ...item,
+        status: mutation.status,
+        readAt: mutation.readAt,
+        dismissedAt: mutation.dismissedAt,
+      }
+    })
+    .filter((item) => item.status !== "dismissed")
+
+  return {
+    ...current,
+    notifications: nextNotifications,
+    unreadNotificationCount: nextNotifications.filter((item) => item.status === "unread").length,
+  }
+}
+
+async function fetchWorkspaceNotifications() {
+  try {
+    return await requestData<NotificationInAppListResponseData>("/notifications/in-app")
+  } catch {
+    return {
+      items: [],
+      unreadCount: 0,
+    }
+  }
 }
 
 const WorkspaceSidebarDataContext =
@@ -32,10 +78,13 @@ const WorkspaceSidebarDataContext =
 async function fetchWorkspaceSidebarData(): Promise<WorkspaceSidebarDataState> {
   try {
     const session = await requestData<LearningCurrentSessionResponseData>("/learning/current-session")
+    const notifications = await fetchWorkspaceNotifications()
 
     return {
       profile: session.profile,
       recentPracticeRounds: session.recentPracticeRounds,
+      notifications: notifications.items,
+      unreadNotificationCount: notifications.unreadCount,
       hasLoaded: true,
     }
   } catch {
@@ -44,16 +93,21 @@ async function fetchWorkspaceSidebarData(): Promise<WorkspaceSidebarDataState> {
 
   try {
     const profile = await requestData<ProfileMeResponseData>("/profile/me")
+    const notifications = await fetchWorkspaceNotifications()
 
     return {
       profile,
       recentPracticeRounds: [],
+      notifications: notifications.items,
+      unreadNotificationCount: notifications.unreadCount,
       hasLoaded: true,
     }
   } catch {
     return {
       profile: null,
       recentPracticeRounds: [],
+      notifications: [],
+      unreadNotificationCount: 0,
       hasLoaded: true,
     }
   }
@@ -63,6 +117,8 @@ export function WorkspaceSidebarDataProvider({ children }: { children: ReactNode
   const [state, setState] = useState<WorkspaceSidebarDataState>({
     profile: null,
     recentPracticeRounds: [],
+    notifications: [],
+    unreadNotificationCount: 0,
     hasLoaded: false,
   })
 
@@ -103,6 +159,8 @@ export function WorkspaceSidebarDataProvider({ children }: { children: ReactNode
         setState({
           profile: null,
           recentPracticeRounds: [],
+          notifications: [],
+          unreadNotificationCount: 0,
           hasLoaded: true,
         })
         return
@@ -129,6 +187,28 @@ export function WorkspaceSidebarDataProvider({ children }: { children: ReactNode
         }))
       },
       refresh,
+      markNotificationRead: async (notificationId) => {
+        const mutation = await requestData<NotificationMutationResponseData>(
+          `/notifications/${notificationId}/read`,
+          {
+            method: "POST",
+          },
+        )
+
+        setState((current) => applyNotificationMutation(current, mutation))
+        return mutation
+      },
+      dismissNotification: async (notificationId) => {
+        const mutation = await requestData<NotificationMutationResponseData>(
+          `/notifications/${notificationId}/dismiss`,
+          {
+            method: "POST",
+          },
+        )
+
+        setState((current) => applyNotificationMutation(current, mutation))
+        return mutation
+      },
     }),
     [state],
   )

@@ -1,3 +1,4 @@
+import { ROUTES } from "@/constants/routes"
 import { getRankName } from "@/constants/ranks"
 import type {
   CompleteTaskRequest,
@@ -12,6 +13,7 @@ import {
   ensureUserRankSnapshot,
 } from "@/server/modules/gamification/service"
 import { reconcileInterruptedLearningPaths } from "@/server/modules/learning-paths/service"
+import { createProgressMilestoneNotification } from "@/server/modules/notifications/service"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import {
   resolveTaskProgression,
@@ -339,6 +341,19 @@ export async function completeTask(
     .eq("user_id", userId)
 
   assertSupabaseSuccess(profileError, "failed to update user profile score")
+
+  await createProgressMilestoneNotification(userId, {
+    title: "任务已完成",
+    content: buildCompletionSummary(currentStep.title, nextTaskTitle),
+    actionHref: progression.pathCompleted ? ROUTES.history : ROUTES.learn,
+    actionLabel: progression.pathCompleted ? "查看历史" : "继续学习",
+    payload: {
+      taskId: task.id,
+      pathId: path.id,
+      nextTaskId: progression.nextTaskId,
+      pathCompleted: progression.pathCompleted,
+    },
+  })
 
   return {
     taskId: task.id,

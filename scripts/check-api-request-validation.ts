@@ -2,6 +2,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 
 import {
+  parseAnalyticsTrackEventBody,
   parseAdminFeedbackBatchDeleteBody,
   parseAdminFeedbackListQuery,
   parseAdminReplyFeedbackBody,
@@ -14,6 +15,7 @@ import {
   parseProfileAvatarFile,
   parseRequiredRouteId,
   parseLearningMessagesQuery,
+  parseNotificationSettingsBody,
   parseHistoryRecentQuery,
   parsePlanDraftRegenerateBody,
   parsePlanFromMaterialBody,
@@ -21,6 +23,81 @@ import {
   parseUpdateProfileMeBody,
   parseUpdateTaskStatusBody,
 } from "../server/lib/request-validation.ts"
+
+test("parseAnalyticsTrackEventBody validates controlled event names and ISO timestamps", () => {
+  const invalid = parseAnalyticsTrackEventBody({
+    eventName: "unknown_event",
+  })
+
+  assert.deepEqual(invalid, {
+    ok: false,
+    code: "VALIDATION_FAILED",
+    message: "eventName 不合法。",
+  })
+
+  const valid = parseAnalyticsTrackEventBody({
+    eventName: "task_completed",
+    pagePath: " /learn ",
+    properties: {
+      taskId: "task-1",
+      scoreDelta: 20,
+    },
+    occurredAt: "2026-04-05T08:00:00.000Z",
+  })
+
+  assert.equal(valid.ok, true)
+  if (!valid.ok) {
+    return
+  }
+
+  assert.deepEqual(valid.data, {
+    eventName: "task_completed",
+    pagePath: "/learn",
+    properties: {
+      taskId: "task-1",
+      scoreDelta: 20,
+    },
+    occurredAt: "2026-04-05T08:00:00.000Z",
+  })
+})
+
+test("parseNotificationSettingsBody validates time fields and nested channels", () => {
+  const invalid = parseNotificationSettingsBody({
+    checkinReminder: true,
+    checkinTime: "9:00",
+    progressPush: true,
+    remindMethods: {
+      app: true,
+      email: false,
+      wechat: false,
+    },
+    doNotDisturb: false,
+    doNotDisturbStart: "22:00",
+    doNotDisturbEnd: "08:00",
+  })
+
+  assert.deepEqual(invalid, {
+    ok: false,
+    code: "VALIDATION_FAILED",
+    message: "checkinTime 必须是 HH:mm 格式。",
+  })
+
+  const valid = parseNotificationSettingsBody({
+    checkinReminder: true,
+    checkinTime: "09:00",
+    progressPush: true,
+    remindMethods: {
+      app: true,
+      email: false,
+      wechat: false,
+    },
+    doNotDisturb: true,
+    doNotDisturbStart: "22:00",
+    doNotDisturbEnd: "08:00",
+  })
+
+  assert.equal(valid.ok, true)
+})
 
 test("parseUpdateProfileMeBody trims optional fields and keeps validation semantics", () => {
   const result = parseUpdateProfileMeBody({

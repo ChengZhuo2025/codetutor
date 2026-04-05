@@ -165,7 +165,7 @@ types/                # 跨 feature 共用的类型定义
 - ✅ AI 学习消息链路第一阶段（SSE 流式输出 + 结构化 structuredContent）
 - ✅ 自学模式教程链接生成计划 Phase A（`plan-from-material` / `plan-drafts` confirm·regenerate，`learning-materials` + `learning-plans` 模块）
 - ✅ OpenAPI 3.1 文档（`/api/docs/openapi`）与 Swagger UI（`/api-docs`）
-- ✅ Supabase 迁移与远程数据库接入（当前已到 `018`，含自学材料摄取与计划草稿表）
+- ✅ Supabase 迁移与远程数据库接入（当前已到 `020`，含自学材料摄取、计划草稿、analytics 与 notifications 表）
 - ✅ 管理后台 Phase 1（管理员认证、看板、反馈工单）
 - ✅ 管理后台用户运营（`/admin/users`、`/admin/users/[userId]`：列表筛选、CSV 导出、详情聚合、受控资料 PATCH、软删除/恢复；`server/modules/admin-users`、`OpenAPI` 分组 `admin-users`）
 - ✅ 管理后台学习运营（`/admin/learning`、`/admin/learning/[pathId]`：学习路径列表筛选、CSV 导出、详情聚合、最近会话回看、`reactivate/archive` 状态操作；`server/modules/admin-learning`、`OpenAPI` 分组 `admin-learning`）
@@ -173,13 +173,13 @@ types/                # 跨 feature 共用的类型定义
 - ✅ 管理后台系统设置（`/admin/settings`：我的资料、安全设置、管理员账号列表与启停、角色权限说明、操作审计、系统信息；`server/modules/admin-settings`、`OpenAPI` 分组 `admin-settings`）
 
 **进行中/待完成：**
-- ⏳ analytics 事件入库
 - ⏳ 管理员后台后续能力（细粒度权限深化；用户域后续如内部备注、人工积分调整；AI 域更深能力如 prompt 版本化、灰度/回滚、成本与稳定性面板等以设计文档与代码为准）
 - ⏳ AI 编排第二阶段（更细粒度 agent 控制、prompt 版本化管理）
-- ⏳ 通知设置落库
+- ✅ analytics 事件入库（`POST /api/analytics/event`、`event_logs`、基础聚合）
+- ✅ 通知设置落库（用户偏好、站内提醒记录、工作台左侧栏提醒卡）
 
 **开发策略：**
-当前项目已是“部分真实接口 + 部分静态展示数据”的状态。优先继续扩展真实用户主链路；营销内容、FAQ、订阅占位、通知设置等仍可继续用本地静态数据承载。
+当前项目已是“部分真实接口 + 部分静态展示数据”的状态。优先继续扩展真实用户主链路；营销内容、FAQ、订阅占位等仍可继续用本地静态数据承载，但 analytics 与通知设置已不再是纯前端占位。
 
 ### 当前状态机补充
 

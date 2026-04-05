@@ -3,6 +3,9 @@ import assert from "node:assert/strict"
 import type { User } from "@supabase/supabase-js"
 
 import {
+  createAnalyticsTrackEventPostHandler,
+} from "../server/modules/analytics/route-handler.ts"
+import {
   createAuthLoginPostHandler,
   createProfileAvatarPostHandler,
   createProfileMeGetHandler,
@@ -28,6 +31,12 @@ import {
   createCompleteOnboardingPostHandler,
   createOnboardingPathOptionsGetHandler,
 } from "../server/modules/onboarding/route-handler.ts"
+import {
+  createInAppNotificationListGetHandler,
+  createNotificationDismissPostHandler,
+  createNotificationReadPostHandler,
+  createNotificationSettingsPatchHandler,
+} from "../server/modules/notifications/route-handler.ts"
 import {
   createCompleteTaskPostHandler,
   createUpdateTaskStatusPostHandler,
@@ -59,6 +68,138 @@ function createFormRequest(url: string, formData: FormData) {
     body: formData,
   }) as never
 }
+
+test("analytics track route rejects invalid controlled event names", async () => {
+  const handler = createAnalyticsTrackEventPostHandler({
+    getRequestAuth: async () => null,
+    trackAnalyticsEvent: async () => {
+      throw new Error("should not write analytics event when payload is invalid")
+    },
+  })
+
+  const response = await handler(
+    createJsonRequest(
+      "http://localhost:3000/api/analytics/event",
+      JSON.stringify({ eventName: "bad_event" }),
+    ),
+  )
+
+  assert.equal(response.status, 400)
+  assert.deepEqual(await response.json(), {
+    code: "VALIDATION_FAILED",
+    message: "eventName 不合法。",
+    data: null,
+  })
+})
+
+test("notification settings patch route returns validation errors for malformed time fields", async () => {
+  const handler = createNotificationSettingsPatchHandler({
+    getRequestAuth: async () => ({ userId: "user-1" }),
+    getRequestAuthHelpText: () => "ignored",
+    updateNotificationSettings: async () => {
+      throw new Error("should not update settings when payload is invalid")
+    },
+  })
+
+  const response = await handler(
+    createPatchJsonRequest(
+      "http://localhost:3000/api/notifications/settings",
+      JSON.stringify({
+        checkinReminder: true,
+        checkinTime: "9:00",
+        progressPush: true,
+        remindMethods: { app: true, email: false, wechat: false },
+        doNotDisturb: false,
+        doNotDisturbStart: "22:00",
+        doNotDisturbEnd: "08:00",
+      }),
+    ),
+  )
+
+  assert.equal(response.status, 400)
+  assert.deepEqual(await response.json(), {
+    code: "VALIDATION_FAILED",
+    message: "checkinTime 必须是 HH:mm 格式。",
+    data: null,
+  })
+})
+
+test("notification list route still requires auth", async () => {
+  const handler = createInAppNotificationListGetHandler({
+    getRequestAuth: async () => null,
+    getRequestAuthHelpText: () => "请先登录。",
+    listInAppNotifications: async () => {
+      throw new Error("should not list notifications without auth")
+    },
+  })
+
+  const response = await handler(
+    new Request("http://localhost:3000/api/notifications/in-app", {
+      method: "GET",
+    }) as never,
+  )
+
+  assert.equal(response.status, 401)
+  assert.deepEqual(await response.json(), {
+    code: "AUTH_REQUIRED",
+    message: "请先登录。",
+    data: null,
+  })
+})
+
+test("notification read route returns 404 when the notification does not belong to the user", async () => {
+  const handler = createNotificationReadPostHandler({
+    getRequestAuth: async () => ({ userId: "user-1" }),
+    getRequestAuthHelpText: () => "ignored",
+    markNotificationRead: async () => null,
+  })
+
+  const response = await handler(
+    new Request("http://localhost:3000/api/notifications/notice-1/read", {
+      method: "POST",
+    }) as never,
+    {
+      params: Promise.resolve({
+        id: "notice-1",
+      }),
+    },
+  )
+
+  assert.equal(response.status, 404)
+  assert.deepEqual(await response.json(), {
+    code: "NOT_FOUND",
+    message: "当前通知不存在。",
+    data: null,
+  })
+})
+
+test("notification dismiss route validates route params before calling the service", async () => {
+  const handler = createNotificationDismissPostHandler({
+    getRequestAuth: async () => ({ userId: "user-1" }),
+    getRequestAuthHelpText: () => "ignored",
+    dismissNotification: async () => {
+      throw new Error("should not dismiss when route id is invalid")
+    },
+  })
+
+  const response = await handler(
+    new Request("http://localhost:3000/api/notifications//dismiss", {
+      method: "POST",
+    }) as never,
+    {
+      params: Promise.resolve({
+        id: "   ",
+      }),
+    },
+  )
+
+  assert.equal(response.status, 400)
+  assert.deepEqual(await response.json(), {
+    code: "BAD_REQUEST",
+    message: "通知 ID 不合法。",
+    data: null,
+  })
+})
 
 test("task complete route returns 422 when request body is invalid", async () => {
   const handler = createCompleteTaskPostHandler({

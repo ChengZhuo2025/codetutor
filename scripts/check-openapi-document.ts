@@ -16,7 +16,7 @@ test("openapi document covers all registered api operations and special transpor
     ),
   )
 
-  assert.equal(operations.length, 79)
+  assert.equal(operations.length, 85)
 
   assert.ok(paths["/api/auth/login"]?.post)
   assert.ok(paths["/api/profile/me"]?.get)
@@ -26,6 +26,12 @@ test("openapi document covers all registered api operations and special transpor
   assert.ok(paths["/api/learning/plan-from-material"]?.post)
   assert.ok(paths["/api/learning/plan-drafts/{id}/confirm"]?.post)
   assert.ok(paths["/api/learning/plan-drafts/{id}/regenerate"]?.post)
+  assert.ok(paths["/api/analytics/event"]?.post)
+  assert.ok(paths["/api/notifications/settings"]?.get)
+  assert.ok(paths["/api/notifications/settings"]?.patch)
+  assert.ok(paths["/api/notifications/in-app"]?.get)
+  assert.ok(paths["/api/notifications/{id}/read"]?.post)
+  assert.ok(paths["/api/notifications/{id}/dismiss"]?.post)
   assert.ok(paths["/api/admin/auth/login"]?.post)
   assert.ok(paths["/api/admin/auth/session"]?.get)
   assert.ok(paths["/api/admin/auth/logout"]?.post)
@@ -139,6 +145,22 @@ test("openapi document covers all registered api operations and special transpor
   assert.deepEqual(historyStatusPostResponses?.["409"]?.content?.["application/json"]?.example, {
     code: "CONFLICT",
     message: "当前已有进行中的学习计划",
+    data: null,
+  })
+
+  const analyticsEventPostResponses = paths["/api/analytics/event"]?.post?.responses as
+    | Record<string, { description?: string; content?: Record<string, { example?: unknown }> }>
+    | undefined
+  assert.equal(analyticsEventPostResponses?.["200"]?.description, "事件写入成功")
+  assert.ok(analyticsEventPostResponses?.["200"]?.content?.["application/json"]?.example)
+
+  const notificationSettingsPatchResponses = paths["/api/notifications/settings"]?.patch?.responses as
+    | Record<string, { description?: string; content?: Record<string, { example?: unknown }> }>
+    | undefined
+  assert.equal(notificationSettingsPatchResponses?.["400"]?.description, "通知设置字段未通过校验。")
+  assert.deepEqual(notificationSettingsPatchResponses?.["400"]?.content?.["application/json"]?.example, {
+    code: "VALIDATION_FAILED",
+    message: "checkinTime 必须是 HH:mm 格式。",
     data: null,
   })
 })

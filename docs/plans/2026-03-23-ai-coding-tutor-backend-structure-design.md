@@ -180,6 +180,8 @@ app/
     ├── auth/
     │   ├── login/route.ts
     │   └── session/route.ts
+    ├── analytics/
+    │   └── event/route.ts
     ├── checkin/
     │   └── daily/route.ts
     ├── docs/
@@ -198,6 +200,12 @@ app/
     │   ├── current-session/route.ts
     │   ├── messages/route.ts
     │   └── message/route.ts
+    ├── notifications/
+    │   ├── in-app/route.ts
+    │   ├── settings/route.ts
+    │   └── [id]/
+    │       ├── dismiss/route.ts
+    │       └── read/route.ts
     ├── onboarding/
     │   ├── complete/route.ts
     │   ├── path-options/route.ts
@@ -222,7 +230,7 @@ app/
 - `/history/recent` 在命名上保留原型兼容性，但实际承载“历史学习路径实例分页列表”
 - `/auth/session` 作为只读会话摘要接口，主要服务首页与营销层登录态恢复，不承担登录写入副作用
 - `/api/docs/openapi` 与 `/api-docs` 只服务开发与联调用途，不是面向终端用户的产品页面
-- 当前尚未落地的主要接口主要为 `analytics/*` 与 `learning/stuck-help`；`learning/plan-from-material` 与 `learning/plan-drafts/*` 已在 Phase A 落地（自学模式材料计划）
+- 当前尚未落地的主要接口主要为 `learning/stuck-help`；`analytics/*` 与 `notifications/*` 已落地，`learning/plan-from-material` 与 `learning/plan-drafts/*` 已在 Phase A 落地（自学模式材料计划）
 
 ---
 
@@ -244,6 +252,7 @@ server/
 └── modules/
     ├── achievement/
     ├── api-docs/
+    ├── analytics/
     ├── auth/
     ├── checkins/
     ├── feedback/
@@ -251,6 +260,7 @@ server/
     ├── history/
     ├── learning/
     ├── learning-paths/
+    ├── notifications/
     ├── onboarding/
     ├── tasks/
     └── progress/
@@ -288,7 +298,9 @@ server/modules/
 ├── learning-plans/
 ├── onboarding/
 ├── progress/
-└── tasks/
+├── tasks/
+├── analytics/
+└── notifications/
 ```
 
 当前各模块并不完全同形态：
@@ -299,7 +311,7 @@ server/modules/<domain>/
 └── service.ts
 ```
 
-当前较简单的域仍主要以 `service.ts` 为核心；但 `auth`、`onboarding`、`feedback`、`history`、`tasks`、`learning`、`learning-plans`、`api-docs` 已经拆出 `route-handler.ts`，`learning`、`checkins`、`gamification` 还继续拆出了 `logic.ts`、`http-logic.ts`、`history-logic.ts`、`orchestration.ts`、`provider.ts`、`errors.ts` 等辅助文件。这仍属于“按域聚合”的同一策略，只是复杂域已经自然演进出域内分层雏形。等单个域复杂度继续上升后，再在域内继续细分 application、domain、repository。
+当前较简单的域仍主要以 `service.ts` 为核心；但 `auth`、`onboarding`、`feedback`、`history`、`tasks`、`learning`、`learning-plans`、`api-docs`、`analytics`、`notifications` 已经拆出 `route-handler.ts`，`learning`、`checkins`、`gamification`、`notifications` 还继续拆出了 `logic.ts`、`http-logic.ts`、`history-logic.ts`、`orchestration.ts`、`provider.ts`、`errors.ts` 等辅助文件。这仍属于“按域聚合”的同一策略，只是复杂域已经自然演进出域内分层雏形。等单个域复杂度继续上升后，再在域内继续细分 application、domain、repository。
 
 ---
 
@@ -545,17 +557,34 @@ server/modules/history/
 - 事件接收
 - 基础聚合支持
 
-建议结构：
+当前已落地结构：
 
 ```text
 server/modules/analytics/
-├── application/
-│   └── track-event.ts
-├── domain/
-│   └── analytics-service.ts
-├── infrastructure/
-│   └── event-log-repository.ts
-└── index.ts
+├── route-handler.ts
+└── service.ts
+```
+
+当前实现说明：
+
+- `route-handler.ts` 负责请求校验与匿名/登录态兼容
+- `service.ts` 负责事件属性裁剪、`event_logs` 入库与基础聚合函数
+
+## 8.10 `notifications`
+
+职责：
+
+- 读取/保存用户通知偏好
+- 生成与读取站内提醒
+- 支撑工作台左侧栏提醒卡与读/忽略操作
+
+当前已落地结构：
+
+```text
+server/modules/notifications/
+├── logic.ts
+├── route-handler.ts
+└── service.ts
 ```
 
 ---
@@ -877,7 +906,7 @@ supabase/
    - 完成任务
    - 更新状态
    - XP、段位、打卡写入
-7. 待实现：`analytics`
+7. 待实现：`learning/stuck-help`、更深权限/审计与后续运营能力
    - 事件入库
 
 这样做的原因是：

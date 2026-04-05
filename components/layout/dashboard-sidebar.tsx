@@ -4,14 +4,18 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import {
+  Bell,
+  CheckCheck,
   ChevronRight,
   Code2,
   Crown,
   Flame,
   Star,
+  X,
 } from "lucide-react"
 import { APP_NAME } from "@/constants/app"
 import { ROUTES } from "@/constants/routes"
+import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog"
 import { SubscriptionDetailDialog } from "@/components/layout/subscription-detail-dialog"
 import { SettingsPopover } from "@/components/layout/settings-popover"
@@ -50,14 +54,20 @@ export function DashboardSidebar({
   children,
   footerContent,
 }: DashboardSidebarProps) {
+  const toast = useAppToast()
   const {
     profile,
     recentPracticeRounds,
+    notifications,
+    unreadNotificationCount,
     hasLoaded,
     updateProfile,
+    markNotificationRead,
+    dismissNotification,
   } = useWorkspaceSidebarData()
   const [profileOpen, setProfileOpen] = useState(false)
   const [profileFeedbackMessage, setProfileFeedbackMessage] = useState<string | null>(null)
+  const [pendingNotificationId, setPendingNotificationId] = useState<string | null>(null)
 
   const handleProfileSaved = (nextProfile: ProfileMeResponseData) => {
     updateProfile(nextProfile)
@@ -77,6 +87,26 @@ export function DashboardSidebar({
       window.clearTimeout(timeoutId)
     }
   }, [profileFeedbackMessage])
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return
+    }
+
+    for (const item of notifications) {
+      if (item.status !== "unread") {
+        continue
+      }
+
+      const sessionKey = `workspace-notification-toast:${item.id}`
+      if (window.sessionStorage.getItem(sessionKey) === "1") {
+        continue
+      }
+
+      toast.info(item.title, item.content)
+      window.sessionStorage.setItem(sessionKey, "1")
+    }
+  }, [notifications, toast])
 
   const displayProfile = hasLoaded
     ? profile
@@ -106,6 +136,31 @@ export function DashboardSidebar({
   const subscription = SUBSCRIPTION_PLACEHOLDER
   const progressPercent = Math.min(Math.round((resolvedProfile.currentScore / 1000) * 100), 100)
   const visiblePracticeRounds = recentPracticeRounds.slice(0, 5)
+
+  const handleMarkRead = async (notificationId: string) => {
+    setPendingNotificationId(notificationId)
+
+    try {
+      await markNotificationRead(notificationId)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "更新提醒状态失败")
+    } finally {
+      setPendingNotificationId(null)
+    }
+  }
+
+  const handleDismiss = async (notificationId: string) => {
+    setPendingNotificationId(notificationId)
+
+    try {
+      await dismissNotification(notificationId)
+      toast.success("提醒已忽略")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "忽略提醒失败")
+    } finally {
+      setPendingNotificationId(null)
+    }
+  }
 
   return (
     <aside
@@ -204,6 +259,97 @@ export function DashboardSidebar({
             onOpenChange={setProfileOpen}
             onSaved={handleProfileSaved}
           />
+
+          <div className="rounded-[24px] border border-border/60 bg-surface-2/80 p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-brand/20 bg-brand/10 text-brand">
+                  <Bell className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">学习提醒</p>
+                  <p className="text-[11px] text-muted-foreground">站内提醒与关键进度节点</p>
+                </div>
+              </div>
+              <span className="rounded-full border border-border/60 bg-background/60 px-2 py-0.5 text-[11px] text-muted-foreground">
+                {unreadNotificationCount > 0 ? `${unreadNotificationCount} 条未读` : "已读完"}
+              </span>
+            </div>
+
+            {notifications.length > 0 ? (
+              <div className="space-y-2">
+                {notifications.map((item) => {
+                  const isPending = pendingNotificationId === item.id
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={cn(
+                        "rounded-2xl border px-3 py-3",
+                        item.status === "unread"
+                          ? "border-brand/25 bg-brand/8"
+                          : "border-border/50 bg-background/40",
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground">{item.title}</p>
+                          <p className="mt-1 text-xs leading-5 text-muted-foreground">{item.content}</p>
+                        </div>
+                        <span className="shrink-0 rounded-full border border-border/60 px-2 py-0.5 text-[10px] text-muted-foreground">
+                          {item.status === "unread" ? "未读" : "已读"}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 flex items-center gap-2">
+                        {item.actionHref && item.actionLabel ? (
+                          <Link
+                            href={item.actionHref}
+                            onClick={() => {
+                              if (item.status === "unread") {
+                                void handleMarkRead(item.id)
+                              }
+                            }}
+                            className="inline-flex items-center rounded-xl border border-border/60 bg-background/70 px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-background"
+                          >
+                            {item.actionLabel}
+                          </Link>
+                        ) : null}
+                        {item.status === "unread" ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void handleMarkRead(item.id)
+                            }}
+                            disabled={isPending}
+                            className="inline-flex items-center rounded-xl border border-border/60 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-background/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <CheckCheck className="mr-1.5 h-3.5 w-3.5" />
+                            标记已读
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleDismiss(item.id)
+                          }}
+                          disabled={isPending}
+                          className="inline-flex items-center rounded-xl border border-border/60 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-background/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <X className="mr-1.5 h-3.5 w-3.5" />
+                          忽略
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3 text-sm text-muted-foreground">
+                当前没有新的学习提醒。完成打卡或任务后，新的提醒会出现在这里。
+              </div>
+            )}
+          </div>
 
           <nav className="space-y-1 rounded-[24px] border border-border/60 bg-surface-2/80 p-2">
             {items.map((item) => {
