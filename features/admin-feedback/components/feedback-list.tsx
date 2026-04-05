@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Download, Search } from "lucide-react"
 import { feedbackPriorityLabels, feedbackTypeLabels } from "../data/status-config"
+import { buildAdminFeedbackListQuery, readAdminFeedbackUserIdFromSearchParams } from "../lib/list-filters"
 import type { AdminFeedbackListResponseData } from "@/lib/api/contracts/feedback"
 import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
@@ -12,6 +14,7 @@ import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
+import { ADMIN_ROUTES } from "@/constants/routes"
 import {
   adminRequestData,
   getAdminApiErrorMessage,
@@ -37,6 +40,8 @@ const EMPTY_STATS = {
 export function FeedbackList() {
   const confirm = useAppConfirm()
   const toast = useAppToast()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [data, setData] = useState<AdminFeedbackListResponseData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -51,6 +56,9 @@ export function FeedbackList() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [batchDeleting, setBatchDeleting] = useState(false)
   const [authExpired, setAuthExpired] = useState(false)
+  const [userIdFilter, setUserIdFilter] = useState<string | undefined>(() => (
+    readAdminFeedbackUserIdFromSearchParams(new URLSearchParams(searchParams.toString()))
+  ))
 
   useAdminSessionExpiryRedirect(authExpired)
 
@@ -60,25 +68,25 @@ export function FeedbackList() {
   const pageSize = Number.parseInt(limit, 10) || 20
   const totalPages = Math.max(1, Math.ceil(total / pageSize) || 1)
 
+  useEffect(() => {
+    const nextUserId = readAdminFeedbackUserIdFromSearchParams(new URLSearchParams(searchParams.toString()))
+    setUserIdFilter(nextUserId)
+    setPage(1)
+  }, [searchParams])
+
   const fetchList = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const params = new URLSearchParams()
-      if (statusFilter !== "all") {
-        params.append("status", statusFilter)
-      }
-      if (typeFilter !== "all") {
-        params.append("feedbackType", typeFilter)
-      }
-      if (priorityFilter !== "all") {
-        params.append("priority", priorityFilter)
-      }
-      if (keywordApplied) {
-        params.append("keyword", keywordApplied)
-      }
-      params.append("limit", limit)
-      params.append("page", String(page))
+      const params = buildAdminFeedbackListQuery({
+        statusFilter,
+        typeFilter,
+        priorityFilter,
+        keywordApplied,
+        limit,
+        page,
+        userId: userIdFilter,
+      })
       const result = await adminRequestData<AdminFeedbackListResponseData>(
         `/admin/feedback?${params.toString()}`,
         {
@@ -95,7 +103,7 @@ export function FeedbackList() {
     } finally {
       setIsLoading(false)
     }
-  }, [keywordApplied, limit, page, priorityFilter, statusFilter, typeFilter])
+  }, [keywordApplied, limit, page, priorityFilter, statusFilter, typeFilter, userIdFilter])
 
   useEffect(() => {
     void fetchList()
@@ -126,6 +134,12 @@ export function FeedbackList() {
   const handleApplySearch = () => {
     setPage(1)
     setKeywordApplied(keyword.trim())
+  }
+
+  const handleClearUserFilter = () => {
+    setPage(1)
+    setUserIdFilter(undefined)
+    router.replace(ADMIN_ROUTES.feedback)
   }
 
   const handleDeleteOne = async (ticketId: string) => {
@@ -345,6 +359,17 @@ export function FeedbackList() {
             <option value="low">低</option>
           </select>
         </div>
+        {userIdFilter ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-primary/15 bg-primary/5 px-3 py-2">
+            <p className="text-xs text-foreground">
+              当前仅查看用户工单：
+              <span className="ml-1 font-mono text-[11px] text-muted-foreground">{userIdFilter}</span>
+            </p>
+            <Button type="button" variant="outline" size="sm" className="h-7" onClick={handleClearUserFilter}>
+              清除用户筛选
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       {isLoading ? (

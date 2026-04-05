@@ -25,7 +25,7 @@ export const menuItems: MenuItem[] = [
     active: true,
   },
   {
-    label: "用户运营",
+    label: "用户管理",
     href: "/admin/users",
     icon: Users,
     active: true,

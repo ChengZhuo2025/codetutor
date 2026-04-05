@@ -21,6 +21,7 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
+import { buildAdminUserPatchPayload } from "../lib/edit-payload"
 
 type UserEditSheetProps = {
   user: AdminUserListItem | null
@@ -42,7 +43,6 @@ export function UserEditSheet({
   const [bio, setBio] = useState("")
   const [contactEmail, setContactEmail] = useState("")
   const [wechat, setWechat] = useState("")
-  const [contentLanguage, setContentLanguage] = useState("")
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -54,7 +54,6 @@ export function UserEditSheet({
     setBio(user.bio ?? "")
     setContactEmail(user.contactEmail ?? "")
     setWechat(user.wechat ?? "")
-    setContentLanguage(user.contentLanguage ?? "zh-CN")
   }, [open, user])
 
   const handleSave = async () => {
@@ -64,18 +63,28 @@ export function UserEditSheet({
 
     setSaving(true)
     try {
+      const payload = buildAdminUserPatchPayload({
+        user,
+        form: {
+          nickname,
+          bio,
+          contactEmail,
+          wechat,
+        },
+      })
+
+      if (Object.keys(payload).length === 0) {
+        toast.info("没有可保存的变更")
+        onOpenChange(false)
+        return
+      }
+
       const result = await adminRequestData<AdminUserDetailResponseData>(
         `/admin/users/${user.userId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nickname: nickname.trim(),
-            bio: bio.trim() || null,
-            contactEmail: contactEmail.trim() || null,
-            wechat: wechat.trim() || null,
-            contentLanguage: contentLanguage.trim() || undefined,
-          }),
+          body: JSON.stringify(payload),
         },
         "保存失败",
       )

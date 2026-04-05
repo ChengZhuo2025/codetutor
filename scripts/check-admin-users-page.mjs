@@ -78,26 +78,26 @@ assert.match(
 
 assert.match(
   detailSource,
-  /用户概览/,
-  "The admin user detail page should render the overview-first tab",
+  /用户资料/,
+  "The admin user detail page should expose the profile section shortcut",
 )
 
 assert.match(
   detailSource,
-  /学习详情/,
-  "The admin user detail page should render the learning detail tab",
+  /学习计划/,
+  "The admin user detail page should expose the learning-plan section shortcut",
 )
 
 assert.match(
   detailSource,
-  /反馈关联/,
-  "The admin user detail page should expose the feedback relation tab",
+  /任务统计/,
+  "The admin user detail page should expose the task summary section shortcut",
 )
 
 assert.match(
   detailSource,
-  /账号操作|只读快照/,
-  "The admin user detail page should focus on overview content instead of embedding the edit form",
+  /反馈工单|查看全部工单/,
+  "The admin user detail page should expose the feedback section and its deep link",
 )
 
 assert.doesNotMatch(
