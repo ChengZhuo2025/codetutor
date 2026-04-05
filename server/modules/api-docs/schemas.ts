@@ -1446,13 +1446,76 @@ export const adminSettingsAuditLogListQuerySchema = z
 // 管理员看板 API Schemas
 // ============================================
 
+export const adminDashboardTrendSchema = z.enum(["up", "down", "neutral"]).openapi("AdminDashboardTrend")
+
+export const adminDashboardMetricSchema = z
+  .object({
+    value: z.number(),
+    trend: adminDashboardTrendSchema,
+    comparisonLabel: z.string().nullable(),
+  })
+  .openapi("AdminDashboardMetric")
+
+export const adminDashboardHourlyPointSchema = z
+  .object({
+    time: z.string(),
+    successRate: z.number(),
+  })
+  .openapi("AdminDashboardHourlyPoint")
+
+export const adminDashboardDayActivePointSchema = z
+  .object({
+    day: z.string(),
+    activeUsers: z.number().int().nonnegative(),
+  })
+  .openapi("AdminDashboardDayActivePoint")
+
+export const adminDashboardFeedbackRowSchema = z
+  .object({
+    id: z.string().uuid(),
+    userLabel: z.string(),
+    typeLabel: z.string(),
+    statusLabel: z.string(),
+    priority: z.enum(["low", "medium", "high"]),
+    relativeTime: z.string(),
+  })
+  .openapi("AdminDashboardFeedbackRow")
+
+export const adminDashboardAiHealthItemSchema = z
+  .object({
+    modelCode: z.string(),
+    providerCode: z.string(),
+    message: z.string(),
+    severity: z.enum(["warning", "info"]),
+    relativeTime: z.string(),
+  })
+  .openapi("AdminDashboardAiHealthItem")
+
 export const adminDashboardOverviewResponseDataSchema = z
   .object({
+    generatedAt: z.string(),
     pendingFeedbackCount: z.number().int().nonnegative(),
     todayNewUserCount: z.number().int().nonnegative(),
     todayCompletedTaskCount: z.number().int().nonnegative(),
     activeLearningPathCount: z.number().int().nonnegative(),
     todayCheckinCount: z.number().int().nonnegative(),
+    todayOnboardingCompletedCount: z.number().int().nonnegative(),
+    metrics: z.object({
+      todayNewUsers: adminDashboardMetricSchema,
+      todayOnboardingCompleted: adminDashboardMetricSchema,
+      activeLearningPaths: adminDashboardMetricSchema,
+      todayCompletedTasks: adminDashboardMetricSchema,
+      todayCheckinUsers: adminDashboardMetricSchema,
+      pendingFeedback: adminDashboardMetricSchema,
+      aiSuccessRate24h: adminDashboardMetricSchema.nullable(),
+      aiAvgLatencyMs24h: adminDashboardMetricSchema.nullable(),
+    }),
+    aiHourlySuccess: z.array(adminDashboardHourlyPointSchema).nullable(),
+    weeklyActiveByDay: z.array(adminDashboardDayActivePointSchema).nullable(),
+    weeklyActiveSubtitle: z.string(),
+    recentFeedback: z.array(adminDashboardFeedbackRowSchema),
+    aiHealth: z.array(adminDashboardAiHealthItemSchema).nullable(),
+    canViewAiCharts: z.boolean(),
   })
   .openapi("AdminDashboardOverviewResponseData")
 

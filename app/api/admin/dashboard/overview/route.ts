@@ -6,7 +6,7 @@ import { getDashboardOverview } from "@/server/modules/admin-dashboard/service"
 
 const getHandler = createAdminDashboardOverviewGetHandler({
   getRequestAdmin: (request) => getRequestAdmin(request as NextRequest),
-  getDashboardOverview,
+  getDashboardOverview: (adminAccountId) => getDashboardOverview(adminAccountId),
 })
 
 export async function GET(request: NextRequest) {

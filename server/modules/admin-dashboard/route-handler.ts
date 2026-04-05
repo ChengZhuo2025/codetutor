@@ -16,7 +16,7 @@ type Awaitable<T> = T | Promise<T>
 
 export function createAdminDashboardOverviewGetHandler(dependencies: {
   getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
-  getDashboardOverview: () => Promise<unknown>
+  getDashboardOverview: (adminAccountId: string) => Promise<unknown>
 }) {
   return async function GET(request: unknown) {
     try {
@@ -26,7 +26,7 @@ export function createAdminDashboardOverviewGetHandler(dependencies: {
         return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
       }
 
-      const data = await dependencies.getDashboardOverview()
+      const data = await dependencies.getDashboardOverview(admin.adminId)
       return jsonSuccess(data, "获取看板数据成功")
     } catch {
       return jsonError("INTERNAL_ERROR", "获取看板数据失败", 500)

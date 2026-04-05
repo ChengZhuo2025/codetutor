@@ -153,7 +153,8 @@ test("admin dashboard route rejects unauthorized requests", async () => {
       reason: "forbidden",
       message: "管理员登录态无效或已过期。",
     }),
-    getDashboardOverview: async () => {
+    getDashboardOverview: async (adminAccountId: string) => {
+      void adminAccountId
       throw new Error("should not load dashboard without admin session")
     },
   })

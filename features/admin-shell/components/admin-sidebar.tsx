@@ -54,7 +54,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
       {/* Brand */}
       <div
         className={cn(
-          "flex h-13 shrink-0 items-center border-b border-sidebar-border/70 bg-sidebar/50",
+          "flex h-14 shrink-0 items-center border-b border-sidebar-border bg-sidebar/50",
           collapsed ? "justify-center px-2" : "gap-2.5 px-3.5",
         )}
       >
@@ -77,7 +77,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
       <nav
         className={cn(
           "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain",
-          collapsed ? "px-1.5 py-3" : "px-2 py-3",
+          collapsed ? "px-2 py-3" : "px-2.5 py-3",
         )}
         aria-label="管理后台主导航"
       >
@@ -115,8 +115,8 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
                     <>
                       <span className="min-w-0 flex-1 text-left">{item.label}</span>
                       {aiExpanded
-                        ? <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
-                        : <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
+                        ? <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+                        : <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                       }
                     </>
                   ) : null}
