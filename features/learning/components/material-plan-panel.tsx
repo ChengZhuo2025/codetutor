@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react"
 import { Loader2, RefreshCw, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { PageSection } from "@/components/ui/page-section"
 import { Textarea } from "@/components/ui/textarea"
 import { apiClient } from "@/lib/api/client"
@@ -172,14 +173,14 @@ export function MaterialPlanPanel({
         </div>
         <div className="space-y-2">
           <p className="text-xs font-medium text-muted-foreground">每周可投入（小时，可选）</p>
-          <input
+          <Input
             type="number"
             min={1}
             max={40}
             value={weeklyHours}
             onChange={(e) => setWeeklyHours(e.target.value)}
             disabled={busy !== null}
-            className="flex h-10 w-full rounded-xl border border-border/70 bg-background px-3 text-sm"
+            className="h-10 rounded-xl border-border/70 bg-background text-sm"
             placeholder="例如 6"
           />
         </div>

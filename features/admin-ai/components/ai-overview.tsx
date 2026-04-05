@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { Activity, Bot, Cpu, Layers, Server, TriangleAlert } from "lucide-react"
 import type { AdminAIOverviewResponseData } from "@/lib/api/contracts/admin-ai"
+import { Badge } from "@/components/ui/badge"
 import { StatePanel } from "@/components/ui/state-panel"
 import { AIAccessGate } from "./ai-access-gate"
 import { MetricCard, PageSection } from "./shared"
@@ -117,9 +118,9 @@ export function AIOverview() {
                           <p className="text-sm font-semibold text-foreground">{item.agentName}</p>
                           <p className="mt-1 text-xs text-muted-foreground">{item.agentCode}</p>
                         </div>
-                        <span className="inline-flex rounded-full border border-border bg-muted/60 px-2 py-1 text-[11px] text-muted-foreground">
+                        <Badge>
                           调用 {item.invocationCount}
-                        </span>
+                        </Badge>
                       </div>
                       <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                         <Activity className="h-3.5 w-3.5" />

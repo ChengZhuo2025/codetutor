@@ -10,6 +10,7 @@ import type {
 } from "@/lib/api/contracts/admin-learning"
 import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { StatePanel } from "@/components/ui/state-panel"
@@ -251,18 +252,18 @@ export function LearningPathDetail({ pathId }: LearningPathDetailProps) {
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">{data.path.pathName}</h1>
-              <span className={cn("inline-flex rounded-full border px-2 py-1 text-[11px] font-medium", statusMeta.className)}>
+              <Badge className={statusMeta.className}>
                 {statusMeta.label}
-              </span>
-              <span className="inline-flex rounded-full border border-border bg-muted/70 px-2 py-1 text-[11px] font-medium text-muted-foreground">
+              </Badge>
+              <Badge>
                 {data.path.toolName}
-              </span>
-              <span className="inline-flex rounded-full border border-border bg-muted/70 px-2 py-1 text-[11px] font-medium text-muted-foreground">
+              </Badge>
+              <Badge>
                 {data.path.learningLevelLabel}
-              </span>
-              <span className="inline-flex rounded-full border border-border bg-muted/70 px-2 py-1 text-[11px] font-medium text-muted-foreground">
+              </Badge>
+              <Badge>
                 {data.path.selectionModeLabel}
-              </span>
+              </Badge>
             </div>
             <p className="mt-2 font-mono text-sm text-muted-foreground">{data.path.pathCode}</p>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
@@ -334,9 +335,9 @@ export function LearningPathDetail({ pathId }: LearningPathDetailProps) {
                             奖励 XP {step.rewardXp} · 完成时间 {formatAdminLearningDateTime(step.completedAt)}
                           </p>
                         </div>
-                        <span className={cn("inline-flex rounded-full border px-2 py-1 text-[11px] font-medium", stepMeta.className)}>
+                        <Badge className={stepMeta.className}>
                           {stepMeta.label}
-                        </span>
+                        </Badge>
                       </div>
                     </div>
                   )

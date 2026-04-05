@@ -21,6 +21,7 @@ import type { AdminUserDetailResponseData } from "@/lib/api/contracts/admin-user
 import type { AdminFeedbackListResponseData } from "@/lib/api/contracts/feedback"
 import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
+import { Badge } from "@/components/ui/badge"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -592,20 +593,16 @@ export function UserDetail({ userId }: UserDetailProps) {
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">
                 {data.nickname || "未命名用户"}
               </h1>
-              <span
-                className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-medium ${onboardingMeta.className}`}
-              >
+              <Badge className={onboardingMeta.className}>
                 {onboardingMeta.label}
-              </span>
-              <span
-                className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-medium ${planStatusMeta.className}`}
-              >
+              </Badge>
+              <Badge className={planStatusMeta.className}>
                 {planStatusMeta.label}
-              </span>
+              </Badge>
               {data.deletedAt ? (
-                <span className="inline-flex rounded-full border border-destructive/20 bg-destructive/10 px-2 py-1 text-[11px] font-medium text-destructive">
+                <Badge variant="danger">
                   已软删
-                </span>
+                </Badge>
               ) : null}
             </div>
             <div className="mt-2 space-y-1 flex flex-wrap gap-3 text-sm">
@@ -714,11 +711,9 @@ export function UserDetail({ userId }: UserDetailProps) {
                 <ListTree className="h-4 w-4 text-primary" />
                 <h2 className="text-base font-semibold text-foreground">当前学习计划</h2>
               </div>
-              <span
-                className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-medium ${planStatusMeta.className}`}
-              >
+              <Badge className={planStatusMeta.className}>
                 {planStatusMeta.label}
-              </span>
+              </Badge>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               路径、进度、任务分布与关键时间，便于对照工单与用户自述。

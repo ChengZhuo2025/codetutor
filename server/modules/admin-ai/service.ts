@@ -366,6 +366,10 @@ function mapProviderListItem(
   }
 }
 
+function findProviderByIdentifier(providers: ProviderRow[], providerIdentifier: string) {
+  return providers.find((row) => row.id === providerIdentifier || row.code === providerIdentifier) ?? null
+}
+
 function mapModelListItem(
   row: ModelRow,
   providerById: Map<string, ProviderRow>,
@@ -704,12 +708,9 @@ export async function getAdminAIProviderDetail(
   providerId: string,
 ): Promise<AdminAIProviderDetailResponseData | null> {
   await assertCanAccessAI(adminAccountId)
-  if (!isUuid(providerId)) {
-    return null
-  }
 
   const [providers, models, agents] = await Promise.all([loadProviders(), loadModels(), loadAgents()])
-  const provider = providers.find((row) => row.id === providerId)
+  const provider = findProviderByIdentifier(providers, providerId)
   if (!provider) {
     return null
   }
@@ -819,7 +820,7 @@ export async function updateAdminAIProvider(
       is_active: input.isActive,
       metadata: input.metadata,
     })
-    .eq("id", providerId)
+    .eq("id", existing.provider.providerId)
 
   mapWriteError(error, "Provider code")
 
@@ -827,7 +828,7 @@ export async function updateAdminAIProvider(
     adminAccountId,
     action: "ai_provider_update",
     targetType: "ai_provider",
-    targetId: providerId,
+    targetId: existing.provider.providerId,
     beforeSnapshot: existing.provider,
     afterSnapshot: {
       ...existing.provider,
@@ -847,7 +848,7 @@ export async function updateAdminAIProvider(
     reason: input.changeReason,
   })
 
-  return getAdminAIProviderDetail(adminAccountId, providerId)
+  return getAdminAIProviderDetail(adminAccountId, existing.provider.providerId)
 }
 
 export async function getAdminAIModelList(filters: {

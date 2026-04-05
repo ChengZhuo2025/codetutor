@@ -178,12 +178,12 @@ export function createAdminAIProviderDetailHandlers(dependencies: {
         }
 
         const { providerId: rawId } = await routeContext.params
-        const providerId = parseUuidRoute(rawId, "Provider ID")
-        if (typeof providerId !== "string") {
-          return providerId
+        const providerId = parseRequiredRouteId(rawId, "Provider ID 不合法。")
+        if (!providerId.ok) {
+          return jsonError(providerId.code, providerId.message, 400)
         }
 
-        const data = await dependencies.getAdminAIProviderDetail(admin.adminId, providerId)
+        const data = await dependencies.getAdminAIProviderDetail(admin.adminId, providerId.data)
         if (!data) {
           return jsonError("NOT_FOUND", "Provider 不存在。", 404)
         }
@@ -201,9 +201,9 @@ export function createAdminAIProviderDetailHandlers(dependencies: {
         }
 
         const { providerId: rawId } = await routeContext.params
-        const providerId = parseUuidRoute(rawId, "Provider ID")
-        if (typeof providerId !== "string") {
-          return providerId
+        const providerId = parseRequiredRouteId(rawId, "Provider ID 不合法。")
+        if (!providerId.ok) {
+          return jsonError(providerId.code, providerId.message, 400)
         }
 
         const parsed = parseAdminAIProviderBody(await request.json())
@@ -212,7 +212,7 @@ export function createAdminAIProviderDetailHandlers(dependencies: {
         }
 
         try {
-          const data = await dependencies.updateAdminAIProvider(admin.adminId, providerId, parsed.data)
+          const data = await dependencies.updateAdminAIProvider(admin.adminId, providerId.data, parsed.data)
           if (!data) {
             return jsonError("NOT_FOUND", "Provider 不存在。", 404)
           }

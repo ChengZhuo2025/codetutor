@@ -10,6 +10,7 @@ import type {
   AdminAIModelListResponseData,
   AdminAIProviderListResponseData,
 } from "@/lib/api/contracts/admin-ai"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatePanel } from "@/components/ui/state-panel"
@@ -154,9 +155,9 @@ export function AITestConsole() {
               {loading ? (
                 <div className="h-48 animate-pulse rounded-xl border border-border bg-muted/30" />
               ) : (
-                <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-                  <div className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-6">
+                  <div className="rounded-xl border border-border bg-background/60 p-4">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                       <label className="space-y-1">
                         <span className="text-sm text-muted-foreground">交互类型</span>
                         <select value={previewForm.interactionType} onChange={(event) => setPreviewForm((prev) => ({ ...prev, interactionType: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground">
@@ -207,41 +208,41 @@ export function AITestConsole() {
                         <Input value={previewForm.stepNo} onChange={(event) => setPreviewForm((prev) => ({ ...prev, stepNo: event.target.value }))} placeholder="留空表示全部 step" />
                       </label>
                     </div>
-                    <Button type="button" className="gap-1.5" onClick={() => void runPreview()} disabled={previewLoading}>
-                      <Search className="h-4 w-4" />
-                      {previewLoading ? "预览中…" : "执行命中预览"}
-                    </Button>
+                    <div className="mt-4">
+                      <Button type="button" className="gap-1.5" onClick={() => void runPreview()} disabled={previewLoading}>
+                        <Search className="h-4 w-4" />
+                        {previewLoading ? "预览中…" : "执行命中预览"}
+                      </Button>
+                    </div>
                   </div>
 
-                  <div>
-                    {previewResult ? (
-                      <div className="space-y-4">
-                        <div className="rounded-xl border border-border bg-background/60 p-4">
-                          <p className="text-sm font-medium text-foreground">命中结果</p>
-                          <div className="mt-3 space-y-1 text-sm text-muted-foreground">
-                            <p>规则：{previewResult.matchedBinding?.bindingId ?? "未命中"}</p>
-                            <p>Agent：{previewResult.agent?.name ?? "未命中"}</p>
-                            <p>Provider / Model：{previewResult.agent ? `${previewResult.agent.providerCode} / ${previewResult.agent.modelCode}` : "暂无"}</p>
-                            <p>Specificity：{previewResult.matchedBinding?.specificityScore ?? "暂无"}</p>
-                          </div>
-                        </div>
-                        <div className="rounded-xl border border-border bg-background/60 p-4">
-                          <p className="text-sm font-medium text-foreground">匹配到的 Skills</p>
-                          {previewResult.matchedSkills.length ? (
-                            <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-                              {previewResult.matchedSkills.map((item) => (
-                                <p key={item.bindingId}>{item.priority}. {item.skillName} ({item.skillCode})</p>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="mt-3 text-sm text-muted-foreground">暂无 Skill 绑定。</p>
-                          )}
+                  {previewResult ? (
+                    <div className="grid gap-4 xl:grid-cols-2">
+                      <div className="rounded-xl border border-border bg-background/60 p-4">
+                        <p className="text-sm font-medium text-foreground">命中结果</p>
+                        <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                          <p>规则：{previewResult.matchedBinding?.bindingId ?? "未命中"}</p>
+                          <p>Agent：{previewResult.agent?.name ?? "未命中"}</p>
+                          <p>Provider / Model：{previewResult.agent ? `${previewResult.agent.providerCode} / ${previewResult.agent.modelCode}` : "暂无"}</p>
+                          <p>Specificity：{previewResult.matchedBinding?.specificityScore ?? "暂无"}</p>
                         </div>
                       </div>
-                    ) : (
-                      <StatePanel status="empty" title="尚未执行预览" description="填写上下文并点击“执行命中预览”后，在此查看命中结果。" />
-                    )}
-                  </div>
+                      <div className="rounded-xl border border-border bg-background/60 p-4">
+                        <p className="text-sm font-medium text-foreground">匹配到的 Skills</p>
+                        {previewResult.matchedSkills.length ? (
+                          <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                            {previewResult.matchedSkills.map((item) => (
+                              <p key={item.bindingId}>{item.priority}. {item.skillName} ({item.skillCode})</p>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-sm text-muted-foreground">暂无 Skill 绑定。</p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <StatePanel status="empty" title="尚未执行预览" description="填写上下文并点击“执行命中预览”后，在此查看命中结果。" />
+                  )}
                 </div>
               )}
             </PageSection>
@@ -250,9 +251,9 @@ export function AITestConsole() {
               {loading ? (
                 <div className="h-48 animate-pulse rounded-xl border border-border bg-muted/30" />
               ) : (
-                <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-                  <div className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-6">
+                  <div className="rounded-xl border border-border bg-background/60 p-4">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                       <label className="space-y-1">
                         <span className="text-sm text-muted-foreground">Agent</span>
                         <select value={testForm.agentCode} onChange={(event) => setTestForm((prev) => ({ ...prev, agentCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground">
@@ -280,67 +281,67 @@ export function AITestConsole() {
                           ))}
                         </select>
                       </label>
-                      <label className="flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-3 text-sm text-foreground">
+                      <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground">
                         <input type="checkbox" checked={testForm.stream} onChange={(event) => setTestForm((prev) => ({ ...prev, stream: event.target.checked }))} />
                         流式调用
                       </label>
                     </div>
 
-                    <label className="space-y-1">
-                      <span className="text-sm text-muted-foreground">Prompt</span>
-                      <textarea value={testForm.prompt} onChange={(event) => setTestForm((prev) => ({ ...prev, prompt: event.target.value }))} className="min-h-40 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
-                    </label>
+                    <div className="mt-4 space-y-4">
+                      <label className="space-y-1">
+                        <span className="text-sm text-muted-foreground">Prompt</span>
+                        <textarea value={testForm.prompt} onChange={(event) => setTestForm((prev) => ({ ...prev, prompt: event.target.value }))} className="min-h-40 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
+                      </label>
 
-                    <label className="space-y-1">
-                      <span className="text-sm text-muted-foreground">变更原因</span>
-                      <textarea value={testForm.changeReason} onChange={(event) => setTestForm((prev) => ({ ...prev, changeReason: event.target.value }))} className="min-h-24 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
-                    </label>
+                      <label className="space-y-1">
+                        <span className="text-sm text-muted-foreground">变更原因</span>
+                        <textarea value={testForm.changeReason} onChange={(event) => setTestForm((prev) => ({ ...prev, changeReason: event.target.value }))} className="min-h-24 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
+                      </label>
 
-                    <Button type="button" className="gap-1.5" onClick={() => void runTest()} disabled={testLoading}>
-                      <Play className="h-4 w-4" />
-                      {testLoading ? "执行中…" : "执行真实 AI 测试"}
-                    </Button>
+                      <Button type="button" className="gap-1.5" onClick={() => void runTest()} disabled={testLoading}>
+                        <Play className="h-4 w-4" />
+                        {testLoading ? "执行中…" : "执行真实 AI 测试"}
+                      </Button>
+                    </div>
                   </div>
 
-                  <div>
-                    {testResult ? (
-                      <div className="space-y-4">
-                        <div className="rounded-xl border border-border bg-background/60 p-4">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className={`inline-flex rounded-full border px-2 py-1 text-[11px] ${getInvocationStatusMeta(testResult.status).className}`}>
-                              {getInvocationStatusMeta(testResult.status).label}
-                            </span>
-                            <span className="text-sm font-semibold text-foreground">{testResult.agentCode}</span>
-                          </div>
-                          <div className="mt-3 space-y-1 text-sm text-muted-foreground">
-                            <p>invocationId：{testResult.invocationId}</p>
-                            <p>Provider / Model：{testResult.providerCode} / {testResult.modelCode}</p>
-                            <p>耗时：{formatNumber(testResult.latencyMs)} ms</p>
-                            <p>Tokens：{formatNumber(testResult.usage.totalTokens)}（prompt {formatNumber(testResult.usage.promptTokens)} / completion {formatNumber(testResult.usage.completionTokens)}）</p>
-                            <p>finishReason：{testResult.finishReason ?? "暂无"}</p>
-                          </div>
+                  {testResult ? (
+                    <div className="space-y-4">
+                      <div className="rounded-xl border border-border bg-background/60 p-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge className={getInvocationStatusMeta(testResult.status).className}>
+                            {getInvocationStatusMeta(testResult.status).label}
+                          </Badge>
+                          <span className="text-sm font-semibold text-foreground">{testResult.agentCode}</span>
                         </div>
-
-                        <div className="rounded-xl border border-border bg-background/60 p-4">
-                          <p className="text-sm font-medium text-foreground">模型返回内容</p>
-                          <div className="mt-3 whitespace-pre-wrap text-sm leading-6 text-foreground">{testResult.content || "模型未返回内容。"}</div>
-                        </div>
-
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <div>
-                            <p className="mb-2 text-sm font-medium text-foreground">Request Payload</p>
-                            <JsonPreview value={testResult.requestPayloadRedacted} />
-                          </div>
-                          <div>
-                            <p className="mb-2 text-sm font-medium text-foreground">Response Payload</p>
-                            <JsonPreview value={testResult.responsePayloadRedacted} />
-                          </div>
+                        <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                          <p>invocationId：{testResult.invocationId}</p>
+                          <p>Provider / Model：{testResult.providerCode} / {testResult.modelCode}</p>
+                          <p>耗时：{formatNumber(testResult.latencyMs)} ms</p>
+                          <p>Tokens：{formatNumber(testResult.usage.totalTokens)}（prompt {formatNumber(testResult.usage.promptTokens)} / completion {formatNumber(testResult.usage.completionTokens)}）</p>
+                          <p>finishReason：{testResult.finishReason ?? "暂无"}</p>
                         </div>
                       </div>
-                    ) : (
-                      <StatePanel status="empty" title="尚未执行 AI 测试" description="填写 Agent / Provider / Model / Prompt 后，执行真实调用并在此查看结果。" />
-                    )}
-                  </div>
+
+                      <div className="rounded-xl border border-border bg-background/60 p-4">
+                        <p className="text-sm font-medium text-foreground">模型返回内容</p>
+                        <div className="mt-3 whitespace-pre-wrap text-sm leading-6 text-foreground">{testResult.content || "模型未返回内容。"}</div>
+                      </div>
+
+                      <div className="grid gap-4 xl:grid-cols-2">
+                        <div>
+                          <p className="mb-2 text-sm font-medium text-foreground">Request Payload</p>
+                          <JsonPreview value={testResult.requestPayloadRedacted} />
+                        </div>
+                        <div>
+                          <p className="mb-2 text-sm font-medium text-foreground">Response Payload</p>
+                          <JsonPreview value={testResult.responsePayloadRedacted} />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <StatePanel status="empty" title="尚未执行 AI 测试" description="填写 Agent / Provider / Model / Prompt 后，执行真实调用并在此查看结果。" />
+                  )}
                 </div>
               )}
             </PageSection>

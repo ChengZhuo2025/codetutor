@@ -448,6 +448,27 @@ test("admin ai provider detail patch returns 200", async () => {
   assert.equal(res.status, 200)
 })
 
+test("admin ai provider detail get accepts provider code route id", async () => {
+  let receivedProviderId: string | null = null
+
+  const handler = createAdminAIProviderDetailHandlers({
+    getRequestAdmin: async () => okAdmin,
+    getAdminAIProviderDetail: async (_adminId, providerId) => {
+      receivedProviderId = providerId
+      return sampleProviderDetail
+    },
+    updateAdminAIProvider: async () => sampleProviderDetail,
+  })
+
+  const res = await handler.GET(
+    new Request("http://localhost/api/admin/ai/providers/siliconflow"),
+    { params: Promise.resolve({ providerId: "siliconflow" }) },
+  )
+
+  assert.equal(res.status, 200)
+  assert.equal(receivedProviderId, "siliconflow")
+})
+
 test("admin ai model list returns 200", async () => {
   const handler = createAdminAIModelListHandler({
     getRequestAdmin: async () => okAdmin,

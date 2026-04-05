@@ -30,13 +30,12 @@ export function AdminHeader({ session }: AdminHeaderProps) {
 
   let title = breadcrumbMap[pathname] ?? "管理后台"
   if (!breadcrumbMap[pathname]) {
-    const segments = pathname.split("/")
-    if (segments.length > 3) {
-      const parentPath = segments.slice(0, 3).join("/")
-      const parentTitle = breadcrumbMap[parentPath]
-      if (parentTitle) {
-        title = `${parentTitle} / 详情`
-      }
+    const matchedPrefix = Object.keys(breadcrumbMap)
+      .filter((key) => pathname.startsWith(`${key}/`))
+      .sort((left, right) => right.length - left.length)[0]
+
+    if (matchedPrefix) {
+      title = `${breadcrumbMap[matchedPrefix]} / 详情`
     }
   }
 

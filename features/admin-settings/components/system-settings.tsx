@@ -23,6 +23,7 @@ import type {
   AdminSettingsAuditLogListResponseData,
   AdminSettingsOverviewResponseData,
 } from "@/lib/api/contracts/admin-settings"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatePanel } from "@/components/ui/state-panel"
@@ -135,11 +136,9 @@ function getAuditActionLabel(action: string) {
 
 function RoleBadge({ role }: { role: AdminRoleCode }) {
   return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${ROLE_BADGE_CLASS[role]}`}
-    >
+    <Badge size="lg" className={ROLE_BADGE_CLASS[role]}>
       {ROLE_LABELS[role]}
-    </span>
+    </Badge>
   )
 }
 
@@ -418,9 +417,9 @@ export function SystemSettings() {
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-lg font-semibold text-foreground">{overview.currentAdmin.displayName}</h2>
-                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusBadgeClass(overview.currentAdmin.status)}`}>
+                  <Badge size="lg" className={getStatusBadgeClass(overview.currentAdmin.status)}>
                     {getStatusLabel(overview.currentAdmin.status)}
-                  </span>
+                  </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">{overview.currentAdmin.email ?? "暂无联系邮箱"}</p>
                 <div className="flex flex-wrap gap-2">
@@ -599,9 +598,9 @@ export function SystemSettings() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusBadgeClass(item.status)}`}>
+                          <Badge size="lg" className={getStatusBadgeClass(item.status)}>
                             {getStatusLabel(item.status)}
-                          </span>
+                          </Badge>
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{formatDateTime(item.lastLoginAt)}</td>
                         <td className="px-4 py-3 text-muted-foreground">{formatDateTime(item.createdAt)}</td>

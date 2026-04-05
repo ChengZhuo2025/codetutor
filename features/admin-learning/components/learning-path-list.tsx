@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { BookOpen, Download, Search, TimerReset, Trophy, Users } from "lucide-react"
 import type { AdminLearningPathListResponseData } from "@/lib/api/contracts/admin-learning"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatePanel } from "@/components/ui/state-panel"
@@ -17,7 +18,6 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
-import { cn } from "@/lib/utils"
 import {
   formatAdminLearningShortDateTime,
   getAdminLearningStatusMeta,
@@ -303,18 +303,18 @@ export function LearningPathList() {
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className={cn("inline-flex rounded-full border px-2 py-1 text-[11px] font-medium", statusMeta.className)}>
+                          <Badge className={statusMeta.className}>
                             {statusMeta.label}
-                          </span>
-                          <span className="inline-flex rounded-full border border-border bg-muted/60 px-2 py-1 text-[11px] font-medium text-muted-foreground">
+                          </Badge>
+                          <Badge>
                             {item.toolName}
-                          </span>
-                          <span className="inline-flex rounded-full border border-border bg-muted/60 px-2 py-1 text-[11px] font-medium text-muted-foreground">
+                          </Badge>
+                          <Badge>
                             {item.learningLevelLabel}
-                          </span>
-                          <span className="inline-flex rounded-full border border-border bg-muted/60 px-2 py-1 text-[11px] font-medium text-muted-foreground">
+                          </Badge>
+                          <Badge>
                             {item.selectionModeLabel}
-                          </span>
+                          </Badge>
                         </div>
                         <div className="mt-3 flex min-w-0 items-start gap-3">
                           {item.userAvatarUrl ? (
