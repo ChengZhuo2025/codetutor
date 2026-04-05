@@ -118,6 +118,14 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - `POST /api/auth/login`
 - `GET /api/auth/session`
+- `POST /api/admin/auth/login`
+- `GET /api/admin/auth/session`
+- `POST /api/admin/auth/logout`
+- `POST /api/admin/auth/change-password`
+- `GET /api/admin/dashboard/overview`
+- `GET /api/admin/profile/me`
+- `PATCH /api/admin/profile/me`
+- `POST /api/admin/profile/avatar`
 - `GET /api/profile/me`
 - `PATCH /api/profile/me`
 - `POST /api/profile/avatar`
@@ -139,10 +147,20 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `POST /api/feedback`
 - `GET /api/feedback/mine`
 - `GET /api/feedback/mine/{id}`
+- `GET /api/admin/users`
+- `GET /api/admin/users/export`
+- `GET /api/admin/users/{userId}`
+- `PATCH /api/admin/users/{userId}`
+- `POST /api/admin/users/{userId}/soft-delete`
+- `POST /api/admin/users/{userId}/restore`
 - `GET /api/admin/feedback`
 - `GET /api/admin/feedback/{id}`
 - `POST /api/admin/feedback/{id}/reply`
 - `POST /api/admin/feedback/{id}/status`
+- `GET /api/admin/learning-paths`
+- `GET /api/admin/learning-paths/export`
+- `GET /api/admin/learning-paths/{pathId}`
+- `POST /api/admin/learning-paths/{pathId}/status`
 - `POST /api/learning/plan-from-material`
 - `POST /api/learning/plan-drafts/{id}/confirm`
 - `POST /api/learning/plan-drafts/{id}/regenerate`
@@ -250,10 +268,28 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `POST /api/feedback`
 - `GET /api/feedback/mine`
 - `GET /api/feedback/mine/{id}`
+- `POST /api/admin/auth/login`
+- `GET /api/admin/auth/session`
+- `POST /api/admin/auth/logout`
+- `POST /api/admin/auth/change-password`
+- `GET /api/admin/dashboard/overview`
+- `GET /api/admin/profile/me`
+- `PATCH /api/admin/profile/me`
+- `POST /api/admin/profile/avatar`
+- `GET /api/admin/users`
+- `GET /api/admin/users/export`
+- `GET /api/admin/users/{userId}`
+- `PATCH /api/admin/users/{userId}`
+- `POST /api/admin/users/{userId}/soft-delete`
+- `POST /api/admin/users/{userId}/restore`
 - `GET /api/admin/feedback`
 - `GET /api/admin/feedback/{id}`
 - `POST /api/admin/feedback/{id}/reply`
 - `POST /api/admin/feedback/{id}/status`
+- `GET /api/admin/learning-paths`
+- `GET /api/admin/learning-paths/export`
+- `GET /api/admin/learning-paths/{pathId}`
+- `POST /api/admin/learning-paths/{pathId}/status`
 
 ## 4.7 数据事件
 
@@ -275,6 +311,10 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 成就页 | `/achievements` | `GET /api/achievement/summary` | 当前已打通成长总览 read model，并支持真实每日打卡 |
 | 历史页 | `/history` | `GET /api/history/recent`、`GET /api/history/{id}`、`POST /api/history/{id}/status` | 当前前端实际需要的是“历史学习计划列表 + 详情复盘 + 状态操作”，而不是“最近对话列表” |
 | 反馈弹窗 | 设置菜单 / `/history` 侧栏 | `POST /api/feedback`、`GET /api/feedback/mine`、`GET /api/feedback/mine/{id}` | 用户可提交反馈并查看管理员回复 |
+| 管理后台总览 | `/admin` | `GET /api/admin/dashboard/overview` | 当前已落地管理员会话守卫、总览看板与资料区 |
+| 用户运营 | `/admin/users`、`/admin/users/[userId]` | `GET /api/admin/users`、`GET /api/admin/users/export`、`GET /api/admin/users/{userId}`、`PATCH /api/admin/users/{userId}`、`POST /api/admin/users/{userId}/soft-delete`、`POST /api/admin/users/{userId}/restore` | 当前已落地列表筛选、导出、详情、资料维护、软删恢复与工单联动 |
+| 学习运营 | `/admin/learning`、`/admin/learning/[pathId]` | `GET /api/admin/learning-paths`、`GET /api/admin/learning-paths/export`、`GET /api/admin/learning-paths/{pathId}`、`POST /api/admin/learning-paths/{pathId}/status` | 当前已落地学习路径实例列表、详情、最近会话摘要与 `reactivate/archive` 状态操作 |
+| 管理端反馈 | `/admin/feedback`、`/admin/feedback/[id]` | `GET /api/admin/feedback`、`GET /api/admin/feedback/{id}`、`POST /api/admin/feedback/{id}/reply`、`POST /api/admin/feedback/{id}/status` | 当前已落地列表筛选、详情回复与状态流转 |
 
 以下内容继续保留前端本地静态配置，不进入 MVP 首期后端：
 
@@ -1565,6 +1605,23 @@ SSE 事件补充：
 
 尚未在本阶段约定的接口（仍以设计文档为规划，**未实现**）：如用户内部备注、人工积分调整等。
 
+### 11.2A 学习运营（学习路径实例）
+
+以下接口均需管理员会话；路径参数使用 `pathId`，对应 `user_learning_paths.id`。
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `GET /api/admin/learning-paths` | GET | 分页学习路径列表；支持 `keyword`、状态、工具、等级、最近更新时间筛选 |
+| `GET /api/admin/learning-paths/export` | GET | 基于列表同筛选导出 CSV（最多 10000 行） |
+| `GET /api/admin/learning-paths/{pathId}` | GET | 学习路径详情 read model，包含用户快照、路径快照、时间线、步骤与最近会话 |
+| `POST /api/admin/learning-paths/{pathId}/status` | POST | 受控状态操作；当前仅支持 `reactivate`、`archive` 两种动作 |
+
+当前约束：
+
+- `reactivate` 仅允许对 `interrupted` 路径执行，且若该用户已有其他 `active` 路径则返回冲突。
+- `archive` 仅允许对 `completed`、`interrupted`、`abandoned` 路径执行；进行中的路径不可直接归档。
+- 所有状态写操作都必须通过后台专用 API，并写入管理员审计日志。
+
 ### 11.3 `GET /api/admin/feedback`
 
 用途：
@@ -1634,6 +1691,8 @@ SSE 事件补充：
 | `PATCH /api/admin/users/{userId}` | 管理员 | 受控更新终端用户资料 |
 | `POST /api/admin/users/{userId}/soft-delete` | 管理员 | 软删除终端用户 |
 | `POST /api/admin/users/{userId}/restore` | 管理员 | 恢复终端用户 |
+| `GET /api/admin/learning-paths*` | 管理员 | 学习路径列表、导出、详情 |
+| `POST /api/admin/learning-paths/{pathId}/status` | 管理员 | 学习路径受控状态操作（`reactivate/archive`） |
 | `GET /api/admin/feedback*` | 管理员 | 管理员反馈查询与回复 |
 | `POST /api/admin/auth/login` | 否 | 管理员登录入口 |
 | `GET /api/admin/auth/session` | 是 | 获取管理员会话摘要 |

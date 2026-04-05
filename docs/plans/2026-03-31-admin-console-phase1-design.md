@@ -281,14 +281,14 @@ app/
 
 ### 4.3 侧边栏菜单
 
-Phase 1 只显示可访问的菜单项（未实现的显示为禁用）。**2026-04 代码对齐**：`用户运营` 已与 `features/admin-shell/data/menu-config.ts` 一致设为可点通。
+Phase 1 只显示可访问的菜单项（未实现的显示为禁用）。**2026-04-05 代码对齐**：`用户运营` 与 `学习运营` 已与 `features/admin-shell/data/menu-config.ts` 一致设为可点通。
 
 ```typescript
 const menuItems = [
   { label: "总览看板", href: "/admin", icon: LayoutDashboard, active: true },
   { label: "用户运营", href: "/admin/users", icon: Users, active: true },
   { label: "反馈工单", href: "/admin/feedback", icon: MessageSquare, active: true },
-  { label: "学习运营", href: "/admin/learning", icon: BookOpen, active: false },
+  { label: "学习运营", href: "/admin/learning", icon: BookOpen, active: true },
   {
     label: "AI 运营",
     href: "/admin/ai",

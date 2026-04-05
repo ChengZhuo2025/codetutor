@@ -40,7 +40,7 @@ export const menuItems: MenuItem[] = [
     label: "学习运营",
     href: "/admin/learning",
     icon: BookOpen,
-    active: false,
+    active: true,
   },
   {
     label: "AI 运营",

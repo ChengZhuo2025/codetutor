@@ -17,6 +17,14 @@ import type { UpdateLearningHistoryStatusRequest } from "@/lib/api/contracts/his
 import type { CompleteOnboardingRequest } from "@/lib/api/contracts/onboarding"
 import type { CompleteTaskRequest, UpdateTaskStatusRequest } from "@/lib/api/contracts/task"
 import type { AdminUpdateUserRequest } from "@/lib/api/contracts/admin-users"
+import {
+  ADMIN_LEARNING_PATH_LIST_STATUSES,
+  ADMIN_LEARNING_PATH_STATUS_ACTIONS,
+  ADMIN_LEARNING_UPDATED_WITHIN_OPTIONS,
+  type AdminLearningPathListStatus,
+  type AdminLearningPathStatusAction,
+  type AdminLearningUpdatedWithin,
+} from "@/lib/api/contracts/admin-learning"
 import { normalizeUuid } from "@/server/lib/identifiers"
 import type { HistoryFilter } from "@/features/history/types"
 import type { Level } from "@/features/onboarding/types"
@@ -553,6 +561,7 @@ export function parseAdminFeedbackListQuery(searchParams: URLSearchParams) {
 }
 
 const ADMIN_USER_ACCOUNT_STATUSES = ["active", "deleted", "all"] as const
+const ADMIN_LEARNING_LEVELS = ["beginner", "intermediate", "advanced"] as const
 
 export function parseAdminUserListQuery(searchParams: URLSearchParams) {
   const rawLimit = searchParams.get("limit")
@@ -603,6 +612,59 @@ export function parseAdminUserListQuery(searchParams: URLSearchParams) {
     onboardingCompleted,
     hasActiveLearningPath,
     keyword: searchParams.get("keyword")?.trim() || undefined,
+    limit,
+    page,
+  })
+}
+
+export function parseAdminLearningPathListQuery(searchParams: URLSearchParams) {
+  const rawLimit = searchParams.get("limit")
+  const rawPage = searchParams.get("page")
+  const rawStatus = searchParams.get("status")
+  const rawLearningLevel = searchParams.get("learningLevel")
+  const rawUpdatedWithin = searchParams.get("updatedWithin")
+
+  const limit = rawLimit ? Number.parseInt(rawLimit, 10) : 20
+  const page = rawPage ? Number.parseInt(rawPage, 10) : 1
+
+  if (!Number.isFinite(limit) || limit < 1 || limit > 100) {
+    return fail("VALIDATION_FAILED", "limit 必须在 1 到 100 之间。")
+  }
+
+  if (!Number.isFinite(page) || page < 1) {
+    return fail("VALIDATION_FAILED", "page 必须是大于等于 1 的整数。")
+  }
+
+  let status: AdminLearningPathListStatus = "all"
+  if (rawStatus) {
+    if (!ADMIN_LEARNING_PATH_LIST_STATUSES.includes(rawStatus as AdminLearningPathListStatus)) {
+      return fail("VALIDATION_FAILED", "status 参数不合法。")
+    }
+    status = rawStatus as AdminLearningPathListStatus
+  }
+
+  let learningLevel: "beginner" | "intermediate" | "advanced" | undefined
+  if (rawLearningLevel) {
+    if (!ADMIN_LEARNING_LEVELS.includes(rawLearningLevel as (typeof ADMIN_LEARNING_LEVELS)[number])) {
+      return fail("VALIDATION_FAILED", "learningLevel 参数不合法。")
+    }
+    learningLevel = rawLearningLevel as (typeof ADMIN_LEARNING_LEVELS)[number]
+  }
+
+  let updatedWithin: AdminLearningUpdatedWithin = "all"
+  if (rawUpdatedWithin) {
+    if (!ADMIN_LEARNING_UPDATED_WITHIN_OPTIONS.includes(rawUpdatedWithin as AdminLearningUpdatedWithin)) {
+      return fail("VALIDATION_FAILED", "updatedWithin 参数不合法。")
+    }
+    updatedWithin = rawUpdatedWithin as AdminLearningUpdatedWithin
+  }
+
+  return ok({
+    keyword: searchParams.get("keyword")?.trim() || undefined,
+    status,
+    toolCode: searchParams.get("toolCode")?.trim() || undefined,
+    learningLevel,
+    updatedWithin,
     limit,
     page,
   })
@@ -702,6 +764,50 @@ export function parseAdminUserPatchBody(input: unknown): ValidationResult<AdminU
   }
 
   return ok(data)
+}
+
+const adminLearningPathStatusShapeSchema = z
+  .object({
+    action: z.string(),
+    reason: z.unknown().optional(),
+  })
+  .strict()
+
+export function parseAdminLearningPathStatusBody(
+  input: unknown,
+): ValidationResult<{
+  action: AdminLearningPathStatusAction
+  reason?: string | null
+}> {
+  const shape = adminLearningPathStatusShapeSchema.safeParse(input)
+
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "学习路径状态更新请求体不合法。")
+  }
+
+  if (!ADMIN_LEARNING_PATH_STATUS_ACTIONS.includes(shape.data.action as AdminLearningPathStatusAction)) {
+    return fail("VALIDATION_FAILED", "action 参数不合法。")
+  }
+
+  let reason: string | null | undefined
+  if (shape.data.reason !== undefined) {
+    if (shape.data.reason === null) {
+      reason = null
+    } else if (typeof shape.data.reason === "string") {
+      const normalized = shape.data.reason.trim()
+      if (normalized.length > 500) {
+        return fail("VALIDATION_FAILED", "reason 最多 500 个字符。")
+      }
+      reason = normalized.length > 0 ? normalized : null
+    } else {
+      return fail("VALIDATION_FAILED", "reason 必须是字符串或 null。")
+    }
+  }
+
+  return ok({
+    action: shape.data.action as AdminLearningPathStatusAction,
+    reason,
+  })
 }
 
 const adminUserSoftDeleteShapeSchema = z.object({

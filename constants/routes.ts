@@ -23,6 +23,7 @@ export const ADMIN_ROUTES = {
   home: "/admin",
   feedback: "/admin/feedback",
   users: "/admin/users",
+  learning: "/admin/learning",
 } as const
 
 export const MARKETING_SECTIONS = {

@@ -1264,3 +1264,176 @@ export const adminSoftDeleteUserRequestSchema = z
     reason: z.string().nullable().optional(),
   })
   .openapi("AdminSoftDeleteUserRequest")
+
+export const adminLearningPathStatusSchema = z
+  .enum(["active", "interrupted", "completed", "abandoned", "archived"])
+  .openapi("AdminLearningPathStatus")
+
+export const adminLearningPathListStatusSchema = z
+  .enum(["all", "active", "interrupted", "completed", "abandoned"])
+  .openapi("AdminLearningPathListStatus")
+
+export const adminLearningUpdatedWithinSchema = z
+  .enum(["all", "7d", "30d", "90d"])
+  .openapi("AdminLearningUpdatedWithin")
+
+export const adminLearningToolOptionSchema = z
+  .object({
+    code: z.string(),
+    name: z.string(),
+  })
+  .openapi("AdminLearningToolOption")
+
+export const adminLearningPathListItemSchema = z
+  .object({
+    pathId: z.string().uuid(),
+    userId: z.string().uuid(),
+    userNickname: z.string().nullable(),
+    userAvatarUrl: z.string().nullable(),
+    userEmail: z.string().nullable(),
+    toolCode: z.string(),
+    toolName: z.string(),
+    pathCode: z.string(),
+    pathName: z.string(),
+    learningLevel: learningLevelSchema,
+    learningLevelLabel: z.string(),
+    selectionMode: selectionModeSchema,
+    selectionModeLabel: z.string(),
+    status: z.enum(["active", "interrupted", "completed", "abandoned"]),
+    progressPercent: z.number().int().min(0).max(100),
+    completedTaskCount: z.number().int().nonnegative(),
+    inProgressTaskCount: z.number().int().nonnegative(),
+    blockedTaskCount: z.number().int().nonnegative(),
+    totalTaskCount: z.number().int().nonnegative(),
+    xpEarned: z.number().int().nonnegative(),
+    startedAt: z.string(),
+    lastLearningAt: z.string().nullable(),
+    updatedAt: z.string(),
+  })
+  .openapi("AdminLearningPathListItem")
+
+export const adminLearningPathListStatsSchema = z
+  .object({
+    totalPaths: z.number().int().nonnegative(),
+    activeCount: z.number().int().nonnegative(),
+    interruptedCount: z.number().int().nonnegative(),
+    completedCount: z.number().int().nonnegative(),
+    abandonedCount: z.number().int().nonnegative(),
+  })
+  .openapi("AdminLearningPathListStats")
+
+export const adminLearningPathListResponseDataSchema = z
+  .object({
+    items: z.array(adminLearningPathListItemSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().min(1),
+    limit: z.number().int().min(1).max(100),
+    stats: adminLearningPathListStatsSchema,
+    toolOptions: z.array(adminLearningToolOptionSchema).optional(),
+  })
+  .openapi("AdminLearningPathListResponseData")
+
+export const adminLearningPathListQuerySchema = z
+  .object({
+    keyword: z.string().optional(),
+    status: adminLearningPathListStatusSchema.optional(),
+    toolCode: z.string().optional(),
+    learningLevel: learningLevelSchema.optional(),
+    updatedWithin: adminLearningUpdatedWithinSchema.optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+  })
+  .openapi("AdminLearningPathListQuery")
+
+export const adminLearningPathIdParamsSchema = z
+  .object({
+    pathId: z.string().uuid(),
+  })
+  .openapi("AdminLearningPathIdParams")
+
+export const adminLearningPathTimelineSchema = z
+  .object({
+    startedAt: z.string(),
+    lastActivityAt: z.string().nullable(),
+    completedAt: z.string().nullable(),
+    interruptedAt: z.string().nullable(),
+    abandonedAt: z.string().nullable(),
+    archivedAt: z.string().nullable(),
+  })
+  .openapi("AdminLearningPathTimeline")
+
+export const adminLearningPathDetailStepSchema = z
+  .object({
+    stepId: z.string(),
+    stepNo: z.number().int().positive(),
+    title: z.string(),
+    status: z.enum(["pending", "in_progress", "blocked", "completed"]),
+    rewardXp: z.number().int().nonnegative(),
+    completedAt: z.string().nullable(),
+  })
+  .openapi("AdminLearningPathDetailStep")
+
+export const adminLearningPathRecentSessionSchema = z
+  .object({
+    sessionId: z.string().uuid(),
+    status: z.string(),
+    startedAt: z.string(),
+    lastMessageAt: z.string().nullable(),
+    messageCount: z.number().int().nonnegative(),
+    latestAssistantSummary: z.string().nullable(),
+  })
+  .openapi("AdminLearningPathRecentSession")
+
+export const adminLearningPathDetailResponseDataSchema = z
+  .object({
+    pathId: z.string().uuid(),
+    user: z.object({
+      userId: z.string().uuid(),
+      nickname: z.string().nullable(),
+      avatarUrl: z.string().nullable(),
+      email: z.string().nullable(),
+      currentScore: z.number().int().nonnegative(),
+      currentRankLabel: z.string(),
+      streakDays: z.number().int().nonnegative(),
+      lastLearningAt: z.string().nullable(),
+    }),
+    path: z.object({
+      pathCode: z.string(),
+      pathName: z.string(),
+      summary: z.string().nullable(),
+      toolCode: z.string(),
+      toolName: z.string(),
+      learningLevel: learningLevelSchema,
+      learningLevelLabel: z.string(),
+      selectionMode: selectionModeSchema,
+      selectionModeLabel: z.string(),
+      status: adminLearningPathStatusSchema,
+      totalSteps: z.number().int().nonnegative(),
+      completedSteps: z.number().int().nonnegative(),
+      progressPercent: z.number().int().min(0).max(100),
+      totalTaskCount: z.number().int().nonnegative(),
+      completedTaskCount: z.number().int().nonnegative(),
+      inProgressTaskCount: z.number().int().nonnegative(),
+      blockedTaskCount: z.number().int().nonnegative(),
+      pendingTaskCount: z.number().int().nonnegative(),
+      xpEarned: z.number().int().nonnegative(),
+    }),
+    timeline: adminLearningPathTimelineSchema,
+    steps: z.array(adminLearningPathDetailStepSchema),
+    recentSessions: z.array(adminLearningPathRecentSessionSchema),
+  })
+  .openapi("AdminLearningPathDetailResponseData")
+
+export const adminUpdateLearningPathStatusRequestSchema = z
+  .object({
+    action: z.enum(["reactivate", "archive"]),
+    reason: z.string().nullable().optional(),
+  })
+  .openapi("AdminUpdateLearningPathStatusRequest")
+
+export const adminUpdateLearningPathStatusResponseDataSchema = z
+  .object({
+    pathId: z.string().uuid(),
+    status: adminLearningPathStatusSchema,
+  })
+  .openapi("AdminUpdateLearningPathStatusResponseData")

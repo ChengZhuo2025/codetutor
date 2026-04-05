@@ -16,6 +16,12 @@ import {
   adminReplyFeedbackRequestSchema,
   adminFeedbackDeleteOkDataSchema,
   adminUpdateFeedbackStatusRequestSchema,
+  adminLearningPathDetailResponseDataSchema,
+  adminLearningPathIdParamsSchema,
+  adminLearningPathListQuerySchema,
+  adminLearningPathListResponseDataSchema,
+  adminUpdateLearningPathStatusRequestSchema,
+  adminUpdateLearningPathStatusResponseDataSchema,
   adminUserExportViewDataSchema,
   adminUserListQuerySchema,
   adminUserListResponseDataSchema,
@@ -216,6 +222,115 @@ const adminUserExportRowExample = {
   profileUpdatedAt: EXAMPLE_LATEST,
   deletedAt: null,
   deletedReason: null,
+}
+
+const adminLearningPathListExample = {
+  items: [
+    {
+      pathId: "550e8400-e29b-41d4-a716-446655440100",
+      userId: "550e8400-e29b-41d4-a716-446655440001",
+      userNickname: "Bao",
+      userAvatarUrl: null,
+      userEmail: "bao@example.com",
+      toolCode: "cursor",
+      toolName: "Cursor",
+      pathCode: "cursor-beginner-01",
+      pathName: "Cursor 入门训练营",
+      learningLevel: "beginner",
+      learningLevelLabel: "零基础",
+      selectionMode: "preset_training",
+      selectionModeLabel: "闯关模式",
+      status: "interrupted",
+      progressPercent: 40,
+      completedTaskCount: 2,
+      inProgressTaskCount: 1,
+      blockedTaskCount: 1,
+      totalTaskCount: 5,
+      xpEarned: 120,
+      startedAt: EXAMPLE_NOW,
+      lastLearningAt: EXAMPLE_LATEST,
+      updatedAt: EXAMPLE_LATEST,
+    },
+  ],
+  total: 1,
+  page: 1,
+  limit: 20,
+  stats: {
+    totalPaths: 12,
+    activeCount: 3,
+    interruptedCount: 2,
+    completedCount: 5,
+    abandonedCount: 2,
+  },
+  toolOptions: [
+    {
+      code: "cursor",
+      name: "Cursor",
+    },
+  ],
+}
+
+const adminLearningPathDetailExample = {
+  pathId: "550e8400-e29b-41d4-a716-446655440100",
+  user: {
+    userId: "550e8400-e29b-41d4-a716-446655440001",
+    nickname: "Bao",
+    avatarUrl: null,
+    email: "bao@example.com",
+    currentScore: 120,
+    currentRankLabel: "新手学徒",
+    streakDays: 3,
+    lastLearningAt: EXAMPLE_LATEST,
+  },
+  path: {
+    pathCode: "cursor-beginner-01",
+    pathName: "Cursor 入门训练营",
+    summary: "从零开始完成 Cursor 入门学习与第一次真实改代码。",
+    toolCode: "cursor",
+    toolName: "Cursor",
+    learningLevel: "beginner",
+    learningLevelLabel: "零基础",
+    selectionMode: "preset_training",
+    selectionModeLabel: "闯关模式",
+    status: "interrupted",
+    totalSteps: 5,
+    completedSteps: 2,
+    progressPercent: 40,
+    totalTaskCount: 5,
+    completedTaskCount: 2,
+    inProgressTaskCount: 1,
+    blockedTaskCount: 1,
+    pendingTaskCount: 1,
+    xpEarned: 120,
+  },
+  timeline: {
+    startedAt: EXAMPLE_NOW,
+    lastActivityAt: EXAMPLE_LATEST,
+    completedAt: null,
+    interruptedAt: "2026-03-31T11:00:00.000Z",
+    abandonedAt: null,
+    archivedAt: null,
+  },
+  steps: [
+    {
+      stepId: "550e8400-e29b-41d4-a716-446655440200",
+      stepNo: 1,
+      title: "安装 Cursor 并完成项目索引",
+      status: "completed",
+      rewardXp: 60,
+      completedAt: EXAMPLE_LATER,
+    },
+  ],
+  recentSessions: [
+    {
+      sessionId: "550e8400-e29b-41d4-a716-446655440300",
+      status: "active",
+      startedAt: EXAMPLE_LATER,
+      lastMessageAt: EXAMPLE_LATEST,
+      messageCount: 6,
+      latestAssistantSummary: "先确认项目索引完成，再继续下一步修复。",
+    },
+  ],
 }
 
 const successExamples = {
@@ -728,6 +843,12 @@ const successExamples = {
     total: 1,
     page: 1,
     limit: 20,
+  },
+  adminLearningPathList: adminLearningPathListExample,
+  adminLearningPathDetail: adminLearningPathDetailExample,
+  adminLearningPathStatusUpdate: {
+    pathId: "550e8400-e29b-41d4-a716-446655440100",
+    status: "archived",
   },
 } as const
 
@@ -2233,6 +2354,105 @@ registry.registerPath({
         },
       },
     }),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/learning-paths",
+  operationId: "getAdminLearningPathList",
+  tags: ["admin-learning"],
+  summary: "管理端学习路径列表",
+  description: "基于真实 user_learning_paths 聚合用户、任务、工具与状态摘要。",
+  security: [],
+  request: {
+    query: adminLearningPathListQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminLearningPathListResponseDataSchema,
+      "AdminLearningPathListResponse",
+      "学习计划列表读取成功",
+      successExamples.adminLearningPathList,
+      "学习计划列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/learning-paths/export",
+  operationId: "getAdminLearningPathExport",
+  tags: ["admin-learning"],
+  summary: "导出学习路径 CSV（最多 10000 行）",
+  security: [],
+  request: {
+    query: adminLearningPathListQuerySchema,
+  },
+  responses: {
+    "200": {
+      description: "UTF-8 CSV（含 BOM），Content-Disposition 为附件。",
+      content: {
+        "text/csv": {
+          schema: z.string(),
+          example: "路径ID,用户ID,计划名称\n550e8400-e29b-41d4-a716-446655440100,550e8400-e29b-41d4-a716-446655440001,Cursor 入门训练营",
+        },
+      },
+    },
+    ...commonErrorResponses(["400", "403", "413", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/learning-paths/{pathId}",
+  operationId: "getAdminLearningPathDetail",
+  tags: ["admin-learning"],
+  summary: "管理端学习路径详情",
+  security: [],
+  request: {
+    params: adminLearningPathIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminLearningPathDetailResponseDataSchema,
+      "AdminLearningPathDetailResponse",
+      "学习路径详情读取成功",
+      successExamples.adminLearningPathDetail,
+      "学习路径详情读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/learning-paths/{pathId}/status",
+  operationId: "postAdminLearningPathStatus",
+  tags: ["admin-learning"],
+  summary: "管理端更新学习路径状态",
+  security: [],
+  request: {
+    params: adminLearningPathIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminUpdateLearningPathStatusRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminUpdateLearningPathStatusResponseDataSchema,
+      "AdminLearningPathStatusResponse",
+      "学习路径状态已更新",
+      successExamples.adminLearningPathStatusUpdate,
+      "学习路径状态已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
   },
 })
 

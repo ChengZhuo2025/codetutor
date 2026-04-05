@@ -54,6 +54,7 @@ export const ADMIN_AUDIT_ACTIONS = [
   "user_profile_update",
   "user_soft_delete",
   "user_restore",
+  "learning_path_status_update",
 ] as const
 
 export type AdminAuditAction = (typeof ADMIN_AUDIT_ACTIONS)[number]

@@ -55,18 +55,20 @@
 6. `/achievements`：成就页
 7. `/history`：学习记录页
 
-当前已可直接访问的管理端页面（Phase 1 + 用户运营）：
+当前已可直接访问的管理端页面（Phase 1 + 用户运营 + 学习运营）：
 
 8. `/admin/login`：管理员登录页
 9. `/admin`：总览看板页
 10. `/admin/users`：用户运营列表页（筛选、导出、行内编辑抽屉）
 11. `/admin/users/[userId]`：用户详情页
-12. `/admin/feedback`：反馈工单列表页
-13. `/admin/feedback/[id]`：反馈工单详情页
+12. `/admin/learning`：学习运营列表页（学习路径实例筛选、导出、详情跳转）
+13. `/admin/learning/[pathId]`：学习路径详情页（时间线、步骤、最近会话、状态操作）
+14. `/admin/feedback`：反馈工单列表页
+15. `/admin/feedback/[id]`：反馈工单详情页
 
 另外还有一个内部开发调试页：
 
-14. `/api-docs`：Swagger UI 接口文档与调试面板
+16. `/api-docs`：Swagger UI 接口文档与调试面板
 
 ---
 
@@ -107,6 +109,8 @@ types/
 - `app/(admin-shell)/admin/page.tsx` -> `features/admin-dashboard/components/dashboard-page.tsx`
 - `app/(admin-shell)/admin/users/page.tsx` -> `features/admin-users/components/user-list-page.tsx`
 - `app/(admin-shell)/admin/users/[userId]/page.tsx` -> `features/admin-users/components/user-detail-page.tsx`
+- `app/(admin-shell)/admin/learning/page.tsx` -> `features/admin-learning/components/learning-path-list-page.tsx`
+- `app/(admin-shell)/admin/learning/[pathId]/page.tsx` -> `features/admin-learning/components/learning-path-detail-page.tsx`
 
 规则：
 
@@ -134,6 +138,7 @@ types/
 - `features/admin-shell`
 - `features/admin-dashboard`
 - `features/admin-users`
+- `features/admin-learning`
 - `features/admin-feedback`
 
 每个业务域当前大致采用如下结构：
@@ -367,6 +372,17 @@ features/<domain>/
 - 当前真实依赖：`GET/PATCH /api/admin/users`、`GET /api/admin/users/export`、`GET /api/admin/users/{userId}`、`POST .../soft-delete`、`POST .../restore`；详情页另拉 `GET /api/admin/feedback?userId=...` 展示最近工单
 - 页面组件：`features/admin-users/components/user-list.tsx`、`user-detail.tsx`、`user-edit-sheet.tsx` 等
 
+### 管理后台学习运营页
+
+- 路由入口：`app/(admin-shell)/admin/learning/page.tsx`、`app/(admin-shell)/admin/learning/[pathId]/page.tsx`
+- 页面装配：`features/admin-learning/components/learning-path-list-page.tsx`、`features/admin-learning/components/learning-path-detail-page.tsx`
+- 当前真实依赖：`GET /api/admin/learning-paths`、`GET /api/admin/learning-paths/export`、`GET /api/admin/learning-paths/{pathId}`、`POST /api/admin/learning-paths/{pathId}/status`
+- 页面组件：`features/admin-learning/components/learning-path-list.tsx`、`learning-path-detail.tsx`
+- 页面联动：
+  - 列表页进入学习路径详情页
+  - 详情页右侧展示用户快照，并可继续跳到 `/admin/users/[userId]`
+  - 状态操作仅允许 `reactivate / archive`，统一走后台 API，而不是页面层直接改写
+
 ### 管理后台反馈页
 
 - 路由入口：`app/(admin-shell)/admin/feedback/page.tsx`、`app/(admin-shell)/admin/feedback/[id]/page.tsx`
@@ -380,7 +396,7 @@ features/<domain>/
 - 页面组件：`features/api-docs/components/swagger-api-viewer.tsx`
 - 当前真实依赖：`GET /api/docs/openapi`、`GET /api/docs/swagger-ui-bundle`
 - 当前职责：提供内部接口查看与调试面板，按标签分组展示接口，补充常见成功响应示例、错误说明、管理员接口调试提示和学习消息 SSE 调试说明
-- 当前鉴权行为：页面受管理员登录态保护；未登录访问 `/api-docs` 会重定向到 `/admin/login?next=/api-docs`，登录成功后回跳；文档里的管理员接口按 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users` 等标签展示
+- 当前鉴权行为：页面受管理员登录态保护；未登录访问 `/api-docs` 会重定向到 `/admin/login?next=/api-docs`，登录成功后回跳；文档里的管理员接口按 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning` 等标签展示
 - 当前实现边界：该页面消费的是运行时注册出来的 OpenAPI 文档；新增后端接口后，需要同步维护 `server/modules/api-docs/openapi.ts` 与 `server/modules/api-docs/schemas.ts`，这里才会一起更新
 
 ### 当前已接真实接口的跨页组件
@@ -546,7 +562,7 @@ features/<domain>/
 - 尚未形成系统性的前端自动化测试覆盖
 - 通知设置、订阅模块、FAQ 仍是静态或占位实现
 - 埋点写入与通知设置落库尚未接入真实后端
-- 管理员后台当前仅完成 Phase 1（认证、看板、反馈工单），Phase 2 运营模块仍未开始
+- 管理员后台当前已完成 Phase 1，并已落地用户运营与学习运营；AI 运营与更深用户运营写能力仍未开始
 
 因此，当前阶段的目标仍然是：
 
@@ -589,6 +605,6 @@ features/<domain>/
 1. 继续把剩余静态模块切到真实接口，优先级依次为埋点事件、通知设置、订阅模块。
 2. 为已接接口的高频页面补充页面级自动化测试或最小交互测试。
 3. 在确认请求复杂度继续上升后，再评估是否引入 Query 缓存层，而不是过早全局化。
-4. 继续推进管理员后台 Phase 2 余下能力前，先保持用户侧与管理侧鉴权分流口径一致，避免两端状态判断逻辑漂移。（用户运营页面与接口已交付，新增后台域时继续遵守 `features/admin-*` 与 `server/modules/admin-*` 约定。）
+4. 继续推进管理员后台 Phase 2 余下能力前，先保持用户侧与管理侧鉴权分流口径一致，避免两端状态判断逻辑漂移。（用户运营与学习运营页面/API 已交付，新增后台域时继续遵守 `features/admin-*` 与 `server/modules/admin-*` 约定。）
 
 如果后续目录与本说明出现偏差，应优先更新本文档，再继续扩展代码。

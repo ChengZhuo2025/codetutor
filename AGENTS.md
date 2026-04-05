@@ -6,19 +6,19 @@ This repository is no longer documentation-only. It contains a runnable Next.js 
 
 If you need a fast orientation to the project and its current authoritative documents, start with `docs/plans/README.md`.
 
-- `app/`: route entries such as `/`, `/login`, `/onboarding`, `/learn`, `/map`, `/achievements`, `/history`, `/admin`, `/admin/users`, `/admin/feedback`, …
+- `app/`: route entries such as `/`, `/login`, `/onboarding`, `/learn`, `/map`, `/achievements`, `/history`, `/admin`, `/admin/users`, `/admin/feedback`, `/admin/learning`, …
 - `app/api/`: current BFF/API route handlers
 - `features/`: feature-level pages, components, static view data, and view models
 - `components/`: shared layout and UI primitives
 - `lib/api/`: API contracts and client wrappers
 - `lib/supabase/`: browser/server Supabase clients and storage helpers
-- `server/modules/`: current domain services such as auth, onboarding, learning, learning-materials, learning-plans, progress, achievement, history, feedback, admin-auth, admin-dashboard, admin-users, admin-feedback, …
+- `server/modules/`: current domain services such as auth, onboarding, learning, learning-materials, learning-plans, progress, achievement, history, feedback, admin-auth, admin-dashboard, admin-users, admin-feedback, admin-learning, …
 - `supabase/migrations/`: checked-in database migrations
 - `constants/`, `types/`, `providers/`, `public/`: shared frontend support code and assets
 - `scripts/`: lightweight verification scripts for key demo pages and layout rules
 - `docs/plans/`: dated planning artifacts; keep using `YYYY-MM-DD-topic-name.md`
 
-Current implemented backend/data pieces include auth login flow integration, homepage session-summary redirecting, profile read/update, avatar upload, onboarding APIs, current learning/progress/history/achievement read models, task completion and task status write APIs, daily check-in APIs, score ledger and rank snapshot write models, history plan detail and status actions, feedback APIs, admin console Phase 1 (auth, dashboard, feedback tickets), **admin user operations** (`GET/PATCH /api/admin/users`, export, detail, soft-delete, restore), self-directed tutorial link plan generation (`/api/learning/plan-from-material` and plan draft confirm/regenerate), and checked-in Supabase migrations through `018`. Still-planned items include analytics ingestion, admin Phase 2 **remainder** (learning ops, AI ops, finer-grained permissions; terminal-user ops are shipped), later AI orchestration phases (e.g. prompt versioning and ops UI), and subscription/payment.
+Current implemented backend/data pieces include auth login flow integration, homepage session-summary redirecting, profile read/update, avatar upload, onboarding APIs, current learning/progress/history/achievement read models, task completion and task status write APIs, daily check-in APIs, score ledger and rank snapshot write models, history plan detail and status actions, feedback APIs, admin console Phase 1 (auth, dashboard, feedback tickets), **admin user operations** (`GET/PATCH /api/admin/users`, export, detail, soft-delete, restore), **admin learning operations** (`GET /api/admin/learning-paths`, export, detail, `POST /status` for `reactivate/archive`), self-directed tutorial link plan generation (`/api/learning/plan-from-material` and plan draft confirm/regenerate), and checked-in Supabase migrations through `018`. Still-planned items include analytics ingestion, admin Phase 2 **remainder** (AI ops, finer-grained permissions, and deeper user-domain ops such as internal notes / manual score adjustment), later AI orchestration phases (e.g. prompt versioning and ops UI), and subscription/payment.
 
 ## Build, Test, and Development Commands
 
@@ -34,6 +34,7 @@ Use `pnpm` for local work in this repository.
 - `pnpm test:workspace-layout-widths`
 - `pnpm test:workspace-aside-styles`
 - `pnpm test:learning-plan-from-material`
+- `pnpm test:admin-learning`
 
 For documentation-only changes, continue using lightweight checks such as `rg --files docs/plans` and `sed -n '1,80p' docs/plans/<file>.md`.
 
@@ -70,4 +71,4 @@ Prefer updating an existing plan doc before creating a duplicate. When assumptio
 
 For quick project understanding, read `docs/plans/README.md` first, then follow its recommended reading order.
 
-Do not describe planned backend or database capabilities as already implemented. Today the repository reflects a partially implemented full-stack MVP: several user-facing flows already use real `app/api` + Supabase, including auth, homepage redirect recovery, onboarding, learning/progress/history read models, history plan management, profile/avatar, feedback, the main learning message AI path, Phase A self-directed material plan APIs, and **admin user operations** (list/export/detail/profile PATCH/soft-delete), while analytics ingestion, admin Phase 2 **beyond** user ops, later orchestration ops, and subscription/payment remain planned or partial.
+Do not describe planned backend or database capabilities as already implemented. Today the repository reflects a partially implemented full-stack MVP: several user-facing flows already use real `app/api` + Supabase, including auth, homepage redirect recovery, onboarding, learning/progress/history read models, history plan management, profile/avatar, feedback, the main learning message AI path, Phase A self-directed material plan APIs, and admin operations for **users** plus **learning paths** (list/export/detail/status actions), while analytics ingestion, admin Phase 2 **remainder** (AI ops, finer-grained permissions, internal notes/manual score adjustment), later orchestration ops, and subscription/payment remain planned or partial.
