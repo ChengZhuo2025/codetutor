@@ -276,13 +276,14 @@ LLM 管理不是只看调用日志，而是要能管理当前 AI registry。
 后台需要支持对以下对象做增删改查：
 
 - `ai_providers`
-  管理大模型供应商配置，如 `code`、`name`、`provider_type`、`base_url`、`auth_mode`、`secret_ref`、超时、重试、是否启用。
+  管理大模型供应商配置，如 `code`、`name`、`provider_type`、`base_url`、`auth_mode`、加密托管的 API Key、`envSecretRef`、超时、重试、是否启用。
 - `ai_models`
   管理具体 LLM 配置，如 `code`、`display_name`、`model_name`、所属 provider、stream/json/tool calling 能力、上下文长度、默认输出上限、推荐 temperature、定价元信息、启停状态。
 
 后台需要提供的典型能力：
 
 - provider 列表、详情、新建、编辑、启用、停用
+- Provider API Key 默认脱敏展示、按需明文查看、修改后服务端加密保存到数据库
 - model 列表、详情、新建、编辑、启用、停用
 - 按 provider 查看模型
 - 校验 `default_provider_code` / `default_model_code` 的引用完整性
@@ -290,7 +291,9 @@ LLM 管理不是只看调用日志，而是要能管理当前 AI registry。
 
 关键约束：
 
-- 不允许在后台直接编辑明文密钥；后台只允许维护 `secret_ref`，真实密钥仍放服务端环境变量或安全 Secret 存储。
+- 后台允许录入与修改 Provider API Key，但只在点击眼睛时按需返回明文；列表/详情默认只展示脱敏值。
+- 后端必须在写库前完成加密，数据库只保存密文与必要参数；服务端环境变量 `AI_PROVIDER_SECRET_ENCRYPTION_KEY` 为必需前置条件。
+- `envSecretRef` 仅作为兼容环境变量回退引用，不再是主密钥真源。
 - 不允许删除已经被生产 agent 引用且仍在使用的 provider / model；首期优先支持“停用”而不是物理删除。
 
 #### 5.6.2 Agents 管理
@@ -378,15 +381,17 @@ Agents 管理必须覆盖两类场景：
 |------|------|------|------|
 | `code` | string | 是 | 全局唯一，首期创建后不允许修改 |
 | `name` | string | 是 | 后台展示名 |
-| `provider_type` | enum | 是 | 现与 `public.ai_provider_type` 对齐 |
-| `base_url` | string | 是 | provider API 基地址 |
-| `auth_mode` | enum | 是 | 现与 `public.ai_auth_mode` 对齐 |
-| `secret_ref` | string | 是 | 仅填 Secret 引用名，不允许填明文密钥 |
-| `supports_stream` | boolean | 是 | provider 级能力标记 |
-| `supports_json_mode` | boolean | 是 | provider 级能力标记 |
-| `timeout_ms` | integer | 是 | 范围建议 `1000-180000` |
-| `retry_count` | integer | 是 | 范围建议 `0-5` |
-| `is_active` | boolean | 是 | 是否允许被运行时使用 |
+| `providerType` | enum | 是 | 现与 `public.ai_provider_type` 对齐 |
+| `baseUrl` | string | 是 | provider API 基地址 |
+| `authMode` | enum | 是 | 现与 `public.ai_auth_mode` 对齐 |
+| `envSecretRef` | string | 否 | 兼容环境变量回退引用，可为空 |
+| `apiKey` | string | 条件必填 | 新建时必填；编辑时留空表示保留现有密钥，填写后会覆盖并加密保存 |
+| `keepExistingSecret` | boolean | 是 | 编辑时是否沿用现有数据库密钥 |
+| `supportsStream` | boolean | 是 | provider 级能力标记 |
+| `supportsJsonMode` | boolean | 是 | provider 级能力标记 |
+| `timeoutMs` | integer | 是 | 范围建议 `1000-180000` |
+| `retryCount` | integer | 是 | 范围建议 `0-5` |
+| `isActive` | boolean | 是 | 是否允许被运行时使用 |
 | `metadata` | json editor | 否 | 仅存补充元信息，如 `consoleUrl`、`phase` |
 | `changeReason` | string | 是 | 本次修改原因，写审计日志 |
 
@@ -715,7 +720,9 @@ Agents 管理页必须补齐的辅助能力：
   "providerType": "siliconflow",
   "baseUrl": "https://api.siliconflow.cn/v1",
   "authMode": "bearer",
-  "secretRef": "SILICONFLOW_API_KEY",
+  "envSecretRef": "SILICONFLOW_API_KEY",
+  "apiKey": "sk-live-demo-secret",
+  "keepExistingSecret": false,
   "supportsStream": true,
   "supportsJsonMode": false,
   "timeoutMs": 60000,
@@ -731,9 +738,10 @@ Agents 管理页必须补齐的辅助能力：
 关键校验规则：
 
 - `code` 必须唯一，且只允许小写字母、数字、中横线。
-- 不允许提交 `secretValue`、`apiKey` 一类明文密钥字段。
+- `apiKey` 允许由后台提交，但服务端必须在写库前完成加密，响应体不返回明文。
 - `timeoutMs`、`retryCount` 必须在允许范围内。
-- 若 `isActive = true`，`baseUrl`、`authMode`、`secretRef` 必须完整。
+- `envSecretRef` 仅作为兼容环境变量回退引用，可为空。
+- 默认详情只返回 `secretMasked` 与 `secretSource`，管理员点击眼睛后再按需读取明文。
 
 成功响应建议：
 

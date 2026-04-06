@@ -15,6 +15,7 @@ import {
 import { ADMIN_ROUTES } from "@/constants/routes"
 import { DetailPageHeader, JsonPreview, PageSection } from "./shared"
 import { ProviderFormSheet } from "./provider-form-sheet"
+import { ProviderSecretDisplay } from "./provider-secret-display"
 
 type ProviderDetailProps = {
   providerId: string
@@ -98,13 +99,22 @@ export function ProviderDetail({ providerId }: ProviderDetailProps) {
               <InfoRow label="类型" value={data.provider.providerType} />
               <InfoRow label="鉴权方式" value={data.provider.authMode} />
               <InfoRow label="Base URL" value={data.provider.baseUrl} />
-              <InfoRow label="Secret Ref" value={data.provider.secretRef} />
               <InfoRow label="支持流式" value={data.provider.supportsStream ? "是" : "否"} />
               <InfoRow label="支持 JSON Mode" value={data.provider.supportsJsonMode ? "是" : "否"} />
               <InfoRow label="超时" value={`${data.provider.timeoutMs} ms`} />
               <InfoRow label="重试次数" value={String(data.provider.retryCount)} />
               <InfoRow label="状态" value={data.provider.isActive ? "启用" : "停用"} />
             </dl>
+            <div className="mt-5 space-y-1.5 border-t border-border pt-5">
+              <p className="text-sm text-muted-foreground">API Key</p>
+              <ProviderSecretDisplay
+                providerId={providerId}
+                secretMasked={data.provider.secretMasked}
+                secretSource={data.provider.secretSource}
+                envSecretRef={data.provider.envSecretRef}
+                onAuthExpired={() => setAuthExpired(true)}
+              />
+            </div>
           </PageSection>
 
           <div className="space-y-6">

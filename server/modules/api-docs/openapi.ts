@@ -28,6 +28,7 @@ import {
   adminAIProviderDetailResponseDataSchema,
   adminAIProviderIdParamsSchema,
   adminAIProviderListResponseDataSchema,
+  adminAIProviderSecretRevealResponseDataSchema,
   adminAIProviderUpsertRequestSchema,
   adminAIQuerySchema,
   adminAIResolvePreviewRequestSchema,
@@ -513,7 +514,10 @@ const adminAIProviderListExample = {
       providerType: "anthropic",
       baseUrl: "https://api.anthropic.com",
       authMode: "bearer",
-      secretRef: "vault://ai/anthropic/prod",
+      secretSource: "database",
+      secretMasked: "••••••••••",
+      envSecretRef: "ANTHROPIC_API_KEY",
+      hasStoredSecret: true,
       supportsStream: true,
       supportsJsonMode: true,
       timeoutMs: 60000,
@@ -538,6 +542,11 @@ const adminAIProviderDetailExample = {
   },
   linkedModelCodes: ["claude-3-7-sonnet", "claude-3-5-haiku"],
   linkedAgentCodes: ["learning_coach_default", "blocked_help_default"],
+}
+
+const adminAIProviderSecretRevealExample = {
+  apiKey: "sk-live-demo-secret",
+  source: "database",
 }
 
 const adminAIModelListExample = {
@@ -1457,6 +1466,7 @@ const successExamples = {
   adminAIOverview: adminAIOverviewExample,
   adminAIProviderList: adminAIProviderListExample,
   adminAIProviderDetail: adminAIProviderDetailExample,
+  adminAIProviderSecretReveal: adminAIProviderSecretRevealExample,
   adminAIModelList: adminAIModelListExample,
   adminAIModelDetail: adminAIModelDetailExample,
   adminAIAgentList: adminAIAgentListExample,
@@ -3453,6 +3463,28 @@ registry.registerPath({
       "Provider 已更新",
     ),
     ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/ai/providers/{providerId}/reveal-secret",
+  operationId: "postAdminAIProviderRevealSecret",
+  tags: ["admin-ai"],
+  summary: "按需读取 Provider API Key 明文",
+  security: [],
+  request: {
+    params: adminAIProviderIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminAIProviderSecretRevealResponseDataSchema,
+      "AdminAIProviderSecretRevealResponse",
+      "Provider 密钥读取成功",
+      successExamples.adminAIProviderSecretReveal,
+      "Provider 密钥读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
   },
 })
 

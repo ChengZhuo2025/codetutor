@@ -44,6 +44,7 @@
 - `018_create_learning_material_plan_tables.sql`
 - `019_admin_user_soft_delete.sql`
 - `020_create_analytics_and_notifications.sql`
+- `021_add_ai_provider_encrypted_secrets.sql`
 
 当前数据库中已落地的核心业务表包括：
 
@@ -75,6 +76,13 @@
 - `event_logs`
 - `user_notification_settings`
 - `user_notifications`
+
+其中 `ai_providers` 当前除基础连接字段外，还包含 Provider API Key 加密托管所需字段：
+
+- `secret_ref`：兼容环境变量回退引用，可为空
+- `secret_ciphertext` / `secret_iv` / `secret_auth_tag`：API Key 密文与解密参数
+- `secret_key_version`：加密主密钥版本
+- `secret_last_updated_at`：最近一次密钥更新时间
 
 当前尚未通过迁移落地、仍属于后续设计的表包括：
 
@@ -158,7 +166,7 @@
 - `public.learning_plan_drafts`
 - `public.learning_plan_draft_tasks`
 
-后续规划核心表：
+已落地 AI / 运营扩展表：
 
 - `public.conversation_sessions`
 - `public.conversation_messages`
@@ -169,8 +177,6 @@
 - `public.skill_packs`
 - `public.agent_skill_bindings`
 - `public.llm_invocations`
-- `public.achievements`
-- `public.user_achievements`
 - `public.event_logs`
 
 ---

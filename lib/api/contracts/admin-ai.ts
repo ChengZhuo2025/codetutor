@@ -9,6 +9,12 @@ export const ADMIN_AI_AUTH_MODES = [
   "api_key_header",
 ] as const
 
+export const ADMIN_AI_PROVIDER_SECRET_SOURCES = [
+  "database",
+  "env_fallback",
+  "missing",
+] as const
+
 export const ADMIN_AI_AGENT_SCENARIO_TYPES = [
   "teaching",
   "blocked_help",
@@ -57,6 +63,7 @@ export const ADMIN_AI_INVOCATION_DATE_RANGES = [
 
 export type AdminAIProviderType = (typeof ADMIN_AI_PROVIDER_TYPES)[number]
 export type AdminAIAuthMode = (typeof ADMIN_AI_AUTH_MODES)[number]
+export type AdminAIProviderSecretSource = (typeof ADMIN_AI_PROVIDER_SECRET_SOURCES)[number]
 export type AdminAIAgentScenarioType = (typeof ADMIN_AI_AGENT_SCENARIO_TYPES)[number]
 export type AdminAISkillSourceType = (typeof ADMIN_AI_SKILL_SOURCE_TYPES)[number]
 export type AdminAISkillTrustLevel = (typeof ADMIN_AI_SKILL_TRUST_LEVELS)[number]
@@ -108,7 +115,10 @@ export type AdminAIProviderListItem = {
   providerType: AdminAIProviderType
   baseUrl: string
   authMode: AdminAIAuthMode
-  secretRef: string
+  secretSource: AdminAIProviderSecretSource
+  secretMasked: string
+  envSecretRef: string | null
+  hasStoredSecret: boolean
   supportsStream: boolean
   supportsJsonMode: boolean
   timeoutMs: number
@@ -142,7 +152,9 @@ export type AdminAIProviderUpsertRequest = {
   providerType: AdminAIProviderType
   baseUrl: string
   authMode: AdminAIAuthMode
-  secretRef: string
+  envSecretRef: string | null
+  apiKey: string | null
+  keepExistingSecret: boolean
   supportsStream: boolean
   supportsJsonMode: boolean
   timeoutMs: number
@@ -150,6 +162,11 @@ export type AdminAIProviderUpsertRequest = {
   isActive: boolean
   metadata: Record<string, unknown>
   changeReason: string
+}
+
+export type AdminAIProviderSecretRevealResponseData = {
+  apiKey: string
+  source: AdminAIProviderSecretSource
 }
 
 export type AdminAIModelListItem = {

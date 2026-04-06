@@ -29,6 +29,7 @@ const menuSource = readFileSync(
 assert.match(overviewSource, /AI 运营/, "The AI overview page should render the AI operations title")
 assert.match(overviewSource, /近 7 天调用|最近失败/, "The AI overview page should expose runtime overview cards")
 assert.match(providerSource, /Provider 管理|新建 Provider|Base URL/, "The Provider page should expose provider CRUD fields")
+assert.match(providerSource, /API Key|secretMasked|密钥来源/, "The Provider page should expose masked secret management affordances")
 assert.match(agentSource, /Agent 管理|System Prompt|Developer Prompt/, "The Agent page should expose real agent template fields")
 assert.match(testSource, /命中预览|真实 AI 测试|llm_invocations/, "The test page should expose preview and real test flows")
 assert.match(menuSource, /label: "AI 运营".*active: true/s, "The admin menu should enable the AI operations entry")

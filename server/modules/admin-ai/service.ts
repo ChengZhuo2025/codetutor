@@ -20,6 +20,7 @@ import type {
   AdminAIProviderDetailResponseData,
   AdminAIProviderListItem,
   AdminAIProviderListResponseData,
+  AdminAIProviderSecretRevealResponseData,
   AdminAIProviderUpsertRequest,
   AdminAIResolvePreviewRequest,
   AdminAIResolvePreviewResponseData,
@@ -32,6 +33,12 @@ import type { AdminAuditAction, AdminRoleCode } from "@/lib/api/contracts/admin"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import { isUuid } from "@/server/lib/identifiers"
+import {
+  encryptProviderSecret,
+  getProviderSecretPresentation,
+  hasStoredProviderSecret,
+  resolveProviderSecret,
+} from "@/server/lib/secrets/provider-secret"
 import { invokeAIProvider, streamAIProvider } from "@/server/modules/learning/provider.ts"
 
 type AdminActorRow = {
@@ -53,7 +60,12 @@ type ProviderRow = {
   provider_type: "siliconflow" | "openai_compatible" | "anthropic"
   base_url: string
   auth_mode: "bearer" | "api_key_header"
-  secret_ref: string
+  secret_ref: string | null
+  secret_ciphertext: string | null
+  secret_iv: string | null
+  secret_auth_tag: string | null
+  secret_key_version: string | null
+  secret_last_updated_at: string | null
   supports_stream: boolean
   supports_json_mode: boolean
   timeout_ms: number
@@ -347,6 +359,8 @@ function mapProviderListItem(
   row: ProviderRow,
   models: ModelRow[],
 ): AdminAIProviderListItem {
+  const secretPresentation = getProviderSecretPresentation(row)
+
   return {
     providerId: row.id,
     code: row.code,
@@ -354,7 +368,10 @@ function mapProviderListItem(
     providerType: row.provider_type,
     baseUrl: row.base_url,
     authMode: row.auth_mode,
-    secretRef: row.secret_ref,
+    secretSource: secretPresentation.secretSource,
+    secretMasked: secretPresentation.secretMasked,
+    envSecretRef: secretPresentation.envSecretRef,
+    hasStoredSecret: secretPresentation.hasStoredSecret,
     supportsStream: row.supports_stream,
     supportsJsonMode: row.supports_json_mode,
     timeoutMs: row.timeout_ms,
@@ -368,6 +385,48 @@ function mapProviderListItem(
 
 function findProviderByIdentifier(providers: ProviderRow[], providerIdentifier: string) {
   return providers.find((row) => row.id === providerIdentifier || row.code === providerIdentifier) ?? null
+}
+
+function buildProviderSecretWriteFields(
+  input: AdminAIProviderUpsertRequest,
+  existing: ProviderRow | null,
+) {
+  const envSecretRef = input.envSecretRef?.trim() || null
+
+  if (input.apiKey) {
+    if (!process.env.AI_PROVIDER_SECRET_ENCRYPTION_KEY?.trim()) {
+      throwNamedError(
+        "VALIDATION_FAILED",
+        "服务端缺少 AI_PROVIDER_SECRET_ENCRYPTION_KEY，无法加密保存 Provider API Key。请先配置该环境变量并重启服务。",
+      )
+    }
+
+    return {
+      secret_ref: envSecretRef,
+      ...encryptProviderSecret(input.apiKey),
+      secret_last_updated_at: new Date().toISOString(),
+    }
+  }
+
+  if (input.keepExistingSecret && existing && hasStoredProviderSecret(existing)) {
+    return {
+      secret_ref: envSecretRef,
+      secret_ciphertext: existing.secret_ciphertext,
+      secret_iv: existing.secret_iv,
+      secret_auth_tag: existing.secret_auth_tag,
+      secret_key_version: existing.secret_key_version,
+      secret_last_updated_at: existing.secret_last_updated_at,
+    }
+  }
+
+  return {
+    secret_ref: envSecretRef,
+    secret_ciphertext: null,
+    secret_iv: null,
+    secret_auth_tag: null,
+    secret_key_version: existing?.secret_key_version ?? null,
+    secret_last_updated_at: existing?.secret_last_updated_at ?? null,
+  }
 }
 
 /** 路由参数可为 UUID（id）或业务 code（与 `ai_models.code` 唯一约束一致） */
@@ -712,7 +771,7 @@ export async function getAdminAIProviderList(filters: {
       if (filters.status === "inactive" && row.isActive) {
         return false
       }
-      return filterByKeyword(filters.keyword, [row.code, row.name, row.baseUrl, row.secretRef])
+      return filterByKeyword(filters.keyword, [row.code, row.name, row.baseUrl, row.envSecretRef, row.secretSource])
     })
 
   return paginate(filtered, filters.page, filters.limit)
@@ -730,6 +789,8 @@ export async function getAdminAIProviderDetail(
     return null
   }
 
+  const secretPresentation = getProviderSecretPresentation(provider)
+
   return {
     provider: {
       providerId: provider.id,
@@ -738,7 +799,10 @@ export async function getAdminAIProviderDetail(
       providerType: provider.provider_type,
       baseUrl: provider.base_url,
       authMode: provider.auth_mode,
-      secretRef: provider.secret_ref,
+      secretSource: secretPresentation.secretSource,
+      secretMasked: secretPresentation.secretMasked,
+      envSecretRef: secretPresentation.envSecretRef,
+      hasStoredSecret: secretPresentation.hasStoredSecret,
       supportsStream: provider.supports_stream,
       supportsJsonMode: provider.supports_json_mode,
       timeoutMs: provider.timeout_ms,
@@ -758,6 +822,7 @@ export async function createAdminAIProvider(
   input: AdminAIProviderUpsertRequest,
 ): Promise<AdminAIProviderDetailResponseData> {
   await assertCanAccessAI(adminAccountId)
+  const secretWriteFields = buildProviderSecretWriteFields(input, null)
 
   const supabase = createSupabaseAdminClient()
   const { data, error } = await supabase
@@ -768,7 +833,7 @@ export async function createAdminAIProvider(
       provider_type: input.providerType,
       base_url: input.baseUrl,
       auth_mode: input.authMode,
-      secret_ref: input.secretRef,
+      ...secretWriteFields,
       supports_stream: input.supportsStream,
       supports_json_mode: input.supportsJsonMode,
       timeout_ms: input.timeoutMs,
@@ -791,6 +856,8 @@ export async function createAdminAIProvider(
       code: input.code,
       name: input.name,
       providerType: input.providerType,
+      secretSource: input.apiKey ? "database" : input.envSecretRef ? "env_fallback" : "missing",
+      envSecretRef: input.envSecretRef,
       isActive: input.isActive,
     },
     reason: input.changeReason,
@@ -813,6 +880,10 @@ export async function updateAdminAIProvider(
   if (!existing) {
     return null
   }
+  const existingRow = findProviderByIdentifier(await loadProviders(), providerId)
+  if (!existingRow) {
+    return null
+  }
 
   if (!input.isActive && existing.linkedAgentCodes.length > 0) {
     throwNamedError("CONFLICT", "当前 Provider 仍被 Agent 引用，不能直接停用。")
@@ -825,6 +896,7 @@ export async function updateAdminAIProvider(
     )
   }
 
+  const secretWriteFields = buildProviderSecretWriteFields(input, existingRow)
   const supabase = createSupabaseAdminClient()
   const { error } = await supabase
     .from("ai_providers")
@@ -834,7 +906,7 @@ export async function updateAdminAIProvider(
       provider_type: input.providerType,
       base_url: input.baseUrl,
       auth_mode: input.authMode,
-      secret_ref: input.secretRef,
+      ...secretWriteFields,
       supports_stream: input.supportsStream,
       supports_json_mode: input.supportsJsonMode,
       timeout_ms: input.timeoutMs,
@@ -859,7 +931,16 @@ export async function updateAdminAIProvider(
       providerType: input.providerType,
       baseUrl: input.baseUrl,
       authMode: input.authMode,
-      secretRef: input.secretRef,
+      secretSource: input.apiKey
+        ? "database"
+        : input.keepExistingSecret
+          ? existing.provider.secretSource
+          : input.envSecretRef
+            ? "env_fallback"
+            : "missing",
+      secretMasked: existing.provider.secretMasked,
+      envSecretRef: input.envSecretRef,
+      hasStoredSecret: input.apiKey ? true : input.keepExistingSecret ? existing.provider.hasStoredSecret : false,
       supportsStream: input.supportsStream,
       supportsJsonMode: input.supportsJsonMode,
       timeoutMs: input.timeoutMs,
@@ -871,6 +952,28 @@ export async function updateAdminAIProvider(
   })
 
   return getAdminAIProviderDetail(adminAccountId, existing.provider.providerId)
+}
+
+export async function revealAdminAIProviderSecret(
+  adminAccountId: string,
+  providerId: string,
+): Promise<AdminAIProviderSecretRevealResponseData | null> {
+  await assertCanAccessAI(adminAccountId)
+
+  const provider = findProviderByIdentifier(await loadProviders(), providerId)
+  if (!provider) {
+    return null
+  }
+
+  const resolved = resolveProviderSecret(provider)
+  if (!resolved.secret) {
+    throwNamedError("VALIDATION_FAILED", "当前 Provider 尚未配置可用 API Key。")
+  }
+
+  return {
+    apiKey: resolved.secret,
+    source: resolved.source,
+  }
 }
 
 export async function getAdminAIModelList(filters: {
@@ -1813,7 +1916,11 @@ export async function executeAdminAITest(
             providerType: provider.provider_type,
             baseUrl: provider.base_url,
             authMode: provider.auth_mode,
-            secretRef: provider.secret_ref,
+            envSecretRef: provider.secret_ref,
+            secretCiphertext: provider.secret_ciphertext,
+            secretIv: provider.secret_iv,
+            secretAuthTag: provider.secret_auth_tag,
+            secretKeyVersion: provider.secret_key_version,
             timeoutMs: provider.timeout_ms,
             retryCount: provider.retry_count,
           },
@@ -1835,7 +1942,11 @@ export async function executeAdminAITest(
             providerType: provider.provider_type,
             baseUrl: provider.base_url,
             authMode: provider.auth_mode,
-            secretRef: provider.secret_ref,
+            envSecretRef: provider.secret_ref,
+            secretCiphertext: provider.secret_ciphertext,
+            secretIv: provider.secret_iv,
+            secretAuthTag: provider.secret_auth_tag,
+            secretKeyVersion: provider.secret_key_version,
             timeoutMs: provider.timeout_ms,
             retryCount: provider.retry_count,
           },

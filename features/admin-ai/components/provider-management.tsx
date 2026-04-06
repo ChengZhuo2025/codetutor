@@ -121,7 +121,7 @@ export function ProviderManagement() {
                         applySearch()
                       }
                     }}
-                    placeholder="关键词：code / 名称 / baseUrl / secretRef"
+                    placeholder="关键词：code / 名称 / baseUrl / 密钥来源 / envSecretRef"
                     className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
@@ -182,7 +182,8 @@ export function ProviderManagement() {
                                   <ActiveStateBadge active={item.isActive} />
                                 </div>
                                 <p className="font-mono text-[11px] text-muted-foreground">{item.code}</p>
-                                <p className="text-xs text-muted-foreground">{item.secretRef}</p>
+                                <p className="text-xs text-muted-foreground">API Key: {item.secretMasked}</p>
+                                <p className="text-xs text-muted-foreground">密钥来源: {item.secretSource}</p>
                               </div>
                             </td>
                             <td className="px-4 py-4 align-top">

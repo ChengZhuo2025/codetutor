@@ -1131,7 +1131,9 @@ const adminAIProviderShapeSchema = z.object({
   providerType: z.unknown(),
   baseUrl: z.unknown(),
   authMode: z.unknown(),
-  secretRef: z.unknown(),
+  envSecretRef: z.unknown().optional(),
+  apiKey: z.unknown().optional(),
+  keepExistingSecret: z.unknown(),
   supportsStream: z.unknown(),
   supportsJsonMode: z.unknown(),
   timeoutMs: z.unknown(),
@@ -1150,7 +1152,9 @@ export function parseAdminAIProviderBody(input: unknown): ValidationResult<Admin
   const code = parseTrimmedRequiredString(shape.data.code, "code", 2, 64)
   const name = parseTrimmedRequiredString(shape.data.name, "name", 2, 128)
   const baseUrl = parseTrimmedRequiredString(shape.data.baseUrl, "baseUrl", 8, 500)
-  const secretRef = parseTrimmedRequiredString(shape.data.secretRef, "secretRef", 2, 128)
+  const envSecretRef = parseTrimmedNullableString(shape.data.envSecretRef, "envSecretRef", 128)
+  const apiKey = parseTrimmedNullableString(shape.data.apiKey, "apiKey", 1000)
+  const keepExistingSecret = parseBooleanField(shape.data.keepExistingSecret, "keepExistingSecret")
   const timeoutMs = parsePositiveInteger(shape.data.timeoutMs, "timeoutMs", 1000, 300_000)
   const retryCount = parsePositiveInteger(shape.data.retryCount, "retryCount", 1, 10)
   const supportsStream = parseBooleanField(shape.data.supportsStream, "supportsStream")
@@ -1159,8 +1163,29 @@ export function parseAdminAIProviderBody(input: unknown): ValidationResult<Admin
   const metadata = parseJsonRecord(shape.data.metadata, "metadata")
   const changeReason = parseChangeReason(shape.data.changeReason)
 
-  if (!code.ok || !name.ok || !baseUrl.ok || !secretRef.ok || !timeoutMs.ok || !retryCount.ok || !supportsStream.ok || !supportsJsonMode.ok || !isActive.ok || !metadata.ok || !changeReason.ok) {
-    return fail("VALIDATION_FAILED", "Provider 请求体字段不合法。")
+  const fieldChecks = [
+    code,
+    name,
+    baseUrl,
+    envSecretRef,
+    apiKey,
+    keepExistingSecret,
+    timeoutMs,
+    retryCount,
+    supportsStream,
+    supportsJsonMode,
+    isActive,
+    metadata,
+    changeReason,
+  ]
+
+  const firstFailure = fieldChecks.find((item) => !item.ok)
+  if (firstFailure && !firstFailure.ok) {
+    return firstFailure
+  }
+
+  if (!apiKey.data && !keepExistingSecret.data && !envSecretRef.data) {
+    return fail("VALIDATION_FAILED", "至少提供 apiKey、keepExistingSecret 或 envSecretRef 之一。")
   }
 
   if (!ADMIN_AI_PROVIDER_TYPES.includes(shape.data.providerType as (typeof ADMIN_AI_PROVIDER_TYPES)[number])) {
@@ -1181,7 +1206,9 @@ export function parseAdminAIProviderBody(input: unknown): ValidationResult<Admin
     providerType: shape.data.providerType as AdminAIProviderUpsertRequest["providerType"],
     baseUrl: baseUrl.data,
     authMode: shape.data.authMode as AdminAIProviderUpsertRequest["authMode"],
-    secretRef: secretRef.data,
+    envSecretRef: envSecretRef.data,
+    apiKey: apiKey.data,
+    keepExistingSecret: keepExistingSecret.data,
     supportsStream: supportsStream.data,
     supportsJsonMode: supportsJsonMode.data,
     timeoutMs: timeoutMs.data,

@@ -13,7 +13,7 @@
 - 当前代码技术栈以 `package.json` 为准：`Next.js 16.2.0`、`React 19.2.4`、`TypeScript 5.7.3`、`Tailwind CSS 4.2`、`shadcn/ui`、`Zod + zod-to-openapi + Swagger UI`；当前本地验证环境为 `Node.js 22.18.0`。
 - 已补运行时接口文档：`/api/docs/openapi` 输出 OpenAPI 3.1 JSON，`/api-docs` 提供 Swagger UI 查看与调试。
 - `app/api` 当前已大量收敛为薄入口层，请求校验、统一响应、错误映射与部分路由编排已下沉到 `server/lib/*` 与各域 `route-handler.ts`。
-- 已落地数据侧：远程 Supabase、`001` 到 `018` 迁移（含 `018` 材料摄取与计划草稿表）、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表、AI 会话 / provider / agent / skill / invocation 表，以及管理员账号/角色/审计日志表。
+- 已落地数据侧：远程 Supabase、`001` 到 `021` 迁移（含 `018` 材料摄取与计划草稿表、`019` 用户软删除、`020` analytics/notifications、`021` Provider API Key 数据库加密托管）、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表、AI 会话 / provider / agent / skill / invocation 表，以及管理员账号/角色/审计日志表。
 - 仍待实现：细粒度权限深化、用户域更深写能力如内部备注 / 人工积分调整、AI 域更深运营化能力（prompt 版本化、灰度/回滚、成本与稳定性面板等）、订阅支付域。（**用户运营**、**学习运营**、**AI 运营**、**系统设置**、**analytics 事件写入** 与 **通知设置落库/站内提醒** 已在代码中落地，不再归入「待实现」。）
 - 若只想最快了解真实现状，优先读：
   1. `docs/plans/README.md`
@@ -82,7 +82,8 @@
 - 当前接口文档不是“扫描整个 `app/api` 目录零维护生成”；新增或修改后端接口后，仍需同步更新 `server/modules/api-docs/openapi.ts` 与 `server/modules/api-docs/schemas.ts` 中的注册与 schema。
 - 当前 `app/api` 路由文件已不再普遍手写请求解析；请求体/查询参数校验、统一成功/失败响应、常见 `NOT_FOUND` / `BAD_REQUEST` 文案与错误映射，正在集中收敛到 `server/lib/request-validation.ts`、`server/lib/route-response.ts`、`server/lib/route-error.ts`、`server/lib/route-error-presets.ts` 以及各域 `route-handler.ts`。
 - 当前仓库顶层真实目录除了页面和服务端主目录外，还包含 `lib/auth`、`lib/learning`、`lib/mocks`、`server/services`、`server/utils`、`supabase/seeds` 等辅助或预留目录；目录阅读应以当前代码树为准，不再按最早设计稿假定不存在的层级。
-- 当前已落地的数据库迁移为 `001` 到 `018`，其中已包含学习主线核心表、用户资料字段升级、运营导出视图、头像 Storage bucket、反馈工单表、学习计划 `interrupted` 状态、成长写模型表 `score_ledgers` / `user_ranks` / `daily_checkins`、AI 会话/agent/provider/skill 相关表、管理员账号/角色/审计日志表，以及 `018` 自学材料摄取与计划草稿相关表（`learning_material_*`、`learning_plan_draft*`）。
+- 当前已落地的数据库迁移为 `001` 到 `021`，其中已包含学习主线核心表、用户资料字段升级、运营导出视图、头像 Storage bucket、反馈工单表、学习计划 `interrupted` 状态、成长写模型表 `score_ledgers` / `user_ranks` / `daily_checkins`、AI 会话/agent/provider/skill 相关表、管理员账号/角色/审计日志表、`018` 自学材料摄取与计划草稿相关表（`learning_material_*`、`learning_plan_draft*`）、`019` 用户软删除、`020` analytics/notifications，以及 `021` Provider API Key 密文存储字段与加密托管能力。
+- 当前 Provider 密钥机制已不是“仅环境变量”：后台 `/admin/ai/providers` 支持查看脱敏值、按需明文读取、修改并加密保存到数据库；运行时优先读数据库密文，`envSecretRef` 仅作兼容环境变量回退；服务端必须配置 `AI_PROVIDER_SECRET_ENCRYPTION_KEY`。
 - 当前主学习闭环已真实打通：学习消息链路首版已完成 `conversation_sessions`、`conversation_messages`、provider / agent / skill 配置表、`POST /api/learning/message`、`GET /api/learning/current-session`、`GET /api/learning/messages`、SSE 流式输出、前端增量渲染、`task_patch` 状态联动、结构化 `structuredContent`（`interactionType / variant / summary / blocks / sections / actions`）与对应测试链路。
 - AI Orchestration 当前仅第一阶段主链路已落地；`2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 中的 `15.2 第二阶段` 与 `15.3 第三阶段` 仍属后续开发计划，尚未开始实现。
 - 首页营销层已接入登录态恢复：顶部导航、Hero、套餐区、最终 CTA、页脚 CTA 会在用户已登录时切换为“继续学习”，并按真实用户状态跳转到 `/learn`、`/history` 或 `/onboarding`。
@@ -126,3 +127,28 @@
 - 当真实代码和文档不一致时，先修正文档主文档，再修下游文档。
 - 过程性、临时性、已完成使命的计划文档不再放回本目录。
 - 新增文档仍使用 `YYYY-MM-DD-topic-name.md` 命名。
+
+## 文档对齐检查清单
+
+每次功能改动完成后，至少按下面顺序检查一次，避免“代码已变、主文档没变”：
+
+1. 先看是否影响仓库入口说明
+   - 若影响当前已实现能力、迁移编号、环境变量、接手口径，更新 `AGENTS.md` 与本 README。
+2. 再看是否影响权威设计主文档
+   - 产品范围变化：更新 PRD。
+   - 页面职责/后台能力变化：更新页面原型说明或管理后台设计文档。
+   - 技术边界、密钥机制、运行时链路变化：更新技术架构或 AI Orchestration 设计文档。
+3. 再看是否影响接口契约
+   - 新增/删除/修改 API、请求体、响应体、错误码时，同时更新 API 规范、`server/modules/api-docs/openapi.ts`、`server/modules/api-docs/schemas.ts`。
+4. 再看是否影响数据库真相
+   - 新增 migration、字段、约束、密钥存储策略时，同时更新数据库 Schema 设计文档与 `.env.example`。
+5. 最后回头扫“已实现 / 待实现”表述
+   - 凡是已经上线到代码或迁移的能力，不能继续留在“待实现”。
+   - 凡是还没落地的规划，不能写成当前事实。
+
+对本项目，下面几类改动最容易漏同步：
+
+- `app/api` 或 `server/modules` 改动：同步 API 规范与 OpenAPI。
+- `supabase/migrations` 改动：同步数据库设计、README 快照、`AGENTS.md` 中的迁移编号。
+- 管理后台 AI/Provider 改动：同步管理后台设计、AI Orchestration 设计、技术架构中的密钥管理描述。
+- 新增服务端环境变量：同步 `.env.example`、README 快照、相关设计文档中的前置条件。

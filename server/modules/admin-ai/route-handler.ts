@@ -4,6 +4,7 @@ import type {
   AdminAIAgentSkillBindingUpsertRequest,
   AdminAIAgentUpsertRequest,
   AdminAIModelUpsertRequest,
+  AdminAIProviderSecretRevealResponseData,
   AdminAIProviderUpsertRequest,
   AdminAIResolvePreviewRequest,
   AdminAITestRequest,
@@ -224,6 +225,44 @@ export function createAdminAIProviderDetailHandlers(dependencies: {
         return jsonError("INTERNAL_ERROR", "Provider 更新失败", 500)
       }
     },
+  }
+}
+
+export function createAdminAIProviderSecretRevealPostHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  revealAdminAIProviderSecret: (
+    adminAccountId: string,
+    providerId: string,
+  ) => Promise<AdminAIProviderSecretRevealResponseData | null>
+}) {
+  return async function POST(
+    request: Request,
+    routeContext: { params: Promise<{ providerId: string }> },
+  ) {
+    try {
+      const admin = await requireAdmin(dependencies.getRequestAdmin, request)
+      if (!admin.ok) {
+        return admin.response
+      }
+
+      const { providerId: rawId } = await routeContext.params
+      const providerId = parseRequiredRouteId(rawId, "Provider ID 不合法。")
+      if (!providerId.ok) {
+        return jsonError(providerId.code, providerId.message, 400)
+      }
+
+      try {
+        const data = await dependencies.revealAdminAIProviderSecret(admin.adminId, providerId.data)
+        if (!data) {
+          return jsonError("NOT_FOUND", "Provider 不存在。", 404)
+        }
+        return jsonSuccess(data, "Provider 密钥读取成功")
+      } catch (error) {
+        return mapCommonRouteError(error, "Provider 密钥读取失败")
+      }
+    } catch {
+      return jsonError("INTERNAL_ERROR", "Provider 密钥读取失败", 500)
+    }
   }
 }
 

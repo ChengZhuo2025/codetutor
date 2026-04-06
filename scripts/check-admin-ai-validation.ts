@@ -78,7 +78,8 @@ test("parseAdminAIProviderBody trims strings and preserves booleans", () => {
     providerType: "openai_compatible",
     baseUrl: " https://api.example.com/v1 ",
     authMode: "bearer",
-    secretRef: " CUSTOM_API_KEY ",
+    apiKey: " sk-live-demo-secret ",
+    keepExistingSecret: false,
     supportsStream: true,
     supportsJsonMode: false,
     timeoutMs: 45000,
@@ -92,8 +93,59 @@ test("parseAdminAIProviderBody trims strings and preserves booleans", () => {
   if (r.ok) {
     assert.equal(r.data.code, "custom-openai")
     assert.equal(r.data.baseUrl, "https://api.example.com/v1")
-    assert.equal(r.data.secretRef, "CUSTOM_API_KEY")
+    assert.equal(r.data.apiKey, "sk-live-demo-secret")
+    assert.equal(r.data.keepExistingSecret, false)
     assert.equal(r.data.changeReason, "新增 provider")
+  }
+})
+
+test("parseAdminAIProviderBody accepts keeping existing secret without apiKey", () => {
+  const r = parseAdminAIProviderBody({
+    code: "siliconflow",
+    name: "SiliconFlow",
+    providerType: "siliconflow",
+    baseUrl: "https://api.siliconflow.cn/v1",
+    authMode: "bearer",
+    apiKey: "   ",
+    keepExistingSecret: true,
+    supportsStream: true,
+    supportsJsonMode: false,
+    timeoutMs: 60000,
+    retryCount: 1,
+    isActive: true,
+    metadata: {},
+    changeReason: "仅更新名称",
+  })
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.equal(r.data.apiKey, null)
+    assert.equal(r.data.keepExistingSecret, true)
+  }
+})
+
+test("parseAdminAIProviderBody rejects missing all secret sources", () => {
+  const r = parseAdminAIProviderBody({
+    code: "siliconflow",
+    name: "SiliconFlow",
+    providerType: "siliconflow",
+    baseUrl: "https://api.siliconflow.cn/v1",
+    authMode: "bearer",
+    envSecretRef: null,
+    apiKey: "   ",
+    keepExistingSecret: false,
+    supportsStream: true,
+    supportsJsonMode: false,
+    timeoutMs: 60000,
+    retryCount: 1,
+    isActive: true,
+    metadata: {},
+    changeReason: "补全校验",
+  })
+
+  assert.equal(r.ok, false)
+  if (!r.ok) {
+    assert.equal(r.message, "至少提供 apiKey、keepExistingSecret 或 envSecretRef 之一。")
   }
 })
 

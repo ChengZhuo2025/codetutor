@@ -1943,7 +1943,10 @@ export const adminAIProviderListItemSchema = z
     providerType: adminAIProviderTypeSchema,
     baseUrl: z.string(),
     authMode: adminAIAuthModeSchema,
-    secretRef: z.string(),
+    secretSource: z.enum(["database", "env_fallback", "missing"]),
+    secretMasked: z.string(),
+    envSecretRef: z.string().nullable(),
+    hasStoredSecret: z.boolean(),
     supportsStream: z.boolean(),
     supportsJsonMode: z.boolean(),
     timeoutMs: z.number().int().positive(),
@@ -1988,7 +1991,9 @@ export const adminAIProviderUpsertRequestSchema = z
     providerType: adminAIProviderTypeSchema,
     baseUrl: z.string().url(),
     authMode: adminAIAuthModeSchema,
-    secretRef: z.string().min(2).max(128),
+    envSecretRef: z.string().min(1).max(128).nullable(),
+    apiKey: z.string().min(1).max(1000).nullable(),
+    keepExistingSecret: z.boolean(),
     supportsStream: z.boolean(),
     supportsJsonMode: z.boolean(),
     timeoutMs: z.number().int().min(1000).max(300000),
@@ -1998,6 +2003,13 @@ export const adminAIProviderUpsertRequestSchema = z
     changeReason: z.string().min(2).max(200),
   })
   .openapi("AdminAIProviderUpsertRequest")
+
+export const adminAIProviderSecretRevealResponseDataSchema = z
+  .object({
+    apiKey: z.string(),
+    source: z.enum(["database", "env_fallback", "missing"]),
+  })
+  .openapi("AdminAIProviderSecretRevealResponseData")
 
 export const adminAIModelListItemSchema = z
   .object({

@@ -15,7 +15,7 @@ AI编程学习教练 - 一个面向中文用户的 AI 编程学习陪练产品�
 - 后端：Next.js API Routes（BFF 入口层 + `server/modules` 服务层）
 - 数据库：阿里云 AnalyticDB PostgreSQL 版 Supabase（已接入，含迁移与远程库）
 - 文件存储：Supabase Storage（已用于头像上传）
-- AI 服务：Claude API（主学习消息链路已接通 SSE 流式输出，详见 `docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md`）
+- AI 服务：外部 AI provider 抽象层（当前首阶段已接通真实 provider 编排链路与 SSE 流式输出；现阶段主接入为硅基流动，详见 `docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md`）
 - 部署：Vercel（规划）
 - 本地验证环境：`Node.js 22.18.0`
 
@@ -162,14 +162,14 @@ types/                # 跨 feature 共用的类型定义
 - ✅ `daily_checkins` 与 `/api/checkin/daily` 落地，成就页支持真实每日打卡
 - ✅ 历史学习计划详情、放弃/重新激活/删除记录状态操作
 - ✅ 用户资料编辑、头像上传、反馈系统
-- ✅ AI 学习消息链路第一阶段（SSE 流式输出 + 结构化 structuredContent）
+- ✅ AI 学习消息链路第一阶段（真实 provider 编排 + SSE 流式输出 + 结构化 `structuredContent`）
 - ✅ 自学模式教程链接生成计划 Phase A（`plan-from-material` / `plan-drafts` confirm·regenerate，`learning-materials` + `learning-plans` 模块）
 - ✅ OpenAPI 3.1 文档（`/api/docs/openapi`）与 Swagger UI（`/api-docs`）
-- ✅ Supabase 迁移与远程数据库接入（当前已到 `020`，含自学材料摄取、计划草稿、analytics 与 notifications 表）
+- ✅ Supabase 迁移与远程数据库接入（当前已到 `021`，含自学材料摄取、计划草稿、analytics / notifications，以及 Provider API Key 数据库加密托管）
 - ✅ 管理后台 Phase 1（管理员认证、看板、反馈工单）
 - ✅ 管理后台用户运营（`/admin/users`、`/admin/users/[userId]`：列表筛选、CSV 导出、详情聚合、受控资料 PATCH、软删除/恢复；`server/modules/admin-users`、`OpenAPI` 分组 `admin-users`）
 - ✅ 管理后台学习运营（`/admin/learning`、`/admin/learning/[pathId]`：学习路径列表筛选、CSV 导出、详情聚合、最近会话回看、`reactivate/archive` 状态操作；`server/modules/admin-learning`、`OpenAPI` 分组 `admin-learning`）
-- ✅ 管理后台 AI 运营（`/admin/ai`、`/admin/ai/providers`、`/admin/ai/providers/[providerId]`、`/admin/ai/models`、`/admin/ai/models/[modelId]`、`/admin/ai/agents`、`/admin/ai/agents/[agentId]`、`/admin/ai/bindings`、`/admin/ai/skills`、`/admin/ai/invocations`、`/admin/ai/invocations/[invocationId]`、`/admin/ai/test`；对应 `/api/admin/ai/*`、`server/modules/admin-ai`、`OpenAPI` 分组 `admin-ai`）
+- ✅ 管理后台 AI 运营（`/admin/ai`、`/admin/ai/providers`、`/admin/ai/providers/[providerId]`、`/admin/ai/models`、`/admin/ai/models/[modelId]`、`/admin/ai/agents`、`/admin/ai/agents/[agentId]`、`/admin/ai/bindings`、`/admin/ai/skills`、`/admin/ai/invocations`、`/admin/ai/invocations/[invocationId]`、`/admin/ai/test`；对应 `/api/admin/ai/*`、`server/modules/admin-ai`、`OpenAPI` 分组 `admin-ai`，已支持 Provider API Key 脱敏展示、按需明文读取、修改并加密保存到数据库）
 - ✅ 管理后台系统设置（`/admin/settings`：我的资料、安全设置、管理员账号列表与启停、角色权限说明、操作审计、系统信息；`server/modules/admin-settings`、`OpenAPI` 分组 `admin-settings`）
 
 **进行中/待完成：**
@@ -260,6 +260,7 @@ types/                # 跨 feature 共用的类型定义
 ## 重要提醒
 
 1. **当前已是同仓 MVP**：项目包含前端页面 + `app/api` BFF + `server/modules` 服务层 + Supabase migrations，是一个完整全栈项目
-2. **AI 学习消息链路已接通**：Claude API 已通过 SSE 流式输出接入 `POST /api/learning/message`，返回结构化 `structuredContent`，第一阶段已完成
-3. **API 文档地址**：`/api-docs` 提供 Swagger UI 查看与调试，`/api/docs/openapi` 返回 OpenAPI 3.1 JSON
-4. **文档与代码冲突时**：以代码和迁移文件为准，再回写文档
+2. **AI 学习消息链路已接通**：真实 provider 编排链路已通过 SSE 流式输出接入 `POST /api/learning/message`，返回结构化 `structuredContent`，第一阶段已完成
+3. **Provider 密钥机制已更新**：`/admin/ai/providers` 支持脱敏查看、按需明文读取与修改；Provider API Key 现可由服务端加密后存入数据库，运行时优先读取数据库密文，`envSecretRef` 仅作兼容环境变量回退；启用该路径需配置 `AI_PROVIDER_SECRET_ENCRYPTION_KEY`
+4. **API 文档地址**：`/api-docs` 提供 Swagger UI 查看与调试，`/api/docs/openapi` 返回 OpenAPI 3.1 JSON
+5. **文档与代码冲突时**：以代码和迁移文件为准，再回写文档

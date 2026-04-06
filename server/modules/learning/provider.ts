@@ -1,5 +1,6 @@
 import "server-only"
 
+import { resolveProviderSecret } from "@/server/lib/secrets/provider-secret"
 import { LearningAIProviderError } from "./errors.ts"
 
 type AIProviderConfig = {
@@ -7,7 +8,11 @@ type AIProviderConfig = {
   providerType: "siliconflow" | "openai_compatible" | "anthropic"
   baseUrl: string
   authMode: "bearer" | "api_key_header"
-  secretRef: string
+  envSecretRef: string | null
+  secretCiphertext: string | null
+  secretIv: string | null
+  secretAuthTag: string | null
+  secretKeyVersion: string | null
   timeoutMs: number
   retryCount: number
 }
@@ -69,13 +74,21 @@ type OpenAICompatibleResponse = {
   }
 }
 
-function getProviderSecret(secretRef: string) {
-  const value = process.env[secretRef]
-  if (!value) {
-    throw new LearningAIProviderError(`Missing required provider secret: ${secretRef}`)
+function getProviderSecret(provider: AIProviderConfig) {
+  const resolved = resolveProviderSecret({
+    secret_ref: provider.envSecretRef,
+    secret_ciphertext: provider.secretCiphertext,
+    secret_iv: provider.secretIv,
+    secret_auth_tag: provider.secretAuthTag,
+    secret_key_version: provider.secretKeyVersion,
+  })
+
+  if (!resolved.secret) {
+    const refLabel = provider.envSecretRef ? ` or env fallback ${provider.envSecretRef}` : ""
+    throw new LearningAIProviderError(`Missing required provider secret for ${provider.code}${refLabel}`)
   }
 
-  return value
+  return resolved.secret
 }
 
 function toResponseText(content: OpenAICompatibleMessage["content"] | undefined) {
@@ -121,7 +134,7 @@ async function callOpenAICompatible(
     const headers = new Headers({
       "Content-Type": "application/json",
     })
-    const secret = getProviderSecret(input.provider.secretRef)
+    const secret = getProviderSecret(input.provider)
 
     if (input.provider.authMode === "bearer") {
       headers.set("Authorization", `Bearer ${secret}`)
@@ -215,7 +228,7 @@ async function callOpenAICompatibleStream(
     const headers = new Headers({
       "Content-Type": "application/json",
     })
-    const secret = getProviderSecret(input.provider.secretRef)
+    const secret = getProviderSecret(input.provider)
 
     if (input.provider.authMode === "bearer") {
       headers.set("Authorization", `Bearer ${secret}`)

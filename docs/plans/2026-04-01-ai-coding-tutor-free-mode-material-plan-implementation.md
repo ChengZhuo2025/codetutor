@@ -442,7 +442,8 @@
 
 2. **环境变量与密钥**
    - 材料抓取服务/API（如有）
-   - AI provider key（现有可复用）
+   - AI provider key（现支持后台数据库加密托管；若未配置数据库密钥可暂走 `envSecretRef` 回退）
+   - `AI_PROVIDER_SECRET_ENCRYPTION_KEY`（若启用 Provider API Key 数据库加密托管则必需）
 
 3. **数据库准备**
    - 迁移评审通过

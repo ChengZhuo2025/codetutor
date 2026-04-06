@@ -23,7 +23,11 @@ type ProviderRow = {
   provider_type: "siliconflow" | "openai_compatible" | "anthropic"
   base_url: string
   auth_mode: "bearer" | "api_key_header"
-  secret_ref: string
+  secret_ref: string | null
+  secret_ciphertext: string | null
+  secret_iv: string | null
+  secret_auth_tag: string | null
+  secret_key_version: string | null
   timeout_ms: number
   retry_count: number
 }
@@ -53,7 +57,7 @@ export async function loadPlannerAgentAndProvider() {
 
   const { data: providerData, error: providerError } = await supabase
     .from("ai_providers")
-    .select("code, provider_type, base_url, auth_mode, secret_ref, timeout_ms, retry_count")
+    .select("code, provider_type, base_url, auth_mode, secret_ref, secret_ciphertext, secret_iv, secret_auth_tag, secret_key_version, timeout_ms, retry_count")
     .eq("code", agent.default_provider_code)
     .eq("is_active", true)
     .maybeSingle()
@@ -105,7 +109,11 @@ export async function invokePlannerModel(userContent: string) {
       providerType: provider.provider_type,
       baseUrl: provider.base_url,
       authMode: provider.auth_mode,
-      secretRef: provider.secret_ref,
+      envSecretRef: provider.secret_ref,
+      secretCiphertext: provider.secret_ciphertext,
+      secretIv: provider.secret_iv,
+      secretAuthTag: provider.secret_auth_tag,
+      secretKeyVersion: provider.secret_key_version,
       timeoutMs: provider.timeout_ms,
       retryCount: provider.retry_count,
     },

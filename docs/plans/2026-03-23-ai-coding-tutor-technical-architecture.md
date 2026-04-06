@@ -730,7 +730,11 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 
 ## 13.2 密钥管理
 
-- AI provider API Key、阿里云 Supabase Service Key 等只存于服务端环境变量
+- AI provider API Key 当前采用“数据库密文托管 + 服务端环境变量主密钥”模式：
+  - Provider 真实 API Key 可由管理后台录入，服务端以 `AES-256-GCM` 加密后写入 `ai_providers`
+  - 服务端环境变量 `AI_PROVIDER_SECRET_ENCRYPTION_KEY` 作为加密主密钥，不落库、不下发前端
+  - `envSecretRef` 仅保留为兼容环境变量回退引用
+- 阿里云 Supabase Service Key 等仍只存于服务端环境变量
 - 前端绝不直连模型密钥
 
 ## 13.3 数据保护

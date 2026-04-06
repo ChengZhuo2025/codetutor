@@ -15,6 +15,7 @@ import {
   createAdminAIOverviewGetHandler,
   createAdminAIProviderDetailHandlers,
   createAdminAIProviderListHandler,
+  createAdminAIProviderSecretRevealPostHandler,
   createAdminAIResolvePreviewPostHandler,
   createAdminAISkillListGetHandler,
   createAdminAITestPostHandler,
@@ -89,7 +90,10 @@ const sampleProviderList: AdminAIProviderListResponseData = {
       providerType: "siliconflow",
       baseUrl: "https://api.siliconflow.cn/v1",
       authMode: "bearer",
-      secretRef: "SILICONFLOW_API_KEY",
+      secretSource: "database",
+      secretMasked: "sk-live-********wxyz",
+      envSecretRef: "SILICONFLOW_API_KEY",
+      hasStoredSecret: true,
       supportsStream: true,
       supportsJsonMode: false,
       timeoutMs: 60000,
@@ -113,7 +117,10 @@ const sampleProviderDetail: AdminAIProviderDetailResponseData = {
     providerType: "siliconflow",
     baseUrl: "https://api.siliconflow.cn/v1",
     authMode: "bearer",
-    secretRef: "SILICONFLOW_API_KEY",
+    secretSource: "database",
+    secretMasked: "sk-live-********wxyz",
+    envSecretRef: "SILICONFLOW_API_KEY",
+    hasStoredSecret: true,
     supportsStream: true,
     supportsJsonMode: false,
     timeoutMs: 60000,
@@ -433,7 +440,7 @@ test("admin ai provider detail patch returns 200", async () => {
         providerType: "siliconflow",
         baseUrl: "https://api.siliconflow.cn/v1",
         authMode: "bearer",
-        secretRef: "SILICONFLOW_API_KEY",
+        keepExistingSecret: true,
         supportsStream: true,
         supportsJsonMode: false,
         timeoutMs: 60000,
@@ -467,6 +474,24 @@ test("admin ai provider detail get accepts provider code route id", async () => 
 
   assert.equal(res.status, 200)
   assert.equal(receivedProviderId, "siliconflow")
+})
+
+test("admin ai provider secret reveal returns 200", async () => {
+  const handler = createAdminAIProviderSecretRevealPostHandler({
+    getRequestAdmin: async () => okAdmin,
+    revealAdminAIProviderSecret: async () => ({
+      apiKey: "sk-live-demo-secret",
+    }),
+  })
+
+  const res = await handler(
+    new Request("http://localhost/api/admin/ai/providers/550e8400-e29b-41d4-a716-446655440101/reveal-secret", {
+      method: "POST",
+    }),
+    { params: Promise.resolve({ providerId: "550e8400-e29b-41d4-a716-446655440101" }) },
+  )
+
+  assert.equal(res.status, 200)
 })
 
 test("admin ai model list returns 200", async () => {

@@ -75,7 +75,7 @@
 - 当前 prompt 已加入 agent 原生 Markdown 输出契约，要求模型按固定二级标题与 `动作文案｜点击后发送的话` 格式返回
 - 当前前端 `/learn` 已提升到 `interactionType` 级别展示驱动，再按 `variant` 做次级细分
 - 当前学习消息链路已覆盖 logic / HTTP / output-format 测试，以及真实 provider / database 参与的 live JSON、live SSE 集成测试
-- 当前真实外部 provider 联调还依赖环境变量 `SILICONFLOW_API_KEY`，若未配置会返回 `AI_PROVIDER_ERROR`
+- 当前 provider 密钥主路径已改为“管理后台录入 -> 服务端加密 -> 数据库存储 -> 运行时解密”；若数据库密钥缺失，则仍可通过 `envSecretRef` 回退读取环境变量；若两者都不存在会返回 `AI_PROVIDER_ERROR`
 - 当前仓库已经具备适合承载该能力的基础设施：`app/api`、`server/modules`、Supabase Auth、Database、Storage、远程迁移执行脚本
 - **教程链接生成学习计划（Phase A）**：已落地专用接口 `POST /api/learning/plan-from-material`（及草稿 `confirm` / `regenerate`），计划生成使用 `agent_templates.code = self-study-material-planner` 与 `invokeAIProvider` 非流式 JSON，不经过 `POST /api/learning/message` 主消息编排
 
@@ -408,7 +408,7 @@ type ChatGenerationResult = {
 
 - 第一阶段 provider：硅基流动
 - 后续兼容方向：OpenAI-compatible provider adapter
-- provider 密钥存放位置：服务端环境变量或 Supabase Secrets
+- provider 密钥存放位置：`ai_providers` 表中的密文字段为主，服务端环境变量 `AI_PROVIDER_SECRET_ENCRYPTION_KEY` 为加密主密钥，`envSecretRef` 为兼容回退引用
 - provider 调用位置：当前项目服务端，不放前端
 - provider 调用模式：真实流式
 
@@ -1113,7 +1113,12 @@ ai/skills/
 | `provider_type` | `ai_provider_type` | not null | provider 类型 |
 | `base_url` | `text` | not null | API 基础地址 |
 | `auth_mode` | `ai_auth_mode` | not null default `bearer` | 鉴权方式 |
-| `secret_ref` | `varchar(128)` | not null | 对应服务端环境变量名或 secrets 标识 |
+| `secret_ref` | `varchar(128)` | nullable | 对应兼容环境变量引用名 |
+| `secret_ciphertext` | `text` | nullable | API Key 密文（base64） |
+| `secret_iv` | `text` | nullable | AES-256-GCM IV（base64） |
+| `secret_auth_tag` | `text` | nullable | AES-256-GCM auth tag（base64） |
+| `secret_key_version` | `varchar(32)` | nullable | 加密主密钥版本 |
+| `secret_last_updated_at` | `timestamptz` | nullable | 最近一次密钥更新时间 |
 | `supports_stream` | `boolean` | not null default true | 是否支持真实流式 |
 | `supports_json_mode` | `boolean` | not null default false | 是否支持 JSON 输出 |
 | `timeout_ms` | `integer` | not null default 60000 | 默认超时 |

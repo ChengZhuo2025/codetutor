@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { Eye, EyeOff } from "lucide-react"
 import type {
   AdminAIProviderDetailResponseData,
   AdminAIProviderUpsertRequest,
@@ -34,6 +35,7 @@ import {
   PROVIDER_TIMEOUT_MS_MIN,
 } from "@/features/admin-ai/lib/provider-form-constraints"
 import { prettyJson } from "@/features/admin-ai/lib/view-model"
+import { ProviderSecretDisplay } from "./provider-secret-display"
 
 const EMPTY_FORM = {
   code: "",
@@ -41,14 +43,15 @@ const EMPTY_FORM = {
   providerType: "openai_compatible",
   baseUrl: "",
   authMode: "bearer",
-  secretRef: "",
+  envSecretRef: "",
+  apiKey: "",
   supportsStream: true,
   supportsJsonMode: false,
   timeoutMs: 60000,
   retryCount: 1,
   isActive: true,
   metadataText: "{}",
-  changeReason: "",
+  changeReason: "更新 Provider 配置",
 }
 
 type ProviderFormState = typeof EMPTY_FORM
@@ -60,14 +63,15 @@ function mapDetailToForm(detail: AdminAIProviderDetailResponseData["provider"]):
     providerType: detail.providerType,
     baseUrl: detail.baseUrl,
     authMode: detail.authMode,
-    secretRef: detail.secretRef,
+    envSecretRef: detail.envSecretRef ?? "",
+    apiKey: "",
     supportsStream: detail.supportsStream,
     supportsJsonMode: detail.supportsJsonMode,
     timeoutMs: detail.timeoutMs,
     retryCount: detail.retryCount,
     isActive: detail.isActive,
     metadataText: prettyJson(detail.metadata),
-    changeReason: "",
+    changeReason: "更新 Provider 配置",
   }
 }
 
@@ -91,9 +95,11 @@ export function ProviderFormSheet({
   const [detail, setDetail] = useState<AdminAIProviderDetailResponseData | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [showNewSecret, setShowNewSecret] = useState(false)
 
   useEffect(() => {
     if (!open) {
+      setShowNewSecret(false)
       return
     }
 
@@ -192,20 +198,39 @@ export function ProviderFormSheet({
         return
       }
 
+      const changeReasonTrimmed = form.changeReason.trim()
+      if (changeReasonTrimmed.length < 2 || changeReasonTrimmed.length > 500) {
+        toast.error("变更原因至少 2 个字符且最多 500 个字符。")
+        return
+      }
+
+      const apiKeyTrimmed = form.apiKey.trim()
+      const hasExistingSecret = detail?.provider.hasStoredSecret || detail?.provider.secretSource === "env_fallback"
+      if (!providerId && apiKeyTrimmed.length === 0) {
+        toast.error("新建 Provider 时必须填写 API Key。")
+        return
+      }
+      if (providerId && !hasExistingSecret && apiKeyTrimmed.length === 0) {
+        toast.error("当前 Provider 尚未配置 API Key，请填写新 API Key 后再保存。")
+        return
+      }
+
       const payload: AdminAIProviderUpsertRequest = {
         code: form.code.trim().toLowerCase(),
         name: form.name.trim(),
         providerType: form.providerType as AdminAIProviderUpsertRequest["providerType"],
         baseUrl: baseUrlTrimmed,
         authMode: form.authMode as AdminAIProviderUpsertRequest["authMode"],
-        secretRef: form.secretRef.trim(),
+        envSecretRef: form.envSecretRef.trim() || null,
+        apiKey: apiKeyTrimmed || null,
+        keepExistingSecret: Boolean(providerId && apiKeyTrimmed.length === 0),
         supportsStream: form.supportsStream,
         supportsJsonMode: form.supportsJsonMode,
         timeoutMs,
         retryCount,
         isActive: form.isActive,
         metadata: metadataParsed.data,
-        changeReason: form.changeReason,
+        changeReason: changeReasonTrimmed,
       }
 
       const result = providerId
@@ -298,10 +323,50 @@ export function ProviderFormSheet({
                 <Input id="provider-baseUrl" value={form.baseUrl} onChange={(event) => setForm((prev) => ({ ...prev, baseUrl: event.target.value }))} />
               </div>
 
+              <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
+                <div className="space-y-1.5">
+                  <Label>当前 API Key</Label>
+                  {providerId && detail ? (
+                    <ProviderSecretDisplay
+                      providerId={providerId}
+                      secretMasked={detail.provider.secretMasked}
+                      secretSource={detail.provider.secretSource}
+                      envSecretRef={detail.provider.envSecretRef}
+                      onAuthExpired={onAuthExpired}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">新建 Provider 时请直接填写下方 API Key。</p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="provider-apiKey">新 API Key</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="provider-apiKey"
+                      type={showNewSecret ? "text" : "password"}
+                      value={form.apiKey}
+                      onChange={(event) => setForm((prev) => ({ ...prev, apiKey: event.target.value }))}
+                      placeholder={providerId ? "留空表示保留当前密钥；填写后覆盖" : "请输入 Provider API Key"}
+                      className="font-mono"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                      onClick={() => setShowNewSecret((prev) => !prev)}
+                      aria-label={showNewSecret ? "隐藏新 API Key" : "显示新 API Key"}
+                    >
+                      {showNewSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
                 <div className="space-y-1.5">
-                  <Label htmlFor="provider-secretRef">Secret Ref</Label>
-                  <Input id="provider-secretRef" value={form.secretRef} onChange={(event) => setForm((prev) => ({ ...prev, secretRef: event.target.value }))} />
+                  <Label htmlFor="provider-envSecretRef">兼容 Env Secret Ref</Label>
+                  <Input id="provider-envSecretRef" value={form.envSecretRef} onChange={(event) => setForm((prev) => ({ ...prev, envSecretRef: event.target.value }))} placeholder="例如：SILICONFLOW_API_KEY（可留空）" />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="provider-timeoutMs">超时 ms</Label>
