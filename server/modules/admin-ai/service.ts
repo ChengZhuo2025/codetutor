@@ -39,6 +39,15 @@ import {
   hasStoredProviderSecret,
   resolveProviderSecret,
 } from "@/server/lib/secrets/provider-secret"
+import {
+  invalidateAIConfigCache,
+  loadAIAgentBindingsSnapshot,
+  loadAIAgentSkillBindingsSnapshot,
+  loadAIAgentsSnapshot,
+  loadAIModelsSnapshot,
+  loadAIProvidersSnapshot,
+  loadAISkillsSnapshot,
+} from "@/server/modules/ai/config-cache"
 import { invokeAIProvider, streamAIProvider } from "@/server/modules/learning/provider.ts"
 
 type AdminActorRow = {
@@ -293,45 +302,27 @@ async function writeAdminAIAudit(input: {
 }
 
 async function loadProviders() {
-  const supabase = createSupabaseAdminClient()
-  const { data, error } = await supabase.from("ai_providers").select("*").order("updated_at", { ascending: false })
-  assertSupabaseSuccess(error, "failed to query ai providers")
-  return (data ?? []) as ProviderRow[]
+  return (await loadAIProvidersSnapshot<ProviderRow>()) as ProviderRow[]
 }
 
 async function loadModels() {
-  const supabase = createSupabaseAdminClient()
-  const { data, error } = await supabase.from("ai_models").select("*").order("updated_at", { ascending: false })
-  assertSupabaseSuccess(error, "failed to query ai models")
-  return (data ?? []) as ModelRow[]
+  return (await loadAIModelsSnapshot<ModelRow>()) as ModelRow[]
 }
 
 async function loadAgents() {
-  const supabase = createSupabaseAdminClient()
-  const { data, error } = await supabase.from("agent_templates").select("*").order("updated_at", { ascending: false })
-  assertSupabaseSuccess(error, "failed to query agent templates")
-  return (data ?? []) as AgentRow[]
+  return (await loadAIAgentsSnapshot<AgentRow>()) as AgentRow[]
 }
 
 async function loadAgentBindings() {
-  const supabase = createSupabaseAdminClient()
-  const { data, error } = await supabase.from("agent_bindings").select("*").order("priority", { ascending: true })
-  assertSupabaseSuccess(error, "failed to query agent bindings")
-  return (data ?? []) as AgentBindingRow[]
+  return (await loadAIAgentBindingsSnapshot<AgentBindingRow>()) as AgentBindingRow[]
 }
 
 async function loadSkills() {
-  const supabase = createSupabaseAdminClient()
-  const { data, error } = await supabase.from("skill_packs").select("*").order("updated_at", { ascending: false })
-  assertSupabaseSuccess(error, "failed to query skill packs")
-  return (data ?? []) as SkillRow[]
+  return (await loadAISkillsSnapshot<SkillRow>()) as SkillRow[]
 }
 
 async function loadAgentSkillBindings() {
-  const supabase = createSupabaseAdminClient()
-  const { data, error } = await supabase.from("agent_skill_bindings").select("*").order("priority", { ascending: true })
-  assertSupabaseSuccess(error, "failed to query agent skill bindings")
-  return (data ?? []) as AgentSkillBindingRow[]
+  return (await loadAIAgentSkillBindingsSnapshot<AgentSkillBindingRow>()) as AgentSkillBindingRow[]
 }
 
 async function loadInvocations() {
@@ -607,31 +598,19 @@ function mapWriteError(error: { message?: string; code?: string } | null, duplic
 }
 
 async function loadProviderByCode(code: string) {
-  const supabase = createSupabaseAdminClient()
-  const { data, error } = await supabase.from("ai_providers").select("*").eq("code", code).maybeSingle()
-  assertSupabaseSuccess(error, "failed to query provider by code")
-  return (data ?? null) as ProviderRow | null
+  return (await loadProviders()).find((row) => row.code === code) ?? null
 }
 
 async function loadModelByCode(code: string) {
-  const supabase = createSupabaseAdminClient()
-  const { data, error } = await supabase.from("ai_models").select("*").eq("code", code).maybeSingle()
-  assertSupabaseSuccess(error, "failed to query model by code")
-  return (data ?? null) as ModelRow | null
+  return (await loadModels()).find((row) => row.code === code) ?? null
 }
 
 async function loadAgentByCode(code: string) {
-  const supabase = createSupabaseAdminClient()
-  const { data, error } = await supabase.from("agent_templates").select("*").eq("code", code).maybeSingle()
-  assertSupabaseSuccess(error, "failed to query agent by code")
-  return (data ?? null) as AgentRow | null
+  return (await loadAgents()).find((row) => row.code === code) ?? null
 }
 
 async function loadSkillByCode(code: string) {
-  const supabase = createSupabaseAdminClient()
-  const { data, error } = await supabase.from("skill_packs").select("*").eq("code", code).maybeSingle()
-  assertSupabaseSuccess(error, "failed to query skill by code")
-  return (data ?? null) as SkillRow | null
+  return (await loadSkills()).find((row) => row.code === code) ?? null
 }
 
 function scoreBindingSpecificity(binding: Pick<AgentBindingRow, "tool_id" | "learning_level" | "selection_mode" | "path_id" | "step_no">) {
@@ -863,6 +842,8 @@ export async function createAdminAIProvider(
     reason: input.changeReason,
   })
 
+  invalidateAIConfigCache("providers")
+
   const detail = await getAdminAIProviderDetail(adminAccountId, (data as { id: string }).id)
   if (!detail) {
     throw new Error("created provider not found")
@@ -950,6 +931,8 @@ export async function updateAdminAIProvider(
     },
     reason: input.changeReason,
   })
+
+  invalidateAIConfigCache("providers")
 
   return getAdminAIProviderDetail(adminAccountId, existing.provider.providerId)
 }
@@ -1087,6 +1070,8 @@ export async function createAdminAIModel(
     reason: input.changeReason,
   })
 
+  invalidateAIConfigCache("models")
+
   const detail = await getAdminAIModelDetail(adminAccountId, (data as { id: string }).id)
   if (!detail) {
     throw new Error("created model not found")
@@ -1162,6 +1147,8 @@ export async function updateAdminAIModel(
     },
     reason: input.changeReason,
   })
+
+  invalidateAIConfigCache("models")
 
   return getAdminAIModelDetail(adminAccountId, rowId)
 }
@@ -1314,6 +1301,8 @@ export async function createAdminAIAgent(
     reason: input.changeReason,
   })
 
+  invalidateAIConfigCache("agents")
+
   const detail = await getAdminAIAgentDetail(adminAccountId, (data as { id: string }).id)
   if (!detail) {
     throw new Error("created agent not found")
@@ -1390,6 +1379,8 @@ export async function updateAdminAIAgent(
     },
     reason: input.changeReason,
   })
+
+  invalidateAIConfigCache("agents")
 
   return getAdminAIAgentDetail(adminAccountId, agentId)
 }
@@ -1475,6 +1466,8 @@ export async function createAdminAIAgentBinding(
     reason: input.changeReason,
   })
 
+  invalidateAIConfigCache("agent-bindings")
+
   const list = await getAdminAIAgentBindingList({ adminAccountId, page: 1, limit: 1000 })
   const item = list.items.find((row) => row.bindingId === (data as { id: string }).id)
   if (!item) {
@@ -1524,6 +1517,8 @@ export async function updateAdminAIAgentBinding(
     afterSnapshot: input,
     reason: input.changeReason,
   })
+
+  invalidateAIConfigCache("agent-bindings")
 
   const nextList = await getAdminAIAgentBindingList({ adminAccountId, page: 1, limit: 1000 })
   return nextList.items.find((row) => row.bindingId === bindingId) ?? null
@@ -1622,6 +1617,8 @@ export async function createAdminAIAgentSkillBinding(
     reason: input.changeReason,
   })
 
+  invalidateAIConfigCache("agent-skill-bindings")
+
   const list = await getAdminAIAgentSkillBindingList({ adminAccountId, page: 1, limit: 1000 })
   const item = list.items.find((row) => row.bindingId === (data as { id: string }).id)
   if (!item) {
@@ -1668,6 +1665,8 @@ export async function updateAdminAIAgentSkillBinding(
     afterSnapshot: input,
     reason: input.changeReason,
   })
+
+  invalidateAIConfigCache("agent-skill-bindings")
 
   const nextList = await getAdminAIAgentSkillBindingList({ adminAccountId, page: 1, limit: 1000 })
   return nextList.items.find((row) => row.bindingId === bindingId) ?? null

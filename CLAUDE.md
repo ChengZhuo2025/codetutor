@@ -166,6 +166,7 @@ types/                # 跨 feature 共用的类型定义
 - ✅ 自学模式教程链接生成计划 Phase A（`plan-from-material` / `plan-drafts` confirm·regenerate，`learning-materials` + `learning-plans` 模块）
 - ✅ OpenAPI 3.1 文档（`/api/docs/openapi`）与 Swagger UI（`/api-docs`）
 - ✅ Supabase 迁移与远程数据库接入（当前已到 `021`，含自学材料摄取、计划草稿、analytics / notifications，以及 Provider API Key 数据库加密托管）
+- ✅ Phase 1 运行时性能与稳定性加固（进程内短 TTL 用户鉴权 / 管理员会话缓存、AI 配置快照缓存、关键接口限流、请求级观测头与结构化日志；当前仍未引入 Redis / 消息队列）
 - ✅ 管理后台 Phase 1（管理员认证、看板、反馈工单）
 - ✅ 管理后台用户运营（`/admin/users`、`/admin/users/[userId]`：列表筛选、CSV 导出、详情聚合、受控资料 PATCH、软删除/恢复；`server/modules/admin-users`、`OpenAPI` 分组 `admin-users`）
 - ✅ 管理后台学习运营（`/admin/learning`、`/admin/learning/[pathId]`：学习路径列表筛选、CSV 导出、详情聚合、最近会话回看、`reactivate/archive` 状态操作；`server/modules/admin-learning`、`OpenAPI` 分组 `admin-learning`）
@@ -180,6 +181,8 @@ types/                # 跨 feature 共用的类型定义
 
 **开发策略：**
 当前项目已是“部分真实接口 + 部分静态展示数据”的状态。优先继续扩展真实用户主链路；营销内容、FAQ、订阅占位等仍可继续用本地静态数据承载，但 analytics 与通知设置已不再是纯前端占位。
+
+运行时基础设施当前要按“单实例进程内实现”理解：已有短 TTL 缓存、限流与请求观测加固，但还没有 Redis、分布式缓存或消息队列。
 
 ### 当前状态机补充
 
@@ -262,5 +265,6 @@ types/                # 跨 feature 共用的类型定义
 1. **当前已是同仓 MVP**：项目包含前端页面 + `app/api` BFF + `server/modules` 服务层 + Supabase migrations，是一个完整全栈项目
 2. **AI 学习消息链路已接通**：真实 provider 编排链路已通过 SSE 流式输出接入 `POST /api/learning/message`，返回结构化 `structuredContent`，第一阶段已完成
 3. **Provider 密钥机制已更新**：`/admin/ai/providers` 支持脱敏查看、按需明文读取与修改；Provider API Key 现可由服务端加密后存入数据库，运行时优先读取数据库密文，`envSecretRef` 仅作兼容环境变量回退；启用该路径需配置 `AI_PROVIDER_SECRET_ENCRYPTION_KEY`
-4. **API 文档地址**：`/api-docs` 提供 Swagger UI 查看与调试，`/api/docs/openapi` 返回 OpenAPI 3.1 JSON
-5. **文档与代码冲突时**：以代码和迁移文件为准，再回写文档
+4. **运行时加固边界要看清**：当前已落地进程内鉴权/会话缓存、AI 配置快照缓存、关键接口限流与 `X-Request-Id` / `X-Auth-Cache` / `X-Config-Cache` / `X-Rate-Limit` / `Server-Timing` 观测头，但这些都不是 Redis 或消息队列方案
+5. **API 文档地址**：`/api-docs` 提供 Swagger UI 查看与调试，`/api/docs/openapi` 返回 OpenAPI 3.1 JSON
+6. **文档与代码冲突时**：以代码和迁移文件为准，再回写文档

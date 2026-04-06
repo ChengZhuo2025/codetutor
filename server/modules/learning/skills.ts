@@ -3,12 +3,17 @@ import "server-only"
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { assertSupabaseSuccess } from "@/server/lib/supabase"
+import {
+  loadAIAgentSkillBindingsSnapshot,
+  loadAISkillsSnapshot,
+} from "@/server/modules/ai/config-cache"
 
 type AgentSkillBindingRow = {
+  agent_code: string
   skill_code: string
   priority: number
   context_budget_tokens: number | null
+  is_active: boolean
 }
 
 type SkillPackRow = {
@@ -52,31 +57,21 @@ export async function loadAgentSkillContexts(
   supabase: SupabaseClient,
   agentCode: string,
 ): Promise<SkillContext[]> {
-  const { data: bindingRows, error: bindingError } = await supabase
-    .from("agent_skill_bindings")
-    .select("skill_code, priority, context_budget_tokens")
-    .eq("agent_code", agentCode)
-    .eq("is_active", true)
-    .order("priority", { ascending: true })
+  void supabase
+  const bindings = (await loadAIAgentSkillBindingsSnapshot<AgentSkillBindingRow>())
+    .filter((binding) => binding.agent_code === agentCode && binding.is_active)
+    .sort((left, right) => left.priority - right.priority)
 
-  assertSupabaseSuccess(bindingError, "failed to load agent skill bindings")
-
-  const bindings = (bindingRows ?? []) as AgentSkillBindingRow[]
   if (bindings.length === 0) {
     return []
   }
 
-  const skillCodes = bindings.map((binding) => binding.skill_code)
-  const { data: skillRows, error: skillError } = await supabase
-    .from("skill_packs")
-    .select("code, name, manifest_path, entry_resource_path, is_active")
-    .in("code", skillCodes)
-    .eq("is_active", true)
-
-  assertSupabaseSuccess(skillError, "failed to load skill packs")
+  const skillCodes = new Set(bindings.map((binding) => binding.skill_code))
+  const skillRows = (await loadAISkillsSnapshot<SkillPackRow>())
+    .filter((skill) => skill.is_active && skillCodes.has(skill.code))
 
   const skillByCode = new Map(
-    ((skillRows ?? []) as SkillPackRow[]).map((row) => [row.code, row]),
+    skillRows.map((row) => [row.code, row]),
   )
 
   const contexts = await Promise.all(

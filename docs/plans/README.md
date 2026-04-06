@@ -14,6 +14,7 @@
 - 已补运行时接口文档：`/api/docs/openapi` 输出 OpenAPI 3.1 JSON，`/api-docs` 提供 Swagger UI 查看与调试。
 - `app/api` 当前已大量收敛为薄入口层，请求校验、统一响应、错误映射与部分路由编排已下沉到 `server/lib/*` 与各域 `route-handler.ts`。
 - 已落地数据侧：远程 Supabase、`001` 到 `021` 迁移（含 `018` 材料摄取与计划草稿表、`019` 用户软删除、`020` analytics/notifications、`021` Provider API Key 数据库加密托管）、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表、AI 会话 / provider / agent / skill / invocation 表，以及管理员账号/角色/审计日志表。
+- 已补 Phase 1 运行时性能与稳定性加固：进程内短 TTL 用户鉴权 / 管理员会话缓存、AI 配置快照缓存、关键接口限流与请求级观测头 / 结构化日志；当前仍未引入 Redis / 消息队列，缓存与限流均为单实例进程内实现。
 - 仍待实现：细粒度权限深化、用户域更深写能力如内部备注 / 人工积分调整、AI 域更深运营化能力（prompt 版本化、灰度/回滚、成本与稳定性面板等）、订阅支付域。（**用户运营**、**学习运营**、**AI 运营**、**系统设置**、**analytics 事件写入** 与 **通知设置落库/站内提醒** 已在代码中落地，不再归入「待实现」。）
 - 若只想最快了解真实现状，优先读：
   1. `docs/plans/README.md`
@@ -85,6 +86,7 @@
 - 当前已落地的数据库迁移为 `001` 到 `021`，其中已包含学习主线核心表、用户资料字段升级、运营导出视图、头像 Storage bucket、反馈工单表、学习计划 `interrupted` 状态、成长写模型表 `score_ledgers` / `user_ranks` / `daily_checkins`、AI 会话/agent/provider/skill 相关表、管理员账号/角色/审计日志表、`018` 自学材料摄取与计划草稿相关表（`learning_material_*`、`learning_plan_draft*`）、`019` 用户软删除、`020` analytics/notifications，以及 `021` Provider API Key 密文存储字段与加密托管能力。
 - 当前 Provider 密钥机制已不是“仅环境变量”：后台 `/admin/ai/providers` 支持查看脱敏值、按需明文读取、修改并加密保存到数据库；运行时优先读数据库密文，`envSecretRef` 仅作兼容环境变量回退；服务端必须配置 `AI_PROVIDER_SECRET_ENCRYPTION_KEY`。
 - 当前主学习闭环已真实打通：学习消息链路首版已完成 `conversation_sessions`、`conversation_messages`、provider / agent / skill 配置表、`POST /api/learning/message`、`GET /api/learning/current-session`、`GET /api/learning/messages`、SSE 流式输出、前端增量渲染、`task_patch` 状态联动、结构化 `structuredContent`（`interactionType / variant / summary / blocks / sections / actions`）与对应测试链路。
+- 当前已补 Phase 1 运行时加固：用户 Bearer 鉴权与管理员会话查找走进程内短 TTL 缓存，AI provider / model / agent / binding / skill 解析走配置快照缓存，`/api/learning/message`、用户 / 管理员登录与会话、Provider 密钥读取、agent test 等关键接口已接入限流、并发保护、`X-Request-Id` / `X-Auth-Cache` / `X-Config-Cache` / `X-Rate-Limit` / `Server-Timing` 观测头与结构化请求日志；这些能力当前都还是单实例进程内实现。
 - AI Orchestration 当前仅第一阶段主链路已落地；`2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 中的 `15.2 第二阶段` 与 `15.3 第三阶段` 仍属后续开发计划，尚未开始实现。
 - 首页营销层已接入登录态恢复：顶部导航、Hero、套餐区、最终 CTA、页脚 CTA 会在用户已登录时切换为“继续学习”，并按真实用户状态跳转到 `/learn`、`/history` 或 `/onboarding`。
 - 用户端与管理端登录态已完成分流：用户端使用 `app-user-session`，管理端使用 `admin-access-token` / `admin-refresh-token`，并由 `proxy.ts` 统一做入口路由守卫。
@@ -109,7 +111,7 @@
 
 - AI 第三阶段能力：按 `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 的 `15.3` 补齐后台前端配置页、调用日志查看、Prompt 灰度与回滚、成本与稳定性面板。
 - 订阅与支付域：补齐套餐权益、支付状态、订阅生命周期与前端订阅模块的真实接入。
-- 缓存与队列增强：按实际流量决定是否引入 Redis、异步队列、频控与更完整的服务端缓存。
+- 缓存与队列增强：当前已落地单实例进程内缓存、限流与基础请求观测；后续按实际流量再决定是否引入 Redis、异步队列、跨实例频控与更完整的分布式缓存。
 - 前端请求层与自动化测试增强：在必要时评估 React Query / SWR，并逐步补齐高频主链路自动化测试。
 
 ### 当前建议开发顺序
@@ -119,7 +121,7 @@
    当前 AI 相关权威设计以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准。
    其中第一阶段已完成；文档里的 `15.2 第二阶段`、`15.3 第三阶段` 目前都还没有开始。
 3. 然后再进入 `15.3 第三阶段` 的 AI 运营深水区能力，例如 prompt 版本化、灰度/回滚、成本与稳定性可视化配置。
-4. 最后再进入 `订阅支付 + Redis/队列 + 更完整测试体系`。
+4. 最后再进入 `订阅支付 + Redis/共享队列 + 更完整测试体系`。
 
 ## 文档维护原则
 

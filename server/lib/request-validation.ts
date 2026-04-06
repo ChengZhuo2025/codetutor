@@ -1184,7 +1184,21 @@ export function parseAdminAIProviderBody(input: unknown): ValidationResult<Admin
     return firstFailure
   }
 
-  if (!apiKey.data && !keepExistingSecret.data && !envSecretRef.data) {
+  const parsedCode = code as ValidationSuccess<string>
+  const parsedName = name as ValidationSuccess<string>
+  const parsedBaseUrl = baseUrl as ValidationSuccess<string>
+  const parsedEnvSecretRef = envSecretRef as ValidationSuccess<string | null>
+  const parsedApiKey = apiKey as ValidationSuccess<string | null>
+  const parsedKeepExistingSecret = keepExistingSecret as ValidationSuccess<boolean>
+  const parsedSupportsStream = supportsStream as ValidationSuccess<boolean>
+  const parsedSupportsJsonMode = supportsJsonMode as ValidationSuccess<boolean>
+  const parsedTimeoutMs = timeoutMs as ValidationSuccess<number>
+  const parsedRetryCount = retryCount as ValidationSuccess<number>
+  const parsedIsActive = isActive as ValidationSuccess<boolean>
+  const parsedMetadata = metadata as ValidationSuccess<Record<string, unknown>>
+  const parsedChangeReason = changeReason as ValidationSuccess<string>
+
+  if (!parsedApiKey.data && !parsedKeepExistingSecret.data && !parsedEnvSecretRef.data) {
     return fail("VALIDATION_FAILED", "至少提供 apiKey、keepExistingSecret 或 envSecretRef 之一。")
   }
 
@@ -1196,26 +1210,26 @@ export function parseAdminAIProviderBody(input: unknown): ValidationResult<Admin
     return fail("VALIDATION_FAILED", "authMode 参数不合法。")
   }
 
-  if (!isValidUrl(baseUrl.data)) {
+  if (!isValidUrl(parsedBaseUrl.data)) {
     return fail("VALIDATION_FAILED", "baseUrl 必须是合法 URL。")
   }
 
   return ok({
-    code: code.data.toLowerCase(),
-    name: name.data,
+    code: parsedCode.data.toLowerCase(),
+    name: parsedName.data,
     providerType: shape.data.providerType as AdminAIProviderUpsertRequest["providerType"],
-    baseUrl: baseUrl.data,
+    baseUrl: parsedBaseUrl.data,
     authMode: shape.data.authMode as AdminAIProviderUpsertRequest["authMode"],
-    envSecretRef: envSecretRef.data,
-    apiKey: apiKey.data,
-    keepExistingSecret: keepExistingSecret.data,
-    supportsStream: supportsStream.data,
-    supportsJsonMode: supportsJsonMode.data,
-    timeoutMs: timeoutMs.data,
-    retryCount: retryCount.data,
-    isActive: isActive.data,
-    metadata: metadata.data,
-    changeReason: changeReason.data,
+    envSecretRef: parsedEnvSecretRef.data,
+    apiKey: parsedApiKey.data,
+    keepExistingSecret: parsedKeepExistingSecret.data,
+    supportsStream: parsedSupportsStream.data,
+    supportsJsonMode: parsedSupportsJsonMode.data,
+    timeoutMs: parsedTimeoutMs.data,
+    retryCount: parsedRetryCount.data,
+    isActive: parsedIsActive.data,
+    metadata: parsedMetadata.data,
+    changeReason: parsedChangeReason.data,
   })
 }
 

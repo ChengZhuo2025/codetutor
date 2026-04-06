@@ -1,7 +1,10 @@
 import "server-only"
 
-import { createSupabaseAdminClient } from "@/lib/supabase/admin"
-import { assertSupabaseSuccess } from "@/server/lib/supabase"
+import {
+  loadAIAgentsSnapshot,
+  loadAIModelsSnapshot,
+  loadAIProvidersSnapshot,
+} from "@/server/modules/ai/config-cache"
 import { invokeAIProvider } from "@/server/modules/learning/provider.ts"
 import type { AIChatMessage } from "@/server/modules/learning/provider.ts"
 
@@ -16,6 +19,7 @@ type AgentTemplateRow = {
   context_message_limit: number
   max_output_tokens: number
   temperature: number
+  is_active: boolean
 }
 
 type ProviderRow = {
@@ -30,48 +34,30 @@ type ProviderRow = {
   secret_key_version: string | null
   timeout_ms: number
   retry_count: number
+  is_active: boolean
 }
 
 type ModelRow = {
   code: string
   model_name: string
+  is_active: boolean
 }
 
 export async function loadPlannerAgentAndProvider() {
-  const supabase = createSupabaseAdminClient()
-
-  const { data: agentData, error: agentError } = await supabase
-    .from("agent_templates")
-    .select(
-      "code, system_prompt_template, developer_prompt_template, default_provider_code, default_model_code, context_message_limit, max_output_tokens, temperature",
-    )
-    .eq("code", MATERIAL_PLAN_AGENT_CODE)
-    .eq("is_active", true)
-    .maybeSingle()
-
-  assertSupabaseSuccess(agentError, "failed to load planner agent")
-  const agent = agentData as AgentTemplateRow | null
+  const agent =
+    (await loadAIAgentsSnapshot<AgentTemplateRow>())
+      .find((item) => item.code === MATERIAL_PLAN_AGENT_CODE && item.is_active) ?? null
   if (!agent) {
     throw new Error("planner agent self-study-material-planner not configured")
   }
 
-  const { data: providerData, error: providerError } = await supabase
-    .from("ai_providers")
-    .select("code, provider_type, base_url, auth_mode, secret_ref, secret_ciphertext, secret_iv, secret_auth_tag, secret_key_version, timeout_ms, retry_count")
-    .eq("code", agent.default_provider_code)
-    .eq("is_active", true)
-    .maybeSingle()
+  const providerData =
+    (await loadAIProvidersSnapshot<ProviderRow>())
+      .find((item) => item.code === agent.default_provider_code && item.is_active) ?? null
 
-  assertSupabaseSuccess(providerError, "failed to load ai provider for planner")
-
-  const { data: modelData, error: modelError } = await supabase
-    .from("ai_models")
-    .select("code, model_name")
-    .eq("code", agent.default_model_code)
-    .eq("is_active", true)
-    .maybeSingle()
-
-  assertSupabaseSuccess(modelError, "failed to load ai model for planner")
+  const modelData =
+    (await loadAIModelsSnapshot<ModelRow>())
+      .find((item) => item.code === agent.default_model_code && item.is_active) ?? null
 
   if (!providerData || !modelData) {
     throw new Error("planner provider or model missing")

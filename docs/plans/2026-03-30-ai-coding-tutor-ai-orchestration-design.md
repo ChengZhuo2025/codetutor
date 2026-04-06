@@ -62,7 +62,7 @@
 
 ## 1.2 当前代码实现状态快照
 
-截至 2026-03-31，当前仓库与 AI 编排直接相关的真实情况如下：
+截至 2026-04-06，当前仓库与 AI 编排直接相关的真实情况如下：
 
 - 已有学习消息入口：`POST /api/learning/message`
 - 已有学习会话恢复入口：`GET /api/learning/current-session`
@@ -74,10 +74,13 @@
 - 当前 assistant 消息已显式返回并持久化 `structuredContent`，其中包含 `interactionType / variant / summary / blocks / sections / actions`
 - 当前 prompt 已加入 agent 原生 Markdown 输出契约，要求模型按固定二级标题与 `动作文案｜点击后发送的话` 格式返回
 - 当前前端 `/learn` 已提升到 `interactionType` 级别展示驱动，再按 `variant` 做次级细分
+- agent / provider / model / skill binding 解析已补进程内配置快照缓存，后台写入 Provider / Model / Agent / Binding / Skill 后会主动失效对应缓存组；不会缓存解密后的明文 Provider 密钥
+- `POST /api/learning/message` 已补第一阶段运行时保护：按用户限流、并发会话保护、请求级观测头与结构化请求摘要日志
 - 当前学习消息链路已覆盖 logic / HTTP / output-format 测试，以及真实 provider / database 参与的 live JSON、live SSE 集成测试
 - 当前 provider 密钥主路径已改为“管理后台录入 -> 服务端加密 -> 数据库存储 -> 运行时解密”；若数据库密钥缺失，则仍可通过 `envSecretRef` 回退读取环境变量；若两者都不存在会返回 `AI_PROVIDER_ERROR`
 - 当前仓库已经具备适合承载该能力的基础设施：`app/api`、`server/modules`、Supabase Auth、Database、Storage、远程迁移执行脚本
 - **教程链接生成学习计划（Phase A）**：已落地专用接口 `POST /api/learning/plan-from-material`（及草稿 `confirm` / `regenerate`），计划生成使用 `agent_templates.code = self-study-material-planner` 与 `invokeAIProvider` 非流式 JSON，不经过 `POST /api/learning/message` 主消息编排
+- 当前仍未引入 Redis / 消息队列；上述缓存、限流与观测增强均为单实例进程内实现，属于第一阶段运行时加固而非分布式基础设施
 
 因此，本文档既是后续扩展规范，也是当前首版真实实现的权威快照
 

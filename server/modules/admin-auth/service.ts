@@ -1,12 +1,16 @@
 // 管理员认证服务
 import type { NextRequest } from "next/server"
 import { cookies } from "next/headers"
+import { performance } from "node:perf_hooks"
 
 import {
   ADMIN_ACCESS_TOKEN_COOKIE,
 } from "@/constants/auth-cookies"
 import { createSupabaseAnonServerClient } from "@/lib/supabase/anon-server"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
+import { markAuthCacheStatus, recordServerTiming } from "@/server/lib/observability"
+import { hashSensitiveValue } from "@/server/lib/request-fingerprint"
+import { createRuntimeCache } from "@/server/lib/runtime-cache"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import type { AdminAccountStatus, AdminRoleCode, AdminSessionResponseData } from "@/lib/api/contracts/admin"
 
@@ -29,6 +33,14 @@ type AdminAccountRow = {
     }
   }>
 }
+
+const ADMIN_SESSION_CACHE_TTL_MS = 60_000
+
+const adminSessionCache = createRuntimeCache<AdminSessionResponseData | null>({
+  name: "admin-session",
+  ttlMs: ADMIN_SESSION_CACHE_TTL_MS,
+  maxEntries: 500,
+})
 
 async function loadAdminAccountByUserId(userId: string) {
   const supabase = createSupabaseAdminClient()
@@ -209,17 +221,25 @@ export async function getAdminSessionByUserId(userId: string): Promise<AdminSess
 export async function getAdminSessionByAccessToken(
   accessToken: string,
 ): Promise<AdminSessionResponseData | null> {
-  const supabase = createSupabaseAdminClient()
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser(accessToken)
+  const tokenHash = hashSensitiveValue(accessToken)
+  const startedAt = performance.now()
+  const cached = await adminSessionCache.getOrLoadDetailed(tokenHash, async () => {
+    const supabase = createSupabaseAdminClient()
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser(accessToken)
 
-  if (error || !user) {
-    return null
-  }
+    if (error || !user) {
+      return null
+    }
 
-  return getAdminSessionByUserId(user.id)
+    return getAdminSessionByUserId(user.id)
+  })
+
+  markAuthCacheStatus(cached.status)
+  recordServerTiming("admin_auth_session_lookup", performance.now() - startedAt)
+  return cached.value
 }
 
 /**
@@ -235,6 +255,19 @@ export async function getAdminSessionFromRequest(
   }
 
   return getAdminSessionByAccessToken(accessToken)
+}
+
+export function clearAdminSessionCaches(input: {
+  accessToken?: string | null
+  refreshToken?: string | null
+}) {
+  if (input.accessToken?.trim()) {
+    adminSessionCache.delete(hashSensitiveValue(input.accessToken.trim()))
+  }
+
+  if (input.refreshToken?.trim()) {
+    adminSessionCache.delete(hashSensitiveValue(input.refreshToken.trim()))
+  }
 }
 
 function validateAdminNewPassword(password: string): string | null {

@@ -1,5 +1,8 @@
 import type { NextRequest } from "next/server"
 import { getRequestAuth, getRequestAuthHelpText } from "@/server/lib/request-auth"
+import { withRequestObservability } from "@/server/lib/observability"
+import { getClientIp } from "@/server/lib/request-fingerprint"
+import { applyWindowRateLimit, attachRateLimitHeaders } from "@/server/lib/route-rate-limit"
 import { withNoStoreHeaders } from "@/server/lib/response-cache"
 import { createAuthLoginPostHandler } from "@/server/modules/auth/route-handler"
 import { finalizeAuthLogin } from "@/server/modules/auth/service"
@@ -21,5 +24,27 @@ const postHandler = createAuthLoginPostHandler({
 })
 
 export async function POST(request: NextRequest) {
-  return withNoStoreHeaders(await postHandler(request))
+  return withRequestObservability(
+    {
+      route: "/api/auth/login",
+      feature: "auth",
+      method: "POST",
+    },
+    async () => {
+      const rateLimit = applyWindowRateLimit({
+        bucket: "auth-login",
+        key: getClientIp(request),
+        max: 8,
+        windowMs: 10 * 60_000,
+        message: "登录请求过于频繁，请稍后再试。",
+      })
+
+      if (!rateLimit.ok) {
+        return withNoStoreHeaders(rateLimit.response)
+      }
+
+      const response = attachRateLimitHeaders(await postHandler(request), rateLimit.headers)
+      return withNoStoreHeaders(response)
+    },
+  )
 }

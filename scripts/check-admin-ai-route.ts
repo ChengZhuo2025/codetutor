@@ -481,6 +481,7 @@ test("admin ai provider secret reveal returns 200", async () => {
     getRequestAdmin: async () => okAdmin,
     revealAdminAIProviderSecret: async () => ({
       apiKey: "sk-live-demo-secret",
+      source: "database",
     }),
   })
 

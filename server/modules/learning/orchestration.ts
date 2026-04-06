@@ -11,6 +11,12 @@ import type {
   LearningMessageResponseData,
   LearningTaskPatch,
 } from "@/lib/api/contracts/learning"
+import {
+  loadAIAgentBindingsSnapshot,
+  loadAIAgentsSnapshot,
+  loadAIModelsSnapshot,
+  loadAIProvidersSnapshot,
+} from "@/server/modules/ai/config-cache"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import { normalizeUuid } from "@/server/lib/identifiers"
 import { touchLearningPathActivity } from "@/server/modules/learning-paths/service"
@@ -72,12 +78,14 @@ type StepRow = {
 
 type AgentBindingRow = {
   agent_code: string
+  interaction_type: LearningInteractionType
   tool_id: string | null
   learning_level: "beginner" | "intermediate" | "advanced" | null
   selection_mode: "self_directed" | "preset_training" | null
   path_id: string | null
   step_no: number | null
   priority: number
+  is_active: boolean
 }
 
 type AgentTemplateRow = {
@@ -90,6 +98,7 @@ type AgentTemplateRow = {
   context_message_limit: number
   max_output_tokens: number
   temperature: number
+  is_active: boolean
 }
 
 type ProviderRow = {
@@ -104,11 +113,13 @@ type ProviderRow = {
   secret_key_version: string | null
   timeout_ms: number
   retry_count: number
+  is_active: boolean
 }
 
 type ModelRow = {
   code: string
   model_name: string
+  is_active: boolean
 }
 
 type ConversationSessionRow = {
@@ -377,15 +388,11 @@ async function resolveAgentTemplate(
     interactionType: LearningInteractionType
   },
 ) {
-  const { data, error } = await input.supabase
-    .from("agent_bindings")
-    .select("agent_code, tool_id, learning_level, selection_mode, path_id, step_no, priority")
-    .eq("interaction_type", input.interactionType)
-    .eq("is_active", true)
+  void input.supabase
 
-  assertSupabaseSuccess(error, "failed to load agent bindings")
-
-  const candidates = ((data ?? []) as AgentBindingRow[])
+  const candidates = (await loadAIAgentBindingsSnapshot<AgentBindingRow>())
+    .filter((binding) => binding.interaction_type === input.interactionType)
+    .filter((binding) => binding.is_active)
     .filter((binding) => {
       if (binding.tool_id && binding.tool_id !== input.tool.id) {
         return false
@@ -422,18 +429,9 @@ async function resolveAgentTemplate(
     throw new LearningValidationError("当前学习场景未命中可用的教学 agent。")
   }
 
-  const { data: agentData, error: agentError } = await input.supabase
-    .from("agent_templates")
-    .select(
-      "code, name, system_prompt_template, developer_prompt_template, default_provider_code, default_model_code, context_message_limit, max_output_tokens, temperature",
-    )
-    .eq("code", binding.agent_code)
-    .eq("is_active", true)
-    .maybeSingle()
-
-  assertSupabaseSuccess(agentError, "failed to load agent template")
-
-  const agent = (agentData as AgentTemplateRow | null) ?? null
+  const agent =
+    (await loadAIAgentsSnapshot<AgentTemplateRow>())
+      .find((item) => item.code === binding.agent_code && item.is_active) ?? null
   if (!agent) {
     throw new LearningValidationError("命中的教学 agent 不存在或已停用。")
   }
@@ -445,23 +443,15 @@ async function loadProviderRuntime(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
   agent: AgentTemplateRow,
 ) {
-  const { data: providerData, error: providerError } = await supabase
-    .from("ai_providers")
-    .select("code, provider_type, base_url, auth_mode, secret_ref, secret_ciphertext, secret_iv, secret_auth_tag, secret_key_version, timeout_ms, retry_count")
-    .eq("code", agent.default_provider_code)
-    .eq("is_active", true)
-    .maybeSingle()
+  void supabase
 
-  assertSupabaseSuccess(providerError, "failed to load ai provider")
+  const providerData =
+    (await loadAIProvidersSnapshot<ProviderRow>())
+      .find((item) => item.code === agent.default_provider_code && item.is_active) ?? null
 
-  const { data: modelData, error: modelError } = await supabase
-    .from("ai_models")
-    .select("code, model_name")
-    .eq("code", agent.default_model_code)
-    .eq("is_active", true)
-    .maybeSingle()
-
-  assertSupabaseSuccess(modelError, "failed to load ai model")
+  const modelData =
+    (await loadAIModelsSnapshot<ModelRow>())
+      .find((item) => item.code === agent.default_model_code && item.is_active) ?? null
 
   if (!providerData || !modelData) {
     throw new LearningValidationError("当前 agent 缺少可用的 provider 或 model 配置。")

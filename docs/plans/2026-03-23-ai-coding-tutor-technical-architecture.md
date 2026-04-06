@@ -66,11 +66,12 @@
 - 通知设置已落地真实偏好表、站内提醒记录表、工作台左侧栏提醒卡与关键时机 toast；邮件/微信当前仅保存偏好
 - 管理员后台 Phase 1（管理员登录/退出、总览看板、反馈工单）及**用户运营**（`/admin/users`、`/admin/users/[userId]`：列表筛选、详情、CSV 导出、受控资料更新、软删除/恢复）、**学习运营**（`/admin/learning`、`/admin/learning/[pathId]`：学习路径列表/导出、详情、最近会话摘要、`reactivate/archive` 状态操作）、**AI 运营**（`/admin/ai*`：概览、Provider/Model/Agent 列表与详情、Bindings/Skills、Invocation 日志列表与详情、resolve preview、agent test）与**系统设置**（`/admin/settings`：管理员治理概览、账号启停、审计日志）
 - `POST /api/learning/message`、`GET /api/learning/messages` 已接入真实 AI 编排链路，包含会话持久化、历史分页、SiliconFlow provider、JSON / SSE 双返回、结构化 `structuredContent` 与 `task_patch` 联动
+- 已补 Phase 1 运行时加固：用户 Bearer 鉴权与管理员会话查找使用进程内短 TTL 缓存，AI provider / model / agent / binding / skill 读取使用配置快照缓存，`/api/learning/message`、用户 / 管理员登录与会话、Provider 密钥读取、agent test 等关键接口已接入限流、并发保护、请求级观测头与结构化请求日志
 
 当前尚未落地的链路包括：
 
 - 管理员后台后续能力（AI 运营深水区、细粒度权限、内部备注/人工积分调整等；**终端用户运营、学习运营、AI 运营、系统设置、analytics 与通知设置已交付**）
-- Redis / 队列等增强型基础设施
+- 跨实例 Redis / 消息队列等增强型基础设施；当前缓存、限流与请求观测仍为单实例进程内实现
 
 当前代码与依赖快照补充：
 
@@ -772,7 +773,7 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 
 - 关键页面采用服务端渲染或混合渲染
 - 历史记录、地图、成就等接口进行分页或聚合
-- 对高频读取的用户当前状态做适度缓存
+- 对高频读取的用户当前状态与 AI 配置解析做适度缓存；当前已落地进程内短 TTL 鉴权缓存与配置快照缓存
 - 避免每次消息都全量加载完整历史
 
 ## 14.3 未来扩展点
@@ -789,7 +790,7 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 - 引入消息队列处理异步任务
 - 将 Analytics 拆到独立分析链路
 - 将 AI 编排模块独立为服务
-- 引入 Redis 做会话缓存与频控
+- 引入 Redis 做跨实例会话缓存与频控
 
 ---
 
@@ -801,6 +802,8 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 - 工具选择完成率
 - 学习消息发送成功率
 - AI 调用成功率与耗时
+- 鉴权缓存 / AI 配置缓存命中率
+- 限流命中率与并发拒绝率
 - 任务完成率
 - 打卡成功率
 - 前端错误率
@@ -816,6 +819,16 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 - ai_call_id
 - latency
 - result_code
+- cache_status（如 `auth hit/miss`、`config hit/miss`）
+- rate_limit_status（是否命中限流 / 剩余额度 / 并发拒绝）
+
+当前第一阶段已落地的请求级观测补充包括：
+
+- `X-Request-Id`
+- `X-Auth-Cache`
+- `X-Config-Cache`
+- `X-Rate-Limit`
+- `Server-Timing`
 
 ## 15.3 埋点事件
 
@@ -877,7 +890,7 @@ flowchart TB
 
 ## 阶段二：增长期
 
-- 引入缓存层
+- 引入共享缓存层（如 Redis）
 - 分离分析数据链路
 - 加强异步任务处理
 - 支持更多工具路径与更多模型策略
