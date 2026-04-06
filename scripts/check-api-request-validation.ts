@@ -255,6 +255,7 @@ test("parseHistoryRecentQuery falls back to existing defaults", () => {
 
 test("request validation helpers cover body parsers used by app routes", () => {
   assert.equal(parseAuthLoginBody({ loginType: "phone" }).ok, true)
+  assert.equal(parseAuthLoginBody({ loginType: "douyin" }).ok, true)
   assert.equal(
     parseCompleteOnboardingBody({
       toolCode: "cursor",

@@ -3,6 +3,10 @@
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { StatePanel } from "@/components/ui/state-panel"
+import {
+  getOAuthProviderMeta,
+  isOAuthProvider,
+} from "@/features/auth/lib/oauth-providers"
 import type { AuthLoginResponseData } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
@@ -37,12 +41,22 @@ function AuthCallbackContent() {
       }
 
       const code = searchParams.get("code")
+      const providerParam = searchParams.get("provider")
 
       if (!code) {
         setStatus("error")
         setMessage("缺少 OAuth 回调 code，无法完成登录。")
         return
       }
+
+      if (!isOAuthProvider(providerParam)) {
+        setStatus("error")
+        setMessage("缺少可识别的扫码登录 provider，无法完成登录。")
+        return
+      }
+
+      const provider = providerParam
+      const providerMeta = getOAuthProviderMeta(provider)
 
       try {
         const supabase = createSupabaseBrowserClient()
@@ -56,7 +70,7 @@ function AuthCallbackContent() {
           method: "POST",
           headers: withAuthorization(exchangeData.session?.access_token),
           body: JSON.stringify({
-            loginType: "wechat",
+            loginType: provider,
           }),
         })
 
@@ -69,7 +83,9 @@ function AuthCallbackContent() {
         }
 
         setStatus("error")
-        setMessage(error instanceof Error ? error.message : "微信登录回调处理失败")
+        setMessage(
+          error instanceof Error ? error.message : `${providerMeta.label}回调处理失败`,
+        )
       }
     }
 

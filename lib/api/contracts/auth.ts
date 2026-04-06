@@ -1,6 +1,6 @@
 import type { AuthPreviewStep } from "@/features/auth/types"
 
-export type AuthLoginType = "phone" | "wechat"
+export type AuthLoginType = "phone" | "wechat" | "douyin"
 
 export type AuthLoginRequest = {
   loginType: AuthLoginType

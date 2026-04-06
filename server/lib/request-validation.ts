@@ -122,7 +122,11 @@ export function parseAuthLoginBody(input: unknown): ValidationResult<{
     return fail("BAD_REQUEST", "loginType 不合法。")
   }
 
-  if (shape.data.loginType !== "phone" && shape.data.loginType !== "wechat") {
+  if (
+    shape.data.loginType !== "phone"
+    && shape.data.loginType !== "wechat"
+    && shape.data.loginType !== "douyin"
+  ) {
     return fail("BAD_REQUEST", "loginType 不合法。")
   }
 

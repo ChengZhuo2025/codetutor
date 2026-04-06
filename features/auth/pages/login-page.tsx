@@ -6,70 +6,20 @@ import { APP_EVENTS } from "@/constants/events"
 import { ROUTES } from "@/constants/routes"
 import { LoginBrandPanel } from "@/features/auth/components/login-brand-panel"
 import { LoginForm } from "@/features/auth/components/login-form"
-import type { AuthMode, AuthTab } from "@/features/auth/types"
+import {
+  loadOAuthProviderAvailability,
+  type OAuthProviderAvailability,
+} from "@/features/auth/lib/oauth-providers"
+import {
+  isValidChinaMainlandPhone,
+  normalizePhoneInput,
+  toFriendlyAuthError,
+} from "@/features/auth/lib/phone-auth"
+import type { AuthMode, AuthOAuthProvider } from "@/features/auth/types"
 import type { AuthLoginResponseData } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { useAppEventTracker } from "@/providers/app-providers"
-
-function normalizePhoneInput(value: string) {
-  const digitsOnly = value.replace(/\D/g, "")
-
-  if (/^86\d{11}$/.test(digitsOnly)) {
-    return digitsOnly.slice(2, 13)
-  }
-
-  return digitsOnly.slice(0, 11)
-}
-
-function isValidChinaMainlandPhone(phone: string) {
-  return /^1[3-9]\d{9}$/.test(phone)
-}
-
-function toFriendlyAuthError(error: unknown, action: "send" | "verify" | "oauth") {
-  const fallback =
-    action === "send"
-      ? "验证码发送失败，请稍后重试。"
-      : action === "verify"
-        ? "登录失败，请检查验证码后重试。"
-        : "微信登录跳转失败，请稍后重试。"
-
-  if (!(error instanceof Error)) {
-    return fallback
-  }
-
-  const message = error.message.toLowerCase()
-
-  if (message.includes("otp_expired") || message.includes("token has expired")) {
-    return "验证码已失效或不正确，请重新获取后再试。"
-  }
-
-  if (message.includes("request_timeout")) {
-    return "短信服务响应超时，请稍后再试。若多次失败，可先使用测试验证码或检查短信通道配置。"
-  }
-
-  if (message.includes("invalid phone") || message.includes("phone_number_invalid")) {
-    return "手机号格式不正确，请输入真实的 11 位中国大陆手机号。"
-  }
-
-  if (
-    message.includes("rate limit") ||
-    message.includes("over_sms_send_rate_limit") ||
-    message.includes("too many requests")
-  ) {
-    return "发送过于频繁，请稍后再试。"
-  }
-
-  if (message.includes("sms provider") || message.includes("sms")) {
-    return "短信发送失败，请检查短信模板、签名和服务商配置。"
-  }
-
-  if (message.includes("network")) {
-    return "网络连接异常，请稍后重试。"
-  }
-
-  return error.message || fallback
-}
 
 function withAuthorization(accessToken: string | null | undefined) {
   if (!accessToken) {
@@ -82,11 +32,11 @@ function withAuthorization(accessToken: string | null | undefined) {
 }
 
 const WECHAT_PROVIDER = "wechat" as never
+const DOUYIN_PROVIDER = "douyin" as never
 
 export function LoginPage() {
   const router = useRouter()
   const { trackEvent } = useAppEventTracker()
-  const [tab, setTab] = useState<AuthTab>("phone")
   const [mode, setMode] = useState<AuthMode>("login")
   const [phone, setPhone] = useState("")
   const [code, setCode] = useState("")
@@ -94,12 +44,140 @@ export function LoginPage() {
   const [lastSentPhone, setLastSentPhone] = useState("")
   const [isSendingCode, setIsSendingCode] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [wechatStatus, setWechatStatus] = useState<"empty" | "loading" | "success" | "error">(
-    "empty",
-  )
-  const [wechatMessage, setWechatMessage] = useState(
-    "点击进入微信扫码页，使用 Supabase 托管的微信 OAuth 完成登录或注册。",
-  )
+  const [oauthAvailability, setOauthAvailability] = useState<OAuthProviderAvailability | null>(null)
+  const [oauthState, setOauthState] = useState<{
+    status: "empty" | "loading" | "error"
+    provider: AuthOAuthProvider | null
+    message: string
+  }>({
+    status: "empty",
+    provider: null,
+    message: "",
+  })
+  const [isOauthPending, startOauthTransition] = useTransition()
+
+  const oauthActionLabel = mode === "login" ? "扫码登录" : "扫码注册"
+  const oauthActionDescription = mode === "login"
+    ? "手机号验证码和扫码入口共享同一登录页，不会因切换方式打断当前操作。"
+    : "注册时可直接走扫码授权，后续统一进入学习路径初始化流程。"
+
+  useEffect(() => {
+    let cancelled = false
+
+    void loadOAuthProviderAvailability().then((availability) => {
+      if (!cancelled) {
+        setOauthAvailability(availability)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (oauthState.status !== "error") {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      setOauthState((current) => (
+        current.status === "error"
+          ? {
+              status: "empty",
+              provider: null,
+              message: "",
+            }
+          : current
+      ))
+    }, 5000)
+
+    return () => window.clearTimeout(timer)
+  }, [oauthState])
+
+  useEffect(() => {
+    setOauthState({
+      status: "empty",
+      provider: null,
+      message: "",
+    })
+  }, [mode])
+
+  const oauthProvidersReady = oauthAvailability ?? {
+    wechat: false,
+    douyin: false,
+  }
+
+  const availableOAuthProviderCount = Object.values(oauthProvidersReady).filter(Boolean).length
+  const oauthStatusMessage = oauthState.status === "empty"
+    ? availableOAuthProviderCount > 0
+      ? oauthActionDescription
+      : "微信和抖音扫码入口会在对应 Provider 完成配置后自动开放。"
+    : oauthState.message
+
+  const oauthStatusTitle = oauthState.status === "loading"
+    ? "正在打开扫码页"
+    : oauthState.status === "error"
+      ? "扫码登录暂不可用"
+      : oauthActionLabel
+
+  const oauthStatus = oauthState.status === "error"
+    ? "error"
+    : oauthState.status === "loading"
+      ? "loading"
+      : "empty"
+
+  const handleOAuthSubmit = (provider: AuthOAuthProvider) => {
+    if (!oauthProvidersReady[provider]) {
+      setOauthState({
+        status: "error",
+        provider,
+        message: "该扫码登录方式暂未开放，请先在 Supabase 控制台启用对应 Provider。",
+      })
+      return
+    }
+
+    const providerForSupabase = provider === "wechat" ? WECHAT_PROVIDER : DOUYIN_PROVIDER
+    const providerLabel = provider === "wechat" ? "微信" : "抖音"
+
+    setErrorMessage(null)
+    setOauthState({
+      status: "loading",
+      provider,
+      message: `正在跳转到${providerLabel}扫码授权页。`,
+    })
+
+    startOauthTransition(() => {
+      void (async () => {
+        try {
+          const supabase = createSupabaseBrowserClient()
+          const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: providerForSupabase,
+            options: {
+              redirectTo: `${window.location.origin}${ROUTES.authCallback}?provider=${provider}`,
+            },
+          })
+
+          if (error) {
+            throw error
+          }
+
+          if (data.url) {
+            window.location.assign(data.url)
+            return
+          }
+
+          throw new Error(`${provider} oauth url missing`)
+        } catch (error) {
+          setOauthState({
+            status: "error",
+            provider,
+            message: toFriendlyAuthError(error, "oauth"),
+          })
+        }
+      })()
+    })
+  }
   const [isPending, startSubmitting] = useTransition()
 
   useEffect(() => {
@@ -198,8 +276,8 @@ export function LoginPage() {
     : countdown > 0
       ? `验证码已发送至 ${lastSentPhone || phone}，${countdown}s 后可重新获取。`
       : mode === "login"
-        ? "登录后将直接回到你上次未完成的学习任务。"
-        : "注册后Ai生成一条适合当前水平的学习路径。"
+        ? "输入手机号并获取验证码，继续回到当前学习进度。"
+        : "完成手机号注册后，系统会继续引导你初始化学习路径。"
 
   const handlePhoneSubmit = () => {
     const normalizedPhone = normalizePhoneInput(phone)
@@ -240,7 +318,6 @@ export function LoginPage() {
           })
 
           trackEvent(APP_EVENTS.loginSubmit, {
-            tab,
             mode,
             loginType: "phone",
             onboardingCompleted: data.onboardingCompleted,
@@ -254,42 +331,10 @@ export function LoginPage() {
     })
   }
 
-  const handleWechatSubmit = () => {
-    setErrorMessage(null)
-    setWechatStatus("loading")
-    setWechatMessage("正在跳转到微信扫码授权页。")
-
-    startSubmitting(() => {
-      void (async () => {
-        try {
-          const supabase = createSupabaseBrowserClient()
-          const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: WECHAT_PROVIDER,
-            options: {
-              redirectTo: `${window.location.origin}${ROUTES.authCallback}?provider=wechat`,
-            },
-          })
-
-          if (error) {
-            throw error
-          }
-
-          if (data.url) {
-            window.location.assign(data.url)
-          }
-        } catch (error) {
-          setWechatStatus("error")
-          setWechatMessage(toFriendlyAuthError(error, "oauth"))
-        }
-      })()
-    })
-  }
-
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <LoginBrandPanel mode={mode} />
       <LoginForm
-        tab={tab}
         mode={mode}
         phone={phone}
         code={code}
@@ -298,13 +343,13 @@ export function LoginPage() {
         isSubmitting={isPending}
         statusMessage={statusMessage}
         errorMessage={errorMessage}
-        wechatStatus={wechatStatus}
-        wechatMessage={wechatMessage}
-        onTabChange={setTab}
+        oauthAvailability={oauthAvailability}
+        oauthStatus={oauthStatus}
+        oauthStatusTitle={oauthStatusTitle}
+        oauthStatusMessage={oauthStatusMessage}
+        activeOAuthProvider={isOauthPending ? oauthState.provider : null}
         onModeToggle={() => {
           setErrorMessage(null)
-          setWechatStatus("empty")
-          setWechatMessage("点击进入微信扫码页，使用 Supabase 托管的微信 OAuth 完成登录或注册。")
           setMode((prev) => (prev === "login" ? "register" : "login"))
         }}
         onPhoneChange={(value) => {
@@ -314,7 +359,7 @@ export function LoginPage() {
         onCodeChange={setCode}
         onSendCode={sendCode}
         onSubmit={handlePhoneSubmit}
-        onWechatSubmit={handleWechatSubmit}
+        onOAuthSubmit={handleOAuthSubmit}
       />
     </div>
   )

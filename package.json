@@ -29,6 +29,7 @@
     "test:openapi-document": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-openapi-document.ts",
     "test:openapi-docs-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-openapi-docs-route.ts",
     "test:auth-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-auth-route.ts",
+    "test:login-page": "node scripts/check-login-page.mjs",
     "test:admin-auth-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-admin-auth-route.ts",
     "test:admin-users-validation": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-admin-users-validation.ts",
     "test:admin-users-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-admin-users-route.ts",
