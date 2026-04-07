@@ -5,21 +5,21 @@ import Image from "next/image"
 import Link from "next/link"
 import {
   Bell,
-  CheckCheck,
   ChevronRight,
   Code2,
   Crown,
   Flame,
   Star,
-  X,
 } from "lucide-react"
 import { APP_NAME } from "@/constants/app"
 import { ROUTES } from "@/constants/routes"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
+import { NotificationDetailDialog } from "@/components/layout/notification-detail-dialog"
 import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog"
 import { SubscriptionDetailDialog } from "@/components/layout/subscription-detail-dialog"
 import { SettingsPopover } from "@/components/layout/settings-popover"
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth"
+import type { NotificationInAppItem } from "@/lib/api/contracts/notifications"
 import { useWorkspaceSidebarData } from "@/providers/workspace-sidebar-provider"
 import { cn } from "@/lib/utils"
 import type { DashboardNavItem } from "@/types/navigation"
@@ -67,7 +67,18 @@ export function DashboardSidebar({
   } = useWorkspaceSidebarData()
   const [profileOpen, setProfileOpen] = useState(false)
   const [profileFeedbackMessage, setProfileFeedbackMessage] = useState<string | null>(null)
-  const [pendingNotificationId, setPendingNotificationId] = useState<string | null>(null)
+
+  type NotificationPanelState = {
+    expanded: boolean
+    selectedNotification: NotificationInAppItem | null
+    dialogOpen: boolean
+  }
+
+  const [notifPanel, setNotifPanel] = useState<NotificationPanelState>({
+    expanded: false,
+    selectedNotification: null,
+    dialogOpen: false,
+  })
 
   const handleProfileSaved = (nextProfile: ProfileMeResponseData) => {
     updateProfile(nextProfile)
@@ -136,31 +147,6 @@ export function DashboardSidebar({
   const subscription = SUBSCRIPTION_PLACEHOLDER
   const progressPercent = Math.min(Math.round((resolvedProfile.currentScore / 1000) * 100), 100)
   const visiblePracticeRounds = recentPracticeRounds.slice(0, 5)
-
-  const handleMarkRead = async (notificationId: string) => {
-    setPendingNotificationId(notificationId)
-
-    try {
-      await markNotificationRead(notificationId)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "更新提醒状态失败")
-    } finally {
-      setPendingNotificationId(null)
-    }
-  }
-
-  const handleDismiss = async (notificationId: string) => {
-    setPendingNotificationId(notificationId)
-
-    try {
-      await dismissNotification(notificationId)
-      toast.success("提醒已忽略")
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "忽略提醒失败")
-    } finally {
-      setPendingNotificationId(null)
-    }
-  }
 
   return (
     <aside
@@ -260,9 +246,25 @@ export function DashboardSidebar({
             onSaved={handleProfileSaved}
           />
 
-          <div className="rounded-[24px] border border-border/60 bg-surface-2/80 p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+          <NotificationDetailDialog
+            open={notifPanel.dialogOpen}
+            onOpenChange={(open) =>
+              setNotifPanel((p) => ({ ...p, dialogOpen: open }))
+            }
+            notification={notifPanel.selectedNotification}
+            onMarkRead={markNotificationRead}
+            onDismiss={dismissNotification}
+          />
+
+          {/* 学习提醒折叠卡片 */}
+          <div className="rounded-[24px] border border-border/60 bg-surface-2/80 overflow-hidden">
+            {/* 折叠头部：可点击切换展开状态 */}
+            <button
+              type="button"
+              onClick={() => setNotifPanel((p) => ({ ...p, expanded: !p.expanded }))}
+              className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-background/40"
+            >
+              <div className="flex items-center gap-2.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-brand/20 bg-brand/10 text-brand">
                   <Bell className="h-4 w-4" />
                 </div>
@@ -271,84 +273,74 @@ export function DashboardSidebar({
                   <p className="text-[11px] text-muted-foreground">站内提醒与关键进度节点</p>
                 </div>
               </div>
-              <span className="rounded-full border border-border/60 bg-background/60 px-2 py-0.5 text-[11px] text-muted-foreground">
-                {unreadNotificationCount > 0 ? `${unreadNotificationCount} 条未读` : "已读完"}
-              </span>
-            </div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-border/60 bg-background/60 px-2 py-0.5 text-[11px] text-muted-foreground">
+                  {unreadNotificationCount > 0 ? `${unreadNotificationCount} 条未读` : "已读完"}
+                </span>
+                <span className="text-muted-foreground transition-transform duration-200" style={{ transform: notifPanel.expanded ? "rotate(180deg)" : "rotate(0deg)" }}>
+                  ▼
+                </span>
+              </div>
+            </button>
 
-            {notifications.length > 0 ? (
-              <div className="space-y-2">
-                {notifications.map((item) => {
-                  const isPending = pendingNotificationId === item.id
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={cn(
-                        "rounded-2xl border px-3 py-3",
-                        item.status === "unread"
-                          ? "border-brand/25 bg-brand/8"
-                          : "border-border/50 bg-background/40",
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-foreground">{item.title}</p>
-                          <p className="mt-1 text-xs leading-5 text-muted-foreground">{item.content}</p>
-                        </div>
-                        <span className="shrink-0 rounded-full border border-border/60 px-2 py-0.5 text-[10px] text-muted-foreground">
-                          {item.status === "unread" ? "未读" : "已读"}
-                        </span>
-                      </div>
-
-                      <div className="mt-3 flex items-center gap-2">
-                        {item.actionHref && item.actionLabel ? (
-                          <Link
-                            href={item.actionHref}
-                            onClick={() => {
-                              if (item.status === "unread") {
-                                void handleMarkRead(item.id)
-                              }
-                            }}
-                            className="inline-flex items-center rounded-xl border border-border/60 bg-background/70 px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-background"
-                          >
-                            {item.actionLabel}
-                          </Link>
-                        ) : null}
-                        {item.status === "unread" ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              void handleMarkRead(item.id)
-                            }}
-                            disabled={isPending}
-                            className="inline-flex items-center rounded-xl border border-border/60 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-background/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            <CheckCheck className="mr-1.5 h-3.5 w-3.5" />
-                            标记已读
-                          </button>
-                        ) : null}
+            {/* 折叠内容 */}
+            <div
+              className={cn(
+                "overflow-hidden transition-all duration-300 ease-in-out",
+                notifPanel.expanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
+              )}
+            >
+              <div className="border-t border-border/40">
+                {notifications.length > 0 ? (
+                  <div className="divide-y divide-border/30">
+                    {notifications.map((item) => {
+                      const isUnread = item.status === "unread"
+                      return (
                         <button
+                          key={item.id}
                           type="button"
-                          onClick={() => {
-                            void handleDismiss(item.id)
-                          }}
-                          disabled={isPending}
-                          className="inline-flex items-center rounded-xl border border-border/60 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-background/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                          onClick={() =>
+                            setNotifPanel((p) => ({
+                              ...p,
+                              selectedNotification: item,
+                              dialogOpen: true,
+                            }))
+                          }
+                          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-background/50 active:bg-background/70"
                         >
-                          <X className="mr-1.5 h-3.5 w-3.5" />
-                          忽略
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div
+                              className={cn(
+                                "h-1.5 w-1.5 shrink-0 rounded-full",
+                                isUnread ? "bg-brand" : "bg-muted-foreground/30",
+                              )}
+                            />
+                            <span className={cn(
+                              "truncate text-sm",
+                              isUnread ? "font-medium text-foreground" : "text-muted-foreground",
+                            )}>
+                              {item.title}
+                            </span>
+                          </div>
+                          <span className={cn(
+                            "shrink-0 rounded-full border px-2 py-0.5 text-[10px]",
+                            isUnread
+                              ? "border-brand/30 bg-brand/10 text-brand"
+                              : "border-border/50 bg-background/40 text-muted-foreground",
+                          )}>
+                            {isUnread ? "未读" : "已读"}
+                          </span>
                         </button>
-                      </div>
-                    </div>
-                  )
-                })}
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="px-4 py-5 text-sm text-muted-foreground">
+                    暂无新提醒。完成打卡或任务后，新的提醒会出现在这里。
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3 text-sm text-muted-foreground">
-                当前没有新的学习提醒。完成打卡或任务后，新的提醒会出现在这里。
-              </div>
-            )}
+            </div>
           </div>
 
           <nav className="space-y-1 rounded-[24px] border border-border/60 bg-surface-2/80 p-2">
