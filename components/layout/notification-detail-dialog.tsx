@@ -48,6 +48,11 @@ export function NotificationDetailDialog({
   const toast = useAppToast()
   const [dismissing, setDismissing] = useState(false)
 
+  // notification 切换时重置 dismissing 状态，避免旧请求状态污染新通知
+  useEffect(() => {
+    setDismissing(false)
+  }, [notification?.id])
+
   // 打开时：如果是未读状态，静默标记已读
   useEffect(() => {
     if (!open || !notification || notification.status !== "unread") return
@@ -81,7 +86,7 @@ export function NotificationDetailDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader className="text-left">
           <DialogTitle className="text-base">{notification.title}</DialogTitle>
-          <DialogDescription className="sr-only">{notification.content}</DialogDescription>
+          <DialogDescription className="sr-only">通知详情</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
