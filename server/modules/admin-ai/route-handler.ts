@@ -779,6 +779,8 @@ export function createAdminAIInvocationListGetHandler(dependencies: {
     modelCode?: string
     agentCode?: string
     dateRange: "24h" | "7d" | "30d" | "90d"
+    startDate?: string
+    endDate?: string
     page: number
     limit: number
   }) => Promise<unknown>

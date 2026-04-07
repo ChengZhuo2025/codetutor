@@ -1114,6 +1114,18 @@ export function parseAdminAIInvocationListQuery(searchParams: URLSearchParams) {
     dateRange = rawDateRange as AdminAIInvocationDateRange
   }
 
+  const rawStartDate = searchParams.get("startDate")?.trim()
+  const rawEndDate = searchParams.get("endDate")?.trim()
+  const startDate = rawStartDate || undefined
+  const endDate = rawEndDate || undefined
+
+  if (startDate && isNaN(Date.parse(startDate))) {
+    return fail("VALIDATION_FAILED", "startDate 格式不合法，需为 ISO 8601 日期。")
+  }
+  if (endDate && isNaN(Date.parse(endDate))) {
+    return fail("VALIDATION_FAILED", "endDate 格式不合法，需为 ISO 8601 日期。")
+  }
+
   return ok({
     keyword: searchParams.get("keyword")?.trim() || undefined,
     status,
@@ -1121,6 +1133,8 @@ export function parseAdminAIInvocationListQuery(searchParams: URLSearchParams) {
     modelCode: searchParams.get("modelCode")?.trim() || undefined,
     agentCode: searchParams.get("agentCode")?.trim() || undefined,
     dateRange,
+    startDate,
+    endDate,
     ...pagination.data,
   })
 }
@@ -1140,6 +1154,7 @@ const adminAIProviderShapeSchema = z.object({
   retryCount: z.unknown(),
   isActive: z.unknown(),
   metadata: z.unknown().optional(),
+  version: z.unknown().optional(),
   changeReason: z.unknown(),
 }).strict()
 
@@ -1214,6 +1229,14 @@ export function parseAdminAIProviderBody(input: unknown): ValidationResult<Admin
     return fail("VALIDATION_FAILED", "baseUrl 必须是合法 URL。")
   }
 
+  const version = shape.data.version !== undefined
+    ? parsePositiveInteger(shape.data.version, "version", 1, Number.MAX_SAFE_INTEGER)
+    : null
+
+  if (version !== null && !version.ok) {
+    return fail("VALIDATION_FAILED", "version 参数不合法，需为正整数。")
+  }
+
   return ok({
     code: parsedCode.data.toLowerCase(),
     name: parsedName.data,
@@ -1229,6 +1252,7 @@ export function parseAdminAIProviderBody(input: unknown): ValidationResult<Admin
     retryCount: parsedRetryCount.data,
     isActive: parsedIsActive.data,
     metadata: parsedMetadata.data,
+    version: version !== null ? (version as ValidationSuccess<number>).data : undefined,
     changeReason: parsedChangeReason.data,
   })
 }
@@ -1247,6 +1271,7 @@ const adminAIModelShapeSchema = z.object({
   pricingMetadata: z.unknown().optional(),
   isActive: z.unknown(),
   metadata: z.unknown().optional(),
+  version: z.unknown().optional(),
   changeReason: z.unknown(),
 }).strict()
 
@@ -1271,6 +1296,14 @@ export function parseAdminAIModelBody(input: unknown): ValidationResult<AdminAIM
   const metadata = parseJsonRecord(shape.data.metadata, "metadata")
   const changeReason = parseChangeReason(shape.data.changeReason)
 
+  const version = shape.data.version !== undefined
+    ? parsePositiveInteger(shape.data.version, "version", 1, Number.MAX_SAFE_INTEGER)
+    : null
+
+  if (version !== null && !version.ok) {
+    return fail("VALIDATION_FAILED", "version 参数不合法，需为正整数。")
+  }
+
   if (!providerCode.ok || !code.ok || !displayName.ok || !modelName.ok || !supportsStream.ok || !supportsJsonMode.ok || !supportsToolCalling.ok || !maxContextTokens.ok || !defaultMaxOutputTokens.ok || !recommendedTemperature.ok || !pricingMetadata.ok || !isActive.ok || !metadata.ok || !changeReason.ok) {
     return fail("VALIDATION_FAILED", "Model 请求体字段不合法。")
   }
@@ -1289,6 +1322,7 @@ export function parseAdminAIModelBody(input: unknown): ValidationResult<AdminAIM
     pricingMetadata: pricingMetadata.data,
     isActive: isActive.data,
     metadata: metadata.data,
+    version: version !== null ? (version as ValidationSuccess<number>).data : undefined,
     changeReason: changeReason.data,
   })
 }
@@ -1309,6 +1343,7 @@ const adminAIAgentShapeSchema = z.object({
   streamEnabled: z.unknown(),
   isActive: z.unknown(),
   metadata: z.unknown().optional(),
+  version: z.unknown().optional(),
   changeReason: z.unknown(),
 }).strict()
 
@@ -1338,6 +1373,14 @@ export function parseAdminAIAgentBody(input: unknown): ValidationResult<AdminAIA
   const metadata = parseJsonRecord(shape.data.metadata, "metadata")
   const changeReason = parseChangeReason(shape.data.changeReason)
 
+  const version = shape.data.version !== undefined
+    ? parsePositiveInteger(shape.data.version, "version", 1, Number.MAX_SAFE_INTEGER)
+    : null
+
+  if (version !== null && !version.ok) {
+    return fail("VALIDATION_FAILED", "version 参数不合法，需为正整数。")
+  }
+
   if (!code.ok || !name.ok || !description.ok || !systemPromptTemplate.ok || !developerPromptTemplate.ok || !defaultProviderCode.ok || !defaultModelCode.ok || !contextMessageLimit.ok || !maxOutputTokens.ok || !temperature.ok || !topP.ok || !streamEnabled.ok || !isActive.ok || !metadata.ok || !changeReason.ok) {
     return fail("VALIDATION_FAILED", "Agent 请求体字段不合法。")
   }
@@ -1358,6 +1401,7 @@ export function parseAdminAIAgentBody(input: unknown): ValidationResult<AdminAIA
     streamEnabled: streamEnabled.data,
     isActive: isActive.data,
     metadata: metadata.data,
+    version: version !== null ? (version as ValidationSuccess<number>).data : undefined,
     changeReason: changeReason.data,
   })
 }

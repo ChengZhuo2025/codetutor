@@ -327,6 +327,7 @@ async function resolveActiveConversationForTask(
       .eq("id", preferredSessionId)
       .eq("user_id", userId)
       .eq("status", "active")
+      .eq("is_admin_test", false)
       .maybeSingle()
 
     assertSupabaseSuccess(error, "failed to load preferred conversation session")
@@ -343,6 +344,7 @@ async function resolveActiveConversationForTask(
     .eq("user_id", userId)
     .eq("user_task_id", task.id)
     .eq("status", "active")
+    .eq("is_admin_test", false)
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -444,6 +446,7 @@ async function assertConversationBelongsToUser(
     .select("id")
     .eq("id", conversationId)
     .eq("user_id", userId)
+    .eq("is_admin_test", false)
     .maybeSingle()
 
   assertSupabaseSuccess(error, "failed to validate conversation ownership")

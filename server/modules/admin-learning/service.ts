@@ -426,7 +426,7 @@ async function writeAdminLearningAudit(input: {
   })
 
   if (error) {
-    console.error("Failed to write admin learning audit log:", error)
+    throw new Error(`AUDIT_LOG_WRITE_FAILED:failed to write admin learning audit log: ${error.message}`)
   }
 }
 
@@ -503,6 +503,7 @@ export async function getAdminLearningPathDetail(
       .from("conversation_sessions")
       .select("id, user_learning_path_id, status, message_count, started_at, last_message_at")
       .eq("user_learning_path_id", path.id)
+      .eq("is_admin_test", false)
       .order("last_message_at", { ascending: false, nullsFirst: false })
       .limit(5),
   ])
@@ -686,17 +687,21 @@ export async function updateAdminLearningPathStatus(
 
     assertSupabaseSuccess(profileError, "failed to touch profile during admin reactivation")
 
-    await writeAdminLearningAudit({
-      adminAccountId,
-      action: "learning_path_status_update",
-      pathId: path.id,
-      beforeSnapshot,
-      afterSnapshot: {
-        status: "active",
-        interruptedAt: null,
-      },
-      reason: input.reason,
-    })
+    try {
+      await writeAdminLearningAudit({
+        adminAccountId,
+        action: "learning_path_status_update",
+        pathId: path.id,
+        beforeSnapshot,
+        afterSnapshot: {
+          status: "active",
+          interruptedAt: null,
+        },
+        reason: input.reason,
+      })
+    } catch (auditError) {
+      throw auditError
+    }
 
     return {
       pathId: path.id,
@@ -723,16 +728,20 @@ export async function updateAdminLearningPathStatus(
 
   assertSupabaseSuccess(error, "failed to admin-archive learning path")
 
-  await writeAdminLearningAudit({
-    adminAccountId,
-    action: "learning_path_status_update",
-    pathId: path.id,
-    beforeSnapshot,
-    afterSnapshot: {
-      status: "archived",
-    },
-    reason: input.reason,
-  })
+  try {
+    await writeAdminLearningAudit({
+      adminAccountId,
+      action: "learning_path_status_update",
+      pathId: path.id,
+      beforeSnapshot,
+      afterSnapshot: {
+        status: "archived",
+      },
+      reason: input.reason,
+    })
+  } catch (auditError) {
+    throw auditError
+  }
 
   return {
     pathId: path.id,

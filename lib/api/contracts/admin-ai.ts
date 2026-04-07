@@ -137,6 +137,7 @@ export type AdminAIProviderListResponseData = {
 }
 
 export type AdminAIProviderDetail = Omit<AdminAIProviderListItem, "modelCount"> & {
+  version: number
   metadata: Record<string, unknown>
 }
 
@@ -161,6 +162,7 @@ export type AdminAIProviderUpsertRequest = {
   retryCount: number
   isActive: boolean
   metadata: Record<string, unknown>
+  version?: number
   changeReason: string
 }
 
@@ -198,6 +200,7 @@ export type AdminAIModelListResponseData = {
 export type AdminAIModelDetail = Omit<AdminAIModelListItem, "linkedAgentCount"> & {
   pricingMetadata: Record<string, unknown>
   metadata: Record<string, unknown>
+  version: number
 }
 
 export type AdminAIModelDetailResponseData = {
@@ -219,6 +222,7 @@ export type AdminAIModelUpsertRequest = {
   pricingMetadata: Record<string, unknown>
   isActive: boolean
   metadata: Record<string, unknown>
+  version?: number
   changeReason: string
 }
 
@@ -318,6 +322,7 @@ export type AdminAIAgentUpsertRequest = {
   streamEnabled: boolean
   isActive: boolean
   metadata: Record<string, unknown>
+  version?: number
   changeReason: string
 }
 

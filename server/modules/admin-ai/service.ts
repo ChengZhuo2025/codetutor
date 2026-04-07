@@ -80,6 +80,7 @@ type ProviderRow = {
   timeout_ms: number
   retry_count: number
   is_active: boolean
+  version: number
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
@@ -99,6 +100,7 @@ type ModelRow = {
   recommended_temperature: number | null
   pricing_metadata: Record<string, unknown>
   is_active: boolean
+  version: number
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
@@ -229,7 +231,7 @@ function normalizeRoles(row: AdminActorRow): AdminRoleCode[] {
     .filter((value): value is AdminRoleCode => Boolean(value))
 }
 
-function throwNamedError(name: "FORBIDDEN" | "CONFLICT" | "VALIDATION_FAILED" | "NOT_FOUND", message: string): never {
+function throwNamedError(name: "FORBIDDEN" | "CONFLICT" | "VERSION_CONFLICT" | "VALIDATION_FAILED" | "NOT_FOUND", message: string): never {
   const error = new Error(message)
   error.name = name
   throw error
@@ -297,7 +299,43 @@ async function writeAdminAIAudit(input: {
   })
 
   if (error) {
-    console.error("Failed to write admin ai audit log:", error)
+    throw new Error(`AUDIT_LOG_WRITE_FAILED:failed to write admin ai audit log: ${error.message}`)
+  }
+}
+
+/**
+ * 在 audit 写入失败时，回滚刚创建的记录（用于 create 操作）。
+ * 审计失败意味着操作失败，应该保证数据一致性。
+ */
+async function rollbackCreatedRecordIfAuditFails(
+  recordType: string,
+  recordId: string,
+  auditError: unknown,
+) {
+  // 尝试删除新创建的记录作为回滚
+  try {
+    const supabase = createSupabaseAdminClient()
+    const tableMap: Record<string, string> = {
+      ai_provider: "ai_providers",
+      ai_model: "ai_models",
+      ai_agent: "agent_templates",
+      ai_agent_binding: "agent_bindings",
+      ai_agent_skill_binding: "agent_skill_bindings",
+    }
+    const table = tableMap[recordType]
+    if (table) {
+      await supabase.from(table).delete().eq("id", recordId)
+    }
+    console.error(
+      `Audit write failed for ${recordType} ${recordId}, rolled back record creation.`,
+      auditError,
+    )
+  } catch (rollbackError) {
+    // 回滚也失败了，记录日志
+    console.error(
+      `CRITICAL: Audit write failed AND rollback failed for ${recordType} ${recordId}. Manual intervention required.`,
+      { auditError, rollbackError },
+    )
   }
 }
 
@@ -305,30 +343,137 @@ async function loadProviders() {
   return (await loadAIProvidersSnapshot<ProviderRow>()) as ProviderRow[]
 }
 
-async function loadModels() {
-  return (await loadAIModelsSnapshot<ModelRow>()) as ModelRow[]
+async function loadModels(filters?: { isActive?: boolean }) {
+  const supabase = createSupabaseAdminClient()
+  let query = supabase
+    .from("ai_models")
+    .select("*")
+    .order("updated_at", { ascending: false })
+
+  if (filters?.isActive !== undefined) {
+    query = query.eq("is_active", filters.isActive)
+  }
+
+  const { data, error } = await query
+  assertSupabaseSuccess(error, "failed to query ai_models")
+  return (data ?? []) as ModelRow[]
 }
 
-async function loadAgents() {
-  return (await loadAIAgentsSnapshot<AgentRow>()) as AgentRow[]
+async function loadAgents(filters?: { isActive?: boolean; scenarioType?: string }) {
+  const supabase = createSupabaseAdminClient()
+  let query = supabase
+    .from("ai_agents")
+    .select("*")
+    .order("updated_at", { ascending: false })
+
+  if (filters?.isActive !== undefined) {
+    query = query.eq("is_active", filters.isActive)
+  }
+  if (filters?.scenarioType) {
+    query = query.eq("scenario_type", filters.scenarioType)
+  }
+
+  const { data, error } = await query
+  assertSupabaseSuccess(error, "failed to query ai_agents")
+  return (data ?? []) as AgentRow[]
 }
 
-async function loadAgentBindings() {
-  return (await loadAIAgentBindingsSnapshot<AgentBindingRow>()) as AgentBindingRow[]
+async function loadAgentBindings(filters?: { agentCodeKeyword?: string }) {
+  const supabase = createSupabaseAdminClient()
+  let query = supabase
+    .from("ai_agent_bindings")
+    .select("*")
+    .order("priority", { ascending: true })
+
+  if (filters?.agentCodeKeyword) {
+    query = query.ilike("agent_code", `%${filters.agentCodeKeyword}%`)
+  }
+
+  const { data, error } = await query
+  assertSupabaseSuccess(error, "failed to query ai_agent_bindings")
+  return (data ?? []) as AgentBindingRow[]
 }
 
 async function loadSkills() {
   return (await loadAISkillsSnapshot<SkillRow>()) as SkillRow[]
 }
 
-async function loadAgentSkillBindings() {
-  return (await loadAIAgentSkillBindingsSnapshot<AgentSkillBindingRow>()) as AgentSkillBindingRow[]
+async function loadAgentSkillBindings(filters?: { agentCodeKeyword?: string; skillCodeKeyword?: string }) {
+  const supabase = createSupabaseAdminClient()
+  let query = supabase
+    .from("ai_agent_skill_bindings")
+    .select("*")
+    .order("priority", { ascending: true })
+
+  if (filters?.agentCodeKeyword) {
+    query = query.ilike("agent_code", `%${filters.agentCodeKeyword}%`)
+  }
+  if (filters?.skillCodeKeyword) {
+    query = query.ilike("skill_code", `%${filters.skillCodeKeyword}%`)
+  }
+
+  const { data, error } = await query
+  assertSupabaseSuccess(error, "failed to query ai_agent_skill_bindings")
+  return (data ?? []) as AgentSkillBindingRow[]
 }
 
-async function loadInvocations() {
+type InvocationListFilters = {
+  status?: string
+  providerCode?: string
+  modelCode?: string
+  agentCode?: string
+  startDate?: string
+  endDate?: string
+  page?: number
+  limit?: number
+}
+
+async function loadInvocations(filters?: InvocationListFilters) {
   const supabase = createSupabaseAdminClient()
-  const { data, error } = await supabase.from("llm_invocations").select("*").order("created_at", { ascending: false })
+  const limit = filters?.limit ?? 50
+  const page = filters?.page ?? 1
+  const from = (page - 1) * limit
+  const to = from + limit - 1
+
+  let query = supabase
+    .from("llm_invocations")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to)
+
+  if (filters?.status && filters.status !== "all") {
+    query = query.eq("status", filters.status)
+  }
+  if (filters?.providerCode) {
+    query = query.eq("provider_code", filters.providerCode)
+  }
+  if (filters?.modelCode) {
+    query = query.eq("model_code", filters.modelCode)
+  }
+  if (filters?.agentCode) {
+    query = query.eq("agent_code", filters.agentCode)
+  }
+  if (filters?.startDate) {
+    query = query.gte("created_at", filters.startDate)
+  }
+  if (filters?.endDate) {
+    query = query.lte("created_at", filters.endDate)
+  }
+
+  const { data, error, count } = await query
   assertSupabaseSuccess(error, "failed to query llm invocations")
+  return { rows: (data ?? []) as InvocationRow[], total: count ?? 0 }
+}
+
+async function loadRecentInvocations(sinceMs: number) {
+  const supabase = createSupabaseAdminClient()
+  const since = new Date(Date.now() - sinceMs).toISOString()
+  const { data, error } = await supabase
+    .from("llm_invocations")
+    .select("*")
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+  assertSupabaseSuccess(error, "failed to query recent llm invocations")
   return (data ?? []) as InvocationRow[]
 }
 
@@ -663,16 +808,13 @@ function resolvePreviewBinding(
 export async function getAdminAIOverview(adminAccountId: string): Promise<AdminAIOverviewResponseData> {
   await assertCanAccessAI(adminAccountId)
 
-  const [providers, models, agents, skills, invocations] = await Promise.all([
+  const [providers, models, agents, skills, last7dInvocations] = await Promise.all([
     loadProviders(),
     loadModels(),
     loadAgents(),
     loadSkills(),
-    loadInvocations(),
+    loadRecentInvocations(7 * 24 * 60 * 60 * 1000),
   ])
-
-  const since = Date.now() - 7 * 24 * 60 * 60 * 1000
-  const last7dInvocations = invocations.filter((item) => new Date(item.created_at).getTime() >= since)
   const failedStatuses = new Set(["failed", "timed_out", "cancelled"])
 
   const topAgentCounts = new Map<string, { count: number; failed: number }>()
@@ -787,6 +929,7 @@ export async function getAdminAIProviderDetail(
       timeoutMs: provider.timeout_ms,
       retryCount: provider.retry_count,
       isActive: provider.is_active,
+      version: provider.version,
       metadata: provider.metadata ?? {},
       createdAt: provider.created_at,
       updatedAt: provider.updated_at,
@@ -818,6 +961,7 @@ export async function createAdminAIProvider(
       timeout_ms: input.timeoutMs,
       retry_count: input.retryCount,
       is_active: input.isActive,
+      version: 1,
       metadata: input.metadata,
     })
     .select("id")
@@ -825,22 +969,28 @@ export async function createAdminAIProvider(
 
   mapWriteError(error, "Provider code")
 
-  await writeAdminAIAudit({
-    adminAccountId,
-    action: "ai_provider_create",
-    targetType: "ai_provider",
-    targetId: (data as { id: string }).id,
-    beforeSnapshot: null,
-    afterSnapshot: {
-      code: input.code,
-      name: input.name,
-      providerType: input.providerType,
-      secretSource: input.apiKey ? "database" : input.envSecretRef ? "env_fallback" : "missing",
-      envSecretRef: input.envSecretRef,
-      isActive: input.isActive,
-    },
-    reason: input.changeReason,
-  })
+  const newProviderId = (data as { id: string }).id
+  try {
+    await writeAdminAIAudit({
+      adminAccountId,
+      action: "ai_provider_create",
+      targetType: "ai_provider",
+      targetId: newProviderId,
+      beforeSnapshot: null,
+      afterSnapshot: {
+        code: input.code,
+        name: input.name,
+        providerType: input.providerType,
+        secretSource: input.apiKey ? "database" : input.envSecretRef ? "env_fallback" : "missing",
+        envSecretRef: input.envSecretRef,
+        isActive: input.isActive,
+      },
+      reason: input.changeReason,
+    })
+  } catch (auditError) {
+    await rollbackCreatedRecordIfAuditFails("ai_provider", newProviderId, auditError)
+    throw auditError
+  }
 
   invalidateAIConfigCache("providers")
 
@@ -878,8 +1028,13 @@ export async function updateAdminAIProvider(
   }
 
   const secretWriteFields = buildProviderSecretWriteFields(input, existingRow)
+
+  if (input.version !== undefined && input.version !== existingRow.version) {
+    throwNamedError("VERSION_CONFLICT", `Provider 已被其他人修改（你的版本: ${input.version}，当前版本: ${existingRow.version}）。请刷新页面后重新编辑。`)
+  }
+
   const supabase = createSupabaseAdminClient()
-  const { error } = await supabase
+  const { data: updatedRow, error } = await supabase
     .from("ai_providers")
     .update({
       code: input.code,
@@ -896,41 +1051,53 @@ export async function updateAdminAIProvider(
       metadata: input.metadata,
     })
     .eq("id", existing.provider.providerId)
+    .eq("version", existingRow.version)
+    .select("version")
+    .maybeSingle()
 
-  mapWriteError(error, "Provider code")
+  if (error) {
+    mapWriteError(error, "Provider code")
+  } else if (!updatedRow) {
+    // No rows matched = version mismatch
+    throwNamedError("VERSION_CONFLICT", `Provider 已被其他人修改（你的版本: ${input.version ?? existingRow.version}，当前版本: ${existingRow.version}）。请刷新页面后重新编辑。`)
+  }
 
-  await writeAdminAIAudit({
-    adminAccountId,
-    action: "ai_provider_update",
-    targetType: "ai_provider",
-    targetId: existing.provider.providerId,
-    beforeSnapshot: existing.provider,
-    afterSnapshot: {
-      ...existing.provider,
-      code: input.code,
-      name: input.name,
-      providerType: input.providerType,
-      baseUrl: input.baseUrl,
-      authMode: input.authMode,
-      secretSource: input.apiKey
-        ? "database"
-        : input.keepExistingSecret
-          ? existing.provider.secretSource
-          : input.envSecretRef
-            ? "env_fallback"
-            : "missing",
-      secretMasked: existing.provider.secretMasked,
-      envSecretRef: input.envSecretRef,
-      hasStoredSecret: input.apiKey ? true : input.keepExistingSecret ? existing.provider.hasStoredSecret : false,
-      supportsStream: input.supportsStream,
-      supportsJsonMode: input.supportsJsonMode,
-      timeoutMs: input.timeoutMs,
-      retryCount: input.retryCount,
-      isActive: input.isActive,
-      metadata: input.metadata,
-    },
-    reason: input.changeReason,
-  })
+  try {
+    await writeAdminAIAudit({
+      adminAccountId,
+      action: "ai_provider_update",
+      targetType: "ai_provider",
+      targetId: existing.provider.providerId,
+      beforeSnapshot: existing.provider,
+      afterSnapshot: {
+        ...existing.provider,
+        code: input.code,
+        name: input.name,
+        providerType: input.providerType,
+        baseUrl: input.baseUrl,
+        authMode: input.authMode,
+        secretSource: input.apiKey
+          ? "database"
+          : input.keepExistingSecret
+            ? existing.provider.secretSource
+            : input.envSecretRef
+              ? "env_fallback"
+              : "missing",
+        secretMasked: existing.provider.secretMasked,
+        envSecretRef: input.envSecretRef,
+        hasStoredSecret: input.apiKey ? true : input.keepExistingSecret ? existing.provider.hasStoredSecret : false,
+        supportsStream: input.supportsStream,
+        supportsJsonMode: input.supportsJsonMode,
+        timeoutMs: input.timeoutMs,
+        retryCount: input.retryCount,
+        isActive: input.isActive,
+        metadata: input.metadata,
+      },
+      reason: input.changeReason,
+    })
+  } catch (auditError) {
+    throw auditError
+  }
 
   invalidateAIConfigCache("providers")
 
@@ -967,20 +1134,18 @@ export async function getAdminAIModelList(filters: {
   limit: number
 }): Promise<AdminAIModelListResponseData> {
   await assertCanAccessAI(filters.adminAccountId)
-  const [providers, models, agents] = await Promise.all([loadProviders(), loadModels(), loadAgents()])
+  const [providers, models, agents] = await Promise.all([
+    loadProviders(),
+    loadModels({ isActive: filters.status === "active" ? true : filters.status === "inactive" ? false : undefined }),
+    loadAgents(),
+  ])
   const providerById = new Map(providers.map((row) => [row.id, row]))
 
   const filtered = models
     .map((row) => mapModelListItem(row, providerById, agents))
-    .filter((row) => {
-      if (filters.status === "active" && !row.isActive) {
-        return false
-      }
-      if (filters.status === "inactive" && row.isActive) {
-        return false
-      }
-      return filterByKeyword(filters.keyword, [row.code, row.displayName, row.modelName, row.providerCode])
-    })
+    .filter((row) =>
+      filterByKeyword(filters.keyword, [row.code, row.displayName, row.modelName, row.providerCode]),
+    )
 
   return paginate(filtered, filters.page, filters.limit)
 }
@@ -1014,6 +1179,7 @@ export async function getAdminAIModelDetail(
       recommendedTemperature: model.recommended_temperature,
       pricingMetadata: model.pricing_metadata ?? {},
       isActive: model.is_active,
+      version: model.version,
       metadata: model.metadata ?? {},
       createdAt: model.created_at,
       updatedAt: model.updated_at,
@@ -1056,19 +1222,25 @@ export async function createAdminAIModel(
 
   mapWriteError(error, "Model code")
 
-  await writeAdminAIAudit({
-    adminAccountId,
-    action: "ai_model_create",
-    targetType: "ai_model",
-    targetId: (data as { id: string }).id,
-    afterSnapshot: {
-      code: input.code,
-      providerCode: input.providerCode,
-      displayName: input.displayName,
-      isActive: input.isActive,
-    },
-    reason: input.changeReason,
-  })
+  const newModelId = (data as { id: string }).id
+  try {
+    await writeAdminAIAudit({
+      adminAccountId,
+      action: "ai_model_create",
+      targetType: "ai_model",
+      targetId: newModelId,
+      afterSnapshot: {
+        code: input.code,
+        providerCode: input.providerCode,
+        displayName: input.displayName,
+        isActive: input.isActive,
+      },
+      reason: input.changeReason,
+    })
+  } catch (auditError) {
+    await rollbackCreatedRecordIfAuditFails("ai_model", newModelId, auditError)
+    throw auditError
+  }
 
   invalidateAIConfigCache("models")
 
@@ -1100,9 +1272,14 @@ export async function updateAdminAIModel(
   }
 
   const rowId = existing.model.modelId
+  const existingVersion = (existing.model as { version: number }).version
+
+  if (input.version !== undefined && input.version !== existingVersion) {
+    throwNamedError("VERSION_CONFLICT", `Model 已被其他人修改（你的版本: ${input.version}，当前版本: ${existingVersion}）。请刷新页面后重新编辑。`)
+  }
 
   const supabase = createSupabaseAdminClient()
-  const { error } = await supabase
+  const { data: updatedRow, error } = await supabase
     .from("ai_models")
     .update({
       provider_id: provider.id,
@@ -1120,33 +1297,44 @@ export async function updateAdminAIModel(
       metadata: input.metadata,
     })
     .eq("id", rowId)
+    .eq("version", existingVersion)
+    .select("version")
+    .maybeSingle()
 
-  mapWriteError(error, "Model code")
+  if (error) {
+    mapWriteError(error, "Model code")
+  } else if (!updatedRow) {
+    throwNamedError("VERSION_CONFLICT", `Model 已被其他人修改（你的版本: ${input.version ?? existingVersion}，当前版本: ${existingVersion}）。请刷新页面后重新编辑。`)
+  }
 
-  await writeAdminAIAudit({
-    adminAccountId,
-    action: "ai_model_update",
-    targetType: "ai_model",
-    targetId: rowId,
-    beforeSnapshot: existing.model,
-    afterSnapshot: {
-      ...existing.model,
-      providerCode: input.providerCode,
-      code: input.code,
-      displayName: input.displayName,
-      modelName: input.modelName,
-      supportsStream: input.supportsStream,
-      supportsJsonMode: input.supportsJsonMode,
-      supportsToolCalling: input.supportsToolCalling,
-      maxContextTokens: input.maxContextTokens,
-      defaultMaxOutputTokens: input.defaultMaxOutputTokens,
-      recommendedTemperature: input.recommendedTemperature,
-      pricingMetadata: input.pricingMetadata,
-      isActive: input.isActive,
-      metadata: input.metadata,
-    },
-    reason: input.changeReason,
-  })
+  try {
+    await writeAdminAIAudit({
+      adminAccountId,
+      action: "ai_model_update",
+      targetType: "ai_model",
+      targetId: rowId,
+      beforeSnapshot: existing.model,
+      afterSnapshot: {
+        ...existing.model,
+        providerCode: input.providerCode,
+        code: input.code,
+        displayName: input.displayName,
+        modelName: input.modelName,
+        supportsStream: input.supportsStream,
+        supportsJsonMode: input.supportsJsonMode,
+        supportsToolCalling: input.supportsToolCalling,
+        maxContextTokens: input.maxContextTokens,
+        defaultMaxOutputTokens: input.defaultMaxOutputTokens,
+        recommendedTemperature: input.recommendedTemperature,
+        pricingMetadata: input.pricingMetadata,
+        isActive: input.isActive,
+        metadata: input.metadata,
+      },
+      reason: input.changeReason,
+    })
+  } catch (auditError) {
+    throw auditError
+  }
 
   invalidateAIConfigCache("models")
 
@@ -1162,26 +1350,23 @@ export async function getAdminAIAgentList(filters: {
   limit: number
 }): Promise<AdminAIAgentListResponseData> {
   await assertCanAccessAI(filters.adminAccountId)
+
+  const agentFilters = {
+    isActive: filters.status === "active" ? true : filters.status === "inactive" ? false : undefined,
+    scenarioType: filters.scenarioType,
+  }
+
   const [agents, bindings, skillBindings] = await Promise.all([
-    loadAgents(),
+    loadAgents(agentFilters),
     loadAgentBindings(),
     loadAgentSkillBindings(),
   ])
 
   const filtered = agents
     .map((row) => mapAgentListItem(row, bindings, skillBindings))
-    .filter((row) => {
-      if (filters.status === "active" && !row.isActive) {
-        return false
-      }
-      if (filters.status === "inactive" && row.isActive) {
-        return false
-      }
-      if (filters.scenarioType && row.scenarioType !== filters.scenarioType) {
-        return false
-      }
-      return filterByKeyword(filters.keyword, [row.code, row.name, row.providerCode, row.modelCode])
-    })
+    .filter((row) =>
+      filterByKeyword(filters.keyword, [row.code, row.name, row.providerCode, row.modelCode]),
+    )
 
   return paginate(filtered, filters.page, filters.limit)
 }
@@ -1278,6 +1463,7 @@ export async function createAdminAIAgent(
       top_p: input.topP,
       stream_enabled: input.streamEnabled,
       is_active: input.isActive,
+      version: 1,
       metadata: input.metadata,
     })
     .select("id")
@@ -1285,21 +1471,27 @@ export async function createAdminAIAgent(
 
   mapWriteError(error, "Agent code")
 
-  await writeAdminAIAudit({
-    adminAccountId,
-    action: "ai_agent_create",
-    targetType: "ai_agent",
-    targetId: (data as { id: string }).id,
-    afterSnapshot: {
-      code: input.code,
-      name: input.name,
-      scenarioType: input.scenarioType,
-      defaultProviderCode: input.defaultProviderCode,
-      defaultModelCode: input.defaultModelCode,
-      isActive: input.isActive,
-    },
-    reason: input.changeReason,
-  })
+  const newAgentId = (data as { id: string }).id
+  try {
+    await writeAdminAIAudit({
+      adminAccountId,
+      action: "ai_agent_create",
+      targetType: "ai_agent",
+      targetId: newAgentId,
+      afterSnapshot: {
+        code: input.code,
+        name: input.name,
+        scenarioType: input.scenarioType,
+        defaultProviderCode: input.defaultProviderCode,
+        defaultModelCode: input.defaultModelCode,
+        isActive: input.isActive,
+      },
+      reason: input.changeReason,
+    })
+  } catch (auditError) {
+    await rollbackCreatedRecordIfAuditFails("ai_agent", newAgentId, auditError)
+    throw auditError
+  }
 
   invalidateAIConfigCache("agents")
 
@@ -1330,7 +1522,13 @@ export async function updateAdminAIAgent(
   }
 
   const supabase = createSupabaseAdminClient()
-  const { error } = await supabase
+  const existingVersion = (existing.agent as { version: number }).version
+
+  if (input.version !== undefined && input.version !== existingVersion) {
+    throwNamedError("VERSION_CONFLICT", `Agent 已被其他人修改（你的版本: ${input.version}，当前版本: ${existingVersion}）。请刷新页面后重新编辑。`)
+  }
+
+  const { data: updatedRow, error } = await supabase
     .from("agent_templates")
     .update({
       code: input.code,
@@ -1350,35 +1548,46 @@ export async function updateAdminAIAgent(
       metadata: input.metadata,
     })
     .eq("id", agentId)
+    .eq("version", existingVersion)
+    .select("version")
+    .maybeSingle()
 
-  mapWriteError(error, "Agent code")
+  if (error) {
+    mapWriteError(error, "Agent code")
+  } else if (!updatedRow) {
+    throwNamedError("VERSION_CONFLICT", `Agent 已被其他人修改（你的版本: ${input.version ?? existingVersion}，当前版本: ${existingVersion}）。请刷新页面后重新编辑。`)
+  }
 
-  await writeAdminAIAudit({
-    adminAccountId,
-    action: "ai_agent_update",
-    targetType: "ai_agent",
-    targetId: agentId,
-    beforeSnapshot: existing.agent,
-    afterSnapshot: {
-      ...existing.agent,
-      code: input.code,
-      name: input.name,
-      scenarioType: input.scenarioType,
-      description: input.description,
-      systemPromptTemplate: input.systemPromptTemplate,
-      developerPromptTemplate: input.developerPromptTemplate,
-      defaultProviderCode: input.defaultProviderCode,
-      defaultModelCode: input.defaultModelCode,
-      contextMessageLimit: input.contextMessageLimit,
-      maxOutputTokens: input.maxOutputTokens,
-      temperature: input.temperature,
-      topP: input.topP,
-      streamEnabled: input.streamEnabled,
-      isActive: input.isActive,
-      metadata: input.metadata,
-    },
-    reason: input.changeReason,
-  })
+  try {
+    await writeAdminAIAudit({
+      adminAccountId,
+      action: "ai_agent_update",
+      targetType: "ai_agent",
+      targetId: agentId,
+      beforeSnapshot: existing.agent,
+      afterSnapshot: {
+        ...existing.agent,
+        code: input.code,
+        name: input.name,
+        scenarioType: input.scenarioType,
+        description: input.description,
+        systemPromptTemplate: input.systemPromptTemplate,
+        developerPromptTemplate: input.developerPromptTemplate,
+        defaultProviderCode: input.defaultProviderCode,
+        defaultModelCode: input.defaultModelCode,
+        contextMessageLimit: input.contextMessageLimit,
+        maxOutputTokens: input.maxOutputTokens,
+        temperature: input.temperature,
+        topP: input.topP,
+        streamEnabled: input.streamEnabled,
+        isActive: input.isActive,
+        metadata: input.metadata,
+      },
+      reason: input.changeReason,
+    })
+  } catch (auditError) {
+    throw auditError
+  }
 
   invalidateAIConfigCache("agents")
 
@@ -1394,7 +1603,7 @@ export async function getAdminAIAgentBindingList(filters: {
   await assertCanAccessAI(filters.adminAccountId)
   const [agents, bindings, tools, paths] = await Promise.all([
     loadAgents(),
-    loadAgentBindings(),
+    loadAgentBindings({ agentCodeKeyword: filters.keyword }),
     loadTools(),
     loadPaths(),
   ])
@@ -1457,14 +1666,20 @@ export async function createAdminAIAgentBinding(
 
   mapWriteError(error, "命中规则")
 
-  await writeAdminAIAudit({
-    adminAccountId,
-    action: "ai_agent_binding_create",
-    targetType: "ai_agent_binding",
-    targetId: (data as { id: string }).id,
-    afterSnapshot: input,
-    reason: input.changeReason,
-  })
+  const newBindingId = (data as { id: string }).id
+  try {
+    await writeAdminAIAudit({
+      adminAccountId,
+      action: "ai_agent_binding_create",
+      targetType: "ai_agent_binding",
+      targetId: newBindingId,
+      afterSnapshot: input,
+      reason: input.changeReason,
+    })
+  } catch (auditError) {
+    await rollbackCreatedRecordIfAuditFails("ai_agent_binding", newBindingId, auditError)
+    throw auditError
+  }
 
   invalidateAIConfigCache("agent-bindings")
 
@@ -1508,15 +1723,19 @@ export async function updateAdminAIAgentBinding(
 
   mapWriteError(error, "命中规则")
 
-  await writeAdminAIAudit({
-    adminAccountId,
-    action: "ai_agent_binding_update",
-    targetType: "ai_agent_binding",
-    targetId: bindingId,
-    beforeSnapshot: existing,
-    afterSnapshot: input,
-    reason: input.changeReason,
-  })
+  try {
+    await writeAdminAIAudit({
+      adminAccountId,
+      action: "ai_agent_binding_update",
+      targetType: "ai_agent_binding",
+      targetId: bindingId,
+      beforeSnapshot: existing,
+      afterSnapshot: input,
+      reason: input.changeReason,
+    })
+  } catch (auditError) {
+    throw auditError
+  }
 
   invalidateAIConfigCache("agent-bindings")
 
@@ -1559,7 +1778,7 @@ export async function getAdminAIAgentSkillBindingList(filters: {
   const [agents, skills, bindings] = await Promise.all([
     loadAgents(),
     loadSkills(),
-    loadAgentSkillBindings(),
+    loadAgentSkillBindings({ agentCodeKeyword: filters.keyword, skillCodeKeyword: filters.keyword }),
   ])
 
   const agentByCode = new Map(agents.map((row) => [row.code, row]))
@@ -1608,14 +1827,20 @@ export async function createAdminAIAgentSkillBinding(
 
   mapWriteError(error, "Agent + Skill 绑定")
 
-  await writeAdminAIAudit({
-    adminAccountId,
-    action: "ai_agent_skill_binding_create",
-    targetType: "ai_agent_skill_binding",
-    targetId: (data as { id: string }).id,
-    afterSnapshot: input,
-    reason: input.changeReason,
-  })
+  const newBindingId = (data as { id: string }).id
+  try {
+    await writeAdminAIAudit({
+      adminAccountId,
+      action: "ai_agent_skill_binding_create",
+      targetType: "ai_agent_skill_binding",
+      targetId: newBindingId,
+      afterSnapshot: input,
+      reason: input.changeReason,
+    })
+  } catch (auditError) {
+    await rollbackCreatedRecordIfAuditFails("ai_agent_skill_binding", newBindingId, auditError)
+    throw auditError
+  }
 
   invalidateAIConfigCache("agent-skill-bindings")
 
@@ -1656,15 +1881,19 @@ export async function updateAdminAIAgentSkillBinding(
 
   mapWriteError(error, "Agent + Skill 绑定")
 
-  await writeAdminAIAudit({
-    adminAccountId,
-    action: "ai_agent_skill_binding_update",
-    targetType: "ai_agent_skill_binding",
-    targetId: bindingId,
-    beforeSnapshot: existing,
-    afterSnapshot: input,
-    reason: input.changeReason,
-  })
+  try {
+    await writeAdminAIAudit({
+      adminAccountId,
+      action: "ai_agent_skill_binding_update",
+      targetType: "ai_agent_skill_binding",
+      targetId: bindingId,
+      beforeSnapshot: existing,
+      afterSnapshot: input,
+      reason: input.changeReason,
+    })
+  } catch (auditError) {
+    throw auditError
+  }
 
   invalidateAIConfigCache("agent-skill-bindings")
 
@@ -1680,30 +1909,37 @@ export async function getAdminAIInvocationList(filters: {
   modelCode?: string
   agentCode?: string
   dateRange: "24h" | "7d" | "30d" | "90d"
+  startDate?: string
+  endDate?: string
   page: number
   limit: number
 }): Promise<AdminAIInvocationListResponseData> {
   await assertCanAccessAI(filters.adminAccountId)
-  const [invocations, providers, models, agents] = await Promise.all([
-    loadInvocations(),
-    loadProviders(),
-    loadModels(),
-    loadAgents(),
-  ])
 
   const dateWindowMs =
     filters.dateRange === "24h" ? 24 * 60 * 60 * 1000
       : filters.dateRange === "7d" ? 7 * 24 * 60 * 60 * 1000
         : filters.dateRange === "30d" ? 30 * 24 * 60 * 60 * 1000
           : 90 * 24 * 60 * 60 * 1000
-  const since = Date.now() - dateWindowMs
+  const since = new Date(Date.now() - dateWindowMs).toISOString()
 
-  const mapped = invocations
-    .filter((row) => new Date(row.created_at).getTime() >= since)
-    .filter((row) => (filters.status === "all" ? true : row.status === filters.status))
-    .filter((row) => (filters.providerCode ? row.provider_code === filters.providerCode : true))
-    .filter((row) => (filters.modelCode ? row.model_code === filters.modelCode : true))
-    .filter((row) => (filters.agentCode ? row.agent_code === filters.agentCode : true))
+  const [result, providers, models, agents] = await Promise.all([
+    loadInvocations({
+      status: filters.status,
+      providerCode: filters.providerCode,
+      modelCode: filters.modelCode,
+      agentCode: filters.agentCode,
+      startDate: filters.startDate ?? since,
+      endDate: filters.endDate,
+      page: filters.page,
+      limit: filters.limit,
+    }),
+    loadProviders(),
+    loadModels(),
+    loadAgents(),
+  ])
+
+  const mapped = result.rows
     .map((row) => mapInvocationListItem(row))
     .filter((row) =>
       filterByKeyword(filters.keyword, [
@@ -1717,9 +1953,11 @@ export async function getAdminAIInvocationList(filters: {
       ]),
     )
 
-  const pageData = paginate(mapped, filters.page, filters.limit)
   return {
-    ...pageData,
+    items: mapped,
+    total: result.total,
+    page: filters.page,
+    limit: filters.limit,
     providerOptions: providers.map((row) => ({ code: row.code, name: row.name })),
     modelOptions: models.map((row) => ({ code: row.code, name: row.display_name })),
     agentOptions: agents.map((row) => ({ code: row.code, name: row.name })),
@@ -1855,6 +2093,7 @@ async function createAdminTestSession(input: {
       metadata: {
         source: "admin_ai_test",
       },
+      is_admin_test: true,
     })
     .select("id")
     .single()

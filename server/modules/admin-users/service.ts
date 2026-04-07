@@ -151,7 +151,7 @@ async function writeAdminUserAudit(input: {
   })
 
   if (error) {
-    console.error("Failed to write admin user audit log:", error)
+    throw new Error(`AUDIT_LOG_WRITE_FAILED:failed to write admin user audit log: ${error.message}`)
   }
 }
 
@@ -373,13 +373,17 @@ export async function updateAdminUser(
 
   const after = await getAdminUserDetail(userId)
 
-  await writeAdminUserAudit({
-    adminAccountId,
-    action: "user_profile_update",
-    targetUserId: userId,
-    beforeSnapshot: before as unknown as Record<string, unknown>,
-    afterSnapshot: (after ?? before) as unknown as Record<string, unknown>,
-  })
+  try {
+    await writeAdminUserAudit({
+      adminAccountId,
+      action: "user_profile_update",
+      targetUserId: userId,
+      beforeSnapshot: before as unknown as Record<string, unknown>,
+      afterSnapshot: (after ?? before) as unknown as Record<string, unknown>,
+    })
+  } catch (auditError) {
+    throw auditError
+  }
 
   return after
 }
@@ -419,14 +423,18 @@ export async function softDeleteAdminUser(
 
   const after = await getAdminUserDetail(userId)
 
-  await writeAdminUserAudit({
-    adminAccountId,
-    action: "user_soft_delete",
-    targetUserId: userId,
-    beforeSnapshot: { deletedAt: before.deletedAt },
-    afterSnapshot: { deletedAt: after?.deletedAt ?? null, deletedReason: after?.deletedReason ?? null },
-    reason: reason ?? null,
-  })
+  try {
+    await writeAdminUserAudit({
+      adminAccountId,
+      action: "user_soft_delete",
+      targetUserId: userId,
+      beforeSnapshot: { deletedAt: before.deletedAt },
+      afterSnapshot: { deletedAt: after?.deletedAt ?? null, deletedReason: after?.deletedReason ?? null },
+      reason: reason ?? null,
+    })
+  } catch (auditError) {
+    throw auditError
+  }
 
   return after
 }
@@ -465,13 +473,17 @@ export async function restoreAdminUser(
 
   const after = await getAdminUserDetail(userId)
 
-  await writeAdminUserAudit({
-    adminAccountId,
-    action: "user_restore",
-    targetUserId: userId,
-    beforeSnapshot: { deletedAt: before.deletedAt },
-    afterSnapshot: { deletedAt: after?.deletedAt ?? null },
-  })
+  try {
+    await writeAdminUserAudit({
+      adminAccountId,
+      action: "user_restore",
+      targetUserId: userId,
+      beforeSnapshot: { deletedAt: before.deletedAt },
+      afterSnapshot: { deletedAt: after?.deletedAt ?? null },
+    })
+  } catch (auditError) {
+    throw auditError
+  }
 
   return after
 }

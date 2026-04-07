@@ -505,6 +505,7 @@ async function resolveConversationSession(
     .eq("user_id", input.userId)
     .eq("user_task_id", input.task.id)
     .eq("status", "active")
+    .eq("is_admin_test", false)
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle()

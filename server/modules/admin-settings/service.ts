@@ -97,9 +97,9 @@ function normalizeRoles(row: AdminAccountWithRolesRow): AdminRoleCode[] {
     .filter((value): value is AdminRoleCode => Boolean(value))
 }
 
-async function loadAdminAccountsWithRoles() {
+async function loadAdminAccountsWithRoles(status?: "all" | "active" | "inactive" | "suspended") {
   const supabase = createSupabaseAdminClient()
-  const { data, error } = await supabase
+  let query = supabase
     .from("admin_accounts")
     .select(`
       id,
@@ -116,6 +116,11 @@ async function loadAdminAccountsWithRoles() {
     `)
     .order("created_at", { ascending: false })
 
+  if (status && status !== "all") {
+    query = query.eq("status", status)
+  }
+
+  const { data, error } = await query
   assertSupabaseSuccess(error, "failed to query admin accounts with roles")
   return (data ?? []) as unknown as AdminAccountWithRolesRow[]
 }
@@ -141,18 +146,39 @@ async function loadUserAvatarMap(userIds: string[]) {
 
 async function loadUserEmailMap(userIds: string[]) {
   const supabase = createSupabaseAdminClient()
-  const pairs = await Promise.all(
-    Array.from(new Set(userIds.filter(Boolean))).map(async (userId) => {
-      const { data, error } = await supabase.auth.admin.getUserById(userId)
-      if (error) {
-        console.error("Failed to query admin auth user email:", error)
-        return [userId, null] as const
-      }
-      return [userId, data.user?.email ?? null] as const
-    }),
-  )
+  const uniqueIds = new Set(userIds.filter(Boolean))
 
-  return new Map<string, string | null>(pairs)
+  // Batch-fetch all auth users via listUsers, handling pagination
+  const emailMap = new Map<string, string | null>()
+  let page = 1
+  const perPage = 1000 // Supabase max per page
+
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage })
+    if (error) {
+      console.error("Failed to list auth users for email map:", error)
+      break
+    }
+
+    for (const user of data.users) {
+      if (uniqueIds.has(user.id)) {
+        emailMap.set(user.id, user.email ?? null)
+      }
+    }
+
+    // Stop if we've fetched all users or found all requested ids
+    if (data.users.length < perPage || emailMap.size >= uniqueIds.size) break
+    page++
+  }
+
+  // Fill missing ids with null
+  for (const id of uniqueIds) {
+    if (!emailMap.has(id)) {
+      emailMap.set(id, null)
+    }
+  }
+
+  return emailMap
 }
 
 function buildAdminAccountStats(items: AdminSettingsAdminAccountListItem[]) {
@@ -177,8 +203,8 @@ function buildAdminAccountStats(items: AdminSettingsAdminAccountListItem[]) {
   )
 }
 
-async function buildAdminAccountItems() {
-  const rows = await loadAdminAccountsWithRoles()
+async function buildAdminAccountItems(status?: "all" | "active" | "inactive" | "suspended") {
+  const rows = await loadAdminAccountsWithRoles(status)
   const userIds = rows.map((row) => row.user_id)
   const [avatarMap, emailMap] = await Promise.all([
     loadUserAvatarMap(userIds),
@@ -264,7 +290,7 @@ async function writeAdminAccountAudit(input: {
   })
 
   if (error) {
-    console.error("Failed to write admin account audit log:", error)
+    throw new Error(`AUDIT_LOG_WRITE_FAILED:failed to write admin account audit log: ${error.message}`)
   }
 }
 
@@ -314,14 +340,11 @@ export async function getAdminSettingsAdminAccountList(filters: {
   limit: number
   page: number
 }): Promise<AdminSettingsAdminAccountListResponseData> {
-  const items = await buildAdminAccountItems()
+  const items = await buildAdminAccountItems(filters.status)
   const stats = buildAdminAccountStats(items)
   const normalizedKeyword = filters.keyword?.trim().toLowerCase() ?? ""
 
   const filtered = items.filter((item) => {
-    if (filters.status !== "all" && item.status !== filters.status) {
-      return false
-    }
     if (!normalizedKeyword) {
       return true
     }
@@ -400,18 +423,22 @@ export async function updateAdminSettingsAdminAccountStatus(
 
   assertSupabaseSuccess(error, "failed to update admin account status")
 
-  await writeAdminAccountAudit({
-    adminAccountId,
-    action: input.action === "activate" ? "admin_account_activate" : "admin_account_deactivate",
-    targetAdminAccountId: target.id,
-    beforeSnapshot: {
-      status: target.status,
-    },
-    afterSnapshot: {
-      status: nextStatus,
-    },
-    reason: input.reason ?? null,
-  })
+  try {
+    await writeAdminAccountAudit({
+      adminAccountId,
+      action: input.action === "activate" ? "admin_account_activate" : "admin_account_deactivate",
+      targetAdminAccountId: target.id,
+      beforeSnapshot: {
+        status: target.status,
+      },
+      afterSnapshot: {
+        status: nextStatus,
+      },
+      reason: input.reason ?? null,
+    })
+  } catch (auditError) {
+    throw auditError
+  }
 
   return {
     adminAccountId: target.id,

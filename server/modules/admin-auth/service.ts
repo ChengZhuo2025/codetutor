@@ -121,7 +121,7 @@ async function writeAdminAuditLog(input: {
   })
 
   if (error) {
-    console.error(`Failed to write admin ${input.action} audit log:`, error)
+    throw new Error(`AUDIT_LOG_WRITE_FAILED:failed to write admin ${input.action} audit log: ${error.message}`)
   }
 }
 
