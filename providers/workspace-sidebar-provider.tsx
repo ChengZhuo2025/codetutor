@@ -32,11 +32,12 @@ function dedupeNotifications(items: NotificationInAppItem[]): NotificationInAppI
       continue
     }
     const date = item.createdAt.slice(0, 10) // "YYYY-MM-DD"
-    const source = (item.payload?.source as string | undefined) ?? item.type
+    const rawSource = item.payload?.source
+    const source = typeof rawSource === "string" ? rawSource : item.type
     const key = `${source}:${date}`
 
     const existing = groups.get(key)
-    if (!existing || new Date(item.createdAt) > new Date(existing.createdAt)) {
+    if (!existing || item.createdAt > existing.createdAt) {
       groups.set(key, item)
     }
   }
@@ -105,12 +106,13 @@ async function fetchWorkspaceSidebarData(): Promise<WorkspaceSidebarDataState> {
   try {
     const session = await requestData<LearningCurrentSessionResponseData>("/learning/current-session")
     const notifications = await fetchWorkspaceNotifications()
+    const deduped = dedupeNotifications(notifications.items)
 
     return {
       profile: session.profile,
       recentPracticeRounds: session.recentPracticeRounds,
-      notifications: dedupeNotifications(notifications.items),
-      unreadNotificationCount: notifications.unreadCount,
+      notifications: deduped,
+      unreadNotificationCount: deduped.filter((n) => n.status === "unread").length,
       hasLoaded: true,
     }
   } catch {
@@ -120,12 +122,13 @@ async function fetchWorkspaceSidebarData(): Promise<WorkspaceSidebarDataState> {
   try {
     const profile = await requestData<ProfileMeResponseData>("/profile/me")
     const notifications = await fetchWorkspaceNotifications()
+    const deduped = dedupeNotifications(notifications.items)
 
     return {
       profile,
       recentPracticeRounds: [],
-      notifications: dedupeNotifications(notifications.items),
-      unreadNotificationCount: notifications.unreadCount,
+      notifications: deduped,
+      unreadNotificationCount: deduped.filter((n) => n.status === "unread").length,
       hasLoaded: true,
     }
   } catch {
