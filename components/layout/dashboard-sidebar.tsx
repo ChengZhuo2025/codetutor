@@ -256,6 +256,28 @@ export function DashboardSidebar({
             onDismiss={dismissNotification}
           />
 
+          <nav className="space-y-1 rounded-[24px] border border-border/60 bg-surface-2/80 p-2">
+            {items.map((item) => {
+              const Icon = item.icon
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-colors",
+                    item.active
+                      ? "bg-brand-dim text-brand"
+                      : "text-muted-foreground hover:bg-surface-3 hover:text-foreground",
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              )
+            })}
+          </nav>
+
           {/* 学习提醒折叠卡片 */}
           <div className="rounded-[24px] border border-border/60 bg-surface-2/80 overflow-hidden">
             {/* 折叠头部：可点击切换展开状态 */}
@@ -342,28 +364,6 @@ export function DashboardSidebar({
               </div>
             </div>
           </div>
-
-          <nav className="space-y-1 rounded-[24px] border border-border/60 bg-surface-2/80 p-2">
-            {items.map((item) => {
-              const Icon = item.icon
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-colors",
-                    item.active
-                      ? "bg-brand-dim text-brand"
-                      : "text-muted-foreground hover:bg-surface-3 hover:text-foreground",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              )
-            })}
-          </nav>
 
           <div className="rounded-[24px] border border-border/60 bg-surface-2/80 p-4">
             <div className="mb-2 flex items-center justify-between gap-3">
