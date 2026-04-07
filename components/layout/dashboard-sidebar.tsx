@@ -64,7 +64,7 @@ export function DashboardSidebar({
   const toast = useAppToast();
   const {
     profile,
-    recentPracticeRounds,
+    recentLearningPlans,
     notifications,
     unreadNotificationCount,
     hasLoaded,
@@ -150,7 +150,22 @@ export function DashboardSidebar({
     Math.round((resolvedProfile.currentScore / 1000) * 100),
     100,
   );
-  const visiblePracticeRounds = recentPracticeRounds.slice(0, 5);
+  const visibleRecentPlans = recentLearningPlans.slice(0, 5);
+
+  const historyStatusLabel = (status: string) => {
+    switch (status) {
+      case "in_progress":
+        return "进行中";
+      case "completed":
+        return "已完成";
+      case "interrupted":
+        return "已中断";
+      case "abandoned":
+        return "已放弃";
+      default:
+        return "未知";
+    }
+  };
 
   return (
     <aside
@@ -418,42 +433,43 @@ export function DashboardSidebar({
                 <ChevronRight className="h-3 w-3" />
               </Link>
             </div>
-            {visiblePracticeRounds.length > 0 ? (
+            {visibleRecentPlans.length > 0 ? (
               <div className="space-y-1">
-                {visiblePracticeRounds.map((practiceRound) => (
+                {visibleRecentPlans.map((plan) => (
                   <button
-                    key={practiceRound.id}
+                    key={plan.id}
                     className="flex w-full items-center justify-between rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-surface-3"
+                    title={plan.title}
                   >
                     <div className="flex min-w-0 items-start gap-2">
                       <div
                         className={cn(
                           "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
-                          practiceRound.status === "completed"
+                          plan.status === "completed"
                             ? "bg-brand"
-                            : practiceRound.status === "in_progress"
+                            : plan.status === "in_progress"
                               ? "bg-gold"
                               : "bg-muted-foreground/40",
                         )}
                       />
                       <div className="min-w-0">
                         <p className="truncate text-[11px] uppercase tracking-[0.12em] text-muted-foreground/55">
-                          {practiceRound.stageLabel}
+                          {plan.tool} · {plan.level}
                         </p>
                         <p className="truncate text-sm text-muted-foreground">
-                          {practiceRound.taskTitle}
+                          {plan.title}
                         </p>
                       </div>
                     </div>
                     <span className="ml-2 shrink-0 text-xs text-muted-foreground/55">
-                      {practiceRound.lastActiveLabel}
+                      {historyStatusLabel(plan.status)}
                     </span>
                   </button>
                 ))}
               </div>
             ) : (
               <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3 text-sm text-muted-foreground">
-                当前还没有最近学习记录。开始一条学习计划后，这里会显示你的最新关卡进度。
+                当前还没有学习计划记录。开始创建并完成第一个关卡后，这里会显示你的学习计划列表。
               </div>
             )}
           </div>
