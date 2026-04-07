@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import {
   Bell,
+  ChevronDown,
   ChevronRight,
   Code2,
   Crown,
@@ -32,6 +33,12 @@ type DashboardSidebarProps = {
   className?: string
   children?: React.ReactNode
   footerContent?: React.ReactNode
+}
+
+type NotificationPanelState = {
+  expanded: boolean
+  selectedNotification: NotificationInAppItem | null
+  dialogOpen: boolean
 }
 
 const SUBSCRIPTION_PLACEHOLDER: SubscriptionSnapshot = {
@@ -67,12 +74,6 @@ export function DashboardSidebar({
   } = useWorkspaceSidebarData()
   const [profileOpen, setProfileOpen] = useState(false)
   const [profileFeedbackMessage, setProfileFeedbackMessage] = useState<string | null>(null)
-
-  type NotificationPanelState = {
-    expanded: boolean
-    selectedNotification: NotificationInAppItem | null
-    dialogOpen: boolean
-  }
 
   const [notifPanel, setNotifPanel] = useState<NotificationPanelState>({
     expanded: false,
@@ -299,9 +300,12 @@ export function DashboardSidebar({
                 <span className="rounded-full border border-border/60 bg-background/60 px-2 py-0.5 text-[11px] text-muted-foreground">
                   {unreadNotificationCount > 0 ? `${unreadNotificationCount} 条未读` : "已读完"}
                 </span>
-                <span className="text-muted-foreground transition-transform duration-200" style={{ transform: notifPanel.expanded ? "rotate(180deg)" : "rotate(0deg)" }}>
-                  ▼
-                </span>
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                    notifPanel.expanded && "rotate-180",
+                  )}
+                />
               </div>
             </button>
 
