@@ -375,7 +375,7 @@ export function DashboardSidebar({
                               dialogOpen: true,
                             }))
                           }
-                          className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-background/50 active:bg-background/70"
+                          className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface-3 active:bg-background/70"
                         >
                           <div className="flex items-center gap-3 min-w-0 flex-1">
                             <div

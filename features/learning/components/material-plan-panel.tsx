@@ -181,7 +181,7 @@ export function MaterialPlanPanel({
           placeholder={"https://developer.mozilla.org/..."}
           rows={2}
           disabled={busy !== null}
-          className="min-h-[88px] resize-y font-mono text-sm"
+          className="min-h-[88px] resize-y font-mono text-sm bg-background"
         />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -193,7 +193,7 @@ export function MaterialPlanPanel({
             placeholder="例如：希望两周内能独立改一个现有页面的交互。"
             rows={2}
             disabled={busy !== null}
-            className="resize-y text-sm"
+            className="resize-y text-sm bg-background"
           />
         </div>
         <div className="space-y-2">
@@ -220,14 +220,14 @@ export function MaterialPlanPanel({
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          size="sm"
+          size="lg"
           onClick={() => void handleGenerate()}
           disabled={busy !== null}
         >
           {busy === "generate" ? (
-            <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+            <Loader2 className="size-4 animate-spin" aria-hidden />
           ) : (
-            <Sparkles className="mr-2 size-4" aria-hidden />
+            <Sparkles className="size-4" aria-hidden />
           )}
           生成计划预览
         </Button>
@@ -235,28 +235,28 @@ export function MaterialPlanPanel({
           <>
             <Button
               type="button"
-              size="sm"
+              size="lg"
               variant="secondary"
               onClick={() => void handleRegenerate()}
               disabled={busy !== null}
             >
               {busy === "regenerate" ? (
-                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                <Loader2 className="size-4 animate-spin" aria-hidden />
               ) : (
-                <RefreshCw className="mr-2 size-4" aria-hidden />
+                <RefreshCw className="size-4" aria-hidden />
               )}
               重新生成
             </Button>
             <Button
               type="button"
-              size="sm"
+              size="lg"
               variant="default"
               className="bg-brand text-brand-foreground hover:bg-brand/90"
               onClick={() => void handleConfirm()}
               disabled={busy !== null}
             >
               {busy === "confirm" ? (
-                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                <Loader2 className="size-4 animate-spin" aria-hidden />
               ) : null}
               启用这个计划
             </Button>

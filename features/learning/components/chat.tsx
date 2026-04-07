@@ -1741,7 +1741,7 @@ export function LearnChat({
           {mission ? (
             <div className="rounded-[1.9rem] border border-border bg-surface-2/95 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
               <div className="flex flex-col gap-5">
-                <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/65">
+                <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/65">
                   <Target className="h-3.5 w-3.5 text-brand" />
                   现在只做这一步
                 </div>
@@ -1751,12 +1751,12 @@ export function LearnChat({
                     <p className="text-xl font-semibold leading-8 text-foreground">
                       {rightPanel.currentStep}
                     </p>
-                    <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
                       {rightPanel.whyThisStep}
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:min-w-[320px] lg:max-w-[360px]">
+                  <div className="flex items-center gap-2 sm:gap-3 lg:min-w-[320px] lg:max-w-[360px]">
                     <div className="rounded-2xl border border-border/50 bg-surface-3 px-3 py-3">
                       <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
                         建议时长
