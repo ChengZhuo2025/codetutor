@@ -1,4 +1,5 @@
 .vercel/
+.worktrees/
 
 # Environment variables
 .env*.local
