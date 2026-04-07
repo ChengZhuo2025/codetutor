@@ -167,6 +167,20 @@ export function DashboardSidebar({
     }
   };
 
+  const formatPlanCreatedAt = (createdAt: string) => {
+    const date = new Date(createdAt);
+
+    if (Number.isNaN(date.getTime())) {
+      return "创建时间未知";
+    }
+
+    return `创建于 ${new Intl.DateTimeFormat("zh-CN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(date)}`;
+  };
+
   return (
     <aside
       className={cn(
@@ -453,8 +467,8 @@ export function DashboardSidebar({
                         )}
                       />
                       <div className="min-w-0">
-                        <p className="truncate text-[11px] uppercase tracking-[0.12em] text-muted-foreground/55">
-                          {plan.tool} · {plan.level}
+                        <p className="truncate text-[11px] text-muted-foreground/55">
+                          {formatPlanCreatedAt(plan.createdAt)}
                         </p>
                         <p className="truncate text-sm text-muted-foreground">
                           {plan.title}

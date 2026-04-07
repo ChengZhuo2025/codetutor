@@ -28,7 +28,11 @@ import {
   normalizeLearningMessagesPageSize,
   resolveLearningMessagesPage,
 } from "./history-logic.ts"
-import type { Message } from "@/features/learning/types"
+import type { LearningTip, Message } from "@/features/learning/types"
+import {
+  renderLearningTips,
+  type LearningTipRenderContext,
+} from "./tip-templates"
 
 type JsonRecord = Record<string, unknown>
 
@@ -144,6 +148,27 @@ function toPitfalls(input: unknown) {
       }
     })
     .filter((item): item is { text: string; isTrap?: boolean } => Boolean(item))
+}
+
+function buildLearningTips(input: {
+  currentStep: StepRow
+  nextStep: StepRow | null
+  knowledgePoints: string[]
+  masteryPoints: string[]
+  pitfalls: Array<{ text: string; isTrap?: boolean }>
+}): LearningTip[] {
+  const { currentStep, nextStep, knowledgePoints, masteryPoints, pitfalls } = input
+
+  const context: LearningTipRenderContext = {
+    currentStepTitle: currentStep.title,
+    currentStepGoal: currentStep.goal,
+    currentStepFocus: currentStep.focus,
+    nextStepTitle: nextStep?.title ?? null,
+    keyPoint: masteryPoints[0] ?? knowledgePoints[0] ?? "当前关卡目标",
+    primaryPitfall: pitfalls.find((item) => item.isTrap)?.text ?? pitfalls[0]?.text ?? null,
+  }
+
+  return renderLearningTips(context)
 }
 
 function getRelativeLastSeenLabel(input: string | null) {
@@ -722,20 +747,13 @@ export async function getLearningCurrentSessionData(
       label,
       color: KNOWLEDGE_TAG_COLORS[index % KNOWLEDGE_TAG_COLORS.length],
     })),
-    tips: [
-      {
-        title: "先完成最小验证，不急着扩展",
-        body: "当前关卡只需要验证一个核心动作，先跑通最小结果，再继续追问更深的问题。",
-      },
-      {
-        title: "卡住时优先贴结果和报错",
-        body: "相比抽象描述，把你看到的代码、截图或报错发出来，AI 更容易给到准确建议。",
-      },
-      {
-        title: "学会判断下一步，而不是一次做完全部",
-        body: "每一关都在训练你和 AI 的协作节奏，先判断当前一步，再推进后续工作。",
-      },
-    ],
+    tips: buildLearningTips({
+      currentStep,
+      nextStep,
+      knowledgePoints,
+      masteryPoints,
+      pitfalls,
+    }),
   }
 }
 
