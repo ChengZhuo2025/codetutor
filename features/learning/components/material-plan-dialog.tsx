@@ -30,7 +30,7 @@ export function MaterialPlanDialog({
       <DialogContent
         className={cn(
           DIALOG_DARK_PANEL_CLASS,
-          "max-h-[85vh] overflow-y-auto rounded-2xl border-white/20 ring-1 ring-white/10 p-0 sm:max-w-[760px]",
+          "max-h-[85vh] overflow-y-auto rounded-2xl ring-1 ring-white/10 p-0 sm:max-w-[760px]",
         )}
       >
         <div className="border-b border-white/10 px-5 pt-5 pb-4">

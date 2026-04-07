@@ -109,7 +109,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
       <DialogContent
         className={cn(
           DIALOG_DARK_PANEL_CLASS,
-          "max-h-[90vh] overflow-y-auto rounded-2xl border-white/20 ring-1 ring-white/10 sm:max-w-[480px]",
+          "max-h-[90vh] overflow-y-auto rounded-2xl ring-1 ring-white/10 sm:max-w-[480px]",
         )}
       >
         <div className="overflow-hidden rounded-2xl">
@@ -132,7 +132,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
 
             {!isLoading ? (
               <>
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <div className="rounded-xl border border-white/10 bg-background/80 p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-brand/20 bg-brand/10 text-brand">
@@ -165,7 +165,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                   )}
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <div className="rounded-xl border border-white/10 bg-background/80 p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-chart-3/20 bg-chart-3/10 text-chart-3">
@@ -184,7 +184,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <div className="rounded-xl border border-white/10 bg-background/80 p-4">
                   <p className="mb-3 text-sm font-medium text-foreground">提醒方式</p>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -228,7 +228,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                   当前只有站内提醒已接入真实发送；邮件和微信通知会保存你的偏好，但暂不会实际下发。
                 </p>
 
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <div className="rounded-xl border border-white/10 bg-background/80 p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-gold/20 bg-gold/10 text-gold">
