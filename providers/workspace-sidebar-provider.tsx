@@ -20,6 +20,32 @@ import { PROFILE_UPDATED_EVENT } from "@/lib/profile/events"
 import type { RecentPracticeRound } from "@/features/learning/types"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
+/**
+ * 同源通知去重：按 source + 日期 分组，每组只保留最新一条（createdAt 最晚）
+ * 解决"今天还没打卡"和"今日打卡成功"同时出现的矛盾
+ */
+function dedupeNotifications(items: NotificationInAppItem[]): NotificationInAppItem[] {
+  const groups = new Map<string, NotificationInAppItem>()
+
+  for (const item of items) {
+    if (item.status === "dismissed") {
+      continue
+    }
+    const date = item.createdAt.slice(0, 10) // "YYYY-MM-DD"
+    const source = (item.payload?.source as string | undefined) ?? item.type
+    const key = `${source}:${date}`
+
+    const existing = groups.get(key)
+    if (!existing || new Date(item.createdAt) > new Date(existing.createdAt)) {
+      groups.set(key, item)
+    }
+  }
+
+  return Array.from(groups.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  )
+}
+
 type WorkspaceSidebarDataState = {
   profile: ProfileMeResponseData | null
   recentPracticeRounds: RecentPracticeRound[]
@@ -83,7 +109,7 @@ async function fetchWorkspaceSidebarData(): Promise<WorkspaceSidebarDataState> {
     return {
       profile: session.profile,
       recentPracticeRounds: session.recentPracticeRounds,
-      notifications: notifications.items,
+      notifications: dedupeNotifications(notifications.items),
       unreadNotificationCount: notifications.unreadCount,
       hasLoaded: true,
     }
@@ -98,7 +124,7 @@ async function fetchWorkspaceSidebarData(): Promise<WorkspaceSidebarDataState> {
     return {
       profile,
       recentPracticeRounds: [],
-      notifications: notifications.items,
+      notifications: dedupeNotifications(notifications.items),
       unreadNotificationCount: notifications.unreadCount,
       hasLoaded: true,
     }
