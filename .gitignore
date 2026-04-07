@@ -1,5 +1,6 @@
 .vercel/
 .worktrees/
+.superpowers/
 
 # Environment variables
 .env*.local
