@@ -108,6 +108,26 @@ test("plan-from-material returns 200 with injected service", async () => {
   assert.equal(json.data.draftId, "11111111-1111-4111-8111-111111111111")
 })
 
+test("plan-from-material returns structured code when multiple links are provided", async () => {
+  const handler = createPlanFromMaterialPostHandler({
+    getRequestAuth: async () => ({ userId: "u1" }),
+    getRequestAuthHelpText: () => "",
+  })
+
+  const response = await handler(
+    createJsonRequest(
+      "http://localhost/api/learning/plan-from-material",
+      JSON.stringify({
+        links: ["https://web.dev/learn/", "https://nextjs.org/docs"],
+      }),
+    ),
+  )
+
+  assert.equal(response.status, 422)
+  const json = (await response.json()) as { code: string }
+  assert.equal(json.code, "MATERIAL_SINGLE_LINK_ONLY")
+})
+
 test("plan-draft confirm returns 400 for invalid draft id", async () => {
   const handler = createPlanDraftConfirmPostHandler({
     getRequestAuth: async () => ({ userId: "u1" }),

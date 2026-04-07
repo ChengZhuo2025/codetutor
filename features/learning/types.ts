@@ -67,6 +67,7 @@ export type LearningPlanSummary = {
   selectionModeLabel: string
   selectionMode: "self_directed" | "preset_training"
   pathName?: string
+  hasMaterialPlan?: boolean
 }
 
 export type LearningSupportMode = "hint" | "breakdown" | "minimal_example"

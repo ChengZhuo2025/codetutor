@@ -12,7 +12,9 @@ export class MaterialPlanError extends Error {
   }
 }
 
-export function materialUnsupportedDomain(message = "当前链接域名不在首期支持范围内。") {
+export function materialUnsupportedDomain(
+  message = "当前仅支持 developer.mozilla.org、nextjs.org、web.dev 的教程链接。",
+) {
   return new MaterialPlanError("MATERIAL_UNSUPPORTED_DOMAIN", message, 422)
 }
 

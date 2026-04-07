@@ -43,6 +43,9 @@ import {
 } from "@/lib/learning/structured-message"
 import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DIALOG_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
 
 type ConnectionState = "online" | "offline" | "reconnecting"
 
@@ -832,9 +835,23 @@ async function consumeSSE(
 type LearnChatProps = {
   learningData: LearningCurrentSessionResponseData
   onRequestRefresh: () => void
+  onOpenMaterialPlanDialog?: (links?: string[]) => void
 }
 
-export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
+function extractHttpLinks(text: string): string[] {
+  const matches = text.match(/https?:\/\/[^\s)]+/g) ?? []
+  const normalized = matches
+    .map((raw) => raw.replace(/[),.;!?]+$/, "").trim())
+    .filter(Boolean)
+  // preserve order + unique; planner flow enforces single link
+  return Array.from(new Set(normalized))
+}
+
+export function LearnChat({
+  learningData,
+  onRequestRefresh,
+  onOpenMaterialPlanDialog,
+}: LearnChatProps) {
   const { trackEvent } = useAppEventTracker()
   const [messages, setMessages] = useState<Message[]>(learningData.messages)
   const [conversationId, setConversationId] = useState<string | null>(
@@ -858,6 +875,8 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
   const [pendingAssistantMessageId, setPendingAssistantMessageId] = useState<number | null>(
     null,
   )
+  const [linkChoiceOpen, setLinkChoiceOpen] = useState(false)
+  const [linkChoiceLinks, setLinkChoiceLinks] = useState<string[]>([])
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -1402,6 +1421,20 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
       return
     }
 
+    const planSummary = learningData.planSummary
+    if (
+      planSummary.selectionMode === "self_directed"
+      && draft.text
+      && !draft.attachment
+    ) {
+      const links = extractHttpLinks(draft.text)
+      if (links.length > 0) {
+        setLinkChoiceLinks(links)
+        setLinkChoiceOpen(true)
+        return
+      }
+    }
+
     await dispatchDraft(draft)
   }
 
@@ -1546,28 +1579,89 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="contents">
+      <Dialog open={linkChoiceOpen} onOpenChange={setLinkChoiceOpen}>
+        <DialogContent
+          className={cn(
+            DIALOG_DARK_PANEL_CLASS,
+            "max-h-[75vh] overflow-y-auto rounded-2xl border-white/20 ring-1 ring-white/10 p-0 sm:max-w-[520px]",
+          )}
+        >
+          <div className="border-b border-white/10 px-5 pt-5 pb-4">
+            <DialogHeader className="text-left">
+              <DialogTitle className="text-base">检测到教程链接</DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">
+                你想用这些链接生成学习计划，还是继续发给 AI 导师聊一聊？
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="space-y-4 px-5 py-4">
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-muted-foreground">
+              {linkChoiceLinks.map((link) => (
+                <div key={link} className="truncate">
+                  {link}
+                </div>
+              ))}
+            </div>
+            {linkChoiceLinks.length > 1 ? (
+              <p className="rounded-xl border border-gold/25 bg-gold-dim px-3 py-2 text-xs text-gold">
+                当前一次学习计划仅支持 1 条教程链接。请删减为单条后再生成计划，或继续把消息发给导师讨论。
+              </p>
+            ) : null}
+
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-[10px] border-white/10 bg-transparent hover:bg-white/5"
+                disabled={linkChoiceLinks.length !== 1}
+                onClick={() => {
+                  setLinkChoiceOpen(false)
+                  onOpenMaterialPlanDialog?.(linkChoiceLinks)
+                }}
+              >
+                生成学习计划
+              </Button>
+              <Button
+                type="button"
+                className="rounded-[10px]"
+                onClick={async () => {
+                  setLinkChoiceOpen(false)
+                  await dispatchDraft({ text: input.trim(), attachment: null })
+                }}
+              >
+                继续发给导师
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-border/80 bg-surface-1/80 px-4 py-4 backdrop-blur-sm sm:px-6">
         <div className="relative">
           <div className="min-w-0">
-            <div className="mb-1.5 flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-brand/20 bg-brand-dim px-2 py-1 text-[11px] font-semibold text-brand">
-                当前任务
-              </span>
-              {connectionState === "offline" && (
-                <span className="rounded-full border border-destructive/20 bg-destructive/10 px-2 py-1 text-[11px] font-semibold text-destructive">
-                  连接中断
+            <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-brand/20 bg-brand-dim px-2 py-0.5 text-[11px] font-semibold text-brand">
+                  当前任务
                 </span>
-              )}
-              {connectionState === "reconnecting" && (
-                <span className="rounded-full border border-chart-3/20 bg-chart-3/10 px-2 py-1 text-[11px] font-semibold text-chart-3">
-                  正在重连
-                </span>
-              )}
+                {connectionState === "offline" && (
+                  <span className="rounded-full border border-destructive/20 bg-destructive/10 px-2 py-1 text-[11px] font-semibold text-destructive">
+                    连接中断
+                  </span>
+                )}
+                {connectionState === "reconnecting" && (
+                  <span className="rounded-full border border-chart-3/20 bg-chart-3/10 px-2 py-1 text-[11px] font-semibold text-chart-3">
+                    正在重连
+                  </span>
+                )}
+              </div>
+              <h2 className="truncate text-lg font-semibold">
+                {mission?.title ?? "当前任务信息暂时不可用"}
+              </h2>
             </div>
-            <h2 className="truncate text-lg font-semibold">
-              {mission?.title ?? "当前任务信息暂时不可用"}
-            </h2>
             <p className="text-xs text-muted-foreground">
               {mission
                 ? `${mission.tool} · ${mission.stageLabel}`
@@ -1577,23 +1671,23 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
               <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
                 本轮学习计划
               </span>
-              <span className="rounded-full border border-border/60 bg-surface-2 px-2.5 py-1 text-xs text-bold text-foreground">
+              <span className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs text-bold text-foreground">
                 {planSummary.selectedToolName}
               </span>
-              <span className="rounded-full border border-border/60 bg-surface-2 px-2.5 py-1 text-xs text-foreground">
+              <span className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs text-foreground">
                 {planSummary.learningLevelLabel}
               </span>
-              <span className="rounded-full border border-border/60 bg-surface-2 px-2.5 py-1 text-xs text-foreground">
+              <span className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs text-foreground">
                 {planSummary.selectionModeLabel}
               </span>
-              <span className="rounded-full border border-border/60 bg-surface-2 px-2.5 py-1 text-xs text-foreground">
+              <span className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs text-foreground">
                 {planSummary.pathName ?? "自主学习"}
               </span>
             </div>
           </div>
 
-          <div className="lg:absolute lg:right-0 lg:top-8 lg:mt-0">
-            <button className="flex items-center gap-1 whitespace-nowrap rounded-xl border border-border/60 bg-surface-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground">
+          <div className="lg:absolute lg:right-0 lg:top-3 lg:mt-0">
+            <button className="flex items-center gap-1 whitespace-nowrap rounded-3xl border border-border bg-surface-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground">
               <RefreshCw className="h-3 w-3" />
               重头开始
             </button>
@@ -1645,7 +1739,7 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
           ) : null}
 
           {mission ? (
-            <div className="rounded-[1.9rem] border border-border/60 bg-surface-2/95 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
+            <div className="rounded-[1.9rem] border border-border bg-surface-2/95 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
               <div className="flex flex-col gap-5">
                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/65">
                   <Target className="h-3.5 w-3.5 text-brand" />
@@ -1702,7 +1796,7 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
               </div>
             </div>
           ) : (
-            <div className="rounded-[1.75rem] border border-border/60 bg-surface-2/95 p-4">
+            <div className="rounded-[1.75rem] border border-border bg-surface-2/95 p-4">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
                 <AlertCircle className="h-4 w-4 text-destructive" />
                 未获取到任务信息
@@ -1957,11 +2051,27 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
                   {action.label}
                 </button>
               ))}
+              {learningData.planSummary.selectionMode === "self_directed"
+              && !learningData.planSummary.hasMaterialPlan ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenMaterialPlanDialog?.([])
+                  }}
+                  disabled={isTyping || connectionState !== "online"}
+                  className={cn(
+                    "rounded-full border px-3.5 py-1 text-[12px] transition-colors disabled:opacity-50",
+                    "border-brand/40 bg-brand-dim text-brand hover:border-brand/55 hover:bg-brand/18",
+                  )}
+                >
+                  生成学习计划
+                </button>
+              ) : null}
             </div>
           </div>
 
           {showSupportOptions ? (
-            <div className="mb-3 rounded-[1.5rem] border border-gold/20 bg-gold-dim p-4">
+            <div className="mb-3 rounded-3xl border border-gold/20 bg-gold-dim p-4">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <Lightbulb className="h-4 w-4 text-gold" />
@@ -1996,7 +2106,7 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
           ) : null}
 
           {previewAttachment ? (
-            <div className="relative mb-3 inline-block overflow-hidden rounded-2xl border border-border/60 bg-surface-2">
+            <div className="relative mb-3 inline-block overflow-hidden rounded-2xl border border-border bg-surface-2">
               <Image
                 src={previewAttachment.url}
                 alt={previewAttachment.name}
@@ -2018,7 +2128,7 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
             </div>
           ) : null}
 
-          <div className="rounded-[1.6rem] border border-border/60 bg-surface-2 px-3 py-2.5 transition-colors focus-within:border-brand/60 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.10)]">
+          <div className="rounded-4xl border border-border bg-surface-2 px-2.5 py-2 transition-colors focus-within:border-brand/60 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.10)]">
             <div
               className={cn(
                 "flex",
@@ -2073,7 +2183,7 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
                 onClick={handleSend}
                 disabled={(!input.trim() && !previewAttachment) || isTyping}
                 className={cn(
-                  "ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all",
+                  "ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl transition-all",
                   (input.trim() || previewAttachment) && !isTyping
                     ? "bg-brand text-brand-foreground hover:bg-brand/90"
                     : "bg-surface-4 text-muted-foreground/40",
@@ -2090,6 +2200,7 @@ export function LearnChat({ learningData, onRequestRefresh }: LearnChatProps) {
 
           <p className="mt-2 text-center text-xs text-muted-foreground/55">{inputHint}</p>
         </div>
+      </div>
       </div>
     </div>
   )

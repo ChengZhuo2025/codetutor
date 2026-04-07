@@ -72,7 +72,11 @@ export function createPlanFromMaterialPostHandler(dependencies: {
       const parsed = parsePlanFromMaterialBody(rawBody.data)
 
       if (!parsed.ok) {
-        return jsonError(parsed.code, parsed.message, 400)
+        return jsonError(
+          parsed.code,
+          parsed.message,
+          parsed.code.startsWith("MATERIAL_") ? 422 : 400,
+        )
       }
 
       const result = await runCreate(auth.userId, {

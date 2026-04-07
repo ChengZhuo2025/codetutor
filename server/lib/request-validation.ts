@@ -67,7 +67,7 @@ type ValidationSuccess<T> = {
 
 type ValidationFailure = {
   ok: false
-  code: "BAD_REQUEST" | "VALIDATION_FAILED"
+  code: string
   message: string
 }
 
@@ -1882,20 +1882,23 @@ export function parseRequiredRouteId(
   return ok(normalized)
 }
 
-const PLAN_FROM_MATERIAL_MAX_LINKS = 5
+const PLAN_FROM_MATERIAL_MAX_LINKS = 1
+const PLAN_FROM_MATERIAL_ERROR_CODES = {
+  linksNotArray: "MATERIAL_LINKS_NOT_ARRAY",
+  linksMustBeSingle: "MATERIAL_SINGLE_LINK_ONLY",
+  linkNotString: "MATERIAL_LINK_NOT_STRING",
+  linkEmpty: "MATERIAL_LINK_EMPTY",
+  linkInvalidUrl: "MATERIAL_LINK_INVALID_URL",
+} as const
 
 function parseMaterialLinkArray(
   links: unknown,
   fieldLabel: string,
 ): ValidationResult<string[]> {
   if (!Array.isArray(links)) {
-    return fail("BAD_REQUEST", `${fieldLabel} 必须是字符串数组。`)
-  }
-
-  if (links.length === 0 || links.length > PLAN_FROM_MATERIAL_MAX_LINKS) {
     return fail(
-      "VALIDATION_FAILED",
-      `${fieldLabel} 数量必须在 1 到 ${PLAN_FROM_MATERIAL_MAX_LINKS} 之间。`,
+      PLAN_FROM_MATERIAL_ERROR_CODES.linksNotArray,
+      `${fieldLabel} 必须是字符串数组。`,
     )
   }
 
@@ -1903,23 +1906,40 @@ function parseMaterialLinkArray(
 
   for (const item of links) {
     if (typeof item !== "string") {
-      return fail("VALIDATION_FAILED", `${fieldLabel} 仅支持字符串 URL。`)
+      return fail(
+        PLAN_FROM_MATERIAL_ERROR_CODES.linkNotString,
+        `${fieldLabel} 仅支持字符串 URL。`,
+      )
     }
 
     const trimmed = item.trim()
 
     if (!trimmed) {
-      return fail("VALIDATION_FAILED", `${fieldLabel} 不能为空字符串。`)
+      return fail(
+        PLAN_FROM_MATERIAL_ERROR_CODES.linkEmpty,
+        `${fieldLabel} 不能为空字符串。`,
+      )
     }
 
     if (!isValidUrl(trimmed)) {
-      return fail("VALIDATION_FAILED", `${fieldLabel} 含非法 URL。`)
+      return fail(
+        PLAN_FROM_MATERIAL_ERROR_CODES.linkInvalidUrl,
+        `${fieldLabel} 含非法 URL。`,
+      )
     }
 
     normalized.push(trimmed)
   }
 
-  return ok([...new Set(normalized)])
+  const deduped = [...new Set(normalized)]
+  if (deduped.length !== PLAN_FROM_MATERIAL_MAX_LINKS) {
+    return fail(
+      PLAN_FROM_MATERIAL_ERROR_CODES.linksMustBeSingle,
+      `${fieldLabel} 仅支持 1 条教程链接。`,
+    )
+  }
+
+  return ok(deduped)
 }
 
 export function parsePlanFromMaterialBody(input: unknown): ValidationResult<{

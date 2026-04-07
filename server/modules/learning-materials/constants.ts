@@ -7,7 +7,7 @@ export const MATERIAL_PLAN_ALLOWED_HOSTS = new Set([
   "web.dev",
 ])
 
-export const MATERIAL_PLAN_MAX_LINKS = 5
+export const MATERIAL_PLAN_MAX_LINKS = 1
 export const MATERIAL_PLAN_FETCH_TIMEOUT_MS = 10_000
 export const MATERIAL_PLAN_MAX_TEXT_CHARS = 500_000
 export const MATERIAL_PLAN_MIN_TOTAL_CHARS = 400

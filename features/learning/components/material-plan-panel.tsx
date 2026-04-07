@@ -16,13 +16,17 @@ import { cn } from "@/lib/utils"
 type MaterialPlanPanelProps = {
   onSessionRefresh: () => void
   className?: string
+  defaultLinksText?: string
+  onDone?: () => void
 }
 
 export function MaterialPlanPanel({
   onSessionRefresh,
   className,
+  defaultLinksText,
+  onDone,
 }: MaterialPlanPanelProps) {
-  const [linksText, setLinksText] = useState("")
+  const [linksText, setLinksText] = useState(defaultLinksText ?? "")
   const [userGoal, setUserGoal] = useState("")
   const [weeklyHours, setWeeklyHours] = useState("")
   const [draftId, setDraftId] = useState<string | null>(null)
@@ -31,6 +35,22 @@ export function MaterialPlanPanel({
   )
   const [busy, setBusy] = useState<"generate" | "confirm" | "regenerate" | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const resolveMaterialPlanErrorMessage = (
+    code: string | undefined,
+    fallback: string,
+  ) => {
+    switch (code) {
+      case "MATERIAL_SINGLE_LINK_ONLY":
+        return "一次仅支持 1 条教程链接。请保留最核心的一条后再生成。"
+      case "MATERIAL_LINK_INVALID_URL":
+        return "链接格式不正确，请粘贴完整的 http(s) 教程链接。"
+      case "MATERIAL_UNSUPPORTED_DOMAIN":
+        return "当前仅支持 developer.mozilla.org、nextjs.org、web.dev。"
+      default:
+        return fallback
+    }
+  }
 
   const parseLinks = useCallback(() => {
     return linksText
@@ -44,6 +64,10 @@ export function MaterialPlanPanel({
     const links = parseLinks()
     if (links.length === 0) {
       setError("请至少粘贴一条 http(s) 教程链接（每行一条）。")
+      return
+    }
+    if (links.length > 1) {
+      setError("一次仅支持使用 1 条教程链接生成学习计划。")
       return
     }
 
@@ -70,7 +94,7 @@ export function MaterialPlanPanel({
     setBusy(null)
 
     if (res.code !== "OK" || !res.data) {
-      setError(res.message ?? "生成失败，请稍后重试。")
+      setError(resolveMaterialPlanErrorMessage(res.code, res.message ?? "生成失败，请稍后重试。"))
       return
     }
 
@@ -91,13 +115,14 @@ export function MaterialPlanPanel({
     setBusy(null)
 
     if (res.code !== "OK" || !res.data) {
-      setError(res.message ?? "确认失败。")
+      setError(resolveMaterialPlanErrorMessage(res.code, res.message ?? "确认失败。"))
       return
     }
 
     setDraftId(null)
     setPreview(null)
     onSessionRefresh()
+    onDone?.()
   }
 
   const handleRegenerate = async () => {
@@ -132,7 +157,7 @@ export function MaterialPlanPanel({
     setBusy(null)
 
     if (res.code !== "OK" || !res.data) {
-      setError(res.message ?? "重新生成失败。")
+      setError(resolveMaterialPlanErrorMessage(res.code, res.message ?? "重新生成失败。"))
       return
     }
 
@@ -145,16 +170,16 @@ export function MaterialPlanPanel({
       className={cn("shrink-0", className)}
       eyebrow="自学路径"
       title="用教程链接生成学习计划"
-      description="支持 developer.mozilla.org、nextjs.org、web.dev。确认后会替换当前进行中的自学计划。"
+      description="当前仅支持 developer.mozilla.org、nextjs.org、web.dev。确认后会替换当前进行中的自学计划。"
       bodyClassName="space-y-4"
     >
       <div className="space-y-2">
-        <p className="text-xs font-medium text-muted-foreground">教程链接（每行一条，最多 5 条）</p>
+        <p className="text-xs font-medium text-muted-foreground">教程链接（仅 1 条）</p>
         <Textarea
           value={linksText}
           onChange={(e) => setLinksText(e.target.value)}
-          placeholder={"https://developer.mozilla.org/...\nhttps://nextjs.org/docs/..."}
-          rows={3}
+          placeholder={"https://developer.mozilla.org/..."}
+          rows={2}
           disabled={busy !== null}
           className="min-h-[88px] resize-y font-mono text-sm"
         />
@@ -204,7 +229,7 @@ export function MaterialPlanPanel({
           ) : (
             <Sparkles className="mr-2 size-4" aria-hidden />
           )}
-          生成草稿
+          生成计划预览
         </Button>
         {draftId && preview ? (
           <>
@@ -233,7 +258,7 @@ export function MaterialPlanPanel({
               {busy === "confirm" ? (
                 <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
               ) : null}
-              确认并替换当前计划
+              启用这个计划
             </Button>
           </>
         ) : null}
@@ -243,7 +268,7 @@ export function MaterialPlanPanel({
         <div className="space-y-3 rounded-2xl border border-border/50 bg-surface-1/80 p-4">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              草稿预览
+              计划预览
             </p>
             <h3 className="mt-1 text-base font-semibold text-foreground">{preview.title}</h3>
             <p className="mt-1 text-sm text-muted-foreground">{preview.goal}</p>

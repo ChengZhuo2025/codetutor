@@ -61,6 +61,7 @@ type ActivePathRow = {
   current_task_id: string | null
   last_activity_at: string | null
   template_path_id: string | null
+  metadata: JsonRecord
 }
 
 type TaskRow = {
@@ -199,7 +200,7 @@ async function loadLearningState(userId: string) {
 
   const { data: activePath, error: activePathError } = await supabase
     .from("user_learning_paths")
-    .select("id, tool_id, path_name_snapshot, path_summary_snapshot, learning_level, selection_mode, total_steps, completed_steps, current_task_id, last_activity_at, template_path_id")
+    .select("id, tool_id, path_name_snapshot, path_summary_snapshot, learning_level, selection_mode, total_steps, completed_steps, current_task_id, last_activity_at, template_path_id, metadata")
     .eq("user_id", userId)
     .eq("status", "active")
     .order("updated_at", { ascending: false })
@@ -549,6 +550,10 @@ export async function getLearningCurrentSessionData(
       selectionModeLabel: getSelectionModeLabel(state.activePath.selection_mode),
       selectionMode: state.activePath.selection_mode,
       pathName: state.activePath.path_name_snapshot,
+      hasMaterialPlan:
+        state.activePath.selection_mode === "self_directed"
+        && typeof (state.activePath.metadata as JsonRecord | undefined)?.seedSource === "string"
+        && (state.activePath.metadata as JsonRecord).seedSource === "plan_draft_confirmed",
     },
     resume: {
       title: "继续上次学习",

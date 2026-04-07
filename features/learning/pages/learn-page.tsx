@@ -8,7 +8,7 @@ import { StatePanel } from "@/components/ui/state-panel"
 import { ROUTES } from "@/constants/routes"
 import { WORKSPACE_ASIDE_WIDTH_CLASS } from "@/constants/workspace-layout"
 import { LearnChat } from "@/features/learning/components/chat"
-import { MaterialPlanPanel } from "@/features/learning/components/material-plan-panel"
+import { MaterialPlanDialog } from "@/features/learning/components/material-plan-dialog"
 import { LearnRightPanel } from "@/features/learning/components/right-panel"
 import { resolveAuthenticatedRedirectTo } from "@/lib/auth/client-session"
 import { apiClient } from "@/lib/api/client"
@@ -18,6 +18,8 @@ import type { ApiRequestState } from "@/types/api"
 export function LearnPage() {
   const router = useRouter()
   const [refreshNonce, setRefreshNonce] = useState(0)
+  const [materialDialogOpen, setMaterialDialogOpen] = useState(false)
+  const [materialDialogInitialLinks, setMaterialDialogInitialLinks] = useState<string[]>([])
   const [sessionState, setSessionState] =
     useState<ApiRequestState<LearningCurrentSessionResponseData>>({
       status: "loading",
@@ -85,6 +87,21 @@ export function LearnPage() {
     }
   }, [refreshNonce, router])
 
+  useEffect(() => {
+    if (sessionState.status !== "success") return
+    if (sessionState.data.planSummary.selectionMode !== "self_directed") return
+    if (sessionState.data.planSummary.hasMaterialPlan) return
+    if (typeof window === "undefined") return
+
+    const userId = sessionState.data.profile.userId
+    const pathId = sessionState.data.path.id
+    const key = `learn:self_directed_plan_prompted:${userId}:${pathId}`
+    if (window.sessionStorage.getItem(key) === "1") return
+
+    window.sessionStorage.setItem(key, "1")
+    window.setTimeout(() => setMaterialDialogOpen(true), 0)
+  }, [sessionState])
+
   return (
     <AppShell
       mobileTitle="学习工作台"
@@ -112,11 +129,13 @@ export function LearnPage() {
       {sessionState.status === "success" ? (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden">
           {sessionState.data.planSummary.selectionMode === "self_directed" ? (
-            <MaterialPlanPanel
-              className="mx-4 shrink-0 sm:mx-6"
+            <MaterialPlanDialog
+              open={materialDialogOpen}
+              onOpenChange={setMaterialDialogOpen}
               onSessionRefresh={() => {
                 setRefreshNonce((current) => current + 1)
               }}
+              initialLinks={materialDialogInitialLinks}
             />
           ) : null}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -124,6 +143,10 @@ export function LearnPage() {
               learningData={sessionState.data}
               onRequestRefresh={() => {
                 setRefreshNonce((current) => current + 1)
+              }}
+              onOpenMaterialPlanDialog={(links) => {
+                setMaterialDialogInitialLinks(links ?? [])
+                setMaterialDialogOpen(true)
               }}
             />
           </div>
