@@ -106,7 +106,12 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn(DIALOG_DARK_PANEL_CLASS, "max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-[480px]")}>
+      <DialogContent
+        className={cn(
+          DIALOG_DARK_PANEL_CLASS,
+          "max-h-[90vh] overflow-y-auto rounded-2xl border-white/20 ring-1 ring-white/10 sm:max-w-[480px]",
+        )}
+      >
         <div className="overflow-hidden rounded-2xl">
           <div className="border-b border-white/10 px-5 py-4">
             <DialogHeader>
@@ -262,16 +267,21 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
             ) : null}
           </div>
 
-          <div className="flex gap-3 border-t border-white/10 px-5 py-4">
+          <div className="flex w-full flex-row items-stretch gap-3 border-t border-white/10 px-5 py-4">
             <Button
               variant="outline"
               size="lg"
               onClick={() => onOpenChange(false)}
-              className="flex-1 rounded-[10px] border-white/10 bg-transparent text-foreground hover:bg-white/5 hover:text-white"
+              className="min-w-0 flex-1 rounded-[10px] border-white/10 bg-transparent text-foreground hover:bg-white/5 hover:text-white"
             >
               取消
             </Button>
-            <Button size="lg" onClick={handleSave} disabled={isLoading || isSaving} className="flex-1 rounded-[10px]">
+            <Button
+              size="lg"
+              onClick={handleSave}
+              disabled={isLoading || isSaving}
+              className="min-w-0 flex-1 rounded-[10px]"
+            >
               {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

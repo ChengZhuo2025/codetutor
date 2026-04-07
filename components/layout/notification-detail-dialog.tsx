@@ -11,8 +11,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { DIALOG_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import type { NotificationInAppItem } from "@/lib/api/contracts/notifications"
+import { cn } from "@/lib/utils"
 
 type NotificationDetailDialogProps = {
   notification: NotificationInAppItem | null
@@ -83,13 +85,20 @@ export function NotificationDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader className="text-left">
-          <DialogTitle className="text-base">{notification.title}</DialogTitle>
-          <DialogDescription className="sr-only">通知详情</DialogDescription>
-        </DialogHeader>
+      <DialogContent
+        className={cn(
+          DIALOG_DARK_PANEL_CLASS,
+          "max-h-[90vh] overflow-y-auto rounded-2xl border-white/20 p-0 ring-1 ring-white/10 sm:max-w-md",
+        )}
+      >
+        <div className="border-b border-white/10 px-5 pt-5 pb-4">
+          <DialogHeader className="text-left">
+            <DialogTitle className="text-base">{notification.title}</DialogTitle>
+            <DialogDescription className="sr-only">通知详情</DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <div className="space-y-4 pt-2">
+        <div className="space-y-4 px-5 py-4">
           <p className="text-sm leading-relaxed text-muted-foreground">
             {notification.content}
           </p>
@@ -98,14 +107,14 @@ export function NotificationDetailDialog({
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 pt-2">
+        <div className="flex w-full flex-row flex-nowrap items-stretch gap-2 border-t border-white/10 px-5 py-4 sm:gap-3">
           {notification.actionHref && notification.actionLabel ? (
             <Button
               variant="default"
               onClick={handlePrimaryAction}
-              className="w-full gap-2"
+              className="min-w-0 flex-1 gap-2 rounded-[10px]"
             >
-              <ExternalLink className="h-4 w-4" />
+              <ExternalLink className="h-4 w-4 shrink-0" />
               {notification.actionLabel}
             </Button>
           ) : null}
@@ -114,12 +123,15 @@ export function NotificationDetailDialog({
             variant="outline"
             onClick={handleDismiss}
             disabled={dismissing}
-            className="w-full gap-2"
+            className={cn(
+              "min-w-0 gap-2 rounded-[10px] border-white/10 bg-transparent hover:bg-white/5",
+              notification.actionHref && notification.actionLabel ? "flex-1" : "w-full",
+            )}
           >
             {dismissing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
             ) : (
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4 shrink-0" />
             )}
             忽略
           </Button>

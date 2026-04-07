@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import {
   Bell,
   ChevronDown,
@@ -11,47 +11,47 @@ import {
   Crown,
   Flame,
   Star,
-} from "lucide-react"
-import { APP_NAME } from "@/constants/app"
-import { ROUTES } from "@/constants/routes"
-import { useAppToast } from "@/components/app-feedback/app-toast-provider"
-import { NotificationDetailDialog } from "@/components/layout/notification-detail-dialog"
-import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog"
-import { SubscriptionDetailDialog } from "@/components/layout/subscription-detail-dialog"
-import { SettingsPopover } from "@/components/layout/settings-popover"
-import type { ProfileMeResponseData } from "@/lib/api/contracts/auth"
-import type { NotificationInAppItem } from "@/lib/api/contracts/notifications"
-import { useWorkspaceSidebarData } from "@/providers/workspace-sidebar-provider"
-import { cn } from "@/lib/utils"
-import type { DashboardNavItem } from "@/types/navigation"
-import type { SubscriptionSnapshot } from "@/types/profile"
+} from "lucide-react";
+import { APP_NAME } from "@/constants/app";
+import { ROUTES } from "@/constants/routes";
+import { useAppToast } from "@/components/app-feedback/app-toast-provider";
+import { NotificationDetailDialog } from "@/components/layout/notification-detail-dialog";
+import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog";
+import { SubscriptionDetailDialog } from "@/components/layout/subscription-detail-dialog";
+import { SettingsPopover } from "@/components/layout/settings-popover";
+import type { ProfileMeResponseData } from "@/lib/api/contracts/auth";
+import type { NotificationInAppItem } from "@/lib/api/contracts/notifications";
+import { useWorkspaceSidebarData } from "@/providers/workspace-sidebar-provider";
+import { cn } from "@/lib/utils";
+import type { DashboardNavItem } from "@/types/navigation";
+import type { SubscriptionSnapshot } from "@/types/profile";
 
 type DashboardSidebarProps = {
-  items: DashboardNavItem[]
-  widthClass?: string
-  showSettings?: boolean
-  className?: string
-  children?: React.ReactNode
-  footerContent?: React.ReactNode
-}
+  items: DashboardNavItem[];
+  widthClass?: string;
+  showSettings?: boolean;
+  className?: string;
+  children?: React.ReactNode;
+  footerContent?: React.ReactNode;
+};
 
 type NotificationPanelState = {
-  expanded: boolean
-  selectedNotification: NotificationInAppItem | null
-  dialogOpen: boolean
-}
+  expanded: boolean;
+  selectedNotification: NotificationInAppItem | null;
+  dialogOpen: boolean;
+};
 
 const SUBSCRIPTION_PLACEHOLDER: SubscriptionSnapshot = {
   planName: "个人版",
   planPriceLabel: "¥39/月",
   billingCycleLabel: "按月订阅",
-  expiresAt: "待接入",
+  expiresAt: "无期限",
   remainingDays: 0,
   quotaLabel: "支付与订阅接口待接入",
   renewalHint: "当前为产品原型阶段，订阅信息仍使用静态占位。",
   primaryActionLabel: "升级套餐",
   secondaryActionLabel: "立即续费",
-}
+};
 
 export function DashboardSidebar({
   items,
@@ -61,7 +61,7 @@ export function DashboardSidebar({
   children,
   footerContent,
 }: DashboardSidebarProps) {
-  const toast = useAppToast()
+  const toast = useAppToast();
   const {
     profile,
     recentPracticeRounds,
@@ -71,58 +71,58 @@ export function DashboardSidebar({
     updateProfile,
     markNotificationRead,
     dismissNotification,
-  } = useWorkspaceSidebarData()
-  const [profileOpen, setProfileOpen] = useState(false)
-  const [profileFeedbackMessage, setProfileFeedbackMessage] = useState<string | null>(null)
+  } = useWorkspaceSidebarData();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileFeedbackMessage, setProfileFeedbackMessage] = useState<
+    string | null
+  >(null);
 
   const [notifPanel, setNotifPanel] = useState<NotificationPanelState>({
     expanded: false,
     selectedNotification: null,
     dialogOpen: false,
-  })
+  });
 
   const handleProfileSaved = (nextProfile: ProfileMeResponseData) => {
-    updateProfile(nextProfile)
-    setProfileFeedbackMessage("个人资料已保存")
-  }
+    updateProfile(nextProfile);
+    setProfileFeedbackMessage("个人资料已保存");
+  };
 
   useEffect(() => {
     if (!profileFeedbackMessage) {
-      return
+      return;
     }
 
     const timeoutId = window.setTimeout(() => {
-      setProfileFeedbackMessage(null)
-    }, 3000)
+      setProfileFeedbackMessage(null);
+    }, 3000);
 
     return () => {
-      window.clearTimeout(timeoutId)
-    }
-  }, [profileFeedbackMessage])
+      window.clearTimeout(timeoutId);
+    };
+  }, [profileFeedbackMessage]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
-      return
+      return;
     }
 
     for (const item of notifications) {
       if (item.status !== "unread") {
-        continue
+        continue;
       }
 
-      const sessionKey = `workspace-notification-toast:${item.id}`
+      const sessionKey = `workspace-notification-toast:${item.id}`;
       if (window.sessionStorage.getItem(sessionKey) === "1") {
-        continue
+        continue;
       }
 
-      toast.info(item.title, item.content)
-      window.sessionStorage.setItem(sessionKey, "1")
+      toast.info(item.title, item.content);
+      window.sessionStorage.setItem(sessionKey, "1");
     }
-  }, [notifications, toast])
+  }, [notifications, toast]);
 
-  const displayProfile = hasLoaded
-    ? profile
-    : null
+  const displayProfile = hasLoaded ? profile : null;
 
   const fallbackProfile = {
     userId: "loading",
@@ -142,12 +142,15 @@ export function DashboardSidebar({
     streakDays: 0,
     completedTaskCount: 0,
     lastLearningAt: new Date(0).toISOString(),
-  }
+  };
 
-  const resolvedProfile = displayProfile ?? fallbackProfile
-  const subscription = SUBSCRIPTION_PLACEHOLDER
-  const progressPercent = Math.min(Math.round((resolvedProfile.currentScore / 1000) * 100), 100)
-  const visiblePracticeRounds = recentPracticeRounds.slice(0, 5)
+  const resolvedProfile = displayProfile ?? fallbackProfile;
+  const subscription = SUBSCRIPTION_PLACEHOLDER;
+  const progressPercent = Math.min(
+    Math.round((resolvedProfile.currentScore / 1000) * 100),
+    100,
+  );
+  const visiblePracticeRounds = recentPracticeRounds.slice(0, 5);
 
   return (
     <aside
@@ -209,26 +212,39 @@ export function DashboardSidebar({
               className="block rounded-xl transition-colors hover:bg-background/40 -mx-1 px-1 py-1"
             >
               <div className="mb-2 flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">{resolvedProfile.currentScore} / 1000 XP</span>
-                <span className="text-muted-foreground">{progressPercent}%</span>
+                <span className="text-muted-foreground">
+                  {resolvedProfile.currentScore} / 1000 XP
+                </span>
+                <span className="text-muted-foreground">
+                  {progressPercent}%
+                </span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-4">
-                <div className="h-full rounded-full bg-brand" style={{ width: `${progressPercent}%` }} />
+                <div
+                  className="h-full rounded-full bg-brand"
+                  style={{ width: `${progressPercent}%` }}
+                />
               </div>
 
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-background/60 px-3 py-2.5">
+                <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-background px-3 py-2.5">
                   <Flame className="h-4 w-4 text-gold" />
                   <div>
-                    <p className="text-[11px] text-muted-foreground">连续学习</p>
-                    <p className="text-sm font-bold text-gold">{resolvedProfile.streakDays} 天</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      连续学习
+                    </p>
+                    <p className="text-sm font-bold text-gold">
+                      {resolvedProfile.streakDays} 天
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-background/60 px-3 py-2.5">
+                <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-background px-3 py-2.5">
                   <Star className="h-4 w-4 text-brand" />
                   <div>
                     <p className="text-[11px] text-muted-foreground">已完成</p>
-                    <p className="text-sm font-bold">{resolvedProfile.completedTaskCount} 关</p>
+                    <p className="text-sm font-bold">
+                      {resolvedProfile.completedTaskCount} 关
+                    </p>
                   </div>
                 </div>
               </div>
@@ -259,7 +275,7 @@ export function DashboardSidebar({
 
           <nav className="space-y-1 rounded-[24px] border border-border/60 bg-surface-2/80 p-2">
             {items.map((item) => {
-              const Icon = item.icon
+              const Icon = item.icon;
 
               return (
                 <Link
@@ -275,52 +291,64 @@ export function DashboardSidebar({
                   <Icon className="h-4 w-4" />
                   {item.label}
                 </Link>
-              )
+              );
             })}
           </nav>
 
           {/* 学习提醒折叠卡片 */}
-          <div className="rounded-[24px] border border-border/60 bg-surface-2/80 overflow-hidden">
+          <div className="relative rounded-[24px] border border-border/60 bg-surface-2/80 overflow-hidden">
             {/* 折叠头部：可点击切换展开状态 */}
             <button
               type="button"
-              onClick={() => setNotifPanel((p) => ({ ...p, expanded: !p.expanded }))}
-              className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-background/40"
+              onClick={() =>
+                setNotifPanel((p) => ({ ...p, expanded: !p.expanded }))
+              }
+              className="flex w-full items-center justify-between gap-3 p-3.5 text-left transition-colors hover:bg-background/40"
             >
               <div className="flex items-center gap-2.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-brand/20 bg-brand/10 text-brand">
                   <Bell className="h-4 w-4" />
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">学习提醒</p>
-                  <p className="text-[11px] text-muted-foreground">站内提醒与关键进度节点</p>
+                <div className="flex items-center gap-2.5">
+                  <p className="text-sm font-semibold text-foreground">
+                    学习提醒
+                  </p>
+                  <p
+                    className={cn(
+                      "rounded-full border px-2 py-0.5 text-[10px]",
+                      unreadNotificationCount > 0
+                        ? "border-brand/45 bg-brand/12 font-medium text-brand shadow-sm shadow-brand/20"
+                        : "border-border/80 bg-background/60 text-muted-foreground",
+                    )}
+                  >
+                    {unreadNotificationCount > 0
+                      ? `${unreadNotificationCount} 条未读`
+                      : "已读完"}
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="rounded-full border border-border/60 bg-background/60 px-2 py-0.5 text-[11px] text-muted-foreground">
-                  {unreadNotificationCount > 0 ? `${unreadNotificationCount} 条未读` : "已读完"}
-                </span>
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 text-muted-foreground transition-transform duration-200",
-                    notifPanel.expanded && "rotate-180",
-                  )}
-                />
-              </div>
+              <ChevronDown
+                className={cn(
+                  "h-4.5 w-4.5 text-muted-foreground transition-transform duration-200",
+                  notifPanel.expanded && "rotate-180",
+                )}
+              />
             </button>
 
             {/* 折叠内容 */}
             <div
               className={cn(
                 "overflow-hidden transition-all duration-300 ease-in-out",
-                notifPanel.expanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
+                notifPanel.expanded
+                  ? "max-h-96 opacity-100"
+                  : "max-h-0 opacity-0",
               )}
             >
-              <div className="border-t border-border/40">
+              <div className="border-t border-border/80">
                 {notifications.length > 0 ? (
                   <div className="divide-y divide-border/30">
                     {notifications.map((item) => {
-                      const isUnread = item.status === "unread"
+                      const isUnread = item.status === "unread";
                       return (
                         <button
                           key={item.id}
@@ -332,32 +360,40 @@ export function DashboardSidebar({
                               dialogOpen: true,
                             }))
                           }
-                          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-background/50 active:bg-background/70"
+                          className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-background/50 active:bg-background/70"
                         >
                           <div className="flex items-center gap-3 min-w-0 flex-1">
                             <div
                               className={cn(
                                 "h-1.5 w-1.5 shrink-0 rounded-full",
-                                isUnread ? "bg-brand" : "bg-muted-foreground/30",
+                                isUnread
+                                  ? "bg-brand"
+                                  : "bg-muted-foreground/30",
                               )}
                             />
-                            <span className={cn(
-                              "truncate text-sm",
-                              isUnread ? "font-medium text-foreground" : "text-muted-foreground",
-                            )}>
+                            <span
+                              className={cn(
+                                "truncate text-sm",
+                                isUnread
+                                  ? "font-medium text-foreground"
+                                  : "text-muted-foreground",
+                              )}
+                            >
                               {item.title}
                             </span>
                           </div>
-                          <span className={cn(
-                            "shrink-0 rounded-full border px-2 py-0.5 text-[10px]",
-                            isUnread
-                              ? "border-brand/30 bg-brand/10 text-brand"
-                              : "border-border/50 bg-background/40 text-muted-foreground",
-                          )}>
+                          <span
+                            className={cn(
+                              "shrink-0 rounded-full border px-2 py-0.5 text-[10px]",
+                              isUnread
+                                ? "border-brand/30 bg-brand/10 text-brand"
+                                : "border-border/80 bg-background/40 text-muted-foreground",
+                            )}
+                          >
                             {isUnread ? "未读" : "已读"}
                           </span>
                         </button>
-                      )
+                      );
                     })}
                   </div>
                 ) : (
@@ -438,5 +474,5 @@ export function DashboardSidebar({
         </div>
       )}
     </aside>
-  )
+  );
 }
