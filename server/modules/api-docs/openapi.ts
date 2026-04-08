@@ -3501,7 +3501,7 @@ registry.registerPath({
   path: "/api/admin/ai/models",
   operationId: "getAdminAIModelList",
   tags: ["admin-ai"],
-  summary: "Model 列表",
+  summary: "Model 列表（可选 query.modelId 读取单条详情）",
   security: [],
   request: {
     query: adminAIListQuerySchema,
@@ -3542,6 +3542,40 @@ registry.registerPath({
       "Model 创建成功",
       successExamples.adminAIModelDetail,
       "Model 创建成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/ai/models",
+  operationId: "patchAdminAIModelByQuery",
+  tags: ["admin-ai"],
+  summary: "更新 Model（query.modelId 指定目标，与 PATCH /models/{modelId} 等价）",
+  security: [],
+  request: {
+    query: z
+      .object({
+        modelId: z.string().min(1),
+      })
+      .openapi("AdminAIModelPatchByQuery"),
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIModelUpsertRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIModelDetailResponseDataSchema,
+      "AdminAIModelPatchByQueryResponse",
+      "Model 已更新",
+      successExamples.adminAIModelDetail,
+      "Model 已更新",
     ),
     ...commonErrorResponses(["400", "403", "404", "409", "500"]),
   },

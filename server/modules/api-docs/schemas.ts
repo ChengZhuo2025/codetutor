@@ -1877,6 +1877,8 @@ export const adminAIListQuerySchema = z
     status: adminAIActiveStatusOptionSchema.optional(),
     page: paginationPositiveIntSchema.optional(),
     limit: paginationPositiveIntSchema.optional(),
+    /** 若提供则返回单条 Model 详情（与 GET /api/admin/ai/models/{modelId} 等价），勿与列表筛选参数混用。 */
+    modelId: z.string().optional(),
   })
   .openapi("AdminAIListQuery")
 

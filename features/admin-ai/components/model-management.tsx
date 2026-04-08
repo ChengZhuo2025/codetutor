@@ -16,7 +16,7 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
-import { ADMIN_ROUTES } from "@/constants/routes"
+import { adminAiModelPageDetailUrl } from "@/features/admin-ai/lib/model-admin-urls"
 import { formatDateTime } from "@/features/admin-ai/lib/view-model"
 import { ModelFormSheet } from "./model-form-sheet"
 import { ActiveStateBadge, ListFilterCard, ListPageHeader } from "./shared"
@@ -197,7 +197,7 @@ export function ModelManagement() {
                           <td className="px-4 py-4 align-top">
                             <div className="flex flex-wrap items-center justify-end gap-2">
                               <Button type="button" variant="outline" size="sm" className="h-8 px-2.5" asChild>
-                                <Link href={`${ADMIN_ROUTES.ai}/models/${item.modelId}`}>详情</Link>
+                                <Link href={adminAiModelPageDetailUrl(item.modelId)}>详情</Link>
                               </Button>
                               <Button
                                 type="button"
@@ -252,7 +252,7 @@ export function ModelManagement() {
         onSaved={async (detail: AdminAIModelDetailResponseData) => {
           await fetchList()
           if (!editingId) {
-            router.push(`${ADMIN_ROUTES.ai}/models/${detail.model.modelId}`)
+            router.push(adminAiModelPageDetailUrl(detail.model.modelId))
           }
         }}
         onAuthExpired={() => setAuthExpired(true)}

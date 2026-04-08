@@ -24,6 +24,7 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
+import { adminAiModelBffDetailUrl } from "@/features/admin-ai/lib/model-admin-urls"
 import { prettyJson, safeJsonParse } from "@/features/admin-ai/lib/view-model"
 
 /** 与抽屉内 Input / select 同系：底色、边框与内阴影一致 */
@@ -99,41 +100,55 @@ export function ModelFormSheet({
     const loadData = async () => {
       setLoading(true)
       try {
-        const providerPromise = adminRequestData<AdminAIProviderListResponseData>(
+        const providerResult = await adminRequestData<AdminAIProviderListResponseData>(
           "/admin/ai/providers?status=active&page=1&limit=100",
           { method: "GET" },
           "获取 Provider 选项失败",
         )
-        const detailPromise = modelId
-          ? adminRequestData<AdminAIModelDetailResponseData>(
-              `/admin/ai/models/${modelId}`,
-              { method: "GET" },
-              "获取 Model 详情失败",
-            )
-          : Promise.resolve(null)
-
-        const [providerResult, detailResult] = await Promise.all([providerPromise, detailPromise])
         if (cancelled) {
           return
         }
-
         setProviders(providerResult)
-        if (detailResult) {
-          setDetail(detailResult)
-          setForm(mapDetailToForm(detailResult.model))
-        } else {
+
+        if (!modelId) {
           setDetail(null)
           setForm((prev) => ({
             ...EMPTY_FORM,
             providerCode: providerResult.items[0]?.code ?? prev.providerCode,
           }))
+          return
+        }
+
+        try {
+          const detailResult = await adminRequestData<AdminAIModelDetailResponseData>(
+            adminAiModelBffDetailUrl(modelId),
+            { method: "GET" },
+            "获取 Model 详情失败",
+          )
+          if (cancelled) {
+            return
+          }
+          setDetail(detailResult)
+          setForm(mapDetailToForm(detailResult.model))
+        } catch (detailError) {
+          if (isAdminSessionExpiredError(detailError)) {
+            onAuthExpired()
+          }
+          if (!cancelled) {
+            toast.error(getAdminApiErrorMessage(detailError, "获取 Model 详情失败"))
+            setDetail(null)
+            setForm((prev) => ({
+              ...EMPTY_FORM,
+              providerCode: providerResult.items[0]?.code ?? prev.providerCode,
+            }))
+          }
         }
       } catch (error) {
         if (isAdminSessionExpiredError(error)) {
           onAuthExpired()
         }
         if (!cancelled) {
-          toast.error(getAdminApiErrorMessage(error, modelId ? "获取 Model 详情失败" : "获取 Model 配置失败"))
+          toast.error(getAdminApiErrorMessage(error, "获取 Model 配置失败"))
         }
       } finally {
         if (!cancelled) {
@@ -177,7 +192,7 @@ export function ModelFormSheet({
 
       const result = modelId
         ? await adminRequestData<AdminAIModelDetailResponseData>(
-            `/admin/ai/models/${modelId}`,
+            adminAiModelBffDetailUrl(modelId),
             {
               method: "PATCH",
               body: JSON.stringify(payload),

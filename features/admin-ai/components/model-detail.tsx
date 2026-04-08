@@ -13,6 +13,7 @@ import {
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
 import { ADMIN_ROUTES } from "@/constants/routes"
+import { adminAiModelBffDetailUrl } from "@/features/admin-ai/lib/model-admin-urls"
 import { DetailPageHeader, JsonPreview, PageSection } from "./shared"
 import { ModelFormSheet } from "./model-form-sheet"
 
@@ -43,7 +44,7 @@ export function ModelDetail({ modelId }: ModelDetailProps) {
     setError(null)
     try {
       const result = await adminRequestData<AdminAIModelDetailResponseData>(
-        `/admin/ai/models/${modelId}`,
+        adminAiModelBffDetailUrl(modelId),
         { method: "GET" },
         "获取 Model 详情失败",
       )

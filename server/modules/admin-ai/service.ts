@@ -362,7 +362,7 @@ async function loadModels(filters?: { isActive?: boolean }) {
 async function loadAgents(filters?: { isActive?: boolean; scenarioType?: string }) {
   const supabase = createSupabaseAdminClient()
   let query = supabase
-    .from("ai_agents")
+    .from("agent_templates")
     .select("*")
     .order("updated_at", { ascending: false })
 
@@ -374,14 +374,14 @@ async function loadAgents(filters?: { isActive?: boolean; scenarioType?: string 
   }
 
   const { data, error } = await query
-  assertSupabaseSuccess(error, "failed to query ai_agents")
+  assertSupabaseSuccess(error, "failed to query agent_templates")
   return (data ?? []) as AgentRow[]
 }
 
 async function loadAgentBindings(filters?: { agentCodeKeyword?: string }) {
   const supabase = createSupabaseAdminClient()
   let query = supabase
-    .from("ai_agent_bindings")
+    .from("agent_bindings")
     .select("*")
     .order("priority", { ascending: true })
 
@@ -390,7 +390,7 @@ async function loadAgentBindings(filters?: { agentCodeKeyword?: string }) {
   }
 
   const { data, error } = await query
-  assertSupabaseSuccess(error, "failed to query ai_agent_bindings")
+  assertSupabaseSuccess(error, "failed to query agent_bindings")
   return (data ?? []) as AgentBindingRow[]
 }
 
@@ -401,7 +401,7 @@ async function loadSkills() {
 async function loadAgentSkillBindings(filters?: { agentCodeKeyword?: string; skillCodeKeyword?: string }) {
   const supabase = createSupabaseAdminClient()
   let query = supabase
-    .from("ai_agent_skill_bindings")
+    .from("agent_skill_bindings")
     .select("*")
     .order("priority", { ascending: true })
 
@@ -413,7 +413,7 @@ async function loadAgentSkillBindings(filters?: { agentCodeKeyword?: string; ski
   }
 
   const { data, error } = await query
-  assertSupabaseSuccess(error, "failed to query ai_agent_skill_bindings")
+  assertSupabaseSuccess(error, "failed to query agent_skill_bindings")
   return (data ?? []) as AgentSkillBindingRow[]
 }
 
@@ -572,7 +572,8 @@ function resolveModelRow(models: ModelRow[], modelIdOrCode: string): ModelRow | 
     return null
   }
   if (isUuid(key)) {
-    const byId = models.find((row) => row.id === key)
+    const idLower = key.toLowerCase()
+    const byId = models.find((row) => row.id.toLowerCase() === idLower)
     if (byId) {
       return byId
     }
