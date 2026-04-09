@@ -1946,6 +1946,7 @@ export function parsePlanFromMaterialBody(input: unknown): ValidationResult<{
   links: string[]
   userGoal?: string | null
   weeklyHours?: number | null
+  currentConstraints?: string | null
 }> {
   if (!input || typeof input !== "object") {
     return fail("BAD_REQUEST", "请求体必须是 JSON 对象。")
@@ -1978,10 +1979,20 @@ export function parsePlanFromMaterialBody(input: unknown): ValidationResult<{
     weeklyHours = body.weeklyHours
   }
 
+  let currentConstraints: string | null | undefined
+  if (body.currentConstraints !== undefined && body.currentConstraints !== null) {
+    if (typeof body.currentConstraints !== "string") {
+      return fail("BAD_REQUEST", "currentConstraints 必须是字符串。")
+    }
+    const trimmed = body.currentConstraints.trim()
+    currentConstraints = trimmed.length > 0 ? trimmed : null
+  }
+
   return ok({
     links: linksResult.data,
     userGoal,
     weeklyHours,
+    currentConstraints,
   })
 }
 
@@ -2056,6 +2067,176 @@ export function parsePlanDraftIdParam(id: string | null | undefined) {
   }
 
   return ok(normalized)
+}
+
+export function parseMaterialIntakeIdParam(id: string | null | undefined) {
+  const normalized = normalizeUuid(typeof id === "string" ? id.trim() : "")
+
+  if (!normalized) {
+    return fail("BAD_REQUEST", "材料摄取 ID 不合法。")
+  }
+
+  return ok(normalized)
+}
+
+export function parsePlanDraftTaskIdParam(id: string | null | undefined) {
+  const normalized = normalizeUuid(typeof id === "string" ? id.trim() : "")
+
+  if (!normalized) {
+    return fail("BAD_REQUEST", "学习计划草稿任务 ID 不合法。")
+  }
+
+  return ok(normalized)
+}
+
+export function parsePlanDraftPatchBody(input: unknown): ValidationResult<{
+  title?: string | null
+  goal?: string | null
+  tasks?: Array<{
+    id: string
+    title?: string | null
+    objective?: string | null
+    practiceSteps?: string[]
+    acceptanceCriteria?: string | null
+    estimatedMinutes?: number | null
+    recommendedForWeek1?: boolean
+  }>
+}> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return fail("BAD_REQUEST", "请求体必须是 JSON 对象。")
+  }
+
+  const body = input as Record<string, unknown>
+  const data: {
+    title?: string | null
+    goal?: string | null
+    tasks?: Array<{
+      id: string
+      title?: string | null
+      objective?: string | null
+      practiceSteps?: string[]
+      acceptanceCriteria?: string | null
+      estimatedMinutes?: number | null
+      recommendedForWeek1?: boolean
+    }>
+  } = {}
+
+  if (body.title !== undefined) {
+    if (body.title !== null && typeof body.title !== "string") {
+      return fail("BAD_REQUEST", "title 必须是字符串。")
+    }
+    data.title = typeof body.title === "string" ? body.title.trim() || null : null
+  }
+
+  if (body.goal !== undefined) {
+    if (body.goal !== null && typeof body.goal !== "string") {
+      return fail("BAD_REQUEST", "goal 必须是字符串。")
+    }
+    data.goal = typeof body.goal === "string" ? body.goal.trim() || null : null
+  }
+
+  if (body.tasks !== undefined) {
+    if (!Array.isArray(body.tasks)) {
+      return fail("BAD_REQUEST", "tasks 必须是数组。")
+    }
+    const tasks: Array<{
+      id: string
+      title?: string | null
+      objective?: string | null
+      practiceSteps?: string[]
+      acceptanceCriteria?: string | null
+      estimatedMinutes?: number | null
+      recommendedForWeek1?: boolean
+    }> = []
+
+    for (const item of body.tasks) {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        return fail("BAD_REQUEST", "tasks 中存在不合法对象。")
+      }
+
+      const task = item as Record<string, unknown>
+      const id = normalizeUuid(typeof task.id === "string" ? task.id.trim() : "")
+      if (!id) {
+        return fail("VALIDATION_FAILED", "tasks 中存在不合法任务 ID。")
+      }
+
+      if (task.estimatedMinutes !== undefined && task.estimatedMinutes !== null) {
+        if (typeof task.estimatedMinutes !== "number" || !Number.isInteger(task.estimatedMinutes)) {
+          return fail("BAD_REQUEST", "estimatedMinutes 必须是整数。")
+        }
+        if (task.estimatedMinutes < 15 || task.estimatedMinutes > 240) {
+          return fail("VALIDATION_FAILED", "estimatedMinutes 必须在 15 到 240 之间。")
+        }
+      }
+
+      if (task.practiceSteps !== undefined) {
+        if (
+          !Array.isArray(task.practiceSteps)
+          || task.practiceSteps.some((step) => typeof step !== "string" || step.trim().length === 0)
+        ) {
+          return fail("VALIDATION_FAILED", "practiceSteps 必须是非空字符串数组。")
+        }
+      }
+
+      if (task.recommendedForWeek1 !== undefined && typeof task.recommendedForWeek1 !== "boolean") {
+        return fail("BAD_REQUEST", "recommendedForWeek1 必须是布尔值。")
+      }
+
+      const normalizedTask: {
+        id: string
+        title?: string | null
+        objective?: string | null
+        practiceSteps?: string[]
+        acceptanceCriteria?: string | null
+        estimatedMinutes?: number | null
+        recommendedForWeek1?: boolean
+      } = { id }
+
+      if (task.title !== undefined) {
+        if (task.title !== null && typeof task.title !== "string") {
+          return fail("BAD_REQUEST", "title 必须是字符串。")
+        }
+        normalizedTask.title = typeof task.title === "string" ? task.title.trim() || null : null
+      }
+
+      if (task.objective !== undefined) {
+        if (task.objective !== null && typeof task.objective !== "string") {
+          return fail("BAD_REQUEST", "objective 必须是字符串。")
+        }
+        normalizedTask.objective =
+          typeof task.objective === "string" ? task.objective.trim() || null : null
+      }
+
+      if (task.practiceSteps !== undefined) {
+        normalizedTask.practiceSteps = (task.practiceSteps as string[]).map((step) => step.trim())
+      }
+
+      if (task.acceptanceCriteria !== undefined) {
+        if (task.acceptanceCriteria !== null && typeof task.acceptanceCriteria !== "string") {
+          return fail("BAD_REQUEST", "acceptanceCriteria 必须是字符串。")
+        }
+        normalizedTask.acceptanceCriteria =
+          typeof task.acceptanceCriteria === "string"
+            ? task.acceptanceCriteria.trim() || null
+            : null
+      }
+
+      if (task.estimatedMinutes !== undefined) {
+        normalizedTask.estimatedMinutes =
+          typeof task.estimatedMinutes === "number" ? task.estimatedMinutes : null
+      }
+
+      if (task.recommendedForWeek1 !== undefined) {
+        normalizedTask.recommendedForWeek1 = task.recommendedForWeek1 as boolean
+      }
+
+      tasks.push(normalizedTask)
+    }
+
+    data.tasks = tasks
+  }
+
+  return ok(data)
 }
 
 export function parseProfileAvatarFile(file: unknown): ValidationResult<File> {

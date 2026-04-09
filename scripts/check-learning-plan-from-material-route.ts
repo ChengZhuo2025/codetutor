@@ -2,8 +2,10 @@ import test from "node:test"
 import assert from "node:assert/strict"
 
 import {
+  createPlanDraftDetailHandler,
   createPlanDraftConfirmPostHandler,
   createPlanFromMaterialPostHandler,
+  createPlanDraftTaskRegeneratePostHandler,
 } from "../server/modules/learning-plans/route-handler.ts"
 
 function createJsonRequest(url: string, body: string) {
@@ -14,37 +16,6 @@ function createJsonRequest(url: string, body: string) {
     },
     body,
   }) as never
-}
-
-const previewFixture = {
-  title: "计划",
-  goal: "目标",
-  tasks: [
-    {
-      taskNo: 1,
-      title: "T1",
-      objective: "O1",
-      practiceSteps: ["a", "b"],
-      acceptanceCriteria: "ok",
-      sourceRefs: ["c1"],
-    },
-    {
-      taskNo: 2,
-      title: "T2",
-      objective: "O2",
-      practiceSteps: ["a", "b"],
-      acceptanceCriteria: "ok",
-      sourceRefs: ["c1"],
-    },
-    {
-      taskNo: 3,
-      title: "T3",
-      objective: "O3",
-      practiceSteps: ["a", "b"],
-      acceptanceCriteria: "ok",
-      sourceRefs: ["c1"],
-    },
-  ],
 }
 
 test("plan-from-material returns 401 when unauthenticated", async () => {
@@ -83,10 +54,11 @@ test("plan-from-material returns 200 with injected service", async () => {
     getRequestAuth: async () => ({ userId: "u1" }),
     getRequestAuthHelpText: () => "",
     createPlanFromMaterial: async () => ({
-      processingMode: "sync" as const,
-      draftId: "11111111-1111-4111-8111-111111111111",
+      processingMode: "async" as const,
       intakeId: "22222222-2222-4222-8222-222222222222",
-      preview: previewFixture,
+      runId: "33333333-3333-4333-8333-333333333333",
+      draftId: null,
+      status: "queued" as const,
     }),
   })
 
@@ -95,6 +67,7 @@ test("plan-from-material returns 200 with injected service", async () => {
       "http://localhost/api/learning/plan-from-material",
       JSON.stringify({
         links: ["https://web.dev/learn/"],
+        currentConstraints: "需要控制在 2 周内完成",
       }),
     ),
   )
@@ -102,10 +75,12 @@ test("plan-from-material returns 200 with injected service", async () => {
   assert.equal(response.status, 200)
   const json = (await response.json()) as {
     code: string
-    data: { draftId: string }
+    data: { processingMode: string; runId: string; draftId: string | null }
   }
   assert.equal(json.code, "OK")
-  assert.equal(json.data.draftId, "11111111-1111-4111-8111-111111111111")
+  assert.equal(json.data.processingMode, "async")
+  assert.equal(json.data.runId, "33333333-3333-4333-8333-333333333333")
+  assert.equal(json.data.draftId, null)
 })
 
 test("plan-from-material returns structured code when multiple links are provided", async () => {
@@ -158,4 +133,91 @@ test("plan-draft confirm returns 200 with injected service", async () => {
   assert.equal(response.status, 200)
   const json = (await response.json()) as { data: { currentTaskId: string } }
   assert.equal(json.data.currentTaskId, "t1")
+})
+
+test("plan-draft detail get returns 200 with injected service", async () => {
+  const handlers = createPlanDraftDetailHandler({
+    getRequestAuth: async () => ({ userId: "u1" }),
+    getRequestAuthHelpText: () => "",
+    getPlanDraftDetailForUser: async () => ({
+      draftId: "11111111-1111-4111-8111-111111111111",
+      intakeId: "22222222-2222-4222-8222-222222222222",
+      title: "草稿",
+      goal: "目标",
+      status: "draft",
+      revisionNo: 2,
+      qualityStatus: "pending",
+      qualityReport: null,
+      alignmentTable: [],
+      week1TaskIds: [],
+      updatedAt: "2026-04-08T00:00:00.000Z",
+      tasks: [],
+    }),
+  })
+
+  const response = await handlers.GET(new Request("http://x") as never, {
+    params: Promise.resolve({ id: "11111111-1111-4111-8111-111111111111" }),
+  })
+
+  assert.equal(response.status, 200)
+})
+
+test("plan-draft detail patch returns 200 with injected service", async () => {
+  const handlers = createPlanDraftDetailHandler({
+    getRequestAuth: async () => ({ userId: "u1" }),
+    getRequestAuthHelpText: () => "",
+    updatePlanDraftForUser: async () => ({
+      draftId: "11111111-1111-4111-8111-111111111111",
+      intakeId: "22222222-2222-4222-8222-222222222222",
+      title: "新标题",
+      goal: "新目标",
+      status: "draft",
+      revisionNo: 3,
+      qualityStatus: "pending",
+      qualityReport: null,
+      alignmentTable: [],
+      week1TaskIds: [],
+      updatedAt: "2026-04-08T00:00:00.000Z",
+      tasks: [],
+    }),
+  })
+
+  const response = await handlers.PATCH(
+    createJsonRequest("http://x", JSON.stringify({ title: "新标题" })),
+    {
+      params: Promise.resolve({ id: "11111111-1111-4111-8111-111111111111" }),
+    },
+  )
+
+  assert.equal(response.status, 200)
+})
+
+test("plan-draft task regenerate returns 200 with injected service", async () => {
+  const handler = createPlanDraftTaskRegeneratePostHandler({
+    getRequestAuth: async () => ({ userId: "u1" }),
+    getRequestAuthHelpText: () => "",
+    regeneratePlanDraftTaskForUser: async () => ({
+      draftId: "11111111-1111-4111-8111-111111111111",
+      intakeId: "22222222-2222-4222-8222-222222222222",
+      title: "草稿",
+      goal: "目标",
+      status: "draft",
+      revisionNo: 4,
+      qualityStatus: "pending",
+      qualityReport: null,
+      alignmentTable: [],
+      week1TaskIds: [],
+      updatedAt: "2026-04-08T00:00:00.000Z",
+      tasks: [],
+    }),
+  })
+
+  const response = await handler(new Request("http://x", { method: "POST" }) as never, {
+    params: Promise.resolve({
+      id: "11111111-1111-4111-8111-111111111111",
+      taskId: "33333333-3333-4333-8333-333333333333",
+    }),
+  })
+
+  assert.equal(response.status, 200)
 })

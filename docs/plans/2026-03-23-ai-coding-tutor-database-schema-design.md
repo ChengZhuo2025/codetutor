@@ -331,10 +331,15 @@ erDiagram
 
 ## 5.15 `learning_material_intake_status`
 
-- `pending`
-- `processing`
-- `succeeded`
-- `failed`
+- `pending`：用户提交但还未入队
+- `queued`：输入合法、已排队等待 worker 摄取
+- `processing`：已有 intake worker 持续执行（旧同步状态）
+- `extracting`：正在拉取字幕/文本/媒体
+- `planning`：planner agent 输出草稿
+- `quality_checking`：质量闸门与二次校验
+- `ready`：草稿可编辑、可确认
+- `succeeded`：旧状态，计划已确认激活
+- `failed`：摄取或规划失败
 
 ## 5.16 `learning_material_source_type`
 
@@ -513,6 +518,11 @@ erDiagram
 | `metadata` | `jsonb` | not null default '{}' | 下一步预告、示例提示、训练 agent 指令片段等 |
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
+
+说明：
+
+- `path_steps.goal`、`path_steps.summary`、`path_steps.completion_criteria` 等字段由 `learning_plan_draft_tasks` 对应字段转写而来
+- `path_steps.metadata` 在自学模式 confirm 后必须写入 `source_refs`、`goal_alignment_refs`、`recommended_for_week_1` 与 `draft_revision_no`，以便追溯材料来源与草稿版本
 
 约束建议：
 
@@ -947,8 +957,15 @@ erDiagram
 | `user_id` | `uuid` | FK，关联 `auth.users.id`，`on delete cascade` | 提交用户 |
 | `status` | `learning_material_intake_status` | not null default `pending` | 摄取状态 |
 | `input_links` | `jsonb` | not null default `'[]'` | 本次请求的 URL 列表（字符串数组） |
+| `processing_stage` | `text` | nullable | 当前异步阶段，例如 `queued` / `extracting` / `planning` / `quality_checking` |
+| `progress_percent` | `integer` | nullable | 估算阶段进度百分比（0-100） |
+| `progress_message` | `text` | nullable | 前端等待态显示文案 |
 | `normalized_summary` | `text` | nullable | 多源合并后的短摘要，供审计或降级展示 |
 | `error_code` | `varchar(64)` | nullable | 失败时的稳定错误码片段，如 `MATERIAL_FETCH_FAILED` |
+| `source_kind` | `text` | nullable | 标识摄取材料的归类（`html` / `douyin` / `xiaohongshu` / `bilibili` 等） |
+| `current_constraints` | `text` | nullable | 用户提交的 “我的约束” 描述，供 worker 校准 |
+| `latest_run_id` | `uuid` | nullable | 当前 intake 最近一次 `learning_plan_generation_runs.id` |
+| `latest_draft_id` | `uuid` | nullable | 最近一次生成的 `learning_plan_drafts.id`，跨阶段恢复用 |
 | `metadata` | `jsonb` | not null default `'{}'` | 扩展字段 |
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间，`update_updated_at` 触发器维护 |
@@ -957,6 +974,7 @@ erDiagram
 
 - `idx_learning_material_intakes_user_created_at`：`user_id`, `created_at desc`
 - `idx_learning_material_intakes_user_status`：`user_id`, `status`
+- `idx_learning_material_intakes_latest_run_id`：`latest_run_id`
 
 ## 6.19 `learning_material_sources`
 
@@ -1010,6 +1028,12 @@ erDiagram
 | `estimated_total_minutes` | `integer` | nullable | 各任务预估分钟汇总 |
 | `status` | `learning_plan_draft_status` | not null default `draft` | 草稿生命周期状态 |
 | `raw_plan_json` | `jsonb` | not null default `'{}'` | 校验通过的 planner 输出快照 |
+| `alignment_json` | `jsonb` | nullable | 目标对齐表 |
+| `week_1_task_ids` | `jsonb` | nullable | 推荐本周子集的任务 ID 列表 |
+| `revision_no` | `integer` | not null default `1` | 当前草稿的修订号 |
+| `editable_payload` | `jsonb` | not null default `'{}'` | 工作台可编辑状态快照 |
+| `quality_status` | `text` | not null default `'pending'` | 质量闸门运行状态 |
+| `quality_report` | `jsonb` | nullable | 规则/小模型结果 |
 | `confirmed_template_path_id` | `uuid` | FK nullable，`learning_paths.id`，`on delete set null` | 确认后生成的路径模板 |
 | `confirmed_user_learning_path_id` | `uuid` | FK nullable，`user_learning_paths.id`，`on delete set null` | 确认后的用户路径实例 |
 | `superseded_by_draft_id` | `uuid` | FK nullable，自引用 `learning_plan_drafts.id`，`on delete set null` | 被哪条新草稿替换 |
@@ -1046,6 +1070,10 @@ erDiagram
 | `acceptance_criteria` | `text` | not null | 验收口径，确认后映射 `path_steps.completion_criteria` |
 | `estimated_minutes` | `integer` | nullable | 预计耗时（分钟） |
 | `source_refs` | `jsonb` | not null default `'[]'` | 材料块 id 引用数组，与 prompt 契约对齐 |
+| `position` | `integer` | nullable | 用户调整后的展示顺序 |
+| `is_user_edited` | `boolean` | not null default false | 是否被用户手动修改过 |
+| `goal_alignment_refs` | `jsonb` | not null default `'[]'` | 指向 alignment table 中与目标对齐的条目 |
+| `recommended_for_week_1` | `boolean` | not null default false | 是否属于 week-1 推荐子集 |
 | `metadata` | `jsonb` | not null default `'{}'` | 扩展字段 |
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
@@ -1057,6 +1085,97 @@ erDiagram
 索引建议：
 
 - `idx_learning_plan_draft_tasks_draft_id`：`draft_id`, `task_no`
+
+## 6.22 `learning_material_chunks`
+
+用途：
+
+- 记录摄取后按 modality 切分的多模态块，供 planner、quality gate 及回放使用
+- 每行关联一个 `learning_material_sources` 与 `learning_material_intakes`
+
+字段建议：
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | `uuid` | PK | 主键 |
+| `intake_id` | `uuid` | FK，关联 `learning_material_intakes.id`，`on delete cascade` | 所属 intake |
+| `source_id` | `uuid` | FK，关联 `learning_material_sources.id`，`on delete cascade` | 来源链接 |
+| `chunk_no` | `integer` | not null | 在单条 source 中的顺序编号 |
+| `modality` | `text` | not null | `text` / `subtitle` / `vision` / `ocr` 等 |
+| `content` | `text` | not null | 清洗后的文本 |
+| `summary` | `text` | nullable | 后台简版摘要 |
+| `source_ref` | `jsonb` | not null default `'{}'` | timecode / frame / subtitle track 等元数据 |
+| `token_estimate` | `integer` | nullable | 供 planner 估算成本的 token 数 |
+| `created_at` | `timestamptz` | not null | 创建时间 |
+| `updated_at` | `timestamptz` | not null | 更新时间 |
+
+索引建议：
+
+- `idx_learning_material_chunks_intake_id`：`intake_id`
+- `idx_learning_material_chunks_source_id`：`source_id`
+
+## 6.23 `learning_plan_generation_runs`
+
+用途：
+
+- 记录每次 intake 的异步生成轮次、planner/quality input/output 以及错误/质量状态
+- 用于异步轮询、恢复上下文、quality gate 结果存档
+
+字段建议：
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | `uuid` | PK | 主键 |
+| `user_id` | `uuid` | FK，关联 `auth.users.id`，`on delete cascade` | 用户 |
+| `intake_id` | `uuid` | FK，关联 `learning_material_intakes.id`，`on delete cascade` | intake |
+| `draft_id` | `uuid` | FK nullable，`learning_plan_drafts.id` | 当前关联草稿 |
+| `trigger_type` | `text` | not null | `initial` / `regenerate` / `task_regenerate` 等 |
+| `status` | `text` | not null | `queued` / `extracting` / `planning` / `quality_checking` / `ready` / `failed` |
+| `source_snapshot` | `jsonb` | not null default `'{}'` | materials/chunks meta |
+| `planner_input` | `jsonb` | nullable | 发送给 planner 的 prompt |
+| `planner_output` | `jsonb` | nullable | planner 返回的结构化 plan |
+| `quality_report` | `jsonb` | nullable | 规则与小模型自检结果 |
+| `error_code` | `text` | nullable | 失败状态下的错误码 |
+| `error_message` | `text` | nullable | 附加人类可读错误 |
+| `started_at` | `timestamptz` | nullable | 运行开始时间 |
+| `finished_at` | `timestamptz` | nullable | 运行结束时间 |
+| `created_at` | `timestamptz` | not null | 创建时间 |
+| `updated_at` | `timestamptz` | not null | 更新时间 |
+
+索引建议：
+
+- `idx_learning_plan_generation_runs_user_id`：`user_id`
+- `idx_learning_plan_generation_runs_intake_id`：`intake_id`
+- `idx_learning_plan_generation_runs_status`：`status`
+
+## 6.24 `learning_plan_draft_revisions`
+
+用途：
+
+- 记录草稿每次编辑、全量重生成与单任务重生成后的修订历史，用于恢复与审计
+- confirm 时写入 `draft_revision_no` 以便 `path_steps.metadata` 找到真源
+
+字段建议：
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | `uuid` | PK | 主键 |
+| `draft_id` | `uuid` | FK，关联 `learning_plan_drafts.id`，`on delete cascade` | 所属草稿 |
+| `revision_no` | `integer` | not null | 修订号，与草稿当前 `revision_no` 对应 |
+| `change_type` | `text` | not null | `patch` / `regenerate` / `task_regenerate` / `confirm_snapshot` 等 |
+| `patch_payload` | `jsonb` | not null default `'{}'` | 本次变更载荷 |
+| `generated_by_run_id` | `uuid` | FK nullable，`learning_plan_generation_runs.id`，`on delete set null` | 若由生成 run 触发，关联 run |
+| `created_by` | `uuid` | FK，关联 `auth.users.id`，`on delete cascade` | 操作者 |
+| `created_at` | `timestamptz` | not null | 创建时间 |
+
+约束建议：
+
+- `unique(draft_id, revision_no)`
+
+索引建议：
+
+- `idx_learning_plan_draft_revisions_draft_id`：`draft_id`
+- `idx_learning_plan_draft_revisions_generated_by_run_id`：`generated_by_run_id`
 
 ---
 
@@ -1101,7 +1220,8 @@ erDiagram
 ## 7.7 自学材料摄取与计划草稿
 
 - **摄取与草稿分离**：一次 `plan-from-material` 至少产生一行 `learning_material_intakes`、多行 `learning_material_sources`（按 URL）、一行 `learning_plan_drafts` 与多行 `learning_plan_draft_tasks`；全部成功前不应写入正式 `user_learning_paths`
-- **确认幂等**：同一 `learning_plan_drafts.id` 在 `status = confirmed` 后重复确认应返回同一 `confirmed_user_learning_path_id`，不得产生第二条并发的 `active` 自学路径（业务层须与「先归档用户全部 `active` ULP 再插入」同事务或使用等价约束）
+- **确认幂等**：同一 `learning_plan_drafts.id` 在 `status = confirmed` 后重复确认应返回相同的 `confirmed_user_learning_path_id`，不得产生第二条并发的 `active` 自学路径（业务层须与「先归档用户全部 `active` ULP 再插入」同事务或使用等价约束）
+- **确认输入**：确认写入 `path_steps.metadata` 时必须包括 `source_refs`、`goal_alignment_refs`、`recommended_for_week_1` 与 `draft_revision_no`，以便追溯材料与 revision。
 - **再生稿**：仅允许对 `status = draft` 的归属草稿调用 regenerate；旧草稿置 `superseded` 并写 `superseded_by_draft_id`，新草稿独立 `intake_id` 策略以代码为准（可新 intake 复用链接列表）
 - **外键语义**：`confirmed_template_path_id` / `confirmed_user_learning_path_id` 在确认成功后写入；若用户路径或模板被清理，可 `on delete set null`，不反向级联删除草稿历史
 

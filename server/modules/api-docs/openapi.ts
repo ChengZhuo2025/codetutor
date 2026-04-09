@@ -90,7 +90,10 @@ import {
   getOnboardingToolsResponseDataSchema,
   historyRecentQuerySchema,
   learningCurrentSessionResponseDataSchema,
+  materialIntakeStatusResponseDataSchema,
+  learningPlanDraftDetailResponseDataSchema,
   learningPlanDraftConfirmResponseDataSchema,
+  learningPlanDraftPatchRequestSchema,
   learningPlanDraftRegenerateRequestSchema,
   learningPlanFromMaterialRequestSchema,
   learningPlanFromMaterialResponseDataSchema,
@@ -1136,45 +1139,51 @@ const successExamples = {
     },
   },
   learningPlanFromMaterial: {
-    processingMode: "sync" as const,
+    processingMode: "async" as const,
+    intakeId: "22222222-2222-4222-8222-222222222222",
+    runId: "33333333-3333-4333-8333-333333333333",
+    draftId: null,
+    status: "queued" as const,
+  },
+  materialIntakeStatus: {
+    intakeId: "22222222-2222-4222-8222-222222222222",
+    status: "planning" as const,
+    processingStage: "planning",
+    progressPercent: 65,
+    progressMessage: "正在生成学习计划草稿",
+    draftId: null,
+    runId: "33333333-3333-4333-8333-333333333333",
+    errorCode: null,
+    errorMessage: null,
+  },
+  learningPlanDraftDetail: {
     draftId: "11111111-1111-4111-8111-111111111111",
     intakeId: "22222222-2222-4222-8222-222222222222",
-    preview: {
-      title: "用官方教程完成第一个 Next.js 页面改造",
-      goal: "基于教程内容完成一个可运行、可验收的最小页面练习闭环。",
-      tasks: [
-        {
-          taskNo: 1,
-          title: "通读教程并跑通基础项目",
-          objective: "先确认教程里的项目结构、依赖和运行方式都可复现。",
-          practiceSteps: [
-            "阅读教程中的环境准备与启动步骤",
-            "本地运行项目并截图记录首页结果",
-          ],
-          acceptanceCriteria: "项目可正常启动；能说明教程目标和当前项目结构。",
-          estimatedMinutes: 30,
-          sourceRefs: ["chunk-1"],
-        },
-        {
-          taskNo: 2,
-          title: "完成首页改造",
-          objective: "按教程修改首页并验证渲染结果。",
-          practiceSteps: ["修改页面组件", "运行 dev 并检查控制台无报错"],
-          acceptanceCriteria: "页面展示符合教程要求。",
-          estimatedMinutes: 45,
-          sourceRefs: ["chunk-1"],
-        },
-        {
-          taskNo: 3,
-          title: "复盘与扩展",
-          objective: "总结本关收获并记录一个后续练习方向。",
-          practiceSteps: ["写三条收获", "列一个下一步小目标"],
-          acceptanceCriteria: "输出可复用的检查清单。",
-          estimatedMinutes: 30,
-          sourceRefs: ["chunk-1"],
-        },
-      ],
-    },
+    title: "两周内跑通一个 Next.js 页面改造闭环",
+    goal: "把教程知识转成一个可执行、可确认的页面改造练习。",
+    status: "draft" as const,
+    revisionNo: 2,
+    qualityStatus: "pending",
+    qualityReport: null,
+    alignmentTable: [],
+    week1TaskIds: ["44444444-4444-4444-8444-444444444444"],
+    updatedAt: EXAMPLE_LATEST,
+    tasks: [
+      {
+        id: "44444444-4444-4444-8444-444444444444",
+        taskNo: 1,
+        position: 1,
+        title: "通读教程并确认运行环境",
+        objective: "先把官方教程跑通，明确本次练习的改造目标。",
+        practiceSteps: ["阅读教程", "启动项目", "记录基线页面"],
+        acceptanceCriteria: "项目可运行，并能说明本次要改的页面。",
+        estimatedMinutes: 30,
+        sourceRefs: ["u1-chunk-0"],
+        goalAlignmentRefs: [],
+        recommendedForWeek1: true,
+        isUserEdited: false,
+      },
+    ],
   },
   learningPlanDraftConfirm: {
     learningPathId: "path-runtime-2",
@@ -1971,7 +1980,7 @@ registry.registerPath({
   path: "/api/learning/plan-from-material",
   operationId: "postLearningPlanFromMaterial",
   tags: ["learning"],
-  summary: "根据白名单教程链接生成学习计划草稿（同步）",
+  summary: "根据教程链接提交异步学习计划草稿生成任务",
   security: [{ bearerAuth: [] }],
   request: {
     body: {
@@ -1987,14 +1996,14 @@ registry.registerPath({
     "200": successResponse(
       learningPlanFromMaterialResponseDataSchema,
       "LearningPlanFromMaterialResponse",
-      "计划草稿生成成功",
+      "材料 intake 已提交",
       successExamples.learningPlanFromMaterial,
     ),
     ...commonErrorResponses(["401", "422", "500", "502"], {
       "422": {
         description: "链接数量、域名、周学习时长或业务约束未通过校验。",
         example: {
-          code: "MATERIAL_UNSUPPORTED_DOMAIN",
+          code: "MATERIAL_UNSUPPORTED_SOURCE",
           message: "当前链接域名暂不在首期支持范围内。",
           data: null,
         },
@@ -2004,6 +2013,112 @@ registry.registerPath({
         example: {
           code: "AI_PROVIDER_ERROR",
           message: "AI 服务暂时不可用，请稍后重试。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/learning/material-intakes/{id}",
+  operationId: "getLearningMaterialIntakeStatus",
+  tags: ["learning"],
+  summary: "读取教程材料 intake 的异步生成状态",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: routeIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      materialIntakeStatusResponseDataSchema,
+      "MaterialIntakeStatusResponse",
+      "材料 intake 状态读取成功",
+      successExamples.materialIntakeStatus,
+    ),
+    ...commonErrorResponses(["401", "404", "500"], {
+      "404": {
+        description: "材料 intake 不存在，或不属于当前用户。",
+        example: {
+          code: "MATERIAL_INTAKE_NOT_FOUND",
+          message: "材料摄取记录不存在。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/learning/plan-drafts/{id}",
+  operationId: "patchLearningPlanDraft",
+  tags: ["learning"],
+  summary: "更新学习计划草稿内容",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: routeIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: learningPlanDraftPatchRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      learningPlanDraftDetailResponseDataSchema,
+      "LearningPlanDraftPatchResponse",
+      "草稿更新成功",
+      successExamples.learningPlanDraftDetail,
+    ),
+    ...commonErrorResponses(["401", "404", "409", "422", "500"], {
+      "404": {
+        description: "草稿不存在，或不属于当前用户。",
+        example: {
+          code: "PLAN_DRAFT_NOT_FOUND",
+          message: "当前学习计划草稿不存在。",
+          data: null,
+        },
+      },
+      "409": {
+        description: "草稿状态不允许编辑。",
+        example: {
+          code: "PLAN_DRAFT_ALREADY_CONFIRMED",
+          message: "仅草稿状态可以编辑。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/learning/plan-drafts/{id}",
+  operationId: "getLearningPlanDraft",
+  tags: ["learning"],
+  summary: "读取学习计划草稿详情",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: routeIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      learningPlanDraftDetailResponseDataSchema,
+      "LearningPlanDraftDetailResponse",
+      "草稿读取成功",
+      successExamples.learningPlanDraftDetail,
+    ),
+    ...commonErrorResponses(["401", "404", "500"], {
+      "404": {
+        description: "草稿不存在，或不属于当前用户。",
+        example: {
+          code: "PLAN_DRAFT_NOT_FOUND",
+          message: "当前学习计划草稿不存在。",
           data: null,
         },
       },
@@ -2042,6 +2157,47 @@ registry.registerPath({
         example: {
           code: "PLAN_DRAFT_ALREADY_CONFIRMED",
           message: "当前学习计划草稿已确认，无需重复激活。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/learning/plan-drafts/{id}/tasks/{taskId}/regenerate",
+  operationId: "postLearningPlanDraftTaskRegenerate",
+  tags: ["learning"],
+  summary: "重生成学习计划草稿中的单个任务",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({
+      id: z.string(),
+      taskId: z.string(),
+    }),
+  },
+  responses: {
+    "200": successResponse(
+      learningPlanDraftDetailResponseDataSchema,
+      "LearningPlanDraftTaskRegenerateResponse",
+      "任务重生成成功",
+      successExamples.learningPlanDraftDetail,
+    ),
+    ...commonErrorResponses(["401", "404", "409", "500", "502"], {
+      "404": {
+        description: "草稿或任务不存在，或不属于当前用户。",
+        example: {
+          code: "PLAN_DRAFT_NOT_FOUND",
+          message: "草稿任务不存在。",
+          data: null,
+        },
+      },
+      "409": {
+        description: "草稿状态不允许重生成任务。",
+        example: {
+          code: "PLAN_DRAFT_ALREADY_CONFIRMED",
+          message: "仅草稿状态可以重生成任务。",
           data: null,
         },
       },

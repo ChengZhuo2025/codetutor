@@ -241,9 +241,13 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `POST /api/learning/message`
 - `GET /api/learning/current-session`
 - `GET /api/learning/messages`
-- `POST /api/learning/plan-from-material`（自学模式白名单教程链接 → 同步生成计划草稿）
+- `POST /api/learning/plan-from-material`（自学模式教程链接 → 异步提交 material intake）
+- `GET /api/learning/material-intakes/{id}`（轮询 intake / run / draft 状态）
+- `GET /api/learning/plan-drafts/{id}`（读取草稿详情）
+- `PATCH /api/learning/plan-drafts/{id}`（编辑草稿）
 - `POST /api/learning/plan-drafts/{id}/confirm`（草稿确认并物化到主路径链路，幂等）
 - `POST /api/learning/plan-drafts/{id}/regenerate`（仅替换草稿，可选更换链接）
+- `POST /api/learning/plan-drafts/{id}/tasks/{taskId}/regenerate`（单任务重生成）
 
 规划中：
 
@@ -316,7 +320,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 营销首页 | `/` | `GET /api/auth/session` | 首页导航、Hero、套餐区、页脚与最终 CTA 会根据登录态切换为“继续学习”，并跳转到 `/learn`、`/history` 或 `/onboarding` |
 | 登录页 | `/login` | `POST /api/auth/login`、`GET/PATCH /api/profile/me`、`POST /api/profile/avatar` | 当前已打通手机号验证码登录、微信 OAuth 跳转、用户档案读取与资料编辑 |
 | 新手引导 | `/onboarding` | `GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete` | 产出主工具、学习等级、学习模式、初始学习路径实例 |
-| 学习页 | `/learn` | `GET /api/learning/current-session`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`、`POST /api/learning/plan-from-material`、`POST /api/learning/plan-drafts/{id}/confirm`、`POST /api/learning/plan-drafts/{id}/regenerate` | 已打通学习主界面 read model、历史消息分页、真实 AI provider 消息编排、SSE 与任务状态写入；自学模式（`selection_mode=self_directed`）已支持白名单教程链接生成计划草稿并确认后替换当前 active 路径 |
+| 学习页 | `/learn` | `GET /api/learning/current-session`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`、`POST /api/learning/plan-from-material`、`GET /api/learning/material-intakes/{id}`、`GET/PATCH /api/learning/plan-drafts/{id}`、`POST /api/learning/plan-drafts/{id}/confirm`、`POST /api/learning/plan-drafts/{id}/regenerate`、`POST /api/learning/plan-drafts/{id}/tasks/{taskId}/regenerate` | 已打通学习主界面 read model、历史消息分页、真实 AI provider 消息编排、SSE 与任务状态写入；自学模式（`selection_mode=self_directed`）已支持异步教程链接 intake、草稿详情编辑与确认后替换当前 active 路径 |
 | 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
 | 成就页 | `/achievements` | `GET /api/achievement/summary` | 当前已打通成长总览 read model，并支持真实每日打卡 |
 | 历史页 | `/history` | `GET /api/history/recent`、`GET /api/history/{id}`、`POST /api/history/{id}/status` | 当前前端实际需要的是“历史学习计划列表 + 详情复盘 + 状态操作”，而不是“最近对话列表” |
@@ -906,12 +910,13 @@ SSE 事件补充：
 
 用途：
 
-- 在自学模式（`selection_mode=self_directed`）下，根据白名单教程链接同步生成学习计划草稿
+- 在自学模式（`selection_mode=self_directed`）下，根据教程链接提交异步材料 intake，并由后台 worker 生成学习计划草稿
 
 实现说明：
 
-- Phase A 仅支持白名单域名（如 `developer.mozilla.org`、`nextjs.org`、`web.dev`），同步返回
-- 成功后只写入 `learning_material_intakes` / `sources` 与 `learning_plan_drafts` / `learning_plan_draft_tasks`，不直接改动当前 active path
+- 当前支持 `developer.mozilla.org`、`nextjs.org`、`web.dev` 与公开的抖音 / 小红书 / B 站教程链接
+- 创建时立即返回 `processingMode=async`、`intakeId`、`runId` 和当前状态；前端通过 `GET /api/learning/material-intakes/{id}` 轮询进度
+- 成功后写入 `learning_material_intakes` / `learning_material_chunks` / `learning_plan_generation_runs` / `learning_plan_drafts` / `learning_plan_draft_tasks` / `learning_plan_draft_revisions`，不直接改动当前 active path
 - 主工具与等级来自 `user_profiles`，无需在请求中传 `targetToolCode`
 - 运行时契约与 Swagger：`GET /api/docs/openapi`（operationId `postLearningPlanFromMaterial` 等）、调试页 `/api-docs`
 
@@ -923,7 +928,8 @@ SSE 事件补充：
     "https://web.dev/learn/"
   ],
   "userGoal": "我想跟着教程做一个最小可运行的页面练习",
-  "weeklyHours": 6
+  "weeklyHours": 6,
+  "currentConstraints": "希望 2 周内完成，优先项目实战"
 }
 ```
 
@@ -931,9 +937,10 @@ SSE 事件补充：
 
 | 字段 | 必填 | 说明 |
 |------|------|------|
-| `links` | 是 | 教程链接列表，1–5 条，须为 http(s) URL |
+| `links` | 是 | 教程链接列表，当前仅支持 1 条，须为 http(s) URL |
 | `userGoal` | 否 | 用户补充的学习目标 |
 | `weeklyHours` | 否 | 每周计划投入时长，1–40（整数） |
+| `currentConstraints` | 否 | 当前约束，例如时间窗口、偏好或范围限制 |
 
 成功响应示例：
 
@@ -942,34 +949,18 @@ SSE 事件补充：
   "code": "OK",
   "message": "success",
   "data": {
-    "processingMode": "sync",
+    "processingMode": "async",
     "intakeId": "22222222-2222-4222-8222-222222222222",
-    "draftId": "11111111-1111-4111-8111-111111111111",
-    "preview": {
-      "title": "用官方教程完成第一个 Next.js 页面改造",
-      "goal": "基于教程内容完成一个可运行、可验收的最小页面练习闭环。",
-      "tasks": [
-        {
-          "taskNo": 1,
-          "title": "通读教程并跑通基础项目",
-          "objective": "先确认教程里的项目结构、依赖和运行方式都可复现。",
-          "practiceSteps": [
-            "阅读教程中的环境准备与启动步骤",
-            "本地运行项目并截图记录首页结果"
-          ],
-          "acceptanceCriteria": "项目可正常启动；能说明教程目标和当前项目结构。",
-          "estimatedMinutes": 30,
-          "sourceRefs": ["chunk-1"]
-        }
-      ]
-    }
+    "runId": "33333333-3333-4333-8333-333333333333",
+    "draftId": null,
+    "status": "queued"
   }
 }
 ```
 
 业务规则：
 
-- 同步接口；材料抓取失败、域名不在白名单、AI JSON 校验失败等返回明确错误码（如 `MATERIAL_UNSUPPORTED_DOMAIN`、`MATERIAL_FETCH_FAILED`、`AI_RESPONSE_INVALID`）；上游模型失败返回 `AI_PROVIDER_ERROR`（502）
+- 异步接口；创建成功只表示 intake / run 已登记，不表示草稿已完成。材料抓取失败、来源不支持、AI JSON 校验失败等会在后续 status / draft 读取中体现明确错误码；创建阶段的来源校验失败返回 `MATERIAL_UNSUPPORTED_SOURCE`
 - 确认学习计划须调用 7.5，本接口不写 `user_learning_paths`
 
 ## 7.5 `POST /api/learning/plan-drafts/{id}/confirm`

@@ -7,6 +7,14 @@ export type MaterialChunk = {
   id: string
   url: string
   excerpt: string
+  modality: "text"
+  sourceRef: {
+    sourceId: string
+    url: string
+    chunkNo: number
+  }
+  evidenceType: "raw_text"
+  confidence: number
 }
 
 const CHUNK_TARGET = 3500
@@ -15,6 +23,7 @@ export function buildChunks(
   url: string,
   text: string,
   urlIndex: number,
+  sourceId: string,
 ): MaterialChunk[] {
   const trimmed = text.trim()
   if (trimmed.length < MATERIAL_PLAN_MIN_TOTAL_CHARS) {
@@ -30,6 +39,14 @@ export function buildChunks(
       id: `u${urlIndex}-chunk-${part}`,
       url,
       excerpt: slice,
+      modality: "text",
+      sourceRef: {
+        sourceId,
+        url,
+        chunkNo: part,
+      },
+      evidenceType: "raw_text",
+      confidence: 1,
     })
     offset += CHUNK_TARGET
     part += 1

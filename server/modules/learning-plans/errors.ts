@@ -20,6 +20,10 @@ export function planDraftAlreadyConfirmed(message = "该草稿已确认，无法
   return new LearningPlanServiceError("PLAN_DRAFT_ALREADY_CONFIRMED", message, 409)
 }
 
+export function materialIntakeNotFound(message = "材料摄取记录不存在。") {
+  return new LearningPlanServiceError("MATERIAL_INTAKE_NOT_FOUND", message, 404)
+}
+
 export function aiResponseInvalid(message = "学习计划生成结果格式无效，请稍后重试或更换材料。") {
   return new LearningPlanServiceError("AI_RESPONSE_INVALID", message, 422)
 }

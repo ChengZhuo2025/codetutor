@@ -14,11 +14,13 @@ type DraftRow = {
   title: string
   goal: string | null
   status: "draft" | "confirmed" | "rejected" | "superseded"
+  revision_no: number
   confirmed_template_path_id: string | null
   confirmed_user_learning_path_id: string | null
 }
 
 type DraftTaskRow = {
+  id: string
   task_no: number
   title: string
   objective: string
@@ -26,6 +28,8 @@ type DraftTaskRow = {
   acceptance_criteria: string
   estimated_minutes: number | null
   source_refs: unknown
+  goal_alignment_refs: unknown
+  recommended_for_week_1: boolean
 }
 
 export type ConfirmDraftResult = {
@@ -43,7 +47,7 @@ export async function confirmPlanDraft(
   const { data: draftData, error: draftError } = await supabase
     .from("learning_plan_drafts")
     .select(
-      "id, user_id, intake_id, title, goal, status, confirmed_template_path_id, confirmed_user_learning_path_id",
+      "id, user_id, intake_id, title, goal, status, revision_no, confirmed_template_path_id, confirmed_user_learning_path_id",
     )
     .eq("id", draftId)
     .maybeSingle()
@@ -110,7 +114,7 @@ export async function confirmPlanDraft(
 
   const { data: taskRows, error: tasksError } = await supabase
     .from("learning_plan_draft_tasks")
-    .select("task_no, title, objective, practice_steps, acceptance_criteria, estimated_minutes, source_refs")
+    .select("id, task_no, title, objective, practice_steps, acceptance_criteria, estimated_minutes, source_refs, goal_alignment_refs, recommended_for_week_1")
     .eq("draft_id", draftId)
     .order("task_no", { ascending: true })
 
@@ -202,6 +206,9 @@ export async function confirmPlanDraft(
     is_required: true,
     metadata: {
       source_refs: t.source_refs,
+      goal_alignment_refs: t.goal_alignment_refs,
+      recommended_for_week_1: t.recommended_for_week_1,
+      draft_revision_no: draft.revision_no,
     },
     created_at: now,
     updated_at: now,
@@ -250,6 +257,14 @@ export async function confirmPlanDraft(
         seedSource: "plan_draft_confirmed",
         draftId,
         intakeId: draft.intake_id,
+        draftRevisionNo: draft.revision_no,
+        sourceRefs: tasks.map((task) => ({
+          taskId: task.id,
+          taskNo: task.task_no,
+          sourceRefs: task.source_refs,
+          goalAlignmentRefs: task.goal_alignment_refs,
+          recommendedForWeek1: task.recommended_for_week_1,
+        })),
       },
       created_at: now,
       updated_at: now,

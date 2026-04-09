@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 
 import { assertHostnameAllowed } from "../server/modules/learning-materials/whitelist.ts"
 import { MaterialPlanError } from "../server/modules/learning-materials/errors.ts"
+import { resolveMaterialSourceAdapter } from "../server/modules/learning-materials/source-resolver.ts"
 import { extractJsonObjectString } from "../server/modules/learning-plans/json-parse.ts"
 import {
   plannerOutputSchema,
@@ -21,6 +22,25 @@ test("assertHostnameAllowed rejects unknown host", () => {
   assert.throws(
     () => assertHostnameAllowed("https://example.com/a"),
     (e: unknown) => e instanceof MaterialPlanError,
+  )
+})
+
+test("resolveMaterialSourceAdapter supports configured public platform sources", () => {
+  assert.equal(
+    resolveMaterialSourceAdapter("https://developer.mozilla.org/en-US/docs/Web").sourceCode,
+    "html",
+  )
+  assert.equal(
+    resolveMaterialSourceAdapter("https://www.douyin.com/video/123").sourceCode,
+    "douyin",
+  )
+  assert.equal(
+    resolveMaterialSourceAdapter("https://www.xiaohongshu.com/explore/123").sourceCode,
+    "xiaohongshu",
+  )
+  assert.equal(
+    resolveMaterialSourceAdapter("https://www.bilibili.com/video/BV1xx").sourceCode,
+    "bilibili",
   )
 })
 

@@ -12,10 +12,10 @@ export class MaterialPlanError extends Error {
   }
 }
 
-export function materialUnsupportedDomain(
+export function materialUnsupportedSource(
   message = "当前仅支持 developer.mozilla.org、nextjs.org、web.dev 的教程链接。",
 ) {
-  return new MaterialPlanError("MATERIAL_UNSUPPORTED_DOMAIN", message, 422)
+  return new MaterialPlanError("MATERIAL_UNSUPPORTED_SOURCE", message, 422)
 }
 
 export function materialFetchFailed(message = "链接抓取失败或超时，请稍后重试。") {

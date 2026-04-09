@@ -18,6 +18,8 @@ import {
   parseNotificationSettingsBody,
   parseHistoryRecentQuery,
   parsePlanDraftRegenerateBody,
+  parsePlanDraftPatchBody,
+  parsePlanDraftTaskIdParam,
   parsePlanFromMaterialBody,
   parseUpdateHistoryStatusBody,
   parseUpdateProfileMeBody,
@@ -341,12 +343,14 @@ test("parsePlanFromMaterialBody validates links and optional fields", () => {
     links: ["https://web.dev/learn/"],
     userGoal: "  ",
     weeklyHours: 6,
+    currentConstraints: "  两周内完成，优先项目实战  ",
   })
   assert.equal(okParsed.ok, true)
   if (okParsed.ok) {
     assert.deepEqual(okParsed.data.links, ["https://web.dev/learn/"])
     assert.equal(okParsed.data.userGoal, null)
     assert.equal(okParsed.data.weeklyHours, 6)
+    assert.equal(okParsed.data.currentConstraints, "两周内完成，优先项目实战")
   }
 })
 
@@ -356,4 +360,32 @@ test("parsePlanDraftRegenerateBody allows empty object", () => {
   if (empty.ok) {
     assert.deepEqual(empty.data, {})
   }
+})
+
+test("parsePlanDraftPatchBody validates editable draft updates", () => {
+  const parsed = parsePlanDraftPatchBody({
+    title: "  新标题 ",
+    tasks: [
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        practiceSteps: ["第一步", "第二步"],
+        estimatedMinutes: 45,
+        recommendedForWeek1: true,
+      },
+    ],
+  })
+  assert.equal(parsed.ok, true)
+  if (parsed.ok) {
+    assert.equal(parsed.data.title, "新标题")
+    assert.equal(parsed.data.tasks?.[0]?.estimatedMinutes, 45)
+    assert.equal(parsed.data.tasks?.[0]?.recommendedForWeek1, true)
+  }
+})
+
+test("plan draft task id parser keeps uuid validation semantics", () => {
+  assert.equal(parsePlanDraftTaskIdParam("not-a-uuid").ok, false)
+  assert.equal(
+    parsePlanDraftTaskIdParam("11111111-1111-4111-8111-111111111111").ok,
+    true,
+  )
 })

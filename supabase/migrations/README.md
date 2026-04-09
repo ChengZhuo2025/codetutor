@@ -37,3 +37,9 @@ As of the current MVP snapshot, the migration sequence now continues through:
 17. `017_create_admin_accounts.sql`
 18. `018_create_learning_material_plan_tables.sql`
 19. `019_admin_user_soft_delete.sql`
+20. `020_create_analytics_and_notifications.sql`
+21. `021_add_ai_provider_encrypted_secrets.sql`
+22. `022_add_admin_test_session_flag.sql`
+23. `023_add_optimistic_lock_version.sql`
+24. `024_async_material_plan_runs.sql`
+25. `025_material_plan_editable_drafts.sql`

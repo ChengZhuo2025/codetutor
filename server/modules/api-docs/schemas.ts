@@ -34,9 +34,10 @@ export const ApiErrorCodeSchema = z
     "CONFLICT",
     "VALIDATION_FAILED",
     "AI_PROVIDER_ERROR",
-    "MATERIAL_UNSUPPORTED_DOMAIN",
+    "MATERIAL_UNSUPPORTED_SOURCE",
     "MATERIAL_FETCH_FAILED",
     "MATERIAL_INSUFFICIENT_CONTENT",
+    "MATERIAL_INTAKE_NOT_FOUND",
     "PLAN_DRAFT_NOT_FOUND",
     "PLAN_DRAFT_ALREADY_CONFIRMED",
     "AI_RESPONSE_INVALID",
@@ -460,17 +461,91 @@ export const learningPlanFromMaterialRequestSchema = z
     links: z.array(z.string().url()).min(1).max(5),
     userGoal: z.string().trim().optional(),
     weeklyHours: z.number().int().min(1).max(40).optional(),
+    currentConstraints: z.string().trim().optional(),
   })
   .openapi("LearningPlanFromMaterialRequest")
 
+export const materialPlanAsyncStatusSchema = z
+  .enum(["queued", "extracting", "planning", "quality_checking", "ready", "failed"])
+  .openapi("MaterialPlanAsyncStatus")
+
 export const learningPlanFromMaterialResponseDataSchema = z
   .object({
-    processingMode: z.literal("sync"),
-    draftId: z.string().uuid(),
+    processingMode: z.literal("async"),
     intakeId: z.string().uuid(),
-    preview: learningPlanPreviewSchema,
+    runId: z.string().uuid(),
+    draftId: z.string().uuid().nullable(),
+    status: materialPlanAsyncStatusSchema,
   })
   .openapi("LearningPlanFromMaterialResponseData")
+
+export const materialIntakeStatusResponseDataSchema = z
+  .object({
+    intakeId: z.string().uuid(),
+    status: materialPlanAsyncStatusSchema,
+    processingStage: z.string().nullable(),
+    progressPercent: z.number().int().nullable(),
+    progressMessage: z.string().nullable(),
+    draftId: z.string().uuid().nullable(),
+    runId: z.string().uuid().nullable(),
+    errorCode: z.string().nullable(),
+    errorMessage: z.string().nullable(),
+  })
+  .openapi("MaterialIntakeStatusResponseData")
+
+export const learningPlanDraftTaskDetailSchema = z
+  .object({
+    id: z.string().uuid(),
+    taskNo: z.number().int(),
+    position: z.number().int().nullable(),
+    title: z.string(),
+    objective: z.string(),
+    practiceSteps: z.array(z.string()),
+    acceptanceCriteria: z.string(),
+    estimatedMinutes: z.number().int().nullable(),
+    sourceRefs: z.array(z.string()),
+    goalAlignmentRefs: z.array(z.string()),
+    recommendedForWeek1: z.boolean(),
+    isUserEdited: z.boolean(),
+  })
+  .openapi("LearningPlanDraftTaskDetail")
+
+export const learningPlanDraftDetailResponseDataSchema = z
+  .object({
+    draftId: z.string().uuid(),
+    intakeId: z.string().uuid(),
+    title: z.string(),
+    goal: z.string().nullable(),
+    status: z.enum(["draft", "confirmed", "rejected", "superseded"]),
+    revisionNo: z.number().int(),
+    qualityStatus: z.string(),
+    qualityReport: z.record(z.string(), z.unknown()).nullable(),
+    alignmentTable: z.unknown(),
+    week1TaskIds: z.array(z.string().uuid()),
+    updatedAt: z.string(),
+    tasks: z.array(learningPlanDraftTaskDetailSchema),
+  })
+  .openapi("LearningPlanDraftDetailResponseData")
+
+export const learningPlanDraftPatchTaskRequestSchema = z
+  .object({
+    id: z.string().uuid(),
+    title: z.string().nullable().optional(),
+    objective: z.string().nullable().optional(),
+    practiceSteps: z.array(z.string()).optional(),
+    acceptanceCriteria: z.string().nullable().optional(),
+    estimatedMinutes: z.number().int().min(15).max(240).nullable().optional(),
+    recommendedForWeek1: z.boolean().optional(),
+  })
+  .openapi("LearningPlanDraftPatchTaskRequest")
+
+export const learningPlanDraftPatchRequestSchema = z
+  .object({
+    title: z.string().nullable().optional(),
+    goal: z.string().nullable().optional(),
+    tasks: z.array(learningPlanDraftPatchTaskRequestSchema).optional(),
+  })
+  .openapi("LearningPlanDraftPatchRequest")
 
 export const learningPlanDraftConfirmResponseDataSchema = z
   .object({

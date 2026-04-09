@@ -129,23 +129,91 @@ export type LearningPlanPreviewContract = {
   tasks: LearningPlanPreviewTaskContract[]
 }
 
+export type MaterialPlanAsyncStatus =
+  | "queued"
+  | "extracting"
+  | "planning"
+  | "quality_checking"
+  | "ready"
+  | "failed"
+
 export type PlanFromMaterialRequestContract = {
   links: string[]
   userGoal?: string | null
   weeklyHours?: number | null
+  currentConstraints?: string | null
 }
 
 export type PlanFromMaterialResponseData = {
-  processingMode: "sync"
-  draftId: string
+  processingMode: "async"
   intakeId: string
-  preview: LearningPlanPreviewContract
+  runId: string
+  draftId: string | null
+  status: MaterialPlanAsyncStatus
 }
 
 export type PlanDraftRegenerateRequestContract = {
   links?: string[]
   userGoal?: string | null
   weeklyHours?: number | null
+}
+
+export type MaterialIntakeStatusResponseData = {
+  intakeId: string
+  status: MaterialPlanAsyncStatus
+  processingStage: string | null
+  progressPercent: number | null
+  progressMessage: string | null
+  draftId: string | null
+  runId: string | null
+  errorCode: string | null
+  errorMessage: string | null
+}
+
+export type LearningPlanDraftTaskDetailContract = {
+  id: string
+  taskNo: number
+  position: number | null
+  title: string
+  objective: string
+  practiceSteps: string[]
+  acceptanceCriteria: string
+  estimatedMinutes: number | null
+  sourceRefs: string[]
+  goalAlignmentRefs: string[]
+  recommendedForWeek1: boolean
+  isUserEdited: boolean
+}
+
+export type LearningPlanDraftDetailResponseData = {
+  draftId: string
+  intakeId: string
+  title: string
+  goal: string | null
+  status: "draft" | "confirmed" | "rejected" | "superseded"
+  revisionNo: number
+  qualityStatus: string
+  qualityReport: Record<string, unknown> | null
+  alignmentTable: unknown
+  week1TaskIds: string[]
+  updatedAt: string
+  tasks: LearningPlanDraftTaskDetailContract[]
+}
+
+export type LearningPlanDraftPatchTaskRequestContract = {
+  id: string
+  title?: string | null
+  objective?: string | null
+  practiceSteps?: string[]
+  acceptanceCriteria?: string | null
+  estimatedMinutes?: number | null
+  recommendedForWeek1?: boolean
+}
+
+export type LearningPlanDraftPatchRequestContract = {
+  title?: string | null
+  goal?: string | null
+  tasks?: LearningPlanDraftPatchTaskRequestContract[]
 }
 
 export type PlanDraftConfirmResponseData = {

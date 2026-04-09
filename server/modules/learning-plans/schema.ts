@@ -10,11 +10,16 @@ export const plannerTaskSchema = z.object({
   acceptanceCriteria: z.string().min(1).max(4000),
   estimatedMinutes: z.number().int().min(15).max(240).optional(),
   sourceRefs: z.array(z.string()).min(1).max(20),
+  goalAlignmentRefs: z.array(z.string()).default([]),
 })
 
 export const plannerOutputSchema = z.object({
   title: z.string().min(1).max(256),
   goal: z.string().min(1).max(8000),
+  alignmentTable: z.array(z.record(z.string(), z.unknown())).default([]),
+  estimatedTotalMinutes: z.number().int().min(30).max(2400).optional(),
+  week1TaskNos: z.array(z.number().int().min(1).max(20)).default([]),
+  warnings: z.array(z.string()).default([]),
   tasks: z.array(plannerTaskSchema).min(3).max(8),
 })
 
@@ -30,6 +35,11 @@ export function validatePlannerBusinessRules(data: PlannerOutput) {
   const titles = new Set(data.tasks.map((t) => t.title.trim().toLowerCase()))
   if (titles.size !== data.tasks.length) {
     return "tasks 标题不能重复。"
+  }
+  for (const no of data.week1TaskNos) {
+    if (!nos.includes(no)) {
+      return "week1TaskNos 必须引用已有 taskNo。"
+    }
   }
   return null
 }
