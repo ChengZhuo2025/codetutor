@@ -5,6 +5,11 @@ import Link from "next/link"
 import { ArrowRight, Code2 } from "lucide-react"
 import { APP_COPYRIGHT_YEAR, APP_NAME } from "@/constants/app"
 import { Button } from "@/components/ui/button"
+import {
+  USER_BUTTON_PRIMARY_CLASS,
+  USER_BUTTON_SECONDARY_CLASS,
+} from "@/components/ui/surface-styles"
+import { cn } from "@/lib/utils"
 import { marketingTools } from "@/features/marketing/data/marketing-content"
 import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
 import type { MarketingTool } from "@/features/marketing/types"
@@ -39,7 +44,7 @@ export function LandingFooter() {
             <Link href={ctaHref}>
               <Button
                 size="lg"
-                className="h-14 rounded-2xl bg-brand px-8 text-base font-semibold text-brand-foreground shadow-[0_24px_60px_-24px_oklch(0.78_0.15_180/0.82)] hover:-translate-y-0.5 hover:bg-brand/90"
+                className={cn("h-14 px-8 text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
               >
                 {authState.status === "authenticated" ? ctaLabel : "立即行动"}
                 <ArrowRight className="h-4 w-4" />
@@ -49,7 +54,7 @@ export function LandingFooter() {
               <Button
                 size="lg"
                 variant="outline"
-                className="h-14 rounded-2xl border-border bg-card/90 px-8 text-base font-medium text-foreground shadow-sm backdrop-blur transition-all hover:-translate-y-1 hover:bg-muted dark:border-white/10 dark:bg-[oklch(0.16_0.01_240/0.34)] dark:shadow-none dark:hover:bg-[oklch(0.20_0.015_220)]"
+                className={cn("h-14 px-8 text-base font-medium", USER_BUTTON_SECONDARY_CLASS)}
               >
                 先看支持哪些工具
               </Button>

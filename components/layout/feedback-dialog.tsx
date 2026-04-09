@@ -24,6 +24,8 @@ import { Label } from "@/components/ui/label"
 import { StatePanel } from "@/components/ui/state-panel"
 import {
   DIALOG_PANEL_CLASS,
+  USER_BUTTON_SECONDARY_CLASS,
+  USER_ICON_BUTTON_CLASS,
   USER_PANEL_DIVIDER_CLASS,
   USER_PANEL_FIELD_CLASS,
   USER_PANEL_OUTLINE_BUTTON_CLASS,
@@ -315,7 +317,7 @@ export function FeedbackDialog({
                 className={cn(
                   "rounded-[10px] px-3 py-2 text-sm font-medium transition-colors",
                   activeTab === "submit"
-                    ? "bg-brand text-brand-foreground"
+                    ? cn(USER_BUTTON_SECONDARY_CLASS, "shadow-none hover:translate-y-0")
                     : "text-foreground/72 hover:bg-muted/70 hover:text-foreground dark:hover:bg-foreground/6",
                 )}
               >
@@ -327,7 +329,7 @@ export function FeedbackDialog({
                 className={cn(
                   "rounded-[10px] px-3 py-2 text-sm font-medium transition-colors",
                   activeTab === "mine"
-                    ? "bg-brand text-brand-foreground"
+                    ? cn(USER_BUTTON_SECONDARY_CLASS, "shadow-none hover:translate-y-0")
                     : "text-foreground/72 hover:bg-muted/70 hover:text-foreground dark:hover:bg-foreground/6",
                 )}
               >
@@ -472,10 +474,10 @@ export function FeedbackDialog({
                   </div>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     size="icon"
                     onClick={() => void loadMyFeedbackList()}
-                    className="h-9 w-9 rounded-xl text-foreground/70 hover:bg-muted/70 hover:text-foreground dark:hover:bg-foreground/8"
+                    className={cn("h-9 w-9 rounded-xl", USER_ICON_BUTTON_CLASS)}
                   >
                     <RefreshCw className="h-4 w-4" />
                   </Button>

@@ -2,6 +2,11 @@
 
 import { Menu, PanelRightOpen } from "lucide-react"
 import { APP_NAME } from "@/constants/app"
+import {
+  USER_BUTTON_SECONDARY_CLASS,
+  USER_ICON_BUTTON_CLASS,
+} from "@/components/ui/surface-styles"
+import { cn } from "@/lib/utils"
 
 type AppMobileNavProps = {
   title: string
@@ -24,7 +29,10 @@ export function AppMobileNav({
         <button
           type="button"
           onClick={onOpenSidebar}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-surface-2 text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+            USER_ICON_BUTTON_CLASS,
+          )}
           aria-label="打开导航"
         >
           <Menu className="h-4 w-4" />
@@ -46,7 +54,10 @@ export function AppMobileNav({
             onClick={onOpenAside}
             aria-label={asideLabel}
             title={asideLabel}
-            className="flex h-10 items-center gap-2 rounded-xl border border-border/60 bg-surface-2 px-3 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+            className={cn(
+              "flex h-10 items-center gap-2 rounded-xl px-3 text-xs font-medium",
+              USER_BUTTON_SECONDARY_CLASS,
+            )}
           >
             <PanelRightOpen className="h-4 w-4" />
             <span className="hidden sm:inline">{asideLabel}</span>

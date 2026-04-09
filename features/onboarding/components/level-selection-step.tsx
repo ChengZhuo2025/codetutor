@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight, Target } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
+  USER_BUTTON_PRIMARY_CLASS,
   USER_PANEL_SECTION_CLASS,
   USER_PANEL_SUBTLE_SECTION_CLASS,
 } from "@/components/ui/surface-styles"
@@ -127,22 +128,23 @@ export function LevelSelectionStep({
             onClick={onNext}
             disabled={!canGoNext || !selectedTool || isPending}
             className={cn(
-              "h-11 w-full max-w-xs rounded-xl text-md font-semibold shadow-[0_24px_64px_-26px_oklch(0.78_0.15_180/0.78)] transition-all",
-              canGoNext && selectedTool
-                ? "bg-brand text-brand-foreground hover:-translate-y-0.5 hover:bg-brand/90"
-                : "cursor-not-allowed opacity-40",
+              "h-11 w-full max-w-xs text-md font-semibold",
+              USER_BUTTON_PRIMARY_CLASS,
             )}
           >
             {isPending ? "切换中…" : "下一步：选择学习方式"}
             <ArrowRight className="h-4 w-4" />
           </Button>
-          <button
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={onBack}
-            className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="gap-1 text-sm"
           >
             <ArrowLeft className="h-3 w-3" />
             返回上一步，改选工具
-          </button>
+          </Button>
         </div>
       </div>
     </div>

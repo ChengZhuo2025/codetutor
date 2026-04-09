@@ -14,9 +14,11 @@ import {
 } from "@/components/ui/dialog"
 import {
   DIALOG_GRADIENT_PANEL_CLASS,
+  USER_BUTTON_PRIMARY_CLASS,
   USER_PANEL_DIVIDER_CLASS,
   USER_PANEL_OUTLINE_BUTTON_CLASS,
 } from "@/components/ui/surface-styles"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { SubscriptionSnapshot } from "@/types/profile"
 
@@ -134,33 +136,31 @@ export function SubscriptionDetailDialog({
                     <div className="mt-4">
                       {isCurrent ? (
                         // 当前套餐：续费按钮
-                        <Link
-                          href="/login"
-                          className="flex items-center justify-center rounded-xl border border-brand/40 bg-brand px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand/90"
-                        >
-                          立即续费
-                        </Link>
+                        <Button asChild className={cn("w-full rounded-xl px-4 py-2.5 text-sm font-semibold", USER_BUTTON_PRIMARY_CLASS)}>
+                          <Link href="/login">立即续费</Link>
+                        </Button>
                       ) : isDowngrade ? (
                         // 更低套餐：不可点击的灰度按钮
                         <button
                           disabled
-                          className="flex w-full cursor-not-allowed items-center justify-center rounded-xl border border-border/60 bg-surface-2/75 px-4 py-2.5 text-sm font-medium text-muted-foreground/50 dark:border-border/70 dark:bg-surface-2/80 dark:text-muted-foreground/40"
+                          className={cn(
+                            "flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium",
+                            USER_PANEL_OUTLINE_BUTTON_CLASS,
+                          )}
                         >
                           已有更高级套餐
                         </button>
                       ) : (
                         // 更高套餐：升级按钮
-                        <Link
-                          href="/login"
+                        <Button
+                          asChild
                           className={cn(
-                            "flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors",
-                            plan.highlight
-                              ? "bg-brand text-white hover:bg-brand/90"
-                              : USER_PANEL_OUTLINE_BUTTON_CLASS,
+                            "w-full rounded-xl px-4 py-2.5 text-sm font-semibold",
+                            plan.highlight ? USER_BUTTON_PRIMARY_CLASS : USER_PANEL_OUTLINE_BUTTON_CLASS,
                           )}
                         >
-                          升级套餐
-                        </Link>
+                          <Link href="/login">升级套餐</Link>
+                        </Button>
                       )}
                     </div>
                   </div>

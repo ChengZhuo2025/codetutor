@@ -1,5 +1,6 @@
 import { ArrowRight, Play, CheckCircle2, Target, Zap } from "lucide-react"
 import {
+  USER_BUTTON_PRIMARY_CLASS,
   USER_PANEL_HERO_CARD_CLASS,
   USER_PANEL_HERO_TOP_SECTION_CLASS,
 } from "@/components/ui/surface-styles"
@@ -65,7 +66,10 @@ export function ProgressOverview({
 
                 <button
                   onClick={onContinueLearning}
-                  className="inline-flex items-center justify-center gap-1 rounded-2xl bg-brand px-5 py-3 text-sm font-semibold text-brand-foreground shadow-[0_24px_60px_-28px_oklch(0.78_0.15_180/0.9)] transition-all hover:-translate-y-0.5 hover:bg-brand/90"
+                  className={cn(
+                    "inline-flex items-center justify-center gap-1 px-5 py-3 text-sm font-semibold",
+                    USER_BUTTON_PRIMARY_CLASS,
+                  )}
                 >
                   继续学习
                   <ArrowRight className="h-4 w-4" />

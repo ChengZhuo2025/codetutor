@@ -3,6 +3,10 @@ import {
   WORKSPACE_ASIDE_INSET_CARD_CLASS,
   WorkspaceAside,
 } from "@/components/layout/workspace-aside";
+import {
+  USER_BUTTON_PRIMARY_CLASS,
+  USER_BUTTON_SECONDARY_CLASS,
+} from "@/components/ui/surface-styles";
 import { cn } from "@/lib/utils";
 import type { Stage } from "@/features/progress/types";
 
@@ -136,12 +140,10 @@ export function StageDetailPanel({
             onClick={isDone ? onOpenReview : onContinueLearning}
             disabled={isLocked}
             className={cn(
-              "mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold transition-colors",
+              "mt-4 flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-semibold",
               isLocked
-                ? "cursor-not-allowed border border-border/70 bg-surface-1/95 text-muted-foreground/55 dark:border-white/10 dark:bg-white/5"
-                : isDone
-                  ? "bg-gold text-background hover:bg-gold/90"
-                  : "bg-brand text-brand-foreground hover:bg-brand/90",
+                ? USER_BUTTON_SECONDARY_CLASS
+                : USER_BUTTON_PRIMARY_CLASS,
             )}
           >
             {isCurrent ? (

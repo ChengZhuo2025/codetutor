@@ -2,6 +2,10 @@
 
 import { ArrowRight, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  USER_BUTTON_PRIMARY_CLASS,
+  USER_BUTTON_SECONDARY_CLASS,
+} from "@/components/ui/surface-styles";
 import { StatePanel } from "@/components/ui/state-panel";
 import {
   OAUTH_PROVIDERS,
@@ -163,7 +167,10 @@ export function LoginForm({
                 type="button"
                 onClick={onSendCode}
                 disabled={countdown > 0 || !isValidPhone || isSendingCode}
-                className="shrink-0 rounded-2xl border border-brand/40 bg-brand-dim px-4 text-sm font-medium text-brand transition-all hover:-translate-y-0.5 hover:bg-brand/20 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
+                className={cn(
+                  "shrink-0 px-4 text-sm font-medium",
+                  USER_BUTTON_SECONDARY_CLASS,
+                )}
               >
                 {isSendingCode
                   ? "发送中..."
@@ -188,7 +195,7 @@ export function LoginForm({
           <Button
             type="submit"
             disabled={!canSubmit || isSubmitting}
-            className="mt-1 h-12 w-full rounded-2xl bg-brand text-base font-semibold text-brand-foreground shadow-[0_20px_60px_-24px_oklch(0.78_0.15_180/0.8)] hover:-translate-y-0.5 hover:bg-brand/90 disabled:translate-y-0"
+            className={cn("mt-1 h-12 w-full text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
           >
             {isSubmitting
               ? "进入学习流程中..."

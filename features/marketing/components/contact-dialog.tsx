@@ -22,7 +22,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { DIALOG_DARK_GRADIENT_PANEL_CLASS } from "@/components/ui/surface-styles"
+import {
+  DIALOG_DARK_GRADIENT_PANEL_CLASS,
+  USER_PANEL_OUTLINE_BUTTON_CLASS,
+} from "@/components/ui/surface-styles"
 import { MockQr } from "@/features/marketing/components/mock-qr"
 import { cn } from "@/lib/utils"
 
@@ -196,9 +199,9 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                           </div>
                           <Button
                             type="button"
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            className="h-8 rounded-full border border-border bg-muted/80 px-3 text-xs text-foreground hover:bg-muted dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-white"
+                            className={cn("h-8 rounded-xl px-3 text-xs", USER_PANEL_OUTLINE_BUTTON_CLASS)}
                             onClick={() => handleCopy(copyKey, channel.handle)}
                           >
                             {isCopied ? <Check className="h-2 w-2" /> : <Copy className="h-2 w-2" />}

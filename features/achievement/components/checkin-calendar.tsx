@@ -1,6 +1,10 @@
 import { Flame, Zap } from "lucide-react"
 import { PageSection } from "@/components/ui/page-section"
 import { StatePanel } from "@/components/ui/state-panel"
+import {
+  USER_BUTTON_PRIMARY_CLASS,
+  USER_BUTTON_SECONDARY_CLASS,
+} from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
 
 type CheckinCalendarProps = {
@@ -60,10 +64,10 @@ export function CheckinCalendar({
             onClick={onCheckIn}
             disabled={checkedInToday || isSubmitting || !onCheckIn}
             className={cn(
-              "rounded-2xl px-4 py-2 text-sm font-semibold transition-colors",
+              "px-4 py-2 text-sm font-semibold",
               checkedInToday
-                ? "cursor-not-allowed border border-brand/20 bg-brand/10 text-brand"
-                : "bg-brand text-brand-foreground hover:bg-brand/90",
+                ? USER_BUTTON_SECONDARY_CLASS
+                : USER_BUTTON_PRIMARY_CLASS,
             )}
           >
             {isSubmitting ? "打卡中..." : checkedInToday ? "今日已打卡" : "立即打卡"}

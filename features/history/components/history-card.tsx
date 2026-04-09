@@ -12,7 +12,10 @@ import {
   Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { USER_PANEL_OUTLINE_BUTTON_CLASS } from "@/components/ui/surface-styles"
+import {
+  USER_BUTTON_DANGER_CLASS,
+  USER_BUTTON_PRIMARY_CLASS,
+} from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
 import type {
   HistoryPlanAction,
@@ -81,7 +84,7 @@ export function HistoryCard({
             onClick={() => onManageAction(item, "abandon")}
             disabled={isMutating}
             variant="outline"
-            className={cn("rounded-xl", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+            className={cn("rounded-xl", USER_BUTTON_DANGER_CLASS)}
           >
             放弃本轮练习
           </Button>
@@ -89,7 +92,7 @@ export function HistoryCard({
             size="sm"
             onClick={() => onContinue(item)}
             disabled={isMutating}
-            className="gap-1.5 rounded-xl bg-brand px-4 text-brand-foreground hover:bg-brand/90"
+            className={cn("gap-1.5 rounded-xl px-4", USER_BUTTON_PRIMARY_CLASS)}
           >
             <Play className="h-4 w-4" />
             继续学习
@@ -107,7 +110,7 @@ export function HistoryCard({
             onClick={() => onManageAction(item, "archive")}
             disabled={isMutating}
             variant="outline"
-            className={cn("rounded-xl", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+            className={cn("rounded-xl", USER_BUTTON_DANGER_CLASS)}
           >
             <Trash2 className="h-4 w-4" />
             删除记录
@@ -116,7 +119,7 @@ export function HistoryCard({
             size="sm"
             onClick={() => onManageAction(item, "reactivate")}
             disabled={isMutating}
-            className="gap-1.5 rounded-xl bg-chart-3 px-4 text-background hover:bg-chart-3/90"
+            className={cn("gap-1.5 rounded-xl px-4", USER_BUTTON_PRIMARY_CLASS)}
           >
             <RefreshCw className="h-4 w-4" />
             重新激活
@@ -134,7 +137,7 @@ export function HistoryCard({
             onClick={() => onManageAction(item, "archive")}
             disabled={isMutating}
             variant="outline"
-            className={cn("rounded-xl", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+            className={cn("rounded-xl", USER_BUTTON_DANGER_CLASS)}
           >
             <Trash2 className="h-4 w-4" />
             删除记录
@@ -143,7 +146,7 @@ export function HistoryCard({
             size="sm"
             onClick={() => onReview(item)}
             disabled={isMutating}
-            className="gap-1.5 rounded-xl bg-green-600 px-4 text-background hover:bg-green-600/90"
+            className={cn("gap-1.5 rounded-xl px-4", USER_BUTTON_PRIMARY_CLASS)}
           >
             <BookOpen className="h-4 w-4" />
             学习复盘
@@ -159,7 +162,7 @@ export function HistoryCard({
         onClick={() => onManageAction(item, "archive")}
         disabled={isMutating}
         variant="outline"
-        className={cn("rounded-xl", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+        className={cn("rounded-xl", USER_BUTTON_DANGER_CLASS)}
       >
         <Trash2 className="h-4 w-4" />
         删除记录

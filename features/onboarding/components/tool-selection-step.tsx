@@ -1,6 +1,7 @@
 import { ArrowRight, Check, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
+  USER_BUTTON_PRIMARY_CLASS,
   USER_PANEL_SECTION_CLASS,
   USER_PANEL_SUBTLE_SECTION_CLASS,
 } from "@/components/ui/surface-styles"
@@ -152,10 +153,8 @@ export function ToolSelectionStep({
             onClick={onNext}
             disabled={!canGoNext}
             className={cn(
-              "h-11 w-full max-w-xs rounded-xl text-md font-semibold shadow-[0_24px_64px_-26px_oklch(0.78_0.15_180/0.78)] transition-all",
-              canGoNext
-                ? "bg-brand text-brand-foreground hover:-translate-y-0.5 hover:bg-brand/90"
-                : "cursor-not-allowed opacity-40",
+              "h-11 w-full max-w-xs text-md font-semibold",
+              USER_BUTTON_PRIMARY_CLASS,
             )}
           >
             下一步：选择我的基础

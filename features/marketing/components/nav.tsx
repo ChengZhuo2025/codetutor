@@ -9,6 +9,10 @@ import { MARKETING_NAV_ITEMS } from "@/constants/navigation"
 import { ROUTES } from "@/constants/routes"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
+import {
+  USER_BUTTON_PRIMARY_CLASS,
+  USER_BUTTON_SECONDARY_CLASS,
+} from "@/components/ui/surface-styles"
 import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
 import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
@@ -75,7 +79,7 @@ export function LandingNav() {
                 target: authState.summary.redirectTo,
               })
             }
-            className="bg-brand text-brand-foreground shadow-[0_18px_40px_-20px_oklch(0.78_0.15_180/0.9)] hover:bg-brand/90"
+            className={USER_BUTTON_PRIMARY_CLASS}
           >
             继续学习
           </Button>
@@ -88,7 +92,7 @@ export function LandingNav() {
           v0.1.0 Beta
         </div>
         <Link href={ROUTES.login}>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+          <Button variant="outline" size="sm" className={USER_BUTTON_SECONDARY_CLASS}>
             登录
           </Button>
         </Link>
@@ -101,7 +105,7 @@ export function LandingNav() {
                 target: ROUTES.login,
               })
             }
-            className="bg-brand text-brand-foreground shadow-[0_18px_40px_-20px_oklch(0.78_0.15_180/0.9)] hover:bg-brand/90"
+            className={USER_BUTTON_PRIMARY_CLASS}
           >
             免费开始
           </Button>
@@ -197,7 +201,7 @@ export function LandingNav() {
                 </div>
                 <Link href={authState.summary.redirectTo}>
                   <Button
-                    className="w-full bg-brand text-brand-foreground hover:bg-brand/90"
+                    className={cn("w-full", USER_BUTTON_PRIMARY_CLASS)}
                     onClick={() =>
                       trackEvent(APP_EVENTS.landingCtaClick, {
                         source: "marketing_nav_mobile_resume",
@@ -212,7 +216,7 @@ export function LandingNav() {
             ) : authState.status === "guest" ? (
               <Link href={ROUTES.login}>
                 <Button
-                  className="w-full bg-brand text-brand-foreground hover:bg-brand/90"
+                  className={cn("w-full", USER_BUTTON_PRIMARY_CLASS)}
                   onClick={() =>
                     trackEvent(APP_EVENTS.landingCtaClick, {
                       source: "marketing_nav_mobile",

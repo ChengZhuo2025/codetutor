@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, HelpCircle, MessageSquare } from "lucide-react"
 import { FeedbackDialog } from "@/components/layout/feedback-dialog"
 import { PageSection } from "@/components/ui/page-section"
 import { Button } from "@/components/ui/button"
+import { USER_PANEL_OUTLINE_BUTTON_CLASS } from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
 import type { FaqItem } from "@/features/history/types"
 
@@ -86,9 +87,9 @@ export function HistorySidebarPanels({ faqItems }: HistorySidebarPanelsProps) {
             variant="outline"
             size="lg"
             onClick={() => setFeedbackOpen(true)}
-            className="w-full gap-2 rounded-xl border-border/40 bg-surface-2 hover:bg-surface-3 hover:text-white"
+            className={cn("w-full gap-2 rounded-xl", USER_PANEL_OUTLINE_BUTTON_CLASS)}
           >
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <MessageSquare className="h-4 w-4" />
             建议反馈
           </Button>
         </div>

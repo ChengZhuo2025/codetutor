@@ -1,9 +1,10 @@
 import { Icon } from "@iconify/react/offline";
 import { Check, Sparkles } from "lucide-react";
 import {
+  USER_BUTTON_PRIMARY_CLASS,
+  USER_BUTTON_SECONDARY_CLASS,
   USER_PANEL_HERO_CARD_CLASS,
   USER_PANEL_HERO_TOP_SECTION_CLASS,
-  USER_PANEL_OUTLINE_BUTTON_CLASS,
 } from "@/components/ui/surface-styles";
 import { cn } from "@/lib/utils";
 import type { AchievementOverview, Rank } from "@/features/achievement/types";
@@ -60,15 +61,18 @@ export function RankProgressCard({
           <div className="flex flex-col gap-3 xl:w-[180px] xl:justify-self-end">
             <button
               onClick={onContinueLearning}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand px-4 py-3 text-sm font-semibold text-brand-foreground shadow-[0_24px_60px_-28px_oklch(0.78_0.15_180/0.9)] transition-all hover:-translate-y-0.5 hover:bg-brand/90"
+              className={cn(
+                "flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-semibold",
+                USER_BUTTON_PRIMARY_CLASS,
+              )}
             >
               继续学习赚XP
             </button>
             <button
               onClick={onOpenMap}
               className={cn(
-                "flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium transition-all hover:-translate-y-0.5",
-                USER_PANEL_OUTLINE_BUTTON_CLASS,
+                "flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-medium",
+                USER_BUTTON_SECONDARY_CLASS,
               )}
             >
               查看闯关地图

@@ -12,6 +12,8 @@ import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog"
 import { NotificationSettingsDialog } from "@/components/layout/notification-settings-dialog"
 import {
   FLOATING_PANEL_CLASS,
+  USER_BUTTON_SECONDARY_CLASS,
+  USER_ICON_BUTTON_CLASS,
   USER_PANEL_DIVIDER_CLASS,
 } from "@/components/ui/surface-styles"
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth"
@@ -100,10 +102,10 @@ export function SettingsPopover({ onProfileSaved, className }: SettingsPopoverPr
         <button
           onClick={() => setOpen((o) => !o)}
           className={cn(
-            "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors",
+            "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium",
             open
-              ? "bg-surface-3 text-foreground"
-              : "text-muted-foreground hover:bg-surface-3 hover:text-foreground",
+              ? USER_BUTTON_SECONDARY_CLASS
+              : USER_BUTTON_SECONDARY_CLASS,
           )}
         >
           <Settings className="h-4 w-4" />
@@ -121,7 +123,7 @@ export function SettingsPopover({ onProfileSaved, className }: SettingsPopoverPr
               <span className="text-sm font-semibold">设置</span>
               <button
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:text-foreground/55 dark:hover:bg-foreground/8"
+                className={cn("rounded-lg p-1", USER_ICON_BUTTON_CLASS)}
               >
                 <X className="h-3.5 w-3.5" />
               </button>

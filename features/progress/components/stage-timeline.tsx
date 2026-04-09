@@ -5,6 +5,7 @@ import {
   Play,
   Sparkles,
 } from "lucide-react"
+import { USER_BUTTON_PRIMARY_CLASS } from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
 import type { Stage } from "@/features/progress/types"
 
@@ -158,7 +159,10 @@ export function StageTimeline({
                         event.stopPropagation()
                         onOpenLearning()
                       }}
-                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand/90"
+                      className={cn(
+                        "inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold",
+                        USER_BUTTON_PRIMARY_CLASS,
+                      )}
                     >
                       <Play className="h-3.5 w-3.5" />
                       继续学习

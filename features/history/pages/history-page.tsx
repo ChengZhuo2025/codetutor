@@ -8,6 +8,10 @@ import { WORKSPACE_ASIDE_WIDTH_CLASS } from "@/constants/workspace-layout"
 import { AppShell } from "@/components/layout/app-shell"
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar"
 import { Button } from "@/components/ui/button"
+import {
+  USER_BUTTON_PRIMARY_CLASS,
+  USER_BUTTON_SECONDARY_CLASS,
+} from "@/components/ui/surface-styles"
 import { StatePanel } from "@/components/ui/state-panel"
 import { HistoryActionDialog } from "@/features/history/components/history-action-dialog"
 import { HistoryList } from "@/features/history/components/history-list"
@@ -265,7 +269,7 @@ export function HistoryPage() {
     <Button
       type="button"
       onClick={handleContinueOrCreate}
-      className="rounded-2xl bg-brand text-brand-foreground hover:bg-brand/90"
+      className={USER_BUTTON_PRIMARY_CLASS}
     >
       {pageSummary?.activeCount ? (
         <RotateCcw className="h-4 w-4" />
@@ -392,10 +396,10 @@ export function HistoryPage() {
                         variant="outline"
                         onClick={() => handleFilterChange(filter.id)}
                         className={cn(
-                          "rounded-full",
+                          "rounded-full px-4",
                           active
-                            ? "border-brand/35 bg-brand/12 text-brand hover:bg-brand/16"
-                            : "border-border/70 bg-surface-1/95 text-foreground hover:border-border hover:bg-muted/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
+                            ? USER_BUTTON_PRIMARY_CLASS
+                            : USER_BUTTON_SECONDARY_CLASS,
                         )}
                       >
                         {filter.label}
@@ -403,8 +407,8 @@ export function HistoryPage() {
                           className={cn(
                             "rounded-full border px-1.5 py-0.5 text-[11px]",
                             active
-                              ? "border-brand/20 bg-brand/12 text-brand"
-                              : "border-border/70 bg-muted/65 text-muted-foreground dark:border-white/10 dark:bg-white/6",
+                              ? "border-white/20 bg-white/12 text-white"
+                              : "border-white/16 bg-white/10 text-white/88",
                           )}
                         >
                           {count}

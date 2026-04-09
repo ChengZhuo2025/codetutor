@@ -22,6 +22,7 @@ import {
 import { PageSection } from "@/components/ui/page-section"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatePanel } from "@/components/ui/state-panel"
+import { USER_ICON_BUTTON_CLASS } from "@/components/ui/surface-styles"
 import type { LearningCurrentSessionResponseData } from "@/lib/api/contracts/learning"
 import { cn } from "@/lib/utils"
 
@@ -198,7 +199,10 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                             prev === 0 ? learningTips.length - 1 : prev - 1,
                           )
                         }
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-surface-2 text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+                        className={cn(
+                          "flex h-8 w-8 items-center justify-center rounded-full",
+                          USER_ICON_BUTTON_CLASS,
+                        )}
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </button>
@@ -207,7 +211,10 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                         onClick={() =>
                           setActiveTipIndex((prev) => (prev + 1) % learningTips.length)
                         }
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-surface-2 text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+                        className={cn(
+                          "flex h-8 w-8 items-center justify-center rounded-full",
+                          USER_ICON_BUTTON_CLASS,
+                        )}
                       >
                         <ChevronRight className="h-4 w-4" />
                       </button>

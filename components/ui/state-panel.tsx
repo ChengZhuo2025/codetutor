@@ -7,6 +7,10 @@ import {
 import type { ReactNode } from "react"
 import type { ViewStateStatus } from "@/types/api"
 import { Button } from "@/components/ui/button"
+import {
+  USER_BUTTON_DANGER_CLASS,
+  USER_BUTTON_SECONDARY_CLASS,
+} from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
 
 type StatePanelProps = {
@@ -67,8 +71,8 @@ export function StatePanel({
   const Icon = meta.icon
   const actionButtonClassName =
     status === "error"
-      ? "border-destructive/20"
-      : "border-brand/18 bg-white/72 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] hover:border-brand/30 hover:bg-white/88 dark:border-white/10 dark:bg-white/8 dark:text-foreground dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] dark:hover:bg-white/12"
+      ? USER_BUTTON_DANGER_CLASS
+      : USER_BUTTON_SECONDARY_CLASS
 
   return (
     <div
@@ -102,7 +106,7 @@ export function StatePanel({
         <div className={cn(compact ? "mt-3" : "mt-4")}>
           <Button
             type="button"
-            variant="outline"
+            variant={status === "error" ? "destructive" : "outline"}
             onClick={onAction}
             className={cn("rounded-2xl", actionButtonClassName)}
           >

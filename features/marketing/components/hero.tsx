@@ -7,6 +7,10 @@ import {
   Sparkles,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  USER_BUTTON_PRIMARY_CLASS,
+  USER_BUTTON_SECONDARY_CLASS,
+} from "@/components/ui/surface-styles"
 import { LightRays } from "@/features/marketing/components/light-rays"
 import { getToolName } from "@/constants/tools"
 import { marketingConversationMessages } from "@/features/marketing/data/marketing-content"
@@ -91,7 +95,7 @@ export function LandingHero() {
           <Link href={ctaHref}>
             <Button
               size="lg"
-              className="h-14 rounded-2xl bg-brand px-9 text-base font-semibold text-brand-foreground shadow-[0_24px_60px_-24px_oklch(0.78_0.15_180/0.82)] hover:-translate-y-0.5 hover:bg-brand/90"
+              className={cn("h-14 px-9 text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
             >
               {authState.status === "authenticated" ? ctaLabel : "免费开始学习"}
               <ArrowRight className="h-4 w-4" />
@@ -99,7 +103,10 @@ export function LandingHero() {
           </Link>
           <a
             href="#how"
-            className="inline-flex h-14 items-center justify-center rounded-2xl border border-border/80 bg-surface-1/95 px-8 text-base font-medium text-foreground shadow-[0_16px_40px_-26px_rgba(15,23,42,0.16)] backdrop-blur transition-all hover:-translate-y-0.5 hover:border-border hover:bg-surface-2 dark:border-border/70 dark:bg-[oklch(0.16_0.01_240/0.34)] dark:shadow-none dark:hover:bg-[oklch(0.2_0.015_220)]"
+            className={cn(
+              "inline-flex h-14 items-center justify-center px-8 text-base font-medium",
+              USER_BUTTON_SECONDARY_CLASS,
+            )}
           >
             看看学习方式
           </a>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Loader2, RefreshCw, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { USER_BUTTON_PRIMARY_CLASS } from "@/components/ui/surface-styles"
 import { Input } from "@/components/ui/input"
 import { PageSection } from "@/components/ui/page-section"
 import { Textarea } from "@/components/ui/textarea"
@@ -409,7 +410,7 @@ export function MaterialPlanPanel({
             <Button
               type="button"
               size="lg"
-              className="bg-brand text-brand-foreground hover:bg-brand/90"
+              className={USER_BUTTON_PRIMARY_CLASS}
               onClick={() => void handleConfirm()}
               disabled={busyAction !== null}
             >

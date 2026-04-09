@@ -19,8 +19,22 @@ export const USER_PANEL_SUBTLE_SECTION_CLASS =
 export const USER_PANEL_FIELD_CLASS =
   "border-border/80 bg-surface-1/95 shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
 
-export const USER_PANEL_OUTLINE_BUTTON_CLASS =
-  "border-border/80 bg-transparent text-foreground hover:border-border hover:bg-muted/70 dark:border-white/10 dark:hover:bg-white/5"
+const USER_BUTTON_DISABLED_CLASS =
+  "disabled:translate-y-0 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[oklch(0.72_0.01_240)] disabled:text-white/78 disabled:[&_svg]:text-white/78 disabled:shadow-none disabled:saturate-0 disabled:opacity-100 dark:disabled:bg-[oklch(0.30_0.01_240)]"
+
+export const USER_BUTTON_PRIMARY_CLASS =
+  `rounded-2xl border border-transparent bg-[oklch(0.42_0.11_185)] text-white shadow-[0_20px_54px_-28px_rgba(8,145,178,0.52)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[oklch(0.46_0.11_185)] active:translate-y-0 focus-visible:ring-brand/35 dark:bg-[oklch(0.48_0.11_185)] dark:text-white dark:shadow-[0_24px_60px_-30px_rgba(11,211,191,0.34)] dark:hover:bg-[oklch(0.54_0.12_185)] [&_svg]:text-white ${USER_BUTTON_DISABLED_CLASS}`
+
+export const USER_BUTTON_SECONDARY_CLASS =
+  `rounded-2xl border border-transparent bg-[oklch(0.30_0.03_225)] text-white shadow-[0_16px_42px_-30px_rgba(15,23,42,0.38)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[oklch(0.34_0.03_225)] active:translate-y-0 focus-visible:ring-brand/30 dark:bg-[oklch(0.24_0.02_225)] dark:text-white dark:shadow-[0_20px_48px_-32px_rgba(0,0,0,0.5)] dark:hover:bg-[oklch(0.28_0.025_225)] [&_svg]:text-white ${USER_BUTTON_DISABLED_CLASS}`
+
+export const USER_BUTTON_DANGER_CLASS =
+  `rounded-2xl border border-transparent bg-[oklch(0.52_0.19_26)] text-white shadow-[0_18px_48px_-28px_rgba(220,38,38,0.36)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[oklch(0.56_0.2_26)] active:translate-y-0 focus-visible:ring-destructive/30 dark:bg-[oklch(0.48_0.17_26)] dark:text-white dark:shadow-[0_22px_52px_-30px_rgba(127,29,29,0.5)] dark:hover:bg-[oklch(0.52_0.18_26)] [&_svg]:text-white ${USER_BUTTON_DISABLED_CLASS}`
+
+export const USER_ICON_BUTTON_CLASS =
+  `rounded-2xl border border-transparent bg-[oklch(0.30_0.03_225)] text-white shadow-[0_14px_34px_-26px_rgba(15,23,42,0.34)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[oklch(0.34_0.03_225)] active:translate-y-0 focus-visible:ring-brand/30 dark:bg-[oklch(0.24_0.02_225)] dark:text-white dark:hover:bg-[oklch(0.28_0.025_225)] [&_svg]:text-white ${USER_BUTTON_DISABLED_CLASS}`
+
+export const USER_PANEL_OUTLINE_BUTTON_CLASS = USER_BUTTON_SECONDARY_CLASS
 
 export const USER_PANEL_DIVIDER_CLASS =
   "border-border/70 dark:border-white/10"

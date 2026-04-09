@@ -22,6 +22,7 @@ import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog";
 import { SubscriptionDetailDialog } from "@/components/layout/subscription-detail-dialog";
 import { SettingsPopover } from "@/components/layout/settings-popover";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { USER_BUTTON_DANGER_CLASS } from "@/components/ui/surface-styles";
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth";
 import type { NotificationInAppItem } from "@/lib/api/contracts/notifications";
 import { getInAppNotificationListTitle } from "@/lib/notifications/in-app-display";
@@ -444,7 +445,10 @@ export function DashboardSidebar({
                                 type="button"
                                 aria-label="删除提醒"
                                 onClick={(e) => void removeReadNotification(e, item.id)}
-                            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-surface-3 hover:text-destructive"
+                                className={cn(
+                                  "rounded-lg p-1.5",
+                                  USER_BUTTON_DANGER_CLASS,
+                                )}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>

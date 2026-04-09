@@ -3,6 +3,10 @@
 import Link from "next/link"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  USER_BUTTON_PRIMARY_CLASS,
+  USER_BUTTON_SECONDARY_CLASS,
+} from "@/components/ui/surface-styles"
 import { marketingPlans } from "@/features/marketing/data/marketing-content"
 import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
 
@@ -75,9 +79,7 @@ export function LandingPricing() {
               >
                 <Button
                   className={`w-full rounded-2xl font-semibold ${
-                    plan.highlight
-                      ? "bg-brand text-brand-foreground shadow-[0_20px_50px_-24px_oklch(0.78_0.15_180/0.68)] hover:-translate-y-0.5 hover:bg-brand/90"
-                      : "border border-border bg-muted/60 text-foreground hover:-translate-y-0.5 hover:bg-muted dark:border-white/10 dark:bg-white/4 dark:hover:bg-white/8"
+                    plan.highlight ? USER_BUTTON_PRIMARY_CLASS : USER_BUTTON_SECONDARY_CLASS
                   }`}
                 >
                   {authState.status === "authenticated" && plan.name === "免费版"

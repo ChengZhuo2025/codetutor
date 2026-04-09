@@ -47,6 +47,9 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   DIALOG_PANEL_CLASS,
+  USER_BUTTON_PRIMARY_CLASS,
+  USER_BUTTON_SECONDARY_CLASS,
+  USER_ICON_BUTTON_CLASS,
   USER_PANEL_DIVIDER_CLASS,
   USER_PANEL_OUTLINE_BUTTON_CLASS,
   USER_PANEL_SECTION_CLASS,
@@ -117,19 +120,16 @@ const messageKindMeta = {
 } as const
 
 const quickActionToneClass: Record<QuickAction["tone"], string> = {
-  primary: "border-brand/40 bg-brand-dim text-brand hover:border-brand/55 hover:bg-brand/18",
-  warning: "border-gold/38 bg-gold-dim text-gold hover:border-gold/50 hover:bg-gold/18",
-  secondary:
-    "border-border/80 bg-surface-2 text-foreground hover:border-border hover:bg-surface-3",
+  primary: USER_BUTTON_PRIMARY_CLASS,
+  warning: USER_BUTTON_SECONDARY_CLASS,
+  secondary: USER_BUTTON_SECONDARY_CLASS,
 }
 
 const messageActionToneClass = {
-  primary: "border-brand/30 bg-brand-dim text-brand hover:bg-brand/18",
-  secondary:
-    "border-border/80 bg-surface-2 text-foreground hover:border-border hover:bg-surface-3",
-  warning: "border-gold/25 bg-gold-dim text-gold hover:bg-gold/18",
-  success:
-    "border-emerald-500/25 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/16",
+  primary: USER_BUTTON_PRIMARY_CLASS,
+  secondary: USER_BUTTON_SECONDARY_CLASS,
+  warning: USER_BUTTON_SECONDARY_CLASS,
+  success: USER_BUTTON_PRIMARY_CLASS,
 } as const
 
 const assistantMessageVariantMeta: Record<
@@ -1692,7 +1692,13 @@ export function LearnChat({
           </div>
 
           <div className="lg:absolute lg:right-0 lg:top-3 lg:mt-0">
-            <button className="flex items-center gap-1 whitespace-nowrap rounded-3xl border border-border bg-surface-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground">
+            <button
+              type="button"
+              className={cn(
+                "flex items-center gap-1 whitespace-nowrap px-3 py-2 text-xs font-medium",
+                USER_BUTTON_SECONDARY_CLASS,
+              )}
+            >
               <RefreshCw className="h-3 w-3" />
               重头开始
             </button>
@@ -1711,7 +1717,10 @@ export function LearnChat({
                 type="button"
                 onClick={handleLoadEarlierMessages}
                 disabled={isLoadingHistory}
-                className="rounded-full border border-border/70 bg-surface-2 px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                className={cn(
+                  "px-4 py-2 text-xs font-medium",
+                  USER_BUTTON_SECONDARY_CLASS,
+                )}
               >
                 {isLoadingHistory ? "正在加载更早消息..." : "加载更早消息"}
               </button>
@@ -1735,7 +1744,7 @@ export function LearnChat({
                 <button
                   type="button"
                   onClick={handleResume}
-                  className="shrink-0 rounded-2xl border border-brand/25 bg-brand-dim px-4 py-2 text-sm font-medium text-brand transition-colors hover:bg-brand/20"
+                  className={cn("shrink-0 px-4 py-2 text-sm font-medium", USER_BUTTON_PRIMARY_CLASS)}
                 >
                   {resume.ctaLabel}
                 </button>
@@ -1933,7 +1942,7 @@ export function LearnChat({
                               })
                             }}
                             className={cn(
-                              "rounded-2xl border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+                              "px-3 py-2 text-sm font-medium",
                               messageActionToneClass[action.tone],
                             )}
                           >
@@ -1984,7 +1993,13 @@ export function LearnChat({
                     })() : null}
 
                     {msg.nextStep ? (
-                      <button className="flex items-center gap-2 self-start rounded-2xl border border-brand/30 bg-brand-dim px-3 py-2 text-sm font-medium text-brand transition-colors hover:bg-brand/20">
+                      <button
+                        type="button"
+                        className={cn(
+                          "flex items-center gap-2 self-start px-3 py-2 text-sm font-medium",
+                          USER_BUTTON_PRIMARY_CLASS,
+                        )}
+                      >
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         {msg.nextStep}
                       </button>
@@ -2049,7 +2064,7 @@ export function LearnChat({
                   onClick={() => handleQuickAction(action)}
                   disabled={isTyping || connectionState !== "online"}
                   className={cn(
-                    "rounded-full border px-3.5 py-1 text-[12px] transition-colors disabled:opacity-50",
+                    "px-3.5 py-1 text-[12px] font-medium",
                     quickActionToneClass[action.tone],
                   )}
                 >
@@ -2065,8 +2080,8 @@ export function LearnChat({
                   }}
                   disabled={isTyping || connectionState !== "online"}
                   className={cn(
-                    "rounded-full border px-3.5 py-1 text-[12px] transition-colors disabled:opacity-50",
-                    "border-brand/40 bg-brand-dim text-brand hover:border-brand/55 hover:bg-brand/18",
+                    "px-3.5 py-1 text-[12px] font-medium",
+                    USER_BUTTON_PRIMARY_CLASS,
                   )}
                 >
                   生成学习计划
@@ -2188,10 +2203,10 @@ export function LearnChat({
                 onClick={handleSend}
                 disabled={(!input.trim() && !previewAttachment) || isTyping}
                 className={cn(
-                  "ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl transition-all",
+                  "ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl",
                   (input.trim() || previewAttachment) && !isTyping
-                    ? "bg-brand text-brand-foreground hover:bg-brand/90"
-                    : "bg-surface-4 text-muted-foreground/40",
+                    ? USER_ICON_BUTTON_CLASS
+                    : "cursor-not-allowed border-transparent bg-[oklch(0.72_0.01_240)] text-white/70 shadow-none dark:bg-[oklch(0.30_0.01_240)]",
                 )}
               >
                 {isTyping ? (
