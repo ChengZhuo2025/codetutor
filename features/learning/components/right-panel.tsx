@@ -66,7 +66,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
             eyebrow="现在只做这一步"
             title={rightPanel.currentStep}
             description={rightPanel.whyThisStep}
-            className="border-brand/20 bg-brand-dim/55"
+            className="border-brand/20 bg-brand-dim/50"
             bodyClassName="pt-0"
           >
             <div className="grid gap-3 pt-4 pb-1">
@@ -279,7 +279,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
             </div>
           </PageSection>
 
-          <div className={cn(WORKSPACE_ASIDE_CARD_CLASS, "border-gold/20 bg-gold-dim/80")}>
+          <div className={cn(WORKSPACE_ASIDE_CARD_CLASS, "border-gold/20 bg-gold-dim/55")}>
             <div className="flex items-start gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold dark:border-gold/15 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.06))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                 <Compass className="h-5 w-5" />

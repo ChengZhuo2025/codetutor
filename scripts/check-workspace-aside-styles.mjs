@@ -35,7 +35,7 @@ const mapSource = readFileSync(
 )
 assert.match(
   mapSource,
-  /import\s+\{[\s\S]*WORKSPACE_ASIDE_BRAND_CARD_CLASS[\s\S]*WORKSPACE_ASIDE_GOLD_CARD_CLASS[\s\S]*WORKSPACE_ASIDE_INSET_CARD_CLASS[\s\S]*WorkspaceAside[\s\S]*\}\s+from\s+"@\/components\/layout\/workspace-aside"/,
+  /import\s+\{[\s\S]*WORKSPACE_ASIDE_INSET_CARD_CLASS[\s\S]*WorkspaceAside[\s\S]*\}\s+from\s+"@\/components\/layout\/workspace-aside"/,
   "StageDetailPanel should use shared workspace aside styles",
 )
 assert.match(mapSource, /<WorkspaceAside/, "StageDetailPanel should render WorkspaceAside")

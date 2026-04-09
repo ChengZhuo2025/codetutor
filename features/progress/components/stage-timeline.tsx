@@ -12,7 +12,7 @@ const statusConfig = {
   done: {
     icon: CheckCircle2,
     nodeStyle: "border-brand/55 bg-brand text-brand-foreground shadow-[0_0_0_6px_rgba(92,225,168,0.08)]",
-    cardStyle: "border-brand/22 bg-brand/12 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.18)] hover:border-brand/35 cursor-pointer dark:bg-brand/18",
+    cardStyle: "border-brand/22 bg-brand/10 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.18)] hover:border-brand/35 cursor-pointer dark:bg-brand/18",
     label: "已完成",
     labelStyle: "text-brand",
   },
@@ -21,7 +21,7 @@ const statusConfig = {
     nodeStyle:
       "border-brand bg-brand text-brand-foreground shadow-[0_0_30px_oklch(0.78_0.15_180/0.5)]",
     cardStyle:
-      "border-brand/40 bg-brand/10 shadow-sm dark:border-brand/50 dark:bg-[linear-gradient(145deg,rgba(31,198,164,0.16),rgba(8,16,29,0.94))] dark:shadow-[0_24px_64px_-32px_oklch(0.78_0.15_180/0.55)] cursor-pointer",
+      "border-brand/10 bg-brand/8 dark:border-brand/50 dark:bg-[linear-gradient(145deg,rgba(31,198,164,0.16),rgba(8,16,29,0.94))] dark:shadow-[0_24px_64px_-32px_oklch(0.78_0.15_180/0.55)] cursor-pointer",
     label: "当前任务",
     labelStyle: "text-brand",
   },

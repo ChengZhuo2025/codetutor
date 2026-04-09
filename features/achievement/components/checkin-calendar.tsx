@@ -31,7 +31,7 @@ export function CheckinCalendar({
     weekDays.length > 0 && checkinDays.length > 0 && calendarDates.length > 0
   const weeklyBest = Math.max(...checkinDays.map((week) => week.filter(Boolean).length), 0)
   const statCardClass =
-    "rounded-[24px] border border-border/70 bg-surface-1/95 px-4 py-4 shadow-[0_12px_32px_-28px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5"
+    "rounded-[24px] border border-border/70 bg-surface-2 px-4 py-4 shadow-[0_12px_32px_-28px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5"
 
   if (!hasCalendar) {
     return (
@@ -146,8 +146,8 @@ export function CheckinCalendar({
                       checked
                         ? "border-brand/35 bg-brand/15 dark:bg-brand/20"
                         : isFuture
-                          ? "border-border/20 bg-surface-1/70 dark:border-white/10 dark:bg-white/5"
-                          : "border-border/70 bg-muted/55 dark:border-white/10 dark:bg-white/6",
+                          ? "border-border bg-surface-3 dark:border-white/10 dark:bg-white/15"
+                          : "border-border/80 bg-surface-2 dark:border-white/10 dark:bg-white/6",
                     )}
                   >
                     <span

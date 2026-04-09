@@ -68,7 +68,7 @@ export function ProgressOverview({
                   <span>当前路径进度</span>
                   <span>{progressPercent}% 已完成</span>
                 </div>
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/75 dark:bg-white/10">
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-3 dark:bg-white/10">
                   <div
                     className="h-full rounded-full bg-brand transition-all duration-700"
                     style={{ width: `${progressPercent}%` }}
@@ -144,7 +144,7 @@ export function ProgressOverview({
               onOpenAchievements()
             }
           }}
-          className="group flex cursor-pointer flex-col rounded-[28px] border border-border/70 bg-[linear-gradient(180deg,rgba(248,252,251,0.95),rgba(241,247,245,0.92))] px-4 py-4 shadow-[0_18px_42px_-30px_rgba(15,23,42,0.18)] hover:border-brand/22 hover:bg-[linear-gradient(180deg,rgba(244,251,248,0.98),rgba(236,246,242,0.95))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(16,30,31,0.92),rgba(12,24,24,0.92))] dark:hover:bg-[linear-gradient(180deg,rgba(17,34,35,0.95),rgba(12,26,27,0.95))] sm:px-5"
+          className="group flex cursor-pointer flex-col rounded-[28px] border border-brand/10 bg-brand/6 px-4 py-4 hover:border-brand/80 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 sm:px-5"
         >
           <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start">
             <div>
@@ -189,7 +189,7 @@ export function ProgressOverview({
               <span>距离下一段位</span>
               <span>{summary.totalXP} / {summary.totalXP + summary.remainingXPToNextRank} XP</span>
             </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted/75 dark:bg-white/10">
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-3 dark:bg-white/10">
               <div
                 className="h-full rounded-full bg-brand transition-all group-hover:bg-brand/90"
                 style={{ width: `${Math.max(rankProgressPercent, 14)}%` }}

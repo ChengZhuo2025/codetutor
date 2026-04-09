@@ -769,7 +769,7 @@ function getTaskPatchDisplayMeta(taskPatch: LearningTaskPatch) {
     return {
       badge: "已标记为卡住",
       badgeClass: "border-gold/25 bg-gold-dim text-gold",
-      panelClass: "border-gold/20 bg-gold-dim/60",
+      panelClass: "border-gold/20 bg-gold-dim/55",
       iconClass: "text-gold",
     }
   }

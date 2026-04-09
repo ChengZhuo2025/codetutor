@@ -25,7 +25,6 @@ export function AchievementSidebarPanels({
         title="XP 获取方式"
         description="完成关卡获得 XP，保持连续学习也有额外奖励，积累足够 XP 可晋升段位。"
         action={<TrendingUp className="h-4 w-4 text-brand" />}
-        className="border-border/70 bg-surface-1/95 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5"
       >
         {guideItems.length > 0 ? (
           <ul className="space-y-3">
@@ -57,7 +56,6 @@ export function AchievementSidebarPanels({
         eyebrow="成长记录"
         title="XP 流水"
         action={<Zap className="h-4 w-4 text-gold" />}
-        className="border-border/70 bg-surface-1/95 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5"
       >
         {historyItems.length > 0 ? (
           <>

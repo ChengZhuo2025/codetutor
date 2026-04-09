@@ -1,7 +1,5 @@
 import { BookMarked, Lock, Play, RotateCcw, Target, Zap } from "lucide-react";
 import {
-  WORKSPACE_ASIDE_BRAND_CARD_CLASS,
-  WORKSPACE_ASIDE_GOLD_CARD_CLASS,
   WORKSPACE_ASIDE_INSET_CARD_CLASS,
   WorkspaceAside,
 } from "@/components/layout/workspace-aside";
@@ -22,10 +20,6 @@ export function StageDetailPanel({
   const isCurrent = stage.status === "current";
   const isDone = stage.status === "done";
   const isLocked = stage.status === "locked";
-
-  const cardClassName = isDone
-    ? WORKSPACE_ASIDE_GOLD_CARD_CLASS
-    : WORKSPACE_ASIDE_BRAND_CARD_CLASS;
   const ctaLabel = isCurrent
     ? "继续学习"
     : isDone
@@ -35,7 +29,7 @@ export function StageDetailPanel({
   return (
     <WorkspaceAside as="div">
       <div className="sticky top-0 space-y-4">
-        <div className={cardClassName}>
+        <div className="rounded-[28px] border border-border/60 bg-surface-2 px-4 py-4 sm:px-5">
           <div className="mb-3 flex items-center gap-2">
             <BookMarked
               className={cn("h-4 w-4", isDone ? "text-gold" : "text-brand")}
