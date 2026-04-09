@@ -84,7 +84,7 @@ export function LoginForm({
           >
             登录
           </button>
-          <div className="h-4 w-px bg-border/60" />
+          <div className="h-4 w-px bg-border" />
           <button
             onClick={() => mode !== "register" && onModeToggle()}
             className={`text-base font-medium transition-colors ${
@@ -122,7 +122,7 @@ export function LoginForm({
             >
               手机号
             </label>
-            <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-surface-2 px-4 py-3 transition-all focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.08)]">
+            <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-surface-2 px-4 py-3 transition-all focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.08)]">
               <Phone className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">+86</span>
               <div className="h-4 w-px bg-border/60" />
@@ -149,7 +149,7 @@ export function LoginForm({
               验证码
             </label>
             <div className="flex gap-3">
-              <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border/60 bg-surface-2 px-4 py-3 transition-all focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.08)]">
+              <div className="flex flex-1 items-center gap-2 rounded-xl border border-border/60 bg-surface-2 px-4 py-3 transition-all focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.08)]">
                 <input
                   id="code-input"
                   type="text"
@@ -242,7 +242,7 @@ export function LoginForm({
                 onClick={() => onOAuthSubmit(provider.id)}
                 disabled={isChecking || !available || isActive || isSubmitting}
                 className={cn(
-                  "group relative overflow-hidden rounded-[22px] border px-4 py-3 text-left transition-all",
+                  "group relative overflow-hidden rounded-xl border px-4 py-3 text-left transition-all",
                   available
                     ? "border-border/70 bg-surface-2 hover:-translate-y-0.5 hover:border-brand/30 hover:bg-surface-1"
                     : "border-border/50 bg-surface-3/70",
@@ -258,7 +258,7 @@ export function LoginForm({
                   <div className="flex min-w-0 items-center gap-3">
                     <div
                       className={cn(
-                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border bg-background/70",
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-background/70",
                         available ? "border-brand/20 text-foreground" : "border-border/60 text-muted-foreground",
                       )}
                     >

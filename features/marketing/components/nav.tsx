@@ -127,7 +127,7 @@ export function LandingNav() {
           </div>
           <div className="leading-[1.02]">
             <span className="block text-[1.06rem] font-extrabold tracking-tight">{APP_NAME}</span>
-            <span className="mt-0.5 block text-[11px] text-muted-foreground">
+            <span className="mt-1 block text-[11px] text-muted-foreground">
               AI 编程学习教练
             </span>
           </div>

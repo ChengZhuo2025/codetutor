@@ -12,7 +12,6 @@ import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog"
 import { NotificationSettingsDialog } from "@/components/layout/notification-settings-dialog"
 import {
   FLOATING_PANEL_CLASS,
-  USER_BUTTON_SECONDARY_CLASS,
   USER_ICON_BUTTON_CLASS,
   USER_PANEL_DIVIDER_CLASS,
 } from "@/components/ui/surface-styles"
@@ -102,10 +101,10 @@ export function SettingsPopover({ onProfileSaved, className }: SettingsPopoverPr
         <button
           onClick={() => setOpen((o) => !o)}
           className={cn(
-            "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium",
+            "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors",
             open
-              ? USER_BUTTON_SECONDARY_CLASS
-              : USER_BUTTON_SECONDARY_CLASS,
+              ? "bg-surface-3 text-foreground"
+              : "text-muted-foreground hover:bg-surface-3 hover:text-foreground",
           )}
         >
           <Settings className="h-4 w-4" />

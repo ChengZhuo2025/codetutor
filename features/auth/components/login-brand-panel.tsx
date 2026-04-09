@@ -18,7 +18,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
   }
 
   return (
-    <div className="relative hidden w-[60%] flex-col overflow-hidden bg-surface-2 p-8 lg:flex">
+    <div className="relative hidden w-[65%] flex-col overflow-hidden bg-surface-2 px-9 pt-9 pb-12 lg:flex">
       <div
         className="pointer-events-none absolute inset-0 dark:hidden"
         style={{
@@ -49,7 +49,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
           </div>
           <div className="leading-[1.02]">
             <span className="block text-[1.06rem] font-extrabold tracking-tight">{APP_NAME}</span>
-            <span className="mt-0.5 block text-[11px] text-muted-foreground">
+            <span className="mt-1 block text-[11px] text-muted-foreground">
               AI 编程学习教练
             </span>
           </div>
@@ -65,7 +65,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
           {previewTools.map((tool) => (
             <span
               key={tool}
-              className="rounded-full border border-border/60 bg-background/50 px-3 py-1 text-xs text-muted-foreground"
+              className="rounded-full border border-border/80 bg-surface-1 px-3 py-1 text-xs text-muted-foreground"
             >
               {tool}
             </span>
@@ -75,20 +75,20 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
         {mode === "login" ? (
           <>
             <h1 className="text-3xl font-semibold leading-tight tracking-tight text-balance">
-              不只是登录。
-              <span className="text-brand"> 是直接回到今天要完成的第一步。</span>
+              不只是登录 
+              <span className="text-brand"> 是直接回到今天要完成的第一步</span>
             </h1>
-            <p className="mt-2 text-sm leading-7 text-muted-foreground">
+            <p className="mt-1 text-sm leading-7 text-muted-foreground">
               登录后立刻看到当前关卡、AI 教练提示和下一步待办，不需要重新回忆自己上次学到哪里。
             </p>
           </>
         ) : (
           <>
             <h1 className="text-3xl font-semibold leading-tight tracking-tight text-balance">
-              从零开始也没关系。
-              <span className="text-brand"> AI 教练会陪你走完每一步。</span>
+              从零开始也没关系
+              <span className="text-brand"> AI 教练会陪你走完每一步</span>
             </h1>
-            <p className="mt-2 text-sm leading-7 text-muted-foreground">
+            <p className="mt-1 text-sm leading-7 text-muted-foreground">
               注册后会根据你选择的工具和水平，自动生成一条适合你的学习路径，从第一步开始陪你练。
             </p>
           </>
@@ -96,7 +96,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
       </div>
 
       {/* AI 导师对话 - 复用首页滚动对话 */}
-      <div className="relative z-10 mx-12 mt-6 flex-1 overflow-hidden rounded-[24px] border border-border/80 bg-surface-1/96 shadow-[0_20px_60px_-34px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-border/70 dark:bg-[oklch(0.15_0.012_240/0.48)] dark:shadow-none">
+      <div className="relative z-10 mx-12 mt-5 flex-1 overflow-hidden rounded-3xl border border-border/70 bg-surface-1 shadow-[0_20px_60px_-34px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:border-border/70 dark:bg-[oklch(0.15_0.012_240/0.48)] dark:shadow-none">
         <div className="flex items-center gap-2 border-b border-border/80 px-4 py-2.5 dark:border-white/8">
           <div className="h-2.5 w-2.5 rounded-full bg-destructive/70" />
           <div className="h-2.5 w-2.5 rounded-full bg-gold/70" />
@@ -177,7 +177,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
       </div>
 
       {/* 底部信息栏 */}
-      <div className="relative z-10 mx-12 mt-5 flex items-center justify-between rounded-2xl border border-border/70 bg-surface-1/88 px-5 py-3 backdrop-blur">
+      <div className="relative z-10 mx-12 mt-5 flex items-center justify-between rounded-4xl bg-surface-1 px-6 py-3">
         <div className="flex items-center gap-4">
           <div>
             <p className="text-[11px] text-muted-foreground">当前段位</p>
