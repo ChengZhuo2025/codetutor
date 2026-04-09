@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { DIALOG_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import type { NotificationInAppItem } from "@/lib/api/contracts/notifications"
+import { getInAppNotificationListTitle } from "@/lib/notifications/in-app-display"
 import { cn } from "@/lib/utils"
 
 type NotificationDetailDialogProps = {
@@ -93,7 +94,9 @@ export function NotificationDetailDialog({
       >
         <div className="border-b border-white/10 px-5 pt-5 pb-4">
           <DialogHeader className="text-left">
-            <DialogTitle className="text-base">{notification.title}</DialogTitle>
+            <DialogTitle className="text-base">
+              {getInAppNotificationListTitle(notification)}
+            </DialogTitle>
             <DialogDescription className="sr-only">通知详情</DialogDescription>
           </DialogHeader>
         </div>

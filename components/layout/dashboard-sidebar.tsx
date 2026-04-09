@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -11,6 +11,7 @@ import {
   Crown,
   Flame,
   Star,
+  Trash2,
 } from "lucide-react";
 import { APP_NAME } from "@/constants/app";
 import { ROUTES } from "@/constants/routes";
@@ -21,6 +22,7 @@ import { SubscriptionDetailDialog } from "@/components/layout/subscription-detai
 import { SettingsPopover } from "@/components/layout/settings-popover";
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth";
 import type { NotificationInAppItem } from "@/lib/api/contracts/notifications";
+import { getInAppNotificationListTitle } from "@/lib/notifications/in-app-display";
 import { useWorkspaceSidebarData } from "@/providers/workspace-sidebar-provider";
 import { cn } from "@/lib/utils";
 import type { DashboardNavItem } from "@/types/navigation";
@@ -117,10 +119,24 @@ export function DashboardSidebar({
         continue;
       }
 
-      toast.info(item.title, item.content);
+      toast.info(getInAppNotificationListTitle(item), item.content);
       window.sessionStorage.setItem(sessionKey, "1");
     }
   }, [notifications, toast]);
+
+  const removeReadNotification = async (
+    event: MouseEvent,
+    notificationId: string,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    try {
+      await dismissNotification(notificationId);
+      toast.success("已移除");
+    } catch {
+      toast.error("删除失败，请重试");
+    }
+  };
 
   const displayProfile = hasLoaded ? profile : null;
 
@@ -379,19 +395,21 @@ export function DashboardSidebar({
                     {notifications.map((item) => {
                       const isUnread = item.status === "unread";
                       return (
-                        <button
+                        <div
                           key={item.id}
-                          type="button"
-                          onClick={() =>
-                            setNotifPanel((p) => ({
-                              ...p,
-                              selectedNotification: item,
-                              dialogOpen: true,
-                            }))
-                          }
-                          className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface-3 active:bg-background/70"
+                          className="flex w-full items-center gap-2 px-4 py-2.5 transition-colors hover:bg-surface-3"
                         >
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setNotifPanel((p) => ({
+                                ...p,
+                                selectedNotification: item,
+                                dialogOpen: true,
+                              }))
+                            }
+                            className="flex min-w-0 flex-1 items-center gap-2 text-left active:opacity-90"
+                          >
                             <div
                               className={cn(
                                 "h-1.5 w-1.5 shrink-0 rounded-full",
@@ -408,20 +426,32 @@ export function DashboardSidebar({
                                   : "text-muted-foreground",
                               )}
                             >
-                              {item.title}
+                              {getInAppNotificationListTitle(item)}
                             </span>
+                          </button>
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <span
+                              className={cn(
+                                "rounded-full border px-2 py-0.5 text-[10px]",
+                                isUnread
+                                  ? "border-brand/30 bg-brand/10 text-brand"
+                                  : "border-border/80 bg-background/40 text-muted-foreground",
+                              )}
+                            >
+                              {isUnread ? "未读" : "已读"}
+                            </span>
+                            {!isUnread ? (
+                              <button
+                                type="button"
+                                aria-label="删除提醒"
+                                onClick={(e) => void removeReadNotification(e, item.id)}
+                                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-background/60 hover:text-destructive"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            ) : null}
                           </div>
-                          <span
-                            className={cn(
-                              "shrink-0 rounded-full border px-2 py-0.5 text-[10px]",
-                              isUnread
-                                ? "border-brand/30 bg-brand/10 text-brand"
-                                : "border-border/80 bg-background/40 text-muted-foreground",
-                            )}
-                          >
-                            {isUnread ? "未读" : "已读"}
-                          </span>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>

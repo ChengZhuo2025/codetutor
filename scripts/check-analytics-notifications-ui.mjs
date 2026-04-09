@@ -13,8 +13,16 @@ const sidebarSource = readFileSync(
   new URL("../components/layout/dashboard-sidebar.tsx", import.meta.url),
   "utf8",
 )
-const notificationDialogSource = readFileSync(
+const notificationSettingsDialogSource = readFileSync(
   new URL("../components/layout/notification-settings-dialog.tsx", import.meta.url),
+  "utf8",
+)
+const notificationDetailDialogSource = readFileSync(
+  new URL("../components/layout/notification-detail-dialog.tsx", import.meta.url),
+  "utf8",
+)
+const inAppDisplaySource = readFileSync(
+  new URL("../lib/notifications/in-app-display.ts", import.meta.url),
   "utf8",
 )
 
@@ -37,13 +45,37 @@ assert.match(
 )
 
 assert.match(
-  notificationDialogSource,
+  sidebarSource,
+  /getInAppNotificationListTitle/,
+  "DashboardSidebar should use dynamic in-app notification titles",
+)
+
+assert.match(
+  notificationDetailDialogSource,
+  /getInAppNotificationListTitle/,
+  "NotificationDetailDialog should use dynamic in-app notification titles",
+)
+
+assert.match(
+  inAppDisplaySource,
+  /formatRelativeDayLabel/,
+  "in-app-display should format relative calendar labels for notifications",
+)
+
+assert.match(
+  sidebarProviderSource,
+  /getShanghaiDateKeyFromIso/,
+  "WorkspaceSidebarDataProvider should use shared Shanghai date key helper",
+)
+
+assert.match(
+  notificationSettingsDialogSource,
   /requestData<NotificationSettingsData>\("\/notifications\/settings"/,
   "NotificationSettingsDialog should load notification settings from the API",
 )
 
 assert.match(
-  notificationDialogSource,
+  notificationSettingsDialogSource,
   /method:\s*"PATCH"/,
   "NotificationSettingsDialog should persist notification settings through PATCH",
 )

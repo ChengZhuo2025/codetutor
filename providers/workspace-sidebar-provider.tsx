@@ -20,30 +20,13 @@ import { requestData } from "@/lib/api/client"
 import { PROFILE_UPDATED_EVENT } from "@/lib/profile/events"
 import type { RecentPracticeRound } from "@/features/learning/types"
 import type { LearningHistory } from "@/features/history/types"
+import { getShanghaiDateKeyFromIso } from "@/lib/datetime/shanghai-date-key"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
 /**
  * 同源通知去重：按 source + 日期 分组，每组只保留最新一条（createdAt 最晚）
  * 解决"今天还没打卡"和"今日打卡成功"同时出现的矛盾
  */
-function getShanghaiDateKeyFromIso(isoString: string): string | null {
-  const date = new Date(isoString)
-  if (Number.isNaN(date.getTime())) return null
-
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date)
-
-  const year = parts.find((p) => p.type === "year")?.value
-  const month = parts.find((p) => p.type === "month")?.value
-  const day = parts.find((p) => p.type === "day")?.value
-  if (!year || !month || !day) return null
-  return `${year}-${month}-${day}`
-}
-
 function dedupeNotifications(items: NotificationInAppItem[]): NotificationInAppItem[] {
   const groups = new Map<string, NotificationInAppItem>()
 
