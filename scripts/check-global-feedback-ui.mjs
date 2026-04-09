@@ -86,7 +86,7 @@ assert.match(
 
 assert.match(
   dialogSource,
-  /bg-background\/96.*backdrop-blur-xl.*shadow-\[0_32px_80px_-40px_rgba\(15,23,42,0\.45\)\]/s,
+  /bg-(?:background\/96|card).*backdrop-blur-xl.*shadow-\[0_32px_80px_-40px_rgba\((?:15,23,42,0\.45|0,0,0,0\.55)\)\]/s,
   "Dialog content should provide a stronger shared modal surface style",
 )
 
@@ -110,7 +110,7 @@ assert.match(
 
 assert.match(
   sheetSource,
-  /bg-background\/96.*backdrop-blur-xl.*shadow-\[0_32px_80px_-40px_rgba\(15,23,42,0\.45\)\]/s,
+  /bg-card.*backdrop-blur-xl.*shadow-\[0_32px_80px_-40px_rgba\(0,0,0,0\.55\)\]/s,
   "Sheet content should provide a stronger shared drawer surface style",
 )
 

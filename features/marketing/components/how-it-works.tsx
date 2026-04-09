@@ -7,7 +7,7 @@ import {
 export function LandingHowItWorks() {
   return (
     <section id="how" className="relative bg-surface-1 px-6 py-24">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/16 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
 
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto mb-16 max-w-3xl text-center">
@@ -33,8 +33,8 @@ export function LandingHowItWorks() {
                     index === 0 ? 'animate-delay-100' : index === 1 ? 'animate-delay-200' : 'animate-delay-300'
                   }`}
                 >
-                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_32%)] opacity-80" />
+                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/18" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.04),transparent_32%)] opacity-80 dark:bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_32%)]" />
 
                   <div className="mb-8 flex items-center justify-between">
                     <div className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-2xl border ${item.iconPanelClassName}`}>
@@ -59,7 +59,7 @@ export function LandingHowItWorks() {
 
                 {!isLast && (
                   <div className="hidden h-full items-center justify-center md:flex">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-surface-2/95 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.8)]">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card shadow-md dark:border-white/10 dark:bg-surface-2/95 dark:shadow-[0_12px_30px_-16px_rgba(0,0,0,0.8)]">
                       <svg className="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
@@ -75,7 +75,7 @@ export function LandingHowItWorks() {
           {marketingFitNotes.map((note, index) => (
             <div
               key={note.title}
-              className="flex min-h-[96px] items-center gap-4 rounded-[24px] border border-white/10 bg-surface-2/85 px-5 py-4 transition-all hover:-translate-y-0.5 hover:border-brand/18 hover:bg-surface-2 animate-fadeUp"
+              className="flex min-h-[96px] items-center gap-4 rounded-[24px] border border-border bg-card px-5 py-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/18 hover:bg-muted/80 animate-fadeUp dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none dark:hover:bg-surface-2"
               style={{ animationDelay: `${400 + index * 100}ms` }}
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/12 text-brand">

@@ -4186,7 +4186,8 @@ export function buildOpenApiDocument() {
     info: {
       title: "AI编程学习教练 API",
       version: "1.0.0",
-      description: "当前仓库已实现后端 API 的自动生成 OpenAPI 文档。",
+      description:
+        "当前仓库已实现后端 API 的自动生成 OpenAPI 文档。\n\n用户端明暗主题偏好仅保存在浏览器 localStorage（next-themes），不提供与之对应的 REST 接口。",
     },
     servers: [
       {

@@ -31,9 +31,9 @@ type LearnRightPanelProps = {
 }
 
 const tipCardClassNames = [
-  "border-brand/25 bg-[linear-gradient(135deg,rgba(31,198,164,0.16),rgba(7,18,27,0.92))]",
-  "border-gold/25 bg-[linear-gradient(135deg,rgba(225,168,75,0.18),rgba(24,18,12,0.92))]",
-  "border-chart-5/25 bg-[linear-gradient(135deg,rgba(63,118,255,0.16),rgba(10,16,30,0.92))]",
+  "border-brand/30 bg-brand/12 dark:border-brand/25 dark:bg-[linear-gradient(135deg,rgba(31,198,164,0.16),rgba(7,18,27,0.92))]",
+  "border-amber-500/25 bg-amber-500/10 dark:border-gold/25 dark:bg-[linear-gradient(135deg,rgba(225,168,75,0.18),rgba(24,18,12,0.92))]",
+  "border-sky-500/25 bg-sky-500/8 dark:border-chart-5/25 dark:bg-[linear-gradient(135deg,rgba(63,118,255,0.16),rgba(10,16,30,0.92))]",
 ]
 
 export function LearnRightPanel({ className, learningData }: LearnRightPanelProps) {
@@ -160,7 +160,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                     tipCardClassNames[activeTipIndex % tipCardClassNames.length],
                   )}
                 >
-                  <div className="absolute right-4 top-3 h-2 w-2 rounded-full bg-background shadow-[0_0_0_2px_rgba(255,255,255,0.12)]" />
+                  <div className="absolute right-4 top-3 h-2 w-2 rounded-full bg-card ring-2 ring-border/60 dark:bg-background dark:shadow-[0_0_0_2px_rgba(255,255,255,0.12)] dark:ring-0" />
                   <div className="max-w-full">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/55">
                       Tip {activeTipIndex + 1}
@@ -281,7 +281,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
 
           <div className={cn(WORKSPACE_ASIDE_CARD_CLASS, "border-gold/20 bg-gold-dim/80")}>
             <div className="flex items-start gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-gold/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.06))] text-gold shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold dark:border-gold/15 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.06))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                 <Compass className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">

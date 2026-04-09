@@ -60,7 +60,7 @@ export function AboutDialog({
       </DialogTrigger>
       <DialogContent className={cn(DIALOG_DARK_GRADIENT_PANEL_CLASS, "max-w-4xl rounded-[32px] sm:max-w-[680px]")}>
         <div className="overflow-hidden rounded-[32px]">
-          <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.16),transparent_46%)] px-6 py-5 sm:px-8">
+          <div className="border-b border-border bg-[radial-gradient(circle_at_top_left,oklch(0.52_0.12_180/0.12),transparent_46%)] px-6 py-5 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.16),transparent_46%)] sm:px-8">
             <DialogHeader>
               <DialogTitle className="text-2xl font-semibold tracking-tight">
                 关于 CodeTutor

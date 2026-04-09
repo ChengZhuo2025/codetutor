@@ -10,9 +10,9 @@ export function LandingFinalCta() {
 
   return (
     <section className="relative overflow-hidden px-6 py-24">
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-white/16 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
       {/* 背景装饰 */}
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,oklch(0.12_0.008_240/0.6)_50%,oklch(0.10_0.006_240/0.9)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,oklch(0.96_0.01_240/0.85)_50%,oklch(0.94_0.008_240/0.95)_100%)] dark:bg-[linear-gradient(180deg,transparent_0%,oklch(0.12_0.008_240/0.6)_50%,oklch(0.10_0.006_240/0.9)_100%)]" />
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,oklch(0.78_0.15_180/0.08),transparent_50%)]" />
       </div>
@@ -53,7 +53,7 @@ export function LandingFinalCta() {
               <Button
                 size="lg"
                 variant="outline"
-                className="h-14 rounded-2xl border-white/10 bg-[oklch(0.16_0.01_240/0.34)] px-8 text-base font-medium text-foreground backdrop-blur transition-all hover:-translate-y-1 hover:bg-[oklch(0.20_0.015_220)] hover:text-foreground"
+                className="h-14 rounded-2xl border-border bg-card/90 px-8 text-base font-medium text-foreground shadow-sm backdrop-blur transition-all hover:-translate-y-1 hover:bg-muted dark:border-white/10 dark:bg-[oklch(0.16_0.01_240/0.34)] dark:shadow-none dark:hover:bg-[oklch(0.20_0.015_220)]"
               >
                 了解学习方式
               </Button>
@@ -74,7 +74,7 @@ export function LandingFinalCta() {
             </div>
             <span>免费试用，每天30轮 AI 对话</span>
           </div>
-          <div className="hidden h-4 w-px bg-white/10 sm:block" />
+          <div className="hidden h-4 w-px bg-border sm:block dark:bg-white/10" />
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-brand/20">
               <svg className="h-3 w-3 text-brand" fill="currentColor" viewBox="0 0 20 20">
@@ -87,7 +87,7 @@ export function LandingFinalCta() {
             </div>
             <span>已支持 8+ 款主流 AI 编程工具</span>
           </div>
-          <div className="hidden h-4 w-px bg-white/10 sm:block" />
+          <div className="hidden h-4 w-px bg-border sm:block dark:bg-white/10" />
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-brand/20">
               <svg className="h-3 w-3 text-brand" fill="currentColor" viewBox="0 0 20 20">

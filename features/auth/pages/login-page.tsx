@@ -19,6 +19,7 @@ import type { AuthMode, AuthOAuthProvider } from "@/features/auth/types"
 import type { AuthLoginResponseData } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { useAppEventTracker } from "@/providers/app-providers"
 
 function withAuthorization(accessToken: string | null | undefined) {
@@ -332,7 +333,10 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="relative flex h-screen overflow-hidden bg-background">
+      <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+        <ThemeToggle />
+      </div>
       <LoginBrandPanel mode={mode} />
       <LoginForm
         mode={mode}

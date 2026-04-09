@@ -3,7 +3,7 @@ import { marketingBenefits } from "@/features/marketing/data/marketing-content"
 export function LandingBenefits() {
   return (
     <section id="benefits" className="relative px-6 py-24">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/16 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto mb-16 max-w-3xl text-center">
           <p className="mb-3 text-sm font-medium uppercase tracking-widest text-muted-foreground">
@@ -23,10 +23,10 @@ export function LandingBenefits() {
             return (
               <div
                 key={benefit.title}
-                className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-surface-2/88 p-6 transition-all hover:-translate-y-1 hover:border-brand/18 hover:bg-surface-2"
+                className="group relative overflow-hidden rounded-[28px] border border-border bg-card p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-brand/18 hover:bg-muted/60 dark:border-white/10 dark:bg-surface-2/88 dark:shadow-none dark:hover:bg-surface-2"
               >
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/16 to-transparent" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.06),transparent_40%)] opacity-60" />
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.03),transparent_40%)] opacity-60 dark:bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.06),transparent_40%)]" />
 
                 <div className={`relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl border ${benefit.borderColor} ${benefit.bgColor} mb-5 transition-all group-hover:scale-110`}>
                   <Icon className={`h-7 w-7 ${benefit.color}`} />

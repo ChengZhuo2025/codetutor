@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
 } from "react"
+import { ThemeProvider } from "next-themes"
 import { Analytics } from "@vercel/analytics/next"
 import { AppConfirmProvider } from "@/components/app-feedback/app-confirm-provider"
 import { AppToastProvider } from "@/components/app-feedback/app-toast-provider"
@@ -74,14 +75,21 @@ function trackEvent(name: AppEventName, payload?: TrackEventPayload) {
 
 export function AppProviders({ children }: AppProvidersProps) {
   return (
-    <AppEventContext.Provider value={{ trackEvent }}>
-      <AppToastProvider>
-        <AppConfirmProvider>
-          {children}
-          <Analytics />
-        </AppConfirmProvider>
-      </AppToastProvider>
-    </AppEventContext.Provider>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="dark"
+      enableSystem={false}
+      storageKey="codetutor-theme"
+    >
+      <AppEventContext.Provider value={{ trackEvent }}>
+        <AppToastProvider>
+          <AppConfirmProvider>
+            {children}
+            <Analytics />
+          </AppConfirmProvider>
+        </AppToastProvider>
+      </AppEventContext.Provider>
+    </ThemeProvider>
   )
 }
 

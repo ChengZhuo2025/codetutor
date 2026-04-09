@@ -30,6 +30,10 @@
 
 需要明确的是：当前实现不是扫描整个 `app/api` 目录后零配置自动发现所有接口；新增或修改后端接口时，除了改 `route.ts` / `route-handler.ts` / `service.ts` 外，仍需同步更新上述 OpenAPI 注册与 schema，运行时文档才会一起反映真实变更。
 
+### 1.1.1 非 API：用户端外观主题
+
+用户端明暗主题由前端 `next-themes` 管理，偏好保存在浏览器 `localStorage`（键名 `codetutor-theme`），**不对应任何 REST 接口**，也与通知设置等服务端用户偏好解耦。OpenAPI `info.description` 中已注明该行为，避免读者误以为存在主题相关 API。
+
 ---
 
 ## 2. 通用规范

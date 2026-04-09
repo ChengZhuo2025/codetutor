@@ -42,6 +42,12 @@ assert.match(
   /loadOAuthProviderAvailability/,
   "Login page should load OAuth provider availability for stable login actions.",
 )
+
+assert.match(
+  loginPageSource,
+  /ThemeToggle/,
+  "Login page should expose the shared theme toggle in the top corner.",
+)
 assert.match(
   callbackSource,
   /loginType: provider/,

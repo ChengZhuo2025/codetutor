@@ -25,7 +25,7 @@ export const marketingSteps: MarketingStep[] = [
       "支持教程链接、视频链接、代码片段、截图或直接提问。把你在抖音、 B站、TikTok、YouTube、公众号收藏的教程内容发给 AI。",
     color: "text-brand",
     panelClassName:
-      "border-white/10 bg-[linear-gradient(180deg,oklch(0.27_0.03_205/0.88),oklch(0.2_0.02_240/0.92))] shadow-[0_24px_70px_-45px_oklch(0.78_0.15_180/0.42)]",
+      "border-border bg-card shadow-lg shadow-black/[0.06] dark:border-white/10 dark:bg-[linear-gradient(180deg,oklch(0.27_0.03_205/0.88),oklch(0.2_0.02_240/0.92))] dark:shadow-[0_24px_70px_-45px_oklch(0.78_0.15_180/0.42)]",
     iconPanelClassName: "border-brand/20 bg-brand/12",
   },
   {
@@ -36,7 +36,7 @@ export const marketingSteps: MarketingStep[] = [
       "AI 导师识别你的水平，把内容转化为明确的下一步。用提问和引导带你推进，而不是直接给答案。",
     color: "text-chart-3",
     panelClassName:
-      "border-white/10 bg-[linear-gradient(180deg,oklch(0.25_0.02_225/0.9),oklch(0.19_0.018_240/0.94))] shadow-[0_24px_70px_-45px_oklch(0.72_0.12_160/0.32)]",
+      "border-border bg-card shadow-lg shadow-black/[0.06] dark:border-white/10 dark:bg-[linear-gradient(180deg,oklch(0.25_0.02_225/0.9),oklch(0.19_0.018_240/0.94))] dark:shadow-[0_24px_70px_-45px_oklch(0.72_0.12_160/0.32)]",
     iconPanelClassName: "border-chart-3/20 bg-chart-3/10",
   },
   {
@@ -47,7 +47,7 @@ export const marketingSteps: MarketingStep[] = [
       `每完成一步获得学分，从 ${firstRankName} 进阶到 ${lastRankName}。连续打卡保持学习节奏，清楚看到自己的成长。`,
     color: "text-gold",
     panelClassName:
-      "border-white/10 bg-[linear-gradient(180deg,oklch(0.26_0.02_210/0.9),oklch(0.18_0.015_235/0.95))] shadow-[0_24px_70px_-45px_oklch(0.82_0.12_82/0.24)]",
+      "border-border bg-card shadow-lg shadow-black/[0.06] dark:border-white/10 dark:bg-[linear-gradient(180deg,oklch(0.26_0.02_210/0.9),oklch(0.18_0.015_235/0.95))] dark:shadow-[0_24px_70px_-45px_oklch(0.82_0.12_82/0.24)]",
     iconPanelClassName: "border-gold/20 bg-gold/10",
   },
 ]

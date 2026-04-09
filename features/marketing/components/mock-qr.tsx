@@ -25,7 +25,12 @@ function isFilled(seed: number, row: number, col: number) {
 
 export function MockQr({ seed, label, className }: MockQrProps) {
   return (
-    <div className={cn("rounded-[28px] border border-white/10 bg-black/20 p-4", className)}>
+    <div
+      className={cn(
+        "rounded-[28px] border border-border bg-muted/60 p-4 dark:border-white/10 dark:bg-black/20",
+        className,
+      )}
+    >
       <div className="grid grid-cols-[repeat(11,minmax(0,1fr))] gap-1 rounded-[20px] bg-white p-3">
         {Array.from({ length: 11 * 11 }, (_, index) => {
           const row = Math.floor(index / 11)

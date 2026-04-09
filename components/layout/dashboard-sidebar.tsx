@@ -21,6 +21,7 @@ import { NotificationDetailDialog } from "@/components/layout/notification-detai
 import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog";
 import { SubscriptionDetailDialog } from "@/components/layout/subscription-detail-dialog";
 import { SettingsPopover } from "@/components/layout/settings-popover";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth";
 import type { NotificationInAppItem } from "@/lib/api/contracts/notifications";
 import { getInAppNotificationListTitle } from "@/lib/notifications/in-app-display";
@@ -527,8 +528,12 @@ export function DashboardSidebar({
       </div>
 
       {showSettings && (
-        <div className="shrink-0 border-t border-border/50 px-4 py-2.5">
-          <SettingsPopover onProfileSaved={handleProfileSaved} />
+        <div className="flex shrink-0 items-center gap-2 border-t border-border/50 px-4 py-2.5">
+          <SettingsPopover
+            className="min-w-0 flex-1"
+            onProfileSaved={handleProfileSaved}
+          />
+          <ThemeToggle />
         </div>
       )}
     </aside>

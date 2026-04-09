@@ -20,7 +20,17 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
   return (
     <div className="relative hidden w-[60%] flex-col overflow-hidden bg-surface-2 p-8 lg:flex">
       <div
-        className="pointer-events-none absolute inset-0"
+        className="pointer-events-none absolute inset-0 dark:hidden"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, oklch(0.55 0.02 240 / 0.09) 1px, transparent 1px),
+            linear-gradient(to bottom, oklch(0.55 0.02 240 / 0.09) 1px, transparent 1px)
+          `,
+          backgroundSize: "32px 32px",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0 hidden dark:block"
         style={{
           backgroundImage: `
             linear-gradient(to right, oklch(0.26 0.008 240 / 0.22) 1px, transparent 1px),
@@ -29,7 +39,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
           backgroundSize: "32px 32px",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.14),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.8_0.18_60/0.12),transparent_24%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.52_0.12_180/0.08),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.75_0.14_60/0.08),transparent_24%)] dark:bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.14),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.8_0.18_60/0.12),transparent_24%)]" />
 
       {/* 顶部 Logo + 标签 */}
       <div className="relative z-10 flex items-center justify-between gap-4">
@@ -86,8 +96,8 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
       </div>
 
       {/* AI 导师对话 - 复用首页滚动对话 */}
-      <div className="relative z-10 mx-12 mt-6 flex-1 overflow-hidden rounded-[24px] border border-white/10 bg-[oklch(0.15_0.012_240/0.48)] backdrop-blur-xl">
-        <div className="flex items-center gap-2 border-b border-white/8 px-4 py-2.5">
+      <div className="relative z-10 mx-12 mt-6 flex-1 overflow-hidden rounded-[24px] border border-border bg-card/95 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-[oklch(0.15_0.012_240/0.48)] dark:shadow-none">
+        <div className="flex items-center gap-2 border-b border-border/80 px-4 py-2.5 dark:border-white/8">
           <div className="h-2.5 w-2.5 rounded-full bg-destructive/70" />
           <div className="h-2.5 w-2.5 rounded-full bg-gold/70" />
           <div className="h-2.5 w-2.5 rounded-full bg-brand/70" />
@@ -95,8 +105,8 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
         </div>
 
         <div className="relative h-full overflow-hidden">
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-12 bg-[linear-gradient(180deg,oklch(0.14_0.01_240/0.78),transparent)]" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-[linear-gradient(180deg,transparent,oklch(0.14_0.01_240/0.86))]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-12 bg-[linear-gradient(180deg,oklch(0.98_0.005_240/0.95),transparent)] dark:bg-[linear-gradient(180deg,oklch(0.14_0.01_240/0.78),transparent)]" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-[linear-gradient(180deg,transparent,oklch(0.98_0.005_240/0.92))] dark:bg-[linear-gradient(180deg,transparent,oklch(0.14_0.01_240/0.86))]" />
 
           <div className="animate-[hero-chat-scroll_26s_linear_infinite] space-y-3.5 p-5">
             {[0, 1].flatMap((loop) =>
@@ -109,7 +119,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
                     className={cn(
                       "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-bold",
                       message.speaker === "user"
-                        ? "bg-white/8 text-foreground"
+                        ? "bg-foreground/10 text-foreground dark:bg-white/8"
                         : message.speaker === "system"
                           ? "bg-gold/14 text-gold"
                           : "bg-brand text-brand-foreground",
@@ -125,7 +135,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
                     className={cn(
                       "max-w-[92%] rounded-2xl px-4 py-2.5 text-left text-sm backdrop-blur-sm",
                       message.speaker === "user"
-                        ? "rounded-tl-sm border border-white/8 bg-white/6 text-foreground"
+                        ? "rounded-tl-sm border border-border bg-muted/70 text-foreground dark:border-white/8 dark:bg-white/6"
                         : message.speaker === "system"
                           ? "rounded-tl-sm border border-gold/18 bg-gold/10 text-foreground"
                           : "rounded-tl-sm border border-brand/18 bg-brand/12 text-foreground",
@@ -145,14 +155,14 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
                         {message.title}
                       </span>
                       {message.meta ? (
-                        <span className="rounded-full border border-white/8 bg-black/16 px-2 py-0.5 text-[10px] text-muted-foreground">
+                        <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground dark:border-white/8 dark:bg-black/16">
                           {message.meta}
                         </span>
                       ) : null}
                     </div>
                     <p className="mt-1.5 leading-6 text-foreground/92">{message.body}</p>
                     {message.speaker === "ai" ? (
-                      <div className="mt-2 flex items-center gap-2 rounded-2xl bg-black/18 px-3 py-1.5">
+                      <div className="mt-2 flex items-center gap-2 rounded-2xl bg-muted/90 px-3 py-1.5 dark:bg-black/18">
                         <CheckCircle2 className="h-3.5 w-3.5 text-gold" />
                         <span className="text-xs font-semibold text-gold">陪练建议已生成</span>
                         <span className="text-xs text-muted-foreground">下一步会直接进入待办</span>

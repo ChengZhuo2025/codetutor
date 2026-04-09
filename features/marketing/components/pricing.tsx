@@ -11,7 +11,7 @@ export function LandingPricing() {
 
   return (
     <section id="pricing" className="relative bg-surface-1 px-6 py-24">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/16 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
 
       <div className="mx-auto max-w-5xl">
         <div className="mx-auto mb-14 max-w-3xl text-center">
@@ -32,8 +32,8 @@ export function LandingPricing() {
               key={plan.name}
               className={`relative flex flex-col rounded-[30px] border p-8 transition-all hover:-translate-y-1 ${
                 plan.highlight
-                  ? "border-brand/40 bg-[linear-gradient(180deg,oklch(0.2_0.02_210/0.94),oklch(0.16_0.015_235/0.98))] shadow-[0_24px_80px_-42px_oklch(0.78_0.15_180/0.28)]"
-                  : "border-white/10 bg-surface-2/88 shadow-[0_20px_70px_-50px_rgba(0,0,0,0.72)]"
+                  ? "border-brand/40 bg-brand/5 shadow-lg shadow-brand/10 dark:bg-[linear-gradient(180deg,oklch(0.2_0.02_210/0.94),oklch(0.16_0.015_235/0.98))] dark:shadow-[0_24px_80px_-42px_oklch(0.78_0.15_180/0.28)]"
+                  : "border-border bg-card shadow-md shadow-black/[0.06] dark:border-white/10 dark:bg-surface-2/88 dark:shadow-[0_20px_70px_-50px_rgba(0,0,0,0.72)]"
               }`}
             >
               {plan.highlight && (
@@ -77,7 +77,7 @@ export function LandingPricing() {
                   className={`w-full rounded-2xl font-semibold ${
                     plan.highlight
                       ? "bg-brand text-brand-foreground shadow-[0_20px_50px_-24px_oklch(0.78_0.15_180/0.68)] hover:-translate-y-0.5 hover:bg-brand/90"
-                      : "border border-white/10 bg-white/4 text-foreground hover:-translate-y-0.5 hover:bg-white/8"
+                      : "border border-border bg-muted/60 text-foreground hover:-translate-y-0.5 hover:bg-muted dark:border-white/10 dark:bg-white/4 dark:hover:bg-white/8"
                   }`}
                 >
                   {authState.status === "authenticated" && plan.name === "免费版"

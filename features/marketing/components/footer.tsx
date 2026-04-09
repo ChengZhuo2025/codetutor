@@ -27,7 +27,7 @@ export function LandingFooter() {
   return (
     <>
       <section id="about" className="relative px-6 text-center">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/16 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
         <div className="mx-auto max-w-3xl px-6 pt-24 pb-16">
           <h2 className="text-4xl font-bold tracking-tight text-balance">
             今天就把第一条学习路径跑起来
@@ -49,7 +49,7 @@ export function LandingFooter() {
               <Button
                 size="lg"
                 variant="outline"
-                className="h-14 rounded-2xl border-white/10 bg-[oklch(0.16_0.01_240/0.34)] px-8 text-base font-medium text-foreground backdrop-blur transition-all hover:-translate-y-1 hover:bg-[oklch(0.20_0.015_220)] hover:text-foreground"
+                className="h-14 rounded-2xl border-border bg-card/90 px-8 text-base font-medium text-foreground shadow-sm backdrop-blur transition-all hover:-translate-y-1 hover:bg-muted dark:border-white/10 dark:bg-[oklch(0.16_0.01_240/0.34)] dark:shadow-none dark:hover:bg-[oklch(0.20_0.015_220)]"
               >
                 先看支持哪些工具
               </Button>
@@ -62,11 +62,11 @@ export function LandingFooter() {
         <div className="mx-auto max-w-6xl">
           <div>
             <div className="flex items-center justify-center gap-4">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/14" />
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-border dark:to-white/14" />
               <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                 相关应用下载
               </p>
-              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/14" />
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-border dark:to-white/14" />
             </div>
 
             <div className="mt-10 pb-6 flex flex-wrap items-center justify-center gap-10 gap-y-5">
@@ -78,7 +78,7 @@ export function LandingFooter() {
                   rel="noreferrer"
                   className="group flex items-center gap-3 transition-transform hover:-translate-y-0.5"
                 >
-                  <div className="flex h-12 w-12 rounded-lg bg-white/5 border border-white/10 items-center justify-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-muted/50 dark:border-white/10 dark:bg-white/5">
                     <Image
                       src={tool.logoSrc}
                       alt={`${tool.name} logo`}

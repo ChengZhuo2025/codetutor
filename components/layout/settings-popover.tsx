@@ -51,9 +51,10 @@ type DialogType = "profile" | "notification" | "feedback" | null
 
 type SettingsPopoverProps = {
   onProfileSaved?: (profile: ProfileMeResponseData) => void
+  className?: string
 }
 
-export function SettingsPopover({ onProfileSaved }: SettingsPopoverProps) {
+export function SettingsPopover({ onProfileSaved, className }: SettingsPopoverProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [activeDialog, setActiveDialog] = useState<DialogType>(null)
@@ -92,7 +93,7 @@ export function SettingsPopover({ onProfileSaved }: SettingsPopoverProps) {
 
   return (
     <>
-      <div ref={ref} className="relative">
+      <div ref={ref} className={cn("relative", className)}>
         <button
           onClick={() => setOpen((o) => !o)}
           className={cn(
@@ -107,12 +108,17 @@ export function SettingsPopover({ onProfileSaved }: SettingsPopoverProps) {
         </button>
 
         {open && (
-          <div className={cn(FLOATING_DARK_PANEL_CLASS, "absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-[20px]")}>
-            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+          <div
+            className={cn(
+              FLOATING_DARK_PANEL_CLASS,
+              "absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-[20px]",
+            )}
+          >
+            <div className="flex items-center justify-between border-b border-border px-4 py-3 dark:border-white/10">
               <span className="text-sm font-semibold">设置</span>
               <button
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-1 text-foreground/55 transition-colors hover:bg-white/8 hover:text-foreground"
+                className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:text-foreground/55 dark:hover:bg-white/8"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -135,16 +141,18 @@ export function SettingsPopover({ onProfileSaved }: SettingsPopoverProps) {
                           void handleItemClick(item)
                         }}
                         className={cn(
-                          "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/6",
-                          isDanger ? "text-rose-300 hover:bg-rose-400/8" : "text-foreground/88",
+                          "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/90 dark:hover:bg-white/6",
+                          isDanger
+                            ? "text-rose-600 hover:bg-rose-500/12 dark:text-rose-300 dark:hover:bg-rose-400/8"
+                            : "text-foreground/88",
                         )}
                       >
                         <div
                           className={cn(
                             "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border",
                             isDanger
-                              ? "border-rose-300/15 bg-rose-300/10 text-rose-400"
-                              : "border-white/10 bg-white/6 text-foreground/78",
+                              ? "border-rose-500/25 bg-rose-500/10 text-rose-600 dark:border-rose-300/15 dark:bg-rose-300/10 dark:text-rose-400"
+                              : "border-border bg-muted/60 text-muted-foreground dark:border-white/10 dark:bg-white/6 dark:text-foreground/78",
                           )}
                         >
                           <Icon className="h-4.5 w-4.5" />
@@ -153,7 +161,9 @@ export function SettingsPopover({ onProfileSaved }: SettingsPopoverProps) {
                           <p
                             className={cn(
                               "text-sm font-medium",
-                              isDanger ? "text-rose-400" : "text-foreground/88",
+                              isDanger
+                                ? "text-rose-700 dark:text-rose-400"
+                                : "text-foreground/88",
                             )}
                           >
                             {item.label}
@@ -161,7 +171,9 @@ export function SettingsPopover({ onProfileSaved }: SettingsPopoverProps) {
                           <p
                             className={cn(
                               "text-[12px] mt-1",
-                              isDanger ? "text-rose-300/60" : "text-foreground/48",
+                              isDanger
+                                ? "text-rose-600/80 dark:text-rose-300/60"
+                                : "text-foreground/48",
                             )}
                           >
                             {item.desc}
@@ -175,7 +187,7 @@ export function SettingsPopover({ onProfileSaved }: SettingsPopoverProps) {
               ))}
             </div>
 
-            <div className="border-t border-white/10 px-4 py-2.5">
+            <div className="border-t border-border px-4 py-2.5 dark:border-white/10">
               <p className="text-[11px] text-foreground/38">
                 {APP_NAME} v{APP_VERSION}
               </p>

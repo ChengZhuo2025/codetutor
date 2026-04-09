@@ -137,7 +137,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
       </DialogTrigger>
       <DialogContent className={cn(DIALOG_DARK_GRADIENT_PANEL_CLASS, "w-[min(900px,calc(100vw-1rem))] max-h-[calc(100dvh-1rem)] overflow-hidden rounded-[30px] sm:max-w-[980px]")}>
         <div className="flex max-h-[calc(100dvh-1rem)] flex-col overflow-hidden rounded-[30px]">
-          <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top,oklch(0.78_0.15_180/0.16),transparent_52%)] px-5 py-4 sm:px-7 sm:py-5">
+          <div className="border-b border-border bg-[radial-gradient(circle_at_top,oklch(0.52_0.12_180/0.1),transparent_52%)] px-5 py-4 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,oklch(0.78_0.15_180/0.16),transparent_52%)] sm:px-7 sm:py-5">
             <DialogHeader className="gap-3">
               <DialogTitle className="text-2xl font-semibold tracking-tight">联系我们</DialogTitle>
               <DialogDescription className="max-w-2xl text-sm leading-2 text-muted-foreground">
@@ -148,8 +148,8 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
 
           <div className="overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
             <div className="grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
-              <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-4 sm:p-5">
-                <div className="flex items-center justify-between gap-3 border-b border-white/8 pb-4">
+              <section className="rounded-[28px] border border-border bg-muted/40 p-4 sm:p-5 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]">
+                <div className="flex items-center justify-between gap-3 border-b border-border pb-4 dark:border-white/8">
                   <div>
                     <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                       直接联系
@@ -188,7 +188,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                           </div>
                         </div>
 
-                        <div className="mt-4 flex items-center justify-between gap-3 rounded-[12px] border border-white/8 bg-black/10 px-4 py-3">
+                        <div className="mt-4 flex items-center justify-between gap-3 rounded-[12px] border border-border bg-muted/50 px-4 py-3 dark:border-white/8 dark:bg-black/10">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-foreground">
                               {channel.maskedHandle}
@@ -198,7 +198,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="h-8 rounded-full border border-white/10 bg-white/5 px-3 text-xs text-foreground hover:bg-white/10 hover:text-white"
+                            className="h-8 rounded-full border border-border bg-muted/80 px-3 text-xs text-foreground hover:bg-muted dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-white"
                             onClick={() => handleCopy(copyKey, channel.handle)}
                           >
                             {isCopied ? <Check className="h-2 w-2" /> : <Copy className="h-2 w-2" />}
@@ -209,7 +209,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                         <MockQr
                           seed={channel.qrSeed}
                           label={channel.qrLabel}
-                          className="mt-4 rounded-[14px] bg-black/18 p-4"
+                          className="mt-4 rounded-[14px] bg-muted/70 p-4 dark:bg-black/18"
                         />
                       </div>
                     )
@@ -217,8 +217,8 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                 </div>
               </section>
 
-              <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,oklch(0.20_0.015_238/0.94),oklch(0.17_0.012_248/0.96))] p-4 sm:p-5">
-                <div className="border-b border-white/8 pb-4">
+              <section className="rounded-[28px] border border-border bg-card p-4 sm:p-5 dark:border-white/10 dark:bg-[linear-gradient(180deg,oklch(0.20_0.015_238/0.94),oklch(0.17_0.012_248/0.96))]">
+                <div className="border-b border-border pb-4 dark:border-white/8">
                   <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                     企业信息
                   </p>
@@ -232,9 +232,9 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                     return (
                       <div
                         key={item.label}
-                        className="flex items-start gap-3 rounded-[14px] border border-white/8 bg-white/[0.03] px-4 py-3"
+                        className="flex items-start gap-3 rounded-[14px] border border-border bg-muted/40 px-4 py-3 dark:border-white/8 dark:bg-white/[0.03]"
                       >
-                        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/6 text-muted-foreground">
+                        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-muted text-muted-foreground dark:bg-white/6">
                           <Icon className="h-4 w-4" />
                         </div>
                         <div className="min-w-0">

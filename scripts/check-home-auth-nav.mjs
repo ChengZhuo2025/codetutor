@@ -23,6 +23,12 @@ assert.match(
 )
 
 assert.match(
+  source,
+  /ThemeToggle/,
+  "LandingNav should expose the shared theme toggle for marketing pages.",
+)
+
+assert.match(
   readFileSync(
     new URL("../features/marketing/providers/landing-auth-provider.tsx", import.meta.url),
     "utf8",

@@ -30,15 +30,15 @@ export function RankProgressCard({
   );
 
   return (
-    <div className="overflow-hidden rounded-[34px] border border-brand/20 bg-[linear-gradient(135deg,rgba(18,30,34,0.96),rgba(12,22,26,0.96))] shadow-[0_30px_90px_rgba(0,0,0,0.22)]">
-      <div className="border-b border-brand/10  bg-[radial-gradient(circle_at_top_right,rgba(79,209,197,0.15),transparent_34%)] px-5 py-6 sm:px-6">
+    <div className="overflow-hidden rounded-[34px] border border-brand/25 bg-card shadow-lg shadow-black/6 dark:border-brand/20 dark:bg-[linear-gradient(135deg,rgba(18,30,34,0.96),rgba(12,22,26,0.96))] dark:shadow-[0_30px_90px_rgba(0,0,0,0.22)]">
+      <div className="border-b border-brand/15 bg-[radial-gradient(circle_at_top_right,oklch(0.52_0.12_180/0.08),transparent_40%)] px-5 py-6 dark:border-brand/10 dark:bg-[radial-gradient(circle_at_top_right,rgba(79,209,197,0.15),transparent_34%)] sm:px-6">
         <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-brand/80">
           <Sparkles className="h-3.5 w-3.5" />
           当前段位
         </div>
 
         <div className="mt-4 flex items-start gap-4">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[26px] border border-brand/30 bg-brand/10 text-brand shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[26px] border border-brand/30 bg-brand/10 text-brand dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center">
               <Icon icon={CurrentRankIcon} width={40} height={40} className="block" />
             </div>
@@ -61,7 +61,7 @@ export function RankProgressCard({
             </button>
             <button
               onClick={onOpenMap}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-background/45 px-4 py-3 text-sm font-medium text-foreground transition-all hover:-translate-y-0.5 hover:bg-background/60"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-muted/70 px-4 py-3 text-sm font-medium text-foreground transition-all hover:-translate-y-0.5 hover:bg-muted dark:bg-background/45 dark:hover:bg-background/60"
             >
               查看闯关地图
             </button>
@@ -104,7 +104,7 @@ export function RankProgressCard({
                         "h-px border-t",
                         isCompleted
                           ? "border-brand/45"
-                          : "border-dashed border-white/20",
+                          : "border-dashed border-border/80 dark:border-white/20",
                       )}
                     />
                     {showPartialProgress ? (
@@ -154,7 +154,7 @@ export function RankProgressCard({
           })}
         </div>
 
-        <div className="mt-5 rounded-[24px] border border-border/40 bg-background/35 px-4 py-3">
+        <div className="mt-5 rounded-[24px] border border-border/60 bg-muted/45 px-4 py-3 dark:border-border/40 dark:bg-background/35">
           {nextRank ? (
             <p className="text-sm text-muted-foreground">
               距离{" "}

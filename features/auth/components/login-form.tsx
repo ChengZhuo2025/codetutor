@@ -65,7 +65,7 @@ export function LoginForm({
 
   return (
     <div className="relative flex w-full flex-col items-center justify-center overflow-hidden px-6 py-8 lg:w-[40%]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,oklch(0.78_0.15_180/0.08),transparent_28%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,oklch(0.52_0.12_180/0.06),transparent_28%)] dark:bg-[radial-gradient(circle_at_top,oklch(0.78_0.15_180/0.08),transparent_28%)]" />
 
       <div className="relative z-10 w-full max-w-sm">
         {/* 登录/注册切换 - 文字链接样式，与下方 tab 区分 */}

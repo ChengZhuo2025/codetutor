@@ -48,7 +48,17 @@ export function LandingHero() {
       />
 
       <div
-        className="pointer-events-none absolute inset-0"
+        className="pointer-events-none absolute inset-0 dark:hidden"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, oklch(0.55 0.02 240 / 0.09) 1px, transparent 1px),
+            linear-gradient(to bottom, oklch(0.55 0.02 240 / 0.09) 1px, transparent 1px)
+          `,
+          backgroundSize: "48px 48px",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0 hidden dark:block"
         style={{
           backgroundImage: `
             linear-gradient(to right, oklch(0.28 0.015 220 / 0.12) 1px, transparent 1px),
@@ -57,11 +67,11 @@ export function LandingHero() {
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_14%,oklch(0.12_0.008_240/0.68)_84%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,oklch(0.12_0.008_240/0.16),transparent_14%,transparent_82%,oklch(0.12_0.008_240/0.58)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_22%,oklch(0.94_0.01_240/0.75)_88%)] dark:bg-[radial-gradient(ellipse_at_center,transparent_14%,oklch(0.12_0.008_240/0.68)_84%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,oklch(0.98_0.005_240/0.55),transparent_18%,transparent_78%,oklch(0.95_0.008_240/0.5)_100%)] dark:bg-[linear-gradient(180deg,oklch(0.12_0.008_240/0.16),transparent_14%,transparent_82%,oklch(0.12_0.008_240/0.58)_100%)]" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center text-center">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand/18 bg-[oklch(0.2_0.02_220/0.38)] px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand/10 px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp dark:border-brand/18 dark:bg-[oklch(0.2_0.02_220/0.38)]">
           <Sparkles className="h-3.5 w-3.5" />
           <span>AI 编程学习陪练平台 · MVP内测中</span>
         </div>
@@ -89,7 +99,7 @@ export function LandingHero() {
           </Link>
           <a
             href="#how"
-            className="inline-flex h-14 items-center justify-center rounded-2xl border border-white/10 bg-[oklch(0.16_0.01_240/0.34)] px-8 text-base font-medium text-foreground backdrop-blur transition-all hover:-translate-y-0.5 hover:bg-[oklch(0.2_0.015_220)] hover:text-foreground"
+            className="inline-flex h-14 items-center justify-center rounded-2xl border border-border bg-card/90 px-8 text-base font-medium text-foreground shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:bg-muted dark:border-white/10 dark:bg-[oklch(0.16_0.01_240/0.34)] dark:shadow-none dark:hover:bg-[oklch(0.2_0.015_220)]"
           >
             看看学习方式
           </a>
@@ -103,7 +113,7 @@ export function LandingHero() {
           {heroStats.map((item) => (
             <div
               key={item.label}
-              className="rounded-2xl border border-white/10 bg-[oklch(0.17_0.01_240/0.38)] px-5 py-4 text-left backdrop-blur-md"
+              className="rounded-2xl border border-border bg-card/95 px-5 py-4 text-left shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-[oklch(0.17_0.01_240/0.38)] dark:shadow-none"
             >
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 {item.label}
@@ -115,10 +125,10 @@ export function LandingHero() {
       </div>
 
       <div className="relative z-10 mx-auto mt-16 w-full max-w-5xl">
-        <div className="overflow-hidden rounded-[32px] border border-white/10 bg-[oklch(0.15_0.012_240/0.48)] shadow-[0_32px_90px_-45px_rgba(0,0,0,0.85)] backdrop-blur-xl">
+        <div className="overflow-hidden rounded-[32px] border border-border bg-card shadow-xl shadow-black/10 backdrop-blur-xl dark:border-white/10 dark:bg-[oklch(0.15_0.012_240/0.48)] dark:shadow-[0_32px_90px_-45px_rgba(0,0,0,0.85)]">
           <div className="grid gap-0 lg:grid-cols-[1.25fr_0.75fr]">
-            <div className="border-b border-white/8 lg:border-b-0 lg:border-r lg:border-r-white/8">
-              <div className="flex items-center gap-2 border-b border-white/8 px-4 py-3">
+            <div className="border-b border-border/80 lg:border-b-0 lg:border-r lg:border-r-border/80 dark:border-white/8 dark:lg:border-r-white/8">
+              <div className="flex items-center gap-2 border-b border-border/80 px-4 py-3 dark:border-white/8">
                 <div className="h-3 w-3 rounded-full bg-destructive/70" />
                 <div className="h-3 w-3 rounded-full bg-gold/70" />
                 <div className="h-3 w-3 rounded-full bg-brand/70" />
@@ -126,8 +136,8 @@ export function LandingHero() {
               </div>
 
               <div className="relative h-[27rem] overflow-hidden p-6">
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-18 bg-[linear-gradient(180deg,oklch(0.14_0.01_240/0.78),transparent)]" />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-[linear-gradient(180deg,transparent,oklch(0.14_0.01_240/0.86))]" />
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-18 bg-[linear-gradient(180deg,oklch(0.98_0.005_240/0.95),transparent)] dark:bg-[linear-gradient(180deg,oklch(0.14_0.01_240/0.78),transparent)]" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-[linear-gradient(180deg,transparent,oklch(0.98_0.005_240/0.92))] dark:bg-[linear-gradient(180deg,transparent,oklch(0.14_0.01_240/0.86))]" />
 
                 <div className="animate-[hero-chat-scroll_26s_linear_infinite] space-y-4">
                   {[0, 1].flatMap((loop) =>
@@ -143,7 +153,7 @@ export function LandingHero() {
                           className={cn(
                             "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold",
                             message.speaker === "user"
-                              ? "bg-white/8 text-foreground"
+                              ? "bg-foreground/10 text-foreground dark:bg-white/8"
                               : message.speaker === "system"
                                 ? "bg-gold/14 text-gold"
                                 : "bg-brand text-brand-foreground",
@@ -159,7 +169,7 @@ export function LandingHero() {
                           className={cn(
                             "max-w-[92%] rounded-2xl px-4 py-3 text-left text-sm backdrop-blur-sm",
                             message.speaker === "user"
-                              ? "rounded-tl-sm border border-white/8 bg-white/6 text-foreground"
+                              ? "rounded-tl-sm border border-border bg-muted/70 text-foreground dark:border-white/8 dark:bg-white/6"
                               : message.speaker === "system"
                                 ? "rounded-tl-sm border border-gold/18 bg-gold/10 text-foreground"
                                 : "rounded-tl-sm border border-brand/18 bg-brand/12 text-foreground",
@@ -179,14 +189,14 @@ export function LandingHero() {
                               {message.title}
                             </span>
                             {message.meta ? (
-                              <span className="rounded-full border border-white/8 bg-black/16 px-2 py-0.5 text-[10px] text-muted-foreground">
+                              <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground dark:border-white/8 dark:bg-black/16">
                                 {message.meta}
                               </span>
                             ) : null}
                           </div>
                           <p className="mt-2 leading-7 text-foreground/92">{message.body}</p>
                           {message.speaker === "ai" ? (
-                            <div className="mt-3 flex items-center gap-2 rounded-2xl bg-black/18 px-3 py-2">
+                            <div className="mt-3 flex items-center gap-2 rounded-2xl bg-muted/90 px-3 py-2 dark:bg-black/18">
                               <CheckCircle2 className="h-3.5 w-3.5 text-gold" />
                               <span className="text-xs font-semibold text-gold">陪练建议已生成</span>
                               <span className="text-xs text-muted-foreground">下一步会直接进入待办</span>
@@ -200,7 +210,7 @@ export function LandingHero() {
               </div>
             </div>
 
-            <div className="bg-[oklch(0.14_0.01_240/0.3)] p-6">
+            <div className="bg-muted/40 p-6 dark:bg-[oklch(0.14_0.01_240/0.3)]">
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 今日学习路径
               </p>
@@ -215,7 +225,7 @@ export function LandingHero() {
                     className={`rounded-2xl border px-4 py-3 backdrop-blur ${
                       index === 0
                         ? "border-brand/26 bg-brand/12"
-                        : "border-white/8 bg-white/4"
+                        : "border-border/80 bg-muted/50 dark:border-white/8 dark:bg-white/4"
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -223,7 +233,7 @@ export function LandingHero() {
                         className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
                           index === 0
                             ? "bg-brand text-brand-foreground"
-                            : "bg-white/8 text-muted-foreground"
+                            : "bg-foreground/10 text-muted-foreground dark:bg-white/8"
                         }`}
                       >
                         {index + 1}
@@ -239,7 +249,7 @@ export function LandingHero() {
                 ))}
               </div>
 
-              <div className="mt-5 rounded-2xl border border-white/8 bg-white/4 px-4 py-4 backdrop-blur-sm">
+              <div className="mt-5 rounded-2xl border border-border/80 bg-muted/40 px-4 py-4 backdrop-blur-sm dark:border-white/8 dark:bg-white/4">
                 <p className="text-xs text-muted-foreground">适合人群</p>
                 <p className="mt-2 text-sm leading-7 text-foreground">
                   第一次接触 AI 编程工具的人，也包括已经能写代码、但想把 {cursorToolName}、{claudeCodeToolName}、{codexToolName} 真正接入自己项目流程的开发者。
@@ -248,7 +258,7 @@ export function LandingHero() {
                   {["新手起步", "项目实战", "调试重构", "接口联调"].map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-white/8 bg-black/18 px-2.5 py-1 text-xs text-muted-foreground"
+                      className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground dark:border-white/8 dark:bg-black/18"
                     >
                       {tag}
                     </span>

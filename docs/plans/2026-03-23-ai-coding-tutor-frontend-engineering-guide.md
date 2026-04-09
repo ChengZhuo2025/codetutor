@@ -231,9 +231,11 @@ features/<domain>/
 
 当前状态：
 
-- `providers/app-providers.tsx` 当前承载全局包裹入口与 `Analytics`
+- `providers/app-providers.tsx` 当前承载全局包裹入口、`next-themes` 的 `ThemeProvider`（`attribute="class"`、`defaultTheme="dark"`、`storageKey="codetutor-theme"`）与 `Analytics`
 - 工作台左侧栏共享数据缓存当前挂在 `app/(workspace)/layout.tsx`，由 `WorkspaceSidebarDataProvider` 仅覆盖工作台路由组
-- 后续接入主题、认证 Session、数据请求缓存时，应继续在这里扩展
+- 明暗切换入口：`components/layout/theme-toggle.tsx`（太阳/月亮），挂载在营销首页导航、登录页右上角、工作台 `DashboardSidebar` 底部设置行右侧
+- 设计令牌：`app/globals.css` 中 `:root` 为浅色、`.dark` 为深色（与 `html` 上的 `dark` class 联动）
+- 后续接入认证 Session、数据请求缓存等时，应继续在这里扩展
 
 ### 3.6 `types/`
 
@@ -540,12 +542,11 @@ features/<domain>/
 
 后续如需接入：
 
-- 主题 Provider
 - Session Provider
 - Query Provider
-- 埋点 Provider
+- 其他全局 Provider
 
-都应优先接入该入口，而不是散落在各页面中。
+都应优先接入该入口，而不是散落在各页面中。（主题已通过 `next-themes` 接入 `AppProviders`。）
 
 当前事件追踪约定：
 

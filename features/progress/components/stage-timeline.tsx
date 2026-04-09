@@ -21,7 +21,7 @@ const statusConfig = {
     nodeStyle:
       "border-brand bg-brand text-brand-foreground shadow-[0_0_30px_oklch(0.78_0.15_180/0.5)]",
     cardStyle:
-      "border-brand/50 bg-[linear-gradient(145deg,rgba(31,198,164,0.16),rgba(8,16,29,0.94))] shadow-[0_24px_64px_-32px_oklch(0.78_0.15_180/0.55)] cursor-pointer",
+      "border-brand/40 bg-brand/10 shadow-sm dark:border-brand/50 dark:bg-[linear-gradient(145deg,rgba(31,198,164,0.16),rgba(8,16,29,0.94))] dark:shadow-[0_24px_64px_-32px_oklch(0.78_0.15_180/0.55)] cursor-pointer",
     label: "当前任务",
     labelStyle: "text-brand",
   },
@@ -79,7 +79,7 @@ export function StageTimeline({
                     isSelected && "ring-2 ring-brand/28 ring-offset-2 ring-offset-background",
                   )}
                 >
-                  <span className="absolute -left-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-gray-800  bg-background px-1 text-[10px] font-bold text-foreground shadow-sm">
+                  <span className="absolute -left-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-border bg-card px-1 text-[10px] font-bold text-foreground shadow-sm dark:border-gray-800 dark:bg-background">
                     {stage.id}
                   </span>
                   <Icon className="h-5 w-5" />

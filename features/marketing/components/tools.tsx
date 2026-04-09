@@ -6,7 +6,7 @@ import {
 export function LandingTools() {
   return (
     <section id="tools" className="relative px-6 py-24">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/16 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
           <div className="flex h-full flex-col">
@@ -24,7 +24,7 @@ export function LandingTools() {
               {marketingTools.map((tool) => (
                 <div
                   key={tool.name}
-                  className="flex min-h-[82px] items-center rounded-[24px] border border-white/10 bg-surface-2/85 px-4 py-4 transition-all hover:-translate-y-0.5 hover:border-brand/18 hover:bg-surface-2"
+                  className="flex min-h-[82px] items-center rounded-[24px] border border-border bg-card px-4 py-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/18 hover:bg-muted/70 dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none dark:hover:bg-surface-2"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`h-2.5 w-2.5 rounded-full ${tool.dot}`} />
@@ -53,7 +53,7 @@ export function LandingTools() {
               {marketingAudiences.map((item) => (
                 <div
                   key={item.label}
-                  className="flex min-h-[177px] flex-col justify-center rounded-[24px] border border-white/10 bg-surface-2/85 px-4 py-4 transition-all hover:-translate-y-0.5 hover:border-brand/18 hover:bg-surface-2"
+                  className="flex min-h-[177px] flex-col justify-center rounded-[24px] border border-border bg-card px-4 py-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/18 hover:bg-muted/70 dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none dark:hover:bg-surface-2"
                 >
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-dim text-sm font-bold text-brand">
                     {item.label[0]}

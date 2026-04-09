@@ -28,7 +28,7 @@ export function ProgressOverview({
   return (
     <div className="shrink-0 border-b border-border/40 px-4 py-4 sm:px-6 sm:py-5">
       <div className="flex flex-col gap-3">
-        <div className="overflow-hidden rounded-[28px] border border-brand/20 bg-[radial-gradient(circle_at_top_left,rgba(92,225,168,0.12),transparent_38%),linear-gradient(145deg,rgba(17,28,44,0.98),rgba(8,15,27,0.98))] px-4 py-4 shadow-[0_18px_56px_-36px_rgba(92,225,168,0.42)] sm:px-5">
+        <div className="overflow-hidden rounded-[28px] border border-brand/25 bg-card px-4 py-4 shadow-md shadow-black/[0.04] sm:px-5 dark:border-brand/20 dark:bg-[radial-gradient(circle_at_top_left,rgba(92,225,168,0.12),transparent_38%),linear-gradient(145deg,rgba(17,28,44,0.98),rgba(8,15,27,0.98))] dark:shadow-[0_18px_56px_-36px_rgba(92,225,168,0.42)]">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="min-w-0">
@@ -58,7 +58,7 @@ export function ProgressOverview({
             </div>
 
             <div className="grid gap-2.5 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
-              <div className="rounded-2xl bg-background/50 px-4 py-3">
+              <div className="rounded-2xl bg-muted/55 px-4 py-3 dark:bg-background/50">
                 <div className="mb-2 flex items-center justify-between gap-3 text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   <span>当前路径进度</span>
                   <span>{progressPercent}% 已完成</span>
@@ -82,7 +82,7 @@ export function ProgressOverview({
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-background/50 px-4 py-3">
+              <div className="rounded-2xl bg-muted/55 px-4 py-3 dark:bg-background/50">
                 <div className="flex items-center gap-2 text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   <Zap className="h-3.5 w-3.5 text-gold" />
                   本关奖励
@@ -94,15 +94,15 @@ export function ProgressOverview({
               </div>
             </div>
 
-            <div className="grid gap-2.5 border-t border-brand/15 pt-4 pb-1 lg:grid-cols-3">
-              <div className="rounded-2xl bg-background/50 px-3.5 py-3">
+            <div className="grid gap-2.5 border-t border-brand/20 pt-4 pb-1 dark:border-brand/15 lg:grid-cols-3">
+              <div className="rounded-2xl bg-muted/55 px-3.5 py-3 dark:bg-background/50">
                 <div className="flex items-center gap-2 text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   <Play className="h-3.5 w-3.5 text-brand" />
                   当前目标
                 </div>
                 <p className="mt-1 text-sm leading-5 text-foreground/90">{currentStage.goal}</p>
               </div>
-              <div className="rounded-2xl bg-background/50 px-3.5 py-3">
+              <div className="rounded-2xl bg-muted/55 px-3.5 py-3 dark:bg-background/50">
                 <div className="flex items-center gap-2 text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   <CheckCircle2 className="h-3.5 w-3.5 text-brand" />
                   完成标准
@@ -111,7 +111,7 @@ export function ProgressOverview({
                   {currentStage.completionCriteria}
                 </p>
               </div>
-              <div className="rounded-2xl bg-background/50 px-3.5 py-3">
+              <div className="rounded-2xl bg-muted/55 px-3.5 py-3 dark:bg-background/50">
                 <div className="flex items-center gap-2 text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   <Target className="h-3.5 w-3.5 text-chart-3" />
                   下一步解锁
@@ -150,24 +150,25 @@ export function ProgressOverview({
                 {summary.currentRank}
               </p>
               <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                再获得 {summary.remainingXPToNextRank} XP 即可进阶为 <span className="text-white">{summary.nextRank}</span>
+                再获得 {summary.remainingXPToNextRank} XP 即可进阶为{" "}
+                <span className="font-medium text-brand dark:text-white">{summary.nextRank}</span>
               </p>
             </div>
 
             <div className="grid gap-2.5 md:grid-cols-3 lg:justify-self-end">
-              <div className="rounded-2xl bg-background/40 px-4 py-3">
+              <div className="rounded-2xl bg-muted/50 px-4 py-3 dark:bg-background/40">
                 <p className="text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   连续学习
                 </p>
                 <p className="mt-1 text-sm font-semibold text-foreground">{summary.streakDays} 天</p>
               </div>
-              <div className="rounded-2xl bg-background/40 px-4 py-3">
+              <div className="rounded-2xl bg-muted/50 px-4 py-3 dark:bg-background/40">
                 <p className="text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   下一段位
                 </p>
                 <p className="mt-1 text-sm font-semibold text-foreground">{summary.nextRank}</p>
               </div>
-              <div className="rounded-2xl bg-background/40 px-4 py-3">
+              <div className="rounded-2xl bg-muted/50 px-4 py-3 dark:bg-background/40">
                 <p className="text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   升级还差
                 </p>
@@ -178,7 +179,7 @@ export function ProgressOverview({
             </div>
           </div>
 
-          <div className="mt-5 rounded-2xl bg-background/40 px-4 pt-3 pb-4">
+          <div className="mt-5 rounded-2xl bg-muted/50 px-4 pt-3 pb-4 dark:bg-background/40">
             <div className="flex items-center justify-between gap-3 text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
               <span>距离下一段位</span>
               <span>{summary.totalXP} / {summary.totalXP + summary.remainingXPToNextRank} XP</span>
