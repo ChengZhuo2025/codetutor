@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { APP_NAME } from "@/constants/app";
 import { ROUTES } from "@/constants/routes";
+import { getRankTierProgressForScore } from "@/constants/ranks";
 import { useAppToast } from "@/components/app-feedback/app-toast-provider";
 import { NotificationDetailDialog } from "@/components/layout/notification-detail-dialog";
 import { ProfileEditDialog } from "@/components/layout/profile-edit-dialog";
@@ -162,10 +163,7 @@ export function DashboardSidebar({
 
   const resolvedProfile = displayProfile ?? fallbackProfile;
   const subscription = SUBSCRIPTION_PLACEHOLDER;
-  const progressPercent = Math.min(
-    Math.round((resolvedProfile.currentScore / 1000) * 100),
-    100,
-  );
+  const rankTierProgress = getRankTierProgressForScore(resolvedProfile.currentScore);
   const visibleRecentPlans = recentLearningPlans.slice(0, 5);
 
   const historyStatusLabel = (status: string) => {
@@ -258,16 +256,17 @@ export function DashboardSidebar({
             >
               <div className="mb-2 flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">
-                  {resolvedProfile.currentScore} / 1000 XP
+                  {rankTierProgress.xpInCurrentTier} / {rankTierProgress.tierSpanXp}{" "}
+                  XP
                 </span>
                 <span className="text-muted-foreground">
-                  {progressPercent}%
+                  {rankTierProgress.percent}%
                 </span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-4">
                 <div
                   className="h-full rounded-full bg-brand"
-                  style={{ width: `${progressPercent}%` }}
+                  style={{ width: `${rankTierProgress.percent}%` }}
                 />
               </div>
 

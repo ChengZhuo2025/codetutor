@@ -76,3 +76,43 @@ export function getRemainingXpToNextRank(code: string, currentScore: number) {
 
   return Math.max(0, nextRank.minScore - currentScore)
 }
+
+/**
+ * Which rank tier a total score falls into (by score alone; matches snapshot drift edge cases).
+ */
+export function getRankDefinitionForScore(score: number): RankDefinition {
+  const last = RANK_DEFINITIONS[RANK_DEFINITIONS.length - 1]
+  if (score >= last.minScore) {
+    return last
+  }
+
+  for (const rank of RANK_DEFINITIONS) {
+    if (score >= rank.minScore && score < rank.maxScore) {
+      return rank
+    }
+  }
+
+  return RANK_DEFINITIONS[0]
+}
+
+/**
+ * Progress within the current tier toward the next rank (numerator/denominator for sidebar XP bar).
+ */
+export function getRankTierProgressForScore(currentScore: number): {
+  xpInCurrentTier: number
+  tierSpanXp: number
+  percent: number
+} {
+  const rank = getRankDefinitionForScore(currentScore)
+  const tierSpanXp = Math.max(rank.maxScore - rank.minScore, 1)
+  const xpInCurrentTier = Math.min(
+    Math.max(currentScore - rank.minScore, 0),
+    tierSpanXp,
+  )
+  const percent = Math.min(
+    100,
+    Math.max(0, Math.round((xpInCurrentTier / tierSpanXp) * 100)),
+  )
+
+  return { xpInCurrentTier, tierSpanXp, percent }
+}
