@@ -283,6 +283,7 @@ export function HistoryPage() {
   if (historyState.status === "error") {
     return (
       <AppShell
+        workspacePage="history"
         mobileTitle="学习记录"
         mobileSubtitle="历史学习计划回顾"
         asideLabel="常见问题"
@@ -298,14 +299,16 @@ export function HistoryPage() {
       >
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="shrink-0 border-b border-border/50 bg-surface-1/80 px-4 py-5 backdrop-blur-sm sm:px-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between xl:relative xl:pr-[16rem]">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">学习记录</h1>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
                   回顾你参与过的所有学习计划，查看进度和成就。
                 </p>
               </div>
-              {renderHeaderAction}
+              <div className="lg:mt-0 xl:absolute xl:top-5 xl:right-14">
+                {renderHeaderAction}
+              </div>
             </div>
           </div>
 
@@ -326,6 +329,7 @@ export function HistoryPage() {
   return (
     <>
       <AppShell
+        workspacePage="history"
         mobileTitle="学习记录"
         mobileSubtitle={
           pageSummary
@@ -345,14 +349,16 @@ export function HistoryPage() {
       >
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="shrink-0 border-b border-border/50 bg-surface-1/80 px-4 py-5 backdrop-blur-sm sm:px-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between xl:relative xl:pr-[16rem]">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">学习记录</h1>
                 <p className="mt-1 text-sm leading-5 text-muted-foreground">
                   回顾你参与过的所有学习计划，并按状态继续、复盘、放弃或清理记录。
                 </p>
               </div>
-              {renderHeaderAction}
+              <div className="lg:mt-0 xl:absolute xl:top-5 xl:right-8">
+                {renderHeaderAction}
+              </div>
             </div>
           </div>
 
@@ -403,16 +409,7 @@ export function HistoryPage() {
                         )}
                       >
                         {filter.label}
-                        <span
-                          className={cn(
-                            "rounded-full border px-1.5 py-0.5 text-[11px]",
-                            active
-                              ? "border-white/20 bg-white/12 text-white"
-                              : "border-white/16 bg-white/10 text-white/88",
-                          )}
-                        >
-                          {count}
-                        </span>
+                        <span className="text-xs">{count} </span>
                       </Button>
                     )
                   })}

@@ -56,9 +56,14 @@ type DialogType = "profile" | "notification" | "feedback" | null
 type SettingsPopoverProps = {
   onProfileSaved?: (profile: ProfileMeResponseData) => void
   className?: string
+  iconOnly?: boolean
 }
 
-export function SettingsPopover({ onProfileSaved, className }: SettingsPopoverProps) {
+export function SettingsPopover({
+  onProfileSaved,
+  className,
+  iconOnly = false,
+}: SettingsPopoverProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [activeDialog, setActiveDialog] = useState<DialogType>(null)
@@ -97,25 +102,29 @@ export function SettingsPopover({ onProfileSaved, className }: SettingsPopoverPr
 
   return (
     <>
-      <div ref={ref} className={cn("relative", className)}>
+      <div ref={ref} className={cn("relative z-[80]", className)}>
         <button
           onClick={() => setOpen((o) => !o)}
           className={cn(
-            "flex w-full items-center gap-2.5 rounded-full px-3 py-2 text-sm transition-colors",
+            "flex items-center gap-2.5 rounded-full text-sm transition-colors",
+            iconOnly ? "h-11 w-11 justify-center px-0 py-0" : "w-full px-3 py-2",
             open
               ? "bg-surface-3 text-foreground"
               : "text-muted-foreground hover:bg-surface-3 hover:text-foreground",
           )}
+          aria-label="打开设置"
+          title="设置"
         >
           <Settings className="h-4 w-4" />
-          设置
+          {iconOnly ? null : "设置"}
         </button>
 
         {open && (
           <div
             className={cn(
               FLOATING_PANEL_CLASS,
-              "min-w-64 absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-[20px]",
+              "min-w-64 absolute bottom-full z-[80] mb-2 overflow-hidden rounded-[20px]",
+              iconOnly ? "left-0" : "left-0 right-0",
             )}
           >
             <div className={cn("flex items-center justify-between border-b px-4 py-3", USER_PANEL_DIVIDER_CLASS)}>

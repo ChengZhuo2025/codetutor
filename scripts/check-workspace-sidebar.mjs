@@ -14,6 +14,10 @@ const cases = [
     file: "features/achievement/pages/achievements-page.tsx",
     activeHref: "ROUTES.achievements",
   },
+  {
+    file: "features/history/pages/history-page.tsx",
+    activeHref: "ROUTES.history",
+  },
 ]
 
 for (const { file, activeHref } of cases) {
@@ -41,4 +45,4 @@ for (const { file, activeHref } of cases) {
   )
 }
 
-console.log("Workspace sidebar usage is consistent across /learn, /map, and /achievements.")
+console.log("Workspace sidebar usage is consistent across /learn, /map, /achievements, and /history.")

@@ -60,7 +60,8 @@
     "test:settings-logout": "node scripts/check-settings-logout.mjs",
     "test:workspace-sidebar-cache": "node scripts/check-workspace-sidebar-cache.mjs",
     "test:workspace-layout-widths": "node scripts/check-workspace-layout-widths.mjs",
-    "test:workspace-aside-styles": "node scripts/check-workspace-aside-styles.mjs"
+    "test:workspace-aside-styles": "node scripts/check-workspace-aside-styles.mjs",
+    "test:workspace-shell-collapse": "node scripts/check-workspace-shell-collapse.mjs"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^7.3.4",

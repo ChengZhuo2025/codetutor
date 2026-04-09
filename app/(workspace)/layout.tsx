@@ -1,3 +1,4 @@
+import { WorkspaceLayoutProvider } from "@/providers/workspace-layout-provider"
 import { WorkspaceSidebarDataProvider } from "@/providers/workspace-sidebar-provider"
 
 export default function WorkspaceLayout({
@@ -5,5 +6,9 @@ export default function WorkspaceLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <WorkspaceSidebarDataProvider>{children}</WorkspaceSidebarDataProvider>
+  return (
+    <WorkspaceSidebarDataProvider>
+      <WorkspaceLayoutProvider>{children}</WorkspaceLayoutProvider>
+    </WorkspaceSidebarDataProvider>
+  )
 }

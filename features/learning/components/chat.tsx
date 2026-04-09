@@ -132,6 +132,25 @@ const messageActionToneClass = {
   success: USER_BUTTON_PRIMARY_CLASS,
 } as const
 
+const CHAT_TONE_CLASS = {
+  info: {
+    panel: "border-brand/16 bg-brand-dim/45",
+    badge: "border-brand/20 bg-brand-dim text-brand",
+    icon: "text-brand",
+  },
+  warning: {
+    panel: "border-gold/18 bg-gold-dim/55",
+    badge: "border-gold/25 bg-gold-dim text-gold",
+    icon: "text-gold",
+  },
+  success: {
+    panel: "border-emerald-500/18 bg-emerald-500/8",
+    badge: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    icon: "text-emerald-600 dark:text-emerald-300",
+    text: "text-emerald-700 dark:text-emerald-300",
+  },
+} as const
+
 const assistantMessageVariantMeta: Record<
   AssistantMessageVariant,
   {
@@ -203,9 +222,9 @@ const assistantMessageVariantMeta: Record<
     label: "完成反馈",
     hint: "总结这一步收获，并准备进入下一关。",
     panelClass: "border-emerald-500/20 bg-background/50",
-    iconClass: "text-emerald-600",
-    chipClass: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600",
-    summaryClass: "text-emerald-700",
+    iconClass: "text-emerald-600 dark:text-emerald-300",
+    chipClass: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    summaryClass: "text-emerald-700 dark:text-emerald-300",
   },
 }
 
@@ -220,7 +239,7 @@ const assistantMessageInteractionMeta: Record<
     iconClass: "text-brand",
     chipClass: "border-brand/20 bg-brand-dim text-brand",
     summaryClass: "text-foreground",
-    sectionClass: "border-brand/16 bg-brand-dim/45",
+    sectionClass: CHAT_TONE_CLASS.info.panel,
     orderedBadgeClass: "bg-brand/12 text-brand",
     listIconClass: "text-brand",
   },
@@ -231,7 +250,7 @@ const assistantMessageInteractionMeta: Record<
     iconClass: "text-gold",
     chipClass: "border-gold/20 bg-gold-dim text-gold",
     summaryClass: "text-foreground",
-    sectionClass: "border-gold/18 bg-gold-dim/55",
+    sectionClass: CHAT_TONE_CLASS.warning.panel,
     orderedBadgeClass: "bg-gold-dim text-gold",
     listIconClass: "text-gold",
   },
@@ -250,12 +269,12 @@ const assistantMessageInteractionMeta: Record<
     label: "完成反馈",
     hint: "确认这一步已经完成，并把收获转成下一步动作。",
     panelClass: "border-emerald-500/20 bg-background/50",
-    iconClass: "text-emerald-600",
-    chipClass: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600",
-    summaryClass: "text-emerald-700",
-    sectionClass: "border-emerald-500/18 bg-emerald-500/8",
-    orderedBadgeClass: "bg-emerald-500/12 text-emerald-600",
-    listIconClass: "text-emerald-600",
+    iconClass: CHAT_TONE_CLASS.success.icon,
+    chipClass: CHAT_TONE_CLASS.success.badge,
+    summaryClass: CHAT_TONE_CLASS.success.text,
+    sectionClass: CHAT_TONE_CLASS.success.panel,
+    orderedBadgeClass: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
+    listIconClass: "text-emerald-600 dark:text-emerald-300",
   },
   path_guidance: {
     label: "下一步建议",
@@ -583,9 +602,9 @@ function renderStructuredContent(
       {sections.map((section, sectionIndex) => {
         const sectionToneClass =
           section.tone === "success"
-            ? "border-emerald-500/18 bg-emerald-500/8"
+            ? CHAT_TONE_CLASS.success.panel
             : section.tone === "warning"
-              ? "border-gold/18 bg-gold-dim/55"
+              ? CHAT_TONE_CLASS.warning.panel
               : section.tone === "info"
                 ? interactionMeta.sectionClass
                 : "border-background/60 bg-background/40"
@@ -596,7 +615,7 @@ function renderStructuredContent(
             className={cn("rounded-2xl border px-3.5 py-3", sectionToneClass)}
           >
             {section.title ? (
-              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
                 {renderInlineText(section.title, `section-title-${sectionIndex}`)}
               </div>
             ) : null}
@@ -607,7 +626,7 @@ function renderStructuredContent(
           return (
             <div
               key={`heading-${sectionIndex}-${blockIndex}`}
-              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70"
+              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80"
             >
               {renderInlineText(block.text, `heading-${sectionIndex}-${blockIndex}`)}
             </div>
@@ -640,7 +659,7 @@ function renderStructuredContent(
                     className={cn(
                       "mt-1 h-4 w-4 shrink-0",
                       kind === "task_feedback" || interactionType === "completion_feedback"
-                        ? "text-emerald-600"
+                        ? "text-emerald-600 dark:text-emerald-300"
                         : interactionMeta.listIconClass,
                     )}
                   />
@@ -768,26 +787,26 @@ function getTaskPatchDisplayMeta(taskPatch: LearningTaskPatch) {
   if (taskPatch.status === "blocked") {
     return {
       badge: "已标记为卡住",
-      badgeClass: "border-gold/25 bg-gold-dim text-gold",
-      panelClass: "border-gold/20 bg-gold-dim/55",
-      iconClass: "text-gold",
+      badgeClass: CHAT_TONE_CLASS.warning.badge,
+      panelClass: CHAT_TONE_CLASS.warning.panel,
+      iconClass: CHAT_TONE_CLASS.warning.icon,
     }
   }
 
   if (taskPatch.status === "completed") {
     return {
       badge: "已完成当前关卡",
-      badgeClass: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600",
-      panelClass: "border-emerald-500/20 bg-emerald-500/8",
-      iconClass: "text-emerald-600",
+      badgeClass: CHAT_TONE_CLASS.success.badge,
+      panelClass: CHAT_TONE_CLASS.success.panel,
+      iconClass: CHAT_TONE_CLASS.success.icon,
     }
   }
 
   return {
     badge: "继续推进当前关卡",
-    badgeClass: "border-brand/20 bg-brand-dim text-brand",
-    panelClass: "border-brand/20 bg-brand-dim/60",
-    iconClass: "text-brand",
+    badgeClass: CHAT_TONE_CLASS.info.badge,
+    panelClass: CHAT_TONE_CLASS.info.panel,
+    iconClass: CHAT_TONE_CLASS.info.icon,
   }
 }
 
@@ -1644,7 +1663,7 @@ export function LearnChat({
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-border/80 bg-surface-1/80 px-4 py-4 backdrop-blur-sm sm:px-6">
-        <div className="relative">
+        <div className="relative xl:pr-[15rem]">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <div className="flex flex-wrap items-center gap-2">
@@ -1672,10 +1691,10 @@ export function LearnChat({
                 : "稍后重试，或从学习地图重新进入本关。"}
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
                 本轮学习计划
               </span>
-              <span className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs text-bold text-foreground">
+              <span className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs font-semibold text-foreground">
                 {planSummary.selectedToolName}
               </span>
               <span className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs text-foreground">
@@ -1690,7 +1709,7 @@ export function LearnChat({
             </div>
           </div>
 
-          <div className="lg:absolute lg:right-0 lg:top-3 lg:mt-0">
+          <div className="lg:mt-0 xl:absolute xl:top-5 xl:right-8">
             <button
               type="button"
               className={cn(
@@ -1754,7 +1773,7 @@ export function LearnChat({
           {mission ? (
             <div className="rounded-[1.9rem] border border-border bg-surface-2/95 p-5">
               <div className="flex flex-col gap-5">
-                <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/65">
+                <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
                   <Target className="h-3.5 w-3.5 text-brand" />
                   现在只做这一步
                 </div>
@@ -1771,7 +1790,7 @@ export function LearnChat({
 
                   <div className="flex items-center gap-2 sm:gap-3 lg:min-w-[320px] lg:max-w-[360px]">
                     <div className="rounded-2xl border border-border/50 bg-surface-3 px-3 py-3">
-                      <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
+                      <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
                         建议时长
                       </p>
                       <p className="mt-1 text-sm font-semibold text-foreground sm:text-base">
@@ -1779,7 +1798,7 @@ export function LearnChat({
                       </p>
                     </div>
                     <div className="rounded-2xl border border-border/50 bg-surface-3 px-3 py-3">
-                      <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
+                      <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
                         当前进度
                       </p>
                       <p className="mt-1 text-sm font-semibold text-foreground sm:text-base">
@@ -1862,7 +1881,7 @@ export function LearnChat({
 
                   <div className="flex max-w-[92%] flex-col gap-2 sm:max-w-[85%]">
                     <div className="flex items-center gap-2 px-1">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/65">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
                         {msg.title ?? meta.badge}
                       </span>
                     </div>
@@ -1920,9 +1939,9 @@ export function LearnChat({
                     </div>
 
                     {msg.kind === "task_feedback" && msg.xp ? (
-                      <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2">
-                        <Zap className="h-4 w-4 text-emerald-600" />
-                        <span className="text-sm font-semibold text-emerald-600">+{msg.xp} XP</span>
+                      <div className={cn("flex items-center gap-2 rounded-2xl border px-3 py-2", CHAT_TONE_CLASS.success.badge)}>
+                        <Zap className={cn("h-4 w-4", CHAT_TONE_CLASS.success.icon)} />
+                        <span className={cn("text-sm font-semibold", CHAT_TONE_CLASS.success.text)}>+{msg.xp} XP</span>
                         <span className="text-xs text-muted-foreground">任务步骤完成</span>
                       </div>
                     ) : null}
@@ -1979,7 +1998,7 @@ export function LearnChat({
                               className={cn("h-3.5 w-3.5 shrink-0", taskPatchMeta.iconClass)}
                             />
                             <div>
-                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
                                 下一步建议
                               </p>
                               <p className="mt-1 text-sm leading-6 text-foreground/90">

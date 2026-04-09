@@ -130,6 +130,7 @@ export function MapPage() {
   if (progressState.status !== "success") {
     return (
       <AppShell
+        workspacePage="map"
         mobileTitle="路径地图"
         mobileSubtitle="等待当前学习计划"
         asideLabel="任务摘要"
@@ -180,6 +181,7 @@ export function MapPage() {
 
   return (
     <AppShell
+      workspacePage="map"
       mobileTitle="路径地图"
       mobileSubtitle={`${map.pathName} · 第 ${currentStage.id} 关 / 共 ${total} 关`}
       asideLabel="任务摘要"

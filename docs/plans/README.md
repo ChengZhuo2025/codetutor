@@ -13,6 +13,7 @@
 - 当前代码技术栈以 `package.json` 为准：`Next.js 16.2.0`、`React 19.2.4`、`TypeScript 5.7.3`、`Tailwind CSS 4.2`、`shadcn/ui`、`Zod + zod-to-openapi + Swagger UI`；当前本地验证环境为 `Node.js 22.18.0`。
 - 已补运行时接口文档：`/api/docs/openapi` 输出 OpenAPI 3.1 JSON，`/api-docs` 提供 Swagger UI 查看与调试；文档 `info.description` 注明用户端主题偏好为前端 localStorage、无 REST 接口。
 - 用户端支持明暗主题切换（默认暗色，`next-themes` + `app/globals.css` 双套令牌），入口：营销顶栏、登录页右上角、工作台左侧栏底部设置行右侧。
+- 用户端工作台共享壳层现已支持桌面端左右栏折叠：左侧可收起为 mini rail（保留 logo / 头像 / 导航 / 学习提醒 / 设置 / 主题 / 展开入口），右侧上下文栏可完全收起并由浮动按钮重新展开；状态保存在浏览器 `localStorage`，无 REST API。
 - `app/api` 当前已大量收敛为薄入口层，请求校验、统一响应、错误映射与部分路由编排已下沉到 `server/lib/*` 与各域 `route-handler.ts`。
 - 已落地数据侧：远程 Supabase、`001` 到 `025` 迁移（含 `018` 材料摄取与计划草稿表、`019` 用户软删除、`020` analytics/notifications、`021` Provider API Key 数据库加密托管、`024` async material intake / generation runs / chunks、`025` editable drafts / revisions）、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表、AI 会话 / provider / agent / skill / invocation 表，以及管理员账号/角色/审计日志表。
 - 已补 Phase 1 运行时性能与稳定性加固：进程内短 TTL 用户鉴权 / 管理员会话缓存、AI 配置快照缓存、关键接口限流与请求级观测头 / 结构化日志；当前仍未引入 Redis / 消息队列，缓存与限流均为单实例进程内实现。

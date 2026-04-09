@@ -132,6 +132,7 @@ export function AchievementsPage() {
   if (achievementState.status !== "success") {
     return (
       <AppShell
+        workspacePage="achievements"
         mobileTitle="我的学习成就"
         mobileSubtitle="等待成长数据"
         asideLabel="XP 流水"
@@ -227,6 +228,7 @@ export function AchievementsPage() {
 
   return (
     <AppShell
+      workspacePage="achievements"
       mobileTitle="我的学习成就"
       mobileSubtitle="XP、段位、连续学习与徽章成长"
       asideLabel="XP 流水"

@@ -104,6 +104,7 @@ export function LearnPage() {
 
   return (
     <AppShell
+      workspacePage="learn"
       mobileTitle="学习工作台"
       mobileSubtitle="继续上次学习 · 当前一步 · 任务上下文"
       asideLabel="任务上下文"
