@@ -1,4 +1,5 @@
 import { marketingBenefits } from "@/features/marketing/data/marketing-content"
+import { cn } from "@/lib/utils"
 
 export function LandingBenefits() {
   return (
@@ -23,17 +24,23 @@ export function LandingBenefits() {
             return (
               <div
                 key={benefit.title}
-                className="group relative overflow-hidden rounded-[28px] border border-border bg-card p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-brand/18 hover:bg-muted/60 dark:border-white/10 dark:bg-surface-2/88 dark:shadow-none dark:hover:bg-surface-2"
+                className="group relative overflow-hidden rounded-[28px]  border border-border/70 bg-card p-6 transition-all hover:-translate-y-1 hover:border-brand/24 hover:bg-brand/4 dark:border-white/10 dark:bg-surface-2/88 dark:shadow-none dark:hover:bg-surface-2"
               >
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.03),transparent_40%)] opacity-60 dark:bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.06),transparent_40%)]" />
 
-                <div className={`relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl border ${benefit.borderColor} ${benefit.bgColor} mb-5 transition-all group-hover:scale-110`}>
-                  <Icon className={`h-7 w-7 ${benefit.color}`} />
+                <div
+                  className={cn(
+                    "relative z-10 mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border transition-all group-hover:scale-110",
+                    benefit.borderColor,
+                    benefit.bgColor,
+                  )}
+                >
+                  <Icon className={cn("h-7 w-7", benefit.color)} />
                 </div>
 
                 <h3 className="mb-3 text-lg font-semibold text-foreground">{benefit.title}</h3>
-                <p className="text-sm leading-7 text-muted-foreground">{benefit.desc}</p>
+                <p className="text-sm leading-6 text-muted-foreground">{benefit.desc}</p>
               </div>
             )
           })}

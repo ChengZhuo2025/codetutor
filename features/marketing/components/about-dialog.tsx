@@ -65,7 +65,7 @@ export function AboutDialog({
               <DialogTitle className="text-2xl font-semibold tracking-tight">
                 关于 CodeTutor
               </DialogTitle>
-              <DialogDescription className="max-w-3xl text-sm leading-4 text-muted-foreground">
+              <DialogDescription className="max-w-3xl text-sm leading-6 text-muted-foreground">
                 我们想把“教程很多、实践很少”的学习断层，变成一个持续推进的 AI 陪练系统。
               </DialogDescription>
             </DialogHeader>

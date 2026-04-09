@@ -1,17 +1,17 @@
 "use client"
 
 import Image from "next/image"
-import Link from "next/link"
-import { ArrowRight, Code2 } from "lucide-react"
+import { Code2 } from "lucide-react"
 import { APP_COPYRIGHT_YEAR, APP_NAME } from "@/constants/app"
-import { Button } from "@/components/ui/button"
 import {
-  USER_BUTTON_PRIMARY_CLASS,
-  USER_BUTTON_SECONDARY_CLASS,
-} from "@/components/ui/surface-styles"
-import { cn } from "@/lib/utils"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { marketingTools } from "@/features/marketing/data/marketing-content"
-import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
 import type { MarketingTool } from "@/features/marketing/types"
 import { AboutDialog } from "./about-dialog"
 import { ContactDialog } from "./contact-dialog"
@@ -26,43 +26,33 @@ const featuredFooterTools = marketingTools.filter(
     Boolean(tool.featuredInFooter && tool.downloadUrl && tool.logoSrc)
 )
 
-export function LandingFooter() {
-  const { authState, ctaHref, ctaLabel } = useLandingAuthState()
+type ComingSoonDialogProps = {
+  triggerLabel: string
+  title: string
+  description: string
+}
 
+function ComingSoonDialog({ triggerLabel, title, description }: ComingSoonDialogProps) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button className="cursor-pointer transition-colors hover:text-foreground">
+          {triggerLabel}
+        </button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription className="leading-6">{description}</DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export function LandingFooter() {
   return (
     <>
-      <section id="about" className="relative px-6 text-center">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
-        <div className="mx-auto max-w-3xl px-6 pt-24 pb-16">
-          <h2 className="text-4xl font-bold tracking-tight text-balance">
-            今天就把第一条学习路径跑起来
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-muted-foreground text-pretty">
-            选择工具、确认水平，然后直接进入第一课。先从一个能完成的动作开始，再慢慢积累成真正的成长节奏。
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link href={ctaHref}>
-              <Button
-                size="lg"
-                className={cn("h-14 px-8 text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
-              >
-                {authState.status === "authenticated" ? ctaLabel : "立即行动"}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="#tools">
-              <Button
-                size="lg"
-                variant="outline"
-                className={cn("h-14 px-8 text-base font-medium", USER_BUTTON_SECONDARY_CLASS)}
-              >
-                先看支持哪些工具
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
       <footer className="pt-10">
         <div className="mx-auto max-w-6xl">
           <div>
@@ -116,10 +106,22 @@ export function LandingFooter() {
                 triggerLabel="关于我们"
                 triggerClassName="cursor-pointer transition-colors hover:text-foreground"
               />
-              <span className="cursor-pointer transition-colors hover:text-foreground">隐私政策</span>
-              <span className="cursor-pointer transition-colors hover:text-foreground">使用条款</span>
+              <ComingSoonDialog
+                triggerLabel="隐私政策"
+                title="隐私政策"
+                description="隐私政策页面正在整理中，当前可通过联系我们入口咨询数据使用和隐私相关问题。"
+              />
+              <ComingSoonDialog
+                triggerLabel="使用条款"
+                title="使用条款"
+                description="使用条款页面正在整理中，正式上线前会同步提供完整协议内容。"
+              />
               <ContactDialog triggerClassName="cursor-pointer transition-colors hover:text-foreground" />
-              <span className="cursor-pointer transition-colors hover:text-foreground">帮助中心</span>
+              <ComingSoonDialog
+                triggerLabel="帮助中心"
+                title="帮助中心"
+                description="帮助中心内容正在建设中，你可以先通过联系我们获取人工支持。"
+              />
             </div>
             <p className="text-xs text-muted-foreground">
               © {APP_COPYRIGHT_YEAR} {APP_NAME}. All rights reserved.

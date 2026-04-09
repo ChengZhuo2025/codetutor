@@ -234,6 +234,12 @@ export function LightRays({
   const smoothMouseRef = useRef<MousePosition>({ x: 0.5, y: 0.42 })
 
   useEffect(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches
+    const effectiveFollowMouse = followMouse && !prefersReducedMotion && !isCoarsePointer
+    const effectiveMouseInfluence = effectiveFollowMouse ? mouseInfluence : 0
+    const effectiveRaysSpeed = prefersReducedMotion ? Math.min(raysSpeed, 0.65) : raysSpeed
+
     const container = containerRef.current
     if (!container) return
 
@@ -247,7 +253,7 @@ export function LightRays({
           dpr: dpr(),
           alpha: true,
           antialias: false,
-          powerPreference: "high-performance",
+          powerPreference: prefersReducedMotion ? "default" : "high-performance",
         })
 
         rendererRef.current = renderer
@@ -267,14 +273,14 @@ export function LightRays({
           rayPos: { value: [0, 0] },
           rayDir: { value: [0, 1] },
           raysColor: { value: hexToRgb(raysColor) },
-          raysSpeed: { value: raysSpeed },
+          raysSpeed: { value: effectiveRaysSpeed },
           lightSpread: { value: lightSpread },
           rayLength: { value: rayLength },
           pulsating: { value: pulsating ? 1 : 0 },
           fadeDistance: { value: fadeDistance },
           saturation: { value: saturation },
           mousePos: { value: [mouseRef.current.x, mouseRef.current.y] },
-          mouseInfluence: { value: mouseInfluence },
+          mouseInfluence: { value: effectiveMouseInfluence },
           noiseAmount: { value: noiseAmount },
           distortion: { value: distortion },
         }
@@ -322,7 +328,7 @@ export function LightRays({
 
           uniformsRef.current.iTime.value = time * 0.001
 
-          if (followMouse && mouseInfluence > 0) {
+          if (effectiveFollowMouse && effectiveMouseInfluence > 0) {
             const smoothing = 0.84
             smoothMouseRef.current.x =
               smoothMouseRef.current.x * smoothing + mouseRef.current.x * (1 - smoothing)
@@ -384,7 +390,7 @@ export function LightRays({
       })
     }
 
-    if (followMouse) {
+    if (effectiveFollowMouse) {
       window.addEventListener("mousemove", handleMouseMove, { passive: true })
     }
 

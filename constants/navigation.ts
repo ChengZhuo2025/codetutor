@@ -8,6 +8,7 @@ export const MARKETING_NAV_ITEMS: NavItem[] = [
   { label: "工具支持", href: MARKETING_SECTIONS.tools },
   { label: "学习收益", href: MARKETING_SECTIONS.benefits },
   { label: "套餐订阅", href: MARKETING_SECTIONS.pricing },
+  { label: "立即开始", href: MARKETING_SECTIONS.start },
 ]
 
 export function getDashboardNavItems(activeHref: string): DashboardNavItem[] {

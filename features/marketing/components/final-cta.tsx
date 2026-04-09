@@ -3,21 +3,25 @@
 import Link from "next/link"
 import { ArrowRight, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { APP_EVENTS } from "@/constants/events"
 import {
   USER_BUTTON_PRIMARY_CLASS,
   USER_BUTTON_SECONDARY_CLASS,
 } from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
+import { MARKETING_FREE_PLAN_CHAT_QUOTA_COPY } from "@/features/marketing/data/marketing-content"
 import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
+import { useAppEventTracker } from "@/providers/app-providers"
 
 export function LandingFinalCta() {
   const { authState, ctaHref, ctaLabel } = useLandingAuthState()
+  const { trackEvent } = useAppEventTracker()
 
   return (
-    <section className="relative overflow-hidden px-6 py-24">
+    <section id="start" className="relative overflow-hidden px-6 py-24">
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
       {/* 背景装饰 */}
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,oklch(0.96_0.01_240/0.85)_50%,oklch(0.94_0.008_240/0.95)_100%)] dark:bg-[linear-gradient(180deg,transparent_0%,oklch(0.12_0.008_240/0.6)_50%,oklch(0.10_0.006_240/0.9)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,oklch(0.96_0.01_240/0.55)_50%,oklch(0.94_0.008_240/0.85)_100%)] dark:bg-[linear-gradient(180deg,transparent_0%,oklch(0.12_0.008_240/0.6)_50%,oklch(0.10_0.006_240/0.9)_100%)]" />
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,oklch(0.78_0.15_180/0.08),transparent_50%)]" />
       </div>
@@ -30,17 +34,17 @@ export function LandingFinalCta() {
         </div>
 
         {/* 主标题 */}
-        <h2 className="mb-6 text-4xl font-bold tracking-tight text-balance md:text-5xl lg:text-6xl">
+        <h2 className="mb-6 text-3xl leading-15 font-bold tracking-tight text-balance md:text-4xl lg:text-5xl">
           从第一个可完成的
           <br />
           <span className="text-brand">AI 编程任务</span> 开始
         </h2>
 
         {/* 描述文案 */}
-        <p className="mx-auto mb-10 max-w-2xl text-lg leading-8 text-muted-foreground text-pretty">
-          不再只是收藏教程，让 CodeTutor 陪你真正学会 AI 编程工具。
+        <p className="mx-auto mb-10 max-w-4xl text-lg leading-8 text-muted-foreground text-pretty">
+          今天就把第一条学习路径跑起来。不再只是收藏教程，让 CodeTutor 陪你真正学会 AI 编程工具。
           <br className="hidden sm:block" />
-          每天只需要15分钟，从&ldquo;看过&rdquo;走向&ldquo;做成&rdquo;。
+          每天只需要15分钟，选择工具、确认水平，然后直接进入第一课。
         </p>
 
         {/* CTA按钮组 */}
@@ -48,9 +52,15 @@ export function LandingFinalCta() {
           <Link href={ctaHref}>
             <Button
               size="lg"
-              className={cn("h-14 px-8 text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
+              className={cn("h-12 px-10 text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
+              onClick={() =>
+                trackEvent(APP_EVENTS.landingCtaClick, {
+                  source: "marketing_final_primary",
+                  target: ctaHref,
+                })
+              }
             >
-              {authState.status === "authenticated" ? ctaLabel : "立即开始学习"}
+              {authState.status === "authenticated" ? ctaLabel : "立即行动"}
               <ArrowRight className="h-5 w-5" />
             </Button>
           </Link>
@@ -58,7 +68,13 @@ export function LandingFinalCta() {
               <Button
                 size="lg"
                 variant="outline"
-                className={cn("h-14 px-8 text-base font-medium", USER_BUTTON_SECONDARY_CLASS)}
+                className={cn("h-12 px-8 text-base font-medium", USER_BUTTON_SECONDARY_CLASS)}
+                onClick={() =>
+                  trackEvent(APP_EVENTS.landingCtaClick, {
+                    source: "marketing_final_secondary",
+                    target: "#how",
+                  })
+                }
               >
                 了解学习方式
               </Button>
@@ -77,7 +93,7 @@ export function LandingFinalCta() {
                 />
               </svg>
             </div>
-            <span>免费试用，每天30轮 AI 对话</span>
+            <span>免费试用，{MARKETING_FREE_PLAN_CHAT_QUOTA_COPY}</span>
           </div>
           <div className="hidden h-4 w-px bg-border sm:block dark:bg-white/10" />
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

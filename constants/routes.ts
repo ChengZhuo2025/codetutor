@@ -34,5 +34,6 @@ export const MARKETING_SECTIONS = {
   tools: "#tools",
   benefits: "#benefits",
   pricing: "#pricing",
+  start: "#start",
   about: "#about",
 } as const

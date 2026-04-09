@@ -13,9 +13,11 @@ import {
 } from "@/components/ui/surface-styles"
 import { LightRays } from "@/features/marketing/components/light-rays"
 import { getToolName } from "@/constants/tools"
+import { APP_EVENTS } from "@/constants/events"
 import { marketingConversationMessages } from "@/features/marketing/data/marketing-content"
 import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
 import { cn } from "@/lib/utils"
+import { useAppEventTracker } from "@/providers/app-providers"
 
 const heroStats = [
   { label: "支持工具", value: "8+" },
@@ -30,6 +32,7 @@ const heroFeaturedTools = [cursorToolName, claudeCodeToolName, "OpenCode"].join(
 
 export function LandingHero() {
   const { authState, ctaHref, ctaLabel } = useLandingAuthState()
+  const { trackEvent } = useAppEventTracker()
 
   return (
     <section
@@ -58,7 +61,7 @@ export function LandingHero() {
             linear-gradient(to right, oklch(0.55 0.02 240 / 0.09) 1px, transparent 1px),
             linear-gradient(to bottom, oklch(0.55 0.02 240 / 0.09) 1px, transparent 1px)
           `,
-          backgroundSize: "48px 48px",
+          backgroundSize: "36px 36px",
         }}
       />
       <div
@@ -68,7 +71,7 @@ export function LandingHero() {
             linear-gradient(to right, oklch(0.28 0.015 220 / 0.12) 1px, transparent 1px),
             linear-gradient(to bottom, oklch(0.28 0.015 220 / 0.12) 1px, transparent 1px)
           `,
-          backgroundSize: "48px 48px",
+          backgroundSize: "36px 36px",
         }}
       />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_22%,oklch(0.94_0.01_240/0.75)_88%)] dark:bg-[radial-gradient(ellipse_at_center,transparent_14%,oklch(0.12_0.008_240/0.68)_84%)]" />
@@ -95,7 +98,13 @@ export function LandingHero() {
           <Link href={ctaHref}>
             <Button
               size="lg"
-              className={cn("h-14 px-9 text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
+              className={cn("h-12 px-10 text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
+              onClick={() =>
+                trackEvent(APP_EVENTS.landingCtaClick, {
+                  source: "marketing_hero_primary",
+                  target: ctaHref,
+                })
+              }
             >
               {authState.status === "authenticated" ? ctaLabel : "免费开始学习"}
               <ArrowRight className="h-4 w-4" />
@@ -104,9 +113,15 @@ export function LandingHero() {
           <a
             href="#how"
             className={cn(
-              "inline-flex h-14 items-center justify-center px-8 text-base font-medium",
+              "inline-flex h-12 items-center justify-center px-8 text-base font-medium",
               USER_BUTTON_SECONDARY_CLASS,
             )}
+            onClick={() =>
+              trackEvent(APP_EVENTS.landingCtaClick, {
+                source: "marketing_hero_secondary",
+                target: "#how",
+              })
+            }
           >
             看看学习方式
           </a>
@@ -151,10 +166,7 @@ export function LandingHero() {
                     marketingConversationMessages.map((message) => (
                       <div
                         key={`${loop}-${message.id}`}
-                        className={cn(
-                          "flex gap-3",
-                          message.speaker === "user" ? "" : "",
-                        )}
+                        className="flex gap-3"
                       >
                         <div
                           className={cn(

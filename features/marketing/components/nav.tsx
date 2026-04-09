@@ -37,29 +37,53 @@ export function LandingNav() {
   const { trackEvent } = useAppEventTracker()
 
   useEffect(() => {
-    function updateActiveSection() {
-      const scrollPosition = window.scrollY + 140
-      let currentHref = MARKETING_NAV_ITEMS[0]?.href ?? "#home"
+    const sectionItems = MARKETING_NAV_ITEMS.filter((item) => item.href !== "#home")
+    const sectionEntryMap = new Map<string, IntersectionObserverEntry>()
 
-      for (const item of MARKETING_NAV_ITEMS) {
-        if (item.href === "#home") continue
-
-        const el = document.getElementById(item.href.replace("#", ""))
-        if (el && scrollPosition >= el.offsetTop) {
-          currentHref = item.href
-        }
+    function resolveActiveHref() {
+      if (window.scrollY < 80) {
+        setActiveHref((prev) => (prev === "#home" ? prev : "#home"))
+        return
       }
 
-      setActiveHref(currentHref)
+      const visibleEntries = Array.from(sectionEntryMap.values()).filter((entry) => entry.isIntersecting)
+      if (visibleEntries.length === 0) {
+        return
+      }
+
+      const currentSection = visibleEntries
+        .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top))[0]
+        .target.id
+      const nextHref = `#${currentSection}`
+      setActiveHref((prev) => (prev === nextHref ? prev : nextHref))
     }
 
-    updateActiveSection()
-    window.addEventListener("scroll", updateActiveSection, { passive: true })
-    window.addEventListener("resize", updateActiveSection)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          sectionEntryMap.set(entry.target.id, entry)
+        }
+        resolveActiveHref()
+      },
+      {
+        rootMargin: "-120px 0px -55% 0px",
+        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
+      },
+    )
+
+    for (const item of sectionItems) {
+      const el = document.getElementById(item.href.replace("#", ""))
+      if (el) {
+        observer.observe(el)
+      }
+    }
+
+    window.addEventListener("scroll", resolveActiveHref, { passive: true })
+    resolveActiveHref()
 
     return () => {
-      window.removeEventListener("scroll", updateActiveSection)
-      window.removeEventListener("resize", updateActiveSection)
+      observer.disconnect()
+      window.removeEventListener("scroll", resolveActiveHref)
     }
   }, [])
 
@@ -144,7 +168,7 @@ export function LandingNav() {
                 className={cn(
                   "rounded-full px-3 py-1.5 text-sm transition-all",
                   activeHref === item.href
-                  ? "bg-surface-3 text-foreground shadow-sm ring-1 ring-border/70 dark:bg-foreground/6 dark:ring-foreground/10"
+                  ? "bg-surface-3 text-foreground ring-1 ring-border/70 dark:bg-foreground/6 dark:ring-foreground/10"
                   : "text-muted-foreground hover:bg-surface-2 hover:text-foreground dark:hover:bg-foreground/6",
                 )}
             >
@@ -186,7 +210,7 @@ export function LandingNav() {
                   className={cn(
                     "rounded-xl px-2 py-1 text-left text-sm transition-all",
                     activeHref === item.href
-                    ? "bg-surface-3 text-foreground shadow-sm ring-1 ring-border/70 dark:bg-foreground/6 dark:ring-foreground/10"
+                    ? "bg-surface-3 text-foreground ring-1 ring-border/70 dark:bg-foreground/6 dark:ring-foreground/10"
                     : "text-muted-foreground hover:bg-surface-2 hover:text-foreground dark:hover:bg-foreground/6",
                   )}
               >

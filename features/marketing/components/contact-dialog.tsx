@@ -143,7 +143,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
           <div className="border-b border-border bg-[radial-gradient(circle_at_top,oklch(0.52_0.12_180/0.1),transparent_52%)] px-5 py-4 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,oklch(0.78_0.15_180/0.16),transparent_52%)] sm:px-7 sm:py-5">
             <DialogHeader className="gap-3">
               <DialogTitle className="text-2xl font-semibold tracking-tight">联系我们</DialogTitle>
-              <DialogDescription className="max-w-2xl text-sm leading-2 text-muted-foreground">
+              <DialogDescription className="max-w-2xl text-sm leading-6 text-muted-foreground">
                 想了解产品功能、申请试用、洽谈合作，或交流分享Ai编辑经验和心得，可以联系我们。
               </DialogDescription>
             </DialogHeader>
@@ -220,7 +220,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                 </div>
               </section>
 
-              <section className="rounded-[28px] border border-border bg-card p-4 sm:p-5 dark:border-white/10 dark:bg-[linear-gradient(180deg,oklch(0.20_0.015_238/0.94),oklch(0.17_0.012_248/0.96))]">
+              <section className="rounded-[28px]  border border-border/70 bg-card p-4 sm:p-5 dark:border-white/10 dark:bg-[linear-gradient(180deg,oklch(0.20_0.015_238/0.94),oklch(0.17_0.012_248/0.96))]">
                 <div className="border-b border-border pb-4 dark:border-white/8">
                   <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                     企业信息

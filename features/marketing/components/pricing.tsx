@@ -3,15 +3,19 @@
 import Link from "next/link"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { APP_EVENTS } from "@/constants/events"
 import {
   USER_BUTTON_PRIMARY_CLASS,
   USER_BUTTON_SECONDARY_CLASS,
 } from "@/components/ui/surface-styles"
 import { marketingPlans } from "@/features/marketing/data/marketing-content"
 import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
+import { cn } from "@/lib/utils"
+import { useAppEventTracker } from "@/providers/app-providers"
 
 export function LandingPricing() {
   const { authState, ctaHref, ctaLabel } = useLandingAuthState()
+  const { trackEvent } = useAppEventTracker()
 
   return (
     <section id="pricing" className="relative bg-surface-1 px-6 py-24">
@@ -34,11 +38,12 @@ export function LandingPricing() {
           {marketingPlans.map((plan) => (
             <div
               key={plan.name}
-              className={`relative flex flex-col rounded-[30px] border p-8 transition-all hover:-translate-y-1 ${
+              className={cn(
+                "relative flex flex-col rounded-[30px] border p-8 transition-all hover:-translate-y-1",
                 plan.highlight
                   ? "border-brand/40 bg-brand/5 shadow-lg shadow-brand/10 dark:bg-[linear-gradient(180deg,oklch(0.2_0.02_210/0.94),oklch(0.16_0.015_235/0.98))] dark:shadow-[0_24px_80px_-42px_oklch(0.78_0.15_180/0.28)]"
-                  : "border-border bg-card shadow-md shadow-black/[0.06] dark:border-white/10 dark:bg-surface-2/88 dark:shadow-[0_20px_70px_-50px_rgba(0,0,0,0.72)]"
-              }`}
+                  : "border-border bg-card shadow-md shadow-black/[0.06] dark:border-white/10 dark:bg-surface-2/88 dark:shadow-[0_20px_70px_-50px_rgba(0,0,0,0.72)]",
+              )}
             >
               {plan.highlight && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border border-brand/40 bg-brand px-4 py-1 text-xs font-semibold text-brand-foreground">
@@ -61,9 +66,10 @@ export function LandingPricing() {
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2.5 text-sm">
                     <Check
-                      className={`mt-0.5 h-4 w-4 shrink-0 ${
-                        plan.highlight ? "text-brand" : "text-muted-foreground"
-                      }`}
+                      className={cn(
+                        "mt-0.5 h-4 w-4 shrink-0",
+                        plan.highlight ? "text-brand" : "text-muted-foreground",
+                      )}
                     />
                     <span className="leading-6 text-foreground/90">{feature}</span>
                   </li>
@@ -78,9 +84,20 @@ export function LandingPricing() {
                 }
               >
                 <Button
-                  className={`w-full rounded-2xl font-semibold ${
-                    plan.highlight ? USER_BUTTON_PRIMARY_CLASS : USER_BUTTON_SECONDARY_CLASS
-                  }`}
+                  size="lg"
+                  className={cn(
+                    "w-full h-12 px-10 text-base font-semibold",
+                    plan.highlight ? USER_BUTTON_PRIMARY_CLASS : USER_BUTTON_SECONDARY_CLASS,
+                  )}
+                  onClick={() =>
+                    trackEvent(APP_EVENTS.landingCtaClick, {
+                      source: `marketing_pricing_${plan.name}`,
+                      target:
+                        authState.status === "authenticated" && plan.name === "免费版"
+                          ? ctaHref
+                          : plan.href,
+                    })
+                  }
                 >
                   {authState.status === "authenticated" && plan.name === "免费版"
                     ? ctaLabel

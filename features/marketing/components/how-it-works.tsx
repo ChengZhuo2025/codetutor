@@ -3,6 +3,7 @@ import {
   marketingFitNotes,
   marketingSteps,
 } from "@/features/marketing/data/marketing-content"
+import { cn } from "@/lib/utils"
 
 export function LandingHowItWorks() {
   return (
@@ -29,16 +30,27 @@ export function LandingHowItWorks() {
             return (
               <React.Fragment key={item.step}>
                 <div
-                  className={`relative overflow-hidden rounded-[30px] border p-8 backdrop-blur animate-fadeUp ${item.panelClassName} ${
-                    index === 0 ? 'animate-delay-100' : index === 1 ? 'animate-delay-200' : 'animate-delay-300'
-                  }`}
+                  className={cn(
+                    "group relative overflow-hidden rounded-[30px] border p-8 backdrop-blur animate-fadeUp transition-all hover:-translate-y-1 hover:border-brand/24 hover:bg-brand/4 dark:hover:bg-surface-2",
+                    item.panelClassName,
+                    index === 0
+                      ? "animate-delay-100"
+                      : index === 1
+                        ? "animate-delay-200"
+                        : "animate-delay-300",
+                  )}
                 >
                   <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/18" />
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.04),transparent_32%)] opacity-80 dark:bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_32%)]" />
 
                   <div className="mb-8 flex items-center justify-between">
-                    <div className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-2xl border ${item.iconPanelClassName}`}>
-                      <Icon className={`h-6 w-6 ${item.color}`} />
+                    <div
+                      className={cn(
+                        "relative z-10 flex h-12 w-12 items-center justify-center rounded-2xl border transition-all group-hover:scale-110",
+                        item.iconPanelClassName,
+                      )}
+                    >
+                      <Icon className={cn("h-6 w-6", item.color)} />
                     </div>
                     <span className="font-mono text-4xl font-bold text-muted-foreground/20">
                       {item.step}
@@ -59,7 +71,7 @@ export function LandingHowItWorks() {
 
                 {!isLast && (
                   <div className="hidden h-full items-center justify-center md:flex">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card shadow-md dark:border-white/10 dark:bg-surface-2/95 dark:shadow-[0_12px_30px_-16px_rgba(0,0,0,0.8)]">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full  border border-border/70 bg-card shadow-md dark:border-white/10 dark:bg-surface-2/95 dark:shadow-[0_12px_30px_-16px_rgba(0,0,0,0.8)]">
                       <svg className="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
@@ -75,7 +87,7 @@ export function LandingHowItWorks() {
           {marketingFitNotes.map((note, index) => (
             <div
               key={note.title}
-              className="flex min-h-[96px] items-center gap-4 rounded-[24px] border border-border bg-card px-5 py-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/18 hover:bg-muted/80 animate-fadeUp dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none dark:hover:bg-surface-2"
+              className="flex min-h-[96px] items-center gap-4 rounded-[24px]  border border-border/70 bg-card px-5 py-4 transition-all hover:-translate-y-0.5 hover:border-brand/24 hover:bg-brand/4 animate-fadeUp dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none dark:hover:bg-surface-2"
               style={{ animationDelay: `${400 + index * 100}ms` }}
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/12 text-brand">
@@ -88,8 +100,8 @@ export function LandingHowItWorks() {
                 </svg>
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">{note.title}</p>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">{note.desc}</p>
+                <p className="text-md font-semibold text-foreground">{note.title}</p>
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">{note.desc}</p>
               </div>
             </div>
           ))}

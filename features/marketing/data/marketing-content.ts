@@ -15,6 +15,7 @@ const firstRankName = getRankName("rookie")
 const lastRankName = getRankName("master")
 const cursorToolName = getToolName("cursor")
 const claudeCodeToolName = getToolName("claude-code")
+const FREE_PLAN_AI_CHAT_QUOTA_LABEL = "每月 30 次 AI 对话"
 
 export const marketingSteps: MarketingStep[] = [
   {
@@ -209,7 +210,7 @@ export const marketingBenefits: MarketingBenefit[] = [
   {
     icon: Trophy,
     title: "有成就感",
-    desc: "学分、段位、连续打卡让进步看得见",
+    desc: "闯关进阶，学分/段位激励，连续打卡让进步看得见",
     color: "text-gold",
     bgColor: "bg-gold/10",
     borderColor: "border-gold/20"
@@ -224,7 +225,7 @@ export const marketingPlans: MarketingPlan[] = [
     desc: "探索产品核心体验",
     highlight: false,
     features: [
-      "每月 30 次 AI 对话",
+      FREE_PLAN_AI_CHAT_QUOTA_LABEL,
       "工具选择与学习路径",
       "基础学分与段位系统",
       "学习进度追踪",
@@ -265,3 +266,5 @@ export const marketingPlans: MarketingPlan[] = [
     href: "/login",
   },
 ]
+
+export const MARKETING_FREE_PLAN_CHAT_QUOTA_COPY = FREE_PLAN_AI_CHAT_QUOTA_LABEL
