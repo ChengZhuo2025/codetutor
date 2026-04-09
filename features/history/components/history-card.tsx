@@ -170,10 +170,10 @@ export function HistoryCard({
   return (
     <div
       className={cn(
-        "group rounded-[26px] border bg-surface-1/95 p-5 shadow-[0_18px_48px_-34px_rgba(15,23,42,0.22)] ring-1 ring-black/[0.03] transition-all dark:ring-white/5",
+        "group rounded-[26px] border bg-surface-2 p-5 shadow-[0_18px_48px_-34px_rgba(15,23,42,0.22)] ring-1 ring-black/[0.03] transition-all dark:ring-white/5",
         "hover:-translate-y-0.5 hover:shadow-[0_24px_64px_-34px_rgba(15,23,42,0.3)]",
         item.status === "completed" && "border-green-600/20 hover:border-green-600/38",
-        item.status === "in_progress" && "border-brand/22 hover:border-brand/42",
+        item.status === "in_progress" && "border-brand/22 bg-brand/8 hover:border-brand/42",
         item.status === "interrupted" && "border-chart-3/20 hover:border-chart-3/38",
         item.status === "abandoned" && "border-border/70 hover:border-border",
       )}
@@ -232,7 +232,7 @@ export function HistoryCard({
             {item.progress.percent}%
           </span>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-muted/75 dark:bg-white/10">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-black/6 dark:bg-white/10">
           <div
             className={cn(
               "h-full rounded-full transition-all",

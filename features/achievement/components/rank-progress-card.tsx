@@ -1,6 +1,10 @@
 import { Icon } from "@iconify/react/offline";
 import { Check, Sparkles } from "lucide-react";
-import { USER_PANEL_OUTLINE_BUTTON_CLASS } from "@/components/ui/surface-styles";
+import {
+  USER_PANEL_HERO_CARD_CLASS,
+  USER_PANEL_HERO_TOP_SECTION_CLASS,
+  USER_PANEL_OUTLINE_BUTTON_CLASS,
+} from "@/components/ui/surface-styles";
 import { cn } from "@/lib/utils";
 import type { AchievementOverview, Rank } from "@/features/achievement/types";
 
@@ -31,8 +35,8 @@ export function RankProgressCard({
   );
 
   return (
-    <div className="overflow-hidden rounded-[34px] border border-brand/25 bg-surface-1/97 shadow-[0_26px_70px_-36px_rgba(15,23,42,0.2)] dark:border-brand/20 dark:bg-[linear-gradient(135deg,rgba(18,30,34,0.96),rgba(12,22,26,0.96))] dark:shadow-[0_30px_90px_rgba(0,0,0,0.22)]">
-      <div className="border-b border-brand/15 bg-[radial-gradient(circle_at_top_right,oklch(0.52_0.12_180/0.08),transparent_40%)] px-5 py-6 dark:border-brand/10 dark:bg-[radial-gradient(circle_at_top_right,rgba(79,209,197,0.15),transparent_34%)] sm:px-6">
+    <div className={cn("overflow-hidden rounded-[34px]", USER_PANEL_HERO_CARD_CLASS)}>
+      <div className={cn(USER_PANEL_HERO_TOP_SECTION_CLASS, "px-5 py-6 sm:px-6")}>
         <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-brand/80">
           <Sparkles className="h-3.5 w-3.5" />
           当前段位

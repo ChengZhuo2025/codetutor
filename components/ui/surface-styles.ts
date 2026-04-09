@@ -25,6 +25,12 @@ export const USER_PANEL_OUTLINE_BUTTON_CLASS =
 export const USER_PANEL_DIVIDER_CLASS =
   "border-border/70 dark:border-white/10"
 
+export const USER_PANEL_HERO_CARD_CLASS =
+  "border border-brand/25 bg-surface-1/97 shadow-[0_26px_70px_-36px_rgba(15,23,42,0.2)] dark:border-brand/20 dark:bg-[linear-gradient(135deg,rgba(18,30,34,0.96),rgba(12,22,26,0.96))] dark:shadow-[0_30px_90px_rgba(0,0,0,0.22)]"
+
+export const USER_PANEL_HERO_TOP_SECTION_CLASS =
+  "border-b border-brand/15 bg-[radial-gradient(circle_at_top_right,oklch(0.52_0.12_180/0.10),transparent_56%),linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0.02))] dark:border-brand/10 dark:bg-[radial-gradient(circle_at_top_right,rgba(79,209,197,0.18),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0))]"
+
 export const DIALOG_DARK_PANEL_CLASS = DIALOG_PANEL_CLASS
 
 export const DIALOG_DARK_GRADIENT_PANEL_CLASS = DIALOG_GRADIENT_PANEL_CLASS
