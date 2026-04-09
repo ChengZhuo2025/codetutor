@@ -22,7 +22,14 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { StatePanel } from "@/components/ui/state-panel"
-import { DIALOG_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
+import {
+  DIALOG_PANEL_CLASS,
+  USER_PANEL_DIVIDER_CLASS,
+  USER_PANEL_FIELD_CLASS,
+  USER_PANEL_OUTLINE_BUTTON_CLASS,
+  USER_PANEL_SECTION_CLASS,
+  USER_PANEL_SUBTLE_SECTION_CLASS,
+} from "@/components/ui/surface-styles"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
@@ -74,13 +81,13 @@ function formatDateTime(value: string | null) {
 function getStatusBadgeClassName(status: string) {
   switch (status) {
     case "replied":
-      return "border-emerald-400/20 bg-emerald-500/10 text-emerald-300"
+      return "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
     case "closed":
-      return "border-white/10 bg-white/8 text-foreground/75"
+      return "border-border/70 bg-muted/65 text-foreground/75 dark:border-border/70 dark:bg-foreground/8"
     case "in_review":
       return "border-brand/20 bg-brand/10 text-brand"
     default:
-      return "border-amber-400/20 bg-amber-500/10 text-amber-300"
+      return "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300"
   }
 }
 
@@ -291,9 +298,9 @@ export function FeedbackDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className={cn(DIALOG_DARK_PANEL_CLASS, "max-h-[92vh] overflow-y-auto rounded-2xl sm:max-w-[750px]")}>
+      <DialogContent className={cn(DIALOG_PANEL_CLASS, "max-h-[92vh] overflow-y-auto rounded-2xl sm:max-w-[750px]")}>
         <div className="overflow-hidden rounded-2xl">
-          <div className="border-b border-white/10 px-5 py-4">
+          <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold">建议反馈</DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
@@ -301,7 +308,7 @@ export function FeedbackDialog({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="mt-4 inline-flex gap-2 rounded-xl border border-white/10 bg-white/5 p-1">
+            <div className={cn("mt-4 inline-flex gap-2 p-1", USER_PANEL_SUBTLE_SECTION_CLASS)}>
               <button
                 type="button"
                 onClick={() => setActiveTab("submit")}
@@ -309,7 +316,7 @@ export function FeedbackDialog({
                   "rounded-[10px] px-3 py-2 text-sm font-medium transition-colors",
                   activeTab === "submit"
                     ? "bg-brand text-brand-foreground"
-                    : "text-foreground/72 hover:text-foreground",
+                    : "text-foreground/72 hover:bg-muted/70 hover:text-foreground dark:hover:bg-foreground/6",
                 )}
               >
                 提交反馈
@@ -321,7 +328,7 @@ export function FeedbackDialog({
                   "rounded-[10px] px-3 py-2 text-sm font-medium transition-colors",
                   activeTab === "mine"
                     ? "bg-brand text-brand-foreground"
-                    : "text-foreground/72 hover:text-foreground",
+                    : "text-foreground/72 hover:bg-muted/70 hover:text-foreground dark:hover:bg-foreground/6",
                 )}
               >
                 我的反馈
@@ -333,13 +340,13 @@ export function FeedbackDialog({
             <>
               <div className="space-y-5 px-5 py-5">
                 {submitError ? (
-                  <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                  <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
                     {submitError}
                   </div>
                 ) : null}
 
                 {submitSuccess ? (
-                  <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
                     {submitSuccess}
                   </div>
                 ) : null}
@@ -359,7 +366,7 @@ export function FeedbackDialog({
                             "flex items-center gap-3 rounded-3xl border px-4 py-2 text-left transition-colors",
                             active
                               ? "border-brand/30 bg-brand/10 text-brand"
-                              : "border-white/10 bg-white/4 text-foreground/78 hover:border-white/18 hover:text-foreground",
+                              : "border-border/70 bg-surface-1/90 text-foreground/78 hover:border-border hover:bg-muted/60 hover:text-foreground dark:border-border/70 dark:bg-surface-2/85 dark:hover:border-border dark:hover:bg-foreground/6",
                           )}
                         >
                           <div
@@ -367,7 +374,7 @@ export function FeedbackDialog({
                               "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
                               active
                                 ? "border-brand bg-brand/10"
-                                : "border-white/20 bg-transparent",
+                                : "border-border/70 bg-transparent dark:border-border/80",
                             )}
                           >
                             <span
@@ -393,7 +400,7 @@ export function FeedbackDialog({
                     value={form.title}
                     onChange={(event) => updateField("title", event.target.value)}
                     placeholder="一句话概括你的建议或问题"
-                    className="rounded-[10px] border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
+                    className={cn("rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
                   />
                 </div>
 
@@ -407,7 +414,7 @@ export function FeedbackDialog({
                     onChange={(event) => updateField("content", event.target.value)}
                     placeholder="详细描述你遇到的问题、建议或希望优化的地方"
                     rows={7}
-                    className="resize-none rounded-[10px] border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
+                    className={cn("resize-none rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>至少 10 个字符，尽量写清楚场景、问题和预期效果。</span>
@@ -424,17 +431,17 @@ export function FeedbackDialog({
                     value={form.contactMethod}
                     onChange={(event) => updateField("contactMethod", event.target.value)}
                     placeholder="手机号、微信号或邮箱，选填"
-                    className="rounded-[10px] border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
+                    className={cn("rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3 border-t border-white/10 px-5 py-4">
+              <div className={cn("flex gap-3 border-t px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
                 <Button
                   variant="outline"
                   size="lg"
                   onClick={() => handleOpenChange(false)}
-                  className="flex-1 rounded-[10px] border-white/10 bg-transparent text-foreground hover:bg-white/5 hover:text-white"
+                  className={cn("flex-1 rounded-[10px]", USER_PANEL_OUTLINE_BUTTON_CLASS)}
                 >
                   取消
                 </Button>
@@ -457,7 +464,7 @@ export function FeedbackDialog({
             </>
           ) : (
             <div className="grid gap-0 sm:grid-cols-[250px_minmax(0,1fr)]">
-              <div className="border-b border-white/10 sm:border-b-0 sm:border-r">
+              <div className={cn("border-b sm:border-b-0 sm:border-r", USER_PANEL_DIVIDER_CLASS)}>
                 <div className="flex items-center justify-between px-5 py-4">
                   <div>
                     <p className="text-sm font-semibold text-foreground">反馈记录</p>
@@ -468,7 +475,7 @@ export function FeedbackDialog({
                     variant="ghost"
                     size="icon"
                     onClick={() => void loadMyFeedbackList()}
-                    className="h-9 w-9 rounded-xl text-foreground/70 hover:bg-white/8 hover:text-foreground"
+                    className="h-9 w-9 rounded-xl text-foreground/70 hover:bg-muted/70 hover:text-foreground dark:hover:bg-foreground/8"
                   >
                     <RefreshCw className="h-4 w-4" />
                   </Button>
@@ -509,21 +516,21 @@ export function FeedbackDialog({
                         const isActive = selectedTicketId === ticket.id
 
                         return (
-                          <button
+                            <button
                             key={ticket.id}
                             type="button"
                             onClick={() => setSelectedTicketId(ticket.id)}
-                            className={cn(
-                              "group relative w-full overflow-hidden rounded-2xl border px-3 py-3 text-left transition-all duration-200",
-                              isActive
-                                ? "translate-x-[2px] border-brand/35 bg-brand/10 shadow-[0_16px_40px_-28px_rgba(22,214,200,0.45)]"
-                                : "border-white/10 bg-white/[0.03] hover:border-white/18 hover:bg-white/[0.055] hover:translate-x-[1px]",
-                            )}
-                          >
+                              className={cn(
+                                "group relative w-full overflow-hidden rounded-2xl border px-3 py-3 text-left transition-all duration-200",
+                                isActive
+                                  ? "translate-x-[2px] border-brand/35 bg-brand/10 shadow-[0_16px_40px_-28px_rgba(22,214,200,0.45)]"
+                                  : "border-border/70 bg-surface-1/85 hover:border-border hover:bg-muted/60 hover:translate-x-[1px] dark:border-border/70 dark:bg-surface-2/82 dark:hover:border-border dark:hover:bg-foreground/6",
+                              )}
+                            >
                             <span
                               className={cn(
                                 "absolute inset-y-3 left-0 w-[3px] rounded-full transition-colors",
-                                isActive ? "bg-brand" : "bg-transparent group-hover:bg-white/12",
+                                isActive ? "bg-brand" : "bg-transparent group-hover:bg-foreground/12",
                               )}
                             />
 
@@ -543,7 +550,7 @@ export function FeedbackDialog({
                                       "rounded-full border px-2 py-0.5 text-[11px] transition-colors",
                                       isActive
                                         ? "border-brand/20 bg-brand/10 text-brand"
-                                        : "border-white/10 bg-white/6 text-foreground/60",
+                                        : "border-border/70 bg-muted/60 text-foreground/60 dark:border-border/70 dark:bg-foreground/6",
                                     )}
                                   >
                                     {ticket.feedbackTypeLabel}
@@ -637,7 +644,7 @@ export function FeedbackDialog({
 
                 {listState.status === "success" && detailState.status === "success" && detailState.data ? (
                   <div className="space-y-4">
-                    <div className="rounded-[24px] border border-white/10 bg-white/4 p-4">
+                    <div className={cn("rounded-[24px] p-4", USER_PANEL_SECTION_CLASS)}>
                       <div className="flex flex-wrap items-center gap-2">
                         <span
                           className={cn(
@@ -647,7 +654,7 @@ export function FeedbackDialog({
                         >
                           {detailState.data.statusLabel}
                         </span>
-                        <span className="rounded-full border border-white/10 bg-white/6 px-2.5 py-1 text-xs text-foreground/65">
+                        <span className="rounded-full border border-border/70 bg-muted/60 px-2.5 py-1 text-xs text-foreground/65 dark:border-border/70 dark:bg-foreground/6">
                           {detailState.data.feedbackTypeLabel}
                         </span>
                         <span className="text-xs text-muted-foreground">
@@ -663,7 +670,7 @@ export function FeedbackDialog({
                       </p>
 
                       {detailState.data.contactMethod ? (
-                        <div className="mt-4 rounded-2xl border border-white/10 bg-background/30 px-3 py-3 text-sm text-muted-foreground">
+                        <div className={cn("mt-4 rounded-2xl px-3 py-3 text-sm text-muted-foreground", USER_PANEL_SUBTLE_SECTION_CLASS)}>
                           回访方式：{detailState.data.contactMethod}
                         </div>
                       ) : null}
@@ -692,8 +699,8 @@ export function FeedbackDialog({
                               className={cn(
                                 "rounded-xl border px-4 py-3",
                                 isAdmin
-                                  ? "border-emerald-400/18 bg-emerald-500/10"
-                                  : "border-white/10 bg-white/4",
+                                  ? "border-emerald-500/18 bg-emerald-500/10"
+                                  : "border-border/70 bg-muted/45 dark:border-border/70 dark:bg-surface-2/85",
                               )}
                             >
                               <div className="flex items-center justify-between gap-3">

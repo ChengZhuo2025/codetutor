@@ -12,6 +12,7 @@ import {
   Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { USER_PANEL_OUTLINE_BUTTON_CLASS } from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
 import type {
   HistoryPlanAction,
@@ -29,27 +30,27 @@ interface HistoryCardProps {
 const statusConfig = {
   completed: {
     label: "已完成",
-    color: "text-green-600",
-    bgColor: "bg-green-600/10",
-    borderColor: "border-green-600/30",
+    color: "text-green-700 dark:text-green-300",
+    bgColor: "bg-green-600/10 dark:bg-green-500/16",
+    borderColor: "border-green-600/25 dark:border-green-400/25",
   },
   in_progress: {
     label: "进行中",
     color: "text-brand",
-    bgColor: "bg-brand/10",
-    borderColor: "border-brand/30",
+    bgColor: "bg-brand/12 dark:bg-brand/18",
+    borderColor: "border-brand/25 dark:border-brand/30",
   },
   interrupted: {
     label: "已中断",
     color: "text-chart-3",
-    bgColor: "bg-chart-3/10",
-    borderColor: "border-chart-3/30",
+    bgColor: "bg-chart-3/10 dark:bg-chart-3/16",
+    borderColor: "border-chart-3/25 dark:border-chart-3/28",
   },
   abandoned: {
     label: "已放弃",
     color: "text-muted-foreground",
-    bgColor: "bg-surface-4",
-    borderColor: "border-border",
+    bgColor: "bg-muted/65 dark:bg-white/6",
+    borderColor: "border-border/70 dark:border-white/10",
   },
 } as const
 
@@ -80,7 +81,7 @@ export function HistoryCard({
             onClick={() => onManageAction(item, "abandon")}
             disabled={isMutating}
             variant="outline"
-            className="rounded-xl border-border/70 bg-background/50"
+            className={cn("rounded-xl", USER_PANEL_OUTLINE_BUTTON_CLASS)}
           >
             放弃本轮练习
           </Button>
@@ -106,7 +107,7 @@ export function HistoryCard({
             onClick={() => onManageAction(item, "archive")}
             disabled={isMutating}
             variant="outline"
-            className="rounded-xl border-border/70 bg-background/50"
+            className={cn("rounded-xl", USER_PANEL_OUTLINE_BUTTON_CLASS)}
           >
             <Trash2 className="h-4 w-4" />
             删除记录
@@ -133,7 +134,7 @@ export function HistoryCard({
             onClick={() => onManageAction(item, "archive")}
             disabled={isMutating}
             variant="outline"
-            className="rounded-xl border-border/70 bg-background/50"
+            className={cn("rounded-xl", USER_PANEL_OUTLINE_BUTTON_CLASS)}
           >
             <Trash2 className="h-4 w-4" />
             删除记录
@@ -158,7 +159,7 @@ export function HistoryCard({
         onClick={() => onManageAction(item, "archive")}
         disabled={isMutating}
         variant="outline"
-        className="rounded-xl border-border/70 bg-background/50"
+        className={cn("rounded-xl", USER_PANEL_OUTLINE_BUTTON_CLASS)}
       >
         <Trash2 className="h-4 w-4" />
         删除记录
@@ -169,12 +170,12 @@ export function HistoryCard({
   return (
     <div
       className={cn(
-        "group rounded-[26px] border bg-surface-2 p-5 transition-all",
-        "hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(0,0,0,0.14)]",
-        item.status === "completed" && "border-green-600/15 hover:border-green-600/40",
-        item.status === "in_progress" && "border-brand/15 hover:border-brand/40",
-        item.status === "interrupted" && "border-chart-3/15 hover:border-chart-3/40",
-        item.status === "abandoned" && "border-border/60 hover:border-border",
+        "group rounded-[26px] border bg-surface-1/95 p-5 shadow-[0_18px_48px_-34px_rgba(15,23,42,0.22)] ring-1 ring-black/[0.03] transition-all dark:ring-white/5",
+        "hover:-translate-y-0.5 hover:shadow-[0_24px_64px_-34px_rgba(15,23,42,0.3)]",
+        item.status === "completed" && "border-green-600/20 hover:border-green-600/38",
+        item.status === "in_progress" && "border-brand/22 hover:border-brand/42",
+        item.status === "interrupted" && "border-chart-3/20 hover:border-chart-3/38",
+        item.status === "abandoned" && "border-border/70 hover:border-border",
       )}
     >
       <div className="mb-2">
@@ -197,15 +198,15 @@ export function HistoryCard({
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
-        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/50 px-2.5 py-1 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/55 px-2.5 py-1 text-xs text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
           <Target className="h-3 w-3" />
           {item.tool}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/50 px-2.5 py-1 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/55 px-2.5 py-1 text-xs text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
           <BookOpen className="h-3 w-3" />
           {item.level}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/50 px-2.5 py-1 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/55 px-2.5 py-1 text-xs text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
           <Clock className="h-3 w-3" />
           {item.mode}
         </span>
@@ -220,7 +221,7 @@ export function HistoryCard({
             className={cn(
               "font-medium",
               item.status === "completed"
-                ? "text-green-600"
+                ? "text-green-700 dark:text-green-300"
                 : item.status === "in_progress"
                   ? "text-brand"
                   : item.status === "interrupted"
@@ -231,7 +232,7 @@ export function HistoryCard({
             {item.progress.percent}%
           </span>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-surface-4">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-muted/75 dark:bg-white/10">
           <div
             className={cn(
               "h-full rounded-full transition-all",

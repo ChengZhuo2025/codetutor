@@ -99,7 +99,7 @@ export function LandingHero() {
           </Link>
           <a
             href="#how"
-            className="inline-flex h-14 items-center justify-center rounded-2xl border border-border bg-card/90 px-8 text-base font-medium text-foreground shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:bg-muted dark:border-white/10 dark:bg-[oklch(0.16_0.01_240/0.34)] dark:shadow-none dark:hover:bg-[oklch(0.2_0.015_220)]"
+            className="inline-flex h-14 items-center justify-center rounded-2xl border border-border/80 bg-surface-1/95 px-8 text-base font-medium text-foreground shadow-[0_16px_40px_-26px_rgba(15,23,42,0.16)] backdrop-blur transition-all hover:-translate-y-0.5 hover:border-border hover:bg-surface-2 dark:border-border/70 dark:bg-[oklch(0.16_0.01_240/0.34)] dark:shadow-none dark:hover:bg-[oklch(0.2_0.015_220)]"
           >
             看看学习方式
           </a>
@@ -113,7 +113,7 @@ export function LandingHero() {
           {heroStats.map((item) => (
             <div
               key={item.label}
-              className="rounded-2xl border border-border bg-card/95 px-5 py-4 text-left shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-[oklch(0.17_0.01_240/0.38)] dark:shadow-none"
+              className="rounded-2xl border border-border/80 bg-surface-1/96 px-5 py-4 text-left shadow-[0_16px_36px_-28px_rgba(15,23,42,0.14)] backdrop-blur-md dark:border-border/70 dark:bg-[oklch(0.17_0.01_240/0.38)] dark:shadow-none"
             >
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 {item.label}
@@ -125,7 +125,7 @@ export function LandingHero() {
       </div>
 
       <div className="relative z-10 mx-auto mt-16 w-full max-w-5xl">
-        <div className="overflow-hidden rounded-[32px] border border-border bg-card shadow-xl shadow-black/10 backdrop-blur-xl dark:border-white/10 dark:bg-[oklch(0.15_0.012_240/0.48)] dark:shadow-[0_32px_90px_-45px_rgba(0,0,0,0.85)]">
+        <div className="overflow-hidden rounded-[32px] border border-border/80 bg-surface-1/98 shadow-[0_26px_80px_-38px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:border-border/70 dark:bg-[oklch(0.15_0.012_240/0.48)] dark:shadow-[0_32px_90px_-45px_rgba(0,0,0,0.85)]">
           <div className="grid gap-0 lg:grid-cols-[1.25fr_0.75fr]">
             <div className="border-b border-border/80 lg:border-b-0 lg:border-r lg:border-r-border/80 dark:border-white/8 dark:lg:border-r-white/8">
               <div className="flex items-center gap-2 border-b border-border/80 px-4 py-3 dark:border-white/8">
@@ -210,7 +210,7 @@ export function LandingHero() {
               </div>
             </div>
 
-            <div className="bg-muted/40 p-6 dark:bg-[oklch(0.14_0.01_240/0.3)]">
+              <div className="bg-surface-2/78 p-6 dark:bg-[oklch(0.14_0.01_240/0.3)]">
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 今日学习路径
               </p>
@@ -225,7 +225,7 @@ export function LandingHero() {
                     className={`rounded-2xl border px-4 py-3 backdrop-blur ${
                       index === 0
                         ? "border-brand/26 bg-brand/12"
-                        : "border-border/80 bg-muted/50 dark:border-white/8 dark:bg-white/4"
+                        : "border-border/80 bg-surface-1/82 dark:border-white/8 dark:bg-white/4"
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -249,7 +249,7 @@ export function LandingHero() {
                 ))}
               </div>
 
-              <div className="mt-5 rounded-2xl border border-border/80 bg-muted/40 px-4 py-4 backdrop-blur-sm dark:border-white/8 dark:bg-white/4">
+              <div className="mt-5 rounded-2xl border border-border/80 bg-surface-1/82 px-4 py-4 backdrop-blur-sm dark:border-white/8 dark:bg-white/4">
                 <p className="text-xs text-muted-foreground">适合人群</p>
                 <p className="mt-2 text-sm leading-7 text-foreground">
                   第一次接触 AI 编程工具的人，也包括已经能写代码、但想把 {cursorToolName}、{claudeCodeToolName}、{codexToolName} 真正接入自己项目流程的开发者。
@@ -258,7 +258,7 @@ export function LandingHero() {
                   {["新手起步", "项目实战", "调试重构", "接口联调"].map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground dark:border-white/8 dark:bg-black/18"
+                      className="rounded-full border border-border/80 bg-surface-2/90 px-2.5 py-1 text-xs text-muted-foreground dark:border-white/8 dark:bg-black/18"
                     >
                       {tag}
                     </span>

@@ -295,7 +295,7 @@ export function DashboardSidebar({
             </Link>
 
             {profileFeedbackMessage ? (
-              <div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+              <div className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
                 {profileFeedbackMessage}
               </div>
             ) : null}
@@ -328,7 +328,7 @@ export function DashboardSidebar({
                   className={cn(
                     "flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-colors",
                     item.active
-                      ? "bg-brand-dim text-brand"
+                      ? "bg-brand-dim text-brand ring-1 ring-brand/15"
                       : "text-muted-foreground hover:bg-surface-3 hover:text-foreground",
                   )}
                 >
@@ -347,7 +347,7 @@ export function DashboardSidebar({
               onClick={() =>
                 setNotifPanel((p) => ({ ...p, expanded: !p.expanded }))
               }
-              className="flex w-full items-center justify-between gap-3 p-3.5 text-left transition-colors hover:bg-background/40"
+              className="flex w-full items-center justify-between gap-3 p-3.5 text-left transition-colors hover:bg-surface-3/85"
             >
               <div className="flex items-center gap-2.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-brand/20 bg-brand/10 text-brand">
@@ -444,7 +444,7 @@ export function DashboardSidebar({
                                 type="button"
                                 aria-label="删除提醒"
                                 onClick={(e) => void removeReadNotification(e, item.id)}
-                                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-background/60 hover:text-destructive"
+                            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-surface-3 hover:text-destructive"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
@@ -481,7 +481,7 @@ export function DashboardSidebar({
                 {visibleRecentPlans.map((plan) => (
                   <button
                     key={plan.id}
-                    className="flex w-full items-center justify-between rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-surface-3"
+                    className="flex w-full items-center justify-between rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-surface-3/90"
                     title={plan.title}
                   >
                     <div className="flex min-w-0 items-start gap-2">

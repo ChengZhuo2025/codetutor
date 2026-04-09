@@ -47,8 +47,8 @@ export function BadgeGrid({ badges }: BadgeGridProps) {
               className={cn(
                 "relative overflow-hidden rounded-[26px] border p-5 transition-transform duration-200 hover:-translate-y-0.5",
                 badge.earned
-                  ? "border-brand/30 bg-brand/12 text-brand shadow-[0_18px_48px_rgba(0,0,0,0.14)]"
-                  : "border-border/40 bg-surface-3 text-muted-foreground",
+                  ? "border-brand/28 bg-[linear-gradient(180deg,rgba(244,251,248,0.98),rgba(235,246,241,0.95))] text-brand shadow-[0_18px_48px_-34px_rgba(15,23,42,0.2)] dark:bg-brand/18"
+                  : "border-border/70 bg-surface-1/95 text-muted-foreground shadow-[0_14px_36px_-30px_rgba(15,23,42,0.16)] dark:border-white/10 dark:bg-white/5",
               )}
             >
               {badge.earned ? (
@@ -60,8 +60,8 @@ export function BadgeGrid({ badges }: BadgeGridProps) {
                   className={cn(
                     "flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] border",
                     badge.earned
-                      ? "border-brand/20 bg-brand/10"
-                      : "border-border/40 bg-background/40",
+                      ? "border-brand/22 bg-brand/10 dark:bg-brand/16"
+                      : "border-border/70 bg-muted/60 dark:border-white/10 dark:bg-white/6",
                   )}
                 >
                   <Icon
@@ -78,7 +78,7 @@ export function BadgeGrid({ badges }: BadgeGridProps) {
                   <p
                     className={cn(
                       "text-sm font-semibold",
-                      badge.earned ? "text-brand" : "text-foreground/75",
+                      badge.earned ? "text-brand" : "text-foreground/80",
                     )}
                   >
                     {badge.title}

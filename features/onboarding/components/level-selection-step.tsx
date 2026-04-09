@@ -1,5 +1,9 @@
 import { ArrowLeft, ArrowRight, Target } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  USER_PANEL_SECTION_CLASS,
+  USER_PANEL_SUBTLE_SECTION_CLASS,
+} from "@/components/ui/surface-styles"
 import type { Level, OnboardingLevel, OnboardingTool, ToolColor } from "@/features/onboarding/types"
 import { cn } from "@/lib/utils"
 
@@ -42,7 +46,12 @@ export function LevelSelectionStep({
           </p>
         </div>
 
-        <div className="mx-auto mb-4 flex w-full max-w-3xl items-center gap-4 rounded-xl border border-border/60 bg-surface-2/75 px-4 py-2 mt-4">
+        <div
+          className={cn(
+            USER_PANEL_SECTION_CLASS,
+            "mx-auto mt-4 mb-4 flex w-full max-w-3xl items-center gap-4 rounded-2xl px-4 py-3",
+          )}
+        >
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium uppercase tracking-[0.12em] text-muted-foreground">
               已选主工具
@@ -63,7 +72,7 @@ export function LevelSelectionStep({
             )}
           </div>
 
-          <div className="hidden rounded-lg border border-border/60 bg-background/70 px-3 py-2 sm:block">
+          <div className={cn(USER_PANEL_SUBTLE_SECTION_CLASS, "hidden rounded-xl px-3 py-2 sm:block")}>
             <p className="text-sm font-medium uppercase tracking-[0.12em] text-muted-foreground">
               再下一步
             </p>
@@ -75,40 +84,45 @@ export function LevelSelectionStep({
 
         <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 items-center">
           <div className="grid w-full gap-3">
-          {levels.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onSelectLevel(item.id)}
-              aria-pressed={level === item.id}
-              className={cn(
-                "group flex w-full items-start gap-3 rounded-xl border p-3.5 text-left transition-all duration-300",
-                level === item.id
-                  ? "border-brand bg-brand-dim/65 shadow-[0_20px_54px_-28px_oklch(0.78_0.15_180/0.56)]"
-                  : "border-border/60 bg-surface-2 hover:-translate-y-0.5 hover:border-border hover:bg-surface-1",
-              )}
-            >
-              <div
+            {levels.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => onSelectLevel(item.id)}
+                aria-pressed={level === item.id}
                 className={cn(
-                  "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all",
+                  "group flex w-full items-start gap-3 rounded-[20px] border p-4 text-left transition-all duration-300",
                   level === item.id
-                    ? "border-brand bg-brand"
-                    : "border-border/60 bg-background group-hover:border-brand/40",
+                    ? "border-brand/45 bg-brand/12 shadow-[0_22px_56px_-30px_rgba(15,23,42,0.26)] ring-1 ring-brand/10 dark:bg-brand/18"
+                    : "border-border/70 bg-surface-1/95 shadow-[0_10px_26px_-26px_rgba(15,23,42,0.22)] hover:-translate-y-0.5 hover:border-border hover:bg-surface-1 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
                 )}
               >
-                {level === item.id && (
-                  <div className="h-1.5 w-1.5 rounded-full bg-brand-foreground" />
-                )}
-              </div>
-              <div>
-                <p className="text-base font-semibold">{item.label}</p>
-                <p className="mt-0.5 text-sm leading-5 text-muted-foreground">{item.desc}</p>
-              </div>
-            </button>
-          ))}
+                <div
+                  className={cn(
+                    "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all",
+                    level === item.id
+                      ? "border-brand bg-brand"
+                      : "border-border/70 bg-surface-1 group-hover:border-brand/40 dark:border-white/10 dark:bg-white/5",
+                  )}
+                >
+                  {level === item.id && (
+                    <div className="h-1.5 w-1.5 rounded-full bg-brand-foreground" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-base font-semibold">{item.label}</p>
+                  <p className="mt-0.5 text-sm leading-5 text-muted-foreground">{item.desc}</p>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-2 px-4 py-2 mt-8">
+        <div
+          className={cn(
+            USER_PANEL_SUBTLE_SECTION_CLASS,
+            "mx-auto mt-8 flex w-full max-w-3xl flex-col items-center gap-2 rounded-2xl px-4 py-3",
+          )}
+        >
           <Button
             onClick={onNext}
             disabled={!canGoNext || !selectedTool || isPending}

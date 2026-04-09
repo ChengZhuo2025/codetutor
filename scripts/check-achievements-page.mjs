@@ -30,8 +30,8 @@ assert.match(
 
 assert.match(
   pageSource,
-  /border-b border-border\/50 bg-surface-1\/80 px-4 py-5 backdrop-blur-sm sm:px-6/,
-  "The /achievements header should use the same horizontal inset as /map",
+  /border-b border-border\/50 bg-\[linear-gradient\(180deg,rgba\(255,255,255,0\.9\),rgba\(247,249,251,0\.82\)\)\] px-4 py-5 shadow-\[0_14px_38px_-34px_rgba\(15,23,42,0\.24\)\] backdrop-blur-sm dark:bg-\[linear-gradient\(180deg,oklch\(0\.19_0\.012_250\/0\.92\),oklch\(0\.16_0\.01_250\/0\.82\)\)\] sm:px-6/,
+  "The /achievements header should use the same horizontal inset and updated gradient shell as /map",
 )
 
 assert.match(

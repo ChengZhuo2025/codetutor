@@ -28,7 +28,13 @@ import {
   getAvatarStoragePathFromUrl,
 } from "@/lib/supabase/storage"
 import { dispatchProfileUpdated } from "@/lib/profile/events"
-import { DIALOG_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
+import {
+  DIALOG_PANEL_CLASS,
+  USER_PANEL_DIVIDER_CLASS,
+  USER_PANEL_FIELD_CLASS,
+  USER_PANEL_OUTLINE_BUTTON_CLASS,
+  USER_PANEL_SECTION_CLASS,
+} from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
 
 type ProfileEditDialogProps = {
@@ -304,9 +310,9 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn(DIALOG_DARK_PANEL_CLASS, "max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-[560px]")}>
+      <DialogContent className={cn(DIALOG_PANEL_CLASS, "max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-[560px]")}>
         <div className="overflow-hidden rounded-2xl">
-          <div className="border-b border-white/10 px-5 py-4">
+          <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold">个人资料</DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
@@ -366,7 +372,7 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
                   onChange={(e) => updateField("nickname", e.target.value)}
                   placeholder="输入昵称"
                   disabled={isBusy}
-                  className="rounded-[10px] border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
+                  className={cn("rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
                 />
               </div>
 
@@ -380,7 +386,7 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
                   readOnly
                   disabled
                   placeholder="未绑定手机号"
-                  className="rounded-[10px] border-white/10 bg-white/5 text-foreground/60 placeholder:text-muted-foreground/40"
+                  className={cn("rounded-[10px] text-foreground/60 placeholder:text-muted-foreground/40", USER_PANEL_FIELD_CLASS)}
                 />
               </div>
 
@@ -394,7 +400,7 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
                   onChange={(e) => updateField("wechat", e.target.value)}
                   placeholder="输入微信号（可选）"
                   disabled={isBusy}
-                  className="rounded-[10px] border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
+                  className={cn("rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
                 />
               </div>
 
@@ -409,7 +415,7 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
                   onChange={(e) => updateField("email", e.target.value)}
                   placeholder="输入邮箱（可选）"
                   disabled={isBusy}
-                  className="rounded-[10px] border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
+                  className={cn("rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
                 />
               </div>
             </div>
@@ -425,13 +431,13 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
                 placeholder="介绍一下自己吧（可选）"
                 rows={4}
                 disabled={isBusy}
-                className="resize-none rounded-[10px] border-white/10 bg-white/5 text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20"
+                className={cn("resize-none rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
               />
               <p className="text-right text-xs text-muted-foreground">{profile.bio.trim().length}/300</p>
             </div>
 
             {isLoading ? (
-              <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-muted-foreground">
+              <div className={cn("flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground", USER_PANEL_SECTION_CLASS)}>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 正在加载个人资料...
               </div>
@@ -444,13 +450,13 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
             ) : null}
 
             {errorMessage ? (
-              <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+              <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
                 {errorMessage}
               </div>
             ) : null}
 
             {successMessage ? (
-              <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 shrink-0" />
                   <span>{successMessage}</span>
@@ -459,13 +465,13 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
             ) : null}
           </div>
 
-          <div className="flex gap-3 border-t border-white/10 px-5 py-4">
+          <div className={cn("flex gap-3 border-t px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
             <Button
               variant="outline"
               size="lg"
               onClick={() => onOpenChange(false)}
               disabled={isSaving}
-              className="flex-1 rounded-[10px] border-white/10 bg-transparent text-foreground hover:bg-white/5 hover:text-white"
+              className={cn("flex-1 rounded-[10px]", USER_PANEL_OUTLINE_BUTTON_CLASS)}
             >
               取消
             </Button>

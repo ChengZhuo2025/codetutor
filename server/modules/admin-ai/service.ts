@@ -41,10 +41,6 @@ import {
 } from "@/server/lib/secrets/provider-secret"
 import {
   invalidateAIConfigCache,
-  loadAIAgentBindingsSnapshot,
-  loadAIAgentSkillBindingsSnapshot,
-  loadAIAgentsSnapshot,
-  loadAIModelsSnapshot,
   loadAIProvidersSnapshot,
   loadAISkillsSnapshot,
 } from "@/server/modules/ai/config-cache"

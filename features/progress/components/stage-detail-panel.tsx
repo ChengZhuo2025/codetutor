@@ -47,7 +47,7 @@ export function StageDetailPanel({
                   ? "学习复盘摘要"
                   : "未解锁任务预览"}
             </span>
-            <span className="rounded-full bg-background/55 px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="rounded-full border border-border/70 bg-surface-1/95 px-2 py-0.5 text-xs text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
               第 {stage.id} 关
             </span>
           </div>
@@ -130,7 +130,7 @@ export function StageDetailPanel({
               {stage.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-border/50 bg-background/45 px-2.5 py-1 text-xs text-muted-foreground"
+                  className="rounded-full border border-border/70 bg-surface-1/95 px-2.5 py-1 text-xs text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                 >
                   {tag}
                 </span>
@@ -144,7 +144,7 @@ export function StageDetailPanel({
             className={cn(
               "mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold transition-colors",
               isLocked
-                ? "cursor-not-allowed bg-surface-3 text-muted-foreground/50"
+                ? "cursor-not-allowed border border-border/70 bg-surface-1/95 text-muted-foreground/55 dark:border-white/10 dark:bg-white/5"
                 : isDone
                   ? "bg-gold text-background hover:bg-gold/90"
                   : "bg-brand text-brand-foreground hover:bg-brand/90",

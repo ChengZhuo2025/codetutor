@@ -1,5 +1,6 @@
 import { Icon } from "@iconify/react/offline";
 import { Check, Sparkles } from "lucide-react";
+import { USER_PANEL_OUTLINE_BUTTON_CLASS } from "@/components/ui/surface-styles";
 import { cn } from "@/lib/utils";
 import type { AchievementOverview, Rank } from "@/features/achievement/types";
 
@@ -30,7 +31,7 @@ export function RankProgressCard({
   );
 
   return (
-    <div className="overflow-hidden rounded-[34px] border border-brand/25 bg-card shadow-lg shadow-black/6 dark:border-brand/20 dark:bg-[linear-gradient(135deg,rgba(18,30,34,0.96),rgba(12,22,26,0.96))] dark:shadow-[0_30px_90px_rgba(0,0,0,0.22)]">
+    <div className="overflow-hidden rounded-[34px] border border-brand/25 bg-surface-1/97 shadow-[0_26px_70px_-36px_rgba(15,23,42,0.2)] dark:border-brand/20 dark:bg-[linear-gradient(135deg,rgba(18,30,34,0.96),rgba(12,22,26,0.96))] dark:shadow-[0_30px_90px_rgba(0,0,0,0.22)]">
       <div className="border-b border-brand/15 bg-[radial-gradient(circle_at_top_right,oklch(0.52_0.12_180/0.08),transparent_40%)] px-5 py-6 dark:border-brand/10 dark:bg-[radial-gradient(circle_at_top_right,rgba(79,209,197,0.15),transparent_34%)] sm:px-6">
         <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-brand/80">
           <Sparkles className="h-3.5 w-3.5" />
@@ -61,7 +62,10 @@ export function RankProgressCard({
             </button>
             <button
               onClick={onOpenMap}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-muted/70 px-4 py-3 text-sm font-medium text-foreground transition-all hover:-translate-y-0.5 hover:bg-muted dark:bg-background/45 dark:hover:bg-background/60"
+              className={cn(
+                "flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium transition-all hover:-translate-y-0.5",
+                USER_PANEL_OUTLINE_BUTTON_CLASS,
+              )}
             >
               查看闯关地图
             </button>
@@ -124,7 +128,7 @@ export function RankProgressCard({
                         ? "border-brand bg-brand text-brand-foreground shadow-[0_0_0_6px_rgba(79,209,197,0.14)]"
                         : isCompleted
                           ? "border-brand/35 bg-brand/15 text-brand"
-                          : "border-border bg-background/60 text-muted-foreground/45",
+                          : "border-border/70 bg-surface-1/95 text-muted-foreground/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.66)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
                     )}
                   >
                     {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
@@ -154,7 +158,7 @@ export function RankProgressCard({
           })}
         </div>
 
-        <div className="mt-5 rounded-[24px] border border-border/60 bg-muted/45 px-4 py-3 dark:border-border/40 dark:bg-background/35">
+        <div className="mt-5 rounded-[24px] border border-border/70 bg-surface-1/95 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.68)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
           {nextRank ? (
             <p className="text-sm text-muted-foreground">
               距离{" "}

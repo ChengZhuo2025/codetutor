@@ -92,14 +92,14 @@ assert.match(
 
 assert.match(
   surfaceStylesSource,
-  /export const DIALOG_DARK_PANEL_CLASS =/,
-  "Surface styles should export a shared dark dialog panel class",
+  /export const DIALOG_PANEL_CLASS =/,
+  "Surface styles should export a shared cross-theme dialog panel class",
 )
 
 assert.match(
   surfaceStylesSource,
-  /export const DIALOG_DARK_GRADIENT_PANEL_CLASS =/,
-  "Surface styles should export a shared dark gradient dialog panel class",
+  /export const DIALOG_GRADIENT_PANEL_CLASS =/,
+  "Surface styles should export a shared cross-theme gradient dialog panel class",
 )
 
 assert.match(
@@ -117,23 +117,23 @@ assert.match(
 for (const source of [notificationDialogSource, profileEditDialogSource, feedbackDialogSource]) {
   assert.match(
     source,
-    /DIALOG_DARK_PANEL_CLASS/,
-    "Dark neutral dialogs should reuse the shared dark panel class",
+    /DIALOG_PANEL_CLASS/,
+    "User dialogs should reuse the shared cross-theme dialog panel class",
   )
 }
 
 for (const source of [subscriptionDialogSource, aboutDialogSource, contactDialogSource]) {
   assert.match(
     source,
-    /DIALOG_DARK_GRADIENT_PANEL_CLASS/,
-    "Dark gradient dialogs should reuse the shared gradient panel class",
+    /DIALOG_GRADIENT_PANEL_CLASS|DIALOG_DARK_GRADIENT_PANEL_CLASS/,
+    "Gradient dialogs should reuse the shared gradient panel class",
   )
 }
 
 assert.match(
   surfaceStylesSource,
-  /export const FLOATING_DARK_PANEL_CLASS =/,
-  "Surface styles should export a shared dark floating panel class",
+  /export const FLOATING_PANEL_CLASS =/,
+  "Surface styles should export a shared cross-theme floating panel class",
 )
 
 assert.match(
@@ -144,13 +144,13 @@ assert.match(
 
 assert.match(
   settingsPopoverSource,
-  /FLOATING_DARK_PANEL_CLASS/,
+  /FLOATING_PANEL_CLASS/,
   "Settings popover should reuse the shared floating panel class",
 )
 
 assert.match(
   timePickerSource,
-  /FLOATING_DARK_PANEL_CLASS/,
+  /FLOATING_PANEL_CLASS/,
   "Time picker should reuse the shared floating panel class",
 )
 

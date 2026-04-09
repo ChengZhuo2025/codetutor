@@ -28,6 +28,7 @@ import type {
   HistoryPlanAction,
   LearningHistory,
 } from "@/features/history/types"
+import { cn } from "@/lib/utils"
 
 const HISTORY_PAGE_SIZE = 10
 
@@ -388,12 +389,24 @@ export function HistoryPage() {
                         key={filter.id}
                         type="button"
                         size="sm"
-                        variant={active ? "secondary" : "outline"}
+                        variant="outline"
                         onClick={() => handleFilterChange(filter.id)}
-                        className="rounded-full"
+                        className={cn(
+                          "rounded-full",
+                          active
+                            ? "border-brand/35 bg-brand/12 text-brand hover:bg-brand/16"
+                            : "border-border/70 bg-surface-1/95 text-foreground hover:border-border hover:bg-muted/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
+                        )}
                       >
                         {filter.label}
-                        <span className="rounded-full bg-background/60 px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                        <span
+                          className={cn(
+                            "rounded-full border px-1.5 py-0.5 text-[11px]",
+                            active
+                              ? "border-brand/20 bg-brand/12 text-brand"
+                              : "border-border/70 bg-muted/65 text-muted-foreground dark:border-white/10 dark:bg-white/6",
+                          )}
+                        >
                           {count}
                         </span>
                       </Button>

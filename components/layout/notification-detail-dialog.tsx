@@ -11,7 +11,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { DIALOG_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
+import {
+  DIALOG_PANEL_CLASS,
+  USER_PANEL_DIVIDER_CLASS,
+  USER_PANEL_OUTLINE_BUTTON_CLASS,
+} from "@/components/ui/surface-styles"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import type { NotificationInAppItem } from "@/lib/api/contracts/notifications"
 import { getInAppNotificationListTitle } from "@/lib/notifications/in-app-display"
@@ -88,11 +92,11 @@ export function NotificationDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          DIALOG_DARK_PANEL_CLASS,
-          "max-h-[90vh] overflow-y-auto rounded-2xl border-white/20 p-0 ring-1 ring-white/10 sm:max-w-md",
+          DIALOG_PANEL_CLASS,
+          "max-h-[90vh] overflow-y-auto rounded-2xl p-0 sm:max-w-md",
         )}
       >
-        <div className="border-b border-white/10 px-5 pt-5 pb-4">
+        <div className={cn("border-b px-5 pt-5 pb-4", USER_PANEL_DIVIDER_CLASS)}>
           <DialogHeader className="text-left">
             <DialogTitle className="text-base">
               {getInAppNotificationListTitle(notification)}
@@ -110,7 +114,7 @@ export function NotificationDetailDialog({
           </div>
         </div>
 
-        <div className="flex w-full flex-row flex-nowrap items-stretch gap-2 border-t border-white/10 px-5 py-4 sm:gap-3">
+        <div className={cn("flex w-full flex-row flex-nowrap items-stretch gap-2 border-t px-5 py-4 sm:gap-3", USER_PANEL_DIVIDER_CLASS)}>
           {notification.actionHref && notification.actionLabel ? (
             <Button
               variant="default"
@@ -127,7 +131,8 @@ export function NotificationDetailDialog({
             onClick={handleDismiss}
             disabled={dismissing}
             className={cn(
-              "min-w-0 gap-2 rounded-[10px] border-white/10 bg-transparent hover:bg-white/5",
+              "min-w-0 gap-2 rounded-[10px]",
+              USER_PANEL_OUTLINE_BUTTON_CLASS,
               notification.actionHref && notification.actionLabel ? "flex-1" : "w-full",
             )}
           >

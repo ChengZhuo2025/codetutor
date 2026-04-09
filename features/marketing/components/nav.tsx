@@ -137,12 +137,12 @@ export function LandingNav() {
                 setActiveHref(item.href)
                 scrollToSection(item.href)
               }}
-              className={cn(
-                "rounded-full px-3 py-1.5 text-sm transition-all",
-                activeHref === item.href
-                  ? "bg-foreground/10 text-foreground dark:bg-white/6"
-                  : "text-muted-foreground hover:bg-foreground/10 hover:text-foreground dark:hover:bg-white/6",
-              )}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-sm transition-all",
+                  activeHref === item.href
+                  ? "bg-surface-3 text-foreground shadow-sm ring-1 ring-border/70 dark:bg-foreground/6 dark:ring-foreground/10"
+                  : "text-muted-foreground hover:bg-surface-2 hover:text-foreground dark:hover:bg-foreground/6",
+                )}
             >
               {item.label}
             </button>
@@ -179,12 +179,12 @@ export function LandingNav() {
                   scrollToSection(item.href)
                   setMobileOpen(false)
                 }}
-                className={cn(
-                  "rounded-xl px-2 py-1 text-left text-sm transition-all",
-                  activeHref === item.href
-                    ? "bg-foreground/10 text-foreground dark:bg-white/6"
-                    : "text-muted-foreground hover:bg-foreground/10 hover:text-foreground dark:hover:bg-white/6",
-                )}
+                  className={cn(
+                    "rounded-xl px-2 py-1 text-left text-sm transition-all",
+                    activeHref === item.href
+                    ? "bg-surface-3 text-foreground shadow-sm ring-1 ring-border/70 dark:bg-foreground/6 dark:ring-foreground/10"
+                    : "text-muted-foreground hover:bg-surface-2 hover:text-foreground dark:hover:bg-foreground/6",
+                  )}
               >
                 {item.label}
               </button>

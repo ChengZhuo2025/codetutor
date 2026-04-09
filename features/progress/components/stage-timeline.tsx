@@ -12,7 +12,7 @@ const statusConfig = {
   done: {
     icon: CheckCircle2,
     nodeStyle: "border-brand/55 bg-brand text-brand-foreground shadow-[0_0_0_6px_rgba(92,225,168,0.08)]",
-    cardStyle: "border-brand/20 bg-brand-dim/22 hover:border-brand/35 cursor-pointer",
+    cardStyle: "border-brand/22 bg-brand/12 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.18)] hover:border-brand/35 cursor-pointer dark:bg-brand/18",
     label: "已完成",
     labelStyle: "text-brand",
   },
@@ -27,8 +27,8 @@ const statusConfig = {
   },
   locked: {
     icon: Lock,
-    nodeStyle: "border-border/40 bg-surface-3 text-muted-foreground/45",
-    cardStyle: "border-border/50 bg-surface-3/60 cursor-pointer opacity-80 hover:opacity-100",
+    nodeStyle: "border-border/50 bg-surface-1/95 text-muted-foreground/50 shadow-[inset_0_1px_0_rgba(255,255,255,0.68)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
+    cardStyle: "border-border/70 bg-surface-1/95 shadow-[0_14px_34px_-30px_rgba(15,23,42,0.16)] cursor-pointer opacity-90 hover:opacity-100 dark:border-white/10 dark:bg-white/5",
     label: "未解锁",
     labelStyle: "text-muted-foreground/65",
   },
@@ -79,7 +79,7 @@ export function StageTimeline({
                     isSelected && "ring-2 ring-brand/28 ring-offset-2 ring-offset-background",
                   )}
                 >
-                  <span className="absolute -left-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-border bg-card px-1 text-[10px] font-bold text-foreground shadow-sm dark:border-gray-800 dark:bg-background">
+                  <span className="absolute -left-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-border/70 bg-surface-1 px-1 text-[10px] font-bold text-foreground shadow-sm dark:border-white/10 dark:bg-[oklch(0.22_0.015_250/0.98)]">
                     {stage.id}
                   </span>
                   <Icon className="h-5 w-5" />
@@ -130,13 +130,13 @@ export function StageTimeline({
                 </div>
 
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="rounded-full border border-border bg-background/55 px-2.5 py-1">
+                  <span className="rounded-full border border-border/70 bg-muted/60 px-2.5 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                     预计 {stage.estimatedTime}
                   </span>
                   {stage.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-border bg-surface-3 px-2.5 py-1"
+                      className="rounded-full border border-border/70 bg-muted/55 px-2.5 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                     >
                       {tag}
                     </span>
@@ -164,12 +164,12 @@ export function StageTimeline({
                       继续学习
                     </button>
                   ) : stage.status === "done" ? (
-                    <span className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-brand/20 bg-background/45 px-3.5 py-2 text-sm font-medium text-brand">
+                    <span className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-brand/22 bg-brand/10 px-3.5 py-2 text-sm font-medium text-brand dark:bg-brand/16">
                       <RotateCcw className="h-3.5 w-3.5" />
                       学习复盘
                     </span>
                   ) : (
-                    <span className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-border/40 bg-background/35 px-3.5 py-2 text-sm text-muted-foreground">
+                    <span className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-border/70 bg-muted/60 px-3.5 py-2 text-sm text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                       <Lock className="h-3.5 w-3.5" />
                       解锁条件
                     </span>

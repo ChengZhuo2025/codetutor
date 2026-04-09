@@ -3,6 +3,8 @@
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { StatePanel } from "@/components/ui/state-panel"
+import { USER_PANEL_OUTLINE_BUTTON_CLASS } from "@/components/ui/surface-styles"
+import { cn } from "@/lib/utils"
 import { HistoryCard } from "./history-card"
 import type {
   HistoryPlanAction,
@@ -80,7 +82,7 @@ export function HistoryList({
             size="lg"
             onClick={onLoadMore}
             disabled={isLoadingMore}
-            className="min-w-[200px] rounded-2xl border-border/60 bg-surface-2 hover:bg-surface-3 hover:text-white"
+            className={cn("min-w-[200px] rounded-2xl", USER_PANEL_OUTLINE_BUTTON_CLASS)}
           >
             {isLoadingMore ? (
               <>

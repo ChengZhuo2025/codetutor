@@ -45,7 +45,12 @@ import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { DIALOG_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
+import {
+  DIALOG_PANEL_CLASS,
+  USER_PANEL_DIVIDER_CLASS,
+  USER_PANEL_OUTLINE_BUTTON_CLASS,
+  USER_PANEL_SECTION_CLASS,
+} from "@/components/ui/surface-styles"
 
 type ConnectionState = "online" | "offline" | "reconnecting"
 
@@ -1583,11 +1588,11 @@ export function LearnChat({
       <Dialog open={linkChoiceOpen} onOpenChange={setLinkChoiceOpen}>
         <DialogContent
           className={cn(
-            DIALOG_DARK_PANEL_CLASS,
-            "max-h-[75vh] overflow-y-auto rounded-2xl border-white/20 ring-1 ring-white/10 p-0 sm:max-w-[520px]",
+            DIALOG_PANEL_CLASS,
+            "max-h-[75vh] overflow-y-auto rounded-2xl p-0 sm:max-w-[520px]",
           )}
         >
-          <div className="border-b border-white/10 px-5 pt-5 pb-4">
+          <div className={cn("border-b px-5 pt-5 pb-4", USER_PANEL_DIVIDER_CLASS)}>
             <DialogHeader className="text-left">
               <DialogTitle className="text-base">检测到教程链接</DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
@@ -1597,7 +1602,7 @@ export function LearnChat({
           </div>
 
           <div className="space-y-4 px-5 py-4">
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-muted-foreground">
+            <div className={cn("rounded-2xl px-3 py-2 text-sm text-muted-foreground", USER_PANEL_SECTION_CLASS)}>
               {linkChoiceLinks.map((link) => (
                 <div key={link} className="truncate">
                   {link}
@@ -1614,7 +1619,7 @@ export function LearnChat({
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-[10px] border-white/10 bg-transparent hover:bg-white/5"
+                className={cn("rounded-[10px]", USER_PANEL_OUTLINE_BUTTON_CLASS)}
                 disabled={linkChoiceLinks.length !== 1}
                 onClick={() => {
                   setLinkChoiceOpen(false)

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { DIALOG_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
+import { DIALOG_PANEL_CLASS, USER_PANEL_DIVIDER_CLASS } from "@/components/ui/surface-styles"
 import { MaterialPlanPanel } from "@/features/learning/components/material-plan-panel"
 import { cn } from "@/lib/utils"
 
@@ -29,11 +29,11 @@ export function MaterialPlanDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          DIALOG_DARK_PANEL_CLASS,
-          "max-h-[85vh] overflow-y-auto rounded-2xl ring-1 ring-white/10 p-0 sm:max-w-[760px]",
+          DIALOG_PANEL_CLASS,
+          "max-h-[85vh] overflow-y-auto rounded-2xl p-0 sm:max-w-[760px]",
         )}
       >
-        <div className="border-b border-white/10 px-5 pt-5 pb-4">
+        <div className={cn("border-b px-5 pt-5 pb-4", USER_PANEL_DIVIDER_CLASS)}>
           <DialogHeader className="text-left">
             <DialogTitle className="text-base">生成学习计划</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
@@ -54,4 +54,3 @@ export function MaterialPlanDialog({
     </Dialog>
   )
 }
-

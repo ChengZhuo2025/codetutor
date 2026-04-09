@@ -12,7 +12,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { DIALOG_DARK_GRADIENT_PANEL_CLASS } from "@/components/ui/surface-styles"
+import {
+  DIALOG_GRADIENT_PANEL_CLASS,
+  USER_PANEL_DIVIDER_CLASS,
+  USER_PANEL_OUTLINE_BUTTON_CLASS,
+} from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
 import type { SubscriptionSnapshot } from "@/types/profile"
 
@@ -32,10 +36,10 @@ export function SubscriptionDetailDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className={cn(DIALOG_DARK_GRADIENT_PANEL_CLASS, "max-h-[90vh] max-w-4xl overflow-y-auto rounded-2xl scrollbar-none sm:max-w-[860px]")}>
+      <DialogContent className={cn(DIALOG_GRADIENT_PANEL_CLASS, "max-h-[90vh] max-w-4xl overflow-y-auto rounded-2xl scrollbar-none sm:max-w-[860px]")}>
         <div className="overflow-hidden rounded-2xl">
           {/* 头部 */}
-          <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.16),transparent_46%)] px-5 py-4">
+          <div className={cn("border-b bg-[radial-gradient(circle_at_top_left,oklch(0.52_0.12_180/0.10),transparent_46%)] px-5 py-4 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.16),transparent_46%)]", USER_PANEL_DIVIDER_CLASS)}>
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold tracking-tight">
                 套餐订阅与续费
@@ -62,8 +66,8 @@ export function SubscriptionDetailDialog({
                       isCurrent
                         ? "border-brand/50 bg-brand-dim/50 ring-2 ring-brand/25"
                         : isDowngrade
-                          ? "border-white/5 bg-white/[0.02] opacity-55"
-                          : "border-white/10 bg-white/5",
+                          ? "border-border/60 bg-surface-2/70 opacity-55 dark:border-border/70 dark:bg-surface-2/80"
+                          : "border-border/70 bg-surface-1/95 shadow-sm dark:border-border/70 dark:bg-surface-2/90",
                     )}
                   >
                     {/* 当前套餐标签 */}
@@ -140,7 +144,7 @@ export function SubscriptionDetailDialog({
                         // 更低套餐：不可点击的灰度按钮
                         <button
                           disabled
-                          className="flex w-full items-center justify-center rounded-xl border border-white/5 bg-white/[0.02] px-4 py-2.5 text-sm font-medium text-muted-foreground/40 cursor-not-allowed"
+                          className="flex w-full cursor-not-allowed items-center justify-center rounded-xl border border-border/60 bg-surface-2/75 px-4 py-2.5 text-sm font-medium text-muted-foreground/50 dark:border-border/70 dark:bg-surface-2/80 dark:text-muted-foreground/40"
                         >
                           已有更高级套餐
                         </button>
@@ -152,7 +156,7 @@ export function SubscriptionDetailDialog({
                             "flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors",
                             plan.highlight
                               ? "bg-brand text-white hover:bg-brand/90"
-                              : "border border-white/15 bg-white/5 text-foreground hover:border-white/25 hover:bg-white/10"
+                              : USER_PANEL_OUTLINE_BUTTON_CLASS,
                           )}
                         >
                           升级套餐
@@ -183,7 +187,7 @@ export function SubscriptionDetailDialog({
                 </div>
                 <Link
                   href="/login"
-                  className="flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-white/25 hover:bg-white/10"
+                  className={cn("flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium", USER_PANEL_OUTLINE_BUTTON_CLASS)}
                 >
                   <FileText className="h-4 w-4" />
                   订阅记录

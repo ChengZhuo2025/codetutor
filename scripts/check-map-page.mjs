@@ -72,8 +72,8 @@ assert.doesNotMatch(
 
 assert.match(
   mapHeaderSource,
-  /className="shrink-0 border-b border-border\/50 bg-surface-1\/80 px-4 py-5 backdrop-blur-sm sm:px-6"/,
-  "The map header should keep the approved static shell styling and horizontal inset",
+  /className="shrink-0 border-b border-border\/50 bg-\[linear-gradient\(180deg,rgba\(255,255,255,0\.9\),rgba\(247,249,251,0\.82\)\)\] px-4 py-5 shadow-\[0_14px_38px_-34px_rgba\(15,23,42,0\.24\)\] backdrop-blur-sm dark:bg-\[linear-gradient\(180deg,oklch\(0\.19_0\.012_250\/0\.92\),oklch\(0\.16_0\.01_250\/0\.82\)\)\] sm:px-6"/,
+  "The map header should keep the approved static shell styling, inset, and updated light-theme gradient treatment",
 )
 
 assert.doesNotMatch(
@@ -144,8 +144,8 @@ assert.doesNotMatch(
 
 assert.match(
   sharedPlanSource,
-  /Cursor 零基础起步营/,
-  "Shared plan data should align the current plan name across /learn and /map",
+  /pathName: `\$\{primaryToolName\} 零基础起步营`/,
+  "Shared plan data should derive the current plan name from the shared primary tool label",
 )
 
 assert.match(

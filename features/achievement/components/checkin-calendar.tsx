@@ -30,6 +30,8 @@ export function CheckinCalendar({
   const hasCalendar =
     weekDays.length > 0 && checkinDays.length > 0 && calendarDates.length > 0
   const weeklyBest = Math.max(...checkinDays.map((week) => week.filter(Boolean).length), 0)
+  const statCardClass =
+    "rounded-[24px] border border-border/70 bg-surface-1/95 px-4 py-4 shadow-[0_12px_32px_-28px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5"
 
   if (!hasCalendar) {
     return (
@@ -70,28 +72,29 @@ export function CheckinCalendar({
       }
       description="每天打卡积累连续天数，连续天数越长可解锁更高奖励。"
       bodyClassName="space-y-5"
+      className="border-border/70 bg-surface-1/95 shadow-[0_18px_48px_-34px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5"
     >
       <div className="grid gap-3 lg:grid-cols-4">
-        <div className="rounded-[24px] border border-border/50 bg-surface-3 px-4 py-4">
+        <div className={statCardClass}>
           <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground/60">
             本月打卡
           </p>
           <p className="mt-2 text-2xl font-semibold text-foreground">{checkedCount} 天</p>
         </div>
-        <div className="rounded-[24px] border border-border/50 bg-surface-3 px-4 py-4">
+        <div className={statCardClass}>
           <div className="flex items-center gap-2 text-xs uppercase tracking-[0.12em] text-muted-foreground/60">
             <Zap className="h-3.5 w-3.5 text-brand" />
             本月获取
           </div>
           <p className="mt-2 text-2xl font-semibold text-foreground">{monthlyXP} XP</p>
         </div>
-        <div className="rounded-[24px] border border-border/50 bg-surface-3 px-4 py-4">
+        <div className={statCardClass}>
           <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground/60">
             单周最佳
           </p>
           <p className="mt-2 text-2xl font-semibold text-foreground">{weeklyBest} 天</p>
         </div>
-        <div className="rounded-[24px] border border-border/50 bg-surface-3 px-4 py-4">
+        <div className={statCardClass}>
           <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground/60">
             累计打卡
           </p>
@@ -99,7 +102,7 @@ export function CheckinCalendar({
         </div>
       </div>
 
-      <div className="rounded-[28px] border border-border/50 bg-surface-3/80 p-4 sm:p-5">
+      <div className="rounded-[28px] border border-border/70 bg-surface-1/95 p-4 shadow-[0_14px_36px_-30px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5 sm:p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground/60">
@@ -141,10 +144,10 @@ export function CheckinCalendar({
                     className={cn(
                       "relative flex aspect-square items-end justify-start rounded-2xl border p-2 transition-colors sm:p-2.5",
                       checked
-                        ? "border-brand/35 bg-brand/15"
+                        ? "border-brand/35 bg-brand/15 dark:bg-brand/20"
                         : isFuture
-                          ? "border-border/10 bg-surface-3"
-                          : "border-border/60 bg-background/25",
+                          ? "border-border/20 bg-surface-1/70 dark:border-white/10 dark:bg-white/5"
+                          : "border-border/70 bg-muted/55 dark:border-white/10 dark:bg-white/6",
                     )}
                   >
                     <span

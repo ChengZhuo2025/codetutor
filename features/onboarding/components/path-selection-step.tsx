@@ -9,6 +9,11 @@ import {
   Sparkles,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  USER_PANEL_OUTLINE_BUTTON_CLASS,
+  USER_PANEL_SECTION_CLASS,
+  USER_PANEL_SUBTLE_SECTION_CLASS,
+} from "@/components/ui/surface-styles"
 import type {
   OnboardingPresetPathOption,
   OnboardingSelectionMode,
@@ -17,6 +22,9 @@ import type {
   ToolColor,
 } from "@/features/onboarding/types"
 import { cn } from "@/lib/utils"
+
+const onboardingMetaPillClass =
+  "rounded-full border border-border/70 bg-surface-1/95 px-3 py-1 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
 
 type PathSelectionStepProps = {
   selectedTool: OnboardingTool | null
@@ -88,7 +96,12 @@ export function PathSelectionStep({
           </p>
         </div>
 
-        <div className="mx-auto mb-3 flex w-full max-w-3xl flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-surface-2/75 px-4 py-2 mt-4">
+        <div
+          className={cn(
+            USER_PANEL_SECTION_CLASS,
+            "mx-auto mt-4 mb-3 flex w-full max-w-3xl flex-wrap items-center gap-2 rounded-2xl px-4 py-3",
+          )}
+        >
           {selectedTool ? (
             <span
               className={cn(
@@ -99,10 +112,10 @@ export function PathSelectionStep({
               {selectedTool.name}
             </span>
           ) : null}
-          <span className="rounded-full border border-border bg-background/80 px-3 py-1 text-sm text-foreground">
+          <span className={cn(onboardingMetaPillClass, "text-foreground")}>
             {levelLabel}
           </span>
-          <span className="rounded-full border border-border bg-background/80 px-3 py-1 text-sm text-muted-foreground">
+          <span className={cn(onboardingMetaPillClass, "text-muted-foreground")}>
             在下面选一种即可
           </span>
         </div>
@@ -112,10 +125,10 @@ export function PathSelectionStep({
             <button
               onClick={onSelectSelfStudy}
               className={cn(
-                "w-full rounded-2xl border p-4 text-left transition-all duration-300",
+                "w-full rounded-[24px] border p-4 text-left transition-all duration-300",
                 selectionMode === "self_directed"
-                  ? "border-brand bg-brand-dim/55 shadow-[0_22px_60px_-34px_oklch(0.78_0.15_180/0.8)]"
-                  : "border-border/60 bg-surface-2/70 hover:-translate-y-0.5 hover:border-brand/40 hover:bg-surface-1",
+                  ? "border-brand/45 bg-brand/12 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.28)] ring-1 ring-brand/10 dark:bg-brand/18"
+                  : "border-border/70 bg-surface-1/95 shadow-[0_12px_30px_-28px_rgba(15,23,42,0.24)] hover:-translate-y-0.5 hover:border-brand/30 hover:bg-surface-1 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
               )}
             >
               <div className="mb-1 flex items-start justify-between gap-3">
@@ -126,7 +139,7 @@ export function PathSelectionStep({
                   <h2 className="text-xl font-semibold text-foreground">{selfStudyOption.name}</h2>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="rounded-full border border-border/60 bg-background/80 p-2 text-brand">
+                  <div className="rounded-full border border-brand/20 bg-brand/12 p-2 text-brand dark:border-brand/30 dark:bg-brand/18">
                     <BookOpenText className="h-4 w-4" />
                   </div>
                   <CheckCircle2
@@ -141,7 +154,7 @@ export function PathSelectionStep({
               <p className="mb-1 text-sm leading-4 text-foreground">{selfStudyOption.summary}</p>
             </button>
 
-            <section className="rounded-2xl border border-border/60 bg-surface-2/70 p-4">
+            <section className={cn(USER_PANEL_SECTION_CLASS, "rounded-[24px] p-4")}>
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="rounded-full border border-chart-3/30 bg-chart-3/10 px-2.5 py-1 text-xs font-semibold text-chart-3">
@@ -149,7 +162,7 @@ export function PathSelectionStep({
                   </span>
                   <h2 className="text-xl font-semibold text-foreground">推荐学习路线</h2>
                 </div>
-                <span className="rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xs text-muted-foreground">
+                <span className="rounded-full border border-border/70 bg-muted/65 px-3 py-1 text-xs text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                   共 {presetPathOptions.length} 条
                 </span>
               </div>
@@ -164,10 +177,10 @@ export function PathSelectionStep({
                     <div
                       key={path.pathId}
                       className={cn(
-                        "rounded-2xl border p-3 text-left transition-all duration-300",
+                        "rounded-[22px] border p-3 text-left transition-all duration-300",
                         isSelected
-                          ? "border-brand bg-brand-dim/50 shadow-[0_24px_60px_-36px_oklch(0.78_0.15_180/0.8)]"
-                          : "border-border/60 bg-background/70 hover:border-border hover:bg-surface-1",
+                          ? "border-brand/45 bg-brand/12 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.28)] ring-1 ring-brand/10 dark:bg-brand/18"
+                          : "border-border/70 bg-surface-1/95 shadow-[0_12px_32px_-28px_rgba(15,23,42,0.22)] hover:border-border hover:bg-surface-1 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
                       )}
                     >
                       <div
@@ -199,14 +212,14 @@ export function PathSelectionStep({
                             </p>
 
                             <div className="mt-2 flex flex-wrap gap-2">
-                              <span className="rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-xs text-foreground">
+                              <span className="rounded-full border border-border/70 bg-muted/60 px-2.5 py-1 text-xs text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                                 <Bot className="mr-1 inline h-3.5 w-3.5" />
                                 {path.coachAgentLabel}
                               </span>
                               {path.tags.map((tag) => (
                                 <span
                                   key={tag}
-                                  className="rounded-full border border-border/60 bg-surface-2 px-2.5 py-1 text-xs text-muted-foreground"
+                                  className="rounded-full border border-border/70 bg-muted/55 px-2.5 py-1 text-xs text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                                 >
                                   {tag}
                                 </span>
@@ -237,7 +250,10 @@ export function PathSelectionStep({
                             event.stopPropagation()
                             toggleExpanded(path.pathId)
                           }}
-                          className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                          className={cn(
+                            USER_PANEL_OUTLINE_BUTTON_CLASS,
+                            "inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground",
+                          )}
                         >
                           {isExpanded ? "收起预览" : "展开关卡"}
                           {isExpanded ? (
@@ -249,7 +265,12 @@ export function PathSelectionStep({
                       </div>
 
                       {isExpanded ? (
-                        <div className="mt-3 rounded-xl border border-border/60 bg-surface-2/70 px-4 py-3">
+                        <div
+                          className={cn(
+                            USER_PANEL_SUBTLE_SECTION_CLASS,
+                            "mt-3 rounded-xl px-4 py-3",
+                          )}
+                        >
                           <div className="space-y-0">
                             {path.preview.map((step, index) => (
                               <div key={step} className="flex gap-3">
@@ -277,7 +298,12 @@ export function PathSelectionStep({
           </div>
         </div>
 
-        <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-2 px-4 pt-3 pb-2 mt-3">
+        <div
+          className={cn(
+            USER_PANEL_SUBTLE_SECTION_CLASS,
+            "mx-auto mt-3 flex w-full max-w-3xl flex-col items-center gap-2 rounded-2xl px-4 pt-3 pb-2",
+          )}
+        >
           <Button
             onClick={onFinish}
             disabled={!canFinish || isPending}

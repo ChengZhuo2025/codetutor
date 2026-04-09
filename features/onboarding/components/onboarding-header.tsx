@@ -26,7 +26,7 @@ const stepMeta = {
 
 export function OnboardingHeader({ step }: OnboardingHeaderProps) {
   return (
-    <header className="relative z-10 border-b border-border/50 bg-surface-1/80 px-6 py-5 backdrop-blur">
+    <header className="relative z-10 border-b border-border/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(247,249,251,0.82))] px-6 py-5 shadow-[0_14px_38px_-34px_rgba(15,23,42,0.28)] backdrop-blur dark:bg-[linear-gradient(180deg,oklch(0.19_0.012_250/0.92),oklch(0.16_0.01_250/0.82))]">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
         {/* Logo - 与首页样式保持一致 */}
         <Link href={ROUTES.home} className="flex items-center gap-3 text-foreground">
@@ -49,10 +49,10 @@ export function OnboardingHeader({ step }: OnboardingHeaderProps) {
                 className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-full border text-sm font-semibold transition-all",
                   item === step
-                    ? "border-brand bg-brand text-brand-foreground"
+                    ? "border-brand/40 bg-brand text-brand-foreground shadow-[0_16px_36px_-22px_oklch(0.78_0.15_180/0.8)]"
                     : item < step
-                      ? "border-brand bg-brand-dim text-brand"
-                      : "border-border bg-surface-2 text-muted-foreground",
+                      ? "border-brand/25 bg-brand/12 text-brand"
+                      : "border-border/70 bg-surface-1 text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
                 )}
               >
                 {item}
@@ -84,7 +84,7 @@ export function OnboardingHeader({ step }: OnboardingHeaderProps) {
                 item === step
                   ? "w-7 bg-brand"
                   : item < step
-                    ? "w-3 bg-brand/50"
+                    ? "w-3 bg-brand/45"
                     : "w-3 bg-surface-4",
               )}
             />

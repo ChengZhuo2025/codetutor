@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Clock } from "lucide-react"
-import { FLOATING_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
+import {
+  FLOATING_PANEL_CLASS,
+  USER_PANEL_FIELD_CLASS,
+} from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
 
 type TimePickerProps = {
@@ -55,8 +58,9 @@ export function TimePicker({ id, value, onChange, className }: TimePickerProps) 
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className={cn(
-          "flex h-8 w-full items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 text-xs text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-colors hover:bg-white/7 focus-visible:border-brand/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/20",
-          open && "border-brand/35 bg-white/7",
+          "flex h-8 w-full items-center justify-between rounded-lg px-3 text-xs text-foreground transition-colors hover:bg-muted/65 focus-visible:border-brand/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/20 dark:hover:bg-foreground/8",
+          USER_PANEL_FIELD_CLASS,
+          open && "border-brand/35 bg-muted/65 dark:bg-foreground/8",
         )}
         aria-expanded={open}
         aria-haspopup="dialog"
@@ -66,8 +70,8 @@ export function TimePicker({ id, value, onChange, className }: TimePickerProps) 
       </button>
 
       {open ? (
-        <div className={cn(FLOATING_DARK_PANEL_CLASS, "absolute left-0 top-full z-50 mt-2 overflow-hidden rounded-2xl")}>
-          <div className="grid grid-cols-[96px_96px] divide-x divide-white/8">
+        <div className={cn(FLOATING_PANEL_CLASS, "absolute left-0 top-full z-50 mt-2 overflow-hidden rounded-2xl")}>
+          <div className="grid grid-cols-[96px_96px] divide-x divide-border/70">
             <div className="max-h-64 overflow-y-auto scrollbar-none p-2">
               {hourOptions.map((hour) => {
                 const active = hour === selectedHour
@@ -81,7 +85,7 @@ export function TimePicker({ id, value, onChange, className }: TimePickerProps) 
                       "mb-1 flex h-9 w-full items-center justify-center rounded-xl text-sm font-medium transition-colors last:mb-0",
                       active
                         ? "bg-brand text-brand-foreground"
-                        : "text-foreground/75 hover:bg-white/7 hover:text-foreground",
+                        : "text-foreground/75 hover:bg-muted/70 hover:text-foreground dark:hover:bg-foreground/8",
                     )}
                   >
                     {hour}
@@ -103,7 +107,7 @@ export function TimePicker({ id, value, onChange, className }: TimePickerProps) 
                       "mb-1 flex h-9 w-full items-center justify-center rounded-xl text-sm font-medium transition-colors last:mb-0",
                       active
                         ? "bg-brand text-brand-foreground"
-                        : "text-foreground/75 hover:bg-white/7 hover:text-foreground",
+                        : "text-foreground/75 hover:bg-muted/70 hover:text-foreground dark:hover:bg-foreground/8",
                     )}
                   >
                     {minute}

@@ -12,7 +12,12 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { DIALOG_DARK_PANEL_CLASS } from "@/components/ui/surface-styles"
+import {
+  DIALOG_PANEL_CLASS,
+  USER_PANEL_DIVIDER_CLASS,
+  USER_PANEL_OUTLINE_BUTTON_CLASS,
+  USER_PANEL_SECTION_CLASS,
+} from "@/components/ui/surface-styles"
 import { TimePicker } from "@/components/ui/time-picker"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import type { NotificationSettingsData } from "@/lib/api/contracts/notifications"
@@ -108,12 +113,12 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          DIALOG_DARK_PANEL_CLASS,
-          "max-h-[90vh] overflow-y-auto rounded-2xl ring-1 ring-white/10 sm:max-w-[480px]",
+          DIALOG_PANEL_CLASS,
+          "max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-[480px]",
         )}
       >
         <div className="overflow-hidden rounded-2xl">
-          <div className="border-b border-white/10 px-5 py-4">
+          <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold">通知设置</DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
@@ -124,7 +129,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
 
           <div className="space-y-1 px-5 py-4">
             {isLoading ? (
-              <div className="flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-10 text-sm text-muted-foreground">
+              <div className={cn("flex items-center justify-center px-4 py-10 text-sm text-muted-foreground", USER_PANEL_SECTION_CLASS)}>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 正在加载通知设置
               </div>
@@ -132,7 +137,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
 
             {!isLoading ? (
               <>
-                <div className="rounded-xl border border-white/10 bg-background/80 p-4">
+                <div className={cn("p-4", USER_PANEL_SECTION_CLASS)}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-brand/20 bg-brand/10 text-brand">
@@ -146,7 +151,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                     <Switch
                       checked={settings.checkinReminder}
                       onCheckedChange={(checked) => updateSetting("checkinReminder", checked)}
-                      className="data-[state=unchecked]:bg-surface-4 data-[state=unchecked]:ring-1 data-[state=unchecked]:ring-white/20"
+                      className="data-[state=unchecked]:bg-surface-4 data-[state=unchecked]:border-border/80"
                     />
                   </div>
 
@@ -165,7 +170,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                   )}
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-background/80 p-4">
+                <div className={cn("p-4", USER_PANEL_SECTION_CLASS)}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-chart-3/20 bg-chart-3/10 text-chart-3">
@@ -179,12 +184,12 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                     <Switch
                       checked={settings.progressPush}
                       onCheckedChange={(checked) => updateSetting("progressPush", checked)}
-                      className="data-[state=unchecked]:bg-surface-4 data-[state=unchecked]:ring-1 data-[state=unchecked]:ring-white/20"
+                      className="data-[state=unchecked]:bg-surface-4 data-[state=unchecked]:border-border/80"
                     />
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-background/80 p-4">
+                <div className={cn("p-4", USER_PANEL_SECTION_CLASS)}>
                   <p className="mb-3 text-sm font-medium text-foreground">提醒方式</p>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -195,7 +200,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                       <Switch
                         checked={settings.remindMethods.app}
                         onCheckedChange={(checked) => updateRemindMethod("app", checked)}
-                        className="data-[state=unchecked]:bg-surface-4 data-[state=unchecked]:ring-1 data-[state=unchecked]:ring-white/20"
+                        className="data-[state=unchecked]:bg-surface-4 data-[state=unchecked]:border-border/80"
                       />
                     </div>
 
@@ -207,7 +212,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                       <Switch
                         checked={settings.remindMethods.email}
                         onCheckedChange={(checked) => updateRemindMethod("email", checked)}
-                        className="data-[state=unchecked]:bg-surface-4 data-[state=unchecked]:ring-1 data-[state=unchecked]:ring-white/20"
+                        className="data-[state=unchecked]:bg-surface-4 data-[state=unchecked]:border-border/80"
                       />
                     </div>
 
@@ -219,7 +224,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                       <Switch
                         checked={settings.remindMethods.wechat}
                         onCheckedChange={(checked) => updateRemindMethod("wechat", checked)}
-                        className="data-[state=unchecked]:bg-surface-4 data-[state=unchecked]:ring-1 data-[state=unchecked]:ring-white/20"
+                        className="data-[state=unchecked]:bg-surface-4 data-[state=unchecked]:border-border/80"
                       />
                     </div>
                   </div>
@@ -228,7 +233,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                   当前只有站内提醒已接入真实发送；邮件和微信通知会保存你的偏好，但暂不会实际下发。
                 </p>
 
-                <div className="rounded-xl border border-white/10 bg-background/80 p-4">
+                <div className={cn("p-4", USER_PANEL_SECTION_CLASS)}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-gold/20 bg-gold/10 text-gold">
@@ -242,7 +247,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                     <Switch
                       checked={settings.doNotDisturb}
                       onCheckedChange={(checked) => updateSetting("doNotDisturb", checked)}
-                      className="data-[state=unchecked]:bg-surface-4 data-[state=unchecked]:ring-1 data-[state=unchecked]:ring-white/20"
+                      className="data-[state=unchecked]:bg-surface-4 data-[state=unchecked]:border-border/80"
                     />
                   </div>
 
@@ -267,12 +272,12 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
             ) : null}
           </div>
 
-          <div className="flex w-full flex-row items-stretch gap-3 border-t border-white/10 px-5 py-4">
+          <div className={cn("flex w-full flex-row items-stretch gap-3 border-t px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
             <Button
               variant="outline"
               size="lg"
               onClick={() => onOpenChange(false)}
-              className="min-w-0 flex-1 rounded-[10px] border-white/10 bg-transparent text-foreground hover:bg-white/5 hover:text-white"
+              className={cn("min-w-0 flex-1 rounded-[10px]", USER_PANEL_OUTLINE_BUTTON_CLASS)}
             >
               取消
             </Button>
