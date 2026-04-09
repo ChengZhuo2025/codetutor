@@ -1619,7 +1619,7 @@ export function LearnChat({
               <Button
                 type="button"
                 variant="outline"
-                className={cn("rounded-[10px]", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+                className={USER_PANEL_OUTLINE_BUTTON_CLASS}
                 disabled={linkChoiceLinks.length !== 1}
                 onClick={() => {
                   setLinkChoiceOpen(false)
@@ -1630,7 +1630,6 @@ export function LearnChat({
               </Button>
               <Button
                 type="button"
-                className="rounded-[10px]"
                 onClick={async () => {
                   setLinkChoiceOpen(false)
                   await dispatchDraft({ text: input.trim(), attachment: null })
@@ -1731,7 +1730,7 @@ export function LearnChat({
           ) : null}
 
           {resume ? (
-            <div className="rounded-[1.6rem] border border-brand/15 bg-surface-2/95 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.16)]">
+            <div className="rounded-[1.6rem] border border-brand/15 bg-surface-2/95 p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand/80">
@@ -1753,7 +1752,7 @@ export function LearnChat({
           ) : null}
 
           {mission ? (
-            <div className="rounded-[1.9rem] border border-border bg-surface-2/95 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
+            <div className="rounded-[1.9rem] border border-border bg-surface-2/95 p-5">
               <div className="flex flex-col gap-5">
                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/65">
                   <Target className="h-3.5 w-3.5 text-brand" />
@@ -1870,7 +1869,7 @@ export function LearnChat({
 
                     <div
                       className={cn(
-                        "rounded-3xl px-4 py-3.5 text-sm leading-relaxed shadow-[0_10px_40px_rgba(0,0,0,0.08)]",
+                        "rounded-3xl px-4 py-3.5 text-sm leading-relaxed",
                         isUser ? "rounded-tr-md" : "rounded-tl-md",
                         meta.bubbleClass,
                       )}
@@ -1958,7 +1957,7 @@ export function LearnChat({
                       return (
                         <div
                           className={cn(
-                            "rounded-2xl border px-3.5 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.06)]",
+                            "rounded-2xl border px-3.5 py-3",
                             taskPatchMeta.panelClass,
                           )}
                         >
@@ -2148,7 +2147,7 @@ export function LearnChat({
             </div>
           ) : null}
 
-          <div className="rounded-4xl border border-border bg-surface-2 px-2.5 py-2 transition-colors focus-within:border-brand/60 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.10)]">
+          <div className="rounded-4xl border border-border bg-surface-2 px-2.5 py-2 transition-colors focus-within:border-brand/60">
             <div
               className={cn(
                 "flex",

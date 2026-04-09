@@ -75,7 +75,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                 <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   完成标准
                 </p>
-                <p className="mt-2 text-sm leading-6 text-foreground">
+                <p className="mt-2 text-sm leading-5 text-foreground">
                   {rightPanel.completionCriteria}
                 </p>
               </div>
@@ -84,7 +84,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                   <span>本关进度</span>
                   <span>{mission.progressLabel}</span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-surface-4">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-black/6 dark:bg-white/10">
                   <div
                     className="h-full rounded-full bg-brand transition-all"
                     style={{ width: `${mission.progressPercent}%` }}
@@ -115,10 +115,10 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
             <div className="space-y-2.5">
               {rightPanel.masteryPoints.map((point, index) => (
                 <div key={point} className={cn(WORKSPACE_ASIDE_INSET_CARD_CLASS, "flex gap-2")}>
-                  <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand/18 text-xs font-semibold text-brand">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand/18 text-xs font-semibold text-brand">
                     {index + 1}
                   </div>
-                  <p className="text-sm leading-6 text-foreground/85">{point}</p>
+                  <p className="text-sm leading-5 text-foreground/85">{point}</p>
                 </div>
               ))}
             </div>
@@ -145,7 +145,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                         卡点提醒
                       </span>
                     ) : null}
-                    <p className="text-sm leading-6 text-foreground/82">{caution.text}</p>
+                    <p className="text-sm leading-5 text-foreground/82">{caution.text}</p>
                   </div>
                 </div>
               ))}
@@ -169,7 +169,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                     <p className="mt-3 text-base font-semibold leading-7 text-foreground">
                       {activeTip.title}
                     </p>
-                    <p className="mt-2 text-sm leading-6 text-foreground/78">{activeTip.body}</p>
+                    <p className="mt-2 text-sm leading-5 text-foreground/78">{activeTip.body}</p>
                   </div>
                 </div>
 
@@ -301,7 +301,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                 </p>
               </div>
             </div>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            <p className="mt-2 text-sm leading-5 text-muted-foreground">
               {rightPanel.nextStepPreview}
             </p>
           </div>

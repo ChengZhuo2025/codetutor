@@ -136,7 +136,7 @@ export function SubscriptionDetailDialog({
                     <div className="mt-4">
                       {isCurrent ? (
                         // 当前套餐：续费按钮
-                        <Button asChild className={cn("w-full rounded-xl px-4 py-2.5 text-sm font-semibold", USER_BUTTON_PRIMARY_CLASS)}>
+                        <Button asChild className={cn("w-full px-4 py-2.5 text-sm font-semibold", USER_BUTTON_PRIMARY_CLASS)}>
                           <Link href="/login">立即续费</Link>
                         </Button>
                       ) : isDowngrade ? (
@@ -144,7 +144,7 @@ export function SubscriptionDetailDialog({
                         <button
                           disabled
                           className={cn(
-                            "flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium",
+                            "flex w-full items-center justify-center px-4 py-2.5 text-sm font-medium",
                             USER_PANEL_OUTLINE_BUTTON_CLASS,
                           )}
                         >
@@ -155,7 +155,7 @@ export function SubscriptionDetailDialog({
                         <Button
                           asChild
                           className={cn(
-                            "w-full rounded-xl px-4 py-2.5 text-sm font-semibold",
+                            "w-full px-4 py-2.5 text-sm font-semibold",
                             plan.highlight ? USER_BUTTON_PRIMARY_CLASS : USER_PANEL_OUTLINE_BUTTON_CLASS,
                           )}
                         >

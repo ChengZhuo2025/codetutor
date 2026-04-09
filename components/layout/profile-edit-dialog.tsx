@@ -471,11 +471,11 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
               size="lg"
               onClick={() => onOpenChange(false)}
               disabled={isSaving}
-              className={cn("flex-1 rounded-[10px]", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+              className={cn("flex-1", USER_PANEL_OUTLINE_BUTTON_CLASS)}
             >
               取消
             </Button>
-            <Button size="lg" onClick={handleSave} disabled={isBusy} className="flex-1 rounded-[10px]">
+            <Button size="lg" onClick={handleSave} disabled={isBusy} className="flex-1">
               {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

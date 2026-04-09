@@ -201,7 +201,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                             type="button"
                             variant="outline"
                             size="sm"
-                            className={cn("h-8 rounded-xl px-3 text-xs", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+                            className={cn("h-8 px-3 text-xs", USER_PANEL_OUTLINE_BUTTON_CLASS)}
                             onClick={() => handleCopy(copyKey, channel.handle)}
                           >
                             {isCopied ? <Check className="h-2 w-2" /> : <Copy className="h-2 w-2" />}

@@ -119,7 +119,7 @@ export function NotificationDetailDialog({
             <Button
               variant="default"
               onClick={handlePrimaryAction}
-              className="min-w-0 flex-1 gap-2 rounded-[10px]"
+              className="min-w-0 flex-1 gap-2"
             >
               <ExternalLink className="h-4 w-4 shrink-0" />
               {notification.actionLabel}
@@ -131,7 +131,7 @@ export function NotificationDetailDialog({
             onClick={handleDismiss}
             disabled={dismissing}
             className={cn(
-              "min-w-0 gap-2 rounded-[10px]",
+              "min-w-0 gap-2",
               USER_PANEL_OUTLINE_BUTTON_CLASS,
               notification.actionHref && notification.actionLabel ? "flex-1" : "w-full",
             )}

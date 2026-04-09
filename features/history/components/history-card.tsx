@@ -84,7 +84,7 @@ export function HistoryCard({
             onClick={() => onManageAction(item, "abandon")}
             disabled={isMutating}
             variant="outline"
-            className={cn("rounded-xl", USER_BUTTON_DANGER_CLASS)}
+            className={USER_BUTTON_DANGER_CLASS}
           >
             放弃本轮练习
           </Button>
@@ -92,7 +92,7 @@ export function HistoryCard({
             size="sm"
             onClick={() => onContinue(item)}
             disabled={isMutating}
-            className={cn("gap-1.5 rounded-xl px-4", USER_BUTTON_PRIMARY_CLASS)}
+            className={cn("gap-1.5 px-4", USER_BUTTON_PRIMARY_CLASS)}
           >
             <Play className="h-4 w-4" />
             继续学习
@@ -110,7 +110,7 @@ export function HistoryCard({
             onClick={() => onManageAction(item, "archive")}
             disabled={isMutating}
             variant="outline"
-            className={cn("rounded-xl", USER_BUTTON_DANGER_CLASS)}
+            className={USER_BUTTON_DANGER_CLASS}
           >
             <Trash2 className="h-4 w-4" />
             删除记录
@@ -119,7 +119,7 @@ export function HistoryCard({
             size="sm"
             onClick={() => onManageAction(item, "reactivate")}
             disabled={isMutating}
-            className={cn("gap-1.5 rounded-xl px-4", USER_BUTTON_PRIMARY_CLASS)}
+            className={cn("gap-1.5 px-4", USER_BUTTON_PRIMARY_CLASS)}
           >
             <RefreshCw className="h-4 w-4" />
             重新激活
@@ -137,7 +137,7 @@ export function HistoryCard({
             onClick={() => onManageAction(item, "archive")}
             disabled={isMutating}
             variant="outline"
-            className={cn("rounded-xl", USER_BUTTON_DANGER_CLASS)}
+            className={USER_BUTTON_DANGER_CLASS}
           >
             <Trash2 className="h-4 w-4" />
             删除记录
@@ -146,7 +146,7 @@ export function HistoryCard({
             size="sm"
             onClick={() => onReview(item)}
             disabled={isMutating}
-            className={cn("gap-1.5 rounded-xl px-4", USER_BUTTON_PRIMARY_CLASS)}
+            className={cn("gap-1.5 px-4", USER_BUTTON_PRIMARY_CLASS)}
           >
             <BookOpen className="h-4 w-4" />
             学习复盘
@@ -162,7 +162,7 @@ export function HistoryCard({
         onClick={() => onManageAction(item, "archive")}
         disabled={isMutating}
         variant="outline"
-        className={cn("rounded-xl", USER_BUTTON_DANGER_CLASS)}
+        className={USER_BUTTON_DANGER_CLASS}
       >
         <Trash2 className="h-4 w-4" />
         删除记录

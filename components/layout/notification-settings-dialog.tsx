@@ -277,7 +277,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
               variant="outline"
               size="lg"
               onClick={() => onOpenChange(false)}
-              className={cn("min-w-0 flex-1 rounded-[10px]", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+              className={cn("min-w-0 flex-1", USER_PANEL_OUTLINE_BUTTON_CLASS)}
             >
               取消
             </Button>
@@ -285,7 +285,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
               size="lg"
               onClick={handleSave}
               disabled={isLoading || isSaving}
-              className="min-w-0 flex-1 rounded-[10px]"
+              className="min-w-0 flex-1"
             >
               {isSaving ? (
                 <>

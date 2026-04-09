@@ -82,7 +82,7 @@ export function HistoryList({
             size="lg"
             onClick={onLoadMore}
             disabled={isLoadingMore}
-            className={cn("min-w-[200px] rounded-2xl", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+            className={cn("min-w-[200px]", USER_PANEL_OUTLINE_BUTTON_CLASS)}
           >
             {isLoadingMore ? (
               <>

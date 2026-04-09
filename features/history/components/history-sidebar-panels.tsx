@@ -87,7 +87,7 @@ export function HistorySidebarPanels({ faqItems }: HistorySidebarPanelsProps) {
             variant="outline"
             size="lg"
             onClick={() => setFeedbackOpen(true)}
-            className={cn("w-full gap-2 rounded-xl", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+            className={cn("w-full gap-2", USER_PANEL_OUTLINE_BUTTON_CLASS)}
           >
             <MessageSquare className="h-4 w-4" />
             建议反馈

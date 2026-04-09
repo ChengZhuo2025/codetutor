@@ -82,7 +82,7 @@ export function ProgressOverview({
                     <span>当前路径进度</span>
                     <span>{progressPercent}% 已完成</span>
                   </div>
-                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-3 dark:bg-white/10">
+                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-black/6 dark:bg-white/10">
                     <div
                       className="h-full rounded-full bg-brand transition-all duration-700"
                       style={{ width: `${progressPercent}%` }}
@@ -206,7 +206,7 @@ export function ProgressOverview({
               <span>距离下一段位</span>
               <span>{summary.totalXP} / {summary.totalXP + summary.remainingXPToNextRank} XP</span>
             </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-3 dark:bg-white/10">
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/6 dark:bg-white/10">
               <div
                 className="h-full rounded-full bg-brand transition-all group-hover:bg-brand/90"
                 style={{ width: `${Math.max(rankProgressPercent, 14)}%` }}

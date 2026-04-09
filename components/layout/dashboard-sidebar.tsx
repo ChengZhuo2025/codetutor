@@ -264,7 +264,7 @@ export function DashboardSidebar({
                 </span>
                 <span className="text-muted-foreground">{progressPercent}%</span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-4">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/6 dark:bg-white/10">
                 <div
                   className="h-full rounded-full bg-brand"
                   style={{ width: `${progressPercent}%` }}

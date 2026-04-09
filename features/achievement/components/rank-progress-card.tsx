@@ -136,7 +136,7 @@ export function RankProgressCard({
                         ? "border-brand bg-brand text-brand-foreground shadow-[0_0_0_6px_rgba(79,209,197,0.14)]"
                         : isCompleted
                           ? "border-brand/35 bg-brand/15 text-brand"
-                          : "border-border/70 bg-surface-1/95 text-muted-foreground/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.66)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
+                          : "border-border/70 bg-surface-3 text-muted-foreground/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.66)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
                     )}
                   >
                     {isCompleted ? <Check className="h-4 w-4" /> : index + 1}

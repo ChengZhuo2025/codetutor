@@ -108,7 +108,7 @@ export function StatePanel({
             type="button"
             variant={status === "error" ? "destructive" : "outline"}
             onClick={onAction}
-            className={cn("rounded-2xl", actionButtonClassName)}
+            className={actionButtonClassName}
           >
             {actionLabel}
           </Button>

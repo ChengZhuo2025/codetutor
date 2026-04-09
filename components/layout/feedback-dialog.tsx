@@ -443,7 +443,7 @@ export function FeedbackDialog({
                   variant="outline"
                   size="lg"
                   onClick={() => handleOpenChange(false)}
-                  className={cn("flex-1 rounded-[10px]", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+                  className={cn("flex-1", USER_PANEL_OUTLINE_BUTTON_CLASS)}
                 >
                   取消
                 </Button>
@@ -451,7 +451,7 @@ export function FeedbackDialog({
                   size="lg"
                   onClick={handleSubmit}
                   disabled={!isValid || isSubmitting}
-                  className="flex-1 rounded-[10px]"
+                  className="flex-1"
                 >
                   {isSubmitting ? (
                     <>
@@ -477,7 +477,7 @@ export function FeedbackDialog({
                     variant="outline"
                     size="icon"
                     onClick={() => void loadMyFeedbackList()}
-                    className={cn("h-9 w-9 rounded-xl", USER_ICON_BUTTON_CLASS)}
+                    className={cn("h-9 w-9", USER_ICON_BUTTON_CLASS)}
                   >
                     <RefreshCw className="h-4 w-4" />
                   </Button>

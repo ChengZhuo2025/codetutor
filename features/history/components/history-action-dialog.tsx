@@ -81,7 +81,6 @@ export function HistoryActionDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isPending}
-            className="rounded-xl"
           >
             取消
           </Button>
@@ -90,7 +89,6 @@ export function HistoryActionDialog({
             variant={copy.confirmVariant}
             onClick={onConfirm}
             disabled={isPending}
-            className="rounded-xl"
           >
             {isPending ? "处理中..." : copy.confirmLabel}
           </Button>

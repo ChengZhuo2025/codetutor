@@ -101,7 +101,7 @@ export function SettingsPopover({ onProfileSaved, className }: SettingsPopoverPr
         <button
           onClick={() => setOpen((o) => !o)}
           className={cn(
-            "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors",
+            "flex w-full items-center gap-2.5 rounded-full px-3 py-2 text-sm transition-colors",
             open
               ? "bg-surface-3 text-foreground"
               : "text-muted-foreground hover:bg-surface-3 hover:text-foreground",
