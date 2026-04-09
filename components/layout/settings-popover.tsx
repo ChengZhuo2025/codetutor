@@ -26,8 +26,8 @@ const settingsItems: Array<{
   {
     group: "账户",
     items: [
-      { icon: User, label: "个人资料", desc: "修改头像、用户名", dialog: "profile" },
-      { icon: Bell, label: "通知设置", desc: "打卡提醒、进度推送", dialog: "notification" },
+      { icon: User, label: "个人资料", desc: "修改头像/昵称", dialog: "profile" },
+      { icon: Bell, label: "通知设置", desc: "打卡提醒/进度推送", dialog: "notification" },
     ],
   },
   {
@@ -36,7 +36,7 @@ const settingsItems: Array<{
       {
         icon: MessageSquareMore,
         label: "建议反馈",
-        desc: "前端设计、交互体验、功能与 Bug 反馈",
+        desc: "欢迎提供建议/反馈",
         dialog: "feedback",
       },
     ],
@@ -111,7 +111,7 @@ export function SettingsPopover({ onProfileSaved, className }: SettingsPopoverPr
           <div
             className={cn(
               FLOATING_DARK_PANEL_CLASS,
-              "absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-[20px]",
+              "min-w-64 absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-[20px]",
             )}
           >
             <div className="flex items-center justify-between border-b border-border px-4 py-3 dark:border-white/10">
@@ -143,13 +143,13 @@ export function SettingsPopover({ onProfileSaved, className }: SettingsPopoverPr
                         className={cn(
                           "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/90 dark:hover:bg-white/6",
                           isDanger
-                            ? "text-rose-600 hover:bg-rose-500/12 dark:text-rose-300 dark:hover:bg-rose-400/8"
+                            ? "text-rose-600 hover:bg-rose-300/15 dark:text-rose-300 dark:hover:bg-rose-400/8"
                             : "text-foreground/88",
                         )}
                       >
                         <div
                           className={cn(
-                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border",
+                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
                             isDanger
                               ? "border-rose-500/25 bg-rose-500/10 text-rose-600 dark:border-rose-300/15 dark:bg-rose-300/10 dark:text-rose-400"
                               : "border-border bg-muted/60 text-muted-foreground dark:border-white/10 dark:bg-white/6 dark:text-foreground/78",
@@ -170,7 +170,7 @@ export function SettingsPopover({ onProfileSaved, className }: SettingsPopoverPr
                           </p>
                           <p
                             className={cn(
-                              "text-[12px] mt-1",
+                              "text-[12px] line-clamp-1",
                               isDanger
                                 ? "text-rose-600/80 dark:text-rose-300/60"
                                 : "text-foreground/48",
