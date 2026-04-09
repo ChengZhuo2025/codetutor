@@ -164,6 +164,7 @@ export function DashboardSidebar({
   const resolvedProfile = displayProfile ?? fallbackProfile;
   const subscription = SUBSCRIPTION_PLACEHOLDER;
   const rankTierProgress = getRankTierProgressForScore(resolvedProfile.currentScore);
+  const progressPercent = rankTierProgress.percent;
   const visibleRecentPlans = recentLearningPlans.slice(0, 5);
 
   const historyStatusLabel = (status: string) => {
@@ -259,14 +260,12 @@ export function DashboardSidebar({
                   {rankTierProgress.xpInCurrentTier} / {rankTierProgress.tierSpanXp}{" "}
                   XP
                 </span>
-                <span className="text-muted-foreground">
-                  {rankTierProgress.percent}%
-                </span>
+                <span className="text-muted-foreground">{progressPercent}%</span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-4">
                 <div
                   className="h-full rounded-full bg-brand"
-                  style={{ width: `${rankTierProgress.percent}%` }}
+                  style={{ width: `${progressPercent}%` }}
                 />
               </div>
 
