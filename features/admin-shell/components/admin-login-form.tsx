@@ -3,9 +3,19 @@
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Shield } from "lucide-react"
+import {
+  CheckCircle2,
+  Code2,
+  Lock,
+  Mail,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react"
+import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { StatePanel } from "@/components/ui/state-panel"
+import { APP_NAME } from "@/constants/app"
 import { ADMIN_ROUTES, ROUTES } from "@/constants/routes"
 
 export function AdminLoginForm() {
@@ -61,75 +71,174 @@ export function AdminLoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center mx-auto mb-4">
-            <Shield className="h-6 w-6 text-primary-foreground" aria-hidden="true" />
+    <div className="relative min-h-screen overflow-hidden bg-background">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-70 dark:opacity-100"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, oklch(0.55 0.018 240 / 0.12) 1px, transparent 1px),
+            linear-gradient(to bottom, oklch(0.55 0.018 240 / 0.12) 1px, transparent 1px)
+          `,
+          backgroundSize: "48px 48px",
+        }}
+      />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.08_240/0.12),transparent_30%),radial-gradient(circle_at_top_right,oklch(0.62_0.12_210/0.14),transparent_28%),radial-gradient(circle_at_bottom_left,oklch(0.78_0.15_180/0.12),transparent_30%)] dark:bg-[radial-gradient(circle_at_top_left,oklch(0.28_0.03_240/0.72),transparent_32%),radial-gradient(circle_at_top_right,oklch(0.72_0.13_210/0.14),transparent_28%),radial-gradient(circle_at_bottom_left,oklch(0.74_0.12_180/0.14),transparent_30%)]" />
+
+      <header className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
+        <Link
+          href={ROUTES.home}
+          className="group inline-flex items-center gap-3 rounded-full border border-border/70 bg-card/85 px-3.5 py-2 shadow-[0_18px_42px_-30px_rgba(15,23,42,0.28)] backdrop-blur-xl transition-colors hover:border-border hover:bg-card"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.78_0.15_180/0.72)]">
+            <Code2 className="h-[18px] w-[18px]" />
           </div>
-          <h1 className="text-2xl font-semibold text-foreground">CodeTutor管理后台</h1>
-          <p className="text-sm text-muted-foreground mt-2">AI编程学习教练运营管理系统</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="bg-card border border-border rounded-lg p-6 space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-              邮箱
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@example.com"
-              disabled={isLoading}
-              className="w-full px-3 py-2 text-sm rounded-md bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              required
-            />
+          <div className="leading-[1.02]">
+            <span className="block text-[1.06rem] font-extrabold tracking-tight text-foreground">
+              {APP_NAME}
+            </span>
+            <span className="mt-1 block text-[11px] text-muted-foreground">
+              AI 编程学习教练
+            </span>
           </div>
+        </Link>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
-              密码
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="请输入密码"
-              disabled={isLoading}
-              className="w-full px-3 py-2 text-sm rounded-md bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              required
-            />
+        <ThemeToggle className="rounded-full border border-border/70 bg-card/90 shadow-sm backdrop-blur-xl" />
+      </header>
+
+      <div className="relative z-10 flex min-h-screen flex-col lg:flex-row">
+        <section className="relative flex w-full flex-col justify-center overflow-hidden px-6 pb-8 pt-14 sm:px-8 lg:min-h-screen lg:w-[54%] lg:px-9 lg:pb-8 lg:pt-14 xl:px-12">
+          <div className="max-w-2xl pl-20">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary dark:border-primary/35 dark:bg-primary/18">
+              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+              管理后台登录入口
+            </div>
+
+            <div className="mt-4">
+              <p className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground/90">
+                Admin control center
+              </p>
+              <h1 className="mt-3 text-[2.6rem] font-semibold tracking-tight text-foreground leading-[1.02] lg:text-[2.9rem] xl:text-[3.15rem]">
+                统一进入后台工作台
+              </h1>
+              <p className="mt-2 text-md leading-6 text-muted-foreground sm:text-[15px]">
+                面向管理员与 IT 运营人员的统一入口，用于处理用户、学习路径、AI 配置与系统治理。
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-2.5 sm:grid-cols-3">
+              <div className="rounded-2xl border border-border/70 bg-card px-3.5 py-3 shadow-[0_20px_48px_-40px_rgba(15,23,42,0.28)] backdrop-blur-xl">
+                <p className="text-md font-semibold text-foreground">用户</p>
+                <p className="mt-1 text-sm leading-5 text-muted-foreground">用户管理与支持处理</p>
+              </div>
+              <div className="rounded-2xl border border-border/70 bg-card px-3.5 py-3 shadow-[0_20px_48px_-40px_rgba(15,23,42,0.28)] backdrop-blur-xl">
+                <p className="text-md font-semibold text-foreground">学习</p>
+                <p className="mt-1 text-sm leading-5 text-muted-foreground">学习路径与内容运营</p>
+              </div>
+              <div className="rounded-2xl border border-border/70 bg-card px-3.5 py-3 shadow-[0_20px_48px_-40px_rgba(15,23,42,0.28)] backdrop-blur-xl">
+                <p className="text-md font-semibold text-foreground">AI / 系统</p>
+                <p className="mt-1 text-sm leading-5 text-muted-foreground">模型配置与系统治理</p>
+              </div>
+            </div>
+
+            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-brand/30 px-3 py-1.5 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-brand" aria-hidden="true" />
+              登录后将进入后台首页
+            </div>
           </div>
+        </section>
 
-          {error && (
-            <StatePanel
-              status="error"
-              title="登录失败"
-              description={error}
-              compact
-            />
-          )}
+        <section className="relative flex w-full items-center justify-center px-6 pb-10 pt-3 sm:px-8 lg:min-h-screen lg:w-[46%] lg:px-9 lg:pb-8 lg:pt-20">
+          <div className="w-full max-w-sm lg:max-w-md">
+            <div className="rounded-[30px] border border-border/70 bg-card/88 p-5 shadow-[0_30px_100px_-44px_rgba(15,23,42,0.4)] backdrop-blur-2xl sm:p-6 lg:p-7">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_20px_48px_-24px_rgba(8,145,178,0.46)]">
+                  <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                    Secure admin sign in
+                  </p>
+                  <h2 className="mt-1 text-[1.65rem] font-bold text-foreground">欢迎登录管理后台</h2>
+                </div>
+              </div>
 
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="w-full"
-          >
-            {isLoading ? "登录中..." : "登录"}
-          </Button>
-        </form>
+              <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="email" className="block text-sm font-medium text-foreground">
+                    邮箱
+                  </label>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="admin@example.com"
+                      disabled={isLoading}
+                      className="h-11 rounded-2xl border-border/75 bg-background/82 pl-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
+                      autoComplete="email"
+                      required
+                    />
+                  </div>
+                </div>
 
-        <div className="mt-6 text-center">
-          <Link
-            href={ROUTES.home}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            返回用户端首页
-          </Link>
-        </div>
+                <div className="space-y-1.5">
+                  <label htmlFor="password" className="block text-sm font-medium text-foreground">
+                    密码
+                  </label>
+                  <div className="relative">
+                    <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="请输入密码"
+                      disabled={isLoading}
+                      className="h-11 rounded-2xl border-border/75 bg-background/82 pl-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
+                      autoComplete="current-password"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <div role="alert" aria-live="assertive">
+                    <StatePanel
+                      status="error"
+                      title="登录失败"
+                      description={error}
+                      compact
+                    />
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="h-11 w-full font-medium shadow-lg shadow-primary/25 transition-all duration-200"
+                >
+                  {isLoading ? "登录中..." : "登录后台"}
+                </Button>
+              </form>
+
+              <div className="mt-4 rounded-[22px] border border-border/70 bg-background/72 px-4 py-2.5 text-sm text-muted-foreground">
+                仅限具备后台权限的管理员账户访问
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-3.5">
+                <Link
+                  href={ROUTES.home}
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  智酷数能科技有限公司
+                </Link>
+                <span className="text-xs text-muted-foreground">Chrome / Edge</span>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   )

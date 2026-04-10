@@ -18,7 +18,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
   }
 
   return (
-    <div className="relative hidden w-[65%] flex-col overflow-hidden bg-surface-2 px-9 pt-9 pb-12 lg:flex">
+    <div className="relative hidden w-[60%] flex-col overflow-hidden bg-surface-2 px-7 pt-6 pb-20 lg:flex">
       <div
         className="pointer-events-none absolute inset-0 dark:hidden"
         style={{
@@ -60,7 +60,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
       </div>
 
       {/* 欢迎语 - 根据登录/注册模式切换，比 logo 栏更缩进形成层次 */}
-      <div className="relative z-10 mt-10 px-12">
+      <div className="relative z-10 mt-16 px-12">
         <div className="mb-4 flex flex-wrap gap-2">
           {previewTools.map((tool) => (
             <span
@@ -74,7 +74,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
 
         {mode === "login" ? (
           <>
-            <h1 className="text-3xl font-semibold leading-tight tracking-tight text-balance">
+            <h1 className="text-3xl font-bold leading-tight tracking-tight text-balance">
               不只是登录 
               <span className="text-brand"> 是直接回到今天要完成的第一步</span>
             </h1>
@@ -84,7 +84,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
           </>
         ) : (
           <>
-            <h1 className="text-3xl font-semibold leading-tight tracking-tight text-balance">
+            <h1 className="text-3xl font-bold leading-tight tracking-tight text-balance">
               从零开始也没关系
               <span className="text-brand"> AI 教练会陪你走完每一步</span>
             </h1>
@@ -173,25 +173,6 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
               )),
             )}
           </div>
-        </div>
-      </div>
-
-      {/* 底部信息栏 */}
-      <div className="relative z-10 mx-12 mt-5 flex items-center justify-between rounded-2xl border border-border/70 bg-surface-1 px-6 py-3 dark:border-border/70 dark:bg-[oklch(0.15_0.012_240/0.48)]">
-        <div className="flex items-center gap-4">
-          <div>
-            <p className="text-[11px] text-muted-foreground">当前段位</p>
-            <p className="text-sm font-semibold text-brand">{profile.currentRank}</p>
-          </div>
-          <div className="h-8 w-px bg-border/40" />
-          <div>
-            <p className="text-[11px] text-muted-foreground">累计学分</p>
-            <p className="text-sm font-semibold text-gold">{profile.currentScore} XP</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Sparkles className="h-3.5 w-3.5 text-brand" />
-          <span>AI 陪你真正学会</span>
         </div>
       </div>
     </div>
