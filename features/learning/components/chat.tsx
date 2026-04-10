@@ -1663,7 +1663,7 @@ export function LearnChat({
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-border/80 bg-surface-1/80 px-4 py-4 backdrop-blur-sm sm:px-6">
-        <div className="relative xl:pr-[15rem]">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <div className="flex flex-wrap items-center gap-2">
@@ -1709,7 +1709,7 @@ export function LearnChat({
             </div>
           </div>
 
-          <div className="lg:mt-0 xl:absolute xl:top-5 xl:right-8">
+          <div className="shrink-0 sm:pt-0.5">
             <button
               type="button"
               className={cn(

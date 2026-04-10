@@ -309,6 +309,19 @@ export function DashboardSidebar({
             </div>
           </SidebarRailAction>
 
+          {showSettings ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="mt-3">
+                  <ThemeToggle className="h-11 w-11 rounded-2xl text-muted-foreground hover:text-foreground" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={12}>
+                切换主题
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
+
           <div className="mt-5 flex flex-col items-center gap-3">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -376,25 +389,11 @@ export function DashboardSidebar({
 
           <div className="mt-auto flex flex-col items-center gap-2">
             {showSettings ? (
-              <>
-                <SettingsPopover
-                  iconOnly
-                  className="h-11 w-11"
-                  onProfileSaved={handleProfileSaved}
-                />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <ThemeToggle
-                        className="h-11 w-11 rounded-2xl text-muted-foreground hover:text-foreground"
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" sideOffset={12}>
-                    切换主题
-                  </TooltipContent>
-                </Tooltip>
-              </>
+              <SettingsPopover
+                iconOnly
+                className="h-11 w-11"
+                onProfileSaved={handleProfileSaved}
+              />
             ) : null}
 
             {onToggleCollapsed ? (
@@ -441,25 +440,8 @@ export function DashboardSidebar({
             <span className="truncate font-semibold">{APP_NAME}</span>
           </div>
 
-          {onToggleCollapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={onToggleCollapsed}
-                  aria-label="收起侧栏"
-                  title="收起侧栏"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <PanelLeftClose className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={12}>
-                收起侧栏
-              </TooltipContent>
-            </Tooltip>
+          {showSettings ? (
+            <ThemeToggle className="text-muted-foreground hover:text-foreground" />
           ) : null}
         </div>
 
@@ -505,7 +487,7 @@ export function DashboardSidebar({
 
               <Link
                 href={ROUTES.achievements}
-                className="block rounded-xl transition-colors hover:bg-background/40 -mx-1 px-1 py-1"
+                className="block rounded-xl transition-colors -mx-1 px-1 py-1"
               >
                 <div className="mb-2 flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">
@@ -773,7 +755,47 @@ export function DashboardSidebar({
               className="min-w-0 flex-1"
               onProfileSaved={handleProfileSaved}
             />
-            <ThemeToggle />
+            {onToggleCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={onToggleCollapsed}
+                    aria-label="收起侧栏"
+                    title="收起侧栏"
+                    className="shrink-0 text-muted-foreground hover:text-foreground"
+                  >
+                    <PanelLeftClose className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={12}>
+                  收起侧栏
+                </TooltipContent>
+              </Tooltip>
+            ) : null}
+          </div>
+        ) : onToggleCollapsed ? (
+          <div className="flex shrink-0 justify-end border-t border-border/50 px-4 py-2.5">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={onToggleCollapsed}
+                  aria-label="收起侧栏"
+                  title="收起侧栏"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <PanelLeftClose className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={12}>
+                收起侧栏
+              </TooltipContent>
+            </Tooltip>
           </div>
         ) : null}
       </aside>

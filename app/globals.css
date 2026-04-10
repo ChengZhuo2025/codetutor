@@ -14,42 +14,43 @@
   --card-foreground: oklch(0.20 0.02 240);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.20 0.02 240);
-  --primary: oklch(0.52 0.14 180);
+  /* 亮色：略提高亮度与色度，色相更贴屏幕 RGB（少 CMYK 灰感） */
+  --primary: oklch(0.55 0.17 175);
   --primary-foreground: oklch(0.99 0.002 240);
   --secondary: oklch(0.96 0.006 240);
   --secondary-foreground: oklch(0.28 0.02 240);
   --muted: oklch(0.96 0.006 240);
   --muted-foreground: oklch(0.46 0.02 240);
-  --accent: oklch(0.72 0.15 60);
-  --accent-foreground: oklch(0.22 0.04 60);
-  --destructive: oklch(0.55 0.22 25);
+  --accent: oklch(0.78 0.19 52);
+  --accent-foreground: oklch(0.20 0.045 52);
+  --destructive: oklch(0.57 0.24 22);
   --destructive-foreground: oklch(0.99 0 0);
   --border: oklch(0.90 0.012 240);
   --input: oklch(0.90 0.012 240);
-  --ring: oklch(0.52 0.14 180);
+  --ring: oklch(0.55 0.17 175);
   --radius: 0.75rem;
-  --brand: oklch(0.52 0.14 180);
+  --brand: oklch(0.55 0.17 175);
   --brand-foreground: oklch(0.99 0.002 240);
-  --brand-dim: oklch(0.52 0.14 180 / 0.14);
-  --gold: oklch(0.62 0.16 60);
-  --gold-dim: oklch(0.80 0.18 60 / 0.18);
+  --brand-dim: oklch(0.55 0.17 175 / 0.14);
+  --gold: oklch(0.68 0.2 52);
+  --gold-dim: oklch(0.82 0.2 52 / 0.2);
   --surface-1: oklch(0.985 0.004 240);
   --surface-2: oklch(0.97 0.006 240);
   --surface-3: oklch(0.94 0.008 240);
   --surface-4: oklch(0.88 0.012 240);
-  --chart-1: oklch(0.52 0.14 180);
-  --chart-2: oklch(0.62 0.16 60);
-  --chart-3: oklch(0.55 0.16 145);
-  --chart-4: oklch(0.58 0.2 25);
-  --chart-5: oklch(0.55 0.14 260);
+  --chart-1: oklch(0.55 0.17 175);
+  --chart-2: oklch(0.68 0.2 52);
+  --chart-3: oklch(0.58 0.21 150);
+  --chart-4: oklch(0.6 0.23 22);
+  --chart-5: oklch(0.58 0.19 252);
   --sidebar: oklch(0.98 0.005 240);
   --sidebar-foreground: oklch(0.20 0.02 240);
-  --sidebar-primary: oklch(0.52 0.14 180);
+  --sidebar-primary: oklch(0.55 0.17 175);
   --sidebar-primary-foreground: oklch(0.99 0.002 240);
   --sidebar-accent: oklch(0.94 0.008 240);
   --sidebar-accent-foreground: oklch(0.28 0.02 240);
   --sidebar-border: oklch(0.90 0.012 240);
-  --sidebar-ring: oklch(0.52 0.14 180);
+  --sidebar-ring: oklch(0.55 0.17 175);
 }
 
 .dark {
@@ -171,7 +172,7 @@
   }
 
   *::selection {
-    background: oklch(0.52 0.14 180 / 0.24);
+    background: oklch(0.55 0.17 175 / 0.26);
     color: oklch(0.12 0.02 240);
   }
 
@@ -189,8 +190,8 @@
 
   body {
     background:
-      radial-gradient(circle at top left, oklch(0.78 0.15 180 / 0.14), transparent 32%),
-      radial-gradient(circle at top right, oklch(0.80 0.18 60 / 0.10), transparent 28%),
+      radial-gradient(circle at top left, oklch(0.82 0.17 175 / 0.16), transparent 32%),
+      radial-gradient(circle at top right, oklch(0.88 0.2 52 / 0.12), transparent 28%),
       linear-gradient(180deg, oklch(0.99 0.005 240), oklch(0.975 0.004 240) 40%, oklch(0.97 0.004 240));
     @apply text-foreground antialiased;
     text-rendering: optimizeLegibility;

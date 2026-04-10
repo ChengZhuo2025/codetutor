@@ -68,13 +68,13 @@ assert.match(
 )
 assert.match(
   appShellSource,
-  /PanelRightOpen/,
-  "AppShell should expose a floating reopen affordance for the collapsed right panel",
+  /ChevronLeft/,
+  "AppShell should use a left chevron when the right panel is collapsed (pull in from the left)",
 )
 assert.match(
   appShellSource,
-  /PanelRightClose/,
-  "AppShell should expose the matching collapse affordance for the expanded right panel",
+  /ChevronRight/,
+  "AppShell should use a right chevron when the right panel is expanded (panel sits to the right)",
 )
 assert.match(
   appShellSource,
@@ -83,8 +83,18 @@ assert.match(
 )
 assert.match(
   appShellSource,
-  /absolute top-5 right-4[\s\S]*xl:flex/,
-  "AppShell should anchor the right-side toggle button to the top-right corner of the center column",
+  /top-1\/2/,
+  "AppShell should vertically center the right-side toggle on the viewport stack",
+)
+assert.match(
+  appShellSource,
+  /-translate-x-1\/2[\s\S]*-translate-y-1\/2/,
+  "AppShell should center the toggle on the main/aside boundary (straddle)",
+)
+assert.match(
+  appShellSource,
+  /xl:inline-flex/,
+  "AppShell should show the right-side toggle from the xl breakpoint",
 )
 assert.match(
   appShellSource,
@@ -141,18 +151,18 @@ assert.match(
 )
 assert.match(
   learnChatSource,
-  /<div className="relative xl:pr-\[15rem\]">/,
-  "/learn header should reserve a right-side slot for the shared aside toggle button",
+  /className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"/,
+  "/learn header should lay out title and actions without reserving space for the aside toggle",
 )
 assert.match(
   historyPageSource,
-  /className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between xl:relative xl:pr-\[16rem\]"/,
-  "/history header should reserve a right-side slot for the shared aside toggle button",
+  /className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"/,
+  "/history header should flow title and actions without aside-toggle padding hacks",
 )
 assert.match(
   historyPageSource,
-  /className="lg:mt-0 xl:absolute xl:top-5 xl:right-14"/,
-  "/history header action should align to the shared top-right control rail",
+  /className="shrink-0 lg:mt-0"/,
+  "/history header action should sit in the flex row without absolute positioning",
 )
 
 for (const [file, pageKey] of [

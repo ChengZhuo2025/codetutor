@@ -39,7 +39,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.52_0.12_180/0.08),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.75_0.14_60/0.08),transparent_24%)] dark:bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.14),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.8_0.18_60/0.12),transparent_24%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.55_0.15_175/0.09),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.78_0.17_52/0.09),transparent_24%)] dark:bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.14),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.8_0.18_60/0.12),transparent_24%)]" />
 
       {/* 顶部 Logo + 标签 */}
       <div className="relative z-10 flex items-center justify-between gap-4">
