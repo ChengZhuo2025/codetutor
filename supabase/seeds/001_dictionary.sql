@@ -46,7 +46,7 @@ VALUES
     'intermediate',
     true,
     30,
-    '{"summary":"多步 Agent 能力强，适合练「交代清楚再改」的协作","category":"图形化 IDE","color":"chart-5","popular":false}'::jsonb,
+    '{"summary":"多Agent协作，适合做长任务大项目","category":"图形化 IDE","color":"chart-5","popular":false}'::jsonb,
     NOW(),
     NOW()
   )

@@ -25,7 +25,7 @@ import type {
 import { cn } from "@/lib/utils"
 
 const onboardingMetaPillClass =
-  "rounded-full border border-border/70 bg-surface-1/95 px-3 py-1 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+  "rounded-full border border-border bg-surface-2 px-3 py-1 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
 
 type PathSelectionStepProps = {
   selectedTool: OnboardingTool | null
@@ -97,12 +97,10 @@ export function PathSelectionStep({
           </p>
         </div>
 
-        <div
-          className={cn(
-            USER_PANEL_SECTION_CLASS,
-            "mx-auto mt-4 mb-3 flex w-full max-w-3xl flex-wrap items-center gap-2 rounded-2xl px-4 py-3",
-          )}
-        >
+        <div className="mx-auto mt-4 mb-4 flex w-full max-w-3xl flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">
+            已选主工具：
+          </span>
           {selectedTool ? (
             <span
               className={cn(
@@ -128,8 +126,8 @@ export function PathSelectionStep({
               className={cn(
                 "w-full rounded-[24px] border p-4 text-left transition-all duration-300",
                 selectionMode === "self_directed"
-                  ? "border-brand/45 bg-brand/12 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.28)] ring-1 ring-brand/10 dark:bg-brand/18"
-                  : "border-border/70 bg-surface-1/95 shadow-[0_12px_30px_-28px_rgba(15,23,42,0.24)] hover:-translate-y-0.5 hover:border-brand/30 hover:bg-surface-1 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
+                  ? "border-brand/45 bg-brand/10 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.28)] ring-1 ring-brand/10 dark:bg-brand/18"
+                  : "border-border/70 bg-surface-2 hover:-translate-y-0.5 hover:border-brand/30 hover:bg-surface-1 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
               )}
             >
               <div className="mb-1 flex items-start justify-between gap-3">
@@ -139,8 +137,8 @@ export function PathSelectionStep({
                   </span>
                   <h2 className="text-xl font-semibold text-foreground">{selfStudyOption.name}</h2>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="rounded-full border border-brand/20 bg-brand/12 p-2 text-brand dark:border-brand/30 dark:bg-brand/18">
+                <div className="flex items-center gap-3">
+                  <div className="text-brand">
                     <BookOpenText className="h-4 w-4" />
                   </div>
                   <CheckCircle2
@@ -155,7 +153,7 @@ export function PathSelectionStep({
               <p className="mb-1 text-sm leading-4 text-foreground">{selfStudyOption.summary}</p>
             </button>
 
-            <section className={cn(USER_PANEL_SECTION_CLASS, "rounded-[24px] p-4")}>
+            <section className={cn(USER_PANEL_SECTION_CLASS, "rounded-[24px] p-4 bg-surface-2 dark:border-white/10 dark:bg-white/5 ")}>
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="rounded-full border border-chart-3/30 bg-chart-3/10 px-2.5 py-1 text-xs font-semibold text-chart-3">
@@ -180,7 +178,7 @@ export function PathSelectionStep({
                       className={cn(
                         "rounded-[22px] border p-3 text-left transition-all duration-300",
                         isSelected
-                          ? "border-brand/45 bg-brand/12 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.28)] ring-1 ring-brand/10 dark:bg-brand/18"
+                          ? "border-brand/45 bg-brand/10 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.28)] ring-1 ring-brand/10 dark:bg-brand/18"
                           : "border-border/70 bg-surface-1/95 shadow-[0_12px_32px_-28px_rgba(15,23,42,0.22)] hover:border-border hover:bg-surface-1 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
                       )}
                     >
@@ -299,12 +297,7 @@ export function PathSelectionStep({
           </div>
         </div>
 
-        <div
-          className={cn(
-            USER_PANEL_SUBTLE_SECTION_CLASS,
-            "mx-auto mt-3 flex w-full max-w-3xl flex-col items-center gap-2 rounded-2xl px-4 pt-3 pb-2",
-          )}
-        >
+        <div className="mx-auto mt-5 flex w-full max-w-3xl flex-col items-center gap-2 rounded-2xl px-4 py-3">
           <Button
             onClick={onFinish}
             disabled={!canFinish || isPending}
@@ -317,12 +310,11 @@ export function PathSelectionStep({
           </Button>
           <Button
             type="button"
-            variant="outline"
-            size="sm"
+            variant="link"
             onClick={onBack}
-            className="gap-1 text-sm"
+            className="h-auto gap-1.5 p-0 text-sm font-normal text-muted-foreground underline-offset-4 hover:text-foreground"
           >
-            <ArrowLeft className="h-3 w-3" />
+            <ArrowLeft className="size-3.5 shrink-0" />
             返回上一步，改基础水平
           </Button>
         </div>

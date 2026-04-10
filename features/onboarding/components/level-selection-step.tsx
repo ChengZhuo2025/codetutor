@@ -73,7 +73,7 @@ export function LevelSelectionStep({
             )}
           </div>
 
-          <div className={cn(USER_PANEL_SUBTLE_SECTION_CLASS, "hidden rounded-xl px-3 py-2 sm:block")}>
+          <div className={cn(USER_PANEL_SUBTLE_SECTION_CLASS, "hidden rounded-xl px-4 py-2 sm:block")}>
             <p className="text-sm font-medium uppercase tracking-[0.12em] text-muted-foreground">
               再下一步
             </p>
@@ -93,8 +93,8 @@ export function LevelSelectionStep({
                 className={cn(
                   "group flex w-full items-start gap-3 rounded-[20px] border p-4 text-left transition-all duration-300",
                   level === item.id
-                    ? "border-brand/45 bg-brand/12 shadow-[0_22px_56px_-30px_rgba(15,23,42,0.26)] ring-1 ring-brand/10 dark:bg-brand/18"
-                    : "border-border/70 bg-surface-1/95 shadow-[0_10px_26px_-26px_rgba(15,23,42,0.22)] hover:-translate-y-0.5 hover:border-border hover:bg-surface-1 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
+                    ? "border-brand/45 bg-brand/10 shadow-[0_22px_56px_-30px_rgba(15,23,42,0.26)] ring-1 ring-brand/10 dark:bg-brand/18"
+                    : "border-border/70 bg-surface-2 shadow-[0_10px_26px_-26px_rgba(15,23,42,0.22)] hover:-translate-y-0.5 hover:border-border hover:bg-surface-1 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
                 )}
               >
                 <div
@@ -118,12 +118,7 @@ export function LevelSelectionStep({
           </div>
         </div>
 
-        <div
-          className={cn(
-            USER_PANEL_SUBTLE_SECTION_CLASS,
-            "mx-auto mt-8 flex w-full max-w-3xl flex-col items-center gap-2 rounded-2xl px-4 py-3",
-          )}
-        >
+        <div className="mx-auto mt-5 flex w-full max-w-3xl flex-col items-center gap-2 rounded-2xl px-4 py-3">
           <Button
             onClick={onNext}
             disabled={!canGoNext || !selectedTool || isPending}
@@ -137,12 +132,11 @@ export function LevelSelectionStep({
           </Button>
           <Button
             type="button"
-            variant="outline"
-            size="sm"
+            variant="link"
             onClick={onBack}
-            className="gap-1 text-sm"
+            className="h-auto gap-1.5 p-0 text-sm font-normal text-muted-foreground underline-offset-4 hover:text-foreground"
           >
-            <ArrowLeft className="h-3 w-3" />
+            <ArrowLeft className="size-3.5 shrink-0" />
             返回上一步，改选工具
           </Button>
         </div>

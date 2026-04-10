@@ -28,7 +28,7 @@ export const TOOL_DEFINITIONS = [
     groupName: "图形化工具",
     category: "图形化 IDE",
     difficultyLevel: "intermediate",
-    summary: "多步 Agent 能力强，适合练「交代清楚再改」的协作",
+    summary: "多Agent协作，适合做长任务大项目",
     popular: false,
     color: "chart-5",
   },

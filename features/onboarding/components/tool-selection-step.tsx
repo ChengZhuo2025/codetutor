@@ -53,7 +53,7 @@ export function ToolSelectionStep({
                 key={group.groupCode}
                 className={cn(
                   USER_PANEL_SECTION_CLASS,
-                  "flex min-h-0 flex-col rounded-[24px] p-4",
+                  "flex min-h-0 flex-col rounded-[24px] p-4 bg-surface-2",
                 )}
               >
                 <div className="mb-3">
@@ -133,12 +133,7 @@ export function ToolSelectionStep({
             ))}
           </div>
         </div>
-        <div
-          className={cn(
-            USER_PANEL_SUBTLE_SECTION_CLASS,
-            "mx-auto mt-6 flex w-full max-w-3xl flex-col items-center gap-2 rounded-2xl px-4 py-3",
-          )}
-        >
+        <div className="mx-auto mt-5 flex w-full max-w-3xl flex-col items-center gap-2 rounded-2xl px-4 py-3">
           <p className="text-sm text-muted-foreground">
             {selectedTool ? (
               <>
