@@ -1,7 +1,8 @@
 "use client"
 
-import { Bell, Search } from "lucide-react"
+import { Bell } from "lucide-react"
 import { usePathname } from "next/navigation"
+import { ThemeToggle } from "@/components/layout/theme-toggle"
 import type { AdminSessionResponseData } from "@/lib/api/contracts/admin"
 import { AdminAccountMenu } from "./admin-account-menu"
 
@@ -44,18 +45,11 @@ export function AdminHeader({ session }: AdminHeaderProps) {
       <div className="min-w-0">
         <p className="text-sm font-medium text-foreground truncate">{title}</p>
       </div>
-      <div className="flex items-center gap-3 shrink-0">
-        <div className="relative hidden md:block">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <input
-            type="search"
-            placeholder="搜索..."
-            className="h-8 pl-8 pr-3 text-xs rounded-md bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring w-48"
-          />
-        </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <ThemeToggle className="size-9 rounded-full hover:bg-brand/10" />
         <button
           type="button"
-          className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-muted/60"
+          className="relative mr-3 flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-brand/10 hover:text-foreground dark:hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-brand/10 dark:active:bg-primary/15"
           aria-label="通知"
         >
           <Bell className="size-4" aria-hidden />

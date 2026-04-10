@@ -27,9 +27,9 @@ import {
 import { adminAiModelBffDetailUrl } from "@/features/admin-ai/lib/model-admin-urls"
 import { prettyJson, safeJsonParse } from "@/features/admin-ai/lib/view-model"
 
-/** 与抽屉内 Input / select 同系：底色、边框与内阴影一致 */
+/** 与抽屉内 Input / select 同系：底色与边框一致，保持扁平化样式 */
 const MODEL_BOOL_TILE_CLASS =
-  "flex min-h-9 shrink-0 cursor-pointer items-center gap-2.5 rounded-md border border-border/90 bg-muted/45 px-3 py-2 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)] has-[:focus-visible]:outline-none has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/50"
+  "flex min-h-9 shrink-0 cursor-pointer items-center gap-2.5 rounded-md border border-border/90 bg-muted/45 px-3 py-2 text-sm text-foreground shadow-none has-[:focus-visible]:outline-none has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/50"
 
 const EMPTY_FORM = {
   providerCode: "",
@@ -236,7 +236,7 @@ export function ModelFormSheet({
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="model-providerCode">Provider</Label>
-                  <select id="model-providerCode" value={form.providerCode} onChange={(event) => setForm((prev) => ({ ...prev, providerCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
+                  <select id="model-providerCode" value={form.providerCode} onChange={(event) => setForm((prev) => ({ ...prev, providerCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                     <option value="">请选择 Provider</option>
                     {providers?.items.map((item) => (
                       <option key={item.providerId} value={item.code}>{item.name} ({item.code})</option>

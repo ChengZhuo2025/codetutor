@@ -59,10 +59,10 @@ function SheetContent({
         data-slot="sheet-content"
         className={cn(
           'bg-card text-card-foreground data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex min-h-0 flex-col gap-0 border-border/80 backdrop-blur-xl shadow-[0_32px_80px_-40px_rgba(0,0,0,0.55)] transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500',
-          '[&_[data-slot=input]]:border-border/90 [&_[data-slot=input]]:bg-muted/45 [&_[data-slot=input]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.22)]',
-          '[&_[data-slot=textarea]]:border-border/90 [&_[data-slot=textarea]]:bg-muted/45 [&_[data-slot=textarea]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.22)]',
-          '[&_select]:border-border/90 [&_select]:bg-muted/45 [&_select]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.22)]',
-          '[&_label.flex.items-center.gap-2.rounded-xl.border]:border-border/80 [&_label.flex.items-center.gap-2.rounded-xl.border]:bg-muted/30 [&_label.flex.items-center.gap-2.rounded-xl.border]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]',
+          '[&_[data-slot=input]]:border-border/90 [&_[data-slot=input]]:bg-muted/45 [&_[data-slot=input]]:shadow-none',
+          '[&_[data-slot=textarea]]:border-border/90 [&_[data-slot=textarea]]:bg-muted/45 [&_[data-slot=textarea]]:shadow-none',
+          '[&_select]:border-border/90 [&_select]:bg-muted/45 [&_select]:shadow-none',
+          '[&_label.flex.items-center.gap-2.rounded-xl.border]:border-border/80 [&_label.flex.items-center.gap-2.rounded-xl.border]:bg-muted/30 [&_label.flex.items-center.gap-2.rounded-xl.border]:shadow-none',
           side === 'right' &&
             'data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm',
           side === 'left' &&

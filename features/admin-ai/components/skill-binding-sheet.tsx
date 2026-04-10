@@ -138,7 +138,7 @@ export function SkillBindingSheet({
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="skill-binding-agentCode">Agent</Label>
-              <select id="skill-binding-agentCode" value={form.agentCode} onChange={(event) => setForm((prev) => ({ ...prev, agentCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
+              <select id="skill-binding-agentCode" value={form.agentCode} onChange={(event) => setForm((prev) => ({ ...prev, agentCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                 <option value="">请选择 Agent</option>
                 {options?.agentOptions?.map((item) => (
                   <option key={item.code} value={item.code}>{item.name}</option>
@@ -147,7 +147,7 @@ export function SkillBindingSheet({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="skill-binding-skillCode">Skill</Label>
-              <select id="skill-binding-skillCode" value={form.skillCode} onChange={(event) => setForm((prev) => ({ ...prev, skillCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
+              <select id="skill-binding-skillCode" value={form.skillCode} onChange={(event) => setForm((prev) => ({ ...prev, skillCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                 <option value="">请选择 Skill</option>
                 {options?.skillOptions?.map((item) => (
                   <option key={item.code} value={item.code}>{item.name}</option>
@@ -165,11 +165,11 @@ export function SkillBindingSheet({
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]">
+              <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-none">
                 <input type="checkbox" checked={form.isRequired} onChange={(event) => setForm((prev) => ({ ...prev, isRequired: event.target.checked }))} />
                 Required
               </label>
-              <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]">
+              <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-none">
                 <input type="checkbox" checked={form.isActive} onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))} />
                 启用
               </label>

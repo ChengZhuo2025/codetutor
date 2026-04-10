@@ -55,7 +55,7 @@ export function AdminSelect({
       onValueChange={(next) => onValueChange(next === EMPTY_SENTINEL ? "" : next)}
       disabled={disabled ?? options.length === 0}
     >
-      <SelectTrigger id={id} className={cn("h-9 w-fit max-w-full shrink-0 min-w-[9rem]", triggerClassName)}>
+      <SelectTrigger id={id} className={cn("h-9 w-fit max-w-full shrink-0 min-w-[9rem] shadow-none", triggerClassName)}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent position="popper" sideOffset={6} className={contentClassName}>

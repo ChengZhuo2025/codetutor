@@ -8,7 +8,7 @@ export const FLOATING_PANEL_CLASS =
   "border border-border bg-popover text-foreground shadow-[0_20px_60px_-32px_rgba(15,23,42,0.24)] ring-1 ring-black/[0.04] backdrop-blur-xl dark:border-white/10 dark:bg-[oklch(0.2_0.015_250/0.98)] dark:ring-white/10 dark:shadow-[0_32px_80px_-36px_rgba(0,0,0,0.9)]"
 
 export const FLOATING_LIGHT_PANEL_CLASS =
-  "border border-border/80 bg-popover shadow-lg shadow-black/20"
+  "border border-border/80 bg-popover shadow-lg shadow-black/10"
 
 export const USER_PANEL_SECTION_CLASS =
   "rounded-xl border border-border/70 bg-surface-1/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] dark:border-white/10 dark:bg-background/80 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"

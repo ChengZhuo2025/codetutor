@@ -52,7 +52,7 @@ export function AdminListPaginationFooter({
               { value: "50", label: "50" },
               { value: "100", label: "100" },
             ]}
-            triggerClassName="mx-0.5 h-8 min-w-[3rem] w-[3rem] justify-center px-2"
+            triggerClassName="mx-0.5 h-8 min-w-20 w-20 px-2.5"
           />
           条
         </span>

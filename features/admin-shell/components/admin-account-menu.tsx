@@ -15,6 +15,13 @@ type AdminAccountMenuProps = {
   session: AdminSessionResponseData
 }
 
+const ADMIN_ROLE_LABELS: Record<string, string> = {
+  super_admin: "超级管理员",
+  support_admin: "客服管理员",
+  ops_admin: "运营管理员",
+  ai_ops_admin: "AI 运营管理员",
+}
+
 function MenuRow({
   icon: Icon,
   label,
@@ -91,6 +98,9 @@ export function AdminAccountMenu({ session }: AdminAccountMenuProps) {
   }
 
   const initial = session.displayName?.charAt(0).toUpperCase() || "A"
+  const roleLabel = session.roles.length
+    ? session.roles.map((roleCode) => ADMIN_ROLE_LABELS[roleCode] ?? roleCode).join(" / ")
+    : "未分配角色"
 
   return (
     <div className="relative" ref={wrapRef}>
@@ -98,10 +108,8 @@ export function AdminAccountMenu({ session }: AdminAccountMenuProps) {
         type="button"
         onClick={() => setMenuOpen((o) => !o)}
         className={cn(
-          "flex max-w-[200px] items-center gap-2 rounded-lg border border-border/60 bg-background/90 px-2 py-1.5 text-sm text-foreground transition-[background-color,border-color,box-shadow] duration-150",
-          "hover:border-border hover:bg-muted/75",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-          menuOpen && "border-border bg-muted/70 shadow-sm",
+          "flex max-w-[200px] items-center gap-2 rounded-lg text-left text-sm text-foreground transition-[background-color,border-color,box-shadow] duration-150",
+          menuOpen && "bg-muted/70",
         )}
         aria-expanded={menuOpen}
         aria-haspopup="menu"
@@ -122,8 +130,13 @@ export function AdminAccountMenu({ session }: AdminAccountMenuProps) {
             </span>
           )}
         </span>
-        <span className="hidden max-w-[7.5rem] truncate font-medium sm:inline">
-          {session.displayName || "管理员"}
+        <span className="hidden max-w-36 text-left sm:flex sm:flex-col sm:items-start sm:leading-tight">
+          <span className="w-full truncate font-medium text-foreground">
+            {session.displayName || "管理员"}
+          </span>
+          <span className="mt-0.5 w-full truncate text-[11px] text-muted-foreground">
+            {roleLabel}
+          </span>
         </span>
       </button>
 
@@ -131,7 +144,7 @@ export function AdminAccountMenu({ session }: AdminAccountMenuProps) {
         <div
           className={cn(
             FLOATING_LIGHT_PANEL_CLASS,
-            "absolute right-0 top-[calc(100%+6px)] z-50 w-44 min-w-[10.5rem] overflow-hidden rounded-xl p-1",
+            "absolute right-0 top-[calc(100%+10px)] z-50 w-44 min-w-42 overflow-hidden rounded-lg p-1",
           )}
           role="menu"
         >

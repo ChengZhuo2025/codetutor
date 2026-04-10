@@ -82,7 +82,7 @@ function pickModelForAgent(
   return list[0]?.code ?? ""
 }
 
-const TEST_CONSOLE_SELECT_TRIGGER = "h-10 w-full min-w-0 bg-muted/45 shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)] border-border/90"
+const TEST_CONSOLE_SELECT_TRIGGER = "h-10 w-full min-w-0 bg-muted/45 shadow-none border-border/90"
 
 export function AITestConsole() {
   const toast = useAppToast()
