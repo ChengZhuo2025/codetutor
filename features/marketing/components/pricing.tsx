@@ -39,7 +39,7 @@ export function LandingPricing() {
             <div
               key={plan.name}
               className={cn(
-                "relative flex flex-col rounded-[30px] border p-8 transition-all hover:-translate-y-1",
+                "relative flex flex-col rounded-[30px] border p-8 transition-all hover:-translate-y-1 hover:border-brand/40 hover:bg-brand/5",
                 plan.highlight
                   ? "border-brand/40 bg-brand/5 shadow-lg shadow-brand/10 dark:bg-[linear-gradient(180deg,oklch(0.2_0.02_210/0.94),oklch(0.16_0.015_235/0.98))] dark:shadow-[0_24px_80px_-42px_oklch(0.78_0.15_180/0.28)]"
                   : "border-border bg-card shadow-md shadow-black/[0.06] dark:border-white/10 dark:bg-surface-2/88 dark:shadow-[0_20px_70px_-50px_rgba(0,0,0,0.72)]",
@@ -86,7 +86,7 @@ export function LandingPricing() {
                 <Button
                   size="lg"
                   className={cn(
-                    "w-full h-12 px-10 text-base font-semibold",
+                    "w-full h-11 px-8 text-base font-semibold",
                     plan.highlight ? USER_BUTTON_PRIMARY_CLASS : USER_BUTTON_SECONDARY_CLASS,
                   )}
                   onClick={() =>
