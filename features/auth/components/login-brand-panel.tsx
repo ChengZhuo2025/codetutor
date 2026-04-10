@@ -23,20 +23,20 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
         className="pointer-events-none absolute inset-0 dark:hidden"
         style={{
           backgroundImage: `
-            linear-gradient(to right, oklch(0.55 0.02 240 / 0.09) 1px, transparent 1px),
-            linear-gradient(to bottom, oklch(0.55 0.02 240 / 0.09) 1px, transparent 1px)
+            linear-gradient(to right, oklch(0.55 0.018 240 / 0.064) 1px, transparent 1px),
+            linear-gradient(to bottom, oklch(0.55 0.018 240 / 0.064) 1px, transparent 1px)
           `,
-          backgroundSize: "32px 32px",
+          backgroundSize: "48px 48px",
         }}
       />
       <div
         className="pointer-events-none absolute inset-0 hidden dark:block"
         style={{
           backgroundImage: `
-            linear-gradient(to right, oklch(0.26 0.008 240 / 0.22) 1px, transparent 1px),
-            linear-gradient(to bottom, oklch(0.26 0.008 240 / 0.22) 1px, transparent 1px)
+            linear-gradient(to right, oklch(0.62 0.04 195 / 0.16) 1px, transparent 1px),
+            linear-gradient(to bottom, oklch(0.62 0.04 195 / 0.16) 1px, transparent 1px)
           `,
-          backgroundSize: "32px 32px",
+          backgroundSize: "48px 48px",
         }}
       />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.52_0.12_180/0.08),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.75_0.14_60/0.08),transparent_24%)] dark:bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.14),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.8_0.18_60/0.12),transparent_24%)]" />
@@ -96,7 +96,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
       </div>
 
       {/* AI 导师对话 - 复用首页滚动对话 */}
-      <div className="relative z-10 mx-12 mt-5 flex-1 overflow-hidden rounded-3xl border border-border/70 bg-surface-1 shadow-[0_20px_60px_-34px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:border-border/70 dark:bg-[oklch(0.15_0.012_240/0.48)] dark:shadow-none">
+      <div className="relative z-10 mx-12 mt-5 flex-1 overflow-hidden rounded-2xl border border-border/70 bg-surface-1 shadow-[0_20px_60px_-34px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:border-border/70 dark:bg-[oklch(0.15_0.012_240/0.48)] dark:shadow-none">
         <div className="flex items-center gap-2 border-b border-border/80 px-4 py-2.5 dark:border-white/8">
           <div className="h-2.5 w-2.5 rounded-full bg-destructive/70" />
           <div className="h-2.5 w-2.5 rounded-full bg-gold/70" />
@@ -177,7 +177,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
       </div>
 
       {/* 底部信息栏 */}
-      <div className="relative z-10 mx-12 mt-5 flex items-center justify-between rounded-4xl bg-surface-1 px-6 py-3">
+      <div className="relative z-10 mx-12 mt-5 flex items-center justify-between rounded-2xl border border-border/70 bg-surface-1 px-6 py-3 dark:border-border/70 dark:bg-[oklch(0.15_0.012_240/0.48)]">
         <div className="flex items-center gap-4">
           <div>
             <p className="text-[11px] text-muted-foreground">当前段位</p>

@@ -1,81 +1,85 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import {
-  ArrowRight,
-  CheckCircle2,
-  Sparkles,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
+import Link from "next/link";
+import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   USER_BUTTON_PRIMARY_CLASS,
   USER_BUTTON_SECONDARY_CLASS,
-} from "@/components/ui/surface-styles"
-import { LightRays } from "@/features/marketing/components/light-rays"
-import { getToolName } from "@/constants/tools"
-import { APP_EVENTS } from "@/constants/events"
-import { marketingConversationMessages } from "@/features/marketing/data/marketing-content"
-import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
-import { cn } from "@/lib/utils"
-import { useAppEventTracker } from "@/providers/app-providers"
+} from "@/components/ui/surface-styles";
+import { LightRays } from "@/features/marketing/components/light-rays";
+import { getToolName } from "@/constants/tools";
+import { APP_EVENTS } from "@/constants/events";
+import { marketingConversationMessages } from "@/features/marketing/data/marketing-content";
+import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider";
+import { cn } from "@/lib/utils";
+import { useAppEventTracker } from "@/providers/app-providers";
 
 const heroStats = [
   { label: "支持工具", value: "8+" },
   { label: "首日任务", value: "15 分钟起" },
   { label: "学习方式", value: "Ai带你一步步操作" },
-]
+];
 
-const cursorToolName = getToolName("cursor")
-const claudeCodeToolName = getToolName("claude-code")
-const codexToolName = getToolName("codex")
-const heroFeaturedTools = [cursorToolName, claudeCodeToolName, "OpenCode"].join("、")
+const cursorToolName = getToolName("cursor");
+const claudeCodeToolName = getToolName("claude-code");
+const codexToolName = getToolName("codex");
+const heroFeaturedTools = [cursorToolName, claudeCodeToolName, "OpenCode"].join(
+  "、",
+);
 
 export function LandingHero() {
-  const { authState, ctaHref, ctaLabel } = useLandingAuthState()
-  const { trackEvent } = useAppEventTracker()
+  const { authState, ctaHref, ctaLabel } = useLandingAuthState();
+  const { trackEvent } = useAppEventTracker();
 
   return (
     <section
       id="home"
-      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pb-18 pt-28"
+      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-6 pb-18 pt-30"
     >
-      <LightRays
-        raysOrigin="top-center"
-        raysColor="#6ff4d8"
-        raysSpeed={1.55}
-        lightSpread={0.9}
-        rayLength={2.35}
-        fadeDistance={1.95}
-        saturation={1.28}
-        followMouse
-        mouseInfluence={0.18}
-        noiseAmount={0.012}
-        distortion={0.075}
-        className="opacity-[0.96]"
-      />
+      {/* WebGL：亮色降低强度，避免噪点/高光显得「脏」；暗色保持原视觉 */}
+      <div className="pointer-events-none absolute inset-0 z-0 opacity-[0.38] contrast-[0.98] dark:z-[1] dark:opacity-[0.96] dark:contrast-100">
+        <LightRays
+          raysOrigin="top-center"
+          raysColor="#6ff4d8"
+          raysSpeed={1.55}
+          lightSpread={0.9}
+          rayLength={2.35}
+          fadeDistance={1.95}
+          saturation={1.28}
+          followMouse
+          mouseInfluence={0.18}
+          noiseAmount={0.012}
+          distortion={0.075}
+          className="opacity-100"
+        />
+      </div>
 
       <div
-        className="pointer-events-none absolute inset-0 dark:hidden"
+        className="pointer-events-none absolute inset-0 z-[1] dark:hidden"
         style={{
           backgroundImage: `
-            linear-gradient(to right, oklch(0.55 0.02 240 / 0.09) 1px, transparent 1px),
-            linear-gradient(to bottom, oklch(0.55 0.02 240 / 0.09) 1px, transparent 1px)
+            linear-gradient(to right, oklch(0.55 0.02 240 / 0.065) 1px, transparent 1px),
+            linear-gradient(to bottom, oklch(0.55 0.02 240 / 0.065) 1px, transparent 1px)
           `,
-          backgroundSize: "36px 36px",
+          backgroundSize: "48px 48px",
         }}
       />
       <div
-        className="pointer-events-none absolute inset-0 hidden dark:block"
+        className="pointer-events-none absolute inset-0 z-[1] hidden dark:block"
         style={{
           backgroundImage: `
-            linear-gradient(to right, oklch(0.28 0.015 220 / 0.12) 1px, transparent 1px),
-            linear-gradient(to bottom, oklch(0.28 0.015 220 / 0.12) 1px, transparent 1px)
+            linear-gradient(to right, oklch(0.62 0.04 195 / 0.22) 1px, transparent 1px),
+            linear-gradient(to bottom, oklch(0.62 0.04 195 / 0.22) 1px, transparent 1px)
           `,
-          backgroundSize: "36px 36px",
+          backgroundSize: "48px 48px",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_22%,oklch(0.94_0.01_240/0.75)_88%)] dark:bg-[radial-gradient(ellipse_at_center,transparent_14%,oklch(0.12_0.008_240/0.68)_84%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,oklch(0.98_0.005_240/0.55),transparent_18%,transparent_78%,oklch(0.95_0.008_240/0.5)_100%)] dark:bg-[linear-gradient(180deg,oklch(0.12_0.008_240/0.16),transparent_14%,transparent_82%,oklch(0.12_0.008_240/0.58)_100%)]" />
+      {/* 亮色：去掉四周压暗的「相框」，改为顶部柔和光晕；底部用页面底色做长距离融接，消除横向硬边 */}
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(ellipse_95%_70%_at_50%_-12%,oklch(0.97_0.04_195/0.38),transparent_58%)] dark:hidden" />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,transparent_0%,transparent_38%,color-mix(in_oklch,var(--background)_55%,transparent)_72%,var(--background)_96%,var(--background)_100%)] dark:hidden" />
+      <div className="pointer-events-none absolute inset-0 z-[1] hidden dark:block bg-[radial-gradient(ellipse_at_center,transparent_14%,oklch(0.12_0.008_240/0.62)_84%)]" />
+      <div className="pointer-events-none absolute inset-0 z-[1] hidden dark:block bg-[linear-gradient(180deg,oklch(0.12_0.008_240/0.14),transparent_14%,transparent_78%,oklch(0.12_0.008_240/0.38)_100%)]" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center text-center">
         <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand/10 px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp dark:border-brand/18 dark:bg-[oklch(0.2_0.02_220/0.38)]">
@@ -84,21 +88,25 @@ export function LandingHero() {
         </div>
 
         <h1 className="max-w-5xl text-4xl font-bold leading-[1.15] tracking-tight text-balance md:text-6xl lg:text-7xl animate-fadeUp animate-delay-100">
-          收藏夹里的教程，不该只是看过
-          <br />
-          让 AI 导师陪你<span className="text-brand">真正做成</span>
+          收藏夹里的教程, 不该只是看过
+          <br />让 AI 导师陪你<span className="text-brand">真正做成</span>
         </h1>
 
         <p className="mt-5 max-w-4xl text-lg leading-8 text-muted-foreground text-pretty animate-fadeUp animate-delay-200">
-          看到大V的{heroFeaturedTools}...等 AI 教程，收藏了就当学过了？<br/>
-          CodeTutor AI 会把教程内容拆分成一步步可实操练习的任务，并全程陪伴你、辅导你从&ldquo;看过&rdquo;走向&ldquo;学会&rdquo;。
+          看到大V的{heroFeaturedTools}...等 AI 教程，收藏了就当学过了？
+          <br />
+          CodeTutor AI
+          会把教程内容拆分成一步步可实操练习的任务，并全程陪伴你、辅导你从&ldquo;看过&rdquo;走向&ldquo;学会&rdquo;。
         </p>
 
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row animate-fadeUp animate-delay-300">
           <Link href={ctaHref}>
             <Button
               size="lg"
-              className={cn("h-12 px-10 text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
+              className={cn(
+                "h-12 px-10 text-base font-semibold",
+                USER_BUTTON_PRIMARY_CLASS,
+              )}
               onClick={() =>
                 trackEvent(APP_EVENTS.landingCtaClick, {
                   source: "marketing_hero_primary",
@@ -128,7 +136,8 @@ export function LandingHero() {
         </div>
 
         <p className="mt-8 text-sm text-muted-foreground animate-fadeUp animate-delay-400">
-          适合刚开始上手 AI 编程工具的人，也适合想把&ldquo;看过教程&rdquo;变成&ldquo;做出结果&rdquo;的开发者。
+          适合刚开始上手 AI
+          编程工具的人，也适合想把&ldquo;看过教程&rdquo;变成&ldquo;做出结果&rdquo;的开发者。
         </p>
 
         <div className="mt-10 grid w-full max-w-3xl gap-3 sm:grid-cols-3 animate-fadeUp animate-delay-500">
@@ -140,13 +149,15 @@ export function LandingHero() {
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 {item.label}
               </p>
-              <p className="mt-2 text-xl font-semibold text-foreground">{item.value}</p>
+              <p className="mt-2 text-xl font-semibold text-foreground">
+                {item.value}
+              </p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="relative z-10 mx-auto mt-16 w-full max-w-5xl">
+      <div className="relative z-10 mx-auto mt-12 w-full max-w-5xl">
         <div className="overflow-hidden rounded-[32px] border border-border/80 bg-surface-1/98 shadow-[0_26px_80px_-38px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:border-border/70 dark:bg-[oklch(0.15_0.012_240/0.48)] dark:shadow-[0_32px_90px_-45px_rgba(0,0,0,0.85)]">
           <div className="grid gap-0 lg:grid-cols-[1.25fr_0.75fr]">
             <div className="border-b border-border/80 lg:border-b-0 lg:border-r lg:border-r-border/80 dark:border-white/8 dark:lg:border-r-white/8">
@@ -154,7 +165,9 @@ export function LandingHero() {
                 <div className="h-3 w-3 rounded-full bg-destructive/70" />
                 <div className="h-3 w-3 rounded-full bg-gold/70" />
                 <div className="h-3 w-3 rounded-full bg-brand/70" />
-                <span className="ml-3 text-xs font-mono text-muted-foreground">AI 导师对话</span>
+                <span className="ml-3 text-xs font-mono text-muted-foreground">
+                  AI 导师对话
+                </span>
               </div>
 
               <div className="relative h-[27rem] overflow-hidden p-6">
@@ -164,10 +177,7 @@ export function LandingHero() {
                 <div className="animate-[hero-chat-scroll_26s_linear_infinite] space-y-4">
                   {[0, 1].flatMap((loop) =>
                     marketingConversationMessages.map((message) => (
-                      <div
-                        key={`${loop}-${message.id}`}
-                        className="flex gap-3"
-                      >
+                      <div key={`${loop}-${message.id}`} className="flex gap-3">
                         <div
                           className={cn(
                             "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold",
@@ -213,12 +223,18 @@ export function LandingHero() {
                               </span>
                             ) : null}
                           </div>
-                          <p className="mt-2 leading-7 text-foreground/92">{message.body}</p>
+                          <p className="mt-2 leading-7 text-foreground/92">
+                            {message.body}
+                          </p>
                           {message.speaker === "ai" ? (
                             <div className="mt-3 flex items-center gap-2 rounded-2xl bg-muted/90 px-3 py-2 dark:bg-black/18">
                               <CheckCircle2 className="h-3.5 w-3.5 text-gold" />
-                              <span className="text-xs font-semibold text-gold">陪练建议已生成</span>
-                              <span className="text-xs text-muted-foreground">下一步会直接进入待办</span>
+                              <span className="text-xs font-semibold text-gold">
+                                陪练建议已生成
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                下一步会直接进入待办
+                              </span>
                             </div>
                           ) : null}
                         </div>
@@ -229,7 +245,7 @@ export function LandingHero() {
               </div>
             </div>
 
-              <div className="bg-surface-2/78 p-6 dark:bg-[oklch(0.14_0.01_240/0.3)]">
+            <div className="bg-surface-2/78 p-6 dark:bg-[oklch(0.14_0.01_240/0.3)]">
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 今日学习路径
               </p>
@@ -258,9 +274,13 @@ export function LandingHero() {
                         {index + 1}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-foreground">{item}</p>
+                        <p className="text-sm font-medium text-foreground">
+                          {item}
+                        </p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {index === 0 ? "预计 5 分钟，完成后继续下一步。" : "随后自动解锁。"}
+                          {index === 0
+                            ? "预计 5 分钟，完成后继续下一步。"
+                            : "随后自动解锁。"}
                         </p>
                       </div>
                     </div>
@@ -271,17 +291,21 @@ export function LandingHero() {
               <div className="mt-5 rounded-2xl border border-border/80 bg-surface-1/82 px-4 py-4 backdrop-blur-sm dark:border-white/8 dark:bg-white/4">
                 <p className="text-xs text-muted-foreground">适合人群</p>
                 <p className="mt-2 text-sm leading-7 text-foreground">
-                  第一次接触 AI 编程工具的人，也包括已经能写代码、但想把 {cursorToolName}、{claudeCodeToolName}、{codexToolName} 真正接入自己项目流程的开发者。
+                  第一次接触 AI 编程工具的人，也包括已经能写代码、但想把{" "}
+                  {cursorToolName}、{claudeCodeToolName}、{codexToolName}{" "}
+                  真正接入自己项目流程的开发者。
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {["新手起步", "项目实战", "调试重构", "接口联调"].map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full border border-border/80 bg-surface-2/90 px-2.5 py-1 text-xs text-muted-foreground dark:border-white/8 dark:bg-black/18"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                  {["新手起步", "项目实战", "调试重构", "接口联调"].map(
+                    (tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full border border-border/80 bg-surface-2/90 px-2.5 py-1 text-xs text-muted-foreground dark:border-white/8 dark:bg-black/18"
+                      >
+                        {tag}
+                      </span>
+                    ),
+                  )}
                 </div>
               </div>
             </div>
@@ -289,5 +313,5 @@ export function LandingHero() {
         </div>
       </div>
     </section>
-  )
+  );
 }
