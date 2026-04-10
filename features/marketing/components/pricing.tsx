@@ -27,7 +27,7 @@ export function LandingPricing() {
             套餐订阅
           </p>
           <h2 className="text-4xl font-bold tracking-tight text-balance">
-            先用免费版体验，再决定是否持续升级
+            先用免费版体验, 再决定是否持续升级
           </h2>
           <p className="mt-4 text-base leading-7 text-muted-foreground">
             当前处于 MVP 内测阶段，定价用于表达能力层级与升级路径，正式联调前仍可能调整。

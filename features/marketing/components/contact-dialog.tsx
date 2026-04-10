@@ -152,7 +152,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
           <div className="overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
             <div className="grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
               <section className="rounded-[28px] border border-border bg-muted/40 p-4 sm:p-5 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]">
-                <div className="flex items-center justify-between gap-3 border-b border-border pb-4 dark:border-white/8">
+                <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-4 dark:border-white/8">
                   <div>
                     <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                       直接联系
@@ -221,7 +221,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
               </section>
 
               <section className="rounded-[28px]  border border-border/70 bg-card p-4 sm:p-5 dark:border-white/10 dark:bg-[linear-gradient(180deg,oklch(0.20_0.015_238/0.94),oklch(0.17_0.012_248/0.96))]">
-                <div className="border-b border-border pb-4 dark:border-white/8">
+                <div className="border-b border-border/60 pb-4 dark:border-white/8">
                   <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                     企业信息
                   </p>

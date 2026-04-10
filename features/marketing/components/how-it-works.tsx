@@ -16,7 +16,7 @@ export function LandingHowItWorks() {
             学习方式
           </p>
           <h2 className="text-4xl font-bold tracking-tight text-balance">
-            三步从&ldquo;看过&rdquo;走向&ldquo;做成&rdquo;
+            三步从 &ldquo;看过&rdquo; 走向 &ldquo;做成&rdquo;
           </h2>
           <p className="mt-4 text-base leading-7 text-muted-foreground">
             不把一整套教程直接塞给你，而是先判断当前目标，再拆出一条能继续执行的路径。
