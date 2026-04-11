@@ -384,13 +384,13 @@ export function MaterialPlanPanel({
 
   return (
     <PageSection
-      className={cn("shrink-0", className)}
+      className={cn("max-w-full min-w-0 shrink-0", className)}
       eyebrow="自学路径"
       title="用教程链接生成学习计划"
       description="提交后会进入异步处理。首版支持 MDN、Next.js、web.dev，以及公开的抖音、小红书、B 站教程链接。确认后会替换当前进行中的自学计划。"
       bodyClassName="space-y-4"
     >
-      <div className="space-y-2">
+      <div className="min-w-0 space-y-2">
         <p className="text-xs font-medium text-muted-foreground">教程链接（仅 1 条）</p>
         <Textarea
           value={linksText}
@@ -398,11 +398,11 @@ export function MaterialPlanPanel({
           placeholder={"https://developer.mozilla.org/..."}
           rows={2}
           disabled={busyAction !== null}
-          className="min-h-[88px] resize-y bg-background font-mono text-sm"
+          className="field-sizing-fixed max-w-full min-h-[88px] min-w-0 resize-y break-all bg-background font-mono text-sm"
         />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
         <div className="space-y-2 sm:col-span-2">
           <p className="text-xs font-medium text-muted-foreground">学习目标补充（可选）</p>
           <Textarea
@@ -411,7 +411,7 @@ export function MaterialPlanPanel({
             placeholder="例如：希望两周内能独立改一个现有页面的交互。"
             rows={2}
             disabled={busyAction !== null}
-            className="resize-y bg-background text-sm"
+            className="field-sizing-fixed max-w-full min-w-0 resize-y wrap-break-word bg-background text-sm"
           />
         </div>
         <div className="space-y-2">

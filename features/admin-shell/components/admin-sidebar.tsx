@@ -46,7 +46,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
   return (
     <aside
       className={cn(
-        "flex shrink-0 flex-col border-r border-sidebar-border/80 bg-sidebar shadow-sm",
+        "flex shrink-0 flex-col border-r border-sidebar-border/80 bg-sidebar",
         "transition-[width] duration-200 ease-[cubic-bezier(0.33,1,0.68,1)]",
         collapsed ? "w-[72px]" : "w-56",
       )}
@@ -106,7 +106,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
                     "w-full text-sidebar-foreground",
                     collapsed ? "min-h-10 justify-center px-0 py-2" : "gap-2.5 px-3 py-2.5",
                     "hover:bg-sidebar-accent/90 hover:text-sidebar-accent-foreground",
-                    isActive && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm",
+                    isActive && "bg-sidebar-accent text-sidebar-accent-foreground",
                   )}
                   aria-expanded={aiExpanded}
                 >
@@ -152,7 +152,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
                               collapsed ? "min-h-9 justify-center px-0 py-2" : "gap-2 px-2 py-2 text-xs",
                               "hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground",
                               isChildActive
-                                && "bg-primary/12 font-semibold text-primary shadow-sm ring-1 ring-primary/15",
+                                && "bg-primary/12 font-semibold text-primary ring-1 ring-primary/15",
                             )}
                           >
                             <ChildIcon className="size-3.5 shrink-0" />
@@ -181,7 +181,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
                   collapsed ? "min-h-10 justify-center px-0 py-2" : "gap-2.5 px-3 py-2.5",
                   "hover:bg-sidebar-accent/90 hover:text-sidebar-accent-foreground",
                   isActive
-                    && "bg-primary/[0.14] font-semibold text-primary shadow-sm ring-1 ring-primary/20",
+                    && "bg-primary/[0.14] font-semibold text-primary ring-1 ring-primary/20",
                 )}
               >
                 <Icon

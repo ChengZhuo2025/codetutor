@@ -30,11 +30,11 @@ export function MaterialPlanDialog({
       <DialogContent
         className={cn(
           DIALOG_PANEL_CLASS,
-          "max-h-[85vh] overflow-y-auto rounded-2xl p-0 sm:max-w-[760px]",
+          "max-h-[85vh] min-w-0 overflow-x-hidden overflow-y-auto rounded-2xl p-0 sm:max-w-[760px]",
         )}
       >
-        <div className={cn("border-b px-5 pt-5 pb-4", USER_PANEL_DIVIDER_CLASS)}>
-          <DialogHeader className="text-left">
+        <div className={cn("min-w-0 border-b px-5 pt-5 pb-4", USER_PANEL_DIVIDER_CLASS)}>
+          <DialogHeader className="min-w-0 text-left">
             <DialogTitle className="text-base">生成学习计划</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
               粘贴 1 条教程链接，让 AI 帮你生成一份可执行的学习计划预览。
@@ -42,7 +42,7 @@ export function MaterialPlanDialog({
           </DialogHeader>
         </div>
 
-        <div className="px-5 pb-5">
+        <div className="min-w-0 px-5 pb-5">
           <MaterialPlanPanel
             key={panelKey}
             onSessionRefresh={onSessionRefresh}
