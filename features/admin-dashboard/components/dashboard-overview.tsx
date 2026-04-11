@@ -134,7 +134,7 @@ export function DashboardOverview() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-foreground">运营值班面板</h1>
+          <h1 className="text-xl font-semibold text-foreground">运营面板</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             今日数据
             {currentTime ? ` · 最后更新：${currentTime}` : null}

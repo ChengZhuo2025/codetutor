@@ -191,7 +191,7 @@ export type AdminAIProviderTestConnectionResponseData = {
   testedPath?: string
 }
 
-/** 编辑 Model 时「连接测试」：使用所选 Provider 的已存密钥 + 表单中的真实模型名发起最小 chat 探测。 */
+/** 编辑 Model 时「连接测试」：默认发起最小模型探测；`quality_check` / thinking 类模型退化为 `/models` 连通性验证。 */
 export type AdminAIModelTestConnectionRequest = {
   providerCode: string
   modelName: string

@@ -59,8 +59,8 @@ export function LandingHero() {
         className="pointer-events-none absolute inset-0 z-[1] dark:hidden"
         style={{
           backgroundImage: `
-            linear-gradient(to right, oklch(0.55 0.02 240 / 0.065) 1px, transparent 1px),
-            linear-gradient(to bottom, oklch(0.55 0.02 240 / 0.065) 1px, transparent 1px)
+            linear-gradient(to right, oklch(0.55 0.02 240 / 0.12) 1px, transparent 1px),
+            linear-gradient(to bottom, oklch(0.55 0.02 240 / 0.12) 1px, transparent 1px)
           `,
           backgroundSize: "48px 48px",
         }}
@@ -69,8 +69,8 @@ export function LandingHero() {
         className="pointer-events-none absolute inset-0 z-[1] hidden dark:block"
         style={{
           backgroundImage: `
-            linear-gradient(to right, oklch(0.62 0.04 195 / 0.22) 1px, transparent 1px),
-            linear-gradient(to bottom, oklch(0.62 0.04 195 / 0.22) 1px, transparent 1px)
+            linear-gradient(to right, oklch(0.62 0.04 195 / 0.15) 1px, transparent 1px),
+            linear-gradient(to bottom, oklch(0.62 0.04 195 / 0.15) 1px, transparent 1px)
           `,
           backgroundSize: "48px 48px",
         }}
@@ -180,7 +180,7 @@ export function LandingHero() {
                       <div key={`${loop}-${message.id}`} className="flex gap-3">
                         <div
                           className={cn(
-                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold",
+                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-semibold",
                             message.speaker === "user"
                               ? "bg-foreground/10 text-foreground dark:bg-white/8"
                               : message.speaker === "system"

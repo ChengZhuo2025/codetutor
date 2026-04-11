@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button"
 import {
   USER_BUTTON_PRIMARY_CLASS,
   USER_PANEL_SECTION_CLASS,
-  USER_PANEL_SUBTLE_SECTION_CLASS,
 } from "@/components/ui/surface-styles"
 import type { OnboardingToolGroup } from "@/features/onboarding/types"
 import { cn } from "@/lib/utils"

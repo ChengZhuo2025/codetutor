@@ -73,7 +73,7 @@ export function LandingFooter() {
                   rel="noreferrer"
                   className="group flex items-center gap-3 transition-transform hover:-translate-y-0.5"
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-muted/50 dark:border-white/10 dark:bg-white/5">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-muted/50 dark:border-white/10 dark:bg-white/5">
                     <Image
                       src={tool.logoSrc}
                       alt={`${tool.name} logo`}

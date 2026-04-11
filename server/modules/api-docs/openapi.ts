@@ -3928,7 +3928,7 @@ registry.registerPath({
   tags: ["admin-ai"],
   summary: "测试 Model 连接（Provider 密钥 + 真实模型名）",
   description:
-    "使用库内所选 Provider 的 Base URL 与已配置密钥，对表单中的「真实模型名」发起最小非流式 chat 请求（POST /chat/completions）。仅支持 OpenAI 兼容与 SiliconFlow Provider。",
+    "使用库内所选 Provider 的 Base URL 与已配置密钥，对表单中的「真实模型名」发起轻量探测。默认使用最小 chat 请求；若模型 metadata 含 `quality_check` 能力，或为 `enableThinking=true` / reasoning profile，则退化为 `/models` 级鉴权连通性探测。仅支持 OpenAI 兼容与 SiliconFlow Provider。",
   security: [],
   request: {
     params: adminAIModelIdParamsSchema,

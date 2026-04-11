@@ -1,6 +1,5 @@
-import { CheckCircle2, Code2, Sparkles } from "lucide-react"
+import { CheckCircle2, Code2 } from "lucide-react"
 import { APP_NAME } from "@/constants/app"
-import { getRankName } from "@/constants/ranks"
 import { AUTH_PREVIEW_TOOL_CODES, getToolName } from "@/constants/tools"
 import { marketingConversationMessages } from "@/features/marketing/data/marketing-content"
 import { cn } from "@/lib/utils"
@@ -12,10 +11,6 @@ type LoginBrandPanelProps = {
 
 export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
   const previewTools = AUTH_PREVIEW_TOOL_CODES.map((code) => getToolName(code))
-  const profile = {
-    currentRank: getRankName("vibe_coder"),
-    currentScore: 680,
-  }
 
   return (
     <div className="relative hidden w-[60%] flex-col overflow-hidden bg-surface-2 px-7 pt-6 pb-20 lg:flex">
@@ -117,7 +112,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
                 >
                   <div
                     className={cn(
-                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-bold",
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-semibold",
                       message.speaker === "user"
                         ? "bg-foreground/10 text-foreground dark:bg-white/8"
                         : message.speaker === "system"

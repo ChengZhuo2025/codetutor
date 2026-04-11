@@ -1171,7 +1171,7 @@ function modelNameLooksLikeSpeechAsr(modelName: string): boolean {
 
 /** 管理端模型连接测试：根据 metadata / 模型名推断探测方式 */
 function inferAdminModelConnectionTestKind(
-  row: ModelRow,
+  row: Pick<ModelRow, "model_name" | "metadata">,
   requestModelName: string,
 ): "chat" | "audio_transcription" {
   const meta = row.metadata ?? {}
@@ -1195,7 +1195,20 @@ function inferAdminModelConnectionTestKind(
   return "chat"
 }
 
-function inferReasoningChatModel(row: ModelRow, requestModelName: string): boolean {
+function normalizeCapabilityName(capability: string): string {
+  return capability.trim().toLowerCase().replace(/-/g, "_")
+}
+
+function modelHasQualityCheckCapability(row: Pick<ModelRow, "metadata">): boolean {
+  return readCapabilitiesList(row.metadata ?? {})
+    .map(normalizeCapabilityName)
+    .includes("quality_check")
+}
+
+function inferReasoningChatModel(
+  row: Pick<ModelRow, "model_name" | "metadata">,
+  requestModelName: string,
+): boolean {
   const meta = row.metadata ?? {}
   if (meta.enableThinking === true) {
     return true
@@ -1216,6 +1229,23 @@ function inferReasoningChatModel(row: ModelRow, requestModelName: string): boole
   }
 
   return false
+}
+
+export function inferAdminModelConnectionProbeStrategy(
+  row: Pick<ModelRow, "model_name" | "metadata">,
+  requestModelName: string,
+): "chat" | "audio_transcription" | "models_list" {
+  const testKind = inferAdminModelConnectionTestKind(row, requestModelName)
+  if (testKind === "audio_transcription") {
+    return "audio_transcription"
+  }
+
+  // 对质量闸门与 thinking 类模型，仅验证鉴权与 Provider 连通性，避免为了后台配置测试触发慢推理。
+  if (modelHasQualityCheckCapability(row) || inferReasoningChatModel(row, requestModelName)) {
+    return "models_list"
+  }
+
+  return "chat"
 }
 
 function providerSupportsSiliconFlowStyleAudioTranscription(provider: ProviderRow): boolean {
@@ -1674,8 +1704,8 @@ export async function testAdminAIModelConnection(
   const maxTokens = input.maxOutputTokens ?? 16
   const effectiveTimeout = input.timeoutMs ?? provider.timeout_ms
 
-  const testKind = inferAdminModelConnectionTestKind(modelRow, modelNameTrim)
-  if (testKind === "audio_transcription") {
+  const probeStrategy = inferAdminModelConnectionProbeStrategy(modelRow, modelNameTrim)
+  if (probeStrategy === "audio_transcription") {
     if (!providerSupportsSiliconFlowStyleAudioTranscription(provider)) {
       throwNamedError(
         "VALIDATION_FAILED",
@@ -1687,6 +1717,16 @@ export async function testAdminAIModelConnection(
       authMode: provider.auth_mode,
       secret: resolved.secret,
       modelName: modelNameTrim,
+      timeoutMs: effectiveTimeout,
+    })
+  }
+
+  if (probeStrategy === "models_list") {
+    return probeProviderModelsEndpoint({
+      providerType: provider.provider_type,
+      baseUrl: provider.base_url,
+      authMode: provider.auth_mode,
+      secret: resolved.secret,
       timeoutMs: effectiveTimeout,
     })
   }
