@@ -185,6 +185,22 @@ export type LearningPlanDraftTaskDetailContract = {
   isUserEdited: boolean
 }
 
+export type LearningPlanDraftQualityReport = {
+  status: "passed" | "pilot_fallback"
+  checks: Array<{
+    code: string
+    passed: boolean
+    message: string
+  }>
+  warnings: string[]
+  selfCheck: {
+    enabled: boolean
+    decision: "pass" | "retry" | "fallback" | "skipped"
+    reason: string | null
+  }
+  fallbackReason: string | null
+}
+
 export type LearningPlanDraftDetailResponseData = {
   draftId: string
   intakeId: string
@@ -193,7 +209,7 @@ export type LearningPlanDraftDetailResponseData = {
   status: "draft" | "confirmed" | "rejected" | "superseded"
   revisionNo: number
   qualityStatus: string
-  qualityReport: Record<string, unknown> | null
+  qualityReport: LearningPlanDraftQualityReport | null
   alignmentTable: unknown
   week1TaskIds: string[]
   updatedAt: string

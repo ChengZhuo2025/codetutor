@@ -22,11 +22,11 @@ export function buildPlannerUserMessage(input: {
   parts.push("\n## 材料分块（每块有 id，sourceRefs 必须引用这些 id）")
   for (const chunk of input.chunks) {
     parts.push(
-      `\n### ${chunk.id}\nURL: ${chunk.url}\nmodality: ${chunk.modality}\nsourceRef: ${JSON.stringify(chunk.sourceRef)}\n${chunk.excerpt}`,
+      `\n### ${chunk.id}\nURL: ${chunk.url}\nmodality: ${chunk.modality}\nevidenceType: ${chunk.evidenceType}\nconfidence: ${chunk.confidence}\nsourceRef: ${JSON.stringify(chunk.sourceRef)}\n${chunk.excerpt}`,
     )
   }
 
-  parts.push("\n请输出 JSON，契约见系统提示。")
+  parts.push("\n要求：高置信度证据优先；弱证据只能作为补充，不要据此编造细节。请输出 JSON，契约见系统提示。")
 
   return parts.join("\n")
 }

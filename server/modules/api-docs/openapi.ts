@@ -1163,8 +1163,24 @@ const successExamples = {
     goal: "把教程知识转成一个可执行、可确认的页面改造练习。",
     status: "draft" as const,
     revisionNo: 2,
-    qualityStatus: "pending",
-    qualityReport: null,
+    qualityStatus: "passed",
+    qualityReport: {
+      status: "passed" as const,
+      checks: [
+        {
+          code: "TASK_COUNT_RANGE",
+          passed: true,
+          message: "任务数需在 3 到 8 之间。",
+        },
+      ],
+      warnings: ["公开页可提取文本较少，已通过字幕补足。"],
+      selfCheck: {
+        enabled: false,
+        decision: "skipped" as const,
+        reason: "未配置 quality-check 模型，已跳过自检。",
+      },
+      fallbackReason: null,
+    },
     alignmentTable: [],
     week1TaskIds: ["44444444-4444-4444-8444-444444444444"],
     updatedAt: EXAMPLE_LATEST,

@@ -411,7 +411,7 @@ Agents 管理必须覆盖两类场景：
 | `recommended_temperature` | number | 否 | 范围建议 `0-2` |
 | `pricing_metadata` | json editor | 否 | 成本元信息 |
 | `is_active` | boolean | 是 | 是否可被 agent 使用 |
-| `metadata` | json editor | 否 | 扩展字段，如 `profileGroup`、`routePolicy` |
+| `metadata` | json editor | 否 | 扩展字段，如 `profileGroup`、`routePolicy`、`capabilities`；其中 `capabilities` 现已被教程材料 intake worker 用于 `asr` / `vision` / `quality_check` 模型回退选择 |
 | `changeReason` | string | 是 | 本次修改原因 |
 
 LLM 管理页的额外交互要求：

@@ -79,7 +79,7 @@
 - 当前学习消息链路已覆盖 logic / HTTP / output-format 测试，以及真实 provider / database 参与的 live JSON、live SSE 集成测试
 - 当前 provider 密钥主路径已改为“管理后台录入 -> 服务端加密 -> 数据库存储 -> 运行时解密”；若数据库密钥缺失，则仍可通过 `envSecretRef` 回退读取环境变量；若两者都不存在会返回 `AI_PROVIDER_ERROR`
 - 当前仓库已经具备适合承载该能力的基础设施：`app/api`、`server/modules`、Supabase Auth、Database、Storage、远程迁移执行脚本
-- **教程链接生成学习计划（Phase A）**：已落地专用接口 `POST /api/learning/plan-from-material`（及草稿 `confirm` / `regenerate`），计划生成使用 `agent_templates.code = self-study-material-planner` 与 `invokeAIProvider` 非流式 JSON，不经过 `POST /api/learning/message` 主消息编排
+- **教程链接生成学习计划（Phase A/B）**：已落地专用接口 `POST /api/learning/plan-from-material`（及草稿 `confirm` / `regenerate`），计划生成使用 `agent_templates.code = self-study-material-planner` 与 `invokeAIProvider` 非流式 JSON，不经过 `POST /api/learning/message` 主消息编排；intake worker 现已按 `raw text -> subtitle -> ASR -> OCR/vision` 顺序做多模态证据摄取，并通过独立 quality gate 做规则校验与可选小模型自检
 - 当前仍未引入 Redis / 消息队列；上述缓存、限流与观测增强均为单实例进程内实现，属于第一阶段运行时加固而非分布式基础设施
 
 因此，本文档既是后续扩展规范，也是当前首版真实实现的权威快照
@@ -1163,7 +1163,7 @@ ai/skills/
 | `recommended_temperature` | `numeric(4,2)` | nullable | 推荐温度 |
 | `pricing_metadata` | `jsonb` | not null default '{}' | 输入/输出计费信息 |
 | `is_active` | `boolean` | not null default true | 是否启用 |
-| `metadata` | `jsonb` | not null default '{}' | 模型特征、备注等扩展字段 |
+| `metadata` | `jsonb` | not null default '{}' | 模型特征、备注等扩展字段；当前 material intake pipeline 会读取 `metadata.capabilities`（如 `asr` / `vision` / `quality_check`）做运行时模型回退选择 |
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
 

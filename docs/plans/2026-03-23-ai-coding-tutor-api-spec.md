@@ -920,6 +920,9 @@ SSE 事件补充：
 
 - 当前支持 `developer.mozilla.org`、`nextjs.org`、`web.dev` 与公开的抖音 / 小红书 / B 站教程链接
 - 创建时立即返回 `processingMode=async`、`intakeId`、`runId` 和当前状态；前端通过 `GET /api/learning/material-intakes/{id}` 轮询进度
+- intake worker 现已固定按 `raw text -> subtitle -> ASR -> OCR/vision` 顺序提取证据；仅当前一层内容不足时才继续调用更贵模型
+- `learning_material_chunks` 现已稳定写入 `modality`、`source_ref`、`evidence_type`、`confidence`，供 planner 与质量闸门追溯证据
+- planner 输出进入规则质量闸门；若证据偏弱或计划质量不足，会自动降级为 3 关试点计划，并在草稿 `qualityReport` 中写出原因
 - 成功后写入 `learning_material_intakes` / `learning_material_chunks` / `learning_plan_generation_runs` / `learning_plan_drafts` / `learning_plan_draft_tasks` / `learning_plan_draft_revisions`，不直接改动当前 active path
 - 主工具与等级来自 `user_profiles`，无需在请求中传 `targetToolCode`
 - 运行时契约与 Swagger：`GET /api/docs/openapi`（operationId `postLearningPlanFromMaterial` 等）、调试页 `/api-docs`
@@ -1762,7 +1765,7 @@ SSE 事件补充：
 | `POST /api/learning/message` | 是 | 核心学习数据 |
 | `GET /api/learning/current-session` | 是 | 恢复当前学习上下文 |
 | `GET /api/learning/messages` | 是 | 分页读取当前学习会话历史消息 |
-| `POST /api/learning/plan-from-material` | 是 | 自学模式（`selection_mode=self_directed`）下按白名单链接同步生成学习计划草稿 |
+| `POST /api/learning/plan-from-material` | 是 | 自学模式（`selection_mode=self_directed`）下提交异步 material intake，按多模态证据生成学习计划草稿 |
 | `POST /api/learning/plan-drafts/{id}/confirm` | 是 | 确认当前用户草稿并物化为 `learning_paths` / `path_steps` / `user_learning_paths` / `user_tasks`，幂等 |
 | `POST /api/learning/plan-drafts/{id}/regenerate` | 是 | 为当前用户重生成草稿；旧草稿标记 `superseded`，不直接改 active path |
 | `POST /api/learning/stuck-help` | 是，规划中 | 请求卡住帮助 |

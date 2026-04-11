@@ -11,6 +11,8 @@ import {
   submitMaterialPlanGeneration,
   type MaterialPlanSubmissionResult,
 } from "@/server/modules/learning-materials/service.ts"
+import { resolveMaterialPipelineModels } from "@/server/modules/learning-materials/providers.ts"
+import type { MaterialEvidenceCoverage } from "@/server/modules/learning-materials/normalizer.ts"
 
 import { confirmPlanDraft, type ConfirmDraftResult } from "./activation.ts"
 import {
@@ -114,6 +116,44 @@ function readStringArrayJson(value: unknown): string[] {
     return []
   }
   return value.filter((item): item is string => typeof item === "string")
+}
+
+function readWarningsFromMetadata(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return [] as string[]
+  }
+
+  const warnings = (value as { warnings?: unknown }).warnings
+  return Array.isArray(warnings)
+    ? warnings.filter((item): item is string => typeof item === "string")
+    : []
+}
+
+function aggregateCoverageFromSourceSnapshots(
+  snapshots: Array<{ metadata: Record<string, unknown> }>,
+): MaterialEvidenceCoverage | null {
+  const coverageItems = snapshots
+    .map((snapshot) => snapshot.metadata.evidenceCoverage)
+    .filter((item): item is MaterialEvidenceCoverage => (
+      !!item && typeof item === "object"
+      && typeof (item as { highConfidenceChars?: unknown }).highConfidenceChars === "number"
+      && typeof (item as { totalUsefulChars?: unknown }).totalUsefulChars === "number"
+      && typeof (item as { chunkCount?: unknown }).chunkCount === "number"
+      && typeof (item as { isSufficient?: unknown }).isSufficient === "boolean"
+      && typeof (item as { isWeakEvidence?: unknown }).isWeakEvidence === "boolean"
+    ))
+
+  if (coverageItems.length === 0) {
+    return null
+  }
+
+  return {
+    highConfidenceChars: coverageItems.reduce((sum, item) => sum + item.highConfidenceChars, 0),
+    totalUsefulChars: coverageItems.reduce((sum, item) => sum + item.totalUsefulChars, 0),
+    chunkCount: coverageItems.reduce((sum, item) => sum + item.chunkCount, 0),
+    isSufficient: coverageItems.every((item) => item.isSufficient),
+    isWeakEvidence: coverageItems.some((item) => item.isWeakEvidence),
+  }
 }
 
 function tryParsePlannerOutput(content: string): PlannerOutput {
@@ -868,14 +908,46 @@ export async function executeMaterialPlanGenerationRun(runId: string) {
       learningLevelLabel,
     })
 
-    let plan: PlannerOutput
-    try {
-      plan = await invokePlannerWithRetry(userMessage)
-    } catch (error) {
-      if (error instanceof LearningAIProviderError) {
-        throw aiProviderFailed(error.message)
+    const intakeWarnings = sourceSnapshots.flatMap((snapshot) => readWarningsFromMetadata(snapshot.metadata))
+    const evidenceCoverage = aggregateCoverageFromSourceSnapshots(sourceSnapshots)
+    const qualityRuntime = (await resolveMaterialPipelineModels()).quality
+
+    let plan: PlannerOutput | null = null
+    let qualityGateResult: Awaited<ReturnType<typeof runPlanQualityGate>> | null = null
+
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      let planned: PlannerOutput
+      try {
+        planned = await invokePlannerWithRetry(userMessage)
+      } catch (error) {
+        if (error instanceof LearningAIProviderError) {
+          throw aiProviderFailed(error.message)
+        }
+        throw error
       }
-      throw error
+
+      plan = {
+        ...planned,
+        warnings: [...new Set([...(planned.warnings ?? []), ...intakeWarnings])],
+      }
+
+      qualityGateResult = await runPlanQualityGate({
+        plan,
+        weeklyHours: plannerInput?.weeklyHours ?? null,
+        intakeWarnings,
+        evidenceCoverage,
+        qualityRuntime,
+        attempt,
+        maxAttempts: 2,
+      })
+
+      if (qualityGateResult.decision !== "retry") {
+        break
+      }
+    }
+
+    if (!plan || !qualityGateResult) {
+      throw aiResponseInvalid("计划生成流程未返回有效结果。")
     }
 
     await updateRunAndIntakeProgress(supabase, run.id, run.intake_id, {
@@ -888,7 +960,6 @@ export async function executeMaterialPlanGenerationRun(runId: string) {
       },
     })
 
-    const qualityGateResult = runPlanQualityGate(plan)
     const finalPlan = qualityGateResult.plan
 
     const draftId = await persistDraftRow(supabase, run.user_id, run.intake_id, finalPlan)

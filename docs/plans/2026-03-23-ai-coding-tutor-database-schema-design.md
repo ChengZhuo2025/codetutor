@@ -1101,10 +1101,12 @@ erDiagram
 | `intake_id` | `uuid` | FK，关联 `learning_material_intakes.id`，`on delete cascade` | 所属 intake |
 | `source_id` | `uuid` | FK，关联 `learning_material_sources.id`，`on delete cascade` | 来源链接 |
 | `chunk_no` | `integer` | not null | 在单条 source 中的顺序编号 |
-| `modality` | `text` | not null | `text` / `subtitle` / `vision` / `ocr` 等 |
+| `modality` | `text` | not null | `text` / `subtitle` / `audio_transcript` / `image_ocr` / `vision_summary` |
 | `content` | `text` | not null | 清洗后的文本 |
 | `summary` | `text` | nullable | 后台简版摘要 |
 | `source_ref` | `jsonb` | not null default `'{}'` | timecode / frame / subtitle track 等元数据 |
+| `evidence_type` | `text` | not null default `'raw_text'` | `raw_text` / `subtitle_track` / `asr_transcript` / `ocr_text` / `vision_summary` |
+| `confidence` | `numeric(4,3)` | not null default `0.980` | 归一化后的证据置信度，供 planner / quality gate 使用 |
 | `token_estimate` | `integer` | nullable | 供 planner 估算成本的 token 数 |
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
@@ -1113,6 +1115,12 @@ erDiagram
 
 - `idx_learning_material_chunks_intake_id`：`intake_id`
 - `idx_learning_material_chunks_source_id`：`source_id`
+
+实现约束补充：
+
+- 摄取 worker 固定按 `raw text -> subtitle -> ASR -> OCR/vision` 顺序追加证据；前一层已满足内容充足度时，不再继续调用更贵模型。
+- `source_ref` 必须稳定记录 `sourceId`、`url`、`chunkNo` 以及可选的 `assetUrl` / `assetKind` / `trackLanguage` / `timeRange` / `frameNo` / `region`，不能退化为单纯文本块。
+- `024` 已建立 `learning_material_chunks` 主表，`026` 补充 `evidence_type` 与 `confidence` 字段，并对早期 `text-only` 数据做回填。
 
 ## 6.23 `learning_plan_generation_runs`
 

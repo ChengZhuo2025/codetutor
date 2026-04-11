@@ -510,6 +510,28 @@ export const learningPlanDraftTaskDetailSchema = z
   })
   .openapi("LearningPlanDraftTaskDetail")
 
+export const learningPlanDraftQualityCheckSchema = z
+  .object({
+    code: z.string(),
+    passed: z.boolean(),
+    message: z.string(),
+  })
+  .openapi("LearningPlanDraftQualityCheck")
+
+export const learningPlanDraftQualityReportSchema = z
+  .object({
+    status: z.enum(["passed", "pilot_fallback"]),
+    checks: z.array(learningPlanDraftQualityCheckSchema),
+    warnings: z.array(z.string()),
+    selfCheck: z.object({
+      enabled: z.boolean(),
+      decision: z.enum(["pass", "retry", "fallback", "skipped"]),
+      reason: z.string().nullable(),
+    }),
+    fallbackReason: z.string().nullable(),
+  })
+  .openapi("LearningPlanDraftQualityReport")
+
 export const learningPlanDraftDetailResponseDataSchema = z
   .object({
     draftId: z.string().uuid(),
@@ -519,7 +541,7 @@ export const learningPlanDraftDetailResponseDataSchema = z
     status: z.enum(["draft", "confirmed", "rejected", "superseded"]),
     revisionNo: z.number().int(),
     qualityStatus: z.string(),
-    qualityReport: z.record(z.string(), z.unknown()).nullable(),
+    qualityReport: learningPlanDraftQualityReportSchema.nullable(),
     alignmentTable: z.unknown(),
     week1TaskIds: z.array(z.string().uuid()),
     updatedAt: z.string(),
