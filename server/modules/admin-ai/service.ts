@@ -15,12 +15,16 @@ import type {
   AdminAIModelDetailResponseData,
   AdminAIModelListItem,
   AdminAIModelListResponseData,
+  AdminAIModelTestConnectionRequest,
+  AdminAIModelTestConnectionResponseData,
   AdminAIModelUpsertRequest,
   AdminAIOverviewResponseData,
   AdminAIProviderDetailResponseData,
   AdminAIProviderListItem,
   AdminAIProviderListResponseData,
   AdminAIProviderSecretRevealResponseData,
+  AdminAIProviderTestConnectionRequest,
+  AdminAIProviderTestConnectionResponseData,
   AdminAIProviderUpsertRequest,
   AdminAIResolvePreviewRequest,
   AdminAIResolvePreviewResponseData,
@@ -1121,6 +1125,582 @@ export async function revealAdminAIProviderSecret(
     apiKey: resolved.secret,
     source: resolved.source,
   }
+}
+
+function normalizeProviderBaseUrl(baseUrl: string) {
+  return baseUrl.trim().replace(/\/+$/, "")
+}
+
+function readMetaString(meta: Record<string, unknown>, key: string): string | undefined {
+  const value = meta[key]
+  return typeof value === "string" && value.trim() ? value.trim() : undefined
+}
+
+function readConnectionTestMode(meta: Record<string, unknown>): string | undefined {
+  const direct = readMetaString(meta, "connectionTest")
+  if (direct) {
+    return direct.toLowerCase()
+  }
+  const nested = meta.connectionTest
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    const mode = readMetaString(nested as Record<string, unknown>, "mode")
+    if (mode) {
+      return mode.toLowerCase()
+    }
+  }
+  return undefined
+}
+
+function readCapabilitiesList(meta: Record<string, unknown>): string[] {
+  const raw = meta.capabilities
+  if (!Array.isArray(raw)) {
+    return []
+  }
+  return raw.filter((item): item is string => typeof item === "string")
+}
+
+function modelNameLooksLikeSpeechAsr(modelName: string): boolean {
+  const m = modelName.toLowerCase()
+  return (
+    m.includes("sensevoice")
+    || m.includes("telespeech")
+    || m.includes("speechasr")
+    || m.includes("funaudiollm/sensevoice")
+  )
+}
+
+/** 管理端模型连接测试：根据 metadata / 模型名推断探测方式 */
+function inferAdminModelConnectionTestKind(
+  row: ModelRow,
+  requestModelName: string,
+): "chat" | "audio_transcription" {
+  const meta = row.metadata ?? {}
+  const mode = readConnectionTestMode(meta)
+  if (mode === "audio_transcription" || mode === "asr" || mode === "speech_to_text") {
+    return "audio_transcription"
+  }
+  if (mode === "chat" || mode === "chat_completions") {
+    return "chat"
+  }
+
+  const caps = readCapabilitiesList(meta).map((item) => item.toLowerCase())
+  if (caps.includes("asr") || caps.includes("speech_to_text")) {
+    return "audio_transcription"
+  }
+
+  if (modelNameLooksLikeSpeechAsr(requestModelName) || modelNameLooksLikeSpeechAsr(row.model_name)) {
+    return "audio_transcription"
+  }
+
+  return "chat"
+}
+
+function inferReasoningChatModel(row: ModelRow, requestModelName: string): boolean {
+  const meta = row.metadata ?? {}
+  if (meta.enableThinking === true) {
+    return true
+  }
+  if (readMetaString(meta, "profileGroup") === "reasoning_lab") {
+    return true
+  }
+
+  const blob = `${requestModelName}\n${row.model_name}`.toLowerCase()
+  if (blob.includes("qwq") || blob.includes("glm-z1") || blob.includes("hunyuan-a13b")) {
+    return true
+  }
+  if (blob.includes("deepseek-r1") || blob.includes("deepseek/r1")) {
+    return true
+  }
+  if (blob.includes("deepseek") && blob.includes("r1")) {
+    return true
+  }
+
+  return false
+}
+
+function providerSupportsSiliconFlowStyleAudioTranscription(provider: ProviderRow): boolean {
+  if (provider.provider_type === "siliconflow") {
+    return true
+  }
+  const host = provider.base_url.toLowerCase()
+  return host.includes("siliconflow.cn") || host.includes("siliconflow.com")
+}
+
+/** 极短静音 PCM WAV，用于 ASR 连通性探测（multipart `file`） */
+function buildMinimalSilenceWavPcm(): Buffer {
+  const sampleRate = 16_000
+  const seconds = 0.06
+  const numChannels = 1
+  const bitsPerSample = 16
+  const blockAlign = (numChannels * bitsPerSample) / 8
+  const byteRate = sampleRate * blockAlign
+  const numSamples = Math.max(1, Math.floor(sampleRate * seconds))
+  const dataSize = numSamples * blockAlign
+  const headerSize = 44
+  const buffer = Buffer.alloc(headerSize + dataSize)
+  buffer.write("RIFF", 0)
+  buffer.writeUInt32LE(36 + dataSize, 4)
+  buffer.write("WAVE", 8)
+  buffer.write("fmt ", 12)
+  buffer.writeUInt32LE(16, 16)
+  buffer.writeUInt16LE(1, 20)
+  buffer.writeUInt16LE(numChannels, 22)
+  buffer.writeUInt32LE(sampleRate, 24)
+  buffer.writeUInt32LE(byteRate, 28)
+  buffer.writeUInt16LE(blockAlign, 32)
+  buffer.writeUInt16LE(bitsPerSample, 34)
+  buffer.write("data", 36)
+  buffer.writeUInt32LE(dataSize, 40)
+  return buffer
+}
+
+function dedupeJsonBodies(bodies: Record<string, unknown>[]): Record<string, unknown>[] {
+  const seen = new Set<string>()
+  const out: Record<string, unknown>[] = []
+  for (const body of bodies) {
+    const key = JSON.stringify(body)
+    if (seen.has(key)) {
+      continue
+    }
+    seen.add(key)
+    out.push(body)
+  }
+  return out
+}
+
+function buildChatCompletionProbeBodies(input: {
+  modelName: string
+  maxOutputTokens: number
+  reasoningLikely: boolean
+  recommendedTemperature: number | null
+}): Record<string, unknown>[] {
+  const capped = Math.min(Math.max(input.maxOutputTokens, 16), 512)
+  const baseMessages = [{ role: "user", content: "ping" }]
+  const list: Record<string, unknown>[] = []
+
+  // 轻量请求优先：连通性探测应快；推理参数放后且 thinking_budget 宜小，避免单次占满整段超时。
+  list.push({
+    model: input.modelName,
+    messages: baseMessages,
+    stream: false,
+    max_tokens: 64,
+    temperature: 0,
+  })
+  list.push({
+    model: input.modelName,
+    messages: baseMessages,
+    stream: false,
+    max_tokens: 128,
+    temperature: 0,
+  })
+  list.push({
+    model: input.modelName,
+    messages: baseMessages,
+    stream: false,
+    max_tokens: capped,
+    temperature: 0,
+  })
+
+  const rec = input.recommendedTemperature
+  if (rec != null && rec > 0) {
+    list.push({
+      model: input.modelName,
+      messages: baseMessages,
+      stream: false,
+      max_tokens: capped,
+      temperature: Number(rec),
+      top_p: 0.95,
+    })
+  }
+
+  list.push({
+    model: input.modelName,
+    messages: baseMessages,
+    stream: false,
+    max_tokens: 256,
+    temperature: 0.7,
+    top_p: 0.95,
+  })
+
+  list.push({
+    model: input.modelName,
+    messages: baseMessages,
+    stream: false,
+    max_tokens: 128,
+  })
+
+  if (input.reasoningLikely) {
+    list.push({
+      model: input.modelName,
+      messages: baseMessages,
+      stream: false,
+      max_tokens: Math.min(capped, 512),
+      temperature: 0.6,
+      top_p: 0.95,
+      thinking_budget: 256,
+    })
+    list.push({
+      model: input.modelName,
+      messages: baseMessages,
+      stream: false,
+      max_tokens: Math.min(capped, 2048),
+      temperature: 0.6,
+      top_p: 0.95,
+      thinking_budget: 1024,
+    })
+    list.push({
+      model: input.modelName,
+      messages: baseMessages,
+      stream: false,
+      max_tokens: Math.min(capped, 4096),
+      temperature: 0.6,
+      top_p: 0.95,
+    })
+  }
+
+  return dedupeJsonBodies(list)
+}
+
+async function probeSiliconFlowCompatibleAudioTranscription(input: {
+  baseUrl: string
+  authMode: "bearer" | "api_key_header"
+  secret: string
+  modelName: string
+  timeoutMs: number
+}): Promise<AdminAIModelTestConnectionResponseData> {
+  const cappedMs = Math.min(30_000, Math.max(3_000, input.timeoutMs))
+  const url = `${normalizeProviderBaseUrl(input.baseUrl)}/audio/transcriptions`
+  const controller = new AbortController()
+  const timer = setTimeout(() => {
+    controller.abort()
+  }, cappedMs)
+
+  try {
+    const headers = new Headers()
+    if (input.authMode === "bearer") {
+      headers.set("Authorization", `Bearer ${input.secret}`)
+    } else {
+      headers.set("x-api-key", input.secret)
+    }
+
+    const wav = buildMinimalSilenceWavPcm()
+    const blob = new Blob([wav], { type: "audio/wav" })
+    const form = new FormData()
+    form.set("model", input.modelName)
+    form.set("file", blob, "codetutor-connection-ping.wav")
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: form,
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: "连接失败",
+        httpStatus: response.status,
+        testedPath: "/audio/transcriptions",
+      }
+    }
+
+    return {
+      success: true,
+      message: "连接成功",
+      httpStatus: response.status,
+      testedPath: "/audio/transcriptions",
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return {
+        success: false,
+        message: "连接超时",
+        testedPath: "/audio/transcriptions",
+      }
+    }
+
+    return {
+      success: false,
+      message: "连接失败",
+      testedPath: "/audio/transcriptions",
+    }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+async function probeProviderModelsEndpoint(input: {
+  providerType: AdminAIProviderTestConnectionRequest["providerType"]
+  baseUrl: string
+  authMode: AdminAIProviderTestConnectionRequest["authMode"]
+  secret: string
+  timeoutMs: number
+}): Promise<AdminAIProviderTestConnectionResponseData> {
+  const cappedMs = Math.min(30_000, Math.max(3_000, input.timeoutMs))
+  const modelsUrl = `${normalizeProviderBaseUrl(input.baseUrl)}/models`
+  const controller = new AbortController()
+  const timer = setTimeout(() => {
+    controller.abort()
+  }, cappedMs)
+
+  try {
+    const headers = new Headers()
+    if (input.providerType === "anthropic") {
+      headers.set("x-api-key", input.secret)
+      headers.set("anthropic-version", "2023-06-01")
+    } else if (input.authMode === "bearer") {
+      headers.set("Authorization", `Bearer ${input.secret}`)
+    } else {
+      headers.set("x-api-key", input.secret)
+    }
+
+    const response = await fetch(modelsUrl, {
+      method: "GET",
+      headers,
+      signal: controller.signal,
+    })
+
+    const bodyText = await response.text()
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: "连接失败",
+        httpStatus: response.status,
+        testedPath: "/models",
+      }
+    }
+
+    void bodyText
+
+    return {
+      success: true,
+      message: "连接成功",
+      httpStatus: response.status,
+      testedPath: "/models",
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return {
+        success: false,
+        message: "连接超时",
+        testedPath: "/models",
+      }
+    }
+
+    return {
+      success: false,
+      message: "连接失败",
+      testedPath: "/models",
+    }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+export async function testAdminAIProviderConnection(
+  adminAccountId: string,
+  providerId: string,
+  input: AdminAIProviderTestConnectionRequest,
+): Promise<AdminAIProviderTestConnectionResponseData> {
+  await assertCanAccessAI(adminAccountId)
+
+  const row = findProviderByIdentifier(await loadProviders(), providerId)
+  if (!row) {
+    throwNamedError("NOT_FOUND", "Provider 不存在。")
+  }
+
+  const apiKeyOverride = input.apiKey?.trim() || null
+  const secretRefForResolve = input.envSecretRef ?? row.secret_ref
+  const recordForResolve = {
+    secret_ref: secretRefForResolve,
+    secret_ciphertext: row.secret_ciphertext,
+    secret_iv: row.secret_iv,
+    secret_auth_tag: row.secret_auth_tag,
+    secret_key_version: row.secret_key_version,
+  }
+
+  const resolved = resolveProviderSecret(recordForResolve)
+  const secret = apiKeyOverride ?? resolved.secret
+
+  if (!secret) {
+    throwNamedError(
+      "VALIDATION_FAILED",
+      "未找到可用 API Key：请在「新 API Key」中填写用于测试，或确保数据库/环境变量中已配置密钥。",
+    )
+  }
+
+  return probeProviderModelsEndpoint({
+    providerType: input.providerType,
+    baseUrl: input.baseUrl,
+    authMode: input.authMode,
+    secret,
+    timeoutMs: input.timeoutMs,
+  })
+}
+
+async function probeOpenAICompatibleModelChatPing(input: {
+  baseUrl: string
+  authMode: "bearer" | "api_key_header"
+  secret: string
+  modelName: string
+  maxOutputTokens: number
+  timeoutMs: number
+  reasoningLikely: boolean
+  recommendedTemperature: number | null
+}): Promise<AdminAIModelTestConnectionResponseData> {
+  const cappedMs = Math.min(30_000, Math.max(3_000, input.timeoutMs))
+  const perAttemptMs = Math.min(22_000, Math.max(6_000, cappedMs))
+  const url = `${normalizeProviderBaseUrl(input.baseUrl)}/chat/completions`
+
+  const headers = new Headers({
+    "Content-Type": "application/json",
+  })
+  if (input.authMode === "bearer") {
+    headers.set("Authorization", `Bearer ${input.secret}`)
+  } else {
+    headers.set("x-api-key", input.secret)
+  }
+
+  const bodies = buildChatCompletionProbeBodies({
+    modelName: input.modelName,
+    maxOutputTokens: input.maxOutputTokens,
+    reasoningLikely: input.reasoningLikely,
+    recommendedTemperature: input.recommendedTemperature,
+  })
+
+  let lastHttpStatus: number | undefined
+  let sawHttpResponse = false
+  let onlyAbortErrors = true
+
+  for (const body of bodies) {
+    const attemptController = new AbortController()
+    const attemptTimer = setTimeout(() => {
+      attemptController.abort()
+    }, perAttemptMs)
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: attemptController.signal,
+      })
+
+      clearTimeout(attemptTimer)
+      onlyAbortErrors = false
+      sawHttpResponse = true
+
+      const bodyText = await response.text()
+      lastHttpStatus = response.status
+
+      if (response.ok) {
+        void bodyText
+        return {
+          success: true,
+          message: "连接成功",
+          httpStatus: response.status,
+          testedPath: "/chat/completions",
+        }
+      }
+    } catch (error) {
+      clearTimeout(attemptTimer)
+      if (error instanceof Error && error.name === "AbortError") {
+        continue
+      }
+      onlyAbortErrors = false
+    }
+  }
+
+  if (!sawHttpResponse && onlyAbortErrors) {
+    return {
+      success: false,
+      message: "连接超时",
+      testedPath: "/chat/completions",
+    }
+  }
+
+  return {
+    success: false,
+    message: "连接失败",
+    httpStatus: lastHttpStatus,
+    testedPath: "/chat/completions",
+  }
+}
+
+export async function testAdminAIModelConnection(
+  adminAccountId: string,
+  modelId: string,
+  input: AdminAIModelTestConnectionRequest,
+): Promise<AdminAIModelTestConnectionResponseData> {
+  await assertCanAccessAI(adminAccountId)
+
+  const [providers, models] = await Promise.all([loadProviders(), loadModels()])
+  const modelRow = resolveModelRow(models, modelId)
+  if (!modelRow) {
+    throwNamedError("NOT_FOUND", "Model 不存在。")
+  }
+
+  const provider = findProviderByIdentifier(providers, input.providerCode.trim())
+  if (!provider) {
+    throwNamedError("VALIDATION_FAILED", "所选 Provider 不存在。")
+  }
+
+  if (provider.provider_type === "anthropic") {
+    throwNamedError(
+      "VALIDATION_FAILED",
+      "Anthropic 类型 Provider 暂不支持从此处发起模型连接测试，请使用 OpenAI 兼容或 SiliconFlow Provider。",
+    )
+  }
+
+  const resolved = resolveProviderSecret({
+    secret_ref: provider.secret_ref,
+    secret_ciphertext: provider.secret_ciphertext,
+    secret_iv: provider.secret_iv,
+    secret_auth_tag: provider.secret_auth_tag,
+    secret_key_version: provider.secret_key_version,
+  })
+
+  if (!resolved.secret) {
+    throwNamedError("VALIDATION_FAILED", "所选 Provider 未配置可用 API Key，无法测试模型。")
+  }
+
+  const modelNameTrim = input.modelName.trim()
+  if (!modelNameTrim) {
+    throwNamedError("VALIDATION_FAILED", "真实模型名不能为空。")
+  }
+
+  const maxTokens = input.maxOutputTokens ?? 16
+  const effectiveTimeout = input.timeoutMs ?? provider.timeout_ms
+
+  const testKind = inferAdminModelConnectionTestKind(modelRow, modelNameTrim)
+  if (testKind === "audio_transcription") {
+    if (!providerSupportsSiliconFlowStyleAudioTranscription(provider)) {
+      throwNamedError(
+        "VALIDATION_FAILED",
+        "语音转写类模型需在 SiliconFlow 或兼容其音频接口的 Provider 上测试连接。",
+      )
+    }
+    return probeSiliconFlowCompatibleAudioTranscription({
+      baseUrl: provider.base_url,
+      authMode: provider.auth_mode,
+      secret: resolved.secret,
+      modelName: modelNameTrim,
+      timeoutMs: effectiveTimeout,
+    })
+  }
+
+  return probeOpenAICompatibleModelChatPing({
+    baseUrl: provider.base_url,
+    authMode: provider.auth_mode,
+    secret: resolved.secret,
+    modelName: modelNameTrim,
+    maxOutputTokens: maxTokens,
+    timeoutMs: effectiveTimeout,
+    reasoningLikely: inferReasoningChatModel(modelRow, modelNameTrim),
+    recommendedTemperature: modelRow.recommended_temperature,
+  })
 }
 
 export async function getAdminAIModelList(filters: {

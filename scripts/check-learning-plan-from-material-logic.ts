@@ -7,6 +7,7 @@ import {
   buildMaterialChunkRows,
   extractMaterialEvidenceForSource,
 } from "../server/modules/learning-materials/service.ts"
+import { douyinMaterialSourceAdapter } from "../server/modules/learning-materials/adapters/douyin.ts"
 import { resolveMaterialPipelineModelsFromSnapshots } from "../server/modules/learning-materials/providers.ts"
 import { resolveMaterialSourceAdapter } from "../server/modules/learning-materials/source-resolver.ts"
 import { extractJsonObjectString } from "../server/modules/learning-plans/json-parse.ts"
@@ -48,6 +49,87 @@ test("resolveMaterialSourceAdapter supports configured public platform sources",
     resolveMaterialSourceAdapter("https://www.bilibili.com/video/BV1xx").sourceCode,
     "bilibili",
   )
+})
+
+test("douyin adapter normalizes self modal share link into public video url", async () => {
+  const originalFetch = globalThis.fetch
+  let requestedUrl: string | null = null
+  let requestUserAgent: string | null = null
+
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    requestedUrl = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url
+    requestUserAgent =
+      init?.headers && init.headers instanceof Headers
+        ? init.headers.get("User-Agent")
+        : Array.isArray(init?.headers)
+          ? (init?.headers.find(([key]) => key.toLowerCase() === "user-agent")?.[1] ?? null)
+          : typeof init?.headers === "object" && init.headers
+            ? ((init.headers as Record<string, string>)["User-Agent"] ?? (init.headers as Record<string, string>)["user-agent"] ?? null)
+            : null
+    return {
+      ok: true,
+      url: requestedUrl,
+      text: async () => `
+        <html>
+          <head>
+            <title>抖音视频标题</title>
+            <meta property="og:description" content="这是一个公开视频页面" />
+          </head>
+          <body>视频正文</body>
+        </html>
+      `,
+    } as Response
+  }) as typeof fetch
+
+  try {
+    const rawUrl =
+      "https://www.douyin.com/user/self?from_tab_name=main&modal_id=7621128300018158911&showSubTab=compilation&showTab=favorite_collection"
+
+    const result = await douyinMaterialSourceAdapter.fetch(rawUrl)
+
+    assert.equal(requestedUrl, "https://www.douyin.com/video/7621128300018158911?source=Baiduspider")
+    assert.match(requestUserAgent ?? "", /Baiduspider/i)
+    assert.equal(result.canonicalUrl, "https://www.douyin.com/video/7621128300018158911?source=Baiduspider")
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test("douyin adapter rejects non-video detail pages with a friendly message", async () => {
+  await assert.rejects(
+    () => douyinMaterialSourceAdapter.fetch("https://www.douyin.com/user/self?from_tab_name=main"),
+    (error: unknown) => {
+      assert.ok(error instanceof MaterialPlanError)
+      assert.equal(error.code, "MATERIAL_FETCH_FAILED")
+      assert.match(error.message, /单条视频详情页|个人页|收藏页|合集页/)
+      return true
+    },
+  )
+})
+
+test("douyin adapter returns a friendly message when public fetch is blocked by login shell", async () => {
+  const originalFetch = globalThis.fetch
+
+  globalThis.fetch = (async () =>
+    ({
+      ok: true,
+      url: "https://www.douyin.com/video/7621128300018158911?source=Baiduspider",
+      text: async () => "<html><head><meta charset=\"UTF-8\" /></head><body></body><script>var glb;window._$jsvmprt=function(){}</script></html>",
+    }) as Response) as typeof fetch
+
+  try {
+    await assert.rejects(
+      () => douyinMaterialSourceAdapter.fetch("https://www.douyin.com/video/7621128300018158911"),
+      (error: unknown) => {
+        assert.ok(error instanceof MaterialPlanError)
+        assert.equal(error.code, "MATERIAL_FETCH_FAILED")
+        assert.match(error.message, /公开访问|需要登录|仅粉丝可见|已下线/)
+        return true
+      },
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })
 
 test("extractJsonObjectString unwraps fenced json", () => {

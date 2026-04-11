@@ -27,6 +27,66 @@ export type LearningRouteErrorResult = {
 
 type JsonRecord = Record<string, unknown>
 
+function isDraftConfirmedSelfDirectedPath(path: {
+  selection_mode: "self_directed" | "preset_training"
+  metadata?: JsonRecord | null
+}) {
+  const seedSource =
+    typeof path.metadata?.seedSource === "string"
+      ? path.metadata.seedSource
+      : typeof path.metadata?.seed_source === "string"
+        ? path.metadata.seed_source
+        : null
+
+  return path.selection_mode === "self_directed" && seedSource === "plan_draft_confirmed"
+}
+
+export function doesAgentBindingMatchLearningScene(
+  binding: {
+    tool_id: string | null
+    learning_level: "beginner" | "intermediate" | "advanced" | null
+    selection_mode: "self_directed" | "preset_training" | null
+    path_id: string | null
+    step_no: number | null
+  },
+  input: {
+    tool: { id: string }
+    path: {
+      learning_level: "beginner" | "intermediate" | "advanced"
+      selection_mode: "self_directed" | "preset_training"
+      template_path_id: string | null
+      metadata?: JsonRecord | null
+    }
+    step: {
+      step_no: number
+    }
+  },
+) {
+  if (binding.tool_id && binding.tool_id !== input.tool.id) {
+    return false
+  }
+
+  if (binding.learning_level && binding.learning_level !== input.path.learning_level) {
+    return false
+  }
+
+  if (binding.selection_mode && binding.selection_mode !== input.path.selection_mode) {
+    return false
+  }
+
+  if (binding.path_id && binding.path_id !== input.path.template_path_id) {
+    if (!isDraftConfirmedSelfDirectedPath(input.path)) {
+      return false
+    }
+  }
+
+  if (binding.step_no && binding.step_no !== input.step.step_no) {
+    return false
+  }
+
+  return true
+}
+
 export function mapPersistentTaskStatusToViewState(
   status: LearningTaskPersistentStatus,
 ): LearningTaskState {

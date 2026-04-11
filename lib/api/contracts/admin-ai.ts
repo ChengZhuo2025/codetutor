@@ -171,6 +171,38 @@ export type AdminAIProviderSecretRevealResponseData = {
   source: AdminAIProviderSecretSource
 }
 
+/** 编辑 Provider 时「连接测试」请求体：与表单一致，用于在未保存前验证 Base URL + 密钥。 */
+export type AdminAIProviderTestConnectionRequest = {
+  baseUrl: string
+  authMode: AdminAIAuthMode
+  providerType: AdminAIProviderType
+  /** 与表单一致；为 null 时使用数据库中的 env 回退配置解析密钥 */
+  envSecretRef: string | null
+  /** 非空则仅用该值探测，不落库；为空则按 envSecretRef + 库内密文解析 */
+  apiKey: string | null
+  timeoutMs: number
+}
+
+export type AdminAIProviderTestConnectionResponseData = {
+  success: boolean
+  message: string
+  httpStatus?: number
+  /** 相对 Base URL 的探测路径，例如 `/models` */
+  testedPath?: string
+}
+
+/** 编辑 Model 时「连接测试」：使用所选 Provider 的已存密钥 + 表单中的真实模型名发起最小 chat 探测。 */
+export type AdminAIModelTestConnectionRequest = {
+  providerCode: string
+  modelName: string
+  /** 探测用 max_tokens，默认 16，范围 1–512 */
+  maxOutputTokens?: number
+  /** 覆盖超时；未传时使用 Provider 库内 timeout_ms（并做上下限裁剪） */
+  timeoutMs?: number
+}
+
+export type AdminAIModelTestConnectionResponseData = AdminAIProviderTestConnectionResponseData
+
 export type AdminAIModelListItem = {
   modelId: string
   providerId: string

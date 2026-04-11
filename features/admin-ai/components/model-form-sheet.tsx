@@ -1,8 +1,13 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import {
+  AdminConnectionTestButton,
+  type AdminConnectionTestPhase,
+} from "@/features/admin-ai/components/admin-connection-test-button"
 import type {
   AdminAIModelDetailResponseData,
+  AdminAIModelTestConnectionResponseData,
   AdminAIModelUpsertRequest,
   AdminAIProviderListResponseData,
 } from "@/lib/api/contracts/admin-ai"
@@ -90,14 +95,20 @@ export function ModelFormSheet({
   const [providers, setProviders] = useState<AdminAIProviderListResponseData | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [connectionTestPhase, setConnectionTestPhase] = useState<AdminConnectionTestPhase>("idle")
+  const [connectionTestMessage, setConnectionTestMessage] = useState("")
 
   useEffect(() => {
     if (!open) {
+      setConnectionTestPhase("idle")
+      setConnectionTestMessage("")
       return
     }
 
     let cancelled = false
     const loadData = async () => {
+      setConnectionTestPhase("idle")
+      setConnectionTestMessage("")
       setLoading(true)
       try {
         const providerResult = await adminRequestData<AdminAIProviderListResponseData>(
@@ -169,6 +180,65 @@ export function ModelFormSheet({
     }
     return `当前已关联 ${detail.linkedAgentCodes.length} 个 Agent。`
   }, [detail])
+
+  const handleTestConnection = async () => {
+    if (!modelId) {
+      return
+    }
+
+    const providerCode = form.providerCode.trim()
+    const modelName = form.modelName.trim()
+    if (!providerCode) {
+      toast.error("请先选择 Provider。")
+      return
+    }
+    if (!modelName) {
+      toast.error("请填写真实模型名后再测试连接。")
+      return
+    }
+
+    const maxOut = Math.trunc(Number(form.defaultMaxOutputTokens))
+    const maxOutputTokens = Number.isFinite(maxOut) && maxOut >= 1 ? Math.min(512, maxOut) : 16
+
+    setConnectionTestPhase("loading")
+    setConnectionTestMessage("")
+    try {
+      const result = await adminRequestData<AdminAIModelTestConnectionResponseData>(
+        `/admin/ai/models/${modelId}/test-connection`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            providerCode,
+            modelName,
+            maxOutputTokens,
+          }),
+        },
+        "连接测试失败",
+      )
+
+      if (result.success) {
+        setConnectionTestPhase("success")
+        setConnectionTestMessage(result.message)
+        toast.success(result.message)
+      } else {
+        setConnectionTestPhase("error")
+        setConnectionTestMessage(result.message)
+        toast.error(result.message)
+      }
+    } catch (error) {
+      if (isAdminSessionExpiredError(error)) {
+        onAuthExpired()
+        setConnectionTestPhase("error")
+        setConnectionTestMessage("登录已过期")
+        toast.error("登录已过期")
+        return
+      }
+      setConnectionTestPhase("error")
+      setConnectionTestMessage("连接失败")
+      toast.error("连接失败")
+    }
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -328,13 +398,34 @@ export function ModelFormSheet({
             </div>
           )}
         </div>
-        <SheetFooter className="border-t border-border px-6 py-4 sm:flex-row sm:justify-end">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            取消
-          </Button>
-          <Button type="button" onClick={() => void handleSave()} disabled={saving || loading}>
-            {saving ? "保存中…" : modelId ? "保存修改" : "创建 Model"}
-          </Button>
+        <SheetFooter className="border-t border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex w-full sm:w-auto">
+            {modelId ? (
+              <AdminConnectionTestButton
+                phase={connectionTestPhase}
+                statusMessage={connectionTestMessage}
+                onClick={() => void handleTestConnection()}
+                disabled={saving || loading}
+              />
+            ) : null}
+          </div>
+          <div className="flex w-full justify-end gap-2 sm:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={saving || connectionTestPhase === "loading"}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={saving || loading || connectionTestPhase === "loading"}
+            >
+              {saving ? "保存中…" : modelId ? "保存修改" : "创建 Model"}
+            </Button>
+          </div>
         </SheetFooter>
       </SheetContent>
     </Sheet>

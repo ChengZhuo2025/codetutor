@@ -1,6 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 
+import { MaterialPlanError } from "../server/modules/learning-materials/errors.ts"
 import {
   createPlanDraftDetailHandler,
   createPlanDraftConfirmPostHandler,
@@ -101,6 +102,34 @@ test("plan-from-material returns structured code when multiple links are provide
   assert.equal(response.status, 422)
   const json = (await response.json()) as { code: string }
   assert.equal(json.code, "MATERIAL_SINGLE_LINK_ONLY")
+})
+
+test("plan-from-material preserves friendly material fetch guidance", async () => {
+  const handler = createPlanFromMaterialPostHandler({
+    getRequestAuth: async () => ({ userId: "u1" }),
+    getRequestAuthHelpText: () => "",
+    createPlanFromMaterial: async () => {
+      throw new MaterialPlanError(
+        "MATERIAL_FETCH_FAILED",
+        "抖音链接未返回可公开访问的详情内容。请打开单条公开视频详情页后复制链接重试；若页面需要登录、仅粉丝可见或已下线，当前无法生成学习计划。",
+        422,
+      )
+    },
+  })
+
+  const response = await handler(
+    createJsonRequest(
+      "http://localhost/api/learning/plan-from-material",
+      JSON.stringify({
+        links: ["https://www.douyin.com/video/7621128300018158911"],
+      }),
+    ),
+  )
+
+  assert.equal(response.status, 422)
+  const json = (await response.json()) as { code: string; message: string }
+  assert.equal(json.code, "MATERIAL_FETCH_FAILED")
+  assert.match(json.message, /单条公开视频详情页|需要登录|仅粉丝可见/)
 })
 
 test("plan-draft confirm returns 400 for invalid draft id", async () => {

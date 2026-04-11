@@ -3,8 +3,12 @@ import type {
   AdminAIAgentBindingUpsertRequest,
   AdminAIAgentSkillBindingUpsertRequest,
   AdminAIAgentUpsertRequest,
+  AdminAIModelTestConnectionRequest,
+  AdminAIModelTestConnectionResponseData,
   AdminAIModelUpsertRequest,
   AdminAIProviderSecretRevealResponseData,
+  AdminAIProviderTestConnectionRequest,
+  AdminAIProviderTestConnectionResponseData,
   AdminAIProviderUpsertRequest,
   AdminAIResolvePreviewRequest,
   AdminAITestRequest,
@@ -16,7 +20,9 @@ import {
   parseAdminAIAgentSkillBindingBody,
   parseAdminAIInvocationListQuery,
   parseAdminAIModelBody,
+  parseAdminAIModelTestConnectionBody,
   parseAdminAIProviderBody,
+  parseAdminAIProviderTestConnectionBody,
   parseAdminAIResolvePreviewBody,
   parseAdminAITestBody,
   parseRequiredRouteId,
@@ -228,6 +234,47 @@ export function createAdminAIProviderDetailHandlers(dependencies: {
   }
 }
 
+export function createAdminAIProviderTestConnectionPostHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  testAdminAIProviderConnection: (
+    adminAccountId: string,
+    providerId: string,
+    input: AdminAIProviderTestConnectionRequest,
+  ) => Promise<AdminAIProviderTestConnectionResponseData>
+}) {
+  return async function POST(
+    request: Request,
+    routeContext: { params: Promise<{ providerId: string }> },
+  ) {
+    try {
+      const admin = await requireAdmin(dependencies.getRequestAdmin, request)
+      if (!admin.ok) {
+        return admin.response
+      }
+
+      const { providerId: rawId } = await routeContext.params
+      const providerId = parseRequiredRouteId(rawId, "Provider ID 不合法。")
+      if (!providerId.ok) {
+        return jsonError(providerId.code, providerId.message, 400)
+      }
+
+      const parsed = parseAdminAIProviderTestConnectionBody(await request.json())
+      if (!parsed.ok) {
+        return jsonError(parsed.code, parsed.message, 400)
+      }
+
+      try {
+        const data = await dependencies.testAdminAIProviderConnection(admin.adminId, providerId.data, parsed.data)
+        return jsonSuccess(data, data.success ? "Provider 连接测试完成" : "Provider 连接测试未通过")
+      } catch (error) {
+        return mapCommonRouteError(error, "Provider 连接测试失败")
+      }
+    } catch {
+      return jsonError("INTERNAL_ERROR", "Provider 连接测试失败", 500)
+    }
+  }
+}
+
 export function createAdminAIProviderSecretRevealPostHandler(dependencies: {
   getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
   revealAdminAIProviderSecret: (
@@ -392,6 +439,47 @@ export function createAdminAIModelDetailHandlers(dependencies: {
         return jsonError("INTERNAL_ERROR", "Model 更新失败", 500)
       }
     },
+  }
+}
+
+export function createAdminAIModelTestConnectionPostHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  testAdminAIModelConnection: (
+    adminAccountId: string,
+    modelId: string,
+    input: AdminAIModelTestConnectionRequest,
+  ) => Promise<AdminAIModelTestConnectionResponseData>
+}) {
+  return async function POST(
+    request: Request,
+    routeContext: { params: Promise<{ modelId: string }> },
+  ) {
+    try {
+      const admin = await requireAdmin(dependencies.getRequestAdmin, request)
+      if (!admin.ok) {
+        return admin.response
+      }
+
+      const { modelId: rawId } = await routeContext.params
+      const parsedId = parseRequiredRouteId(rawId, "Model ID 不合法。")
+      if (!parsedId.ok) {
+        return jsonError(parsedId.code, parsedId.message, 400)
+      }
+
+      const parsed = parseAdminAIModelTestConnectionBody(await request.json())
+      if (!parsed.ok) {
+        return jsonError(parsed.code, parsed.message, 400)
+      }
+
+      try {
+        const data = await dependencies.testAdminAIModelConnection(admin.adminId, parsedId.data, parsed.data)
+        return jsonSuccess(data, data.success ? "Model 连接测试完成" : "Model 连接测试未通过")
+      } catch (error) {
+        return mapCommonRouteError(error, "Model 连接测试失败")
+      }
+    } catch {
+      return jsonError("INTERNAL_ERROR", "Model 连接测试失败", 500)
+    }
   }
 }
 

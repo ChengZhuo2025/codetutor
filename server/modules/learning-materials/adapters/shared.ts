@@ -78,7 +78,12 @@ function extractTitle(html: string) {
   )
 }
 
-export async function fetchPublicPageBasics(rawUrl: string) {
+export async function fetchPublicPageBasics(
+  rawUrl: string,
+  options?: {
+    headers?: HeadersInit
+  },
+) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), MATERIAL_PLAN_FETCH_TIMEOUT_MS)
 
@@ -88,6 +93,7 @@ export async function fetchPublicPageBasics(rawUrl: string) {
       headers: {
         "User-Agent": "CodeTutorMaterialBot/1.0 (+https://example.com)",
         Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+        ...(options?.headers ?? {}),
       },
       redirect: "follow",
     })

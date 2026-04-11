@@ -50,6 +50,8 @@ import {
   type AdminAIInvocationDateRange,
   type AdminAIInvocationStatusOption,
   type AdminAIModelUpsertRequest,
+  type AdminAIModelTestConnectionRequest,
+  type AdminAIProviderTestConnectionRequest,
   type AdminAIProviderUpsertRequest,
   type AdminAIResolvePreviewRequest,
   type AdminAITestRequest,
@@ -1254,6 +1256,109 @@ export function parseAdminAIProviderBody(input: unknown): ValidationResult<Admin
     metadata: parsedMetadata.data,
     version: version !== null ? (version as ValidationSuccess<number>).data : undefined,
     changeReason: parsedChangeReason.data,
+  })
+}
+
+const adminAIProviderTestConnectionShapeSchema = z
+  .object({
+    baseUrl: z.unknown(),
+    authMode: z.unknown(),
+    providerType: z.unknown(),
+    envSecretRef: z.unknown().optional(),
+    apiKey: z.unknown().optional(),
+    timeoutMs: z.unknown().optional(),
+  })
+  .strict()
+
+export function parseAdminAIProviderTestConnectionBody(
+  input: unknown,
+): ValidationResult<AdminAIProviderTestConnectionRequest> {
+  const shape = adminAIProviderTestConnectionShapeSchema.safeParse(input)
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "Provider 连接测试请求体不合法。")
+  }
+
+  const baseUrl = parseTrimmedRequiredString(shape.data.baseUrl, "baseUrl", 8, 500)
+  const envSecretRef = parseTrimmedNullableString(shape.data.envSecretRef, "envSecretRef", 128)
+  const apiKey = parseTrimmedNullableString(shape.data.apiKey, "apiKey", 1000)
+  const timeoutMs =
+    shape.data.timeoutMs === undefined || shape.data.timeoutMs === null
+      ? ok(15_000)
+      : parsePositiveInteger(shape.data.timeoutMs, "timeoutMs", 1000, 300_000)
+
+  const checks = [baseUrl, envSecretRef, apiKey, timeoutMs]
+  const first = checks.find((item) => !item.ok)
+  if (first && !first.ok) {
+    return first
+  }
+
+  if (!ADMIN_AI_PROVIDER_TYPES.includes(shape.data.providerType as (typeof ADMIN_AI_PROVIDER_TYPES)[number])) {
+    return fail("VALIDATION_FAILED", "providerType 参数不合法。")
+  }
+
+  if (!ADMIN_AI_AUTH_MODES.includes(shape.data.authMode as (typeof ADMIN_AI_AUTH_MODES)[number])) {
+    return fail("VALIDATION_FAILED", "authMode 参数不合法。")
+  }
+
+  const parsedBaseUrl = baseUrl as ValidationSuccess<string>
+  if (!isValidUrl(parsedBaseUrl.data)) {
+    return fail("VALIDATION_FAILED", "baseUrl 必须是合法 URL。")
+  }
+
+  return ok({
+    baseUrl: parsedBaseUrl.data,
+    authMode: shape.data.authMode as AdminAIProviderTestConnectionRequest["authMode"],
+    providerType: shape.data.providerType as AdminAIProviderTestConnectionRequest["providerType"],
+    envSecretRef: (envSecretRef as ValidationSuccess<string | null>).data,
+    apiKey: (apiKey as ValidationSuccess<string | null>).data,
+    timeoutMs: (timeoutMs as ValidationSuccess<number>).data,
+  })
+}
+
+const adminAIModelTestConnectionShapeSchema = z
+  .object({
+    providerCode: z.unknown(),
+    modelName: z.unknown(),
+    maxOutputTokens: z.unknown().optional(),
+    timeoutMs: z.unknown().optional(),
+  })
+  .strict()
+
+export function parseAdminAIModelTestConnectionBody(
+  input: unknown,
+): ValidationResult<AdminAIModelTestConnectionRequest> {
+  const shape = adminAIModelTestConnectionShapeSchema.safeParse(input)
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "Model 连接测试请求体不合法。")
+  }
+
+  const providerCode = parseTrimmedRequiredString(shape.data.providerCode, "providerCode", 1, 64)
+  const modelName = parseTrimmedRequiredString(shape.data.modelName, "modelName", 1, 256)
+  const maxOutputTokens =
+    shape.data.maxOutputTokens === undefined || shape.data.maxOutputTokens === null
+      ? ok(16)
+      : parsePositiveInteger(shape.data.maxOutputTokens, "maxOutputTokens", 1, 512)
+
+  const checks = [providerCode, modelName, maxOutputTokens]
+  const first = checks.find((item) => !item.ok)
+  if (first && !first.ok) {
+    return first
+  }
+
+  let timeoutMs: number | undefined
+  if (shape.data.timeoutMs !== undefined && shape.data.timeoutMs !== null) {
+    const parsedTimeout = parsePositiveInteger(shape.data.timeoutMs, "timeoutMs", 1000, 300_000)
+    if (!parsedTimeout.ok) {
+      return parsedTimeout
+    }
+    timeoutMs = parsedTimeout.data
+  }
+
+  return ok({
+    providerCode: (providerCode as ValidationSuccess<string>).data,
+    modelName: (modelName as ValidationSuccess<string>).data,
+    maxOutputTokens: (maxOutputTokens as ValidationSuccess<number>).data,
+    ...(timeoutMs !== undefined ? { timeoutMs } : {}),
   })
 }
 

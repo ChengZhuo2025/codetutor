@@ -7,7 +7,9 @@ import {
   parseAdminAIAgentSkillBindingBody,
   parseAdminAIInvocationListQuery,
   parseAdminAIModelBody,
+  parseAdminAIModelTestConnectionBody,
   parseAdminAIProviderBody,
+  parseAdminAIProviderTestConnectionBody,
   parseAdminAIResolvePreviewBody,
   parseAdminAITestBody,
 } from "../server/lib/request-validation.ts"
@@ -44,6 +46,8 @@ test("parseAdminAIInvocationListQuery accepts structured filters", () => {
       modelCode: "deepseek-v3-2",
       agentCode: "codex-cli-coach",
       dateRange: "30d",
+      startDate: undefined,
+      endDate: undefined,
       page: 2,
       limit: 50,
     })
@@ -146,6 +150,40 @@ test("parseAdminAIProviderBody rejects missing all secret sources", () => {
   assert.equal(r.ok, false)
   if (!r.ok) {
     assert.equal(r.message, "至少提供 apiKey、keepExistingSecret 或 envSecretRef 之一。")
+  }
+})
+
+test("parseAdminAIProviderTestConnectionBody defaults timeout and trims baseUrl", () => {
+  const r = parseAdminAIProviderTestConnectionBody({
+    baseUrl: " https://api.siliconflow.cn/v1 ",
+    authMode: "bearer",
+    providerType: "siliconflow",
+    envSecretRef: null,
+    apiKey: null,
+  })
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.equal(r.data.baseUrl, "https://api.siliconflow.cn/v1")
+    assert.equal(r.data.timeoutMs, 15_000)
+    assert.equal(r.data.envSecretRef, null)
+    assert.equal(r.data.apiKey, null)
+  }
+})
+
+test("parseAdminAIModelTestConnectionBody trims and caps maxOutputTokens", () => {
+  const r = parseAdminAIModelTestConnectionBody({
+    providerCode: " siliconflow ",
+    modelName: " zai-org/GLM-4.6 ",
+    maxOutputTokens: 128,
+  })
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.equal(r.data.providerCode, "siliconflow")
+    assert.equal(r.data.modelName, "zai-org/GLM-4.6")
+    assert.equal(r.data.maxOutputTokens, 128)
+    assert.equal(r.data.timeoutMs, undefined)
   }
 })
 

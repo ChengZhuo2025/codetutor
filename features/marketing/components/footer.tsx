@@ -99,7 +99,7 @@ export function LandingFooter() {
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-brand-foreground">
                 <Code2 className="h-3.5 w-3.5" />
               </div>
-              <span className="text-sm font-medium">{APP_NAME}</span>
+              <span className="text-sm font-semibold">{APP_NAME}</span>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
               <AboutDialog

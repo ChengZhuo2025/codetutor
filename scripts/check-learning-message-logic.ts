@@ -5,6 +5,7 @@ import {
   buildIdempotentReplayResponse,
   classifyLearningRouteError,
   deriveTaskPatch,
+  doesAgentBindingMatchLearningScene,
   parseStoredTaskPatchMetadata,
   resolveLearningResponseMode,
   shouldPersistTaskPatch,
@@ -22,6 +23,60 @@ test("resolveLearningResponseMode falls back to json and upgrades to sse when re
   assert.equal(resolveLearningResponseMode(null, false), "json")
   assert.equal(resolveLearningResponseMode("application/json", true), "sse")
   assert.equal(resolveLearningResponseMode("text/event-stream", false), "sse")
+})
+
+test("doesAgentBindingMatchLearningScene allows custom material-plan self-directed paths to reuse generic self-study coach", () => {
+  assert.equal(
+    doesAgentBindingMatchLearningScene(
+      {
+        tool_id: "tool-claude",
+        learning_level: null,
+        selection_mode: "self_directed",
+        path_id: "default-self-study-template",
+        step_no: null,
+      },
+      {
+        tool: { id: "tool-claude" },
+        path: {
+          learning_level: "intermediate",
+          selection_mode: "self_directed",
+          template_path_id: "material-plan-template",
+          metadata: {
+            seedSource: "plan_draft_confirmed",
+          },
+        },
+        step: {
+          step_no: 1,
+        },
+      },
+    ),
+    true,
+  )
+
+  assert.equal(
+    doesAgentBindingMatchLearningScene(
+      {
+        tool_id: "tool-claude",
+        learning_level: null,
+        selection_mode: "self_directed",
+        path_id: "default-self-study-template",
+        step_no: null,
+      },
+      {
+        tool: { id: "tool-claude" },
+        path: {
+          learning_level: "intermediate",
+          selection_mode: "self_directed",
+          template_path_id: "another-custom-template",
+          metadata: {},
+        },
+        step: {
+          step_no: 1,
+        },
+      },
+    ),
+    false,
+  )
 })
 
 test("deriveTaskPatch marks blocked_help inputs as blocked with a concrete next action", () => {

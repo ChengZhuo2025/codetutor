@@ -23,12 +23,16 @@ import {
   adminAIModelDetailResponseDataSchema,
   adminAIModelIdParamsSchema,
   adminAIModelListResponseDataSchema,
+  adminAIModelTestConnectionRequestSchema,
+  adminAIModelTestConnectionResponseDataSchema,
   adminAIModelUpsertRequestSchema,
   adminAIOverviewResponseDataSchema,
   adminAIProviderDetailResponseDataSchema,
   adminAIProviderIdParamsSchema,
   adminAIProviderListResponseDataSchema,
   adminAIProviderSecretRevealResponseDataSchema,
+  adminAIProviderTestConnectionRequestSchema,
+  adminAIProviderTestConnectionResponseDataSchema,
   adminAIProviderUpsertRequestSchema,
   adminAIQuerySchema,
   adminAIResolvePreviewRequestSchema,
@@ -614,6 +618,20 @@ const adminAIProviderDetailExample = {
 const adminAIProviderSecretRevealExample = {
   apiKey: "sk-live-demo-secret",
   source: "database",
+}
+
+const adminAIProviderTestConnectionResponseExample = {
+  success: true,
+  message: "连接成功",
+  httpStatus: 200,
+  testedPath: "/models",
+}
+
+const adminAIModelTestConnectionResponseExample = {
+  success: true,
+  message: "连接成功",
+  httpStatus: 200,
+  testedPath: "/chat/completions",
 }
 
 const adminAIModelListExample = {
@@ -1564,6 +1582,8 @@ const successExamples = {
   adminAIProviderList: adminAIProviderListExample,
   adminAIProviderDetail: adminAIProviderDetailExample,
   adminAIProviderSecretReveal: adminAIProviderSecretRevealExample,
+  adminAIProviderTestConnectionOk: adminAIProviderTestConnectionResponseExample,
+  adminAIModelTestConnectionOk: adminAIModelTestConnectionResponseExample,
   adminAIModelList: adminAIModelListExample,
   adminAIModelDetail: adminAIModelDetailExample,
   adminAIAgentList: adminAIAgentListExample,
@@ -3733,6 +3753,38 @@ registry.registerPath({
 })
 
 registry.registerPath({
+  method: "post",
+  path: "/api/admin/ai/providers/{providerId}/test-connection",
+  operationId: "postAdminAIProviderTestConnection",
+  tags: ["admin-ai"],
+  summary: "测试 Provider 连接（Base URL + API Key）",
+  description:
+    "在未保存表单前，使用当前表单中的 Base URL、鉴权方式、Provider 类型与密钥（新 API Key 优先，否则按库内/环境变量解析）发起轻量 GET /models 探测。",
+  security: [],
+  request: {
+    params: adminAIProviderIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIProviderTestConnectionRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIProviderTestConnectionResponseDataSchema,
+      "AdminAIProviderTestConnectionResponse",
+      "Provider 连接测试完成",
+      successExamples.adminAIProviderTestConnectionOk,
+      "探测完成；success 为 false 时表示上游拒绝或网络异常。",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
   method: "get",
   path: "/api/admin/ai/models",
   operationId: "getAdminAIModelList",
@@ -3866,6 +3918,38 @@ registry.registerPath({
       "Model 已更新",
     ),
     ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/ai/models/{modelId}/test-connection",
+  operationId: "postAdminAIModelTestConnection",
+  tags: ["admin-ai"],
+  summary: "测试 Model 连接（Provider 密钥 + 真实模型名）",
+  description:
+    "使用库内所选 Provider 的 Base URL 与已配置密钥，对表单中的「真实模型名」发起最小非流式 chat 请求（POST /chat/completions）。仅支持 OpenAI 兼容与 SiliconFlow Provider。",
+  security: [],
+  request: {
+    params: adminAIModelIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIModelTestConnectionRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIModelTestConnectionResponseDataSchema,
+      "AdminAIModelTestConnectionResponse",
+      "Model 连接测试完成",
+      successExamples.adminAIModelTestConnectionOk,
+      "探测完成；success 为 false 时表示上游拒绝或网络异常。",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
   },
 })
 

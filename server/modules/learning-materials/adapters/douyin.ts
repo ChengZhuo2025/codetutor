@@ -1,7 +1,41 @@
 import "server-only"
 
 import { fetchPublicPageBasics } from "./shared.ts"
+import { materialFetchFailed } from "../errors.ts"
 import type { MaterialSourceAdapter } from "../source-resolver.ts"
+
+function getFriendlyDouyinLinkGuidance() {
+  return "请打开抖音单条公开视频详情页后复制链接重试，不要直接使用个人页、收藏页或合集页链接。"
+}
+
+function getFriendlyDouyinAccessGuidance() {
+  return "抖音链接未返回可公开访问的详情内容。请打开单条公开视频详情页后复制链接重试；若页面需要登录、仅粉丝可见或已下线，当前无法生成学习计划。"
+}
+
+function normalizeDouyinPublicUrl(rawUrl: string) {
+  try {
+    const url = new URL(rawUrl)
+    const modalId = url.searchParams.get("modal_id")?.trim()
+
+    if (modalId) {
+      return `https://www.douyin.com/video/${modalId}?source=Baiduspider`
+    }
+
+    if (url.hostname.toLowerCase().includes("douyin.com") && /^\/video\/\d+$/i.test(url.pathname)) {
+      url.searchParams.set("source", "Baiduspider")
+      return url.toString()
+    }
+
+    throw materialFetchFailed(getFriendlyDouyinLinkGuidance())
+  } catch {
+    throw materialFetchFailed(getFriendlyDouyinLinkGuidance())
+  }
+}
+
+function isLikelyDouyinLoginShell(rawHtml: string) {
+  return rawHtml.includes("_$jsvmprt")
+    && /<body>\s*<\/body>/i.test(rawHtml)
+}
 
 export const douyinMaterialSourceAdapter: MaterialSourceAdapter = {
   sourceCode: "douyin",
@@ -9,7 +43,17 @@ export const douyinMaterialSourceAdapter: MaterialSourceAdapter = {
     return url.hostname.toLowerCase().includes("douyin.com")
   },
   async fetch(rawUrl) {
-    const basics = await fetchPublicPageBasics(rawUrl)
+    const basics = await fetchPublicPageBasics(normalizeDouyinPublicUrl(rawUrl), {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+      },
+    })
+
+    if (isLikelyDouyinLoginShell(basics.rawHtml)) {
+      throw materialFetchFailed(getFriendlyDouyinAccessGuidance())
+    }
+
     const mediaAssets = [
       ...(basics.videoUrl ? [{ kind: "video", url: basics.videoUrl }] : []),
       ...(basics.coverImageUrl ? [{ kind: "cover_image", url: basics.coverImageUrl }] : []),

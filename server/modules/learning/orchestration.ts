@@ -24,6 +24,7 @@ import { LearningAIProviderError, LearningValidationError } from "./errors.ts"
 import { buildLearningOutputFormatGuide } from "./output-format.ts"
 import {
   buildIdempotentReplayResponse,
+  doesAgentBindingMatchLearningScene,
   deriveTaskPatch,
   parseStoredTaskPatchMetadata,
   shouldPersistTaskPatch,
@@ -56,6 +57,7 @@ type PathRow = {
   selection_mode: "self_directed" | "preset_training"
   status: "active" | "interrupted" | "completed" | "abandoned" | "archived"
   current_task_id: string | null
+  metadata: JsonRecord | null
 }
 
 type TaskRow = {
@@ -286,10 +288,10 @@ async function loadRuntimeState(userId: string, taskId?: string | null) {
   const supabase = createSupabaseAdminClient()
 
   const { data: pathData, error: pathError } = await supabase
-    .from("user_learning_paths")
-    .select(
-      "id, template_path_id, tool_id, path_code_snapshot, path_name_snapshot, learning_level, selection_mode, status, current_task_id",
-    )
+      .from("user_learning_paths")
+      .select(
+        "id, template_path_id, tool_id, path_code_snapshot, path_name_snapshot, learning_level, selection_mode, status, current_task_id, metadata",
+      )
     .eq("user_id", userId)
     .eq("status", "active")
     .order("updated_at", { ascending: false })
@@ -393,29 +395,13 @@ async function resolveAgentTemplate(
   const candidates = (await loadAIAgentBindingsSnapshot<AgentBindingRow>())
     .filter((binding) => binding.interaction_type === input.interactionType)
     .filter((binding) => binding.is_active)
-    .filter((binding) => {
-      if (binding.tool_id && binding.tool_id !== input.tool.id) {
-        return false
-      }
-
-      if (binding.learning_level && binding.learning_level !== input.path.learning_level) {
-        return false
-      }
-
-      if (binding.selection_mode && binding.selection_mode !== input.path.selection_mode) {
-        return false
-      }
-
-      if (binding.path_id && binding.path_id !== input.path.template_path_id) {
-        return false
-      }
-
-      if (binding.step_no && binding.step_no !== input.step.step_no) {
-        return false
-      }
-
-      return true
-    })
+    .filter((binding) =>
+      doesAgentBindingMatchLearningScene(binding, {
+        tool: input.tool,
+        path: input.path,
+        step: input.step,
+      }),
+    )
     .sort((left, right) => {
       if (left.priority !== right.priority) {
         return left.priority - right.priority

@@ -33,19 +33,35 @@ type LearningPathDetailProps = {
   pathId: string
 }
 
+const summaryValueToneClass = {
+  default: "text-foreground",
+  chart2: "text-chart-2",
+  chart3: "text-chart-3",
+  primary: "text-primary",
+} as const
+
 function SummaryCard({
   label,
   value,
   hint,
+  valueTone = "default",
 }: {
   label: string
   value: string | number
   hint: string
+  valueTone?: keyof typeof summaryValueToneClass
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card px-4 py-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{value}</p>
+    <div className="rounded-lg border border-border bg-card px-4 py-3">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          "mt-1 text-xl font-semibold",
+          summaryValueToneClass[valueTone],
+        )}
+      >
+        {value}
+      </p>
       <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
     </div>
   )
@@ -277,9 +293,9 @@ export function LearningPathDetail({ pathId }: LearningPathDetailProps) {
         {backLink}
         <div className="space-y-4">
           <div className="h-32 animate-pulse rounded-2xl border border-border bg-card" />
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {[1, 2, 3, 4].map((item) => (
-              <div key={item} className="h-24 animate-pulse rounded-xl border border-border bg-card" />
+              <div key={item} className="h-24 animate-pulse rounded-lg border border-border bg-card" />
             ))}
           </div>
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -331,7 +347,7 @@ export function LearningPathDetail({ pathId }: LearningPathDetailProps) {
 
       <div className="rounded-2xl border border-border bg-card p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
+          <div className="w-full">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">{data.path.pathName}</h1>
               <Badge className={statusMeta.className}>
@@ -352,7 +368,7 @@ export function LearningPathDetail({ pathId }: LearningPathDetailProps) {
               {data.path.summary || "暂无路径摘要。"}
             </p>
           </div>
-          <div className="rounded-xl border border-border bg-muted/20 px-4 py-3 text-sm">
+          <div className="rounded-xl border border-brand/20 bg-brand/6 px-4 py-3 text-sm">
             <p className="font-medium text-foreground">运营动作</p>
             <p className="mt-2 text-muted-foreground">
               仅支持将已中断路径重新激活，或将已完成 / 已中断 / 已放弃路径归档。
@@ -361,11 +377,30 @@ export function LearningPathDetail({ pathId }: LearningPathDetailProps) {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard label="学习进度" value={`${data.path.progressPercent}%`} hint={`${data.path.completedSteps}/${data.path.totalSteps} 步骤`} />
-        <SummaryCard label="任务完成" value={`${data.path.completedTaskCount}/${data.path.totalTaskCount}`} hint={`进行中 ${data.path.inProgressTaskCount} · 阻塞 ${data.path.blockedTaskCount}`} />
-        <SummaryCard label="累计 XP" value={data.path.xpEarned} hint="当前路径已获得积分" />
-        <SummaryCard label="学习连续天数" value={data.user.streakDays} hint={data.user.currentRankLabel} />
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <SummaryCard
+          label="学习进度"
+          value={`${data.path.progressPercent}%`}
+          hint={`${data.path.completedSteps}/${data.path.totalSteps} 步骤`}
+        />
+        <SummaryCard
+          label="任务完成"
+          value={`${data.path.completedTaskCount}/${data.path.totalTaskCount}`}
+          hint={`进行中 ${data.path.inProgressTaskCount} · 阻塞 ${data.path.blockedTaskCount}`}
+          valueTone="chart2"
+        />
+        <SummaryCard
+          label="累计 XP"
+          value={data.path.xpEarned}
+          hint="当前路径已获得积分"
+          valueTone="primary"
+        />
+        <SummaryCard
+          label="学习连续天数"
+          value={data.user.streakDays}
+          hint={data.user.currentRankLabel}
+          valueTone="chart3"
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -634,7 +669,7 @@ export function LearningPathDetail({ pathId }: LearningPathDetailProps) {
               ) : null}
             </section>
           ) : (
-            <section className="rounded-2xl border border-dashed border-border bg-card p-5">
+            <section className="rounded-2xl border border-border bg-card p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold text-foreground">来源草稿</h2>
@@ -647,10 +682,10 @@ export function LearningPathDetail({ pathId }: LearningPathDetailProps) {
                 </Badge>
               </div>
 
-              <div className="mt-4 rounded-xl border border-border bg-background/70 px-4 py-3">
+              <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3">
                 <p className="text-sm text-foreground">
                   {data.path.selectionMode === "self_directed"
-                    ? "该学习路径不是由教程链接生成计划确认后创建，或历史数据未留下草稿回链。"
+                    ? "该学习路径是由教程链接生成计划确认后创建，但历史数据未留下草稿。"
                     : "该学习路径属于预设训练路径，不存在教程链接草稿。"}
                 </p>
               </div>

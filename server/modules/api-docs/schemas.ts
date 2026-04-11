@@ -2155,6 +2155,26 @@ export const adminAIProviderSecretRevealResponseDataSchema = z
   })
   .openapi("AdminAIProviderSecretRevealResponseData")
 
+export const adminAIProviderTestConnectionRequestSchema = z
+  .object({
+    baseUrl: z.string().min(8).max(500),
+    authMode: adminAIAuthModeSchema,
+    providerType: adminAIProviderTypeSchema,
+    envSecretRef: z.union([z.string().min(1).max(128), z.null()]),
+    apiKey: z.union([z.string().min(1).max(1000), z.null()]),
+    timeoutMs: z.number().int().min(1000).max(300_000),
+  })
+  .openapi("AdminAIProviderTestConnectionRequest")
+
+export const adminAIProviderTestConnectionResponseDataSchema = z
+  .object({
+    success: z.boolean(),
+    message: z.string(),
+    httpStatus: z.number().int().optional(),
+    testedPath: z.string().optional(),
+  })
+  .openapi("AdminAIProviderTestConnectionResponseData")
+
 export const adminAIModelListItemSchema = z
   .object({
     modelId: z.string().uuid(),
@@ -2220,6 +2240,24 @@ export const adminAIModelUpsertRequestSchema = z
     changeReason: z.string().min(2).max(200),
   })
   .openapi("AdminAIModelUpsertRequest")
+
+export const adminAIModelTestConnectionRequestSchema = z
+  .object({
+    providerCode: z.string().min(1).max(64),
+    modelName: z.string().min(1).max(256),
+    maxOutputTokens: z.number().int().min(1).max(512).optional(),
+    timeoutMs: z.number().int().min(1000).max(300_000).optional(),
+  })
+  .openapi("AdminAIModelTestConnectionRequest")
+
+export const adminAIModelTestConnectionResponseDataSchema = z
+  .object({
+    success: z.boolean(),
+    message: z.string(),
+    httpStatus: z.number().int().optional(),
+    testedPath: z.string().optional(),
+  })
+  .openapi("AdminAIModelTestConnectionResponseData")
 
 export const adminAIAgentBindingListItemSchema = z
   .object({

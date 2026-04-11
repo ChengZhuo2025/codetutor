@@ -2,8 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
+import {
+  AdminConnectionTestButton,
+  type AdminConnectionTestPhase,
+} from "@/features/admin-ai/components/admin-connection-test-button"
 import type {
   AdminAIProviderDetailResponseData,
+  AdminAIProviderTestConnectionResponseData,
   AdminAIProviderUpsertRequest,
 } from "@/lib/api/contracts/admin-ai"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
@@ -95,22 +100,30 @@ export function ProviderFormSheet({
   const [detail, setDetail] = useState<AdminAIProviderDetailResponseData | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [connectionTestPhase, setConnectionTestPhase] = useState<AdminConnectionTestPhase>("idle")
+  const [connectionTestMessage, setConnectionTestMessage] = useState("")
   const [showNewSecret, setShowNewSecret] = useState(false)
 
   useEffect(() => {
     if (!open) {
       setShowNewSecret(false)
+      setConnectionTestPhase("idle")
+      setConnectionTestMessage("")
       return
     }
 
     if (!providerId) {
       setDetail(null)
       setForm(EMPTY_FORM)
+      setConnectionTestPhase("idle")
+      setConnectionTestMessage("")
       return
     }
 
     let cancelled = false
     const loadDetail = async () => {
+      setConnectionTestPhase("idle")
+      setConnectionTestMessage("")
       setLoading(true)
       try {
         const result = await adminRequestData<AdminAIProviderDetailResponseData>(
@@ -153,6 +166,79 @@ export function ProviderFormSheet({
   }, [detail])
 
   const codeLocked = Boolean(providerId && detail && detail.linkedAgentCodes.length > 0)
+
+  const handleTestConnection = async () => {
+    if (!providerId) {
+      return
+    }
+
+    const baseUrlTrimmed = form.baseUrl.trim()
+    if (
+      baseUrlTrimmed.length < PROVIDER_BASE_URL_MIN_LENGTH
+      || baseUrlTrimmed.length > PROVIDER_BASE_URL_MAX_LENGTH
+    ) {
+      toast.error(
+        `Base URL 长度须在 ${PROVIDER_BASE_URL_MIN_LENGTH}–${PROVIDER_BASE_URL_MAX_LENGTH} 字符之间。`,
+      )
+      return
+    }
+    if (!isValidProviderBaseUrl(baseUrlTrimmed)) {
+      toast.error("Base URL 必须是合法的 http(s) 地址。")
+      return
+    }
+
+    const timeoutMs = Math.trunc(Number(form.timeoutMs))
+    if (
+      !Number.isFinite(timeoutMs)
+      || timeoutMs < PROVIDER_TIMEOUT_MS_MIN
+      || timeoutMs > PROVIDER_TIMEOUT_MS_MAX
+    ) {
+      toast.error(`超时须在 ${PROVIDER_TIMEOUT_MS_MIN}–${PROVIDER_TIMEOUT_MS_MAX} ms 之间。`)
+      return
+    }
+
+    setConnectionTestPhase("loading")
+    setConnectionTestMessage("")
+    try {
+      const result = await adminRequestData<AdminAIProviderTestConnectionResponseData>(
+        `/admin/ai/providers/${providerId}/test-connection`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            baseUrl: baseUrlTrimmed,
+            authMode: form.authMode,
+            providerType: form.providerType,
+            envSecretRef: form.envSecretRef.trim() || null,
+            apiKey: form.apiKey.trim() || null,
+            timeoutMs,
+          }),
+        },
+        "连接测试失败",
+      )
+
+      if (result.success) {
+        setConnectionTestPhase("success")
+        setConnectionTestMessage(result.message)
+        toast.success(result.message)
+      } else {
+        setConnectionTestPhase("error")
+        setConnectionTestMessage(result.message)
+        toast.error(result.message)
+      }
+    } catch (error) {
+      if (isAdminSessionExpiredError(error)) {
+        onAuthExpired()
+        setConnectionTestPhase("error")
+        setConnectionTestMessage("登录已过期")
+        toast.error("登录已过期")
+        return
+      }
+      setConnectionTestPhase("error")
+      setConnectionTestMessage("连接失败")
+      toast.error("连接失败")
+    }
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -405,13 +491,34 @@ export function ProviderFormSheet({
             </div>
           )}
         </div>
-        <SheetFooter className="border-t border-border px-6 py-4 sm:flex-row sm:justify-end">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            取消
-          </Button>
-          <Button type="button" onClick={() => void handleSave()} disabled={saving || loading}>
-            {saving ? "保存中…" : providerId ? "保存修改" : "创建 Provider"}
-          </Button>
+        <SheetFooter className="border-t border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex w-full sm:w-auto">
+            {providerId ? (
+              <AdminConnectionTestButton
+                phase={connectionTestPhase}
+                statusMessage={connectionTestMessage}
+                onClick={() => void handleTestConnection()}
+                disabled={saving || loading}
+              />
+            ) : null}
+          </div>
+          <div className="flex w-full justify-end gap-2 sm:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={saving || connectionTestPhase === "loading"}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={saving || loading || connectionTestPhase === "loading"}
+            >
+              {saving ? "保存中…" : providerId ? "保存修改" : "创建 Provider"}
+            </Button>
+          </div>
         </SheetFooter>
       </SheetContent>
     </Sheet>

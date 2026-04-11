@@ -87,13 +87,13 @@ export function AdminLoginForm() {
       <header className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
         <Link
           href={ROUTES.home}
-          className="group inline-flex items-center gap-3 rounded-full border border-border/70 bg-card/85 px-3.5 py-2 shadow-[0_18px_42px_-30px_rgba(15,23,42,0.28)] backdrop-blur-xl transition-colors hover:border-border hover:bg-card"
+          className="group inline-flex items-center gap-3"
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.78_0.15_180/0.72)]">
             <Code2 className="h-[18px] w-[18px]" />
           </div>
           <div className="leading-[1.02]">
-            <span className="block text-[1.06rem] font-extrabold tracking-tight text-foreground">
+            <span className="block text-[1rem] font-semibold tracking-tight text-foreground">
               {APP_NAME}
             </span>
             <span className="mt-1 block text-[11px] text-muted-foreground">
