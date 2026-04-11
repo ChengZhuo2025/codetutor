@@ -22,7 +22,7 @@ import {
 import { normalizeUuid } from "@/server/lib/identifiers"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
 import { orchestrateLearningMessage } from "./orchestration.ts"
-import { parseStoredTaskPatchMetadata } from "./logic.ts"
+import { hasLearningResumeHistory, parseStoredTaskPatchMetadata } from "./logic.ts"
 import {
   buildPersistedLearningMessageId,
   normalizeLearningMessagesPageSize,
@@ -552,6 +552,11 @@ export async function getLearningCurrentSessionData(
     totalSteps > 0
       ? Math.round(((state.activePath.completed_steps + (currentTask.status === "in_progress" ? 0.5 : 0)) / totalSteps) * 100)
       : 0
+  const shouldExposeResume = hasLearningResumeHistory({
+    completedSteps: state.activePath.completed_steps,
+    currentTaskLastConversationId: currentTask.last_conversation_id,
+    persistedMessageCount: persistedMessages.length,
+  })
 
   return {
     conversationId: activeConversation?.id ?? null,
@@ -580,14 +585,17 @@ export async function getLearningCurrentSessionData(
         && typeof (state.activePath.metadata as JsonRecord | undefined)?.seedSource === "string"
         && (state.activePath.metadata as JsonRecord).seedSource === "plan_draft_confirmed",
     },
-    resume: {
-      title: "继续上次学习",
-      summary: currentStep.summary,
-      lastSeenLabel: getRelativeLastSeenLabel(
-        state.activePath.last_activity_at ?? state.profile.last_learning_at,
-      ),
-      ctaLabel: "继续这一关",
-    },
+    resume:
+      shouldExposeResume
+        ? {
+            title: "继续上次学习",
+            summary: currentStep.summary,
+            lastSeenLabel: getRelativeLastSeenLabel(
+              state.activePath.last_activity_at ?? state.profile.last_learning_at,
+            ),
+            ctaLabel: "继续这一关",
+          }
+        : null,
     mission: {
       title: currentStep.title,
       tool: state.tool.name,

@@ -29,7 +29,9 @@ import {
   buildComposerDraftFromAssistantAction,
   isExplicitTaskCompletionInput,
   mergeAssistantActionIntoInput,
+  shouldRenderLearningResumeCard,
   shouldRenderMessageTaskPatch,
+  shouldRenderStructuredMessageSection,
 } from "@/features/learning/lib/chat-behavior";
 import type {
   LearningCurrentSessionResponseData,
@@ -63,6 +65,8 @@ import {
   USER_BUTTON_SECONDARY_CLASS,
   USER_ICON_BUTTON_CLASS,
   USER_PANEL_DIVIDER_CLASS,
+  USER_PANEL_HERO_CARD_CLASS,
+  USER_PANEL_HERO_TOP_SECTION_CLASS,
   USER_PANEL_OUTLINE_BUTTON_CLASS,
   USER_PANEL_SECTION_CLASS,
 } from "@/components/ui/surface-styles";
@@ -107,19 +111,19 @@ type AssistantMessageInteractionMeta = {
 const messageKindMeta = {
   system_goal: {
     badge: "学习提示",
-    bubbleClass: "border-border/60 bg-surface-3 text-foreground",
+    bubbleClass: "border-border/70 bg-surface-3/70 text-foreground",
     avatarClass: "bg-surface-4 text-muted-foreground",
     avatarLabel: "目",
   },
   coach: {
     badge: "AI 教练",
-    bubbleClass: "border-brand/20 bg-brand-dim text-foreground",
+    bubbleClass: "border-brand/20 bg-brand-dim/60 text-foreground",
     avatarClass: "bg-brand text-brand-foreground",
     avatarLabel: "AI",
   },
   user_input: {
     badge: "我的反馈",
-    bubbleClass: "border-border/50 bg-surface-3 text-foreground",
+    bubbleClass: "border-border/70 bg-surface-3/70 text-foreground",
     avatarClass: "bg-surface-4 text-muted-foreground",
     avatarLabel: "我",
   },
@@ -146,17 +150,17 @@ const messageActionToneClass = {
 
 const CHAT_TONE_CLASS = {
   info: {
-    panel: "border-brand/16 bg-brand-dim/45",
-    badge: "border-brand/20 bg-brand-dim text-brand",
+    panel: "border-border/10 bg-surface-3/70",
+    badge: "border-brand/20 bg-brand-dim/60 text-brand",
     icon: "text-brand",
   },
   warning: {
-    panel: "border-gold/18 bg-gold-dim/55",
+    panel: "border-border/10 bg-surface-3/70",
     badge: "border-gold/25 bg-gold-dim text-gold",
     icon: "text-gold",
   },
   success: {
-    panel: "border-emerald-500/18 bg-emerald-500/8",
+    panel: "border-border/10 bg-surface-3/75",
     badge:
       "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
     icon: "text-emerald-600 dark:text-emerald-300",
@@ -180,7 +184,7 @@ const assistantMessageVariantMeta: Record<
     hint: "先给你当前关卡最值得执行的一步。",
     panelClass: "border-brand/20 bg-background/50",
     iconClass: "text-brand",
-    chipClass: "border-brand/20 bg-brand-dim text-brand",
+    chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
     summaryClass: "text-foreground",
   },
   hint: {
@@ -204,7 +208,7 @@ const assistantMessageVariantMeta: Record<
     hint: "把当前任务压缩成更容易验证的小动作。",
     panelClass: "border-brand/20 bg-background/50",
     iconClass: "text-brand",
-    chipClass: "border-brand/20 bg-brand-dim text-brand",
+    chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
     summaryClass: "text-foreground",
   },
   blocked_help: {
@@ -220,7 +224,7 @@ const assistantMessageVariantMeta: Record<
     hint: "优先把眼前这一步做成，而不是一次铺得太大。",
     panelClass: "border-brand/20 bg-background/50",
     iconClass: "text-brand",
-    chipClass: "border-brand/20 bg-brand-dim text-brand",
+    chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
     summaryClass: "text-foreground",
   },
   review: {
@@ -251,7 +255,7 @@ const assistantMessageInteractionMeta: Record<
     hint: "围绕当前关卡给出最小下一步，先做成再扩展。",
     panelClass: "border-brand/20 bg-background/50",
     iconClass: "text-brand",
-    chipClass: "border-brand/20 bg-brand-dim text-brand",
+    chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
     summaryClass: "text-foreground",
     sectionClass: CHAT_TONE_CLASS.info.panel,
     orderedBadgeClass: "bg-brand/12 text-brand",
@@ -296,9 +300,9 @@ const assistantMessageInteractionMeta: Record<
     hint: "优先把当前这一步做实，再判断是否进入后续扩展。",
     panelClass: "border-brand/20 bg-background/50",
     iconClass: "text-brand",
-    chipClass: "border-brand/20 bg-brand-dim text-brand",
+    chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
     summaryClass: "text-foreground",
-    sectionClass: "border-brand/16 bg-brand-dim/45",
+    sectionClass: "border-brand/16 bg-brand-dim/35",
     orderedBadgeClass: "bg-brand/12 text-brand",
     listIconClass: "text-brand",
   },
@@ -615,7 +619,7 @@ function renderStructuredContent(
       {renderAssistantMessageLead(interactionType, variant)}
 
       {summaryText ? (
-        <div className="rounded-2xl border border-background/60 bg-background/45 px-3.5 py-3">
+        <div className="rounded-2xl bg-background/50 px-3.5 py-3">
           <p
             className={cn(
               "text-sm font-medium leading-6",
@@ -627,7 +631,13 @@ function renderStructuredContent(
         </div>
       ) : null}
 
-      {sections.map((section, sectionIndex) => {
+      {sections
+        .filter((section) =>
+          shouldRenderStructuredMessageSection({
+            blockCount: section.blocks.length,
+          }),
+        )
+        .map((section, sectionIndex) => {
         const sectionToneClass =
           section.tone === "success"
             ? CHAT_TONE_CLASS.success.panel
@@ -635,7 +645,7 @@ function renderStructuredContent(
               ? CHAT_TONE_CLASS.warning.panel
               : section.tone === "info"
                 ? interactionMeta.sectionClass
-                : "border-background/60 bg-background/40";
+                : "border-border/80 bg-surface-3";
 
         return (
           <div
@@ -643,7 +653,7 @@ function renderStructuredContent(
             className={cn("rounded-2xl border px-3.5 py-3", sectionToneClass)}
           >
             {section.title ? (
-              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
+              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
                 {renderInlineText(
                   section.title,
                   `section-title-${sectionIndex}`,
@@ -657,7 +667,7 @@ function renderStructuredContent(
                   return (
                     <div
                       key={`heading-${sectionIndex}-${blockIndex}`}
-                      className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80"
+                      className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80"
                     >
                       {renderInlineText(
                         block.text,
@@ -685,7 +695,7 @@ function renderStructuredContent(
                   return (
                     <div
                       key={`unordered-${sectionIndex}-${blockIndex}`}
-                      className="space-y-2 rounded-2xl border border-background/60 bg-background/40 px-3.5 py-3"
+                      className="space-y-2 rounded-2xl bg-background/50 px-3.5 py-3"
                     >
                       {block.items.map((item, itemIndex) => (
                         <div
@@ -716,7 +726,7 @@ function renderStructuredContent(
                 return (
                   <div
                     key={`ordered-${sectionIndex}-${blockIndex}`}
-                    className="space-y-2 rounded-2xl border border-background/60 bg-background/40 px-3.5 py-3"
+                    className="space-y-2 rounded-2xl bg-background/50 px-3.5 py-3"
                   >
                     {block.items.map((item, itemIndex) => (
                       <div
@@ -745,7 +755,7 @@ function renderStructuredContent(
             </div>
           </div>
         );
-      })}
+        })}
     </div>
   );
 }
@@ -930,6 +940,7 @@ export function LearnChat({
     useState<ConnectionState>("online");
   const [showSupportOptions, setShowSupportOptions] = useState(false);
   const [taskState, setTaskState] = useState(learningData.task.status);
+  const [resumeCardDismissed, setResumeCardDismissed] = useState(false);
   const [historyPagination, setHistoryPagination] = useState(
     learningData.historyPagination,
   );
@@ -958,6 +969,15 @@ export function LearnChat({
 
   const { mission, planSummary, resume, rightPanel, supportOptions } =
     learningData;
+  const hasResume = Boolean(resume);
+  const showResumeCard = shouldRenderLearningResumeCard({
+    hasResume,
+    dismissed: resumeCardDismissed,
+  });
+
+  useEffect(() => {
+    setResumeCardDismissed(false);
+  }, [learningData.path.id, hasResume]);
   const inputHint = getInputHint(connectionState, isTyping, previewAttachment);
 
   useEffect(() => {
@@ -1772,7 +1792,7 @@ export function LearnChat({
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-brand/20 bg-brand-dim px-2 py-0.5 text-[11px] font-semibold text-brand">
+                  <span className="rounded-full border border-brand/20 bg-brand-dim/60 px-2 py-0.5 text-[11px] font-semibold text-brand">
                     当前任务
                   </span>
                   {connectionState === "offline" && (
@@ -1853,8 +1873,18 @@ export function LearnChat({
               </div>
             ) : null}
 
-            {resume ? (
-              <div className="rounded-[1.6rem] border border-brand/20 bg-surface-2 p-4">
+            {showResumeCard && resume ? (
+              <div className="relative rounded-[1.6rem] border border-brand/20 bg-brand/6 p-4 pr-12">
+                <button
+                  type="button"
+                  aria-label="关闭继续上次学习提醒"
+                  onClick={() => setResumeCardDismissed(true)}
+                  className={cn(
+                    "absolute top-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-brand/15 bg-surface-1/88 text-muted-foreground shadow-[0_12px_28px_-24px_rgba(15,23,42,0.24)] backdrop-blur-sm transition-all duration-200 hover:border-brand/20 hover:bg-surface-1 hover:text-foreground focus-visible:ring-brand/25 dark:border-white/10 dark:bg-white/8 dark:text-white/72 dark:hover:bg-white/12 dark:hover:text-white",
+                  )}
+                >
+                  <X className="h-4 w-4" />
+                </button>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand/80">
@@ -1883,63 +1913,74 @@ export function LearnChat({
             ) : null}
 
             {mission ? (
-              <div className="relative rounded-[1.8rem] border border-border bg-surface-2/95 p-5">
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
+              <div
+                className={cn(
+                  "overflow-hidden rounded-[2.00rem] mb-6",
+                  USER_PANEL_HERO_CARD_CLASS,
+                )}
+              >
+                <div
+                  className={cn(
+                    USER_PANEL_HERO_TOP_SECTION_CLASS,
+                    "px-5 py-5 sm:px-6 sm:py-6",
+                  )}
+                >
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand/80">
                     <Target className="h-3.5 w-3.5 text-brand" />
                     现在只做这一步
                   </div>
 
-                  <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="mt-6 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                     <div className="min-w-0 flex-1">
-                      <p className="text-xl font-semibold leading-8 text-foreground">
+                      <p className="text-2xl font-bold leading-9 tracking-tight text-foreground sm:text-[2.15rem]">
                         {rightPanel.currentStep}
                       </p>
-                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      <p className="mt-3 max-w-4xl text-[15px] leading-7 text-muted-foreground">
                         {rightPanel.whyThisStep}
                       </p>
                     </div>
-                  </div>
 
-                  <div className="rounded-2xl border border-border/70 bg-surface-3 px-4 py-3">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                    <div className="grid shrink-0 gap-3 sm:grid-cols-3 xl:w-[320px]">
+                      <div className="rounded-[1.25rem] border border-border/55 bg-surface-1/92 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                        <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/75">
+                          建议时长
+                        </p>
+                        <p className="mt-2 text-md font-semibold text-foreground">
+                          {mission.estimatedTime}
+                        </p>
+                      </div>
+                      <div className="rounded-[1.25rem] border border-border/55 bg-surface-1/92 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                        <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/75">
+                          当前进度
+                        </p>
+                        <p className="mt-2 text-md font-semibold text-foreground">
+                          {mission.progressLabel}
+                        </p>
+                      </div>
+                      <div className="rounded-[1.25rem] border border-gold/30 bg-[linear-gradient(180deg,rgba(255,247,237,0.96),rgba(255,237,213,0.88))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:border-gold/20 dark:bg-[linear-gradient(180deg,rgba(120,53,15,0.24),rgba(120,53,15,0.16))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                        <p className="text-[11px] uppercase tracking-[0.12em] text-gold/80">
+                          完成奖励
+                        </p>
+                        <p className="mt-2 text-md font-bold text-gold">
+                          {mission.reward}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-5 py-5 sm:px-6">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/90">
                       <Lightbulb className="h-3.5 w-3.5 text-gold" />
                       AI 教练提醒
                     </div>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    <p className="mt-1 ml-5 text-sm leading-7 text-muted-foreground">
                       {mission.coachCue}
                     </p>
-                  </div>
-                </div>
-                <div className="absolute top-5 right-5 flex items-center gap-2 sm:gap-3 lg:min-w-[320px] lg:max-w-[360px]">
-                  <div className="rounded-2xl border border-border/50 bg-surface-3 px-3 py-2">
-                    <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
-                      建议时长
-                    </p>
-                    <p className="text-sm font-semibold text-foreground sm:text-base">
-                      {mission.estimatedTime}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-border/50 bg-surface-3 px-3 py-2">
-                    <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
-                      当前进度
-                    </p>
-                    <p className="text-sm font-semibold text-foreground sm:text-base">
-                      {mission.progressLabel}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-gold/20 bg-gold-dim px-3 py-2">
-                    <p className="text-[11px] uppercase tracking-[0.12em] text-gold/80">
-                      完成奖励
-                    </p>
-                    <p className="text-sm font-semibold text-gold sm:text-base">
-                      {mission.reward}
-                    </p>
-                  </div>
                 </div>
               </div>
             ) : (
-              <div className="rounded-[1.75rem] border border-border bg-surface-2/95 p-4">
+              <div className="rounded-[1.75rem] border border-border bg-surface-2/95 p-4 pb-6">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
                   <AlertCircle className="h-4 w-4 text-destructive" />
                   未获取到任务信息

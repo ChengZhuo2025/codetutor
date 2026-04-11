@@ -53,10 +53,10 @@ function formatMetricDisplay(def: DashboardStatCardDef, metric: AdminDashboardMe
 
 function trendTextClass(trend: AdminDashboardMetric["trend"]) {
   if (trend === "up") {
-    return "text-green-400"
+    return "text-emerald-700 dark:text-green-400"
   }
   if (trend === "down") {
-    return "text-red-400"
+    return "text-red-700 dark:text-red-400"
   }
   return "text-muted-foreground"
 }
@@ -141,8 +141,8 @@ export function DashboardOverview() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs text-green-400">
-            <span className="size-1.5 animate-pulse rounded-full bg-green-400" />
+          <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-green-400">
+            <span className="size-1.5 animate-pulse rounded-full bg-emerald-600 dark:bg-green-400" />
             系统正常
           </div>
         </div>
@@ -351,14 +351,16 @@ export function DashboardOverview() {
                       className={cn(
                         "flex items-start gap-3 rounded-md border p-3",
                         alert.severity === "warning"
-                          ? "border-yellow-400/20 bg-yellow-400/5"
-                          : "border-green-400/20 bg-green-400/5",
+                          ? "border-amber-200 bg-amber-50 dark:border-yellow-400/20 dark:bg-yellow-400/5"
+                          : "border-emerald-200 bg-emerald-50 dark:border-green-400/20 dark:bg-green-400/5",
                       )}
                     >
                       <AlertCircle
                         className={cn(
                           "mt-0.5 size-4 shrink-0",
-                          alert.severity === "warning" ? "text-yellow-400" : "text-green-400",
+                          alert.severity === "warning"
+                            ? "text-amber-700 dark:text-yellow-400"
+                            : "text-emerald-700 dark:text-green-400",
                         )}
                         aria-hidden
                       />
@@ -368,7 +370,9 @@ export function DashboardOverview() {
                         <p
                           className={cn(
                             "mt-0.5 text-[10px]",
-                            alert.severity === "warning" ? "text-yellow-400" : "text-green-400",
+                            alert.severity === "warning"
+                              ? "text-amber-900 dark:text-yellow-400"
+                              : "text-emerald-900 dark:text-green-400",
                           )}
                         >
                           {alert.message}

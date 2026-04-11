@@ -88,6 +88,19 @@ export function shouldRenderMessageTaskPatch(
   return input.pendingAssistantMessageId !== input.messageId
 }
 
+export function shouldRenderLearningResumeCard(input: {
+  hasResume: boolean
+  dismissed: boolean
+}) {
+  return input.hasResume && !input.dismissed
+}
+
+export function shouldRenderStructuredMessageSection(input: {
+  blockCount: number
+}) {
+  return input.blockCount > 0
+}
+
 export function mergeAssistantActionIntoInput(
   currentInput: string,
   prompt: string,

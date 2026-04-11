@@ -79,6 +79,8 @@
   --surface-3: oklch(0.94 0.008 240);
   --surface-4: oklch(0.88 0.012 240);
   --chart-1: oklch(0.55 0.17 175);
+  /* 管理看板图表：亮色下降低色度，避免与数据卡片上的 neon 色叠加 */
+  --admin-dashboard-chart: oklch(0.48 0.085 175);
   --chart-2: oklch(0.68 0.2 52);
   --chart-3: oklch(0.58 0.21 150);
   --chart-4: oklch(0.6 0.23 22);
@@ -123,6 +125,7 @@
   --surface-3: oklch(0.20 0.006 240);
   --surface-4: oklch(0.26 0.008 240);
   --chart-1: oklch(0.78 0.15 180);
+  --admin-dashboard-chart: oklch(0.78 0.15 180);
   --chart-2: oklch(0.80 0.18 60);
   --chart-3: oklch(0.70 0.18 145);
   --chart-4: oklch(0.68 0.22 25);

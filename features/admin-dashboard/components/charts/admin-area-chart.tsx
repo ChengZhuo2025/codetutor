@@ -27,7 +27,7 @@ type AdminAreaChartProps = {
 export function AdminAreaChart({ data, xKey, yKey, yDomain, name, ariaLabel }: AdminAreaChartProps) {
   const reactId = useId()
   const gradientId = useMemo(() => `admin-area-grad-${reactId.replace(/:/g, "")}`, [reactId])
-  const stroke = "var(--chart-1)"
+  const stroke = "var(--admin-dashboard-chart)"
 
   return (
     <div className="h-full w-full min-h-[176px]" role="img" aria-label={ariaLabel}>

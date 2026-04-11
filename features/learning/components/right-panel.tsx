@@ -75,7 +75,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                 <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   完成标准
                 </p>
-                <p className="mt-2 text-sm leading-5 text-foreground">
+                <p className="mt-2 text-sm leading-6 text-foreground">
                   {rightPanel.completionCriteria}
                 </p>
               </div>
@@ -118,7 +118,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand/18 text-xs font-semibold text-brand">
                     {index + 1}
                   </div>
-                  <p className="text-sm leading-5 text-foreground/85">{point}</p>
+                  <p className="text-sm leading-6 text-foreground/85">{point}</p>
                 </div>
               ))}
             </div>
@@ -145,7 +145,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                         卡点提醒
                       </span>
                     ) : null}
-                    <p className="text-sm leading-5 text-foreground/82">{caution.text}</p>
+                    <p className="text-sm leading-6 text-foreground/82">{caution.text}</p>
                   </div>
                 </div>
               ))}
@@ -169,7 +169,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                     <p className="mt-3 text-base font-semibold leading-7 text-foreground">
                       {activeTip.title}
                     </p>
-                    <p className="mt-2 text-sm leading-5 text-foreground/78">{activeTip.body}</p>
+                    <p className="mt-2 text-sm leading-6 text-foreground/78">{activeTip.body}</p>
                   </div>
                 </div>
 
@@ -286,7 +286,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
             </div>
           </PageSection>
 
-          <div className={cn(WORKSPACE_ASIDE_CARD_CLASS, "border-gold/20 bg-gold-dim/55")}>
+          <div className={cn(WORKSPACE_ASIDE_CARD_CLASS, "border-gold/15 bg-gold-dim/35")}>
             <div className="flex items-start gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold dark:border-gold/15 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.06))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                 <Compass className="h-5 w-5" />
@@ -301,7 +301,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                 </p>
               </div>
             </div>
-            <p className="mt-2 text-sm leading-5 text-muted-foreground">
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {rightPanel.nextStepPreview}
             </p>
           </div>

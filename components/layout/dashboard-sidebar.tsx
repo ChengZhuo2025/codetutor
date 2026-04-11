@@ -510,7 +510,7 @@ export function DashboardSidebar({
                       <p className="text-[11px] text-muted-foreground">
                         连续学习
                       </p>
-                      <p className="text-sm font-bold text-gold">
+                      <p className="text-sm font-semibold text-gold">
                         {resolvedProfile.streakDays} 天
                       </p>
                     </div>
@@ -519,7 +519,7 @@ export function DashboardSidebar({
                     <Star className="h-4 w-4 text-brand" />
                     <div>
                       <p className="text-[11px] text-muted-foreground">已完成</p>
-                      <p className="text-sm font-bold">
+                      <p className="text-sm font-semibold">
                         {resolvedProfile.completedTaskCount} 关
                       </p>
                     </div>

@@ -33,7 +33,7 @@ export function PageSection({
             {title}
           </h2>
           {description ? (
-            <p className="mt-1 text-sm leading-5 text-muted-foreground">{description}</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
           ) : null}
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}

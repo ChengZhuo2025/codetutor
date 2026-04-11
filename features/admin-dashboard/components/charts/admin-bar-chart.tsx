@@ -26,7 +26,7 @@ type AdminBarChartProps = {
 }
 
 export function AdminBarChart({ data, xKey, yKey, name, ariaLabel }: AdminBarChartProps) {
-  const fill = "var(--chart-1)"
+  const fill = "var(--admin-dashboard-chart)"
 
   return (
     <div className="h-full w-full min-h-[176px]" role="img" aria-label={ariaLabel}>

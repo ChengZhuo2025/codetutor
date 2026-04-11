@@ -6,6 +6,7 @@ import {
   classifyLearningRouteError,
   deriveTaskPatch,
   doesAgentBindingMatchLearningScene,
+  hasLearningResumeHistory,
   parseStoredTaskPatchMetadata,
   resolveLearningResponseMode,
   shouldPersistTaskPatch,
@@ -146,6 +147,44 @@ test("shouldPersistTaskPatch only persists state changes that are not completion
       "in_progress",
     ),
     false,
+  )
+})
+
+test("hasLearningResumeHistory hides resume card for a newly created path with no study trace", () => {
+  assert.equal(
+    hasLearningResumeHistory({
+      completedSteps: 0,
+      currentTaskLastConversationId: null,
+      persistedMessageCount: 0,
+    }),
+    false,
+  )
+
+  assert.equal(
+    hasLearningResumeHistory({
+      completedSteps: 1,
+      currentTaskLastConversationId: null,
+      persistedMessageCount: 0,
+    }),
+    true,
+  )
+
+  assert.equal(
+    hasLearningResumeHistory({
+      completedSteps: 0,
+      currentTaskLastConversationId: "conversation-1",
+      persistedMessageCount: 0,
+    }),
+    true,
+  )
+
+  assert.equal(
+    hasLearningResumeHistory({
+      completedSteps: 0,
+      currentTaskLastConversationId: null,
+      persistedMessageCount: 2,
+    }),
+    true,
   )
 })
 

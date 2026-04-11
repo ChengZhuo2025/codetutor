@@ -5,7 +5,9 @@ import {
   buildComposerDraftFromAssistantAction,
   isExplicitTaskCompletionInput,
   mergeAssistantActionIntoInput,
+  shouldRenderLearningResumeCard,
   shouldRenderMessageTaskPatch,
+  shouldRenderStructuredMessageSection,
 } from "../features/learning/lib/chat-behavior.ts"
 
 test("shouldRenderMessageTaskPatch hides task patch while the assistant message is still streaming", () => {
@@ -84,4 +86,46 @@ test("isExplicitTaskCompletionInput recognizes strong completion intents but ign
   assert.equal(isExplicitTaskCompletionInput("这一关我已完成，可以继续下一步"), true)
   assert.equal(isExplicitTaskCompletionInput("我完成了吗？"), false)
   assert.equal(isExplicitTaskCompletionInput("我还没完成，但想知道下一步"), false)
+})
+
+test("shouldRenderLearningResumeCard hides the resume prompt after manual dismissal", () => {
+  assert.equal(
+    shouldRenderLearningResumeCard({
+      hasResume: true,
+      dismissed: false,
+    }),
+    true,
+  )
+
+  assert.equal(
+    shouldRenderLearningResumeCard({
+      hasResume: true,
+      dismissed: true,
+    }),
+    false,
+  )
+
+  assert.equal(
+    shouldRenderLearningResumeCard({
+      hasResume: false,
+      dismissed: false,
+    }),
+    false,
+  )
+})
+
+test("shouldRenderStructuredMessageSection hides empty coach detail containers", () => {
+  assert.equal(
+    shouldRenderStructuredMessageSection({
+      blockCount: 0,
+    }),
+    false,
+  )
+
+  assert.equal(
+    shouldRenderStructuredMessageSection({
+      blockCount: 1,
+    }),
+    true,
+  )
 })

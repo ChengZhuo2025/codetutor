@@ -31,7 +31,7 @@ export function ProgressOverview({
     (summary.totalXP / Math.max(summary.totalXP + summary.remainingXPToNextRank, 1)) * 100,
   )
   const insetPanelClass =
-    "rounded-2xl border border-border/70 bg-surface-1/95 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.68)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+    "rounded-2xl border border-border/70 bg-surface-2 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.68)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
   const infoPillClass =
     "rounded-full border border-border/70 bg-muted/60 px-2.5 py-1 text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
 
@@ -47,7 +47,7 @@ export function ProgressOverview({
           <div className={cn(USER_PANEL_HERO_TOP_SECTION_CLASS, "px-4 py-5 sm:px-5")}>
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div className="min-w-0">
+                <div className="min-w-0 w-[75%]">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span className="rounded-full border border-brand/18 bg-brand-dim px-2.5 py-1 font-medium text-brand">
                       当前任务
@@ -56,10 +56,10 @@ export function ProgressOverview({
                       第 {currentStage.id} 关 / 共 {total} 关
                     </span>
                   </div>
-                  <h2 className="mt-3 text-[1.5rem] font-bold leading-tight tracking-tight text-foreground">
+                  <h2 className="mt-6 text-[1.5rem] font-bold leading-tight tracking-tight text-foreground">
                     {currentStage.title}
                   </h2>
-                  <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
                     {currentStage.summary}
                   </p>
                 </div>
@@ -67,7 +67,7 @@ export function ProgressOverview({
                 <button
                   onClick={onContinueLearning}
                   className={cn(
-                    "inline-flex items-center justify-center gap-1 px-5 py-3 text-sm font-semibold",
+                    "mt-6 inline-flex items-center justify-center gap-1 px-5 py-3 text-sm font-semibold",
                     USER_BUTTON_PRIMARY_CLASS,
                   )}
                 >

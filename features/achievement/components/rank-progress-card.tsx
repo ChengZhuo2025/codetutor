@@ -166,7 +166,7 @@ export function RankProgressCard({
           })}
         </div>
 
-        <div className="mt-5 rounded-[24px] border border-border/70 bg-surface-1/95 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.68)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+        <div className="mt-5 rounded-[24px] border border-border/70 bg-surface-2 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.68)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
           {nextRank ? (
             <p className="text-sm text-muted-foreground">
               距离{" "}
