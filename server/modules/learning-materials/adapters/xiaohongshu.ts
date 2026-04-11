@@ -11,6 +11,10 @@ export const xiaohongshuMaterialSourceAdapter: MaterialSourceAdapter = {
   },
   async fetch(rawUrl) {
     const basics = await fetchPublicPageBasics(rawUrl)
+    const mediaAssets = [
+      ...(basics.imageUrls.map((url) => ({ kind: "image", url }))),
+      ...(basics.coverImageUrl ? [{ kind: "cover_image", url: basics.coverImageUrl }] : []),
+    ]
     return {
       canonicalUrl: basics.canonicalUrl,
       sourceType: "image_post",
@@ -19,7 +23,7 @@ export const xiaohongshuMaterialSourceAdapter: MaterialSourceAdapter = {
       authorName: null,
       coverImageUrl: basics.coverImageUrl,
       subtitleTracks: [],
-      mediaAssets: basics.coverImageUrl ? [{ kind: "cover_image", url: basics.coverImageUrl }] : [],
+      mediaAssets,
       rawTextBlocks: basics.text ? [basics.text] : [],
       warnings: basics.text.length < 400 ? ["公开页正文较少，已保留可见描述与元数据。"] : [],
     }

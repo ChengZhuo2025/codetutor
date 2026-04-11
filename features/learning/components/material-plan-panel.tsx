@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Loader2, RefreshCw, Sparkles } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { USER_BUTTON_PRIMARY_CLASS } from "@/components/ui/surface-styles"
 import { Input } from "@/components/ui/input"
@@ -30,6 +31,86 @@ const ACTIVE_STATUSES = new Set([
   "planning",
   "quality_checking",
 ])
+
+function getQualityStatusMeta(status: string) {
+  switch (status) {
+    case "passed":
+      return {
+        label: "已通过",
+        variant: "success" as const,
+        description: "规则闸门已通过，计划可继续编辑或确认。",
+      }
+    case "pilot_fallback":
+      return {
+        label: "试点降级",
+        variant: "warning" as const,
+        description: "质量闸门建议先收缩为试点计划，避免基于弱证据生成过长路径。",
+      }
+    default:
+      return {
+        label: status || "未知",
+        variant: "neutral" as const,
+        description: "当前质量状态尚未完成判定。",
+      }
+  }
+}
+
+function getSelfCheckMeta(
+  selfCheck: LearningPlanDraftDetailResponseData["qualityReport"] extends infer T
+    ? T extends { selfCheck: infer S }
+      ? S
+      : never
+    : never,
+) {
+  switch (selfCheck.decision) {
+    case "pass":
+      return {
+        label: "模型自检通过",
+        variant: "success" as const,
+        description: selfCheck.reason ?? "小模型复核通过，未要求重试或收缩计划。",
+      }
+    case "retry":
+      return {
+        label: "模型建议重试",
+        variant: "warning" as const,
+        description: selfCheck.reason ?? "小模型认为计划仍需重试或补充证据。",
+      }
+    case "fallback":
+      return {
+        label: "模型建议降级",
+        variant: "warning" as const,
+        description: selfCheck.reason ?? "小模型建议直接收缩为试点计划。",
+      }
+    case "skipped":
+      if (selfCheck.reason?.includes("低风险计划")) {
+        return {
+          label: "低风险跳过",
+          variant: "info" as const,
+          description: selfCheck.reason,
+        }
+      }
+
+      if (selfCheck.reason?.includes("未配置")) {
+        return {
+          label: "未配置自检",
+          variant: "neutral" as const,
+          description: selfCheck.reason,
+        }
+      }
+
+      return {
+        label: "自检已跳过",
+        variant: "warning" as const,
+        description: selfCheck.reason ?? "模型自检未执行。",
+      }
+    default:
+      return {
+        label: "自检未知",
+        variant: "neutral" as const,
+        description: selfCheck.reason ?? "当前未记录模型自检结果。",
+      }
+  }
+}
 
 export function MaterialPlanPanel({
   onSessionRefresh,
@@ -485,6 +566,97 @@ export function MaterialPlanPanel({
             <span>质量：{draftDetail.qualityStatus}</span>
             <span>状态：{draftDetail.status}</span>
           </div>
+
+          {draftDetail.qualityReport ? (
+            <div className="space-y-3 rounded-2xl border border-border/50 bg-background/70 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">质量闸门</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    区分规则检查结果、模型自检状态，以及是否触发试点降级。
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Badge
+                    variant={getQualityStatusMeta(draftDetail.qualityReport.status).variant}
+                    size="lg"
+                  >
+                    {getQualityStatusMeta(draftDetail.qualityReport.status).label}
+                  </Badge>
+                  <Badge
+                    variant={getSelfCheckMeta(draftDetail.qualityReport.selfCheck).variant}
+                    size="lg"
+                  >
+                    {getSelfCheckMeta(draftDetail.qualityReport.selfCheck).label}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-border/50 bg-surface-1/70 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    规则结论
+                  </p>
+                  <p className="mt-2 text-sm text-foreground">
+                    {getQualityStatusMeta(draftDetail.qualityReport.status).description}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border/50 bg-surface-1/70 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    模型自检
+                  </p>
+                  <p className="mt-2 text-sm text-foreground">
+                    {getSelfCheckMeta(draftDetail.qualityReport.selfCheck).description}
+                  </p>
+                </div>
+              </div>
+
+              {draftDetail.qualityReport.fallbackReason ? (
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                    降级原因
+                  </p>
+                  <p className="mt-2 text-sm text-amber-700 dark:text-amber-200">
+                    {draftDetail.qualityReport.fallbackReason}
+                  </p>
+                </div>
+              ) : null}
+
+              <div className="grid gap-2">
+                {draftDetail.qualityReport.checks.map((check) => (
+                  <div
+                    key={check.code}
+                    className="flex items-start justify-between gap-3 rounded-2xl border border-border/50 bg-surface-1/70 px-3 py-2"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{check.message}</p>
+                      <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                        {check.code}
+                      </p>
+                    </div>
+                    <Badge variant={check.passed ? "success" : "warning"} size="md">
+                      {check.passed ? "通过" : "未通过"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+
+              {draftDetail.qualityReport.warnings.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    质量提示
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {draftDetail.qualityReport.warnings.map((warning) => (
+                      <Badge key={warning} variant="outline" size="lg">
+                        {warning}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="space-y-3">
             {draftDetail.tasks.map((task) => (

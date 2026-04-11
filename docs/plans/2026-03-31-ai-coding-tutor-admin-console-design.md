@@ -241,7 +241,7 @@
 - 学习计划列表
   支持按状态 `active / interrupted / completed / abandoned`、工具、等级、更新时间筛选。
 - 学习计划详情
-  查看路径快照、当前步骤、任务状态、最近活动时间、累计 XP。
+  查看路径快照、当前步骤、任务状态、最近活动时间、累计 XP；若该路径来自教程链接草稿确认，还需展示关联 draft / intake、quality gate 检查结果与 self-check 状态，以及 intake 内各 source 的多模态抽取摘要（是否命中 ASR / OCR / vision、证据覆盖和模型代码）。
 - 最近会话概览
   查看当前路径关联的 `conversation_sessions` 和最近消息摘要。
 - 路径状态运营动作

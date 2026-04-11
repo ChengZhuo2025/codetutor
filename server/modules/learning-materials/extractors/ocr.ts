@@ -46,12 +46,22 @@ export async function runOcrExtraction(input: {
   const response = await invokeMaterialPipelineModel({
     runtime: input.runtime,
     systemPrompt: "你是教程材料 OCR 助手。若无法读取图片 URL，请返回空 text 并说明 warning。只输出 JSON：{\"text\":\"...\",\"warning\":\"...\"}。",
-    userPrompt: [
-      `标题：${input.title ?? "未提供"}`,
-      `图片链接：${input.mediaAsset.url}`,
-      `资源类型：${input.mediaAsset.kind}`,
-      "请只提取图片中实际可见的教程标题、步骤、命令、代码片段或标签。不要总结，只做 OCR 文本提取。",
-    ].join("\n"),
+    userContent: [
+      {
+        type: "text",
+        text: [
+          `标题：${input.title ?? "未提供"}`,
+          `资源类型：${input.mediaAsset.kind}`,
+          "请只提取图片中实际可见的教程标题、步骤、命令、代码片段或标签。不要总结，只做 OCR 文本提取。",
+        ].join("\n"),
+      },
+      {
+        type: "image_url",
+        image_url: {
+          url: input.mediaAsset.url,
+        },
+      },
+    ],
     temperature: 0,
     maxOutputTokens: 1800,
   })

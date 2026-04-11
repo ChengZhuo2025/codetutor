@@ -91,15 +91,25 @@ export function MetricCard({
   label,
   value,
   hint,
+  valueClassName,
 }: {
   label: string
   value: string | number
   hint: string
+  /** 数值强调色，与 `/admin/feedback` 统计卡片一致的可读分层 */
+  valueClassName?: string
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card px-4 py-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{value}</p>
+    <div className="rounded-lg border border-border bg-card px-4 py-3">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          "mt-1 text-xl font-semibold",
+          valueClassName ?? "text-foreground",
+        )}
+      >
+        {value}
+      </p>
       <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
     </div>
   )

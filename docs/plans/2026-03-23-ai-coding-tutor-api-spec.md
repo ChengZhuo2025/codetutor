@@ -1706,7 +1706,7 @@ SSE 事件补充：
 |------|------|------|
 | `GET /api/admin/learning-paths` | GET | 分页学习路径列表；支持 `keyword`、状态、工具、等级、最近更新时间筛选 |
 | `GET /api/admin/learning-paths/export` | GET | 基于列表同筛选导出 CSV（最多 10000 行） |
-| `GET /api/admin/learning-paths/{pathId}` | GET | 学习路径详情 read model，包含用户快照、路径快照、时间线、步骤与最近会话 |
+| `GET /api/admin/learning-paths/{pathId}` | GET | 学习路径详情 read model，包含用户快照、路径快照、时间线、步骤、最近会话，以及当路径来自教程链接草稿确认时的 `materialPlan` 质量快照与多模态抽取摘要（source warnings / extractionTrace / evidenceCoverage / resolvedModelCodes） |
 | `POST /api/admin/learning-paths/{pathId}/status` | POST | 受控状态操作；当前仅支持 `reactivate`、`archive` 两种动作 |
 
 当前约束：

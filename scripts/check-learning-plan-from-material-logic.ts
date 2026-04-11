@@ -483,6 +483,13 @@ test("runPlanQualityGate falls back after quality self-check keeps asking for re
       },
       attempt: 2,
       maxAttempts: 2,
+      evidenceCoverage: {
+        highConfidenceChars: 420,
+        totalUsefulChars: 860,
+        chunkCount: 3,
+        isSufficient: false,
+        isWeakEvidence: false,
+      },
     },
     {
       invokeQualityModel: async () => ({
@@ -503,4 +510,129 @@ test("runPlanQualityGate falls back after quality self-check keeps asking for re
   assert.equal(result.qualityStatus, "pilot_fallback")
   assert.equal(result.qualityReport.selfCheck.decision, "retry")
   assert.equal(result.qualityReport.fallbackReason, "quality_model_retry_exhausted")
+})
+
+test("runPlanQualityGate skips low-risk quality self-check and does not invoke model", async () => {
+  const plan = plannerOutputSchema.parse({
+    title: "低风险计划",
+    goal: "完成基础学习闭环",
+    tasks: [
+      { taskNo: 1, title: "第一步", objective: "完成项目环境配置并记录启动结果", practiceSteps: ["安装依赖", "启动项目"], acceptanceCriteria: "项目可以正常启动", estimatedMinutes: 45, sourceRefs: ["c1"] },
+      { taskNo: 2, title: "第二步", objective: "跟随材料完成一次页面结构调整并记录变化", practiceSteps: ["修改页面", "查看结果"], acceptanceCriteria: "页面结构按预期更新", estimatedMinutes: 60, sourceRefs: ["c1"] },
+      { taskNo: 3, title: "第三步", objective: "整理本次练习结论并输出下一步计划", practiceSteps: ["记录结论", "列出下一步"], acceptanceCriteria: "输出一份复盘记录", estimatedMinutes: 30, sourceRefs: ["c1"] },
+    ],
+  })
+
+  let invoked = false
+  const result = await runPlanQualityGate(
+    {
+      plan,
+      weeklyHours: 4,
+      qualityRuntime: {
+        provider: {
+          code: "provider-1",
+          providerType: "openai_compatible",
+          baseUrl: "https://provider.example.com",
+          authMode: "bearer",
+          envSecretRef: "SECRET",
+          secretCiphertext: null,
+          secretIv: null,
+          secretAuthTag: null,
+          secretKeyVersion: null,
+          timeoutMs: 10_000,
+          retryCount: 1,
+        },
+        model: {
+          code: "quality-model",
+          modelName: "quality-model-name",
+          defaultMaxOutputTokens: 300,
+          recommendedTemperature: 0,
+        },
+      },
+      evidenceCoverage: {
+        highConfidenceChars: 1800,
+        totalUsefulChars: 2200,
+        chunkCount: 4,
+        isSufficient: true,
+        isWeakEvidence: false,
+      },
+    },
+    {
+      invokeQualityModel: async () => {
+        invoked = true
+        throw new Error("should not invoke")
+      },
+    },
+  )
+
+  assert.equal(invoked, false)
+  assert.equal(result.qualityStatus, "passed")
+  assert.equal(result.qualityReport.selfCheck.decision, "skipped")
+  assert.match(result.qualityReport.selfCheck.reason ?? "", /低风险计划/)
+  assert.equal(result.qualityReport.warnings.includes("should not invoke"), false)
+})
+
+test("runPlanQualityGate keeps timeout reason in selfCheck but not in warnings", async () => {
+  const plan = plannerOutputSchema.parse({
+    title: "高风险计划",
+    goal: "在证据不足时收缩学习范围",
+    tasks: [
+      { taskNo: 1, title: "第一步", objective: "梳理材料里提到的概念并记录未知项", practiceSteps: ["阅读材料", "记录未知项"], acceptanceCriteria: "输出一份概念清单", sourceRefs: ["c1"] },
+      { taskNo: 2, title: "第二步", objective: "根据材料完成一次最小实践并记录阻塞点", practiceSteps: ["尝试实践", "记录阻塞"], acceptanceCriteria: "完成一次最小实践记录", sourceRefs: ["c1"] },
+      { taskNo: 3, title: "第三步", objective: "整理后续求证问题并准备补充资料", practiceSteps: ["整理问题", "准备资料"], acceptanceCriteria: "输出待验证问题列表", sourceRefs: ["c1"] },
+    ],
+    warnings: ["材料证据仍偏弱"],
+  })
+
+  const result = await runPlanQualityGate(
+    {
+      plan,
+      intakeWarnings: ["材料证据仍偏弱"],
+      qualityRuntime: {
+        provider: {
+          code: "provider-1",
+          providerType: "openai_compatible",
+          baseUrl: "https://provider.example.com",
+          authMode: "bearer",
+          envSecretRef: "SECRET",
+          secretCiphertext: null,
+          secretIv: null,
+          secretAuthTag: null,
+          secretKeyVersion: null,
+          timeoutMs: 10_000,
+          retryCount: 1,
+        },
+        model: {
+          code: "quality-model",
+          modelName: "quality-model-name",
+          defaultMaxOutputTokens: 300,
+          recommendedTemperature: 0,
+        },
+      },
+      evidenceCoverage: {
+        highConfidenceChars: 350,
+        totalUsefulChars: 680,
+        chunkCount: 3,
+        isSufficient: false,
+        isWeakEvidence: true,
+      },
+    },
+    {
+      invokeQualityModel: async (input) => {
+        const payload = JSON.parse(input.userPrompt ?? "{}") as Record<string, unknown>
+        assert.ok(payload.planSummary)
+        assert.ok(Array.isArray(payload.riskSignals))
+        assert.equal("plan" in payload, false)
+        throw new Error("AI provider request timed out")
+      },
+    },
+  )
+
+  assert.equal(result.qualityStatus, "passed")
+  assert.equal(result.qualityReport.selfCheck.decision, "skipped")
+  assert.equal(result.qualityReport.selfCheck.reason, "AI provider request timed out")
+  assert.equal(
+    result.qualityReport.warnings.some((warning) => warning.includes("timed out")),
+    false,
+  )
 })

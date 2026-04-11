@@ -48,6 +48,7 @@ type QualityGateDependencies = {
 }
 
 const GENERIC_OBJECTIVE_PATTERN = /(了解一下|熟悉概念|继续阅读资料|看看内容|知道大概)/i
+const QUALITY_SKIP_REASON = "规则检查已覆盖当前低风险计划，跳过模型自检。"
 
 function buildPilotPlan(plan: PlannerOutput): PlannerOutput {
   const tasks = plan.tasks.slice(0, 3).map((task, index) => ({
@@ -111,6 +112,67 @@ function buildRuleChecks(input: RunPlanQualityGateInput): QualityCheck[] {
   ]
 }
 
+function collectQualityRiskSignals(input: RunPlanQualityGateInput) {
+  const totalMinutes = input.plan.tasks.reduce(
+    (sum, task) => sum + (task.estimatedMinutes ?? 0),
+    0,
+  )
+  const signals: string[] = []
+
+  if (input.evidenceCoverage?.isWeakEvidence) {
+    signals.push("weak_evidence")
+  } else if (input.evidenceCoverage && !input.evidenceCoverage.isSufficient) {
+    signals.push("insufficient_evidence")
+  }
+
+  if (input.plan.tasks.length >= 5) {
+    signals.push("long_plan")
+  }
+
+  if (input.plan.tasks.some((task) => !task.estimatedMinutes)) {
+    signals.push("missing_estimates")
+  }
+
+  if (input.weeklyHours && totalMinutes > input.weeklyHours * 60 * 1.8) {
+    signals.push("schedule_pressure")
+  }
+
+  return signals
+}
+
+function buildQualitySelfCheckPayload(
+  input: RunPlanQualityGateInput,
+  riskSignals: string[],
+) {
+  const totalMinutes = input.plan.tasks.reduce(
+    (sum, task) => sum + (task.estimatedMinutes ?? 0),
+    0,
+  )
+
+  return {
+    warnings: input.intakeWarnings ?? [],
+    evidenceCoverage: input.evidenceCoverage ?? null,
+    riskSignals,
+    planSummary: {
+      title: input.plan.title,
+      goal: input.plan.goal,
+      taskCount: input.plan.tasks.length,
+      totalMinutes,
+      week1TaskNos: input.plan.week1TaskNos,
+      warningCount: input.plan.warnings?.length ?? 0,
+      tasks: input.plan.tasks.map((task) => ({
+        taskNo: task.taskNo,
+        title: task.title,
+        objective: task.objective,
+        acceptanceCriteria: task.acceptanceCriteria,
+        estimatedMinutes: task.estimatedMinutes ?? null,
+        practiceStepCount: task.practiceSteps.length,
+        sourceRefCount: task.sourceRefs.length,
+      })),
+    },
+  }
+}
+
 async function runQualitySelfCheck(
   input: RunPlanQualityGateInput,
   dependencies: QualityGateDependencies,
@@ -123,17 +185,22 @@ async function runQualitySelfCheck(
     }
   }
 
+  const riskSignals = collectQualityRiskSignals(input)
+  if (riskSignals.length === 0) {
+    return {
+      enabled: false,
+      decision: "skipped",
+      reason: QUALITY_SKIP_REASON,
+    }
+  }
+
   try {
     const response = await (dependencies.invokeQualityModel ?? invokeMaterialPipelineModel)({
       runtime: input.qualityRuntime,
       systemPrompt: "你是学习计划质量闸门。只输出 JSON：{\"decision\":\"pass|retry|fallback\",\"reason\":\"...\"}。",
-      userPrompt: JSON.stringify({
-        warnings: input.intakeWarnings ?? [],
-        evidenceCoverage: input.evidenceCoverage ?? null,
-        plan: input.plan,
-      }),
+      userPrompt: JSON.stringify(buildQualitySelfCheckPayload(input, riskSignals)),
       temperature: 0,
-      maxOutputTokens: 400,
+      maxOutputTokens: 160,
     })
 
     const raw = JSON.parse(extractJsonObjectString(response.content)) as {
@@ -227,9 +294,7 @@ export async function runPlanQualityGate(
     qualityReport: {
       status: "passed",
       checks,
-      warnings: selfCheck.reason && selfCheck.decision === "skipped"
-        ? [...warnings, selfCheck.reason]
-        : warnings,
+      warnings,
       selfCheck,
       fallbackReason: null,
     },

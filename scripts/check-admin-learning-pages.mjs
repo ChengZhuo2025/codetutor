@@ -36,8 +36,14 @@ assert.match(
 
 assert.match(
   detailSource,
-  /状态时间线|步骤|最近会话|重新激活|归档/,
-  "The admin learning detail should expose timeline, steps, recent sessions, and status actions",
+  /状态时间线|步骤|最近会话|重新激活|归档|来源草稿|质量闸门|多模态提取/,
+  "The admin learning detail should expose timeline, steps, recent sessions, material-plan quality, extraction summary, and status actions",
+)
+
+assert.match(
+  detailSource,
+  /当前路径未关联教程链接草稿|该学习路径不是由教程链接生成计划确认后创建/,
+  "The admin learning detail should explain when a path has no linked material-plan draft",
 )
 
 assert.match(

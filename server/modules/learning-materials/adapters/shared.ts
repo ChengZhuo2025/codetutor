@@ -11,18 +11,63 @@ function stripTags(html: string) {
     .replace(/<[^>]+>/g, " ")
 }
 
+function decodeHtmlEntities(value: string) {
+  return value
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, "\"")
+    .replace(/&#39;/gi, "'")
+}
+
+function resolveAssetUrl(value: string | null, baseUrl: string) {
+  if (!value) {
+    return null
+  }
+
+  const normalized = decodeHtmlEntities(value.trim())
+  if (!normalized) {
+    return null
+  }
+
+  try {
+    return new URL(normalized, baseUrl).toString()
+  } catch {
+    return normalized.startsWith("//") ? `https:${normalized}` : normalized
+  }
+}
+
 function matchMeta(html: string, name: string) {
   const propertyMatch = html.match(
     new RegExp(`<meta[^>]+property=["']${name}["'][^>]+content=["']([^"']+)["']`, "i"),
   )
   if (propertyMatch?.[1]) {
-    return propertyMatch[1].trim()
+    return decodeHtmlEntities(propertyMatch[1].trim())
   }
 
   const nameMatch = html.match(
     new RegExp(`<meta[^>]+name=["']${name}["'][^>]+content=["']([^"']+)["']`, "i"),
   )
-  return nameMatch?.[1]?.trim() ?? null
+  return nameMatch?.[1] ? decodeHtmlEntities(nameMatch[1].trim()) : null
+}
+
+function matchMetaAll(html: string, name: string) {
+  const matches = [
+    ...html.matchAll(
+      new RegExp(`<meta[^>]+property=["']${name}["'][^>]+content=["']([^"']+)["']`, "gi"),
+    ),
+    ...html.matchAll(
+      new RegExp(`<meta[^>]+name=["']${name}["'][^>]+content=["']([^"']+)["']`, "gi"),
+    ),
+  ]
+
+  return [
+    ...new Set(
+      matches
+        .map((match) => match[1] ? decodeHtmlEntities(match[1].trim()) : null)
+        .filter(Boolean),
+    ),
+  ]
 }
 
 function extractTitle(html: string) {
@@ -57,9 +102,19 @@ export async function fetchPublicPageBasics(rawUrl: string) {
 
     return {
       canonicalUrl: response.url || rawUrl,
+      rawHtml: html,
       title: extractTitle(html),
       description: matchMeta(html, "og:description") ?? matchMeta(html, "description"),
-      coverImageUrl: matchMeta(html, "og:image"),
+      coverImageUrl: resolveAssetUrl(matchMeta(html, "og:image"), response.url || rawUrl),
+      imageUrls: matchMetaAll(html, "og:image")
+        .map((url) => resolveAssetUrl(url, response.url || rawUrl))
+        .filter((url): url is string => Boolean(url)),
+      videoUrl: resolveAssetUrl(
+        matchMeta(html, "og:video:url")
+          ?? matchMeta(html, "og:video")
+          ?? matchMeta(html, "twitter:player:stream"),
+        response.url || rawUrl,
+      ),
       text,
     }
   } catch (error) {

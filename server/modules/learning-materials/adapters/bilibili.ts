@@ -3,6 +3,30 @@ import "server-only"
 import { fetchPublicPageBasics } from "./shared.ts"
 import type { MaterialSourceAdapter } from "../source-resolver.ts"
 
+function safeJsonParse<T>(value: string | null): T | null {
+  if (!value) {
+    return null
+  }
+
+  try {
+    return JSON.parse(value) as T
+  } catch {
+    return null
+  }
+}
+
+function matchInlineJson(html: string, pattern: RegExp) {
+  return html.match(pattern)?.[1] ?? null
+}
+
+function pickDashUrl(
+  items: Array<{ baseUrl?: string; base_url?: string }> | undefined,
+) {
+  return items?.find((item) => item.baseUrl || item.base_url)?.baseUrl
+    ?? items?.find((item) => item.baseUrl || item.base_url)?.base_url
+    ?? null
+}
+
 export const bilibiliMaterialSourceAdapter: MaterialSourceAdapter = {
   sourceCode: "bilibili",
   supports(url) {
@@ -11,17 +35,55 @@ export const bilibiliMaterialSourceAdapter: MaterialSourceAdapter = {
   },
   async fetch(rawUrl) {
     const basics = await fetchPublicPageBasics(rawUrl)
+    const initialState = safeJsonParse<{
+      videoData?: {
+        title?: string
+        desc?: string
+        owner?: {
+          name?: string
+        }
+        pic?: string
+      }
+    }>(
+      matchInlineJson(basics.rawHtml, /window\.__INITIAL_STATE__=(\{[\s\S]*?\});\(function\(/),
+    )
+    const playinfo = safeJsonParse<{
+      data?: {
+        dash?: {
+          audio?: Array<{ baseUrl?: string; base_url?: string }>
+          video?: Array<{ baseUrl?: string; base_url?: string }>
+        }
+      }
+    }>(
+      matchInlineJson(basics.rawHtml, /window\.__playinfo__=(\{[\s\S]*?\})<\/script>/),
+    )
+    const title = initialState?.videoData?.title ?? basics.title
+    const description = initialState?.videoData?.desc?.trim() || basics.description
+    const authorName = initialState?.videoData?.owner?.name ?? null
+    const coverImageUrl = initialState?.videoData?.pic ?? basics.coverImageUrl
+    const audioUrl = pickDashUrl(playinfo?.data?.dash?.audio)
+    const videoUrl = pickDashUrl(playinfo?.data?.dash?.video) ?? basics.videoUrl
+    const mediaAssets = [
+      ...(audioUrl ? [{ kind: "audio", url: audioUrl }] : []),
+      ...(videoUrl ? [{ kind: "video", url: videoUrl }] : []),
+      ...(coverImageUrl ? [{ kind: "cover_image", url: coverImageUrl }] : []),
+    ]
+    const rawTextBlocks = [title, description].map((item) => item?.trim()).filter(Boolean) as string[]
+
     return {
       canonicalUrl: basics.canonicalUrl,
       sourceType: "video",
-      title: basics.title,
-      description: basics.description,
-      authorName: null,
-      coverImageUrl: basics.coverImageUrl,
+      title,
+      description,
+      authorName,
+      coverImageUrl,
       subtitleTracks: [],
-      mediaAssets: basics.coverImageUrl ? [{ kind: "cover_image", url: basics.coverImageUrl }] : [],
-      rawTextBlocks: basics.text ? [basics.text] : [],
-      warnings: basics.text.length < 400 ? ["未拿到稳定字幕，先使用公开简介与可见文本。"] : [],
+      mediaAssets,
+      rawTextBlocks,
+      warnings:
+        rawTextBlocks.join("\n").length < 400
+          ? ["未拿到稳定字幕，先使用公开标题与简介，必要时继续升级到 ASR。"]
+          : [],
     }
   },
 }

@@ -282,9 +282,8 @@ export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
           ))}
           <Button
             type="button"
-            variant="outline"
+            variant="destructiveSoft"
             size="sm"
-            className="text-destructive hover:border-destructive/40 hover:bg-destructive/12 hover:text-destructive"
             disabled={isDeleting || isSubmitting}
             onClick={() => void handleDelete()}
           >

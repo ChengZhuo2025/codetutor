@@ -1,4 +1,6 @@
 import type {
+  AdminLearningMaterialPlanQualityReport,
+  AdminLearningMaterialSourceSummary,
   AdminLearningPathDetailResponseData,
   AdminLearningPathDetailStep,
   AdminLearningPathListItem,
@@ -80,12 +82,214 @@ type SessionRow = {
   last_message_at: string | null
 }
 
+type MaterialPlanDraftRow = {
+  id: string
+  intake_id: string
+  title: string
+  status: "draft" | "confirmed" | "rejected" | "superseded"
+  revision_no: number
+  quality_status: string
+  quality_report: Record<string, unknown> | null
+  updated_at: string
+}
+
+type MaterialSourceRow = {
+  id: string
+  url: string
+  source_type: string
+  title: string | null
+  content_excerpt: string | null
+  metadata: Record<string, unknown> | null
+}
+
 type MessageRow = {
   id: string
   session_id: string
   role: "system" | "developer" | "user" | "assistant" | "tool"
   sequence_no: number
   content_text: string | null
+}
+
+function readMaterialPlanQualityReport(
+  value: unknown,
+): AdminLearningMaterialPlanQualityReport | null {
+  if (!value || typeof value !== "object") {
+    return null
+  }
+
+  const record = value as {
+    status?: unknown
+    checks?: unknown
+    warnings?: unknown
+    selfCheck?: unknown
+    fallbackReason?: unknown
+  }
+
+  if (
+    (record.status !== "passed" && record.status !== "pilot_fallback")
+    || !Array.isArray(record.checks)
+    || !Array.isArray(record.warnings)
+    || !record.selfCheck
+    || typeof record.selfCheck !== "object"
+  ) {
+    return null
+  }
+
+  const selfCheck = record.selfCheck as {
+    enabled?: unknown
+    decision?: unknown
+    reason?: unknown
+  }
+
+  if (
+    typeof selfCheck.enabled !== "boolean"
+    || !["pass", "retry", "fallback", "skipped"].includes(String(selfCheck.decision))
+    || (selfCheck.reason !== null && typeof selfCheck.reason !== "string" && selfCheck.reason !== undefined)
+  ) {
+    return null
+  }
+
+  return {
+    status: record.status,
+    checks: record.checks.flatMap((item) => {
+      if (!item || typeof item !== "object") {
+        return []
+      }
+      const check = item as { code?: unknown; passed?: unknown; message?: unknown }
+      if (typeof check.code !== "string" || typeof check.passed !== "boolean" || typeof check.message !== "string") {
+        return []
+      }
+      return [{
+        code: check.code,
+        passed: check.passed,
+        message: check.message,
+      }]
+    }),
+    warnings: record.warnings.filter((item): item is string => typeof item === "string"),
+    selfCheck: {
+      enabled: selfCheck.enabled,
+      decision: selfCheck.decision as AdminLearningMaterialPlanQualityReport["selfCheck"]["decision"],
+      reason: typeof selfCheck.reason === "string" ? selfCheck.reason : null,
+    },
+    fallbackReason: typeof record.fallbackReason === "string" ? record.fallbackReason : null,
+  }
+}
+
+function readMaterialSourceExtractionTrace(
+  value: unknown,
+): AdminLearningMaterialSourceSummary["extractionTrace"] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") {
+      return []
+    }
+
+    const trace = item as {
+      stage?: unknown
+      attempted?: unknown
+      used?: unknown
+      reason?: unknown
+      producedChars?: unknown
+    }
+
+    if (
+      !["raw_text", "subtitle", "asr", "ocr", "vision"].includes(String(trace.stage))
+      || typeof trace.attempted !== "boolean"
+      || typeof trace.used !== "boolean"
+      || typeof trace.reason !== "string"
+      || typeof trace.producedChars !== "number"
+    ) {
+      return []
+    }
+
+    return [{
+      stage: trace.stage as AdminLearningMaterialSourceSummary["extractionTrace"][number]["stage"],
+      attempted: trace.attempted,
+      used: trace.used,
+      reason: trace.reason,
+      producedChars: trace.producedChars,
+    }]
+  })
+}
+
+function readMaterialEvidenceCoverage(
+  value: unknown,
+): AdminLearningMaterialSourceSummary["evidenceCoverage"] {
+  if (!value || typeof value !== "object") {
+    return null
+  }
+
+  const coverage = value as {
+    highConfidenceChars?: unknown
+    totalUsefulChars?: unknown
+    chunkCount?: unknown
+    isSufficient?: unknown
+    isWeakEvidence?: unknown
+  }
+
+  if (
+    typeof coverage.highConfidenceChars !== "number"
+    || typeof coverage.totalUsefulChars !== "number"
+    || typeof coverage.chunkCount !== "number"
+    || typeof coverage.isSufficient !== "boolean"
+    || typeof coverage.isWeakEvidence !== "boolean"
+  ) {
+    return null
+  }
+
+  return {
+    highConfidenceChars: coverage.highConfidenceChars,
+    totalUsefulChars: coverage.totalUsefulChars,
+    chunkCount: coverage.chunkCount,
+    isSufficient: coverage.isSufficient,
+    isWeakEvidence: coverage.isWeakEvidence,
+  }
+}
+
+function readResolvedModelCodes(
+  value: unknown,
+): AdminLearningMaterialSourceSummary["resolvedModelCodes"] {
+  if (!value || typeof value !== "object") {
+    return null
+  }
+
+  const codes = value as {
+    asr?: unknown
+    vision?: unknown
+    quality?: unknown
+  }
+
+  return {
+    asr: typeof codes.asr === "string" ? codes.asr : null,
+    vision: typeof codes.vision === "string" ? codes.vision : null,
+    quality: typeof codes.quality === "string" ? codes.quality : null,
+  }
+}
+
+function readMaterialSourceWarnings(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [] as string[]
+  }
+
+  return value.filter((item): item is string => typeof item === "string")
+}
+
+function mapMaterialSourceSummary(row: MaterialSourceRow): AdminLearningMaterialSourceSummary {
+  const metadata = row.metadata ?? null
+  return {
+    sourceId: row.id,
+    url: row.url,
+    sourceType: row.source_type,
+    title: row.title,
+    contentExcerpt: row.content_excerpt,
+    warnings: readMaterialSourceWarnings(metadata?.warnings),
+    extractionTrace: readMaterialSourceExtractionTrace(metadata?.extractionTrace),
+    evidenceCoverage: readMaterialEvidenceCoverage(metadata?.evidenceCoverage),
+    resolvedModelCodes: readResolvedModelCodes(metadata?.resolvedModelCodes),
+  }
 }
 
 type ListFilters = {
@@ -488,7 +692,7 @@ export async function getAdminLearningPathDetail(
   }
 
   const supabase = createSupabaseAdminClient()
-  const [{ toolById }, { data: profileData, error: profileError }, { data: taskData, error: taskError }, { data: sessionData, error: sessionError }] = await Promise.all([
+  const [{ toolById }, { data: profileData, error: profileError }, { data: taskData, error: taskError }, { data: sessionData, error: sessionError }, { data: materialPlanData, error: materialPlanError }] = await Promise.all([
     getToolMaps(),
     supabase
       .from("user_profiles")
@@ -506,15 +710,24 @@ export async function getAdminLearningPathDetail(
       .eq("is_admin_test", false)
       .order("last_message_at", { ascending: false, nullsFirst: false })
       .limit(5),
+    supabase
+      .from("learning_plan_drafts")
+      .select("id, intake_id, title, status, revision_no, quality_status, quality_report, updated_at")
+      .eq("confirmed_user_learning_path_id", path.id)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   assertSupabaseSuccess(profileError, "failed to query admin learning detail profile")
   assertSupabaseSuccess(taskError, "failed to query admin learning detail tasks")
   assertSupabaseSuccess(sessionError, "failed to query admin learning detail sessions")
+  assertSupabaseSuccess(materialPlanError, "failed to query admin learning detail material plan")
 
   const profile = (profileData as UserProfileRow | null) ?? null
   const tasks = (taskData ?? []) as UserTaskRow[]
   const sessions = (sessionData ?? []) as SessionRow[]
+  const materialPlan = (materialPlanData as MaterialPlanDraftRow | null) ?? null
   const taskStats = buildTaskStatsMap(tasks).get(path.id) ?? {
     totalTaskCount: 0,
     completedTaskCount: 0,
@@ -549,6 +762,17 @@ export async function getAdminLearningPathDetail(
           .order("sequence_no", { ascending: false })
 
   assertSupabaseSuccess(messageError, "failed to query admin learning detail messages")
+
+  const { data: materialSourceData, error: materialSourceError } =
+    materialPlan
+      ? await supabase
+          .from("learning_material_sources")
+          .select("id, url, source_type, title, content_excerpt, metadata")
+          .eq("intake_id", materialPlan.intake_id)
+          .order("created_at", { ascending: true })
+      : { data: [] as MaterialSourceRow[], error: null }
+
+  assertSupabaseSuccess(materialSourceError, "failed to query admin learning detail material sources")
 
   for (const row of (messageData ?? []) as MessageRow[]) {
     const bucket = messagesBySessionId.get(row.session_id) ?? []
@@ -627,6 +851,19 @@ export async function getAdminLearningPathDetail(
       latestAssistantSummary:
         messagesBySessionId.get(session.id)?.find((message) => message.content_text && message.content_text.trim().length > 0)?.content_text?.trim().slice(0, 120) ?? null,
     })),
+    materialPlan: materialPlan
+      ? {
+          draftId: materialPlan.id,
+          intakeId: materialPlan.intake_id,
+          title: materialPlan.title,
+          draftStatus: materialPlan.status,
+          revisionNo: materialPlan.revision_no,
+          qualityStatus: materialPlan.quality_status,
+          qualityReport: readMaterialPlanQualityReport(materialPlan.quality_report),
+          updatedAt: toIsoDate(materialPlan.updated_at),
+          sources: ((materialSourceData ?? []) as MaterialSourceRow[]).map(mapMaterialSourceSummary),
+        }
+      : null,
   }
 }
 

@@ -63,18 +63,48 @@ export function AIOverview() {
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <MetricCard label="Providers" value={data?.stats.totalProviders ?? 0} hint="当前登记 Provider 总数" />
-            <MetricCard label="Models" value={data?.stats.totalModels ?? 0} hint="当前登记 Model 总数" />
-            <MetricCard label="Agents" value={data?.stats.totalAgents ?? 0} hint="当前登记 Agent 总数" />
-            <MetricCard label="Skills" value={data?.stats.totalSkills ?? 0} hint="当前登记 Skill 包总数" />
+            <MetricCard
+              label="Models"
+              value={data?.stats.totalModels ?? 0}
+              hint="当前登记 Model 总数"
+              valueClassName="text-chart-2"
+            />
+            <MetricCard
+              label="Agents"
+              value={data?.stats.totalAgents ?? 0}
+              hint="当前登记 Agent 总数"
+              valueClassName="text-chart-3"
+            />
+            <MetricCard
+              label="Skills"
+              value={data?.stats.totalSkills ?? 0}
+              hint="当前登记 Skill 包总数"
+              valueClassName="text-primary"
+            />
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <MetricCard label="近 7 天调用" value={data?.stats.invocationCountLast7Days ?? 0} hint="来源于 llm_invocations" />
-            <MetricCard label="近 7 天失败" value={data?.stats.failedInvocationCountLast7Days ?? 0} hint="failed / timed_out / cancelled" />
-            <MetricCard label="成功率" value={formatPercent(data?.stats.successRateLast7Days ?? 0)} hint="近 7 天成功调用占比" />
-            <MetricCard label="活跃配置" value={`${data?.stats.activeProviders ?? 0}/${data?.stats.activeModels ?? 0}/${data?.stats.activeAgents ?? 0}`} hint="Provider / Model / Agent 启用数" />
+            <MetricCard
+              label="近 7 天失败"
+              value={data?.stats.failedInvocationCountLast7Days ?? 0}
+              hint="failed / timed_out / cancelled"
+              valueClassName="text-destructive"
+            />
+            <MetricCard
+              label="成功率"
+              value={formatPercent(data?.stats.successRateLast7Days ?? 0)}
+              hint="近 7 天成功调用占比"
+              valueClassName="text-chart-2"
+            />
+            <MetricCard
+              label="活跃配置"
+              value={`${data?.stats.activeProviders ?? 0}/${data?.stats.activeModels ?? 0}/${data?.stats.activeAgents ?? 0}`}
+              hint="Provider / Model / Agent 启用数"
+              valueClassName="text-chart-3"
+            />
           </div>
 
           <PageSection title="配置健康" description="快速查看当前启用配置规模。">

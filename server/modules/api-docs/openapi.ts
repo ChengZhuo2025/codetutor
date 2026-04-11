@@ -380,6 +380,70 @@ const adminLearningPathDetailExample = {
       latestAssistantSummary: "先确认项目索引完成，再继续下一步修复。",
     },
   ],
+  materialPlan: {
+    draftId: "550e8400-e29b-41d4-a716-446655440700",
+    intakeId: "550e8400-e29b-41d4-a716-446655440701",
+    title: "Cursor 自学草稿",
+    draftStatus: "confirmed",
+    revisionNo: 2,
+    qualityStatus: "passed",
+    qualityReport: {
+      status: "passed",
+      checks: [
+        {
+          code: "TASK_COUNT_RANGE",
+          passed: true,
+          message: "任务数需在 3 到 8 之间。",
+        },
+      ],
+      warnings: ["公开标题与简介已提供足够上下文。"],
+      selfCheck: {
+        enabled: false,
+        decision: "skipped",
+        reason: "规则检查已覆盖当前低风险计划，跳过模型自检。",
+      },
+      fallbackReason: null,
+    },
+    updatedAt: EXAMPLE_LATEST,
+    sources: [
+      {
+        sourceId: "550e8400-e29b-41d4-a716-446655440702",
+        url: "https://www.bilibili.com/video/BV1xx",
+        sourceType: "video",
+        title: "Cursor 入门教程",
+        contentExcerpt: "先用公开标题与简介补齐上下文，再按需升级到 ASR。",
+        warnings: ["未拿到稳定字幕，先使用公开标题与简介，必要时继续升级到 ASR。"],
+        extractionTrace: [
+          {
+            stage: "raw_text",
+            attempted: true,
+            used: true,
+            reason: "使用公开页可见正文。",
+            producedChars: 220,
+          },
+          {
+            stage: "asr",
+            attempted: true,
+            used: true,
+            reason: "正文不足，升级到 ASR。",
+            producedChars: 1800,
+          },
+        ],
+        evidenceCoverage: {
+          highConfidenceChars: 220,
+          totalUsefulChars: 2020,
+          chunkCount: 3,
+          isSufficient: true,
+          isWeakEvidence: false,
+        },
+        resolvedModelCodes: {
+          asr: "sense-voice-small",
+          vision: "qwen-3.5-9b",
+          quality: "zai-org-glm-4.6",
+        },
+      },
+    ],
+  },
 }
 
 const adminSettingsOverviewExample = {

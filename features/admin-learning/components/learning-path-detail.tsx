@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowLeft, BookOpen, Clock3, RefreshCw, TimerReset, UserRound } from "lucide-react"
 import type {
+  AdminLearningMaterialPlanQualityReport,
   AdminLearningPathDetailResponseData,
   AdminUpdateLearningPathStatusResponseData,
 } from "@/lib/api/contracts/admin-learning"
@@ -57,6 +58,87 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <dd className="max-w-[65%] text-right text-sm text-foreground">{value}</dd>
     </div>
   )
+}
+
+function getMaterialPlanQualityStatusMeta(status: string) {
+  switch (status) {
+    case "passed":
+      return { label: "已通过", variant: "success" as const }
+    case "pilot_fallback":
+      return { label: "试点降级", variant: "warning" as const }
+    default:
+      return { label: status || "未知", variant: "neutral" as const }
+  }
+}
+
+function getMaterialPlanSelfCheckMeta(
+  selfCheck: AdminLearningMaterialPlanQualityReport["selfCheck"],
+) {
+  switch (selfCheck.decision) {
+    case "pass":
+      return {
+        label: "模型通过",
+        variant: "success" as const,
+        description: selfCheck.reason ?? "模型复核通过。",
+      }
+    case "retry":
+      return {
+        label: "模型建议重试",
+        variant: "warning" as const,
+        description: selfCheck.reason ?? "模型建议重试或补充证据。",
+      }
+    case "fallback":
+      return {
+        label: "模型建议降级",
+        variant: "warning" as const,
+        description: selfCheck.reason ?? "模型建议收缩为试点计划。",
+      }
+    case "skipped":
+      if (selfCheck.reason?.includes("低风险计划")) {
+        return {
+          label: "低风险跳过",
+          variant: "info" as const,
+          description: selfCheck.reason,
+        }
+      }
+
+      if (selfCheck.reason?.includes("未配置")) {
+        return {
+          label: "未配置自检",
+          variant: "neutral" as const,
+          description: selfCheck.reason,
+        }
+      }
+
+      return {
+        label: "自检跳过",
+        variant: "warning" as const,
+        description: selfCheck.reason ?? "模型自检未执行。",
+      }
+    default:
+      return {
+        label: "自检未知",
+        variant: "neutral" as const,
+        description: selfCheck.reason ?? "当前未记录模型自检结果。",
+      }
+  }
+}
+
+function getExtractionStageMeta(stage: string) {
+  switch (stage) {
+    case "raw_text":
+      return { label: "Raw Text", variant: "neutral" as const }
+    case "subtitle":
+      return { label: "Subtitle", variant: "info" as const }
+    case "asr":
+      return { label: "ASR", variant: "primary" as const }
+    case "ocr":
+      return { label: "OCR", variant: "warning" as const }
+    case "vision":
+      return { label: "Vision", variant: "warning" as const }
+    default:
+      return { label: stage, variant: "neutral" as const }
+  }
 }
 
 export function LearningPathDetail({ pathId }: LearningPathDetailProps) {
@@ -378,6 +460,203 @@ export function LearningPathDetail({ pathId }: LearningPathDetailProps) {
         </div>
 
         <aside className="space-y-6">
+          {data.materialPlan ? (
+            <section className="rounded-2xl border border-border bg-card p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">来源草稿</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    该路径由教程链接生成计划确认后物化而来，可直接查看质量闸门快照。
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Badge
+                    variant={getMaterialPlanQualityStatusMeta(data.materialPlan.qualityStatus).variant}
+                    size="lg"
+                  >
+                    {getMaterialPlanQualityStatusMeta(data.materialPlan.qualityStatus).label}
+                  </Badge>
+                  {data.materialPlan.qualityReport ? (
+                    <Badge
+                      variant={getMaterialPlanSelfCheckMeta(data.materialPlan.qualityReport.selfCheck).variant}
+                      size="lg"
+                    >
+                      {getMaterialPlanSelfCheckMeta(data.materialPlan.qualityReport.selfCheck).label}
+                    </Badge>
+                  ) : null}
+                </div>
+              </div>
+
+              <dl className="mt-4">
+                <InfoRow label="Draft ID" value={data.materialPlan.draftId} />
+                <Separator />
+                <InfoRow label="Intake ID" value={data.materialPlan.intakeId} />
+                <Separator />
+                <InfoRow label="草稿标题" value={data.materialPlan.title} />
+                <Separator />
+                <InfoRow label="草稿状态" value={data.materialPlan.draftStatus} />
+                <Separator />
+                <InfoRow label="Revision" value={`#${data.materialPlan.revisionNo}`} />
+                <Separator />
+                <InfoRow label="更新时间" value={formatAdminLearningDateTime(data.materialPlan.updatedAt)} />
+              </dl>
+
+              {data.materialPlan.qualityReport ? (
+                <div className="mt-4 space-y-3">
+                  <div className="rounded-xl border border-border bg-background/70 px-4 py-3">
+                    <p className="text-xs text-muted-foreground">模型自检说明</p>
+                    <p className="mt-2 text-sm text-foreground">
+                      {getMaterialPlanSelfCheckMeta(data.materialPlan.qualityReport.selfCheck).description}
+                    </p>
+                  </div>
+
+                  {data.materialPlan.qualityReport.fallbackReason ? (
+                    <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3">
+                      <p className="text-xs text-amber-700 dark:text-amber-300">降级原因</p>
+                      <p className="mt-2 text-sm text-amber-700 dark:text-amber-200">
+                        {data.materialPlan.qualityReport.fallbackReason}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  <div className="space-y-2">
+                    {data.materialPlan.qualityReport.checks.map((check) => (
+                      <div
+                        key={check.code}
+                        className="flex items-start justify-between gap-3 rounded-xl border border-border bg-background/70 px-4 py-3"
+                      >
+                        <div>
+                          <p className="text-sm text-foreground">{check.message}</p>
+                          <p className="mt-1 font-mono text-[11px] text-muted-foreground">{check.code}</p>
+                        </div>
+                        <Badge variant={check.passed ? "success" : "warning"} size="md">
+                          {check.passed ? "通过" : "未通过"}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+
+                  {data.materialPlan.qualityReport.warnings.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {data.materialPlan.qualityReport.warnings.map((warning) => (
+                        <Badge key={warning} variant="outline" size="lg">
+                          {warning}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {data.materialPlan.sources.length > 0 ? (
+                <div className="mt-4 space-y-3">
+                  <div className="rounded-xl border border-border bg-background/70 px-4 py-3">
+                    <p className="text-xs text-muted-foreground">多模态提取</p>
+                    <p className="mt-2 text-sm text-foreground">
+                      展示 intake 内每个来源实际命中的提取阶段、证据覆盖情况与模型代码。
+                    </p>
+                  </div>
+
+                  {data.materialPlan.sources.map((source) => (
+                    <div key={source.sourceId} className="space-y-3 rounded-xl border border-border bg-background/70 px-4 py-4">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium text-foreground">{source.title || "未命名来源"}</p>
+                          <Badge variant="outline" size="md">{source.sourceType}</Badge>
+                          {source.evidenceCoverage ? (
+                            <Badge variant={source.evidenceCoverage.isSufficient ? "success" : "warning"} size="md">
+                              {source.evidenceCoverage.isSufficient ? "证据充足" : "证据待补强"}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <p className="break-all font-mono text-[11px] text-muted-foreground">{source.url}</p>
+                        {source.contentExcerpt ? (
+                          <p className="text-sm text-muted-foreground">{source.contentExcerpt}</p>
+                        ) : null}
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {source.extractionTrace.map((trace) => (
+                          <Badge
+                            key={`${source.sourceId}-${trace.stage}`}
+                            variant={trace.used ? "success" : trace.attempted ? "warning" : getExtractionStageMeta(trace.stage).variant}
+                            size="lg"
+                          >
+                            {getExtractionStageMeta(trace.stage).label}
+                            {trace.used ? "·已命中" : trace.attempted ? "·未命中" : "·跳过"}
+                          </Badge>
+                        ))}
+                      </div>
+
+                      {source.evidenceCoverage ? (
+                        <div className="grid gap-2 sm:grid-cols-3">
+                          <div className="rounded-xl border border-border/60 bg-card px-3 py-2">
+                            <p className="text-[11px] text-muted-foreground">高置信字符</p>
+                            <p className="mt-1 text-sm font-medium text-foreground">{source.evidenceCoverage.highConfidenceChars}</p>
+                          </div>
+                          <div className="rounded-xl border border-border/60 bg-card px-3 py-2">
+                            <p className="text-[11px] text-muted-foreground">有效字符</p>
+                            <p className="mt-1 text-sm font-medium text-foreground">{source.evidenceCoverage.totalUsefulChars}</p>
+                          </div>
+                          <div className="rounded-xl border border-border/60 bg-card px-3 py-2">
+                            <p className="text-[11px] text-muted-foreground">Chunk 数</p>
+                            <p className="mt-1 text-sm font-medium text-foreground">{source.evidenceCoverage.chunkCount}</p>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {source.resolvedModelCodes ? (
+                        <div className="flex flex-wrap gap-2">
+                          {source.resolvedModelCodes.asr ? (
+                            <Badge variant="outline" size="md">ASR: {source.resolvedModelCodes.asr}</Badge>
+                          ) : null}
+                          {source.resolvedModelCodes.vision ? (
+                            <Badge variant="outline" size="md">Vision: {source.resolvedModelCodes.vision}</Badge>
+                          ) : null}
+                          {source.resolvedModelCodes.quality ? (
+                            <Badge variant="outline" size="md">Quality: {source.resolvedModelCodes.quality}</Badge>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {source.warnings.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {source.warnings.map((warning) => (
+                            <Badge key={`${source.sourceId}-${warning}`} variant="outline" size="lg">
+                              {warning}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          ) : (
+            <section className="rounded-2xl border border-dashed border-border bg-card p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">来源草稿</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    当前路径未关联教程链接草稿，因此没有质量闸门和多模态提取快照。
+                  </p>
+                </div>
+                <Badge variant="outline" size="lg">
+                  未关联
+                </Badge>
+              </div>
+
+              <div className="mt-4 rounded-xl border border-border bg-background/70 px-4 py-3">
+                <p className="text-sm text-foreground">
+                  {data.path.selectionMode === "self_directed"
+                    ? "该学习路径不是由教程链接生成计划确认后创建，或历史数据未留下草稿回链。"
+                    : "该学习路径属于预设训练路径，不存在教程链接草稿。"}
+                </p>
+              </div>
+            </section>
+          )}
+
           <section className="rounded-2xl border border-border bg-card p-5">
             <div className="flex items-center gap-3">
               {data.user.avatarUrl ? (

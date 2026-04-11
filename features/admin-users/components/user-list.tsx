@@ -24,6 +24,7 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
+import { cn } from "@/lib/utils"
 import { ADMIN_ROUTES } from "@/constants/routes"
 import {
   formatAdminLearningLevelLabel,
@@ -88,22 +89,38 @@ function getPlanStatusMeta(user: AdminUserListItem) {
     }
 }
 
+const listStatValueToneClass = {
+  default: "text-foreground",
+  chart2: "text-chart-2",
+  chart3: "text-chart-3",
+  destructive: "text-destructive",
+} as const
+
 function ListStatCard({
   label,
   value,
   icon: Icon,
+  valueTone = "default",
 }: {
   label: string
   value: number
   icon: typeof Users
+  valueTone?: keyof typeof listStatValueToneClass
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card px-4 py-3">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Icon className="h-4 w-4" />
-        <p className="text-xs">{label}</p>
+    <div className="rounded-lg border border-border bg-card px-4 py-3">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Icon className="h-4 w-4 shrink-0" />
+        <p>{label}</p>
       </div>
-      <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{value}</p>
+      <p
+        className={cn(
+          "mt-1 text-xl font-semibold",
+          listStatValueToneClass[valueTone],
+        )}
+      >
+        {value}
+      </p>
     </div>
   )
 }
@@ -129,9 +146,9 @@ function ListRowActions({
       </Button>
       <Button
         type="button"
-        variant="outline"
+        variant="destructiveSoft"
         size="sm"
-        className="h-8 px-2.5 text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
+        className="h-8 px-2.5"
         disabled={Boolean(item.deletedAt) || deletingUserId === item.userId}
         onClick={() => void onSoftDelete(item.userId)}
       >
@@ -322,26 +339,25 @@ export function UserList() {
         </Button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <ListStatCard
-          label="总用户数"
-          value={stats.totalUsers}
-          icon={Users}
-        />
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <ListStatCard label="总用户数" value={stats.totalUsers} icon={Users} />
         <ListStatCard
           label="进行中计划"
           value={stats.activePlanUsers}
           icon={FolderKanban}
+          valueTone="chart2"
         />
         <ListStatCard
           label="连续打卡"
           value={stats.streakingUsers}
           icon={Flame}
+          valueTone="chart3"
         />
         <ListStatCard
           label="已删除"
           value={stats.deletedUsers}
           icon={ShieldAlert}
+          valueTone="destructive"
         />
       </div>
 

@@ -1,8 +1,7 @@
 import "server-only"
 
-import { extractJsonObjectString } from "@/server/modules/learning-plans/json-parse.ts"
 import {
-  invokeMaterialPipelineModel,
+  invokeMaterialAudioTranscription,
   type MaterialPipelineRuntime,
 } from "../providers.ts"
 import type { MaterialEvidenceInput } from "../normalizer.ts"
@@ -10,25 +9,6 @@ import type { MaterialEvidenceInput } from "../normalizer.ts"
 type MediaAsset = {
   kind: string
   url: string
-}
-
-function parseTranscriptContent(content: string) {
-  try {
-    const raw = JSON.parse(extractJsonObjectString(content)) as {
-      transcript?: string
-      warning?: string
-    }
-
-    return {
-      transcript: raw.transcript?.trim() ?? "",
-      warning: raw.warning?.trim() ?? null,
-    }
-  } catch {
-    return {
-      transcript: content.trim(),
-      warning: null,
-    }
-  }
 }
 
 export async function runAsrExtraction(input: {
@@ -44,26 +24,21 @@ export async function runAsrExtraction(input: {
     }
   }
 
-  const response = await invokeMaterialPipelineModel({
+  const response = await invokeMaterialAudioTranscription({
     runtime: input.runtime,
-    systemPrompt: "你是教程材料的 ASR 转写助手。若无法直接访问媒体 URL，请返回空 transcript 并说明 warning。只输出 JSON：{\"transcript\":\"...\",\"warning\":\"...\"}。",
-    userPrompt: [
+    mediaUrl: input.mediaAsset.url,
+    prompt: [
       `标题：${input.title ?? "未提供"}`,
       `描述：${input.description ?? "未提供"}`,
-      `媒体链接：${input.mediaAsset.url}`,
-      `媒体类型：${input.mediaAsset.kind}`,
-      "请尽可能提取可执行学习相关的中文转写，保留关键术语，不要凭空补充未出现的步骤。",
+      "请尽可能保留教程步骤、关键术语、命令和代码相关片段。",
     ].join("\n"),
-    temperature: 0,
-    maxOutputTokens: 2200,
   })
 
-  const parsed = parseTranscriptContent(response.content)
-  const transcript = parsed.transcript.trim()
+  const transcript = response.text.trim()
   if (!transcript) {
     return {
       evidence: [] as MaterialEvidenceInput[],
-      warnings: [parsed.warning ?? "ASR 未返回稳定转写内容。"],
+      warnings: ["ASR 未返回稳定转写内容。"],
     }
   }
 
@@ -84,6 +59,6 @@ export async function runAsrExtraction(input: {
         },
       },
     ],
-    warnings: parsed.warning ? [parsed.warning] : [],
+    warnings: [],
   }
 }

@@ -149,7 +149,9 @@ function appendEvidence(
 }
 
 function findVideoAsset(mediaAssets: MediaAsset[]) {
-  return mediaAssets.find((asset) => asset.kind === "video" || asset.kind === "audio") ?? null
+  return mediaAssets.find((asset) => asset.kind === "audio")
+    ?? mediaAssets.find((asset) => asset.kind === "video")
+    ?? null
 }
 
 function findImageAsset(mediaAssets: MediaAsset[]) {

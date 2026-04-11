@@ -1826,6 +1826,50 @@ export const adminLearningPathRecentSessionSchema = z
   })
   .openapi("AdminLearningPathRecentSession")
 
+export const adminLearningMaterialPlanSnapshotSchema = z
+  .object({
+    draftId: z.string().uuid(),
+    intakeId: z.string().uuid(),
+    title: z.string(),
+    draftStatus: z.enum(["draft", "confirmed", "rejected", "superseded"]),
+    revisionNo: z.number().int().nonnegative(),
+    qualityStatus: z.string(),
+    qualityReport: learningPlanDraftQualityReportSchema.nullable(),
+    updatedAt: z.string(),
+    sources: z.array(
+      z.object({
+        sourceId: z.string().uuid(),
+        url: z.string(),
+        sourceType: z.string(),
+        title: z.string().nullable(),
+        contentExcerpt: z.string().nullable(),
+        warnings: z.array(z.string()),
+        extractionTrace: z.array(
+          z.object({
+            stage: z.enum(["raw_text", "subtitle", "asr", "ocr", "vision"]),
+            attempted: z.boolean(),
+            used: z.boolean(),
+            reason: z.string(),
+            producedChars: z.number().int().nonnegative(),
+          }),
+        ),
+        evidenceCoverage: z.object({
+          highConfidenceChars: z.number().int().nonnegative(),
+          totalUsefulChars: z.number().int().nonnegative(),
+          chunkCount: z.number().int().nonnegative(),
+          isSufficient: z.boolean(),
+          isWeakEvidence: z.boolean(),
+        }).nullable(),
+        resolvedModelCodes: z.object({
+          asr: z.string().nullable(),
+          vision: z.string().nullable(),
+          quality: z.string().nullable(),
+        }).nullable(),
+      }),
+    ),
+  })
+  .openapi("AdminLearningMaterialPlanSnapshot")
+
 export const adminLearningPathDetailResponseDataSchema = z
   .object({
     pathId: z.string().uuid(),
@@ -1863,6 +1907,7 @@ export const adminLearningPathDetailResponseDataSchema = z
     timeline: adminLearningPathTimelineSchema,
     steps: z.array(adminLearningPathDetailStepSchema),
     recentSessions: z.array(adminLearningPathRecentSessionSchema),
+    materialPlan: adminLearningMaterialPlanSnapshotSchema.nullable(),
   })
   .openapi("AdminLearningPathDetailResponseData")
 

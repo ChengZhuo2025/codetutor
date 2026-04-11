@@ -1,11 +1,14 @@
 import "server-only"
 
+import { resolveProviderSecret } from "@/server/lib/secrets/provider-secret"
+import { LearningAIProviderError } from "@/server/modules/learning/errors.ts"
 import {
   loadAIModelsSnapshot,
   loadAIProvidersSnapshot,
 } from "@/server/modules/ai/config-cache"
 import {
   invokeAIProvider,
+  type AIChatContentPart,
   type AIChatMessage,
 } from "@/server/modules/learning/provider.ts"
 
@@ -178,10 +181,12 @@ export async function resolveMaterialPipelineModels() {
 export async function invokeMaterialPipelineModel(input: {
   runtime: MaterialPipelineRuntime
   systemPrompt: string
-  userPrompt: string
+  userPrompt?: string
+  userContent?: AIChatContentPart[]
   temperature?: number
   maxOutputTokens?: number
 }) {
+  const userContent = input.userContent ?? [{ type: "text", text: input.userPrompt ?? "" }]
   const messages: AIChatMessage[] = [
     {
       role: "system",
@@ -189,7 +194,7 @@ export async function invokeMaterialPipelineModel(input: {
     },
     {
       role: "user",
-      content: input.userPrompt,
+      content: userContent,
     },
   ]
 
@@ -209,4 +214,171 @@ export async function invokeMaterialPipelineModel(input: {
       ?? input.runtime.model.defaultMaxOutputTokens
       ?? 1500,
   })
+}
+
+export async function invokeMaterialAudioTranscription(input: {
+  runtime: MaterialPipelineRuntime
+  mediaUrl: string
+  prompt?: string
+}) {
+  function buildMediaDownloadHeaders(mediaUrl: string) {
+    const headers = new Headers({
+      "User-Agent": "CodeTutorMaterialBot/1.0 (+https://example.com)",
+    })
+
+    try {
+      const url = new URL(mediaUrl)
+      if (url.hostname.includes("bilivideo.com")) {
+        headers.set("Referer", "https://www.bilibili.com/")
+        headers.set("Origin", "https://www.bilibili.com")
+      }
+    } catch {
+      // Ignore invalid URLs here and let fetch raise the actual error.
+    }
+
+    return headers
+  }
+
+  function normalizeAudioMimeType(mediaUrl: string, contentType: string) {
+    const normalized = contentType.toLowerCase()
+    if (normalized !== "application/octet-stream") {
+      return normalized
+    }
+
+    const pathname = (() => {
+      try {
+        return new URL(mediaUrl).pathname.toLowerCase()
+      } catch {
+        return ""
+      }
+    })()
+
+    if (pathname.endsWith(".m4s") || pathname.endsWith(".mp4") || pathname.endsWith(".m4a")) {
+      return "audio/mp4"
+    }
+    if (pathname.endsWith(".wav")) {
+      return "audio/wav"
+    }
+    if (pathname.endsWith(".webm")) {
+      return "audio/webm"
+    }
+
+    return normalized
+  }
+
+  function inferFileExtension(mediaUrl: string, contentType: string) {
+    const pathname = (() => {
+      try {
+        return new URL(mediaUrl).pathname.toLowerCase()
+      } catch {
+        return ""
+      }
+    })()
+
+    if (pathname.endsWith(".m4s") || pathname.endsWith(".mp4") || pathname.endsWith(".m4a")) {
+      return "mp4"
+    }
+    if (pathname.endsWith(".wav")) {
+      return "wav"
+    }
+    if (pathname.endsWith(".webm")) {
+      return "webm"
+    }
+    if (contentType.includes("mp4")) {
+      return "mp4"
+    }
+    if (contentType.includes("wav")) {
+      return "wav"
+    }
+    if (contentType.includes("webm")) {
+      return "webm"
+    }
+
+    return "mp3"
+  }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => {
+    controller.abort()
+  }, input.runtime.provider.timeoutMs)
+
+  try {
+    const resolved = resolveProviderSecret({
+      secret_ref: input.runtime.provider.envSecretRef,
+      secret_ciphertext: input.runtime.provider.secretCiphertext,
+      secret_iv: input.runtime.provider.secretIv,
+      secret_auth_tag: input.runtime.provider.secretAuthTag,
+      secret_key_version: input.runtime.provider.secretKeyVersion,
+    })
+
+    if (!resolved.secret) {
+      throw new LearningAIProviderError(`Missing required provider secret for ${input.runtime.provider.code}`)
+    }
+
+    const mediaResponse = await fetch(input.mediaUrl, {
+      signal: controller.signal,
+      headers: buildMediaDownloadHeaders(input.mediaUrl),
+    })
+
+    if (!mediaResponse.ok) {
+      throw new LearningAIProviderError(`Failed to download media asset with status ${mediaResponse.status}`)
+    }
+
+    const contentType = normalizeAudioMimeType(
+      input.mediaUrl,
+      mediaResponse.headers.get("content-type") ?? "audio/mpeg",
+    )
+    const buffer = await mediaResponse.arrayBuffer()
+    const form = new FormData()
+    const extension = inferFileExtension(input.mediaUrl, contentType)
+    form.append("file", new Blob([buffer], { type: contentType }), `material.${extension}`)
+    form.append("model", input.runtime.model.modelName)
+    form.append("response_format", "json")
+    if (input.prompt?.trim()) {
+      form.append("prompt", input.prompt.trim())
+    }
+
+    const headers = new Headers()
+    if (input.runtime.provider.authMode === "bearer") {
+      headers.set("Authorization", `Bearer ${resolved.secret}`)
+    } else {
+      headers.set("x-api-key", resolved.secret)
+    }
+
+    const response = await fetch(`${input.runtime.provider.baseUrl}/audio/transcriptions`, {
+      method: "POST",
+      headers,
+      body: form,
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      const errorText = (await response.text()).slice(0, 400)
+      throw new LearningAIProviderError(
+        `ASR request failed with status ${response.status}: ${errorText}`,
+      )
+    }
+
+    const payload = (await response.json()) as {
+      text?: string
+    }
+
+    return {
+      text: payload.text?.trim() ?? "",
+    }
+  } catch (error) {
+    if (error instanceof LearningAIProviderError) {
+      throw error
+    }
+
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new LearningAIProviderError("ASR request timed out")
+    }
+
+    throw new LearningAIProviderError(
+      error instanceof Error ? error.message : "Unknown ASR provider error",
+    )
+  } finally {
+    clearTimeout(timeout)
+  }
 }

@@ -106,6 +106,64 @@ export type AdminLearningPathRecentSession = {
   latestAssistantSummary: string | null
 }
 
+export type AdminLearningMaterialPlanQualityReport = {
+  status: "passed" | "pilot_fallback"
+  checks: Array<{
+    code: string
+    passed: boolean
+    message: string
+  }>
+  warnings: string[]
+  selfCheck: {
+    enabled: boolean
+    decision: "pass" | "retry" | "fallback" | "skipped"
+    reason: string | null
+  }
+  fallbackReason: string | null
+}
+
+export type AdminLearningMaterialSourceExtractionStage = {
+  stage: "raw_text" | "subtitle" | "asr" | "ocr" | "vision"
+  attempted: boolean
+  used: boolean
+  reason: string
+  producedChars: number
+}
+
+export type AdminLearningMaterialSourceSummary = {
+  sourceId: string
+  url: string
+  sourceType: string
+  title: string | null
+  contentExcerpt: string | null
+  warnings: string[]
+  extractionTrace: AdminLearningMaterialSourceExtractionStage[]
+  evidenceCoverage: {
+    highConfidenceChars: number
+    totalUsefulChars: number
+    chunkCount: number
+    isSufficient: boolean
+    isWeakEvidence: boolean
+  } | null
+  resolvedModelCodes: {
+    asr: string | null
+    vision: string | null
+    quality: string | null
+  } | null
+}
+
+export type AdminLearningMaterialPlanSnapshot = {
+  draftId: string
+  intakeId: string
+  title: string
+  draftStatus: "draft" | "confirmed" | "rejected" | "superseded"
+  revisionNo: number
+  qualityStatus: string
+  qualityReport: AdminLearningMaterialPlanQualityReport | null
+  updatedAt: string
+  sources: AdminLearningMaterialSourceSummary[]
+}
+
 export type AdminLearningPathDetailResponseData = {
   pathId: string
   user: {
@@ -142,6 +200,7 @@ export type AdminLearningPathDetailResponseData = {
   timeline: AdminLearningPathTimeline
   steps: AdminLearningPathDetailStep[]
   recentSessions: AdminLearningPathRecentSession[]
+  materialPlan: AdminLearningMaterialPlanSnapshot | null
 }
 
 export type AdminUpdateLearningPathStatusRequest = {

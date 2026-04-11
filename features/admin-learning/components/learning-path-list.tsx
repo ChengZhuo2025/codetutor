@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import type { AdminLearningPathListResponseData } from "@/lib/api/contracts/admin-learning";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,24 +40,38 @@ const EMPTY_STATS = {
   abandonedCount: 0,
 };
 
+const statValueToneClass = {
+  default: "text-foreground",
+  chart2: "text-chart-2",
+  chart3: "text-chart-3",
+  primary: "text-primary",
+} as const;
+
 function StatCard({
   label,
   value,
   hint,
   icon: Icon,
+  valueTone = "default",
 }: {
   label: string;
   value: number;
   hint: string;
   icon: typeof Users;
+  valueTone?: keyof typeof statValueToneClass;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card px-4 py-3">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Icon className="h-4 w-4" />
-        <p className="text-xs">{label}</p>
+    <div className="rounded-lg border border-border bg-card px-4 py-3">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Icon className="h-4 w-4 shrink-0" />
+        <p>{label}</p>
       </div>
-      <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
+      <p
+        className={cn(
+          "mt-1 text-xl font-semibold",
+          statValueToneClass[valueTone],
+        )}
+      >
         {value}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
@@ -210,7 +225,7 @@ export function LearningPathList() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard
           label="总路径数"
           value={stats.totalPaths}
@@ -222,18 +237,21 @@ export function LearningPathList() {
           value={stats.activeCount}
           hint="可继续推进的路径"
           icon={Users}
+          valueTone="chart2"
         />
         <StatCard
           label="已中断"
           value={stats.interruptedCount}
           hint="优先回访与激活"
           icon={TimerReset}
+          valueTone="chart3"
         />
         <StatCard
           label="已完成"
           value={stats.completedCount}
           hint="可评估归档"
           icon={Trophy}
+          valueTone="primary"
         />
       </div>
 

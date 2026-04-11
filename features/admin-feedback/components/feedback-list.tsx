@@ -501,9 +501,9 @@ export function FeedbackList() {
                         <Link href={`/admin/feedback/${item.id}`}>详情</Link>
                       </Button>
                       <Button
-                        variant="outline"
+                        variant="destructiveSoft"
                         size="sm"
-                        className="h-8 px-2 text-sm text-destructive hover:border-destructive/40 hover:bg-destructive/12 hover:text-destructive"
+                        className="h-8 px-2 text-sm"
                         disabled={deletingId === item.id}
                         onClick={() => void handleDeleteOne(item.id)}
                       >
@@ -538,7 +538,7 @@ export function FeedbackList() {
             endActions={
               <Button
                 type="button"
-                variant="outline"
+                variant="destructiveSoft"
                 size="sm"
                 className="h-8 gap-1"
                 disabled={selectedIds.length === 0 || batchDeleting}

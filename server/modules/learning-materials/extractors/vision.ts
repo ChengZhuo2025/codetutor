@@ -47,13 +47,23 @@ export async function runVisionExtraction(input: {
   const response = await invokeMaterialPipelineModel({
     runtime: input.runtime,
     systemPrompt: "你是教程材料视觉理解助手。若无法读取图片 URL，请返回空 summary 并说明 warning。只输出 JSON：{\"summary\":\"...\",\"warning\":\"...\"}。",
-    userPrompt: [
-      `标题：${input.title ?? "未提供"}`,
-      `描述：${input.description ?? "未提供"}`,
-      `图片链接：${input.mediaAsset.url}`,
-      `资源类型：${input.mediaAsset.kind}`,
-      "请总结图片里能支持学习计划的事实：界面区域、步骤顺序、出现的术语或操作结果。不要编造看不见的细节。",
-    ].join("\n"),
+    userContent: [
+      {
+        type: "text",
+        text: [
+          `标题：${input.title ?? "未提供"}`,
+          `描述：${input.description ?? "未提供"}`,
+          `资源类型：${input.mediaAsset.kind}`,
+          "请总结图片里能支持学习计划的事实：界面区域、步骤顺序、出现的术语或操作结果。不要编造看不见的细节。",
+        ].join("\n"),
+      },
+      {
+        type: "image_url",
+        image_url: {
+          url: input.mediaAsset.url,
+        },
+      },
+    ],
     temperature: 0,
     maxOutputTokens: 1200,
   })
