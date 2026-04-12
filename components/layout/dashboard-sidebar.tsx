@@ -25,7 +25,6 @@ import { SubscriptionDetailDialog } from "@/components/layout/subscription-detai
 import { SettingsPopover } from "@/components/layout/settings-popover";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { USER_BUTTON_DANGER_CLASS } from "@/components/ui/surface-styles";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth";
 import type { NotificationInAppItem } from "@/lib/api/contracts/notifications";
@@ -664,8 +663,10 @@ export function DashboardSidebar({
                                     void removeReadNotification(event, item.id)
                                   }
                                   className={cn(
-                                    "rounded-lg p-1.5",
-                                    USER_BUTTON_DANGER_CLASS,
+                                    "rounded-full p-1.5 text-rose-600 transition-colors",
+                                    "hover:bg-rose-500/12 hover:text-rose-700",
+                                    "dark:text-rose-400 dark:hover:bg-rose-500/18 dark:hover:text-rose-300",
+                                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                                   )}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
