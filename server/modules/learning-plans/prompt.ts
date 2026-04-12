@@ -26,7 +26,11 @@ export function buildPlannerUserMessage(input: {
     )
   }
 
-  parts.push("\n要求：高置信度证据优先；弱证据只能作为补充，不要据此编造细节。请输出 JSON，契约见系统提示。")
+  parts.push("\n要求：")
+  parts.push("- 高置信度证据优先；弱证据只能作为补充，不要据此编造细节。")
+  parts.push("- 每个任务都必须包含 masteryPoints（本关要掌握，2-6 条）和 cautions（注意事项，1-6 条）。")
+  parts.push("- cautions 中真正的高频误区请标记 isTrap=true。")
+  parts.push("- 请输出 JSON，契约见系统提示。")
 
   return parts.join("\n")
 }

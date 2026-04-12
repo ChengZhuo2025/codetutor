@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AppShell } from "@/components/layout/app-shell"
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar"
@@ -18,8 +18,10 @@ import type { ApiRequestState } from "@/types/api"
 export function LearnPage() {
   const router = useRouter()
   const [refreshNonce, setRefreshNonce] = useState(0)
-  const [materialDialogOpen, setMaterialDialogOpen] = useState(false)
-  const [materialDialogInitialLinks, setMaterialDialogInitialLinks] = useState<string[]>([])
+  const [materialDialog, setMaterialDialog] = useState({
+    open: false,
+    initialLinks: [] as string[],
+  })
   const [sessionState, setSessionState] =
     useState<ApiRequestState<LearningCurrentSessionResponseData>>({
       status: "loading",
@@ -85,7 +87,8 @@ export function LearnPage() {
     return () => {
       cancelled = true
     }
-  }, [refreshNonce, router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshNonce])
 
   useEffect(() => {
     if (sessionState.status !== "success") return
@@ -96,11 +99,50 @@ export function LearnPage() {
     const userId = sessionState.data.profile.userId
     const pathId = sessionState.data.path.id
     const key = `learn:self_directed_plan_prompted:${userId}:${pathId}`
-    if (window.sessionStorage.getItem(key) === "1") return
 
-    window.sessionStorage.setItem(key, "1")
-    window.setTimeout(() => setMaterialDialogOpen(true), 0)
+    try {
+      if (window.sessionStorage?.getItem(key) === "1") return
+      window.setTimeout(() => setMaterialDialog((prev) => ({ ...prev, open: true })), 0)
+    } catch (error) {
+      console.warn("Failed to access sessionStorage:", error)
+      window.setTimeout(() => setMaterialDialog((prev) => ({ ...prev, open: true })), 0)
+    }
   }, [sessionState])
+
+  const handleSessionRefresh = useCallback(() => {
+    setRefreshNonce((current) => current + 1)
+  }, [])
+
+  const handleMaterialDialogOpenChange = useCallback((open: boolean) => {
+    setMaterialDialog((prev) => ({ ...prev, open }))
+  }, [])
+
+  const handleMaterialPlanDialogOpened = useCallback(
+    (open: boolean) => {
+      if (!open) return
+      if (sessionState.status !== "success") return
+      if (sessionState.data.planSummary.selectionMode !== "self_directed") return
+      if (sessionState.data.planSummary.hasMaterialPlan) return
+
+      const userId = sessionState.data.profile.userId
+      const pathId = sessionState.data.path.id
+      const key = `learn:self_directed_plan_prompted:${userId}:${pathId}`
+
+      try {
+        window.sessionStorage?.setItem(key, "1")
+      } catch (error) {
+        console.warn("Failed to access sessionStorage:", error)
+      }
+    },
+    [sessionState],
+  )
+
+  const handleOpenMaterialPlanDialog = useCallback((links?: string[]) => {
+    setMaterialDialog({
+      open: true,
+      initialLinks: links ?? [],
+    })
+  }, [])
 
   return (
     <AppShell
@@ -131,24 +173,18 @@ export function LearnPage() {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden">
           {sessionState.data.planSummary.selectionMode === "self_directed" ? (
             <MaterialPlanDialog
-              open={materialDialogOpen}
-              onOpenChange={setMaterialDialogOpen}
-              onSessionRefresh={() => {
-                setRefreshNonce((current) => current + 1)
-              }}
-              initialLinks={materialDialogInitialLinks}
+              open={materialDialog.open}
+              onOpenChange={handleMaterialDialogOpenChange}
+              onDialogOpenChange={handleMaterialPlanDialogOpened}
+              onSessionRefresh={handleSessionRefresh}
+              initialLinks={materialDialog.initialLinks}
             />
           ) : null}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <LearnChat
               learningData={sessionState.data}
-              onRequestRefresh={() => {
-                setRefreshNonce((current) => current + 1)
-              }}
-              onOpenMaterialPlanDialog={(links) => {
-                setMaterialDialogInitialLinks(links ?? [])
-                setMaterialDialogOpen(true)
-              }}
+              onRequestRefresh={handleSessionRefresh}
+              onOpenMaterialPlanDialog={handleOpenMaterialPlanDialog}
             />
           </div>
         </div>

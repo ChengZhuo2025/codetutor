@@ -88,6 +88,19 @@ function buildRuleChecks(input: RunPlanQualityGateInput): QualityCheck[] {
       message: "每个任务都必须引用至少一个 sourceRef。",
     },
     {
+      code: "MASTERY_POINTS_PRESENT",
+      passed: input.plan.tasks.every((task) => task.masteryPoints.length >= 2),
+      message: "每个任务都必须给出至少 2 条本关要掌握。",
+    },
+    {
+      code: "CAUTIONS_PRESENT",
+      passed: input.plan.tasks.every((task) => (
+        task.cautions.length >= 1
+        && task.cautions.every((caution) => caution.text.trim().length > 0)
+      )),
+      message: "每个任务都必须给出至少 1 条注意事项。",
+    },
+    {
       code: "OBJECTIVE_NOT_GENERIC",
       passed: input.plan.tasks.every((task) => (
         task.objective.trim().length >= 12 && !GENERIC_OBJECTIVE_PATTERN.test(task.objective)
@@ -167,6 +180,8 @@ function buildQualitySelfCheckPayload(
         acceptanceCriteria: task.acceptanceCriteria,
         estimatedMinutes: task.estimatedMinutes ?? null,
         practiceStepCount: task.practiceSteps.length,
+        masteryPointCount: task.masteryPoints.length,
+        cautionCount: task.cautions.length,
         sourceRefCount: task.sourceRefs.length,
       })),
     },

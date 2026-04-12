@@ -521,7 +521,7 @@ erDiagram
 
 说明：
 
-- `path_steps.goal`、`path_steps.summary`、`path_steps.completion_criteria` 等字段由 `learning_plan_draft_tasks` 对应字段转写而来
+- `path_steps.goal`、`path_steps.summary`、`path_steps.completion_criteria`、`path_steps.key_points`、`path_steps.pitfalls` 等字段由 `learning_plan_draft_tasks` 对应字段转写而来
 - `path_steps.metadata` 在自学模式 confirm 后必须写入 `source_refs`、`goal_alignment_refs`、`recommended_for_week_1` 与 `draft_revision_no`，以便追溯材料来源与草稿版本
 
 约束建议：
@@ -1070,6 +1070,8 @@ erDiagram
 | `acceptance_criteria` | `text` | not null | 验收口径，确认后映射 `path_steps.completion_criteria` |
 | `estimated_minutes` | `integer` | nullable | 预计耗时（分钟） |
 | `source_refs` | `jsonb` | not null default `'[]'` | 材料块 id 引用数组，与 prompt 契约对齐 |
+| `mastery_points` | `jsonb` | not null default `'[]'` | “本关要掌握”字符串数组，confirm 后映射 `path_steps.key_points` |
+| `cautions` | `jsonb` | not null default `'[]'` | “注意事项”对象数组（`text` + 可选 `isTrap`），confirm 后映射 `path_steps.pitfalls` |
 | `position` | `integer` | nullable | 用户调整后的展示顺序 |
 | `is_user_edited` | `boolean` | not null default false | 是否被用户手动修改过 |
 | `goal_alignment_refs` | `jsonb` | not null default `'[]'` | 指向 alignment table 中与目标对齐的条目 |
@@ -1081,6 +1083,7 @@ erDiagram
 约束建议：
 
 - `unique(draft_id, task_no)`
+- `mastery_points` 在 planner / PATCH 后应至少有 2 条，`cautions` 至少有 1 条；弱证据回退为试点计划时也不能丢失
 
 索引建议：
 
@@ -1229,7 +1232,7 @@ erDiagram
 
 - **摄取与草稿分离**：一次 `plan-from-material` 至少产生一行 `learning_material_intakes`、多行 `learning_material_sources`（按 URL）、一行 `learning_plan_drafts` 与多行 `learning_plan_draft_tasks`；全部成功前不应写入正式 `user_learning_paths`
 - **确认幂等**：同一 `learning_plan_drafts.id` 在 `status = confirmed` 后重复确认应返回相同的 `confirmed_user_learning_path_id`，不得产生第二条并发的 `active` 自学路径（业务层须与「先归档用户全部 `active` ULP 再插入」同事务或使用等价约束）
-- **确认输入**：确认写入 `path_steps.metadata` 时必须包括 `source_refs`、`goal_alignment_refs`、`recommended_for_week_1` 与 `draft_revision_no`，以便追溯材料与 revision。
+- **确认输入**：确认时除写入 `path_steps.metadata.source_refs`、`goal_alignment_refs`、`recommended_for_week_1` 与 `draft_revision_no` 外，还必须把草稿任务 `mastery_points` / `cautions` 分别转写到 `path_steps.key_points` / `pitfalls`，以便用户端直接展示每关“本关要掌握 / 注意事项”。
 - **再生稿**：仅允许对 `status = draft` 的归属草稿调用 regenerate；旧草稿置 `superseded` 并写 `superseded_by_draft_id`，新草稿独立 `intake_id` 策略以代码为准（可新 intake 复用链接列表）
 - **外键语义**：`confirmed_template_path_id` / `confirmed_user_learning_path_id` 在确认成功后写入；若用户路径或模板被清理，可 `on delete set null`，不反向级联删除草稿历史
 

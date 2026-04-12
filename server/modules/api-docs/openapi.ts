@@ -94,6 +94,7 @@ import {
   getOnboardingToolsResponseDataSchema,
   historyRecentQuerySchema,
   learningCurrentSessionResponseDataSchema,
+  learningRestartConversationResponseDataSchema,
   materialIntakeStatusResponseDataSchema,
   learningPlanDraftDetailResponseDataSchema,
   learningPlanDraftConfirmResponseDataSchema,
@@ -1079,6 +1080,15 @@ const successExamples = {
     initialPreview: ["先确认环境", "打开项目", "尝试第一次提问"],
     redirectTo: "/learn",
   },
+  learningRestartConversation: {
+    restarted: true,
+    closedSessionId: "conversation-1",
+  },
+  learningRestartConversationNoop: {
+    restarted: false,
+    closedSessionId: null,
+    message: "当前没有进行中的对话。",
+  },
   learningCurrentSession: {
     conversationId: "conversation-1",
     historyPagination: {
@@ -1278,6 +1288,13 @@ const successExamples = {
         estimatedMinutes: 30,
         sourceRefs: ["u1-chunk-0"],
         goalAlignmentRefs: [],
+        masteryPoints: ["知道本次练习要改哪一页", "知道项目成功启动的判断标准"],
+        cautions: [
+          {
+            text: "不要一开始就改页面代码，先确认教程项目能稳定跑起来。",
+            isTrap: true,
+          },
+        ],
         recommendedForWeek1: true,
         isUserEdited: false,
       },
@@ -1994,6 +2011,35 @@ registry.registerPath({
       successExamples.learningCurrentSession,
     ),
     ...commonErrorResponses(["401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/learning/restart-conversation",
+  operationId: "postLearningRestartConversation",
+  tags: ["learning"],
+  summary: "归档当前关卡活跃对话并清空任务会话指针，以便重新开始",
+  description:
+    "将当前任务下 status=active 且非管理员测试的 conversation_sessions 标记为 archived，并把 user_tasks.last_conversation_id 置空。若无活跃会话则返回 restarted=false。",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      learningRestartConversationResponseDataSchema,
+      "LearningRestartConversationResponse",
+      "操作结果",
+      successExamples.learningRestartConversation,
+    ),
+    ...commonErrorResponses(["401", "404", "429", "500"], {
+      "429": {
+        description: "短时间内重复调用触发限流。",
+        example: {
+          code: "RATE_LIMITED",
+          message: "操作过于频繁，请稍后再试。",
+          data: null,
+        },
+      },
+    }),
   },
 })
 

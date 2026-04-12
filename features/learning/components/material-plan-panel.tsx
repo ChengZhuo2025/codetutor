@@ -32,6 +32,29 @@ const ACTIVE_STATUSES = new Set([
   "quality_checking",
 ])
 
+function serializeCautions(
+  cautions: Array<{ text: string; isTrap?: boolean }>,
+) {
+  return cautions
+    .map((caution) => `${caution.isTrap ? "! " : ""}${caution.text}`)
+    .join("\n")
+}
+
+function parseCautionsInput(value: string) {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const isTrap = line.startsWith("!")
+      const text = (isTrap ? line.slice(1) : line).trim()
+      return {
+        text,
+        ...(isTrap ? { isTrap: true } : {}),
+      }
+    })
+}
+
 function getQualityStatusMeta(status: string) {
   switch (status) {
     case "passed":
@@ -292,6 +315,8 @@ export function MaterialPlanPanel({
         practiceSteps: task.practiceSteps,
         acceptanceCriteria: task.acceptanceCriteria,
         estimatedMinutes: task.estimatedMinutes,
+        masteryPoints: task.masteryPoints,
+        cautions: task.cautions,
         recommendedForWeek1: task.recommendedForWeek1,
       })),
     }
@@ -759,6 +784,66 @@ export function MaterialPlanPanel({
                   rows={2}
                   disabled={busyAction !== null}
                 />
+
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">本关要掌握（每行一条）</p>
+                    <Textarea
+                      value={task.masteryPoints.join("\n")}
+                      onChange={(e) =>
+                        setDraftDetail((current) =>
+                          current
+                            ? {
+                                ...current,
+                                tasks: current.tasks.map((item) =>
+                                  item.id === task.id
+                                    ? {
+                                        ...item,
+                                        masteryPoints: e.target.value
+                                          .split(/\r?\n/)
+                                          .map((point) => point.trim())
+                                          .filter(Boolean),
+                                      }
+                                    : item,
+                                ),
+                              }
+                            : current,
+                        )
+                      }
+                      rows={4}
+                      disabled={busyAction !== null}
+                      placeholder={"例如：知道这关要验证什么\n例如：能独立判断是否完成"}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      注意事项（每行一条，`!` 开头表示卡点提醒）
+                    </p>
+                    <Textarea
+                      value={serializeCautions(task.cautions)}
+                      onChange={(e) =>
+                        setDraftDetail((current) =>
+                          current
+                            ? {
+                                ...current,
+                                tasks: current.tasks.map((item) =>
+                                  item.id === task.id
+                                    ? {
+                                        ...item,
+                                        cautions: parseCautionsInput(e.target.value),
+                                      }
+                                    : item,
+                                ),
+                              }
+                            : current,
+                        )
+                      }
+                      rows={4}
+                      disabled={busyAction !== null}
+                      placeholder={"! 不要一上来大改结构\n先完成最小可验证结果"}
+                    />
+                  </div>
+                </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Input

@@ -29,6 +29,8 @@ type DraftTaskRow = {
   estimated_minutes: number | null
   source_refs: unknown
   goal_alignment_refs: unknown
+  mastery_points: unknown
+  cautions: unknown
   recommended_for_week_1: boolean
 }
 
@@ -36,6 +38,38 @@ export type ConfirmDraftResult = {
   learningPathId: string
   currentTaskId: string
   redirectTo: string
+}
+
+function readStringArrayJson(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.filter((item): item is string => typeof item === "string")
+}
+
+function readCautionItemsJson(value: unknown): Array<{ text: string; isTrap?: boolean }> {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        return null
+      }
+
+      const record = item as Record<string, unknown>
+      if (typeof record.text !== "string") {
+        return null
+      }
+
+      return {
+        text: record.text,
+        ...(typeof record.isTrap === "boolean" ? { isTrap: record.isTrap } : {}),
+      }
+    })
+    .filter((item): item is { text: string; isTrap?: boolean } => Boolean(item))
 }
 
 export async function confirmPlanDraft(
@@ -114,7 +148,7 @@ export async function confirmPlanDraft(
 
   const { data: taskRows, error: tasksError } = await supabase
     .from("learning_plan_draft_tasks")
-    .select("id, task_no, title, objective, practice_steps, acceptance_criteria, estimated_minutes, source_refs, goal_alignment_refs, recommended_for_week_1")
+    .select("id, task_no, title, objective, practice_steps, acceptance_criteria, estimated_minutes, source_refs, goal_alignment_refs, mastery_points, cautions, recommended_for_week_1")
     .eq("draft_id", draftId)
     .order("task_no", { ascending: true })
 
@@ -199,9 +233,9 @@ export async function confirmPlanDraft(
     review_summary: null,
     estimated_minutes: t.estimated_minutes ?? 45,
     reward_score: 10,
-    knowledge_points: [],
-    key_points: [],
-    pitfalls: [],
+    knowledge_points: readStringArrayJson(t.mastery_points).slice(0, 4),
+    key_points: readStringArrayJson(t.mastery_points),
+    pitfalls: readCautionItemsJson(t.cautions),
     difficulty_weight: 1,
     is_required: true,
     metadata: {
@@ -263,6 +297,8 @@ export async function confirmPlanDraft(
           taskNo: task.task_no,
           sourceRefs: task.source_refs,
           goalAlignmentRefs: task.goal_alignment_refs,
+          masteryPoints: task.mastery_points,
+          cautions: task.cautions,
           recommendedForWeek1: task.recommended_for_week_1,
         })),
       },

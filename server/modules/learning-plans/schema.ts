@@ -2,6 +2,11 @@ import "server-only"
 
 import { z } from "zod"
 
+export const plannerCautionSchema = z.object({
+  text: z.string().min(1).max(500),
+  isTrap: z.boolean().optional(),
+})
+
 export const plannerTaskSchema = z.object({
   taskNo: z.number().int().min(1).max(20),
   title: z.string().min(1).max(256),
@@ -10,6 +15,8 @@ export const plannerTaskSchema = z.object({
   acceptanceCriteria: z.string().min(1).max(4000),
   estimatedMinutes: z.number().int().min(15).max(240).optional(),
   sourceRefs: z.array(z.string()).min(1).max(20),
+  masteryPoints: z.array(z.string().min(1).max(500)).min(2).max(6),
+  cautions: z.array(plannerCautionSchema).min(1).max(6),
   goalAlignmentRefs: z.array(z.string()).default([]),
 })
 

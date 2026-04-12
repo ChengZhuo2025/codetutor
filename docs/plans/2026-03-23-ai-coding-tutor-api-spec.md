@@ -137,6 +137,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `GET /api/onboarding/path-options`
 - `POST /api/onboarding/complete`
 - `GET /api/learning/current-session`
+- `POST /api/learning/restart-conversation`
 - `POST /api/learning/message`
 - `GET /api/learning/messages`
 - `POST /api/task/complete`
@@ -244,6 +245,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - `POST /api/learning/message`
 - `GET /api/learning/current-session`
+- `POST /api/learning/restart-conversation`
 - `GET /api/learning/messages`
 - `POST /api/learning/plan-from-material`（自学模式教程链接 → 异步提交 material intake）
 - `GET /api/learning/material-intakes/{id}`（轮询 intake / run / draft 状态）
@@ -324,7 +326,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 营销首页 | `/` | `GET /api/auth/session` | 首页导航、Hero、套餐区、页脚与最终 CTA 会根据登录态切换为“继续学习”，并跳转到 `/learn`、`/history` 或 `/onboarding` |
 | 登录页 | `/login` | `POST /api/auth/login`、`GET/PATCH /api/profile/me`、`POST /api/profile/avatar` | 当前已打通手机号验证码登录、微信 OAuth 跳转、用户档案读取与资料编辑 |
 | 新手引导 | `/onboarding` | `GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete` | 产出主工具、学习等级、学习模式、初始学习路径实例 |
-| 学习页 | `/learn` | `GET /api/learning/current-session`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`、`POST /api/learning/plan-from-material`、`GET /api/learning/material-intakes/{id}`、`GET/PATCH /api/learning/plan-drafts/{id}`、`POST /api/learning/plan-drafts/{id}/confirm`、`POST /api/learning/plan-drafts/{id}/regenerate`、`POST /api/learning/plan-drafts/{id}/tasks/{taskId}/regenerate` | 已打通学习主界面 read model、历史消息分页、真实 AI provider 消息编排、SSE 与任务状态写入；自学模式（`selection_mode=self_directed`）已支持异步教程链接 intake、草稿详情编辑与确认后替换当前 active 路径 |
+| 学习页 | `/learn` | `GET /api/learning/current-session`、`POST /api/learning/restart-conversation`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`、`POST /api/learning/plan-from-material`、`GET /api/learning/material-intakes/{id}`、`GET/PATCH /api/learning/plan-drafts/{id}`、`POST /api/learning/plan-drafts/{id}/confirm`、`POST /api/learning/plan-drafts/{id}/regenerate`、`POST /api/learning/plan-drafts/{id}/tasks/{taskId}/regenerate` | 已打通学习主界面 read model、历史消息分页、真实 AI provider 消息编排、SSE 与任务状态写入；支持归档当前关卡活跃对话并清空任务会话指针后重头开始；自学模式（`selection_mode=self_directed`）已支持异步教程链接 intake、草稿详情编辑与确认后替换当前 active 路径 |
 | 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
 | 成就页 | `/achievements` | `GET /api/achievement/summary` | 当前已打通成长总览 read model，并支持真实每日打卡 |
 | 历史页 | `/history` | `GET /api/history/recent`、`GET /api/history/{id}`、`POST /api/history/{id}/status` | 当前前端实际需要的是“历史学习计划列表 + 详情复盘 + 状态操作”，而不是“最近对话列表” |
@@ -859,6 +861,37 @@ SSE 事件补充：
 - `quickActions`、`supportOptions`、`tips`、`knowledgeTags.color` 等字段偏展示层，可在首期先由前端保留静态配置；如果服务端返回，也应视为可选扩展字段，而不是底层数据库实体。
 - `messages.role` 在服务端内部建议使用 `assistant`，若前端仍保留 `ai`，可在 BFF DTO 层做映射。
 
+## 7.2.1 `POST /api/learning/restart-conversation`
+
+用途：
+
+- 学习页「重头开始」：将当前任务下 `status=active` 且非管理员测试的 `conversation_sessions` 标记为 `archived`（写入 `closed_at`），并把 `user_tasks.last_conversation_id` 置空；下次 `POST /api/learning/message` 会按现有逻辑创建新会话。旧会话中的消息仍保留在库中，但不再作为当前关卡的活跃会话。
+
+鉴权：
+
+- 需要用户 Bearer token，与其它 `/api/learning/*` 一致。
+
+请求体：
+
+- 可为空 JSON `{}`（路由不解析业务字段）。
+
+成功响应 `data` 字段：
+
+- `restarted`（`boolean`）：是否成功归档过至少一条活跃会话并清空指针。
+- `closedSessionId`（`string | null`）：若 `restarted=true`，为被归档的会话 id；否则为 `null`。
+- `message`（`string`，可选）：当 `restarted=false` 时说明原因，例如当前没有活跃对话。
+
+限流：
+
+- 进程内窗口限流（例如每用户每分钟 10 次），超限返回 `429` / `RATE_LIMITED`。
+
+错误码：
+
+- `401` `AUTH_REQUIRED`
+- `404` `NOT_FOUND`：当前用户无可恢复的 active 学习路径（与 `GET /api/learning/current-session` 一致）
+- `429` `RATE_LIMITED`
+- `500` `INTERNAL_ERROR`
+
 ## 7.3 `GET /api/learning/messages`
 
 用途：
@@ -922,6 +955,7 @@ SSE 事件补充：
 - 创建时立即返回 `processingMode=async`、`intakeId`、`runId` 和当前状态；前端通过 `GET /api/learning/material-intakes/{id}` 轮询进度
 - intake worker 现已固定按 `raw text -> subtitle -> ASR -> OCR/vision` 顺序提取证据；仅当前一层内容不足时才继续调用更贵模型
 - `learning_material_chunks` 现已稳定写入 `modality`、`source_ref`、`evidence_type`、`confidence`，供 planner 与质量闸门追溯证据
+- planner 生成的每个 task 除 `title/objective/practiceSteps/acceptanceCriteria` 外，还必须包含 `masteryPoints`（本关要掌握）与 `cautions`（注意事项，可含 `isTrap`）
 - planner 输出进入规则质量闸门；若证据偏弱或计划质量不足，会自动降级为 3 关试点计划，并在草稿 `qualityReport` 中写出原因
 - 成功后写入 `learning_material_intakes` / `learning_material_chunks` / `learning_plan_generation_runs` / `learning_plan_drafts` / `learning_plan_draft_tasks` / `learning_plan_draft_revisions`，不直接改动当前 active path
 - 主工具与等级来自 `user_profiles`，无需在请求中传 `targetToolCode`
@@ -979,6 +1013,7 @@ SSE 事件补充：
 实现说明：
 
 - 物化到 `learning_paths` + `path_steps` + `user_learning_paths` + `user_tasks`，与 onboarding 一致：先将用户所有 `active` 的 `user_learning_paths` 置为 `archived`，再插入新路径与任务，并更新 `current_task_id` / `last_active_task_id`
+- confirm 时将草稿任务的 `masteryPoints` 写入 `path_steps.key_points`，将 `cautions` 写入 `path_steps.pitfalls`，因此 `/learn` 右侧栏可直接消费精细化的“本关要掌握 / 注意事项”
 - 同一草稿重复确认幂等：返回已确认的 `learningPathId` 与 `currentTaskId`
 
 路径参数：
@@ -1023,6 +1058,7 @@ SSE 事件补充：
 业务规则：
 
 - 仅允许对当前用户名下 `status=draft` 的草稿操作；旧草稿标记为 `superseded` 并写入 `superseded_by_draft_id` 指向新草稿
+- `GET/PATCH /api/learning/plan-drafts/{id}` 返回并允许编辑 task 级 `masteryPoints` / `cautions`
 - 不直接修改当前 active path；仅插入新 intake（若重新抓取）与新 draft
 
 ## 7.7 规划中：`POST /api/learning/stuck-help`
@@ -1764,6 +1800,7 @@ SSE 事件补充：
 | `POST /api/onboarding/complete` | 是 | 写用户引导结果 |
 | `POST /api/learning/message` | 是 | 核心学习数据 |
 | `GET /api/learning/current-session` | 是 | 恢复当前学习上下文 |
+| `POST /api/learning/restart-conversation` | 是 | 归档当前关卡活跃对话并清空任务会话指针，供学习页重头开始 |
 | `GET /api/learning/messages` | 是 | 分页读取当前学习会话历史消息 |
 | `POST /api/learning/plan-from-material` | 是 | 自学模式（`selection_mode=self_directed`）下提交异步 material intake，按多模态证据生成学习计划草稿 |
 | `POST /api/learning/plan-drafts/{id}/confirm` | 是 | 确认当前用户草稿并物化为 `learning_paths` / `path_steps` / `user_learning_paths` / `user_tasks`，幂等 |

@@ -16,6 +16,7 @@ import {
   plannerOutputSchema,
   validatePlannerBusinessRules,
 } from "../server/modules/learning-plans/schema.ts"
+import { parsePlanDraftPatchBody } from "../server/lib/request-validation.ts"
 
 test("assertHostnameAllowed accepts frozen whitelist hosts", () => {
   assert.doesNotThrow(() =>
@@ -150,6 +151,48 @@ test("plannerOutputSchema + business rules accept valid planner payload", () => 
         acceptanceCriteria: "能启动",
         estimatedMinutes: 30,
         sourceRefs: ["c1"],
+        masteryPoints: ["知道如何启动项目", "知道成功运行的判断标准"],
+        cautions: [{ text: "不要跳过环境检查", isTrap: true }],
+      },
+      {
+        taskNo: 2,
+        title: "第二步",
+        objective: "改页面",
+        practiceSteps: ["编辑", "验证"],
+        acceptanceCriteria: "页面更新",
+        sourceRefs: ["c1"],
+        masteryPoints: ["知道需要修改哪个页面", "知道如何验证页面已更新"],
+        cautions: [{ text: "不要一上来大改结构" }],
+      },
+      {
+        taskNo: 3,
+        title: "第三步",
+        objective: "复盘",
+        practiceSteps: ["记录", "计划下一步"],
+        acceptanceCriteria: "有清单",
+        sourceRefs: ["c1"],
+        masteryPoints: ["能复述这次练习的核心收获", "能列出下一步行动"],
+        cautions: [{ text: "不要只看结果不复盘原因" }],
+      },
+    ],
+  }
+  const parsed = plannerOutputSchema.parse(raw)
+  assert.equal(validatePlannerBusinessRules(parsed), null)
+})
+
+test("plannerOutputSchema rejects tasks without mastery points and cautions", () => {
+  const raw = {
+    title: "测试计划",
+    goal: "完成最小闭环",
+    tasks: [
+      {
+        taskNo: 1,
+        title: "第一步",
+        objective: "跑通环境",
+        practiceSteps: ["安装", "运行"],
+        acceptanceCriteria: "能启动",
+        estimatedMinutes: 30,
+        sourceRefs: ["c1"],
       },
       {
         taskNo: 2,
@@ -169,8 +212,37 @@ test("plannerOutputSchema + business rules accept valid planner payload", () => 
       },
     ],
   }
-  const parsed = plannerOutputSchema.parse(raw)
-  assert.equal(validatePlannerBusinessRules(parsed), null)
+
+  assert.throws(() => plannerOutputSchema.parse(raw))
+})
+
+test("parsePlanDraftPatchBody preserves mastery points and cautions", () => {
+  const parsed = parsePlanDraftPatchBody({
+    tasks: [
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        masteryPoints: ["理解这关核心目标", "知道如何验证完成"],
+        cautions: [
+          { text: "不要一次改太多", isTrap: true },
+          { text: "先做最小可验证版本" },
+        ],
+      },
+    ],
+  })
+
+  assert.equal(parsed.ok, true)
+  if (!parsed.ok) {
+    return
+  }
+
+  assert.deepEqual(parsed.data.tasks?.[0]?.masteryPoints, [
+    "理解这关核心目标",
+    "知道如何验证完成",
+  ])
+  assert.deepEqual(parsed.data.tasks?.[0]?.cautions, [
+    { text: "不要一次改太多", isTrap: true },
+    { text: "先做最小可验证版本" },
+  ])
 })
 
 test("validatePlannerBusinessRules rejects non-sequential taskNo", () => {
@@ -185,6 +257,8 @@ test("validatePlannerBusinessRules rejects non-sequential taskNo", () => {
         practiceSteps: ["a", "b"],
         acceptanceCriteria: "x",
         sourceRefs: ["c1"],
+        masteryPoints: ["m1", "m2"],
+        cautions: [{ text: "c1" }],
       },
       {
         taskNo: 3,
@@ -193,6 +267,8 @@ test("validatePlannerBusinessRules rejects non-sequential taskNo", () => {
         practiceSteps: ["a", "b"],
         acceptanceCriteria: "y",
         sourceRefs: ["c1"],
+        masteryPoints: ["m1", "m2"],
+        cautions: [{ text: "c1" }],
       },
       {
         taskNo: 4,
@@ -201,6 +277,8 @@ test("validatePlannerBusinessRules rejects non-sequential taskNo", () => {
         practiceSteps: ["a", "b"],
         acceptanceCriteria: "z",
         sourceRefs: ["c1"],
+        masteryPoints: ["m1", "m2"],
+        cautions: [{ text: "c1" }],
       },
     ],
   }
@@ -501,12 +579,12 @@ test("runPlanQualityGate falls back to pilot plan for weak evidence and generic 
     goal: "快速学会一个概念",
     warnings: ["公开页可提取文本较少。"],
     tasks: [
-      { taskNo: 1, title: "第一步", objective: "先了解一下主题", practiceSteps: ["看一遍", "记一下"], acceptanceCriteria: "知道大概是什么", sourceRefs: ["c1"] },
-      { taskNo: 2, title: "第二步", objective: "继续了解一下更多内容", practiceSteps: ["再看一遍", "做记录"], acceptanceCriteria: "知道更多概念", sourceRefs: ["c1"] },
-      { taskNo: 3, title: "第三步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"] },
-      { taskNo: 4, title: "第四步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"] },
-      { taskNo: 5, title: "第五步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"] },
-      { taskNo: 6, title: "第六步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"] },
+      { taskNo: 1, title: "第一步", objective: "先了解一下主题", practiceSteps: ["看一遍", "记一下"], acceptanceCriteria: "知道大概是什么", sourceRefs: ["c1"], masteryPoints: ["知道主题核心范围", "知道这关输出什么"], cautions: [{ text: "不要只扫读标题就进入下一步", isTrap: true }] },
+      { taskNo: 2, title: "第二步", objective: "继续了解一下更多内容", practiceSteps: ["再看一遍", "做记录"], acceptanceCriteria: "知道更多概念", sourceRefs: ["c1"], masteryPoints: ["能说出新增概念", "能记录核心差异"], cautions: [{ text: "不要只记名词不记含义" }] },
+      { taskNo: 3, title: "第三步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"], masteryPoints: ["能复述关键概念", "知道概念之间的关系"], cautions: [{ text: "不要在概念没理顺时直接扩展练习" }] },
+      { taskNo: 4, title: "第四步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"], masteryPoints: ["能复述关键概念", "知道本关边界"], cautions: [{ text: "不要堆积未验证理解" }] },
+      { taskNo: 5, title: "第五步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"], masteryPoints: ["能指出关键概念", "能说明验证方式"], cautions: [{ text: "不要跳过记录过程" }] },
+      { taskNo: 6, title: "第六步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"], masteryPoints: ["能复述关键信息", "能说明下一步"], cautions: [{ text: "不要把弱证据当成结论", isTrap: true }] },
     ],
   })
 
@@ -533,9 +611,9 @@ test("runPlanQualityGate falls back after quality self-check keeps asking for re
     title: "质量自检计划",
     goal: "完成一个最小改造",
     tasks: [
-      { taskNo: 1, title: "第一步", objective: "完成本地环境准备并记录初始状态", practiceSteps: ["安装依赖", "运行项目"], acceptanceCriteria: "项目可以正常启动", sourceRefs: ["c1"] },
-      { taskNo: 2, title: "第二步", objective: "根据材料完成一次页面结构改造并截图对比", practiceSteps: ["调整布局", "保存截图"], acceptanceCriteria: "页面结构更新且截图可对比", sourceRefs: ["c1"] },
-      { taskNo: 3, title: "第三步", objective: "整理复盘并记录下一步优化清单", practiceSteps: ["记录问题", "列出优化项"], acceptanceCriteria: "产出一份复盘清单", sourceRefs: ["c1"] },
+      { taskNo: 1, title: "第一步", objective: "完成本地环境准备并记录初始状态", practiceSteps: ["安装依赖", "运行项目"], acceptanceCriteria: "项目可以正常启动", sourceRefs: ["c1"], masteryPoints: ["知道环境是否准备完成", "知道启动成功的判断标准"], cautions: [{ text: "不要跳过启动验证", isTrap: true }] },
+      { taskNo: 2, title: "第二步", objective: "根据材料完成一次页面结构改造并截图对比", practiceSteps: ["调整布局", "保存截图"], acceptanceCriteria: "页面结构更新且截图可对比", sourceRefs: ["c1"], masteryPoints: ["知道本关改动范围", "知道如何对比改造前后"], cautions: [{ text: "不要同时修改无关模块" }] },
+      { taskNo: 3, title: "第三步", objective: "整理复盘并记录下一步优化清单", practiceSteps: ["记录问题", "列出优化项"], acceptanceCriteria: "产出一份复盘清单", sourceRefs: ["c1"], masteryPoints: ["能复述这次练习产出", "能列出下一步优化点"], cautions: [{ text: "不要只记录结果不记录原因" }] },
     ],
   })
 
@@ -599,9 +677,9 @@ test("runPlanQualityGate skips low-risk quality self-check and does not invoke m
     title: "低风险计划",
     goal: "完成基础学习闭环",
     tasks: [
-      { taskNo: 1, title: "第一步", objective: "完成项目环境配置并记录启动结果", practiceSteps: ["安装依赖", "启动项目"], acceptanceCriteria: "项目可以正常启动", estimatedMinutes: 45, sourceRefs: ["c1"] },
-      { taskNo: 2, title: "第二步", objective: "跟随材料完成一次页面结构调整并记录变化", practiceSteps: ["修改页面", "查看结果"], acceptanceCriteria: "页面结构按预期更新", estimatedMinutes: 60, sourceRefs: ["c1"] },
-      { taskNo: 3, title: "第三步", objective: "整理本次练习结论并输出下一步计划", practiceSteps: ["记录结论", "列出下一步"], acceptanceCriteria: "输出一份复盘记录", estimatedMinutes: 30, sourceRefs: ["c1"] },
+      { taskNo: 1, title: "第一步", objective: "完成项目环境配置并记录启动结果", practiceSteps: ["安装依赖", "启动项目"], acceptanceCriteria: "项目可以正常启动", estimatedMinutes: 45, sourceRefs: ["c1"], masteryPoints: ["知道依赖安装成功的判断方法", "知道项目成功启动的标志"], cautions: [{ text: "不要在环境未通前进入页面改造", isTrap: true }] },
+      { taskNo: 2, title: "第二步", objective: "跟随材料完成一次页面结构调整并记录变化", practiceSteps: ["修改页面", "查看结果"], acceptanceCriteria: "页面结构按预期更新", estimatedMinutes: 60, sourceRefs: ["c1"], masteryPoints: ["知道这次要调整的结构点", "知道如何验证结构变化"], cautions: [{ text: "不要把视觉微调和结构改造混在一起" }] },
+      { taskNo: 3, title: "第三步", objective: "整理本次练习结论并输出下一步计划", practiceSteps: ["记录结论", "列出下一步"], acceptanceCriteria: "输出一份复盘记录", estimatedMinutes: 30, sourceRefs: ["c1"], masteryPoints: ["能总结这次练习学会了什么", "能明确下一步行动"], cautions: [{ text: "不要遗漏阻塞点与解决方式" }] },
     ],
   })
 
@@ -659,9 +737,9 @@ test("runPlanQualityGate keeps timeout reason in selfCheck but not in warnings",
     title: "高风险计划",
     goal: "在证据不足时收缩学习范围",
     tasks: [
-      { taskNo: 1, title: "第一步", objective: "梳理材料里提到的概念并记录未知项", practiceSteps: ["阅读材料", "记录未知项"], acceptanceCriteria: "输出一份概念清单", sourceRefs: ["c1"] },
-      { taskNo: 2, title: "第二步", objective: "根据材料完成一次最小实践并记录阻塞点", practiceSteps: ["尝试实践", "记录阻塞"], acceptanceCriteria: "完成一次最小实践记录", sourceRefs: ["c1"] },
-      { taskNo: 3, title: "第三步", objective: "整理后续求证问题并准备补充资料", practiceSteps: ["整理问题", "准备资料"], acceptanceCriteria: "输出待验证问题列表", sourceRefs: ["c1"] },
+      { taskNo: 1, title: "第一步", objective: "梳理材料里提到的概念并记录未知项", practiceSteps: ["阅读材料", "记录未知项"], acceptanceCriteria: "输出一份概念清单", sourceRefs: ["c1"], masteryPoints: ["能梳理已知概念", "能标出未知项"], cautions: [{ text: "不要把猜测当成已掌握内容" }] },
+      { taskNo: 2, title: "第二步", objective: "根据材料完成一次最小实践并记录阻塞点", practiceSteps: ["尝试实践", "记录阻塞"], acceptanceCriteria: "完成一次最小实践记录", sourceRefs: ["c1"], masteryPoints: ["能跑通最小实践", "能定位阻塞位置"], cautions: [{ text: "不要一遇到报错就改很多地方", isTrap: true }] },
+      { taskNo: 3, title: "第三步", objective: "整理后续求证问题并准备补充资料", practiceSteps: ["整理问题", "准备资料"], acceptanceCriteria: "输出待验证问题列表", sourceRefs: ["c1"], masteryPoints: ["能提出待验证问题", "能说明需要补什么资料"], cautions: [{ text: "不要在证据不足时下定论" }] },
     ],
     warnings: ["材料证据仍偏弱"],
   })

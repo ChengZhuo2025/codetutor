@@ -38,6 +38,7 @@ import type {
   LearningInteractionType,
   LearningMessageResponseData,
   LearningMessagesResponseData,
+  LearningRestartConversationResponseData,
   LearningTaskPatch,
 } from "@/lib/api/contracts/learning";
 import type {
@@ -71,44 +72,29 @@ import {
   USER_PANEL_SECTION_CLASS,
 } from "@/components/ui/surface-styles";
 
-type ConnectionState = "online" | "offline" | "reconnecting";
-
-type PendingDraft = {
-  text: string;
-  attachment: MessageAttachment | null;
-};
-
-type SSEEventHandler = (event: string, data: Record<string, unknown>) => void;
-
+// 常量定义
 const STREAMING_PLACEHOLDER = "__streaming_placeholder__";
 const STREAMING_BATCH_SIZE = 16;
 const STREAMING_BATCH_DELAY_MS = 70;
 const STREAMING_LOADING_TITLE = "AI 正在思考中";
 const STREAMING_LOADING_HINT = "先分析你的输入和当前上下文，再生成回复";
 
-type AssistantMessageVariant =
-  | "default"
-  | "hint"
-  | "example"
-  | "breakdown"
-  | "blocked_help"
-  | "path_guidance"
-  | "review"
-  | "completion";
+const TEXTAREA_MAX_HEIGHT = 24 * 4 + 12; // 108px
 
-type AssistantMessageInteractionMeta = {
-  label: string;
-  hint: string;
-  panelClass: string;
-  iconClass: string;
-  chipClass: string;
-  summaryClass: string;
-  sectionClass: string;
-  orderedBadgeClass: string;
-  listIconClass: string;
+const QUICK_ACTION_TONE_CLASS: Record<QuickAction["tone"], string> = {
+  primary: USER_BUTTON_PRIMARY_CLASS,
+  warning: USER_BUTTON_SECONDARY_CLASS,
+  secondary: USER_BUTTON_SECONDARY_CLASS,
 };
 
-const messageKindMeta = {
+const MESSAGE_ACTION_TONE_CLASS = {
+  primary: USER_BUTTON_PRIMARY_CLASS,
+  secondary: USER_BUTTON_SECONDARY_CLASS,
+  warning: USER_BUTTON_SECONDARY_CLASS,
+  success: USER_BUTTON_PRIMARY_CLASS,
+} as const;
+
+const MESSAGE_KIND_META = {
   system_goal: {
     badge: "学习提示",
     bubbleClass: "border-border/70 bg-surface-3/70 text-foreground",
@@ -135,19 +121,6 @@ const messageKindMeta = {
   },
 } as const;
 
-const quickActionToneClass: Record<QuickAction["tone"], string> = {
-  primary: USER_BUTTON_PRIMARY_CLASS,
-  warning: USER_BUTTON_SECONDARY_CLASS,
-  secondary: USER_BUTTON_SECONDARY_CLASS,
-};
-
-const messageActionToneClass = {
-  primary: USER_BUTTON_PRIMARY_CLASS,
-  secondary: USER_BUTTON_SECONDARY_CLASS,
-  warning: USER_BUTTON_SECONDARY_CLASS,
-  success: USER_BUTTON_PRIMARY_CLASS,
-} as const;
-
 const CHAT_TONE_CLASS = {
   info: {
     panel: "border-border/10 bg-surface-3/70",
@@ -168,7 +141,38 @@ const CHAT_TONE_CLASS = {
   },
 } as const;
 
-const assistantMessageVariantMeta: Record<
+type ConnectionState = "online" | "offline" | "reconnecting";
+
+type PendingDraft = {
+  text: string;
+  attachment: MessageAttachment | null;
+};
+
+type SSEEventHandler = (event: string, data: Record<string, unknown>) => void;
+
+type AssistantMessageVariant =
+  | "default"
+  | "hint"
+  | "example"
+  | "breakdown"
+  | "blocked_help"
+  | "path_guidance"
+  | "review"
+  | "completion";
+
+type AssistantMessageInteractionMeta = {
+  label: string;
+  hint: string;
+  panelClass: string;
+  iconClass: string;
+  chipClass: string;
+  summaryClass: string;
+  sectionClass: string;
+  orderedBadgeClass: string;
+  listIconClass: string;
+};
+
+const ASSISTANT_MESSAGE_VARIANT_META: Record<
   AssistantMessageVariant,
   {
     label: string;
@@ -246,7 +250,7 @@ const assistantMessageVariantMeta: Record<
   },
 };
 
-const assistantMessageInteractionMeta: Record<
+const ASSISTANT_MESSAGE_INTERACTION_META: Record<
   LearningInteractionType,
   AssistantMessageInteractionMeta
 > = {
@@ -526,10 +530,10 @@ function renderAssistantMessageLead(
   interactionType: LearningInteractionType,
   variant: AssistantMessageVariant,
 ) {
-  const meta = assistantMessageInteractionMeta[interactionType];
+  const meta = ASSISTANT_MESSAGE_INTERACTION_META[interactionType];
   const subtypeMeta =
     interactionType === "teaching" && variant !== "default"
-      ? assistantMessageVariantMeta[variant]
+      ? ASSISTANT_MESSAGE_VARIANT_META[variant]
       : null;
   const Icon =
     interactionType === "blocked_help"
@@ -592,7 +596,7 @@ function renderStructuredContent(
   const detailBlocks =
     structuredContent?.blocks ??
     (fallbackHasSummary ? fallbackBlocks.slice(1) : fallbackBlocks);
-  const interactionMeta = assistantMessageInteractionMeta[interactionType];
+  const interactionMeta = ASSISTANT_MESSAGE_INTERACTION_META[interactionType];
   const sections =
     structuredContent?.sections && structuredContent.sections.length > 0
       ? structuredContent.sections
@@ -899,7 +903,15 @@ async function consumeSSE(response: Response, onEvent: SSEEventHandler) {
       }
 
       const event = eventLine.slice(6).trim();
-      const data = JSON.parse(dataLines.join("")) as Record<string, unknown>;
+
+      let data: Record<string, unknown>;
+      try {
+        data = JSON.parse(dataLines.join("")) as Record<string, unknown>;
+      } catch (parseError) {
+        console.error("Failed to parse SSE data:", parseError);
+        continue;
+      }
+
       onEvent(event, data);
     }
   }
@@ -951,6 +963,8 @@ export function LearnChat({
   >(null);
   const [linkChoiceOpen, setLinkChoiceOpen] = useState(false);
   const [linkChoiceLinks, setLinkChoiceLinks] = useState<string[]>([]);
+  const [restartDialogOpen, setRestartDialogOpen] = useState(false);
+  const [restartSubmitting, setRestartSubmitting] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -1050,7 +1064,7 @@ export function LearnChat({
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    const clamped = Math.min(el.scrollHeight, 24 * 4 + 12);
+    const clamped = Math.min(el.scrollHeight, TEXTAREA_MAX_HEIGHT);
     el.style.height = `${clamped}px`;
   }, [input]);
 
@@ -1719,8 +1733,87 @@ export function LearnChat({
     setPreviewAttachment(null);
   };
 
+  const confirmRestartConversation = async () => {
+    if (connectionState !== "online") {
+      setSendError("当前网络连接不稳定，请恢复后再试。");
+      return;
+    }
+
+    setRestartSubmitting(true);
+    setSendError(null);
+
+    try {
+      const data = await requestData<LearningRestartConversationResponseData>(
+        "/learning/restart-conversation",
+        {
+          method: "POST",
+          body: JSON.stringify({}),
+        },
+      );
+
+      resetStreamState();
+      resetAgent();
+      setRestartDialogOpen(false);
+
+      if (!data.restarted && data.message) {
+        setSendError(data.message);
+      }
+
+      onRequestRefresh();
+    } catch (error) {
+      setSendError(
+        error instanceof Error
+          ? error.message
+          : "重头开始失败，请稍后重试。",
+      );
+    } finally {
+      setRestartSubmitting(false);
+    }
+  };
+
   return (
     <div className="contents">
+      <Dialog open={restartDialogOpen} onOpenChange={setRestartDialogOpen}>
+        <DialogContent
+          className={cn(
+            DIALOG_PANEL_CLASS,
+            "max-h-[75vh] overflow-y-auto rounded-2xl p-0 sm:max-w-[480px]",
+          )}
+        >
+          <div
+            className={cn("border-b px-5 pt-5 pb-4", USER_PANEL_DIVIDER_CLASS)}
+          >
+            <DialogHeader className="text-left">
+              <DialogTitle className="text-base">重头开始本关对话？</DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">
+                当前关卡的聊天记录将从学习页隐藏，并在你下次发送消息时开启新的对话。历史仍保留在服务端，不会用于新对话上下文。
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="flex flex-col-reverse gap-3 px-5 py-4 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className={USER_PANEL_OUTLINE_BUTTON_CLASS}
+              disabled={restartSubmitting}
+              onClick={() => setRestartDialogOpen(false)}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              className={USER_BUTTON_PRIMARY_CLASS}
+              disabled={restartSubmitting}
+              onClick={() => {
+                void confirmRestartConversation();
+              }}
+            >
+              {restartSubmitting ? "处理中…" : "确认重头开始"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={linkChoiceOpen} onOpenChange={setLinkChoiceOpen}>
         <DialogContent
           className={cn(
@@ -1834,15 +1927,20 @@ export function LearnChat({
               </div>
             </div>
 
-            <div className="shrink-0 sm:pt-0.5">
+            <div className="shrink-0 sm:pt-2">
               <button
                 type="button"
+                disabled={connectionState !== "online" || restartSubmitting}
+                onClick={() => setRestartDialogOpen(true)}
                 className={cn(
-                  "flex items-center gap-1 whitespace-nowrap px-3 py-2 text-xs font-medium",
-                  USER_BUTTON_SECONDARY_CLASS,
+                  "inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-surface-3/50 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-none transition-colors",
+                  "hover:border-border hover:bg-surface-3/65 hover:text-foreground",
+                  "dark:border-brand/20 dark:bg-brand/8 dark:text-brand dark:hover:bg-brand/15",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  "disabled:pointer-events-none disabled:opacity-40",
                 )}
               >
-                <RefreshCw className="h-3 w-3" />
+                <RefreshCw className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
                 重头开始
               </button>
             </div>
@@ -2008,7 +2106,7 @@ export function LearnChat({
               />
             ) : (
               messages.map((msg) => {
-                const meta = messageKindMeta[msg.kind];
+                const meta = MESSAGE_KIND_META[msg.kind];
                 const isUser = msg.role === "user";
                 const interactionType =
                   msg.role === "ai"
@@ -2136,7 +2234,7 @@ export function LearnChat({
                                 }
                                 className={cn(
                                   "px-3 py-2 text-sm font-medium",
-                                  messageActionToneClass[action.tone],
+                                  MESSAGE_ACTION_TONE_CLASS[action.tone],
                                 )}
                               >
                                 {action.label}
@@ -2275,7 +2373,7 @@ export function LearnChat({
                     disabled={isTyping || connectionState !== "online"}
                     className={cn(
                       "px-3.5 py-1 text-[12px] font-medium",
-                      quickActionToneClass[action.tone],
+                      QUICK_ACTION_TONE_CLASS[action.tone],
                     )}
                   >
                     {action.label}
@@ -2398,8 +2496,10 @@ export function LearnChat({
                   ref={textareaRef}
                   rows={1}
                   placeholder="把教程链接、代码片段或你卡住的问题发给我"
+                  aria-label="消息输入框"
+                  aria-describedby="input-hint"
                   className="scrollbar-none flex-1 resize-none bg-transparent py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground/50"
-                  style={{ maxHeight: `${24 * 4 + 12}px`, overflowY: "auto" }}
+                  style={{ maxHeight: `${TEXTAREA_MAX_HEIGHT}px`, overflowY: "auto" }}
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
                   onKeyDown={(event) => {
@@ -2430,7 +2530,7 @@ export function LearnChat({
               </div>
             </div>
 
-            <p className="mt-2 text-center text-xs text-muted-foreground/55">
+            <p id="input-hint" className="mt-2 text-center text-xs text-muted-foreground/55">
               {inputHint}
             </p>
           </div>

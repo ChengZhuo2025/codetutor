@@ -11,7 +11,6 @@ import {
   ChevronRight,
   Lightbulb,
   Lock,
-  Target,
 } from "lucide-react"
 import { ROUTES } from "@/constants/routes"
 import {
@@ -20,11 +19,13 @@ import {
   WorkspaceAside,
 } from "@/components/layout/workspace-aside"
 import { PageSection } from "@/components/ui/page-section"
-import { Skeleton } from "@/components/ui/skeleton"
 import { StatePanel } from "@/components/ui/state-panel"
 import { USER_ICON_BUTTON_CLASS } from "@/components/ui/surface-styles"
 import type { LearningCurrentSessionResponseData } from "@/lib/api/contracts/learning"
 import { cn } from "@/lib/utils"
+
+// 常量定义
+const TIP_ROTATION_INTERVAL_MS = 7000
 
 type LearnRightPanelProps = {
   className?: string
@@ -47,17 +48,27 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
   } = learningData
   const [activeTipIndex, setActiveTipIndex] = useState(0)
 
+  const safeActiveTipIndex =
+    learningTips.length === 0
+      ? 0
+      : Math.min(activeTipIndex, learningTips.length - 1)
+
   useEffect(() => {
     if (learningTips.length <= 1) return
 
     const timer = window.setInterval(() => {
-      setActiveTipIndex((prev) => (prev + 1) % learningTips.length)
-    }, 7000)
+      setActiveTipIndex((prev) => {
+        const len = learningTips.length
+        const clamped = Math.min(Math.max(prev, 0), len - 1)
+        return (clamped + 1) % len
+      })
+    }, TIP_ROTATION_INTERVAL_MS)
 
     return () => window.clearInterval(timer)
   }, [learningTips.length])
 
-  const activeTip = learningTips[activeTipIndex]
+  const activeTip =
+    learningTips.length > 0 ? learningTips[safeActiveTipIndex] : undefined
 
   return (
     <WorkspaceAside className={className}>
@@ -158,13 +169,13 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                 <div
                   className={cn(
                     "relative overflow-hidden rounded-[16px] border px-4 py-4",
-                    tipCardClassNames[activeTipIndex % tipCardClassNames.length],
+                    tipCardClassNames[safeActiveTipIndex % tipCardClassNames.length],
                   )}
                 >
                   <div className="absolute right-4 top-3 h-2 w-2 rounded-full bg-card ring-2 ring-border/60 dark:bg-background dark:shadow-[0_0_0_2px_rgba(255,255,255,0.12)] dark:ring-0" />
                   <div className="max-w-full">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/55">
-                      Tip {activeTipIndex + 1}
+                      Tip {safeActiveTipIndex + 1}
                     </p>
                     <p className="mt-3 text-base font-semibold leading-7 text-foreground">
                       {activeTip.title}
@@ -178,13 +189,13 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                     <div className="flex items-center gap-2">
                       {learningTips.map((tip, index) => (
                         <button
-                          key={tip.title}
+                          key={`${index}-${tip.title}`}
                           type="button"
                           aria-label={`查看提示 ${index + 1}`}
                           onClick={() => setActiveTipIndex(index)}
                           className={cn(
                             "h-2.5 rounded-full transition-all",
-                            index === activeTipIndex
+                            index === safeActiveTipIndex
                               ? "w-6 bg-brand"
                               : "w-2.5 bg-surface-4 hover:bg-surface-3",
                           )}
@@ -194,10 +205,13 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
+                        aria-label="上一条技巧"
                         onClick={() =>
-                          setActiveTipIndex((prev) =>
-                            prev === 0 ? learningTips.length - 1 : prev - 1,
-                          )
+                          setActiveTipIndex((prev) => {
+                            const len = learningTips.length
+                            const clamped = Math.min(Math.max(prev, 0), len - 1)
+                            return clamped === 0 ? len - 1 : clamped - 1
+                          })
                         }
                         className={cn(
                           "flex h-8 w-8 items-center justify-center rounded-full",
@@ -208,8 +222,13 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                       </button>
                       <button
                         type="button"
+                        aria-label="下一条技巧"
                         onClick={() =>
-                          setActiveTipIndex((prev) => (prev + 1) % learningTips.length)
+                          setActiveTipIndex((prev) => {
+                            const len = learningTips.length
+                            const clamped = Math.min(Math.max(prev, 0), len - 1)
+                            return (clamped + 1) % len
+                          })
                         }
                         className={cn(
                           "flex h-8 w-8 items-center justify-center rounded-full",
@@ -307,45 +326,17 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
           </div>
         </>
       ) : (
-        <>
-          <StatePanel
-            status="error"
-            title="未获取到任务信息"
-            description="当前右侧上下文面板没有拿到可展示的任务数据。联调真实接口后，这里会显示目标、完成标准和分层求助提示。"
-            extra={
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-rose-500/80">
-                <AlertCircle className="h-3.5 w-3.5" />
-                任务上下文缺失
-              </div>
-            }
-          />
-
-          <StatePanel
-            status="loading"
-            title="预留加载态"
-            description="真实接口接入后，右侧上下文区域会先显示骨架屏，再按成功或空状态渲染。"
-            extra={
-              <div className="space-y-3">
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-[88%]" />
-                <Skeleton className="h-20 w-full rounded-2xl" />
-              </div>
-            }
-          />
-
-          <StatePanel
-            status="empty"
-            title="等待学习任务开始"
-            description="当页面拿到当前会话后，这里会展示当前这一步和完成标准。"
-            extra={
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <Target className="h-3.5 w-3.5" />
-                当前一步优先
-              </div>
-            }
-          />
-        </>
+        <StatePanel
+          status="empty"
+          title="任务上下文暂不可用"
+          description="当前会话没有可展示的关卡摘要。请刷新页面或从学习地图重新进入本关；若问题持续，请联系支持。"
+          extra={
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <AlertCircle className="h-3.5 w-3.5" />
+              缺少 mission 数据
+            </div>
+          }
+        />
       )}
     </WorkspaceAside>
   )

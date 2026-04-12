@@ -2205,6 +2205,8 @@ export function parsePlanDraftPatchBody(input: unknown): ValidationResult<{
     acceptanceCriteria?: string | null
     estimatedMinutes?: number | null
     recommendedForWeek1?: boolean
+    masteryPoints?: string[]
+    cautions?: Array<{ text: string; isTrap?: boolean }>
   }>
 }> {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
@@ -2223,6 +2225,8 @@ export function parsePlanDraftPatchBody(input: unknown): ValidationResult<{
       acceptanceCriteria?: string | null
       estimatedMinutes?: number | null
       recommendedForWeek1?: boolean
+      masteryPoints?: string[]
+      cautions?: Array<{ text: string; isTrap?: boolean }>
     }>
   } = {}
 
@@ -2252,6 +2256,8 @@ export function parsePlanDraftPatchBody(input: unknown): ValidationResult<{
       acceptanceCriteria?: string | null
       estimatedMinutes?: number | null
       recommendedForWeek1?: boolean
+      masteryPoints?: string[]
+      cautions?: Array<{ text: string; isTrap?: boolean }>
     }> = []
 
     for (const item of body.tasks) {
@@ -2295,6 +2301,8 @@ export function parsePlanDraftPatchBody(input: unknown): ValidationResult<{
         acceptanceCriteria?: string | null
         estimatedMinutes?: number | null
         recommendedForWeek1?: boolean
+        masteryPoints?: string[]
+        cautions?: Array<{ text: string; isTrap?: boolean }>
       } = { id }
 
       if (task.title !== undefined) {
@@ -2333,6 +2341,40 @@ export function parsePlanDraftPatchBody(input: unknown): ValidationResult<{
 
       if (task.recommendedForWeek1 !== undefined) {
         normalizedTask.recommendedForWeek1 = task.recommendedForWeek1 as boolean
+      }
+
+      if (task.masteryPoints !== undefined) {
+        if (
+          !Array.isArray(task.masteryPoints)
+          || task.masteryPoints.some((p) => typeof p !== "string" || p.trim().length === 0)
+        ) {
+          return fail("VALIDATION_FAILED", "masteryPoints 必须是非空字符串数组。")
+        }
+        normalizedTask.masteryPoints = (task.masteryPoints as string[]).map((p) => p.trim())
+      }
+
+      if (task.cautions !== undefined) {
+        if (!Array.isArray(task.cautions)) {
+          return fail("BAD_REQUEST", "cautions 必须是数组。")
+        }
+        const cautions: Array<{ text: string; isTrap?: boolean }> = []
+        for (const entry of task.cautions) {
+          if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+            return fail("BAD_REQUEST", "cautions 中存在不合法对象。")
+          }
+          const row = entry as Record<string, unknown>
+          if (typeof row.text !== "string" || row.text.trim().length === 0) {
+            return fail("VALIDATION_FAILED", "cautions 中 text 必须是非空字符串。")
+          }
+          if (row.isTrap !== undefined && typeof row.isTrap !== "boolean") {
+            return fail("BAD_REQUEST", "cautions 中 isTrap 必须是布尔值。")
+          }
+          cautions.push({
+            text: row.text.trim(),
+            ...(typeof row.isTrap === "boolean" ? { isTrap: row.isTrap } : {}),
+          })
+        }
+        normalizedTask.cautions = cautions
       }
 
       tasks.push(normalizedTask)

@@ -41,7 +41,14 @@ JSON 顶层结构固定为：
       "practiceSteps": ["string"],
       "acceptanceCriteria": "string",
       "estimatedMinutes": 60,
-      "sourceRefs": ["string"]
+      "sourceRefs": ["string"],
+      "masteryPoints": ["string"],
+      "cautions": [
+        {
+          "text": "string",
+          "isTrap": true
+        }
+      ]
     }
   ]
 }
@@ -53,8 +60,10 @@ JSON 顶层结构固定为：
 4. practiceSteps 至少 2 条，每条是可执行动作短句。
 5. acceptanceCriteria 必须具体可验收，不要空泛。
 6. sourceRefs 必须引用用户消息中给出的材料块 id（例如 chunk 标识），若无则填 "unknown"。
-7. 材料信息不足时仍输出 JSON，但 tasks 取下限数量、并在 goal 中诚实说明依赖用户补充的部分（不要编造教程中不存在的内容）。$planner$,
-  '用户消息中会包含工具、水平、周学时与材料分块；严格按 system 的 JSON 契约输出。',
+7. masteryPoints 表示“本关要掌握”，每关必须给出 2 到 6 条，强调完成这一关后用户真正能判断自己学会了什么。
+8. cautions 表示“注意事项”，每关必须给出 1 到 6 条；真正的高频误区或容易踩坑的项请标记 isTrap=true。
+9. 材料信息不足时仍输出 JSON，但 tasks 取下限数量、并在 goal 中诚实说明依赖用户补充的部分（不要编造教程中不存在的内容）。$planner$,
+  '用户消息中会包含工具、水平、周学时与材料分块；严格按 system 的 JSON 契约输出，并保证每关都包含 masteryPoints 与 cautions。',
   'siliconflow',
   'deepseek-v3-2',
   4,

@@ -77,6 +77,12 @@ export type LearningMessagesResponseData = {
   pagination: LearningHistoryPagination
 }
 
+export type LearningRestartConversationResponseData = {
+  restarted: boolean
+  closedSessionId: string | null
+  message?: string
+}
+
 export type LearningCurrentSessionResponseData = {
   conversationId: string | null
   historyPagination: LearningHistoryPagination
@@ -121,6 +127,8 @@ export type LearningPlanPreviewTaskContract = {
   acceptanceCriteria: string
   estimatedMinutes?: number
   sourceRefs: string[]
+  masteryPoints: string[]
+  cautions: LearningCautionItem[]
 }
 
 export type LearningPlanPreviewContract = {
@@ -181,6 +189,8 @@ export type LearningPlanDraftTaskDetailContract = {
   estimatedMinutes: number | null
   sourceRefs: string[]
   goalAlignmentRefs: string[]
+  masteryPoints: string[]
+  cautions: LearningCautionItem[]
   recommendedForWeek1: boolean
   isUserEdited: boolean
 }
@@ -223,6 +233,8 @@ export type LearningPlanDraftPatchTaskRequestContract = {
   practiceSteps?: string[]
   acceptanceCriteria?: string | null
   estimatedMinutes?: number | null
+  masteryPoints?: string[]
+  cautions?: LearningCautionItem[]
   recommendedForWeek1?: boolean
 }
 

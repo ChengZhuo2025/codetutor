@@ -3,6 +3,7 @@ import type {
   LearningMessageRequest,
   LearningMessageResponseData,
   LearningMessagesResponseData,
+  LearningRestartConversationResponseData,
   LearningTaskState,
 } from "@/lib/api/contracts/learning"
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth"
@@ -480,6 +481,70 @@ async function assertConversationBelongsToUser(
   return (data as ConversationSessionRow | null) ?? null
 }
 
+export async function restartLearningConversationForCurrentTask(
+  userId: string,
+): Promise<LearningRestartConversationResponseData | null> {
+  const state = await loadLearningState(userId)
+
+  if (!state) {
+    return null
+  }
+
+  const currentTask =
+    state.tasks.find((task) => task.id === state.activePath.current_task_id) ??
+    state.tasks.find((task) => task.status === "in_progress") ??
+    state.tasks.find((task) => task.status === "blocked") ??
+    state.tasks.find((task) => task.status === "not_started") ??
+    state.tasks[0]
+
+  if (!currentTask) {
+    return null
+  }
+
+  const activeConversation = await resolveActiveConversationForTask(userId, currentTask)
+
+  if (!activeConversation) {
+    return {
+      restarted: false,
+      closedSessionId: null,
+      message: "当前没有进行中的对话。",
+    }
+  }
+
+  const supabase = createSupabaseAdminClient()
+  const now = new Date().toISOString()
+
+  const { error: sessionError } = await supabase
+    .from("conversation_sessions")
+    .update({
+      status: "archived",
+      closed_at: now,
+      updated_at: now,
+    })
+    .eq("id", activeConversation.id)
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .eq("is_admin_test", false)
+
+  assertSupabaseSuccess(sessionError, "failed to archive conversation session")
+
+  const { error: taskError } = await supabase
+    .from("user_tasks")
+    .update({
+      last_conversation_id: null,
+      updated_at: now,
+    })
+    .eq("id", currentTask.id)
+    .eq("user_id", userId)
+
+  assertSupabaseSuccess(taskError, "failed to clear task last_conversation_id")
+
+  return {
+    restarted: true,
+    closedSessionId: activeConversation.id,
+  }
+}
+
 export async function getLearningMessagesPage(
   userId: string,
   input: {
@@ -538,8 +603,37 @@ export async function getLearningCurrentSessionData(
 
   const nextStep = orderedSteps.find((step) => step.step_no === currentStep.step_no + 1) ?? null
   const knowledgePoints = toStringArray(currentStep.knowledge_points)
-  const masteryPoints = toStringArray(currentStep.key_points)
-  const pitfalls = toPitfalls(currentStep.pitfalls)
+  let masteryPoints = toStringArray(currentStep.key_points)
+  let pitfalls = toPitfalls(currentStep.pitfalls)
+
+  // 为自学模式生成的计划提供智能 fallback
+  if (masteryPoints.length === 0) {
+    if (currentStep.goal) {
+      masteryPoints = [
+        `理解目标：${currentStep.goal}`,
+        `完成这一步：${currentStep.title}`,
+        `判断完成标准：${currentStep.completion_criteria || "能够独立演示或解释"}`,
+      ]
+    } else if (knowledgePoints.length > 0) {
+      masteryPoints = knowledgePoints
+    } else {
+      masteryPoints = [
+        "理解当前步骤的核心概念",
+        "能够按步骤完成实践操作",
+        "知道如何验证自己的学习成果",
+      ]
+    }
+  }
+
+  // 如果数据库中没有 pitfalls，生成通用的学习注意事项
+  if (pitfalls.length === 0) {
+    pitfalls = [
+      { text: "不要急于求成，先理解概念再动手实践", isTrap: false },
+      { text: "遇到错误时，先仔细阅读错误信息而不是盲目尝试", isTrap: true },
+      { text: "确保当前步骤真正完成后再进入下一步", isTrap: false },
+      { text: "遇到困难时可以向 AI 导师求助，但先尝试自己解决", isTrap: false },
+    ]
+  }
   const baseMessages = buildDefaultMessages(currentStep)
   const activeConversation = await resolveActiveConversationForTask(userId, currentTask)
   const persistedMessagePage =

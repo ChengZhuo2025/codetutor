@@ -53,6 +53,8 @@ export type PlanDraftTaskPatchInput = {
   practiceSteps?: string[]
   acceptanceCriteria?: string | null
   estimatedMinutes?: number | null
+  masteryPoints?: string[]
+  cautions?: Array<{ text: string; isTrap?: boolean }>
   recommendedForWeek1?: boolean
 }
 
@@ -93,6 +95,8 @@ export type PlanDraftDetailResult = {
     estimatedMinutes: number | null
     sourceRefs: string[]
     goalAlignmentRefs: string[]
+    masteryPoints: string[]
+    cautions: Array<{ text: string; isTrap?: boolean }>
     recommendedForWeek1: boolean
     isUserEdited: boolean
   }>
@@ -116,6 +120,30 @@ function readStringArrayJson(value: unknown): string[] {
     return []
   }
   return value.filter((item): item is string => typeof item === "string")
+}
+
+function readCautionItemsJson(value: unknown): Array<{ text: string; isTrap?: boolean }> {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        return null
+      }
+
+      const record = item as Record<string, unknown>
+      if (typeof record.text !== "string") {
+        return null
+      }
+
+      return {
+        text: record.text,
+        ...(typeof record.isTrap === "boolean" ? { isTrap: record.isTrap } : {}),
+      }
+    })
+    .filter((item): item is { text: string; isTrap?: boolean } => Boolean(item))
 }
 
 function readWarningsFromMetadata(value: unknown) {
@@ -275,6 +303,8 @@ async function persistDraftRow(
     estimated_minutes: task.estimatedMinutes ?? null,
     source_refs: task.sourceRefs,
     goal_alignment_refs: task.goalAlignmentRefs,
+    mastery_points: task.masteryPoints,
+    cautions: task.cautions,
     recommended_for_week_1: plan.week1TaskNos.includes(task.taskNo),
     metadata: {},
     created_at: now,
@@ -349,7 +379,7 @@ async function loadDraftTasks(
   const { data: taskRows, error: taskError } = await supabase
     .from("learning_plan_draft_tasks")
     .select(
-      "id, task_no, position, title, objective, practice_steps, acceptance_criteria, estimated_minutes, source_refs, goal_alignment_refs, recommended_for_week_1, is_user_edited",
+      "id, task_no, position, title, objective, practice_steps, acceptance_criteria, estimated_minutes, source_refs, goal_alignment_refs, mastery_points, cautions, recommended_for_week_1, is_user_edited",
     )
     .eq("draft_id", draftId)
     .order("task_no", { ascending: true })
@@ -367,6 +397,8 @@ async function loadDraftTasks(
     estimated_minutes: number | null
     source_refs: unknown
     goal_alignment_refs: unknown
+    mastery_points: unknown
+    cautions: unknown
     recommended_for_week_1: boolean
     is_user_edited: boolean
   }>
@@ -399,6 +431,8 @@ function toDraftDetailResult(
       estimatedMinutes: task.estimated_minutes,
       sourceRefs: readStringArrayJson(task.source_refs),
       goalAlignmentRefs: readStringArrayJson(task.goal_alignment_refs),
+      masteryPoints: readStringArrayJson(task.mastery_points),
+      cautions: readCautionItemsJson(task.cautions),
       recommendedForWeek1: task.recommended_for_week_1,
       isUserEdited: task.is_user_edited,
     })),
@@ -425,6 +459,8 @@ function buildRawPlanFromDraftDetail(detail: PlanDraftDetailResult): PlannerOutp
       estimatedMinutes: task.estimatedMinutes ?? undefined,
       sourceRefs: task.sourceRefs,
       goalAlignmentRefs: task.goalAlignmentRefs,
+      masteryPoints: task.masteryPoints,
+      cautions: task.cautions,
     })),
   }
 }
@@ -541,6 +577,10 @@ export async function updatePlanDraftForUser(
         acceptance_criteria: patch.acceptanceCriteria ?? task.acceptance_criteria,
         estimated_minutes:
           patch.estimatedMinutes !== undefined ? patch.estimatedMinutes : task.estimated_minutes,
+        mastery_points:
+          patch.masteryPoints !== undefined ? patch.masteryPoints : task.mastery_points,
+        cautions:
+          patch.cautions !== undefined ? patch.cautions : task.cautions,
         recommended_for_week_1:
           patch.recommendedForWeek1 !== undefined
             ? patch.recommendedForWeek1
@@ -625,6 +665,8 @@ function buildTaskRegenerationUserMessage(input: {
   parts.push(`要重生成的 taskNo：${targetTask.taskNo}`)
   parts.push(`当前任务标题：${targetTask.title}`)
   parts.push(`当前任务目标：${targetTask.objective}`)
+  parts.push(`当前本关要掌握：${targetTask.masteryPoints.join("；") || "无"}`)
+  parts.push(`当前注意事项：${targetTask.cautions.map((item) => item.text).join("；") || "无"}`)
   parts.push("现有任务列表：")
   for (const task of input.draft.tasks) {
     parts.push(`- ${task.taskNo}. ${task.title}｜${task.objective}`)
@@ -633,7 +675,7 @@ function buildTaskRegenerationUserMessage(input: {
   for (const chunk of input.chunks) {
     parts.push(`### ${chunk.id}\n${chunk.content}`)
   }
-  parts.push("要求：保留相同 taskNo；sourceRefs 只能引用上面的 chunk id；输出更具体、可执行。")
+  parts.push("要求：保留相同 taskNo；sourceRefs 只能引用上面的 chunk id；必须输出 masteryPoints 与 cautions；输出更具体、可执行。")
   return parts.join("\n")
 }
 
@@ -718,6 +760,8 @@ export async function regeneratePlanDraftTaskForUser(
       acceptance_criteria: regeneratedTask.acceptanceCriteria,
       estimated_minutes: regeneratedTask.estimatedMinutes ?? null,
       source_refs: regeneratedTask.sourceRefs,
+      mastery_points: regeneratedTask.masteryPoints,
+      cautions: regeneratedTask.cautions,
       is_user_edited: false,
       updated_at: now,
     })

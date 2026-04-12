@@ -436,6 +436,13 @@ export const learningMessagesResponseDataSchema = z
   })
   .openapi("LearningMessagesResponseData")
 
+export const learningCautionItemSchema = z
+  .object({
+    text: z.string(),
+    isTrap: z.boolean().optional(),
+  })
+  .openapi("LearningCautionItem")
+
 export const learningPlanPreviewTaskSchema = z
   .object({
     taskNo: z.number().int(),
@@ -445,6 +452,8 @@ export const learningPlanPreviewTaskSchema = z
     acceptanceCriteria: z.string(),
     estimatedMinutes: z.number().int().optional(),
     sourceRefs: z.array(z.string()),
+    masteryPoints: z.array(z.string()),
+    cautions: z.array(learningCautionItemSchema),
   })
   .openapi("LearningPlanPreviewTask")
 
@@ -505,6 +514,8 @@ export const learningPlanDraftTaskDetailSchema = z
     estimatedMinutes: z.number().int().nullable(),
     sourceRefs: z.array(z.string()),
     goalAlignmentRefs: z.array(z.string()),
+    masteryPoints: z.array(z.string()),
+    cautions: z.array(learningCautionItemSchema),
     recommendedForWeek1: z.boolean(),
     isUserEdited: z.boolean(),
   })
@@ -557,6 +568,8 @@ export const learningPlanDraftPatchTaskRequestSchema = z
     practiceSteps: z.array(z.string()).optional(),
     acceptanceCriteria: z.string().nullable().optional(),
     estimatedMinutes: z.number().int().min(15).max(240).nullable().optional(),
+    masteryPoints: z.array(z.string()).optional(),
+    cautions: z.array(learningCautionItemSchema).optional(),
     recommendedForWeek1: z.boolean().optional(),
   })
   .openapi("LearningPlanDraftPatchTaskRequest")
@@ -660,13 +673,6 @@ export const learningKnowledgeTagSchema = z
   })
   .openapi("LearningKnowledgeTag")
 
-export const learningCautionItemSchema = z
-  .object({
-    text: z.string(),
-    isTrap: z.boolean().optional(),
-  })
-  .openapi("LearningCautionItem")
-
 export const learningTipSchema = z
   .object({
     title: z.string(),
@@ -728,6 +734,14 @@ export const learningCurrentSessionResponseDataSchema = z
     tips: z.array(learningTipSchema),
   })
   .openapi("LearningCurrentSessionResponseData")
+
+export const learningRestartConversationResponseDataSchema = z
+  .object({
+    restarted: z.boolean(),
+    closedSessionId: z.string().nullable(),
+    message: z.string().optional(),
+  })
+  .openapi("LearningRestartConversationResponseData")
 
 export const completeTaskRequestSchema = z
   .object({
