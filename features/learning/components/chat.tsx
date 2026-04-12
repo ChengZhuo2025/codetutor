@@ -1,30 +1,26 @@
-"use client";
+"use client"
 
-import Image from "next/image";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { APP_EVENTS } from "@/constants/events"
+import { ROUTES } from "@/constants/routes"
+import { LearnChatComposer, TEXTAREA_MAX_HEIGHT } from "@/features/learning/components/learn-chat-composer"
+import { LearnChatHeader } from "@/features/learning/components/learn-chat-header"
+import { LearnChatLinkChoiceDialog } from "@/features/learning/components/learn-chat-link-choice-dialog"
+import { LearnChatMessageList } from "@/features/learning/components/learn-chat-message-list"
+import { LearnChatRestartDialog } from "@/features/learning/components/learn-chat-restart-dialog"
 import {
-  AlertCircle,
-  CheckCircle2,
-  ImagePlus,
-  Lightbulb,
-  RefreshCw,
-  Send,
-  Sparkles,
-  Target,
-  WifiOff,
-  X,
-  Zap,
-} from "lucide-react";
-import { APP_EVENTS } from "@/constants/events";
-import { ROUTES } from "@/constants/routes";
-import { Skeleton } from "@/components/ui/skeleton";
-import { StatePanel } from "@/components/ui/state-panel";
+  parseStructuredContentPayload,
+  resolveAssistantInteractionType,
+  resolveTaskStateFromPatch,
+  STREAMING_PLACEHOLDER,
+} from "@/features/learning/components/learn-chat-rich-content"
+import type { ConnectionState } from "@/features/learning/components/learn-chat-types"
 import type {
   LearningSupportOption,
   Message,
   MessageAttachment,
   QuickAction,
-} from "@/features/learning/types";
+} from "@/features/learning/types"
 import {
   buildComposerDraftFromAssistantAction,
   canUseCompletionQuickAction,
@@ -32,790 +28,45 @@ import {
   mergeAssistantActionIntoInput,
   shouldCompleteCurrentTaskFromAssistantAction,
   shouldRenderLearningResumeCard,
-  shouldRenderMessageTaskPatch,
-  shouldRenderStructuredMessageSection,
-  shouldStabilizePendingAssistantTone,
-} from "@/features/learning/lib/chat-behavior";
+} from "@/features/learning/lib/chat-behavior"
 import type {
   LearningCurrentSessionResponseData,
-  LearningInteractionType,
   LearningMessageResponseData,
   LearningMessagesResponseData,
   LearningRestartConversationResponseData,
   LearningTaskPatch,
-} from "@/lib/api/contracts/learning";
+} from "@/lib/api/contracts/learning"
 import type {
   CompleteTaskResponseData,
   UpdateTaskStatusResponseData,
-} from "@/lib/api/contracts/task";
-import { apiFetch, requestData } from "@/lib/api/client";
-import {
-  buildStructuredLearningMessageContent,
-  parseStoredStructuredLearningMessageContent,
-  resolveRenderableStructuredLearningMessageContent,
-} from "@/lib/learning/structured-message";
-import { cn } from "@/lib/utils";
-import { useAppEventTracker } from "@/providers/app-providers";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  DIALOG_PANEL_CLASS,
-  USER_BUTTON_PRIMARY_CLASS,
-  USER_BUTTON_SECONDARY_CLASS,
-  USER_ICON_BUTTON_CLASS,
-  USER_PANEL_DIVIDER_CLASS,
-  USER_PANEL_HERO_CARD_CLASS,
-  USER_PANEL_HERO_TOP_SECTION_CLASS,
-  USER_PANEL_OUTLINE_BUTTON_CLASS,
-  USER_PANEL_SECTION_CLASS,
-} from "@/components/ui/surface-styles";
+} from "@/lib/api/contracts/task"
+import { apiFetch, requestData } from "@/lib/api/client"
+import { buildStructuredLearningMessageContent } from "@/lib/learning/structured-message"
+import { useAppEventTracker } from "@/providers/app-providers"
 
-// 常量定义
-const STREAMING_PLACEHOLDER = "__streaming_placeholder__";
-const STREAMING_BATCH_SIZE = 16;
-const STREAMING_BATCH_DELAY_MS = 70;
-const STREAMING_LOADING_TITLE = "AI 正在思考中";
-const STREAMING_LOADING_HINT = "先分析你的输入和当前上下文，再生成回复";
-
-const TEXTAREA_MAX_HEIGHT = 24 * 4 + 12; // 108px
-
-const QUICK_ACTION_TONE_CLASS: Record<QuickAction["tone"], string> = {
-  primary: USER_BUTTON_PRIMARY_CLASS,
-  warning: USER_BUTTON_SECONDARY_CLASS,
-  secondary: USER_BUTTON_SECONDARY_CLASS,
-};
-
-const MESSAGE_ACTION_TONE_CLASS = {
-  primary: USER_BUTTON_PRIMARY_CLASS,
-  secondary: USER_BUTTON_SECONDARY_CLASS,
-  warning: USER_BUTTON_SECONDARY_CLASS,
-  success: USER_BUTTON_PRIMARY_CLASS,
-} as const;
-
-const MESSAGE_KIND_META = {
-  system_goal: {
-    badge: "学习提示",
-    bubbleClass: "border-border/70 bg-surface-3/70 text-foreground",
-    avatarClass: "bg-surface-4 text-muted-foreground",
-    avatarLabel: "目",
-  },
-  coach: {
-    badge: "AI 教练",
-    bubbleClass: "border-brand/20 bg-brand-dim/60 text-foreground",
-    avatarClass: "bg-brand text-brand-foreground",
-    avatarLabel: "AI",
-  },
-  user_input: {
-    badge: "我的反馈",
-    bubbleClass:
-      "border-brand/80 bg-brand font-medium text-white dark:text-black",
-    avatarClass: "bg-surface-4 text-muted-foreground",
-    avatarLabel: "我",
-  },
-  task_feedback: {
-    badge: "任务反馈",
-    bubbleClass: "border-emerald-500/20 bg-emerald-500/10 text-foreground",
-    avatarClass: "bg-emerald-500 text-white",
-    avatarLabel: "成",
-  },
-} as const;
-
-const CHAT_TONE_CLASS = {
-  info: {
-    panel: "border-brand/5 bg-brand-dim/45",
-    badge: "border-brand/20 bg-brand-dim/60 text-brand",
-    icon: "text-brand",
-  },
-  warning: {
-    panel: "border-brand/5 bg-brand-dim/45",
-    badge: "border-gold/25 bg-gold-dim text-gold",
-    icon: "text-gold",
-  },
-  success: {
-    panel: "border-border/10 bg-surface-3/75",
-    badge:
-      "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-    icon: "text-emerald-600 dark:text-emerald-300",
-    text: "text-emerald-700 dark:text-emerald-300",
-  },
-} as const;
-
-type ConnectionState = "online" | "offline" | "reconnecting";
+const STREAMING_BATCH_SIZE = 16
+const STREAMING_BATCH_DELAY_MS = 70
 
 type PendingDraft = {
-  text: string;
-  attachment: MessageAttachment | null;
-};
-
-type SSEEventHandler = (event: string, data: Record<string, unknown>) => void;
-
-type AssistantMessageVariant =
-  | "default"
-  | "hint"
-  | "example"
-  | "breakdown"
-  | "blocked_help"
-  | "path_guidance"
-  | "review"
-  | "completion";
-
-type AssistantMessageInteractionMeta = {
-  label: string;
-  hint: string;
-  panelClass: string;
-  iconClass: string;
-  chipClass: string;
-  summaryClass: string;
-  sectionClass: string;
-  orderedBadgeClass: string;
-  listIconClass: string;
-};
-
-const ASSISTANT_MESSAGE_VARIANT_META: Record<
-  AssistantMessageVariant,
-  {
-    label: string;
-    hint: string;
-    panelClass: string;
-    iconClass: string;
-    chipClass: string;
-    summaryClass: string;
-  }
-> = {
-  default: {
-    label: "教练引导",
-    hint: "先给你当前关卡最值得执行的一步。",
-    panelClass: "border-brand/20 bg-background/50",
-    iconClass: "text-brand",
-    chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
-    summaryClass: "text-foreground",
-  },
-  hint: {
-    label: "轻量提示",
-    hint: "先给方向，不直接展开完整答案。",
-    panelClass: "border-gold/20 bg-background/50",
-    iconClass: "text-gold",
-    chipClass: "border-gold/20 bg-gold-dim text-gold",
-    summaryClass: "text-foreground",
-  },
-  example: {
-    label: "最小示例",
-    hint: "先跑通最小结果，再决定是否扩展。",
-    panelClass: "border-chart-3/20 bg-background/50",
-    iconClass: "text-chart-3",
-    chipClass: "border-chart-3/20 bg-chart-3/10 text-chart-3",
-    summaryClass: "text-foreground",
-  },
-  breakdown: {
-    label: "拆解步骤",
-    hint: "把当前任务压缩成更容易验证的小动作。",
-    panelClass: "border-brand/20 bg-background/50",
-    iconClass: "text-brand",
-    chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
-    summaryClass: "text-foreground",
-  },
-  blocked_help: {
-    label: "排查建议",
-    hint: "先定位卡点，再决定下一步修改动作。",
-    panelClass: "border-gold/20 bg-background/50",
-    iconClass: "text-gold",
-    chipClass: "border-gold/20 bg-gold-dim text-gold",
-    summaryClass: "text-foreground",
-  },
-  path_guidance: {
-    label: "下一步建议",
-    hint: "优先把眼前这一步做成，而不是一次铺得太大。",
-    panelClass: "border-brand/20 bg-background/50",
-    iconClass: "text-brand",
-    chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
-    summaryClass: "text-foreground",
-  },
-  review: {
-    label: "复盘建议",
-    hint: "回看结果，确认做对了什么、还差什么。",
-    panelClass: "border-chart-5/20 bg-background/50",
-    iconClass: "text-chart-5",
-    chipClass: "border-chart-5/20 bg-chart-5/10 text-chart-5",
-    summaryClass: "text-foreground",
-  },
-  completion: {
-    label: "完成反馈",
-    hint: "总结这一步收获，并准备进入下一关。",
-    panelClass: "border-emerald-500/20 bg-background/50",
-    iconClass: "text-emerald-600 dark:text-emerald-300",
-    chipClass:
-      "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-    summaryClass: "text-emerald-700 dark:text-emerald-300",
-  },
-};
-
-const ASSISTANT_MESSAGE_INTERACTION_META: Record<
-  LearningInteractionType,
-  AssistantMessageInteractionMeta
-> = {
-  teaching: {
-    label: "教练引导",
-    hint: "围绕当前关卡给出最小下一步，先做成再扩展。",
-    panelClass: "border-brand/20 bg-background/50",
-    iconClass: "text-brand",
-    chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
-    summaryClass: "text-foreground",
-    sectionClass: CHAT_TONE_CLASS.info.panel,
-    orderedBadgeClass: "bg-brand/12 text-brand",
-    listIconClass: "text-brand",
-  },
-  blocked_help: {
-    label: "排查建议",
-    hint: "先收敛问题来源，再决定要改哪里。",
-    panelClass: "border-gold/20 bg-background/50",
-    iconClass: "text-gold",
-    chipClass: "border-gold/20 bg-gold-dim text-gold",
-    summaryClass: "text-foreground",
-    sectionClass: CHAT_TONE_CLASS.warning.panel,
-    orderedBadgeClass: "bg-gold-dim text-gold",
-    listIconClass: "text-gold",
-  },
-  task_review: {
-    label: "复盘建议",
-    hint: "回看当前结果，确认做对了什么、还差什么。",
-    panelClass: "border-chart-5/20 bg-background/50",
-    iconClass: "text-chart-5",
-    chipClass: "border-chart-5/20 bg-chart-5/10 text-chart-5",
-    summaryClass: "text-foreground",
-    sectionClass: "border-chart-5/16 bg-chart-5/10",
-    orderedBadgeClass: "bg-chart-5/12 text-chart-5",
-    listIconClass: "text-chart-5",
-  },
-  completion_feedback: {
-    label: "完成反馈",
-    hint: "确认这一步已经完成，并把收获转成下一步动作。",
-    panelClass: "border-emerald-500/20 bg-background/50",
-    iconClass: CHAT_TONE_CLASS.success.icon,
-    chipClass: CHAT_TONE_CLASS.success.badge,
-    summaryClass: CHAT_TONE_CLASS.success.text,
-    sectionClass: CHAT_TONE_CLASS.success.panel,
-    orderedBadgeClass:
-      "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
-    listIconClass: "text-emerald-600 dark:text-emerald-300",
-  },
-  path_guidance: {
-    label: "下一步建议",
-    hint: "优先把当前这一步做实，再判断是否进入后续扩展。",
-    panelClass: "border-brand/20 bg-background/50",
-    iconClass: "text-brand",
-    chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
-    summaryClass: "text-foreground",
-    sectionClass: "border-brand/16 bg-brand-dim/35",
-    orderedBadgeClass: "bg-brand/12 text-brand",
-    listIconClass: "text-brand",
-  },
-};
-
-type MessageInlineToken =
-  | { type: "text"; value: string }
-  | { type: "strong"; value: string }
-  | { type: "code"; value: string };
-
-function tokenizeInlineText(text: string): MessageInlineToken[] {
-  const tokens: MessageInlineToken[] = [];
-  const pattern = /(\*\*[^*]+\*\*|`[^`\n]+`)/g;
-  let lastIndex = 0;
-
-  for (const match of text.matchAll(pattern)) {
-    const matched = match[0];
-    const start = match.index ?? 0;
-
-    if (start > lastIndex) {
-      tokens.push({
-        type: "text",
-        value: text.slice(lastIndex, start),
-      });
-    }
-
-    if (matched.startsWith("**") && matched.endsWith("**")) {
-      tokens.push({
-        type: "strong",
-        value: matched.slice(2, -2),
-      });
-    } else if (matched.startsWith("`") && matched.endsWith("`")) {
-      tokens.push({
-        type: "code",
-        value: matched.slice(1, -1),
-      });
-    }
-
-    lastIndex = start + matched.length;
-  }
-
-  if (lastIndex < text.length) {
-    tokens.push({
-      type: "text",
-      value: text.slice(lastIndex),
-    });
-  }
-
-  return tokens.filter((token) => token.value.length > 0);
+  text: string
+  attachment: MessageAttachment | null
 }
 
-type PlainTextTone = "default" | "inverted";
-
-function renderInlineText(
-  text: string,
-  keyPrefix: string,
-  tone: PlainTextTone = "default",
-) {
-  const strongClass =
-    tone === "inverted"
-      ? "font-semibold text-white dark:text-black"
-      : "font-semibold text-foreground";
-  const codeClass =
-    tone === "inverted"
-      ? "rounded-sm bg-white/15 px-2 py-1 font-mono text-[0.92em] text-white dark:bg-black/10 dark:text-black"
-      : "rounded-sm bg-black/8 dark:bg-white/10 px-2 py-1 font-mono text-[0.92em] text-foreground";
-
-  return tokenizeInlineText(text).map((token, index) => {
-    if (token.type === "strong") {
-      return (
-        <strong key={`${keyPrefix}-strong-${index}`} className={strongClass}>
-          {token.value}
-        </strong>
-      );
-    }
-
-    if (token.type === "code") {
-      return (
-        <code key={`${keyPrefix}-code-${index}`} className={codeClass}>
-          {token.value}
-        </code>
-      );
-    }
-
-    return <span key={`${keyPrefix}-text-${index}`}>{token.value}</span>;
-  });
-}
-
-function renderPlainContent(text: string, tone: PlainTextTone = "default") {
-  const paragraphClass =
-    tone === "inverted"
-      ? "text-white/95 dark:text-black/90"
-      : "text-foreground/90";
-
-  return text.split("\n").map((line, index) =>
-    line === "" ? (
-      <div key={`spacer-${index}`} className="h-2" />
-    ) : (
-      <p key={`line-${index}`} className={paragraphClass}>
-        {renderInlineText(line, `plain-${index}`, tone)}
-      </p>
-    ),
-  );
-}
-
-function resolveAssistantInteractionType(
-  message: Message,
-  options?: {
-    allowContentHeuristics?: boolean;
-  },
-): LearningInteractionType {
-  if (message.structuredContent?.interactionType) {
-    return message.structuredContent.interactionType;
-  }
-
-  if (
-    message.kind === "task_feedback" ||
-    message.taskPatch?.status === "completed"
-  ) {
-    return "completion_feedback";
-  }
-
-  const title = message.title ?? "";
-  const content = message.content;
-
-  if (
-    title.includes("排查") ||
-    message.taskPatch?.status === "blocked" ||
-    ((options?.allowContentHeuristics ?? true) &&
-      /报错|错误|failed|失败|卡住/i.test(content))
-  ) {
-    return "blocked_help";
-  }
-
-  if (title.includes("下一步")) {
-    return "path_guidance";
-  }
-
-  if (title.includes("复盘")) {
-    return "task_review";
-  }
-
-  return "teaching";
-}
-
-function resolveAssistantMessageVariant(
-  message: Message,
-  interactionType: LearningInteractionType,
-): AssistantMessageVariant {
-  if (message.structuredContent?.variant) {
-    return message.structuredContent.variant;
-  }
-
-  if (interactionType === "completion_feedback") {
-    return "completion";
-  }
-
-  if (interactionType === "blocked_help") {
-    return "blocked_help";
-  }
-
-  if (interactionType === "task_review") {
-    return "review";
-  }
-
-  if (interactionType === "path_guidance") {
-    return "path_guidance";
-  }
-
-  const title = message.title ?? "";
-
-  if (title.includes("最小示例") || title.includes("示例")) {
-    return "example";
-  }
-
-  if (title.includes("拆小") || title.includes("拆细")) {
-    return "breakdown";
-  }
-
-  if (title.includes("提示")) {
-    return "hint";
-  }
-
-  return "default";
-}
-
-function renderAssistantMessageLead(
-  interactionType: LearningInteractionType,
-  variant: AssistantMessageVariant,
-) {
-  const meta = ASSISTANT_MESSAGE_INTERACTION_META[interactionType];
-  const subtypeMeta =
-    interactionType === "teaching" && variant !== "default"
-      ? ASSISTANT_MESSAGE_VARIANT_META[variant]
-      : null;
-  const Icon =
-    interactionType === "blocked_help"
-      ? AlertCircle
-      : interactionType === "completion_feedback"
-        ? CheckCircle2
-        : interactionType === "path_guidance"
-          ? Target
-          : interactionType === "task_review"
-            ? RefreshCw
-            : Lightbulb;
-
-  return (
-    <div className={cn("mb-3 rounded-2xl border px-3.5 py-3", meta.panelClass)}>
-      <div className="flex items-start gap-2">
-        <Icon className={cn("mt-1 h-4 w-4 shrink-0", meta.iconClass)} />
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={cn(
-                "rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
-                meta.chipClass,
-              )}
-            >
-              {meta.label}
-            </span>
-            {subtypeMeta ? (
-              <span
-                className={cn(
-                  "rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
-                  subtypeMeta.chipClass,
-                )}
-              >
-                {subtypeMeta.label}
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-1 text-[13px] leading-6 text-muted-foreground">
-            {subtypeMeta ? subtypeMeta.hint : meta.hint}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function renderStructuredContent(
-  title: string | undefined,
-  text: string,
-  kind: Message["kind"],
-  interactionType: LearningInteractionType,
-  variant: AssistantMessageVariant,
-  taskPatch?: Message["taskPatch"],
-  structuredContent?: Message["structuredContent"],
-) {
-  const fallbackStructuredContent =
-    resolveRenderableStructuredLearningMessageContent({
-      title: title ?? null,
-      kind,
-      interactionType,
-      content: text,
-      taskPatch: taskPatch ?? null,
-      storedContent: structuredContent ?? null,
-    }) ?? structuredContent;
-  const fallbackBlocks = fallbackStructuredContent?.blocks ?? [];
-  const firstFallbackBlock = fallbackBlocks[0] ?? null;
-  const fallbackHasSummary = firstFallbackBlock?.type === "paragraph";
-  const summaryText =
-    fallbackStructuredContent?.summary ??
-    (fallbackHasSummary ? firstFallbackBlock.text : null);
-  const detailBlocks =
-    fallbackStructuredContent?.blocks ??
-    (fallbackHasSummary ? fallbackBlocks.slice(1) : fallbackBlocks);
-  const interactionMeta = ASSISTANT_MESSAGE_INTERACTION_META[interactionType];
-  const sections =
-    fallbackStructuredContent?.sections &&
-    fallbackStructuredContent.sections.length > 0
-      ? fallbackStructuredContent.sections
-      : [
-          {
-            title: null,
-            tone:
-              interactionType === "completion_feedback"
-                ? "success"
-                : interactionType === "blocked_help"
-                  ? "warning"
-                  : interactionType === "path_guidance" ||
-                      interactionType === "task_review" ||
-                      variant === "example" ||
-                      variant === "hint"
-                    ? "info"
-                    : "default",
-            blocks: detailBlocks,
-          },
-        ];
-
-  return (
-    <div className="space-y-3">
-      {renderAssistantMessageLead(interactionType, variant)}
-
-      {summaryText ? (
-        <div className="rounded-2xl bg-background/50 px-3.5 py-3">
-          <p
-            className={cn(
-              "whitespace-pre-wrap text-sm font-medium leading-6",
-              interactionMeta.summaryClass,
-            )}
-          >
-            {renderInlineText(summaryText, "summary")}
-          </p>
-        </div>
-      ) : null}
-
-      {sections
-        .filter((section) =>
-          shouldRenderStructuredMessageSection({
-            blockCount: section.blocks.length,
-          }),
-        )
-        .map((section, sectionIndex) => {
-        const sectionToneClass =
-          section.tone === "success"
-            ? CHAT_TONE_CLASS.success.panel
-            : section.tone === "warning"
-              ? CHAT_TONE_CLASS.warning.panel
-              : section.tone === "info"
-                ? interactionMeta.sectionClass
-                : "border-brand/5 bg-brand-dim/45";
-
-        return (
-          <div
-            key={`section-${sectionIndex}`}
-            className={cn("rounded-2xl border px-3.5 py-3", sectionToneClass)}
-          >
-            {section.title ? (
-              <div className="mb-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
-                {renderInlineText(
-                  section.title,
-                  `section-title-${sectionIndex}`,
-                )}
-              </div>
-            ) : null}
-
-            <div className="space-y-3">
-              {section.blocks.map((block, blockIndex) => {
-                if (block.type === "heading") {
-                  return (
-                    <div
-                      key={`heading-${sectionIndex}-${blockIndex}`}
-                      className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80"
-                    >
-                      {renderInlineText(
-                        block.text,
-                        `heading-${sectionIndex}-${blockIndex}`,
-                      )}
-                    </div>
-                  );
-                }
-
-                if (block.type === "paragraph") {
-                  return (
-                    <p
-                      key={`paragraph-${sectionIndex}-${blockIndex}`}
-                      className="whitespace-pre-wrap text-sm leading-6 text-foreground/90"
-                    >
-                      {renderInlineText(
-                        block.text,
-                        `paragraph-${sectionIndex}-${blockIndex}`,
-                      )}
-                    </p>
-                  );
-                }
-
-                if (block.type === "code_block") {
-                  return (
-                    <div
-                      key={`code-${sectionIndex}-${blockIndex}`}
-                      className="overflow-hidden rounded-2xl border border-brand/30 bg-background/70 dark:border-white/10 dark:bg-background/50"
-                    >
-                      {block.language ? (
-                        <div className="border-b border-brand/20 px-3.5 py-2 font-bold text-[11px] uppercase tracking-[0.12em] text-brand dark:border-white/10">
-                          {block.language}
-                        </div>
-                      ) : null}
-                      <pre className="overflow-x-auto px-3.5 py-3 text-[13px] leading-6 text-foreground">
-                        <code className="block whitespace-pre font-mono">
-                          {block.code}
-                        </code>
-                      </pre>
-                    </div>
-                  );
-                }
-
-                if (block.type === "unordered_list") {
-                  return (
-                    <div
-                      key={`unordered-${sectionIndex}-${blockIndex}`}
-                      className="space-y-2 rounded-2xl bg-background/50 px-3.5 py-3"
-                    >
-                      {block.items.map((item, itemIndex) => (
-                        <div
-                          key={`unordered-item-${sectionIndex}-${blockIndex}-${itemIndex}`}
-                          className="flex items-start gap-2.5"
-                        >
-                          <CheckCircle2
-                            className={cn(
-                              "mt-1 h-4 w-4 shrink-0",
-                              kind === "task_feedback" ||
-                                interactionType === "completion_feedback"
-                                ? "text-emerald-600 dark:text-emerald-300"
-                                : interactionMeta.listIconClass,
-                            )}
-                          />
-                          <p className="text-sm leading-6 text-foreground/90">
-                            {renderInlineText(
-                              item,
-                              `unordered-${sectionIndex}-${blockIndex}-${itemIndex}`,
-                            )}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                }
-
-                return (
-                  <div
-                    key={`ordered-${sectionIndex}-${blockIndex}`}
-                    className="space-y-2 rounded-2xl bg-background/50 px-3.5 py-3"
-                  >
-                    {block.items.map((item, itemIndex) => (
-                      <div
-                        key={`ordered-item-${sectionIndex}-${blockIndex}-${itemIndex}`}
-                        className="flex items-start gap-2.5"
-                      >
-                        <div
-                          className={cn(
-                            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
-                            interactionMeta.orderedBadgeClass,
-                          )}
-                        >
-                          {itemIndex + 1}
-                        </div>
-                        <p className="text-sm leading-6 text-foreground/90">
-                          {renderInlineText(
-                            item,
-                            `ordered-${sectionIndex}-${blockIndex}-${itemIndex}`,
-                          )}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-        })}
-    </div>
-  );
-}
+type SSEEventHandler = (event: string, data: Record<string, unknown>) => void
 
 function createAttachmentFromFile(file: File): MessageAttachment {
   return {
     type: "image",
     url: URL.createObjectURL(file),
     name: file.name,
-  };
-}
-
-function getInputHint(
-  connectionState: ConnectionState,
-  isTyping: boolean,
-  previewAttachment: MessageAttachment | null,
-) {
-  if (connectionState === "offline") {
-    return "你现在处于离线状态，消息会等待网络恢复后重试。";
   }
-
-  if (connectionState === "reconnecting") {
-    return "网络恢复中，稍后即可继续发送消息。";
-  }
-
-  if (isTyping) {
-    return "AI 正在分析你的输入并生成回复...";
-  }
-
-  if (previewAttachment) {
-    return "截图已附上，适合直接让 AI 帮你定位具体报错。";
-  }
-
-  return "把教程、代码、链接或你卡住的地方直接发给我。Enter 发送，Shift+Enter 换行。";
-}
-
-function resolveTaskStateFromPatch(
-  taskPatch: LearningTaskPatch | null | undefined,
-  fallbackState: LearningCurrentSessionResponseData["task"]["status"],
-) {
-  if (!taskPatch || taskPatch.status === "completed") {
-    return fallbackState;
-  }
-
-  return taskPatch.status;
 }
 
 function parseTaskPatchPayload(
   payload: Record<string, unknown>,
 ): LearningTaskPatch | null {
   if (typeof payload.taskId !== "string") {
-    return null;
+    return null
   }
 
   if (
@@ -823,117 +74,84 @@ function parseTaskPatchPayload(
     payload.status !== "blocked" &&
     payload.status !== "completed"
   ) {
-    return null;
+    return null
   }
 
   if (typeof payload.suggestedNextAction !== "string") {
-    return null;
+    return null
   }
 
   return {
     taskId: payload.taskId,
     status: payload.status,
     suggestedNextAction: payload.suggestedNextAction,
-  };
-}
-
-function parseStructuredContentPayload(payload: Record<string, unknown>) {
-  return parseStoredStructuredLearningMessageContent(
-    payload.structuredContent ?? null,
-  );
-}
-
-function getTaskPatchDisplayMeta(taskPatch: LearningTaskPatch) {
-  if (taskPatch.status === "blocked") {
-    return {
-      badge: "已标记为卡住",
-      badgeClass: CHAT_TONE_CLASS.warning.badge,
-      panelClass: CHAT_TONE_CLASS.warning.panel,
-      iconClass: CHAT_TONE_CLASS.warning.icon,
-    };
   }
-
-  if (taskPatch.status === "completed") {
-    return {
-      badge: "已完成当前关卡",
-      badgeClass: CHAT_TONE_CLASS.success.badge,
-      panelClass: CHAT_TONE_CLASS.success.panel,
-      iconClass: CHAT_TONE_CLASS.success.icon,
-    };
-  }
-
-  return {
-    badge: "继续推进当前关卡",
-    badgeClass: CHAT_TONE_CLASS.info.badge,
-    panelClass: CHAT_TONE_CLASS.info.panel,
-    iconClass: CHAT_TONE_CLASS.info.icon,
-  };
 }
 
 async function consumeSSE(response: Response, onEvent: SSEEventHandler) {
   if (!response.body) {
-    throw new Error("流式响应为空。");
+    throw new Error("流式响应为空。")
   }
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ""
 
   while (true) {
-    const { value, done } = await reader.read();
+    const { value, done } = await reader.read()
     if (done) {
-      break;
+      break
     }
 
-    buffer += decoder.decode(value, { stream: true });
+    buffer += decoder.decode(value, { stream: true })
 
     while (true) {
-      const boundary = buffer.indexOf("\n\n");
+      const boundary = buffer.indexOf("\n\n")
       if (boundary < 0) {
-        break;
+        break
       }
 
-      const rawEvent = buffer.slice(0, boundary);
-      buffer = buffer.slice(boundary + 2);
+      const rawEvent = buffer.slice(0, boundary)
+      buffer = buffer.slice(boundary + 2)
 
-      const lines = rawEvent.split("\n");
-      const eventLine = lines.find((line) => line.startsWith("event:"));
+      const lines = rawEvent.split("\n")
+      const eventLine = lines.find((line) => line.startsWith("event:"))
       const dataLines = lines
         .filter((line) => line.startsWith("data:"))
-        .map((line) => line.slice(5).trim());
+        .map((line) => line.slice(5).trim())
 
       if (!eventLine || dataLines.length === 0) {
-        continue;
+        continue
       }
 
-      const event = eventLine.slice(6).trim();
+      const event = eventLine.slice(6).trim()
 
-      let data: Record<string, unknown>;
+      let data: Record<string, unknown>
       try {
-        data = JSON.parse(dataLines.join("")) as Record<string, unknown>;
+        data = JSON.parse(dataLines.join("")) as Record<string, unknown>
       } catch (parseError) {
-        console.error("Failed to parse SSE data:", parseError);
-        continue;
+        console.error("Failed to parse SSE data:", parseError)
+        continue
       }
 
-      onEvent(event, data);
+      onEvent(event, data)
     }
   }
 }
 
-type LearnChatProps = {
-  learningData: LearningCurrentSessionResponseData;
-  onRequestRefresh: () => void;
-  onOpenMaterialPlanDialog?: (links?: string[]) => void;
-};
-
 function extractHttpLinks(text: string): string[] {
-  const matches = text.match(/https?:\/\/[^\s)]+/g) ?? [];
+  const matches = text.match(/https?:\/\/[^\s)]+/g) ?? []
   const normalized = matches
     .map((raw) => raw.replace(/[),.;!?]+$/, "").trim())
-    .filter(Boolean);
-  // preserve order + unique; planner flow enforces single link
-  return Array.from(new Set(normalized));
+    .filter(Boolean)
+
+  return Array.from(new Set(normalized))
+}
+
+type LearnChatProps = {
+  learningData: LearningCurrentSessionResponseData
+  onRequestRefresh: () => void
+  onOpenMaterialPlanDialog?: (links?: string[]) => void
 }
 
 export function LearnChat({
@@ -941,62 +159,62 @@ export function LearnChat({
   onRequestRefresh,
   onOpenMaterialPlanDialog,
 }: LearnChatProps) {
-  const { trackEvent } = useAppEventTracker();
-  const [messages, setMessages] = useState<Message[]>(learningData.messages);
+  const { trackEvent } = useAppEventTracker()
+  const [messages, setMessages] = useState<Message[]>(learningData.messages)
   const [conversationId, setConversationId] = useState<string | null>(
     learningData.conversationId,
-  );
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  )
+  const [input, setInput] = useState("")
+  const [isTyping, setIsTyping] = useState(false)
   const [previewAttachment, setPreviewAttachment] =
-    useState<MessageAttachment | null>(null);
-  const [sendError, setSendError] = useState<string | null>(null);
-  const [failedDraft, setFailedDraft] = useState<PendingDraft | null>(null);
+    useState<MessageAttachment | null>(null)
+  const [sendError, setSendError] = useState<string | null>(null)
+  const [failedDraft, setFailedDraft] = useState<PendingDraft | null>(null)
   const [connectionState, setConnectionState] =
-    useState<ConnectionState>("online");
-  const [showSupportOptions, setShowSupportOptions] = useState(false);
-  const [taskState, setTaskState] = useState(learningData.task.status);
-  const [resumeCardDismissed, setResumeCardDismissed] = useState(false);
+    useState<ConnectionState>("online")
+  const [showSupportOptions, setShowSupportOptions] = useState(false)
+  const [taskState, setTaskState] = useState(learningData.task.status)
+  const [resumeCardDismissed, setResumeCardDismissed] = useState(false)
   const [historyPagination, setHistoryPagination] = useState(
     learningData.historyPagination,
-  );
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [historyError, setHistoryError] = useState<string | null>(null);
+  )
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const [historyError, setHistoryError] = useState<string | null>(null)
   const [pendingAssistantMessageId, setPendingAssistantMessageId] = useState<
     number | null
-  >(null);
-  const [linkChoiceOpen, setLinkChoiceOpen] = useState(false);
-  const [linkChoiceLinks, setLinkChoiceLinks] = useState<string[]>([]);
-  const [restartDialogOpen, setRestartDialogOpen] = useState(false);
-  const [restartSubmitting, setRestartSubmitting] = useState(false);
+  >(null)
+  const [linkChoiceOpen, setLinkChoiceOpen] = useState(false)
+  const [linkChoiceLinks, setLinkChoiceLinks] = useState<string[]>([])
+  const [restartDialogOpen, setRestartDialogOpen] = useState(false)
+  const [restartSubmitting, setRestartSubmitting] = useState(false)
 
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const nextMessageId = useRef(learningData.messages.length + 1);
-  const reconnectTimerRef = useRef<number | null>(null);
-  const streamBufferRef = useRef("");
-  const streamFlushTimerRef = useRef<number | null>(null);
-  const streamTargetMessageIdRef = useRef<number | null>(null);
-  const streamHasVisibleContentRef = useRef(false);
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const nextMessageId = useRef(learningData.messages.length + 1)
+  const reconnectTimerRef = useRef<number | null>(null)
+  const streamBufferRef = useRef("")
+  const streamFlushTimerRef = useRef<number | null>(null)
+  const streamTargetMessageIdRef = useRef<number | null>(null)
+  const streamHasVisibleContentRef = useRef(false)
   const prependScrollMetricsRef = useRef<{
-    previousScrollHeight: number;
-    previousScrollTop: number;
-  } | null>(null);
+    previousScrollHeight: number
+    previousScrollTop: number
+  } | null>(null)
 
   const { mission, planSummary, resume, rightPanel, supportOptions } =
-    learningData;
-  const hasResume = Boolean(resume);
+    learningData
+  const hasResume = Boolean(resume)
   const showResumeCard = shouldRenderLearningResumeCard({
     hasResume,
     dismissed: resumeCardDismissed,
-  });
+  })
 
   useEffect(() => {
-    setResumeCardDismissed(false);
-  }, [learningData.path.id, hasResume]);
-  const inputHint = getInputHint(connectionState, isTyping, previewAttachment);
+    setResumeCardDismissed(false)
+  }, [learningData.path.id, hasResume])
+
   const canTriggerCompleteQuickAction = canUseCompletionQuickAction({
     taskState,
     messages: messages.map((message) => ({
@@ -1008,116 +226,123 @@ export function LearnChat({
           ? resolveAssistantInteractionType(message)
           : null,
       actionLabels:
-        message.structuredContent?.actions?.map((action) => action.label) ??
-        [],
+        message.structuredContent?.actions?.map((action) => action.label) ?? [],
       taskPatchStatus: message.taskPatch?.status ?? null,
     })),
-  });
+  })
 
   const scrollToConversationBottom = (behavior: ScrollBehavior = "smooth") => {
     window.requestAnimationFrame(() => {
-      bottomRef.current?.scrollIntoView({ behavior });
-    });
-  };
+      bottomRef.current?.scrollIntoView({ behavior })
+    })
+  }
 
   const requestSessionRefresh = () => {
-    onRequestRefresh();
-    window.setTimeout(() => onRequestRefresh(), 180);
-  };
+    onRequestRefresh()
+    window.setTimeout(() => onRequestRefresh(), 180)
+  }
 
   useEffect(() => {
-    setMessages(learningData.messages);
-    setConversationId(learningData.conversationId);
-    setTaskState(learningData.task.status);
-    setHistoryPagination(learningData.historyPagination);
-    setHistoryError(null);
-    setIsLoadingHistory(false);
-    setPendingAssistantMessageId(null);
-    nextMessageId.current = learningData.messages.length + 1;
-    streamBufferRef.current = "";
-    streamTargetMessageIdRef.current = null;
-    streamHasVisibleContentRef.current = false;
-  }, [learningData]);
+    setMessages(learningData.messages)
+    setConversationId(learningData.conversationId)
+    setTaskState(learningData.task.status)
+    setHistoryPagination(learningData.historyPagination)
+    setHistoryError(null)
+    setIsLoadingHistory(false)
+    setPendingAssistantMessageId(null)
+    nextMessageId.current = learningData.messages.length + 1
+    streamBufferRef.current = ""
+    streamTargetMessageIdRef.current = null
+    streamHasVisibleContentRef.current = false
+  }, [learningData])
 
   useEffect(() => {
     const syncConnectionState = () => {
       if (!navigator.onLine) {
-        setConnectionState("offline");
-        return;
+        setConnectionState("offline")
+        return
       }
 
       setConnectionState((prev) => {
         if (prev === "offline") {
           if (reconnectTimerRef.current) {
-            window.clearTimeout(reconnectTimerRef.current);
+            window.clearTimeout(reconnectTimerRef.current)
           }
           reconnectTimerRef.current = window.setTimeout(() => {
-            setConnectionState("online");
-            reconnectTimerRef.current = null;
-          }, 1200);
-          return "reconnecting";
+            setConnectionState("online")
+            reconnectTimerRef.current = null
+          }, 1200)
+          return "reconnecting"
         }
-        return "online";
-      });
-    };
-
-    syncConnectionState();
-    window.addEventListener("online", syncConnectionState);
-    window.addEventListener("offline", syncConnectionState);
-
-    return () => {
-      window.removeEventListener("online", syncConnectionState);
-      window.removeEventListener("offline", syncConnectionState);
-      if (reconnectTimerRef.current) {
-        window.clearTimeout(reconnectTimerRef.current);
-      }
-      if (streamFlushTimerRef.current) {
-        window.clearTimeout(streamFlushTimerRef.current);
-      }
-    };
-  }, []);
-
-  useLayoutEffect(() => {
-    const container = scrollContainerRef.current;
-    const metrics = prependScrollMetricsRef.current;
-
-    if (container && metrics) {
-      const scrollDelta = container.scrollHeight - metrics.previousScrollHeight;
-      container.scrollTop = metrics.previousScrollTop + scrollDelta;
-      prependScrollMetricsRef.current = null;
-      return;
+        return "online"
+      })
     }
 
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping, sendError, connectionState, showSupportOptions]);
+    syncConnectionState()
+    window.addEventListener("online", syncConnectionState)
+    window.addEventListener("offline", syncConnectionState)
+
+    return () => {
+      window.removeEventListener("online", syncConnectionState)
+      window.removeEventListener("offline", syncConnectionState)
+      if (reconnectTimerRef.current) {
+        window.clearTimeout(reconnectTimerRef.current)
+      }
+      if (streamFlushTimerRef.current) {
+        window.clearTimeout(streamFlushTimerRef.current)
+      }
+    }
+  }, [])
+
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current
+    const metrics = prependScrollMetricsRef.current
+
+    if (container && metrics) {
+      const scrollDelta = container.scrollHeight - metrics.previousScrollHeight
+      container.scrollTop = metrics.previousScrollTop + scrollDelta
+      prependScrollMetricsRef.current = null
+      return
+    }
+
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages, isTyping, sendError, connectionState, showSupportOptions])
 
   useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    const clamped = Math.min(el.scrollHeight, TEXTAREA_MAX_HEIGHT);
-    el.style.height = `${clamped}px`;
-  }, [input]);
+    const element = textareaRef.current
+    if (!element) return
+    element.style.height = "auto"
+    const clamped = Math.min(element.scrollHeight, TEXTAREA_MAX_HEIGHT)
+    element.style.height = `${clamped}px`
+  }, [input])
+
+  useEffect(() => {
+    return () => {
+      if (previewAttachment) {
+        URL.revokeObjectURL(previewAttachment.url)
+      }
+    }
+  }, [previewAttachment])
 
   const allocateMessageId = () => {
-    const id = nextMessageId.current;
-    nextMessageId.current += 1;
-    return id;
-  };
+    const id = nextMessageId.current
+    nextMessageId.current += 1
+    return id
+  }
 
   const createClientMessageId = () =>
-    `msg_client_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    `msg_client_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
 
   const clearStreamFlushTimer = () => {
     if (streamFlushTimerRef.current) {
-      window.clearTimeout(streamFlushTimerRef.current);
-      streamFlushTimerRef.current = null;
+      window.clearTimeout(streamFlushTimerRef.current)
+      streamFlushTimerRef.current = null
     }
-  };
+  }
 
   const appendAssistantChunk = (messageId: number, chunk: string) => {
     if (!chunk) {
-      return;
+      return
     }
 
     setMessages((prev) =>
@@ -1132,118 +357,115 @@ export function LearnChat({
             }
           : message,
       ),
-    );
-  };
+    )
+  }
 
   const scheduleStreamFlush = (delayMs = STREAMING_BATCH_DELAY_MS) => {
     if (streamFlushTimerRef.current) {
-      return;
+      return
     }
 
     streamFlushTimerRef.current = window.setTimeout(() => {
-      streamFlushTimerRef.current = null;
+      streamFlushTimerRef.current = null
 
-      const messageId = streamTargetMessageIdRef.current;
+      const messageId = streamTargetMessageIdRef.current
       if (messageId === null) {
-        return;
+        return
       }
 
-      const buffered = streamBufferRef.current;
+      const buffered = streamBufferRef.current
       if (!buffered) {
-        return;
+        return
       }
 
-      let chunk = buffered;
+      let chunk = buffered
       if (buffered.length > STREAMING_BATCH_SIZE) {
         const punctuationIndex = buffered
           .slice(0, STREAMING_BATCH_SIZE + 1)
-          .search(/[，。！？；：\n]/);
+          .search(/[，。！？；：\n]/)
 
         chunk =
           punctuationIndex >= 0
             ? buffered.slice(0, punctuationIndex + 1)
-            : buffered.slice(0, STREAMING_BATCH_SIZE);
+            : buffered.slice(0, STREAMING_BATCH_SIZE)
       }
 
-      streamBufferRef.current = buffered.slice(chunk.length);
-      appendAssistantChunk(messageId, chunk);
+      streamBufferRef.current = buffered.slice(chunk.length)
+      appendAssistantChunk(messageId, chunk)
 
       if (streamBufferRef.current) {
-        scheduleStreamFlush();
+        scheduleStreamFlush()
       }
-    }, delayMs);
-  };
+    }, delayMs)
+  }
 
   const enqueueStreamDelta = (messageId: number, delta: string) => {
     if (!delta) {
-      return;
+      return
     }
 
-    streamTargetMessageIdRef.current = messageId;
+    streamTargetMessageIdRef.current = messageId
 
     if (!streamHasVisibleContentRef.current) {
-      streamHasVisibleContentRef.current = true;
-      appendAssistantChunk(messageId, delta);
-      return;
+      streamHasVisibleContentRef.current = true
+      appendAssistantChunk(messageId, delta)
+      return
     }
 
-    streamBufferRef.current += delta;
+    streamBufferRef.current += delta
 
     if (
       streamBufferRef.current.length >= STREAMING_BATCH_SIZE ||
       /[，。！？；：\n]/.test(streamBufferRef.current)
     ) {
-      scheduleStreamFlush(30);
-      return;
+      scheduleStreamFlush(30)
+      return
     }
 
-    scheduleStreamFlush();
-  };
+    scheduleStreamFlush()
+  }
 
   const flushRemainingStreamDelta = () => {
-    clearStreamFlushTimer();
+    clearStreamFlushTimer()
 
-    const messageId = streamTargetMessageIdRef.current;
-    const buffered = streamBufferRef.current;
+    const messageId = streamTargetMessageIdRef.current
+    const buffered = streamBufferRef.current
 
     if (messageId !== null && buffered) {
-      streamBufferRef.current = "";
-      appendAssistantChunk(messageId, buffered);
+      streamBufferRef.current = ""
+      appendAssistantChunk(messageId, buffered)
     }
-  };
+  }
 
   const resetStreamState = () => {
-    clearStreamFlushTimer();
-    streamBufferRef.current = "";
-    streamTargetMessageIdRef.current = null;
-    streamHasVisibleContentRef.current = false;
-    setPendingAssistantMessageId(null);
-  };
+    clearStreamFlushTimer()
+    streamBufferRef.current = ""
+    streamTargetMessageIdRef.current = null
+    streamHasVisibleContentRef.current = false
+    setPendingAssistantMessageId(null)
+  }
 
   const resetAgent = () => {
-    setInput("");
-    setPreviewAttachment(null);
-    setSendError(null);
-    setFailedDraft(null);
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
-  };
+    setInput("")
+    setPreviewAttachment(null)
+    setSendError(null)
+    setFailedDraft(null)
+    if (textareaRef.current) textareaRef.current.style.height = "auto"
+  }
 
   const appendTaskFeedbackMessage = (data: CompleteTaskResponseData) => {
-    const lines = [data.completionSummary];
+    const lines = [data.completionSummary]
 
     if (data.scoreDelta > 0) {
-      lines.push(
-        "",
-        `本次获得 +${data.scoreDelta} XP，当前累计 ${data.currentScore} XP。`,
-      );
+      lines.push("", `本次获得 +${data.scoreDelta} XP，当前累计 ${data.currentScore} XP。`)
     }
 
     if (data.rankChanged) {
-      lines.push(`当前段位已提升为 ${data.currentRank}。`);
+      lines.push(`当前段位已提升为 ${data.currentRank}。`)
     }
 
     if (data.nextTask) {
-      lines.push("", `下一关：${data.nextTask.title}`);
+      lines.push("", `下一关：${data.nextTask.title}`)
     }
 
     const message: Message = {
@@ -1269,10 +491,10 @@ export function LearnChat({
       nextStep: data.nextTask
         ? `进入下一关：${data.nextTask.title}`
         : "本轮学习计划已完成",
-    };
+    }
 
-    setMessages((prev) => [...prev, message]);
-  };
+    setMessages((prev) => [...prev, message])
+  }
 
   const syncTaskStatus = async (
     status: "in_progress" | "blocked",
@@ -1288,16 +510,16 @@ export function LearnChat({
           reason,
         }),
       },
-    );
+    )
 
-    setTaskState(data.taskStatus);
-    return data;
-  };
+    setTaskState(data.taskStatus)
+    return data
+  }
 
   const completeCurrentTask = async (userContent?: string) => {
     if (connectionState !== "online") {
-      setSendError("当前网络连接不稳定，完成结果尚未提交。恢复后请重试。");
-      return;
+      setSendError("当前网络连接不稳定，完成结果尚未提交。恢复后请重试。")
+      return
     }
 
     const userMessage: Message = {
@@ -1306,50 +528,47 @@ export function LearnChat({
       kind: "user_input",
       title: "我的反馈",
       content: userContent?.trim() || "我完成了",
-    };
+    }
 
-    setMessages((prev) => [...prev, userMessage]);
-    setShowSupportOptions(false);
-    setIsTyping(true);
-    setSendError(null);
+    setMessages((prev) => [...prev, userMessage])
+    setShowSupportOptions(false)
+    setIsTyping(true)
+    setSendError(null)
 
     try {
-      const data = await requestData<CompleteTaskResponseData>(
-        "/task/complete",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            taskId: learningData.task.taskId,
-            conversationId,
-          }),
-        },
-      );
+      const data = await requestData<CompleteTaskResponseData>("/task/complete", {
+        method: "POST",
+        body: JSON.stringify({
+          taskId: learningData.task.taskId,
+          conversationId,
+        }),
+      })
 
-      setTaskState("completed");
-      appendTaskFeedbackMessage(data);
-      setFailedDraft(null);
-      setInput("");
-      setPreviewAttachment(null);
-      requestSessionRefresh();
+      setTaskState("completed")
+      appendTaskFeedbackMessage(data)
+      setFailedDraft(null)
+      setInput("")
+      setPreviewAttachment(null)
+      requestSessionRefresh()
     } catch (error) {
       setSendError(
         error instanceof Error ? error.message : "任务完成失败，请稍后重试。",
-      );
+      )
     } finally {
-      setIsTyping(false);
+      setIsTyping(false)
     }
-  };
+  }
 
   const dispatchDraft = async (
     draft: PendingDraft,
     options?: {
-      preserveBlockedStatus?: boolean;
+      preserveBlockedStatus?: boolean
     },
   ) => {
     if (connectionState !== "online") {
-      setFailedDraft(draft);
-      setSendError("当前网络连接不稳定，消息尚未发出。恢复后可直接重试。");
-      return;
+      setFailedDraft(draft)
+      setSendError("当前网络连接不稳定，消息尚未发出。恢复后可直接重试。")
+      return
     }
 
     const userMessage: Message = {
@@ -1359,42 +578,42 @@ export function LearnChat({
       title: "我的反馈",
       content: draft.text || "我上传了一张截图，请帮我定位问题。",
       attachment: draft.attachment ?? undefined,
-    };
+    }
 
     trackEvent(APP_EVENTS.learningInputSend, {
       hasAttachment: Boolean(draft.attachment),
       contentLength: draft.text.length,
       taskId: learningData.task.taskId,
-    });
+    })
 
-    setMessages((prev) => [...prev, userMessage]);
-    resetAgent();
-    setShowSupportOptions(false);
-    setIsTyping(true);
+    setMessages((prev) => [...prev, userMessage])
+    resetAgent()
+    setShowSupportOptions(false)
+    setIsTyping(true)
 
-    const assistantMessageId = allocateMessageId();
-    setPendingAssistantMessageId(assistantMessageId);
-    streamTargetMessageIdRef.current = assistantMessageId;
-    streamBufferRef.current = "";
-    streamHasVisibleContentRef.current = false;
+    const assistantMessageId = allocateMessageId()
+    setPendingAssistantMessageId(assistantMessageId)
+    streamTargetMessageIdRef.current = assistantMessageId
+    streamBufferRef.current = ""
+    streamHasVisibleContentRef.current = false
 
     try {
       if (taskState === "blocked" && !options?.preserveBlockedStatus) {
-        await syncTaskStatus("in_progress");
+        await syncTaskStatus("in_progress")
       }
 
-      const clientMessageId = createClientMessageId();
-      let assistantInserted = false;
+      const clientMessageId = createClientMessageId()
+      let assistantInserted = false
 
       const ensureAssistantMessage = (
         title = "AI 教练引导",
         initialContent = STREAMING_PLACEHOLDER,
       ) => {
         if (assistantInserted) {
-          return;
+          return
         }
 
-        assistantInserted = true;
+        assistantInserted = true
         setMessages((prev) => [
           ...prev,
           {
@@ -1404,10 +623,10 @@ export function LearnChat({
             title,
             content: initialContent,
           },
-        ]);
-      };
+        ])
+      }
 
-      ensureAssistantMessage();
+      ensureAssistantMessage()
 
       const response = await apiFetch("/learning/message", {
         method: "POST",
@@ -1425,9 +644,9 @@ export function LearnChat({
             pagePath: ROUTES.learn,
           },
         }),
-      });
+      })
 
-      const contentType = response.headers.get("content-type") ?? "";
+      const contentType = response.headers.get("content-type") ?? ""
 
       if (contentType.includes("text/event-stream")) {
         await consumeSSE(response, (event, payload) => {
@@ -1436,29 +655,28 @@ export function LearnChat({
               typeof payload.conversationId === "string"
                 ? payload.conversationId
                 : null,
-            );
-            return;
+            )
+            return
           }
 
           if (event === "assistant_delta") {
-            const delta =
-              typeof payload.delta === "string" ? payload.delta : "";
+            const delta = typeof payload.delta === "string" ? payload.delta : ""
 
             if (!delta) {
-              return;
+              return
             }
 
-            enqueueStreamDelta(assistantMessageId, delta);
-            return;
+            enqueueStreamDelta(assistantMessageId, delta)
+            return
           }
 
           if (event === "task_patch") {
-            const taskPatch = parseTaskPatchPayload(payload);
+            const taskPatch = parseTaskPatchPayload(payload)
             if (!taskPatch) {
-              return;
+              return
             }
 
-            setTaskState((prev) => resolveTaskStateFromPatch(taskPatch, prev));
+            setTaskState((prev) => resolveTaskStateFromPatch(taskPatch, prev))
             setMessages((prev) =>
               prev.map((message) =>
                 message.id === assistantMessageId
@@ -1468,17 +686,17 @@ export function LearnChat({
                     }
                   : message,
               ),
-            );
-            return;
+            )
+            return
           }
 
           if (event === "assistant_done") {
-            flushRemainingStreamDelta();
-            const structuredContent = parseStructuredContentPayload(payload);
+            flushRemainingStreamDelta()
+            const structuredContent = parseStructuredContentPayload(payload)
             const title =
-              typeof payload.title === "string" ? payload.title : "AI 教练引导";
+              typeof payload.title === "string" ? payload.title : "AI 教练引导"
             const kind =
-              payload.kind === "task_feedback" ? "task_feedback" : "coach";
+              payload.kind === "task_feedback" ? "task_feedback" : "coach"
 
             setMessages((prev) =>
               prev.map((message) =>
@@ -1491,8 +709,8 @@ export function LearnChat({
                     }
                   : message,
               ),
-            );
-            return;
+            )
+            return
           }
 
           if (event === "error") {
@@ -1500,29 +718,29 @@ export function LearnChat({
               typeof payload.message === "string"
                 ? payload.message
                 : "流式消息发送失败，请稍后重试。",
-            );
+            )
           }
-        });
+        })
       } else {
         const apiResponse = (await response.json()) as {
-          code: string;
-          message: string;
-          data: LearningMessageResponseData | null;
-        };
-
-        if (apiResponse.code !== "OK" || !apiResponse.data) {
-          throw new Error(apiResponse.message || "消息发送失败，请稍后重试。");
+          code: string
+          message: string
+          data: LearningMessageResponseData | null
         }
 
-        const responseData = apiResponse.data;
-        resetStreamState();
-        setConversationId(responseData.conversationId);
+        if (apiResponse.code !== "OK" || !apiResponse.data) {
+          throw new Error(apiResponse.message || "消息发送失败，请稍后重试。")
+        }
+
+        const responseData = apiResponse.data
+        resetStreamState()
+        setConversationId(responseData.conversationId)
         setTaskState(
           resolveTaskStateFromPatch(
             responseData.taskPatch,
             responseData.taskState,
           ),
-        );
+        )
         setMessages((prev) =>
           prev.map((message) =>
             message.id === assistantMessageId
@@ -1533,77 +751,76 @@ export function LearnChat({
                 }
               : message,
           ),
-        );
+        )
       }
 
-      setFailedDraft(null);
-      setSendError(null);
+      setFailedDraft(null)
+      setSendError(null)
     } catch (error) {
-      resetStreamState();
+      resetStreamState()
       setMessages((prev) =>
         prev.filter((message) => message.id !== assistantMessageId),
-      );
-      setFailedDraft(draft);
+      )
+      setFailedDraft(draft)
       setSendError(
         error instanceof Error ? error.message : "消息发送失败，请稍后重试。",
-      );
+      )
     } finally {
-      flushRemainingStreamDelta();
-      resetStreamState();
-      setIsTyping(false);
+      flushRemainingStreamDelta()
+      resetStreamState()
+      setIsTyping(false)
     }
-  };
+  }
 
   const handleSend = async () => {
     const draft = {
       text: input.trim(),
       attachment: previewAttachment,
-    };
-
-    if ((!draft.text && !draft.attachment) || isTyping) return;
-
-    if (!draft.attachment && isExplicitTaskCompletionInput(draft.text)) {
-      await completeCurrentTask(draft.text);
-      return;
     }
 
-    const planSummary = learningData.planSummary;
+    if ((!draft.text && !draft.attachment) || isTyping) return
+
+    if (!draft.attachment && isExplicitTaskCompletionInput(draft.text)) {
+      await completeCurrentTask(draft.text)
+      return
+    }
+
     if (
       planSummary.selectionMode === "self_directed" &&
       draft.text &&
       !draft.attachment
     ) {
-      const links = extractHttpLinks(draft.text);
+      const links = extractHttpLinks(draft.text)
       if (links.length > 0) {
-        setLinkChoiceLinks(links);
-        setLinkChoiceOpen(true);
-        return;
+        setLinkChoiceLinks(links)
+        setLinkChoiceOpen(true)
+        return
       }
     }
 
-    await dispatchDraft(draft);
-  };
+    await dispatchDraft(draft)
+  }
 
   const handleQuickAction = (action: QuickAction) => {
-    if (isTyping) return;
+    if (isTyping) return
 
     if (action.label === "我卡住了") {
       trackEvent(APP_EVENTS.learningQuickHelp, {
         action: action.label,
         category: action.category,
         taskId: learningData.task.taskId,
-      });
-      setShowSupportOptions((prev) => !prev);
-      return;
+      })
+      setShowSupportOptions((prev) => !prev)
+      return
     }
 
     if (action.label === "我完成了") {
       trackEvent(APP_EVENTS.taskCompleted, {
         source: "quick_action",
         taskId: learningData.task.taskId,
-      });
-      void completeCurrentTask();
-      return;
+      })
+      void completeCurrentTask()
+      return
     }
 
     if (action.category === "help" || action.category === "hint") {
@@ -1611,91 +828,91 @@ export function LearnChat({
         action: action.label,
         category: action.category,
         taskId: learningData.task.taskId,
-      });
+      })
 
       void (async () => {
         try {
-          await syncTaskStatus("blocked", action.label);
+          await syncTaskStatus("blocked", action.label)
           await dispatchDraft(
             { text: action.label, attachment: null },
             { preserveBlockedStatus: true },
-          );
+          )
         } catch (error) {
           setSendError(
             error instanceof Error
               ? error.message
               : "更新任务状态失败，请稍后重试。",
-          );
+          )
         }
-      })();
-      return;
+      })()
+      return
     }
 
-    void dispatchDraft({ text: action.label, attachment: null });
-  };
+    void dispatchDraft({ text: action.label, attachment: null })
+  }
 
   const handleSupportOption = (option: LearningSupportOption) => {
-    if (isTyping) return;
+    if (isTyping) return
 
     trackEvent(APP_EVENTS.stuckHelpRequested, {
       helpMode: option.mode,
       taskId: learningData.task.taskId,
-    });
+    })
 
     void (async () => {
       try {
-        await syncTaskStatus("blocked", option.label);
+        await syncTaskStatus("blocked", option.label)
         await dispatchDraft(
           { text: option.prompt, attachment: null },
           { preserveBlockedStatus: true },
-        );
+        )
       } catch (error) {
         setSendError(
           error instanceof Error
             ? error.message
             : "更新任务状态失败，请稍后重试。",
-        );
+        )
       }
-    })();
-  };
+    })()
+  }
 
   const handleAssistantActionPrefill = (inputAction: {
-    label: string;
-    prompt: string;
+    label: string
+    prompt: string
   }) => {
-    if (isTyping) return;
+    if (isTyping) return
 
-    const composerDraft = buildComposerDraftFromAssistantAction(inputAction);
-    setInput((prev) => mergeAssistantActionIntoInput(prev, composerDraft));
+    const composerDraft = buildComposerDraftFromAssistantAction(inputAction)
+    setInput((prev) => mergeAssistantActionIntoInput(prev, composerDraft))
     window.requestAnimationFrame(() => {
-      const textarea = textareaRef.current;
+      const textarea = textareaRef.current
       if (!textarea) {
-        return;
+        return
       }
 
-      textarea.focus();
-      const nextValue = textarea.value;
-      textarea.setSelectionRange(nextValue.length, nextValue.length);
-    });
-  };
+      textarea.focus()
+      const nextValue = textarea.value
+      textarea.setSelectionRange(nextValue.length, nextValue.length)
+    })
+  }
 
   const handleAdvanceToNextTask = async (prompt: string) => {
-    if (isTyping) return;
+    if (isTyping) return
 
     if (taskState !== "completed") {
-      await completeCurrentTask(prompt);
-      return;
+      await completeCurrentTask(prompt)
+      return
     }
 
-    requestSessionRefresh();
-    scrollToConversationBottom("auto");
-  };
+    requestSessionRefresh()
+    scrollToConversationBottom("auto")
+  }
 
   const handleAssistantAction = (
     message: Message,
     action: {
-      label: string;
-      prompt: string;
+      label: string
+      prompt: string
     },
   ) => {
     if (
@@ -1706,31 +923,31 @@ export function LearnChat({
         nextStep: message.nextStep ?? null,
       })
     ) {
-      void handleAdvanceToNextTask(action.prompt || action.label);
-      return;
+      void handleAdvanceToNextTask(action.prompt || action.label)
+      return
     }
 
-    handleAssistantActionPrefill(action);
-  };
+    handleAssistantActionPrefill(action)
+  }
 
   const handleNextStepClick = (message: Message) => {
-    if (isTyping) return;
+    if (isTyping) return
     void handleAdvanceToNextTask(
       message.nextStep ?? "我已经完成当前这一关，请进入下一关。",
-    );
-  };
+    )
+  }
 
   const handleRetry = () => {
-    if (!failedDraft || connectionState !== "online") return;
-    setSendError(null);
-    void dispatchDraft(failedDraft);
-  };
+    if (!failedDraft || connectionState !== "online") return
+    setSendError(null)
+    void dispatchDraft(failedDraft)
+  }
 
   const handleResume = () => {
     trackEvent(APP_EVENTS.sessionResumed, {
       conversationId,
       taskId: learningData.task.taskId,
-    });
+    })
 
     if (taskState === "blocked") {
       void syncTaskStatus("in_progress").catch((error) => {
@@ -1738,13 +955,13 @@ export function LearnChat({
           error instanceof Error
             ? error.message
             : "恢复任务状态失败，请稍后重试。",
-        );
-      });
+        )
+      })
     }
 
-    textareaRef.current?.focus();
-    scrollToConversationBottom();
-  };
+    textareaRef.current?.focus()
+    scrollToConversationBottom()
+  }
 
   const handleLoadEarlierMessages = async () => {
     if (
@@ -1753,64 +970,72 @@ export function LearnChat({
       historyPagination.nextBeforeSequenceNo === null ||
       isLoadingHistory
     ) {
-      return;
+      return
     }
 
-    setIsLoadingHistory(true);
-    setHistoryError(null);
+    setIsLoadingHistory(true)
+    setHistoryError(null)
 
     try {
       const query = new URLSearchParams({
         conversationId,
         beforeSequenceNo: String(historyPagination.nextBeforeSequenceNo),
         limit: "20",
-      });
+      })
 
       const data = await requestData<LearningMessagesResponseData>(
         `/learning/messages?${query.toString()}`,
-      );
+      )
 
-      const container = scrollContainerRef.current;
+      const container = scrollContainerRef.current
       prependScrollMetricsRef.current = container
         ? {
             previousScrollHeight: container.scrollHeight,
             previousScrollTop: container.scrollTop,
           }
-        : null;
+        : null
 
       setMessages((prev) => {
-        const existingIds = new Set(prev.map((message) => message.id));
+        const existingIds = new Set(prev.map((message) => message.id))
         const incoming = data.messages.filter(
           (message) => !existingIds.has(message.id),
-        );
-        return [...incoming, ...prev];
-      });
-      setHistoryPagination(data.pagination);
+        )
+        return [...incoming, ...prev]
+      })
+      setHistoryPagination(data.pagination)
     } catch (error) {
       setHistoryError(
         error instanceof Error
           ? error.message
           : "加载更早消息失败，请稍后重试。",
-      );
+      )
     } finally {
-      setIsLoadingHistory(false);
+      setIsLoadingHistory(false)
     }
-  };
+  }
 
   const removePreview = () => {
-    if (!previewAttachment) return;
-    URL.revokeObjectURL(previewAttachment.url);
-    setPreviewAttachment(null);
-  };
+    if (!previewAttachment) return
+    URL.revokeObjectURL(previewAttachment.url)
+    setPreviewAttachment(null)
+  }
+
+  const handleSelectAttachment = (file: File) => {
+    if (previewAttachment) {
+      URL.revokeObjectURL(previewAttachment.url)
+    }
+
+    setPreviewAttachment(createAttachmentFromFile(file))
+  }
 
   const confirmRestartConversation = async () => {
     if (connectionState !== "online") {
-      setSendError("当前网络连接不稳定，请恢复后再试。");
-      return;
+      setSendError("当前网络连接不稳定，请恢复后再试。")
+      return
     }
 
-    setRestartSubmitting(true);
-    setSendError(null);
+    setRestartSubmitting(true)
+    setSendError(null)
 
     try {
       const data = await requestData<LearningRestartConversationResponseData>(
@@ -1819,823 +1044,113 @@ export function LearnChat({
           method: "POST",
           body: JSON.stringify({}),
         },
-      );
+      )
 
-      resetStreamState();
-      resetAgent();
-      setRestartDialogOpen(false);
+      resetStreamState()
+      resetAgent()
+      setRestartDialogOpen(false)
 
       if (!data.restarted && data.message) {
-        setSendError(data.message);
+        setSendError(data.message)
       }
 
-      onRequestRefresh();
+      onRequestRefresh()
     } catch (error) {
       setSendError(
-        error instanceof Error
-          ? error.message
-          : "重头开始失败，请稍后重试。",
-      );
+        error instanceof Error ? error.message : "重头开始失败，请稍后重试。",
+      )
     } finally {
-      setRestartSubmitting(false);
+      setRestartSubmitting(false)
     }
-  };
+  }
+
+  const handleContinueChatFromLinkChoice = async () => {
+    setLinkChoiceOpen(false)
+    await dispatchDraft({ text: input.trim(), attachment: null })
+  }
+
+  const handleGeneratePlanFromLinkChoice = () => {
+    setLinkChoiceOpen(false)
+    onOpenMaterialPlanDialog?.(linkChoiceLinks)
+  }
 
   return (
     <div className="contents">
-      <Dialog open={restartDialogOpen} onOpenChange={setRestartDialogOpen}>
-        <DialogContent
-          className={cn(
-            DIALOG_PANEL_CLASS,
-            "max-h-[75vh] overflow-y-auto rounded-2xl p-0 sm:max-w-[480px]",
-          )}
-        >
-          <div
-            className={cn("border-b px-5 pt-5 pb-4", USER_PANEL_DIVIDER_CLASS)}
-          >
-            <DialogHeader className="text-left">
-              <DialogTitle className="text-base">重头开始本关对话？</DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">
-                当前关卡的聊天记录将从学习页隐藏，并在你下次发送消息时开启新的对话。历史仍保留在服务端，不会用于新对话上下文。
-              </DialogDescription>
-            </DialogHeader>
-          </div>
-          <div className="flex flex-col-reverse gap-3 px-5 py-4 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              className={USER_PANEL_OUTLINE_BUTTON_CLASS}
-              disabled={restartSubmitting}
-              onClick={() => setRestartDialogOpen(false)}
-            >
-              取消
-            </Button>
-            <Button
-              type="button"
-              className={USER_BUTTON_PRIMARY_CLASS}
-              disabled={restartSubmitting}
-              onClick={() => {
-                void confirmRestartConversation();
-              }}
-            >
-              {restartSubmitting ? "处理中…" : "确认重头开始"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <LearnChatRestartDialog
+        open={restartDialogOpen}
+        onOpenChange={setRestartDialogOpen}
+        restartSubmitting={restartSubmitting}
+        onConfirm={() => {
+          void confirmRestartConversation()
+        }}
+      />
 
-      <Dialog open={linkChoiceOpen} onOpenChange={setLinkChoiceOpen}>
-        <DialogContent
-          className={cn(
-            DIALOG_PANEL_CLASS,
-            "max-h-[75vh] overflow-y-auto rounded-2xl p-0 sm:max-w-[520px]",
-          )}
-        >
-          <div
-            className={cn("border-b px-5 pt-5 pb-4", USER_PANEL_DIVIDER_CLASS)}
-          >
-            <DialogHeader className="text-left">
-              <DialogTitle className="text-base">检测到教程链接</DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">
-                你想用这些链接生成学习计划，还是继续发给 AI 导师聊一聊？
-              </DialogDescription>
-            </DialogHeader>
-          </div>
-
-          <div className="space-y-4 px-5 py-4">
-            <div
-              className={cn(
-                "rounded-2xl px-3 py-2 text-sm text-muted-foreground",
-                USER_PANEL_SECTION_CLASS,
-              )}
-            >
-              {linkChoiceLinks.map((link) => (
-                <div key={link} className="truncate">
-                  {link}
-                </div>
-              ))}
-            </div>
-            {linkChoiceLinks.length > 1 ? (
-              <p className="rounded-xl border border-gold/25 bg-gold-dim px-3 py-2 text-xs text-gold">
-                当前一次学习计划仅支持 1
-                条教程链接。请删减为单条后再生成计划，或继续把消息发给导师讨论。
-              </p>
-            ) : null}
-
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className={USER_PANEL_OUTLINE_BUTTON_CLASS}
-                disabled={linkChoiceLinks.length !== 1}
-                onClick={() => {
-                  setLinkChoiceOpen(false);
-                  onOpenMaterialPlanDialog?.(linkChoiceLinks);
-                }}
-              >
-                生成学习计划
-              </Button>
-              <Button
-                type="button"
-                onClick={async () => {
-                  setLinkChoiceOpen(false);
-                  await dispatchDraft({ text: input.trim(), attachment: null });
-                }}
-              >
-                继续发给导师
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <LearnChatLinkChoiceDialog
+        open={linkChoiceOpen}
+        onOpenChange={setLinkChoiceOpen}
+        links={linkChoiceLinks}
+        onGeneratePlan={handleGeneratePlanFromLinkChoice}
+        onContinueChat={handleContinueChatFromLinkChoice}
+      />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="shrink-0 border-b border-border/80 bg-surface-1/80 px-4 py-4 backdrop-blur-sm sm:px-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-brand/20 bg-brand-dim/60 px-2 py-0.5 text-[11px] font-semibold text-brand">
-                    当前任务
-                  </span>
-                  {connectionState === "offline" && (
-                    <span className="rounded-full border border-destructive/20 bg-destructive/10 px-2 py-1 text-[11px] font-semibold text-destructive">
-                      连接中断
-                    </span>
-                  )}
-                  {connectionState === "reconnecting" && (
-                    <span className="rounded-full border border-chart-3/20 bg-chart-3/10 px-2 py-1 text-[11px] font-semibold text-chart-3">
-                      正在重连
-                    </span>
-                  )}
-                </div>
-                <h2 className="truncate text-lg font-semibold">
-                  {mission?.title ?? "当前任务信息暂时不可用"}
-                </h2>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {mission
-                  ? `${mission.tool} · ${mission.stageLabel}`
-                  : "稍后重试，或从学习地图重新进入本关。"}
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
-                  本轮学习计划
-                </span>
-                <span className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs font-semibold text-foreground">
-                  {planSummary.selectedToolName}
-                </span>
-                <span className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs text-foreground">
-                  {planSummary.learningLevelLabel}
-                </span>
-                <span className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs text-foreground">
-                  {planSummary.selectionModeLabel}
-                </span>
-                <span className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs text-foreground">
-                  {planSummary.pathName ?? "自主学习"}
-                </span>
-              </div>
-            </div>
+        <LearnChatHeader
+          mission={mission}
+          planSummary={planSummary}
+          connectionState={connectionState}
+          restartSubmitting={restartSubmitting}
+          onRestart={() => setRestartDialogOpen(true)}
+        />
 
-            <div className="shrink-0 sm:pt-2">
-              <button
-                type="button"
-                disabled={connectionState !== "online" || restartSubmitting}
-                onClick={() => setRestartDialogOpen(true)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-surface-3/50 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-none transition-colors",
-                  "hover:border-border hover:bg-surface-3/65 hover:text-foreground",
-                  "dark:border-brand/20 dark:bg-brand/8 dark:text-brand dark:hover:bg-brand/15",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                  "disabled:pointer-events-none disabled:opacity-40",
-                )}
-              >
-                <RefreshCw className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
-                重头开始
-              </button>
-            </div>
-          </div>
-        </div>
+        <LearnChatMessageList
+          scrollContainerRef={scrollContainerRef}
+          bottomRef={bottomRef}
+          conversationId={conversationId}
+          historyPagination={historyPagination}
+          isLoadingHistory={isLoadingHistory}
+          historyError={historyError}
+          onLoadEarlierMessages={handleLoadEarlierMessages}
+          showResumeCard={showResumeCard}
+          resume={resume}
+          onDismissResume={() => setResumeCardDismissed(true)}
+          onResume={handleResume}
+          mission={mission}
+          rightPanel={rightPanel}
+          connectionState={connectionState}
+          messages={messages}
+          isTyping={isTyping}
+          pendingAssistantMessageId={pendingAssistantMessageId}
+          onAssistantAction={handleAssistantAction}
+          onNextStepClick={handleNextStepClick}
+        />
 
-        <div
-          ref={scrollContainerRef}
-          className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 py-5 sm:px-6 sm:py-6"
-        >
-          <div className="mx-auto max-w-3xl space-y-4">
-            {conversationId && historyPagination.hasMore ? (
-              <div className="flex flex-col items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleLoadEarlierMessages}
-                  disabled={isLoadingHistory}
-                  className={cn(
-                    "px-4 py-2 text-xs font-medium",
-                    USER_BUTTON_SECONDARY_CLASS,
-                  )}
-                >
-                  {isLoadingHistory ? "正在加载更早消息..." : "加载更早消息"}
-                </button>
-                {historyError ? (
-                  <p className="text-xs text-destructive">{historyError}</p>
-                ) : null}
-              </div>
-            ) : null}
-
-            {showResumeCard && resume ? (
-              <div className="relative rounded-[1.6rem] border border-brand/20 bg-brand/6 p-4 pr-12">
-                <button
-                  type="button"
-                  aria-label="关闭继续上次学习提醒"
-                  onClick={() => setResumeCardDismissed(true)}
-                  className={cn(
-                    "absolute top-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-brand/15 bg-surface-1/88 text-muted-foreground shadow-[0_12px_28px_-24px_rgba(15,23,42,0.24)] backdrop-blur-sm transition-all duration-200 hover:border-brand/20 hover:bg-surface-1 hover:text-foreground focus-visible:ring-brand/25 dark:border-white/10 dark:bg-white/8 dark:text-white/72 dark:hover:bg-white/12 dark:hover:text-white",
-                  )}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand/80">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      {resume.title}
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-foreground">
-                      {resume.summary}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {resume.lastSeenLabel}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleResume}
-                    className={cn(
-                      "shrink-0 px-4 py-2 text-sm font-medium",
-                      USER_BUTTON_PRIMARY_CLASS,
-                    )}
-                  >
-                    {resume.ctaLabel}
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
-            {mission ? (
-              <div
-                className={cn(
-                  "overflow-hidden rounded-[2.00rem] mb-6",
-                  USER_PANEL_HERO_CARD_CLASS,
-                )}
-              >
-                <div
-                  className={cn(
-                    USER_PANEL_HERO_TOP_SECTION_CLASS,
-                    "px-5 py-5 sm:px-6 sm:py-6",
-                  )}
-                >
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand/80">
-                    <Target className="h-3.5 w-3.5 text-brand" />
-                    现在只做这一步
-                  </div>
-
-                  <div className="mt-6 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-2xl font-bold leading-9 tracking-tight text-foreground sm:text-[2.15rem]">
-                        {rightPanel.currentStep}
-                      </p>
-                      <p className="mt-3 max-w-4xl text-[15px] leading-7 text-muted-foreground">
-                        {rightPanel.whyThisStep}
-                      </p>
-                    </div>
-
-                    <div className="grid shrink-0 gap-3 sm:grid-cols-3 xl:w-[320px]">
-                      <div className="rounded-[1.25rem] border border-border/55 bg-surface-1/92 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                        <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/75">
-                          预计时长
-                        </p>
-                        <p className="mt-2 text-md font-semibold text-foreground">
-                          {mission.estimatedTime}
-                        </p>
-                      </div>
-                      <div className="rounded-[1.25rem] border border-border/55 bg-surface-1/92 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                        <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/75">
-                          当前进度
-                        </p>
-                        <p className="mt-2 text-md font-semibold text-foreground">
-                          {mission.progressLabel}
-                        </p>
-                      </div>
-                      <div className="rounded-[1.25rem] border border-gold/30 bg-[linear-gradient(180deg,rgba(255,247,237,0.96),rgba(255,237,213,0.88))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:border-gold/20 dark:bg-[linear-gradient(180deg,rgba(120,53,15,0.24),rgba(120,53,15,0.16))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                        <p className="text-[11px] uppercase tracking-[0.12em] text-gold/80">
-                          完成奖励
-                        </p>
-                        <p className="mt-2 text-md font-bold text-gold">
-                          {mission.reward}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="px-5 py-5 sm:px-6">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/90">
-                      <Lightbulb className="h-3.5 w-3.5 text-gold" />
-                      AI 教练提醒
-                    </div>
-                    <p className="mt-1 ml-5 text-sm leading-7 text-muted-foreground">
-                      {mission.coachCue}
-                    </p>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-[1.75rem] border border-border bg-surface-2/95 p-4 pb-6">
-                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <AlertCircle className="h-4 w-4 text-destructive" />
-                  未获取到任务信息
-                </div>
-                <p className="text-sm leading-7 text-muted-foreground">
-                  当前任务卡暂时没有拿到可展示的数据。你可以回到学习地图重新进入本关，或者等待联调接口后自动恢复。
-                </p>
-              </div>
-            )}
-
-            {connectionState === "reconnecting" && (
-              <StatePanel
-                status="loading"
-                title="正在恢复连接"
-                description="消息与任务上下文会在几秒内重新同步。"
-                compact
-              />
-            )}
-
-            {messages.length === 0 ? (
-              <StatePanel
-                status="empty"
-                title="还没有对话记录"
-                description="先从当前一步开始，或者直接把你卡住的内容发给我。"
-              />
-            ) : (
-              messages.map((msg) => {
-                const meta = MESSAGE_KIND_META[msg.kind];
-                const isUser = msg.role === "user";
-                const shouldUseStablePendingTone =
-                  msg.role === "ai"
-                    ? shouldStabilizePendingAssistantTone({
-                        messageId: msg.id,
-                        pendingAssistantMessageId,
-                      })
-                    : false;
-                const interactionType =
-                  msg.role === "ai"
-                    ? resolveAssistantInteractionType(msg, {
-                        allowContentHeuristics: !shouldUseStablePendingTone,
-                      })
-                    : null;
-                const assistantVariant =
-                  msg.role === "ai" && interactionType
-                    ? resolveAssistantMessageVariant(msg, interactionType)
-                    : null;
-
-                return (
-                  <div
-                    key={msg.id}
-                    className={cn(
-                      "flex gap-3",
-                      isUser ? "flex-row-reverse" : "flex-row",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold",
-                        meta.avatarClass,
-                      )}
-                    >
-                      {meta.avatarLabel}
-                    </div>
-
-                    <div className="flex max-w-[92%] flex-col gap-2 sm:max-w-[85%]">
-                      <div className="flex items-center gap-2 px-1">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
-                          {msg.title ?? meta.badge}
-                        </span>
-                      </div>
-
-                      <div
-                        className={cn(
-                          "rounded-3xl px-4 py-3.5 text-sm leading-relaxed",
-                          isUser ? "rounded-tr-md" : "rounded-tl-md",
-                          meta.bubbleClass,
-                        )}
-                      >
-                        {msg.content === STREAMING_PLACEHOLDER ? (
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-sm font-medium text-brand">
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                              {STREAMING_LOADING_TITLE}
-                            </div>
-                            <p className="text-sm leading-6 text-muted-foreground">
-                              {STREAMING_LOADING_HINT}
-                            </p>
-                            <div className="space-y-2">
-                              <Skeleton className="h-3 w-28 bg-brand/20" />
-                              <Skeleton className="h-3 w-44 bg-brand/20" />
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-1.5">
-                            {msg.role === "user"
-                              ? renderPlainContent(
-                                  msg.content,
-                                  msg.kind === "user_input"
-                                    ? "inverted"
-                                    : "default",
-                                )
-                              : renderStructuredContent(
-                                  msg.title,
-                                  msg.content,
-                                  msg.kind,
-                                  interactionType ?? "teaching",
-                                  assistantVariant ?? "default",
-                                  msg.taskPatch,
-                                  msg.structuredContent,
-                                )}
-                          </div>
-                        )}
-
-                        {msg.attachment ? (
-                          <div className="mt-3 overflow-hidden rounded-2xl border border-border/60 bg-background/55">
-                            <Image
-                              src={msg.attachment.url}
-                              alt={msg.attachment.name}
-                              width={320}
-                              height={180}
-                              unoptimized
-                              className="h-auto w-full object-cover"
-                            />
-                            <div className="px-3 py-2 text-xs text-muted-foreground">
-                              已附上截图：{msg.attachment.name}
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-
-                      {msg.kind === "task_feedback" && msg.xp ? (
-                        <div
-                          className={cn(
-                            "flex items-center gap-2 rounded-2xl border px-3 py-2",
-                            CHAT_TONE_CLASS.success.badge,
-                          )}
-                        >
-                          <Zap
-                            className={cn(
-                              "h-4 w-4",
-                              CHAT_TONE_CLASS.success.icon,
-                            )}
-                          />
-                          <span
-                            className={cn(
-                              "text-sm font-semibold",
-                              CHAT_TONE_CLASS.success.text,
-                            )}
-                          >
-                            +{msg.xp} XP
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            任务步骤完成
-                          </span>
-                        </div>
-                      ) : null}
-
-                      {msg.role === "ai" &&
-                      msg.structuredContent?.actions?.length ? (
-                        <div className="flex flex-wrap gap-2">
-                          {msg.structuredContent.actions.map(
-                            (action, actionIndex) => (
-                              <button
-                                key={`message-action-${msg.id}-${actionIndex}`}
-                                type="button"
-                                disabled={isTyping}
-                                onClick={() => handleAssistantAction(msg, action)}
-                                className={cn(
-                                  "px-3 py-2 text-sm font-medium",
-                                  MESSAGE_ACTION_TONE_CLASS[action.tone],
-                                )}
-                              >
-                                {action.label}
-                              </button>
-                            ),
-                          )}
-                        </div>
-                      ) : null}
-
-                      {shouldRenderMessageTaskPatch(msg.taskPatch, {
-                        messageId: msg.id,
-                        pendingAssistantMessageId,
-                      })
-                        ? (() => {
-                            const taskPatch = msg.taskPatch;
-                            if (!taskPatch) {
-                              return null;
-                            }
-
-                            const taskPatchMeta =
-                              getTaskPatchDisplayMeta(taskPatch);
-
-                            return (
-                              <div
-                                className={cn(
-                                  "rounded-2xl border px-3.5 py-3",
-                                  taskPatchMeta.panelClass,
-                                )}
-                              >
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span
-                                    className={cn(
-                                      "rounded-full border px-2.5 py-1 text-[11px] font-semibold",
-                                      taskPatchMeta.badgeClass,
-                                    )}
-                                  >
-                                    {taskPatchMeta.badge}
-                                  </span>
-                                  <span className="text-[12px] font-medium text-muted-foreground">
-                                    当前任务状态已同步
-                                  </span>
-                                </div>
-                                <div className="mt-2 flex items-start gap-2">
-                                  <Lightbulb
-                                    className={cn(
-                                      "h-3.5 w-3.5 shrink-0",
-                                      taskPatchMeta.iconClass,
-                                    )}
-                                  />
-                                  <div>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
-                                      下一步建议
-                                    </p>
-                                    <p className="mt-1 text-sm leading-6 text-foreground/90">
-                                      {taskPatch.suggestedNextAction}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })()
-                        : null}
-
-                      {msg.nextStep ? (
-                        <button
-                          type="button"
-                          onClick={() => handleNextStepClick(msg)}
-                          disabled={isTyping}
-                          className={cn(
-                            "flex items-center gap-2 self-start px-3 py-2 text-sm font-medium",
-                            USER_BUTTON_PRIMARY_CLASS,
-                            isTyping && "pointer-events-none opacity-60",
-                          )}
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          {msg.nextStep}
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-
-            {isTyping && pendingAssistantMessageId === null && (
-              <div className="flex gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand text-xs font-semibold text-brand-foreground">
-                  AI
-                </div>
-                <div className="min-w-[220px] rounded-3xl rounded-tl-md border border-brand/15 bg-brand-dim px-4 py-3.5">
-                  <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand/80">
-                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                    AI 正在整理下一步
-                  </div>
-                  <div className="space-y-2">
-                    <Skeleton className="h-3 w-28 bg-brand/20" />
-                    <Skeleton className="h-3 w-40 bg-brand/20" />
-                    <Skeleton className="h-3 w-32 bg-brand/20" />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div ref={bottomRef} />
-          </div>
-        </div>
-
-        <div className="shrink-0 border-t border-border/50 bg-surface-1 px-4 pb-4 pt-3 sm:px-6">
-          <div className="mx-auto max-w-3xl">
-            {sendError ? (
-              <StatePanel
-                status="error"
-                title="消息发送失败"
-                description={sendError}
-                actionLabel="重试发送"
-                onAction={
-                  connectionState === "online" ? handleRetry : undefined
-                }
-                compact
-                className="mb-3"
-                extra={
-                  connectionState !== "online" ? (
-                    <div className="flex items-center gap-2 text-xs text-destructive">
-                      <WifiOff className="h-3.5 w-3.5" />
-                      当前仍处于离线状态
-                    </div>
-                  ) : null
-                }
-              />
-            ) : null}
-
-            <div className="mb-3">
-              <div className="flex flex-wrap gap-2">
-                {learningData.quickActions.map((action) => {
-                  const isCompletionAction = action.label === "我完成了";
-                  const disabled =
-                    isTyping ||
-                    connectionState !== "online" ||
-                    (isCompletionAction && !canTriggerCompleteQuickAction);
-
-                  return (
-                    <button
-                      key={action.label}
-                      type="button"
-                      onClick={() => handleQuickAction(action)}
-                      disabled={disabled}
-                      title={
-                        isCompletionAction && !canTriggerCompleteQuickAction
-                          ? "先提交一次结果、代码或问题，再标记当前关卡完成。"
-                          : undefined
-                      }
-                      className={cn(
-                        "px-3.5 py-1 text-[12px] font-medium",
-                        QUICK_ACTION_TONE_CLASS[action.tone],
-                      )}
-                    >
-                      {action.label}
-                    </button>
-                  );
-                })}
-                {learningData.planSummary.selectionMode === "self_directed" &&
-                !learningData.planSummary.hasMaterialPlan ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onOpenMaterialPlanDialog?.([]);
-                    }}
-                    disabled={isTyping || connectionState !== "online"}
-                    className={cn(
-                      "px-3.5 py-1 text-[12px] font-medium",
-                      USER_BUTTON_PRIMARY_CLASS,
-                    )}
-                  >
-                    生成学习计划
-                  </button>
-                ) : null}
-              </div>
-            </div>
-
-            {showSupportOptions ? (
-              <div className="mb-3 rounded-3xl border border-gold/20 bg-gold-dim p-4">
-                <div className="mb-3 flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <Lightbulb className="h-4 w-4 text-gold" />
-                    先选一种更轻的求助方式
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowSupportOptions(false)}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gold/20 bg-background/55 text-muted-foreground transition-colors hover:border-gold/35 hover:text-foreground"
-                    aria-label="关闭求助方式选择"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {supportOptions.map((option) => (
-                    <button
-                      key={option.mode}
-                      type="button"
-                      onClick={() => handleSupportOption(option)}
-                      disabled={isTyping || connectionState !== "online"}
-                      className="rounded-2xl border border-gold/20 bg-background/70 px-3 py-3 text-left transition-colors hover:bg-background disabled:opacity-50"
-                    >
-                      <span className="block text-sm font-medium text-foreground">
-                        {option.label}
-                      </span>
-                      <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                        {option.description}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {previewAttachment ? (
-              <div className="relative mb-3 inline-block overflow-hidden rounded-2xl border border-border bg-surface-2">
-                <Image
-                  src={previewAttachment.url}
-                  alt={previewAttachment.name}
-                  width={200}
-                  height={120}
-                  unoptimized
-                  className="h-28 w-auto object-cover"
-                />
-                <div className="flex items-center justify-between gap-3 px-3 py-2 text-xs text-muted-foreground">
-                  <span className="truncate">{previewAttachment.name}</span>
-                  <button
-                    type="button"
-                    onClick={removePreview}
-                    className="flex h-5 w-5 items-center justify-center rounded-full bg-surface-4 text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
-            <div className="rounded-4xl border border-border bg-surface-2 px-2.5 py-2 transition-colors focus-within:border-brand/60">
-              <div
-                className={cn(
-                  "flex",
-                  input.split("\n").length > 1 ? "items-end" : "items-center",
-                )}
-              >
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground/60 transition-colors hover:bg-surface-3 hover:text-muted-foreground"
-                  title="发送截图"
-                >
-                  <ImagePlus className="h-4 w-4" />
-                </button>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (!file) return;
-
-                    if (previewAttachment) {
-                      URL.revokeObjectURL(previewAttachment.url);
-                    }
-
-                    setPreviewAttachment(createAttachmentFromFile(file));
-                    event.target.value = "";
-                  }}
-                />
-
-                <textarea
-                  ref={textareaRef}
-                  rows={1}
-                  placeholder="把教程链接、代码片段或你卡住的问题发给我"
-                  aria-label="消息输入框"
-                  aria-describedby="input-hint"
-                  className="scrollbar-none flex-1 resize-none bg-transparent py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground/50"
-                  style={{ maxHeight: `${TEXTAREA_MAX_HEIGHT}px`, overflowY: "auto" }}
-                  value={input}
-                  onChange={(event) => setInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && !event.shiftKey) {
-                      event.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                />
-
-                <button
-                  type="button"
-                  onClick={handleSend}
-                  disabled={(!input.trim() && !previewAttachment) || isTyping}
-                  className={cn(
-                    "ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl",
-                    (input.trim() || previewAttachment) && !isTyping
-                      ? USER_ICON_BUTTON_CLASS
-                      : "cursor-not-allowed border-transparent bg-[oklch(0.72_0.01_240)] text-white/70 shadow-none dark:bg-[oklch(0.30_0.01_240)]",
-                  )}
-                >
-                  {isTyping ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <p id="input-hint" className="mt-2 text-center text-xs text-muted-foreground/55">
-              {inputHint}
-            </p>
-          </div>
-        </div>
+        <LearnChatComposer
+          sendError={sendError}
+          onRetry={handleRetry}
+          connectionState={connectionState}
+          quickActions={learningData.quickActions}
+          canTriggerCompleteQuickAction={canTriggerCompleteQuickAction}
+          onQuickAction={handleQuickAction}
+          selectionMode={learningData.planSummary.selectionMode}
+          hasMaterialPlan={learningData.planSummary.hasMaterialPlan}
+          onOpenMaterialPlanDialog={onOpenMaterialPlanDialog}
+          isTyping={isTyping}
+          showSupportOptions={showSupportOptions}
+          supportOptions={supportOptions}
+          onCloseSupportOptions={() => setShowSupportOptions(false)}
+          onSupportOption={handleSupportOption}
+          previewAttachment={previewAttachment}
+          onRemovePreview={removePreview}
+          onSelectAttachment={handleSelectAttachment}
+          fileInputRef={fileInputRef}
+          textareaRef={textareaRef}
+          input={input}
+          onInputChange={setInput}
+          onSend={() => {
+            void handleSend()
+          }}
+        />
       </div>
     </div>
-  );
+  )
 }

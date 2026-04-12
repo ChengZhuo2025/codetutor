@@ -1,0 +1,304 @@
+"use client"
+
+import Image from "next/image"
+import type { RefObject } from "react"
+import { ImagePlus, Lightbulb, RefreshCw, Send, WifiOff, X } from "lucide-react"
+import { StatePanel } from "@/components/ui/state-panel"
+import {
+  USER_BUTTON_PRIMARY_CLASS,
+  USER_BUTTON_SECONDARY_CLASS,
+  USER_ICON_BUTTON_CLASS,
+} from "@/components/ui/surface-styles"
+import type { ConnectionState } from "@/features/learning/components/learn-chat-types"
+import type {
+  LearningSupportOption,
+  MessageAttachment,
+  QuickAction,
+} from "@/features/learning/types"
+import { cn } from "@/lib/utils"
+
+export const TEXTAREA_MAX_HEIGHT = 24 * 4 + 12
+
+const QUICK_ACTION_TONE_CLASS: Record<QuickAction["tone"], string> = {
+  primary: USER_BUTTON_PRIMARY_CLASS,
+  warning: USER_BUTTON_SECONDARY_CLASS,
+  secondary: USER_BUTTON_SECONDARY_CLASS,
+}
+
+function getInputHint(
+  connectionState: ConnectionState,
+  isTyping: boolean,
+  previewAttachment: MessageAttachment | null,
+) {
+  if (connectionState === "offline") {
+    return "你现在处于离线状态，消息会等待网络恢复后重试。"
+  }
+
+  if (connectionState === "reconnecting") {
+    return "网络恢复中，稍后即可继续发送消息。"
+  }
+
+  if (isTyping) {
+    return "AI 正在分析你的输入并生成回复..."
+  }
+
+  if (previewAttachment) {
+    return "截图已附上，适合直接让 AI 帮你定位具体报错。"
+  }
+
+  return "把教程、代码、链接或你卡住的地方直接发给我。Enter 发送，Shift+Enter 换行。"
+}
+
+type LearnChatComposerProps = {
+  sendError: string | null
+  onRetry: () => void
+  connectionState: ConnectionState
+  quickActions: QuickAction[]
+  canTriggerCompleteQuickAction: boolean
+  onQuickAction: (action: QuickAction) => void
+  selectionMode: "self_directed" | "preset_training"
+  hasMaterialPlan: boolean | undefined
+  onOpenMaterialPlanDialog?: (links?: string[]) => void
+  isTyping: boolean
+  showSupportOptions: boolean
+  supportOptions: LearningSupportOption[]
+  onCloseSupportOptions: () => void
+  onSupportOption: (option: LearningSupportOption) => void
+  previewAttachment: MessageAttachment | null
+  onRemovePreview: () => void
+  onSelectAttachment: (file: File) => void
+  fileInputRef: RefObject<HTMLInputElement | null>
+  textareaRef: RefObject<HTMLTextAreaElement | null>
+  input: string
+  onInputChange: (value: string) => void
+  onSend: () => void
+}
+
+export function LearnChatComposer({
+  sendError,
+  onRetry,
+  connectionState,
+  quickActions,
+  canTriggerCompleteQuickAction,
+  onQuickAction,
+  selectionMode,
+  hasMaterialPlan,
+  onOpenMaterialPlanDialog,
+  isTyping,
+  showSupportOptions,
+  supportOptions,
+  onCloseSupportOptions,
+  onSupportOption,
+  previewAttachment,
+  onRemovePreview,
+  onSelectAttachment,
+  fileInputRef,
+  textareaRef,
+  input,
+  onInputChange,
+  onSend,
+}: LearnChatComposerProps) {
+  const inputHint = getInputHint(connectionState, isTyping, previewAttachment)
+
+  return (
+    <div className="shrink-0 border-t border-border/50 bg-surface-1 px-4 pb-4 pt-3 sm:px-6">
+      <div className="mx-auto max-w-3xl">
+        {sendError ? (
+          <StatePanel
+            status="error"
+            title="消息发送失败"
+            description={sendError}
+            actionLabel="重试发送"
+            onAction={connectionState === "online" ? onRetry : undefined}
+            compact
+            className="mb-3"
+            extra={
+              connectionState !== "online" ? (
+                <div className="flex items-center gap-2 text-xs text-destructive">
+                  <WifiOff className="h-3.5 w-3.5" />
+                  当前仍处于离线状态
+                </div>
+              ) : null
+            }
+          />
+        ) : null}
+
+        <div className="mb-3">
+          <div className="flex flex-wrap gap-2">
+            {quickActions.map((action) => {
+              const isCompletionAction = action.label === "我完成了"
+              const disabled =
+                isTyping ||
+                connectionState !== "online" ||
+                (isCompletionAction && !canTriggerCompleteQuickAction)
+
+              return (
+                <button
+                  key={action.label}
+                  type="button"
+                  onClick={() => onQuickAction(action)}
+                  disabled={disabled}
+                  title={
+                    isCompletionAction && !canTriggerCompleteQuickAction
+                      ? "先提交一次结果、代码或问题，再标记当前关卡完成。"
+                      : undefined
+                  }
+                  className={cn(
+                    "px-3.5 py-1 text-[12px] font-medium",
+                    QUICK_ACTION_TONE_CLASS[action.tone],
+                  )}
+                >
+                  {action.label}
+                </button>
+              )
+            })}
+            {selectionMode === "self_directed" && !hasMaterialPlan ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenMaterialPlanDialog?.([])
+                }}
+                disabled={isTyping || connectionState !== "online"}
+                className={cn("px-3.5 py-1 text-[12px] font-medium", USER_BUTTON_PRIMARY_CLASS)}
+              >
+                生成学习计划
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        {showSupportOptions ? (
+          <div className="mb-3 rounded-3xl border border-gold/20 bg-gold-dim p-4">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Lightbulb className="h-4 w-4 text-gold" />
+                先选一种更轻的求助方式
+              </div>
+              <button
+                type="button"
+                onClick={onCloseSupportOptions}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gold/20 bg-background/55 text-muted-foreground transition-colors hover:border-gold/35 hover:text-foreground"
+                aria-label="关闭求助方式选择"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {supportOptions.map((option) => (
+                <button
+                  key={option.mode}
+                  type="button"
+                  onClick={() => onSupportOption(option)}
+                  disabled={isTyping || connectionState !== "online"}
+                  className="rounded-2xl border border-gold/20 bg-background/70 px-3 py-3 text-left transition-colors hover:bg-background disabled:opacity-50"
+                >
+                  <span className="block text-sm font-medium text-foreground">
+                    {option.label}
+                  </span>
+                  <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                    {option.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {previewAttachment ? (
+          <div className="relative mb-3 inline-block overflow-hidden rounded-2xl border border-border bg-surface-2">
+            <Image
+              src={previewAttachment.url}
+              alt={previewAttachment.name}
+              width={200}
+              height={120}
+              unoptimized
+              className="h-28 w-auto object-cover"
+            />
+            <div className="flex items-center justify-between gap-3 px-3 py-2 text-xs text-muted-foreground">
+              <span className="truncate">{previewAttachment.name}</span>
+              <button
+                type="button"
+                onClick={onRemovePreview}
+                className="flex h-5 w-5 items-center justify-center rounded-full bg-surface-4 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="rounded-4xl border border-border bg-surface-2 px-2.5 py-2 transition-colors focus-within:border-brand/60">
+          <div
+            className={cn(
+              "flex",
+              input.split("\n").length > 1 ? "items-end" : "items-center",
+            )}
+          >
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground/60 transition-colors hover:bg-surface-3 hover:text-muted-foreground"
+              title="发送截图"
+            >
+              <ImagePlus className="h-4 w-4" />
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (!file) return
+
+                onSelectAttachment(file)
+                event.target.value = ""
+              }}
+            />
+
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              placeholder="把教程链接、代码片段或你卡住的问题发给我"
+              aria-label="消息输入框"
+              aria-describedby="input-hint"
+              className="scrollbar-none flex-1 resize-none bg-transparent py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground/50"
+              style={{ maxHeight: `${TEXTAREA_MAX_HEIGHT}px`, overflowY: "auto" }}
+              value={input}
+              onChange={(event) => onInputChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault()
+                  onSend()
+                }
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={onSend}
+              disabled={(!input.trim() && !previewAttachment) || isTyping}
+              className={cn(
+                "ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl",
+                (input.trim() || previewAttachment) && !isTyping
+                  ? USER_ICON_BUTTON_CLASS
+                  : "cursor-not-allowed border-transparent bg-[oklch(0.72_0.01_240)] text-white/70 shadow-none dark:bg-[oklch(0.30_0.01_240)]",
+              )}
+            >
+              {isTyping ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        <p id="input-hint" className="mt-2 text-center text-xs text-muted-foreground/55">
+          {inputHint}
+        </p>
+      </div>
+    </div>
+  )
+}

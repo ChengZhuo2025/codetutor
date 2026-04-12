@@ -25,8 +25,8 @@ const settingsPopoverSource = readFileSync(
   new URL("../components/layout/settings-popover.tsx", import.meta.url),
   "utf8",
 )
-const learnChatSource = readFileSync(
-  new URL("../features/learning/components/chat.tsx", import.meta.url),
+const learnChatHeaderSource = readFileSync(
+  new URL("../features/learning/components/learn-chat-header.tsx", import.meta.url),
   "utf8",
 )
 const historyPageSource = readFileSync(
@@ -150,7 +150,7 @@ assert.match(
   "SettingsPopover should raise its floating panel above the center workspace content",
 )
 assert.match(
-  learnChatSource,
+  learnChatHeaderSource,
   /className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"/,
   "/learn header should lay out title and actions without reserving space for the aside toggle",
 )

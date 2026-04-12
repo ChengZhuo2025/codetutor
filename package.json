@@ -23,6 +23,7 @@
     "test:learning-message-logic": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-logic.ts",
     "test:learning-message-output-format": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-output-format.ts",
     "test:learning-message-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-route.ts",
+    "test:learn-chat-composition": "node scripts/check-learn-chat-composition.mjs",
     "test:learning-plan-from-material": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-plan-from-material-logic.ts scripts/check-learning-plan-from-material-route.ts",
     "test:api-request-validation": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-api-request-validation.ts",
     "test:request-validated-routes": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-request-validated-routes.ts",
