@@ -40,7 +40,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
           <PageSection
             eyebrow="你现在学到哪了"
             title="本关任务进行到哪一步"
-            description="这里按顺序列出本关内的各个步骤：已完成的会显示勾选；当前正在做的会标注「进行中」；尚未解锁的会在你完成前置步骤后依次开放。需要对照整条学习路径时，可点击「查看全部」。"
+            description="本关步骤依序展示：勾选为已完成，「进行中」为当前；全路径点「查看全部」。"
           >
             <div className="mb-3 flex items-center justify-end">
               <a
@@ -131,7 +131,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
           <PageSection
             eyebrow="本关要掌握"
             title="这一步真正要学会什么"
-            description="进入实操前先对齐这关真正要掌握的判断标准。"
+            description="先看知识标签定方向，再按编号要点逐项对齐掌握标准。"
           >
             <div className="flex flex-wrap gap-2">
               {learningKnowledgeTags.map((tag) => (
@@ -194,7 +194,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
               <div className="min-w-0 flex-1">
                 <div className="mt-1 flex items-center gap-1 text-xs uppercase tracking-[0.12em] text-gold">
                   <Lightbulb className="h-3 w-3" />
-                  下一关预告
+                  {mission.nextPreviewIsFinal ? "学习计划收尾" : "下一关预告"}
                 </div>
                 <p className="mt-1 text-sm font-semibold text-foreground">
                   {mission.nextUnlockTitle}

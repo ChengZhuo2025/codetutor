@@ -784,7 +784,8 @@ SSE 事件补充：
       "progressPercent": 36,
       "coachCue": "先把任务做小，只验证 Agent 是否比 Ask 更适合生成完整文件。",
       "nextUnlockTitle": "AI 调试助手",
-      "nextUnlockSummary": "学会带着错误上下文让 Cursor 帮你定位并修复 bug。"
+      "nextUnlockSummary": "学会带着错误上下文让 Cursor 帮你定位并修复 bug。",
+      "nextPreviewIsFinal": false
     },
     "messages": [
       {

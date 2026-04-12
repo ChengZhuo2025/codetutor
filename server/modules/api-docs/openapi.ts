@@ -1126,6 +1126,7 @@ const successExamples = {
       coachCue: "先选中一小段代码，再描述你想要的改动。",
       nextUnlockTitle: "第一次智能重构",
       nextUnlockSummary: "下一步会让 AI 帮你整理已有代码。",
+      nextPreviewIsFinal: false,
     },
     resume: {
       title: "回到上次练习",

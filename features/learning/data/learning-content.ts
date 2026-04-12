@@ -69,6 +69,7 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
         coachCue: "先把任务做小，只验证 Agent 是否比 Ask 更适合生成完整文件。",
         nextUnlockTitle: nextStage.title,
         nextUnlockSummary: nextStage.summary,
+        nextPreviewIsFinal: false,
       },
       messages: [
         {

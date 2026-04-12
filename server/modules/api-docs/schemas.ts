@@ -699,6 +699,7 @@ export const learningMissionSchema = z
     coachCue: z.string(),
     nextUnlockTitle: z.string(),
     nextUnlockSummary: z.string(),
+    nextPreviewIsFinal: z.boolean(),
   })
   .openapi("LearningMission")
 

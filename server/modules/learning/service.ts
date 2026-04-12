@@ -192,6 +192,29 @@ function mapTaskState(status: TaskRow["status"]): LearningTaskState {
   return "pending"
 }
 
+/** 下一关卡片/侧栏说明：与当前关 whyThisStep 一致，优先 focus，再 summary / goal 等。 */
+function resolveNextStepBodyText(step: StepRow | null): string | null {
+  if (!step) {
+    return null
+  }
+
+  const candidates = [step.focus, step.summary, step.goal, step.completion_criteria]
+  for (const value of candidates) {
+    if (typeof value === "string") {
+      const trimmed = value.trim()
+      if (trimmed.length > 0) {
+        return trimmed
+      }
+    }
+  }
+
+  return null
+}
+
+const FINAL_PATH_STEP_TITLE = "当前已是最后一关"
+const FINAL_PATH_STEP_PREVIEW =
+  "你正处在本路径的最后一关；完成本关后，该学习计划在这条路径上的练习即全部结束。之后可到学习地图查看整体进度，或选择新的学习内容。"
+
 async function loadLearningState(userId: string) {
   await reconcileInterruptedLearningPaths(userId)
 
@@ -597,7 +620,17 @@ export async function getLearningCurrentSessionData(
     return null
   }
 
-  const nextStep = orderedSteps.find((step) => step.step_no === currentStep.step_no + 1) ?? null
+  const currentStepIndex = orderedSteps.findIndex((step) => step.id === currentStep.id)
+  const nextStep =
+    currentStepIndex >= 0 && currentStepIndex < orderedSteps.length - 1
+      ? orderedSteps[currentStepIndex + 1]!
+      : null
+  const nextStepBodyText = resolveNextStepBodyText(nextStep)
+  const isFinalPathStep = nextStep === null
+  const nextUnlockSummaryOrPreview =
+    nextStep === null
+      ? FINAL_PATH_STEP_PREVIEW
+      : nextStepBodyText ?? `完成后进入「${nextStep.title}」，详情可在学习地图查看。`
   const knowledgePoints = toStringArray(currentStep.knowledge_points)
   let masteryPoints = toStringArray(currentStep.key_points)
   let pitfalls = toPitfalls(currentStep.pitfalls)
@@ -706,9 +739,9 @@ export async function getLearningCurrentSessionData(
       progressPercent: currentProgressPercent,
       coachCue:
         currentStep.focus ?? "先把任务做小，只验证当前这一关的核心能力，不要一次扩展太多。",
-      nextUnlockTitle: nextStep?.title ?? "完成当前路径",
-      nextUnlockSummary:
-        nextStep?.summary ?? "完成这一关后，你可以回到地图查看新的路径状态。",
+      nextPreviewIsFinal: isFinalPathStep,
+      nextUnlockTitle: isFinalPathStep ? FINAL_PATH_STEP_TITLE : nextStep.title,
+      nextUnlockSummary: nextUnlockSummaryOrPreview,
     },
     messages: [...baseMessages, ...persistedMessages],
     quickActions: [
@@ -767,10 +800,14 @@ export async function getLearningCurrentSessionData(
           "",
           "**你已经确认了当前关卡的关键能力：**",
           `- ${currentStep.title}`,
-          nextStep ? `- 接下来可以进入 ${nextStep.title}` : "- 当前路径已接近完成",
+          nextStep
+            ? `- 接下来可以进入 ${nextStep.title}`
+            : "- 当前已是本路径最后一关，完成后该路径练习将全部结束",
         ].join("\n"),
         xp: currentStep.reward_score,
-        nextStep: nextStep ? `进入下一关：${nextStep.title}` : "回到地图查看路径状态",
+        nextStep: nextStep
+          ? `进入下一关：${nextStep.title}`
+          : "完成本关后本路径练习全部结束，可前往学习地图查看进度",
       },
       {
         trigger: "帮我拆细一点",
@@ -814,8 +851,7 @@ export async function getLearningCurrentSessionData(
       knowledgePoints,
       masteryPoints: masteryPoints.length > 0 ? masteryPoints : knowledgePoints,
       cautions: pitfalls,
-      nextStepPreview:
-        nextStep?.summary ?? "完成当前关卡后，可以继续回到地图查看下一步。",
+      nextStepPreview: nextUnlockSummaryOrPreview,
     },
     recentPracticeRounds: orderedSteps.slice(0, 3).map((step) => {
       const task = taskByStepId.get(step.id)
