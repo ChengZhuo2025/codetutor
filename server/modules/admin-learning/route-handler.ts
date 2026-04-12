@@ -1,6 +1,7 @@
 import { jsonError, jsonSuccess } from "@/server/lib/route-response"
 import {
   parseAdminLearningPathListQuery,
+  parseAdminLearningSessionListQuery,
   parseAdminLearningPathStatusBody,
   parseRequiredRouteId,
 } from "@/server/lib/request-validation"
@@ -201,6 +202,111 @@ export function createAdminLearningPathStatusPostHandler(dependencies: {
       }
     } catch {
       return jsonError("INTERNAL_ERROR", "学习路径状态更新失败", 500)
+    }
+  }
+}
+
+export function createAdminLearningPathMaterialPlanDetailGetHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  getAdminLearningPathMaterialPlanDetail: (pathId: string) => Promise<unknown | null>
+}) {
+  return async function GET(request: unknown, routeContext: { params: Promise<{ pathId: string }> }) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+
+      const { pathId: rawId } = await routeContext.params
+      const routeId = parseRequiredRouteId(rawId, "学习路径 ID 不合法。")
+
+      if (!routeId.ok || !isUuid(routeId.data)) {
+        return jsonError("BAD_REQUEST", "学习路径 ID 不合法。", 400)
+      }
+
+      const data = await dependencies.getAdminLearningPathMaterialPlanDetail(routeId.data)
+
+      if (!data) {
+        return jsonError("NOT_FOUND", "来源草稿不存在。", 404)
+      }
+
+      return jsonSuccess(data, "来源草稿详情读取成功")
+    } catch {
+      return jsonError("INTERNAL_ERROR", "来源草稿详情读取失败", 500)
+    }
+  }
+}
+
+export function createAdminLearningPathSessionListGetHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  getAdminLearningPathSessionList: (pathId: string, filters: { page: number; limit: number }) => Promise<unknown | null>
+}) {
+  return async function GET(request: unknown, routeContext: { params: Promise<{ pathId: string }> }) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+
+      const { pathId: rawId } = await routeContext.params
+      const routeId = parseRequiredRouteId(rawId, "学习路径 ID 不合法。")
+
+      if (!routeId.ok || !isUuid(routeId.data)) {
+        return jsonError("BAD_REQUEST", "学习路径 ID 不合法。", 400)
+      }
+
+      const url = new URL((request as Request).url)
+      const parsed = parseAdminLearningSessionListQuery(url.searchParams)
+      if (!parsed.ok) {
+        return jsonError(parsed.code, parsed.message, 400)
+      }
+
+      const data = await dependencies.getAdminLearningPathSessionList(routeId.data, parsed.data)
+      if (!data) {
+        return jsonError("NOT_FOUND", "学习路径不存在。", 404)
+      }
+
+      return jsonSuccess(data, "学习路径会话列表读取成功")
+    } catch {
+      return jsonError("INTERNAL_ERROR", "学习路径会话列表读取失败", 500)
+    }
+  }
+}
+
+export function createAdminLearningPathSessionDetailGetHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  getAdminLearningPathSessionDetail: (pathId: string, sessionId: string) => Promise<unknown | null>
+}) {
+  return async function GET(request: unknown, routeContext: { params: Promise<{ pathId: string; sessionId: string }> }) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+
+      const { pathId: rawPathId, sessionId: rawSessionId } = await routeContext.params
+      const pathId = parseRequiredRouteId(rawPathId, "学习路径 ID 不合法。")
+      const sessionId = parseRequiredRouteId(rawSessionId, "会话 ID 不合法。")
+
+      if (!pathId.ok || !isUuid(pathId.data)) {
+        return jsonError("BAD_REQUEST", "学习路径 ID 不合法。", 400)
+      }
+
+      if (!sessionId.ok || !isUuid(sessionId.data)) {
+        return jsonError("BAD_REQUEST", "会话 ID 不合法。", 400)
+      }
+
+      const data = await dependencies.getAdminLearningPathSessionDetail(pathId.data, sessionId.data)
+      if (!data) {
+        return jsonError("NOT_FOUND", "会话不存在。", 404)
+      }
+
+      return jsonSuccess(data, "学习路径会话详情读取成功")
+    } catch {
+      return jsonError("INTERNAL_ERROR", "学习路径会话详情读取失败", 500)
     }
   }
 }

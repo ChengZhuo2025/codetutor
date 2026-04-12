@@ -1051,6 +1051,10 @@ export function parseAdminLearningPathListQuery(searchParams: URLSearchParams) {
   })
 }
 
+export function parseAdminLearningSessionListQuery(searchParams: URLSearchParams) {
+  return parseSharedListPagination(searchParams)
+}
+
 export function parseAdminAIAgentListQuery(
   searchParams: URLSearchParams,
   options?: {

@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 
 import {
   parseAdminLearningPathListQuery,
+  parseAdminLearningSessionListQuery,
   parseAdminLearningPathStatusBody,
 } from "../server/lib/request-validation.ts"
 
@@ -65,5 +66,34 @@ test("parseAdminLearningPathStatusBody rejects invalid action", () => {
   const r = parseAdminLearningPathStatusBody({
     action: "abandon",
   })
+  assert.equal(r.ok, false)
+})
+
+test("parseAdminLearningSessionListQuery applies defaults", () => {
+  const r = parseAdminLearningSessionListQuery(new URLSearchParams())
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.equal(r.data.page, 1)
+    assert.equal(r.data.limit, 20)
+  }
+})
+
+test("parseAdminLearningSessionListQuery accepts pagination", () => {
+  const r = parseAdminLearningSessionListQuery(new URLSearchParams([
+    ["page", "3"],
+    ["limit", "50"],
+  ]))
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.deepEqual(r.data, {
+      page: 3,
+      limit: 50,
+    })
+  }
+})
+
+test("parseAdminLearningSessionListQuery rejects invalid limit", () => {
+  const r = parseAdminLearningSessionListQuery(new URLSearchParams([["limit", "0"]]))
   assert.equal(r.ok, false)
 })

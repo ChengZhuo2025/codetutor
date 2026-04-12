@@ -431,7 +431,7 @@ export function SystemSettings() {
               </div>
             </div>
             <Button type="button" onClick={() => setProfileDialogOpen(true)}>
-              <UserPen className="mr-2 h-4 w-4" />
+              <UserPen className="h-4 w-4" />
               资料编辑
             </Button>
           </div>
@@ -469,7 +469,7 @@ export function SystemSettings() {
             </p>
           </div>
           <Button type="button" variant="outline" onClick={() => setPasswordDialogOpen(true)}>
-            <KeyRound className="mr-2 h-4 w-4" />
+            <KeyRound className="h-4 w-4" />
             修改密码
           </Button>
         </div>

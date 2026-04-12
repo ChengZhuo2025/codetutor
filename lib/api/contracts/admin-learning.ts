@@ -103,7 +103,47 @@ export type AdminLearningPathRecentSession = {
   startedAt: string
   lastMessageAt: string | null
   messageCount: number
+  latestUserSummary: string | null
   latestAssistantSummary: string | null
+  tokenUsage: {
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+  } | null
+}
+
+export type AdminLearningPathSessionListResponseData = {
+  items: AdminLearningPathRecentSession[]
+  total: number
+  page: number
+  limit: number
+}
+
+export type AdminLearningPathSessionDetailResponseData = {
+  session: {
+    sessionId: string
+    status: string
+    startedAt: string
+    lastMessageAt: string | null
+    messageCount: number
+    tokenUsage: {
+      promptTokens: number
+      completionTokens: number
+      totalTokens: number
+    } | null
+  }
+  messages: Array<{
+    messageId: string
+    role: "user" | "assistant"
+    sequenceNo: number
+    contentText: string | null
+    createdAt: string
+    tokenUsage: {
+      promptTokens: number
+      completionTokens: number
+      totalTokens: number
+    } | null
+  }>
 }
 
 export type AdminLearningMaterialPlanQualityReport = {

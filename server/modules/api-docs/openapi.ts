@@ -58,11 +58,16 @@ import {
   adminFeedbackUserSnapshotResponseDataSchema,
   adminReplyFeedbackRequestSchema,
   adminFeedbackDeleteOkDataSchema,
+  adminLearningMaterialPlanSnapshotSchema,
   adminUpdateFeedbackStatusRequestSchema,
   adminLearningPathDetailResponseDataSchema,
   adminLearningPathIdParamsSchema,
   adminLearningPathListQuerySchema,
   adminLearningPathListResponseDataSchema,
+  adminLearningPathSessionDetailResponseDataSchema,
+  adminLearningPathSessionIdParamsSchema,
+  adminLearningPathSessionListResponseDataSchema,
+  adminLearningSessionListQuerySchema,
   adminUpdateLearningPathStatusRequestSchema,
   adminUpdateLearningPathStatusResponseDataSchema,
   adminUpdateAdminAccountStatusRequestSchema,
@@ -382,7 +387,13 @@ const adminLearningPathDetailExample = {
       startedAt: EXAMPLE_LATER,
       lastMessageAt: EXAMPLE_LATEST,
       messageCount: 6,
+      latestUserSummary: "我已经完成索引了，下一步应该先做什么？",
       latestAssistantSummary: "先确认项目索引完成，再继续下一步修复。",
+      tokenUsage: {
+        promptTokens: 320,
+        completionTokens: 180,
+        totalTokens: 500,
+      },
     },
   ],
   materialPlan: {
@@ -449,6 +460,52 @@ const adminLearningPathDetailExample = {
       },
     ],
   },
+}
+
+const adminLearningMaterialPlanDetailExample = adminLearningPathDetailExample.materialPlan
+
+const adminLearningSessionListExample = {
+  items: adminLearningPathDetailExample.recentSessions,
+  total: 1,
+  page: 1,
+  limit: 20,
+}
+
+const adminLearningSessionDetailExample = {
+  session: {
+    sessionId: "550e8400-e29b-41d4-a716-446655440300",
+    status: "active",
+    startedAt: EXAMPLE_LATER,
+    lastMessageAt: EXAMPLE_LATEST,
+    messageCount: 6,
+    tokenUsage: {
+      promptTokens: 320,
+      completionTokens: 180,
+      totalTokens: 500,
+    },
+  },
+  messages: [
+    {
+      messageId: "550e8400-e29b-41d4-a716-446655440310",
+      role: "user",
+      sequenceNo: 1,
+      contentText: "我已经完成索引了，下一步应该先做什么？",
+      createdAt: EXAMPLE_LATER,
+      tokenUsage: null,
+    },
+    {
+      messageId: "550e8400-e29b-41d4-a716-446655440311",
+      role: "assistant",
+      sequenceNo: 2,
+      contentText: "先确认项目索引完成，再挑一个真实文件做首次修改。",
+      createdAt: EXAMPLE_LATEST,
+      tokenUsage: {
+        promptTokens: 320,
+        completionTokens: 180,
+        totalTokens: 500,
+      },
+    },
+  ],
 }
 
 const adminSettingsOverviewExample = {
@@ -1578,6 +1635,9 @@ const successExamples = {
   },
   adminLearningPathList: adminLearningPathListExample,
   adminLearningPathDetail: adminLearningPathDetailExample,
+  adminLearningMaterialPlanDetail: adminLearningMaterialPlanDetailExample,
+  adminLearningSessionList: adminLearningSessionListExample,
+  adminLearningSessionDetail: adminLearningSessionDetailExample,
   adminLearningPathStatusUpdate: {
     pathId: "550e8400-e29b-41d4-a716-446655440100",
     status: "archived",
@@ -3552,6 +3612,73 @@ registry.registerPath({
       "学习路径详情读取成功",
       successExamples.adminLearningPathDetail,
       "学习路径详情读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/learning-paths/{pathId}/draft",
+  operationId: "getAdminLearningPathMaterialPlanDetail",
+  tags: ["admin-learning"],
+  summary: "管理端来源草稿详情",
+  security: [],
+  request: {
+    params: adminLearningPathIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminLearningMaterialPlanSnapshotSchema,
+      "AdminLearningMaterialPlanDetailResponse",
+      "来源草稿详情读取成功",
+      successExamples.adminLearningMaterialPlanDetail,
+      "来源草稿详情读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/learning-paths/{pathId}/sessions",
+  operationId: "getAdminLearningPathSessionList",
+  tags: ["admin-learning"],
+  summary: "管理端学习路径会话列表",
+  security: [],
+  request: {
+    params: adminLearningPathIdParamsSchema,
+    query: adminLearningSessionListQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminLearningPathSessionListResponseDataSchema,
+      "AdminLearningPathSessionListResponse",
+      "学习路径会话列表读取成功",
+      successExamples.adminLearningSessionList,
+      "学习路径会话列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/learning-paths/{pathId}/sessions/{sessionId}",
+  operationId: "getAdminLearningPathSessionDetail",
+  tags: ["admin-learning"],
+  summary: "管理端学习路径会话详情",
+  security: [],
+  request: {
+    params: adminLearningPathSessionIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminLearningPathSessionDetailResponseDataSchema,
+      "AdminLearningPathSessionDetailResponse",
+      "学习路径会话详情读取成功",
+      successExamples.adminLearningSessionDetail,
+      "学习路径会话详情读取成功",
     ),
     ...commonErrorResponses(["400", "403", "404", "500"]),
   },

@@ -1,10 +1,14 @@
 import type {
   AdminLearningMaterialPlanQualityReport,
+  AdminLearningMaterialPlanSnapshot,
   AdminLearningMaterialSourceSummary,
   AdminLearningPathDetailResponseData,
   AdminLearningPathDetailStep,
   AdminLearningPathListItem,
   AdminLearningPathListResponseData,
+  AdminLearningPathRecentSession,
+  AdminLearningPathSessionDetailResponseData,
+  AdminLearningPathSessionListResponseData,
   AdminLearningPathListStats,
   AdminLearningPathStatus,
   AdminLearningToolOption,
@@ -108,6 +112,18 @@ type MessageRow = {
   role: "system" | "developer" | "user" | "assistant" | "tool"
   sequence_no: number
   content_text: string | null
+  created_at: string
+}
+
+type InvocationRow = {
+  id: string
+  session_id: string
+  assistant_message_id: string | null
+  user_message_id: string | null
+  prompt_tokens: number | null
+  completion_tokens: number | null
+  total_tokens: number | null
+  created_at: string
 }
 
 function readMaterialPlanQualityReport(
@@ -485,6 +501,178 @@ function buildTaskStatsMap(rows: UserTaskRow[]) {
   return map
 }
 
+function normalizeMessageSummary(content: string | null, maxLength = 120) {
+  if (!content) {
+    return null
+  }
+
+  const normalized = content.replace(/\s+/g, " ").trim()
+  if (!normalized) {
+    return null
+  }
+
+  return normalized.length > maxLength ? `${normalized.slice(0, maxLength).trimEnd()}…` : normalized
+}
+
+function buildTokenUsage(input: {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+}) {
+  if (input.promptTokens === 0 && input.completionTokens === 0 && input.totalTokens === 0) {
+    return null
+  }
+
+  return input
+}
+
+function aggregateInvocationTokenUsage(rows: InvocationRow[]) {
+  return buildTokenUsage(rows.reduce(
+    (acc, row) => ({
+      promptTokens: acc.promptTokens + (row.prompt_tokens ?? 0),
+      completionTokens: acc.completionTokens + (row.completion_tokens ?? 0),
+      totalTokens: acc.totalTokens + (row.total_tokens ?? 0),
+    }),
+    { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+  ))
+}
+
+async function getMaterialPlanSnapshotByPathId(pathId: string): Promise<AdminLearningMaterialPlanSnapshot | null> {
+  const supabase = createSupabaseAdminClient()
+  const { data: materialPlanData, error: materialPlanError } = await supabase
+    .from("learning_plan_drafts")
+    .select("id, intake_id, title, status, revision_no, quality_status, quality_report, updated_at")
+    .eq("confirmed_user_learning_path_id", pathId)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  assertSupabaseSuccess(materialPlanError, "failed to query admin learning detail material plan")
+
+  const materialPlan = (materialPlanData as MaterialPlanDraftRow | null) ?? null
+  if (!materialPlan) {
+    return null
+  }
+
+  const { data: materialSourceData, error: materialSourceError } = await supabase
+    .from("learning_material_sources")
+    .select("id, url, source_type, title, content_excerpt, metadata")
+    .eq("intake_id", materialPlan.intake_id)
+    .order("created_at", { ascending: true })
+
+  assertSupabaseSuccess(materialSourceError, "failed to query admin learning detail material sources")
+
+  return {
+    draftId: materialPlan.id,
+    intakeId: materialPlan.intake_id,
+    title: materialPlan.title,
+    draftStatus: materialPlan.status,
+    revisionNo: materialPlan.revision_no,
+    qualityStatus: materialPlan.quality_status,
+    qualityReport: readMaterialPlanQualityReport(materialPlan.quality_report),
+    updatedAt: toIsoDate(materialPlan.updated_at),
+    sources: ((materialSourceData ?? []) as MaterialSourceRow[]).map(mapMaterialSourceSummary),
+  }
+}
+
+async function fetchSessionMessageAndInvocationMaps(sessionIds: string[]) {
+  const messagesBySessionId = new Map<string, MessageRow[]>()
+  const invocationsBySessionId = new Map<string, InvocationRow[]>()
+
+  if (sessionIds.length === 0) {
+    return {
+      messagesBySessionId,
+      invocationsBySessionId,
+    }
+  }
+
+  const supabase = createSupabaseAdminClient()
+  const [{ data: messageData, error: messageError }, { data: invocationData, error: invocationError }] = await Promise.all([
+    supabase
+      .from("conversation_messages")
+      .select("id, session_id, role, sequence_no, content_text, created_at")
+      .in("session_id", sessionIds)
+      .in("role", ["user", "assistant"])
+      .order("sequence_no", { ascending: false }),
+    supabase
+      .from("llm_invocations")
+      .select("id, session_id, assistant_message_id, user_message_id, prompt_tokens, completion_tokens, total_tokens, created_at")
+      .in("session_id", sessionIds)
+      .order("created_at", { ascending: false }),
+  ])
+
+  assertSupabaseSuccess(messageError, "failed to query admin learning detail messages")
+  assertSupabaseSuccess(invocationError, "failed to query admin learning detail invocations")
+
+  for (const row of (messageData ?? []) as MessageRow[]) {
+    const bucket = messagesBySessionId.get(row.session_id) ?? []
+    bucket.push(row)
+    messagesBySessionId.set(row.session_id, bucket)
+  }
+
+  for (const row of (invocationData ?? []) as InvocationRow[]) {
+    const bucket = invocationsBySessionId.get(row.session_id) ?? []
+    bucket.push(row)
+    invocationsBySessionId.set(row.session_id, bucket)
+  }
+
+  return {
+    messagesBySessionId,
+    invocationsBySessionId,
+  }
+}
+
+function mapRecentSessionItem(
+  session: SessionRow,
+  messages: MessageRow[],
+  invocations: InvocationRow[],
+): AdminLearningPathRecentSession {
+  const latestUserSummary = messages.find((message) => message.role === "user")?.content_text ?? null
+  const latestAssistantSummary = messages.find((message) => message.role === "assistant")?.content_text ?? null
+
+  return {
+    sessionId: session.id,
+    status: session.status,
+    startedAt: toIsoDate(session.started_at),
+    lastMessageAt: session.last_message_at ? toIsoDate(session.last_message_at) : null,
+    messageCount: session.message_count,
+    latestUserSummary: normalizeMessageSummary(latestUserSummary),
+    latestAssistantSummary: normalizeMessageSummary(latestAssistantSummary),
+    tokenUsage: aggregateInvocationTokenUsage(invocations),
+  }
+}
+
+async function getLearningPathRecentSessions(pathId: string, page: number, limit: number): Promise<AdminLearningPathSessionListResponseData> {
+  const supabase = createSupabaseAdminClient()
+  const from = (page - 1) * limit
+  const to = from + limit - 1
+  const { data: sessionData, error: sessionError, count } = await supabase
+    .from("conversation_sessions")
+    .select("id, user_learning_path_id, status, message_count, started_at, last_message_at", { count: "exact" })
+    .eq("user_learning_path_id", pathId)
+    .eq("is_admin_test", false)
+    .order("last_message_at", { ascending: false, nullsFirst: false })
+    .range(from, to)
+
+  assertSupabaseSuccess(sessionError, "failed to query admin learning detail sessions")
+
+  const sessions = (sessionData ?? []) as SessionRow[]
+  const sessionIds = sessions.map((session) => session.id)
+  const { messagesBySessionId, invocationsBySessionId } = await fetchSessionMessageAndInvocationMaps(sessionIds)
+
+  return {
+    items: sessions.map((session) =>
+      mapRecentSessionItem(
+        session,
+        messagesBySessionId.get(session.id) ?? [],
+        invocationsBySessionId.get(session.id) ?? [],
+      )),
+    total: count ?? sessions.length,
+    page,
+    limit,
+  }
+}
+
 function mapListItem(
   row: LearningPathRow,
   profile: UserProfileRow | null,
@@ -692,7 +880,7 @@ export async function getAdminLearningPathDetail(
   }
 
   const supabase = createSupabaseAdminClient()
-  const [{ toolById }, { data: profileData, error: profileError }, { data: taskData, error: taskError }, { data: sessionData, error: sessionError }, { data: materialPlanData, error: materialPlanError }] = await Promise.all([
+  const [{ toolById }, { data: profileData, error: profileError }, { data: taskData, error: taskError }, recentSessionsResult, materialPlan] = await Promise.all([
     getToolMaps(),
     supabase
       .from("user_profiles")
@@ -703,31 +891,15 @@ export async function getAdminLearningPathDetail(
       .from("user_tasks")
       .select("id, user_learning_path_id, path_step_id, status, score_awarded, completed_at")
       .eq("user_learning_path_id", path.id),
-    supabase
-      .from("conversation_sessions")
-      .select("id, user_learning_path_id, status, message_count, started_at, last_message_at")
-      .eq("user_learning_path_id", path.id)
-      .eq("is_admin_test", false)
-      .order("last_message_at", { ascending: false, nullsFirst: false })
-      .limit(5),
-    supabase
-      .from("learning_plan_drafts")
-      .select("id, intake_id, title, status, revision_no, quality_status, quality_report, updated_at")
-      .eq("confirmed_user_learning_path_id", path.id)
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+    getLearningPathRecentSessions(path.id, 1, 5),
+    getMaterialPlanSnapshotByPathId(path.id),
   ])
 
   assertSupabaseSuccess(profileError, "failed to query admin learning detail profile")
   assertSupabaseSuccess(taskError, "failed to query admin learning detail tasks")
-  assertSupabaseSuccess(sessionError, "failed to query admin learning detail sessions")
-  assertSupabaseSuccess(materialPlanError, "failed to query admin learning detail material plan")
 
   const profile = (profileData as UserProfileRow | null) ?? null
   const tasks = (taskData ?? []) as UserTaskRow[]
-  const sessions = (sessionData ?? []) as SessionRow[]
-  const materialPlan = (materialPlanData as MaterialPlanDraftRow | null) ?? null
   const taskStats = buildTaskStatsMap(tasks).get(path.id) ?? {
     totalTaskCount: 0,
     completedTaskCount: 0,
@@ -748,37 +920,6 @@ export async function getAdminLearningPathDetail(
           .order("step_no", { ascending: true })
 
   assertSupabaseSuccess(stepError, "failed to query admin learning detail steps")
-
-  const messagesBySessionId = new Map<string, MessageRow[]>()
-  const sessionIds = sessions.map((session) => session.id)
-  const { data: messageData, error: messageError } =
-    sessionIds.length === 0
-      ? { data: [] as MessageRow[], error: null }
-      : await supabase
-          .from("conversation_messages")
-          .select("id, session_id, role, sequence_no, content_text")
-          .in("session_id", sessionIds)
-          .eq("role", "assistant")
-          .order("sequence_no", { ascending: false })
-
-  assertSupabaseSuccess(messageError, "failed to query admin learning detail messages")
-
-  const { data: materialSourceData, error: materialSourceError } =
-    materialPlan
-      ? await supabase
-          .from("learning_material_sources")
-          .select("id, url, source_type, title, content_excerpt, metadata")
-          .eq("intake_id", materialPlan.intake_id)
-          .order("created_at", { ascending: true })
-      : { data: [] as MaterialSourceRow[], error: null }
-
-  assertSupabaseSuccess(materialSourceError, "failed to query admin learning detail material sources")
-
-  for (const row of (messageData ?? []) as MessageRow[]) {
-    const bucket = messagesBySessionId.get(row.session_id) ?? []
-    bucket.push(row)
-    messagesBySessionId.set(row.session_id, bucket)
-  }
 
   const taskByStepId = new Map(tasks.map((task) => [task.path_step_id, task]))
   const steps: AdminLearningPathDetailStep[] = ((stepData ?? []) as StepRow[]).map((step) => {
@@ -842,28 +983,113 @@ export async function getAdminLearningPathDetail(
       archivedAt: path.status === "archived" ? toIsoDate(path.updated_at) : null,
     },
     steps,
-    recentSessions: sessions.map((session) => ({
+    recentSessions: recentSessionsResult.items,
+    materialPlan,
+  }
+}
+
+export async function getAdminLearningPathMaterialPlanDetail(
+  pathId: string,
+): Promise<AdminLearningMaterialPlanSnapshot | null> {
+  const path = await getPathRowById(pathId)
+  if (!path) {
+    return null
+  }
+
+  return getMaterialPlanSnapshotByPathId(path.id)
+}
+
+export async function getAdminLearningPathSessionList(
+  pathId: string,
+  filters: {
+    page: number
+    limit: number
+  },
+): Promise<AdminLearningPathSessionListResponseData | null> {
+  const path = await getPathRowById(pathId)
+  if (!path) {
+    return null
+  }
+
+  return getLearningPathRecentSessions(path.id, filters.page, filters.limit)
+}
+
+export async function getAdminLearningPathSessionDetail(
+  pathId: string,
+  sessionId: string,
+): Promise<AdminLearningPathSessionDetailResponseData | null> {
+  const path = await getPathRowById(pathId)
+  if (!path) {
+    return null
+  }
+
+  const supabase = createSupabaseAdminClient()
+  const { data: sessionData, error: sessionError } = await supabase
+    .from("conversation_sessions")
+    .select("id, user_learning_path_id, status, message_count, started_at, last_message_at")
+    .eq("id", sessionId)
+    .eq("user_learning_path_id", path.id)
+    .eq("is_admin_test", false)
+    .maybeSingle()
+
+  assertSupabaseSuccess(sessionError, "failed to query admin learning session detail")
+
+  const session = (sessionData as SessionRow | null) ?? null
+  if (!session) {
+    return null
+  }
+
+  const [{ data: messageData, error: messageError }, { data: invocationData, error: invocationError }] = await Promise.all([
+    supabase
+      .from("conversation_messages")
+      .select("id, session_id, role, sequence_no, content_text, created_at")
+      .eq("session_id", session.id)
+      .in("role", ["user", "assistant"])
+      .order("sequence_no", { ascending: true }),
+    supabase
+      .from("llm_invocations")
+      .select("id, session_id, assistant_message_id, user_message_id, prompt_tokens, completion_tokens, total_tokens, created_at")
+      .eq("session_id", session.id)
+      .order("created_at", { ascending: true }),
+  ])
+
+  assertSupabaseSuccess(messageError, "failed to query admin learning session detail messages")
+  assertSupabaseSuccess(invocationError, "failed to query admin learning session detail invocations")
+
+  const invocations = (invocationData ?? []) as InvocationRow[]
+  const invocationByAssistantMessageId = new Map(
+    invocations
+      .filter((row) => row.assistant_message_id)
+      .map((row) => [
+        row.assistant_message_id as string,
+        buildTokenUsage({
+          promptTokens: row.prompt_tokens ?? 0,
+          completionTokens: row.completion_tokens ?? 0,
+          totalTokens: row.total_tokens ?? 0,
+        }),
+      ]),
+  )
+
+  return {
+    session: {
       sessionId: session.id,
       status: session.status,
       startedAt: toIsoDate(session.started_at),
       lastMessageAt: session.last_message_at ? toIsoDate(session.last_message_at) : null,
       messageCount: session.message_count,
-      latestAssistantSummary:
-        messagesBySessionId.get(session.id)?.find((message) => message.content_text && message.content_text.trim().length > 0)?.content_text?.trim().slice(0, 120) ?? null,
+      tokenUsage: aggregateInvocationTokenUsage(invocations),
+    },
+    messages: ((messageData ?? []) as MessageRow[]).map((message) => ({
+      messageId: message.id,
+      role: message.role as "user" | "assistant",
+      sequenceNo: message.sequence_no,
+      contentText: message.content_text,
+      createdAt: toIsoDate(message.created_at),
+      tokenUsage:
+        message.role === "assistant"
+          ? invocationByAssistantMessageId.get(message.id) ?? null
+          : null,
     })),
-    materialPlan: materialPlan
-      ? {
-          draftId: materialPlan.id,
-          intakeId: materialPlan.intake_id,
-          title: materialPlan.title,
-          draftStatus: materialPlan.status,
-          revisionNo: materialPlan.revision_no,
-          qualityStatus: materialPlan.quality_status,
-          qualityReport: readMaterialPlanQualityReport(materialPlan.quality_report),
-          updatedAt: toIsoDate(materialPlan.updated_at),
-          sources: ((materialSourceData ?? []) as MaterialSourceRow[]).map(mapMaterialSourceSummary),
-        }
-      : null,
   }
 }
 

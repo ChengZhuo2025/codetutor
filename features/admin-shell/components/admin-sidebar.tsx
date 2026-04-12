@@ -58,17 +58,12 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
           collapsed ? "justify-center px-2" : "gap-2.5 px-3.5",
         )}
       >
-        <div
-          className={cn(
-            "flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground",
-            "shadow-sm ring-1 ring-primary/20",
-          )}
-        >
-          <BrandIcon className="size-4" aria-hidden />
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <BrandIcon className="size-4.5" aria-hidden />
         </div>
         {!collapsed ? (
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold tracking-tight text-sidebar-foreground">CodeTutor</p>
+            <p className="truncate text-md font-semibold tracking-tight text-sidebar-foreground">CodeTutor</p>
             <p className="truncate text-[10px] leading-tight text-muted-foreground">系统管理后台 v1.0.0</p>
           </div>
         ) : null}

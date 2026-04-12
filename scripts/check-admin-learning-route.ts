@@ -5,11 +5,17 @@ import {
   createAdminLearningPathDetailGetHandler,
   createAdminLearningPathExportGetHandler,
   createAdminLearningPathListGetHandler,
+  createAdminLearningPathMaterialPlanDetailGetHandler,
+  createAdminLearningPathSessionDetailGetHandler,
+  createAdminLearningPathSessionListGetHandler,
   createAdminLearningPathStatusPostHandler,
 } from "../server/modules/admin-learning/route-handler.ts"
 import type {
+  AdminLearningMaterialPlanSnapshot,
   AdminLearningPathDetailResponseData,
   AdminLearningPathListResponseData,
+  AdminLearningPathSessionDetailResponseData,
+  AdminLearningPathSessionListResponseData,
   AdminUpdateLearningPathStatusResponseData,
 } from "../lib/api/contracts/admin-learning.ts"
 
@@ -113,12 +119,18 @@ const sampleDetail: AdminLearningPathDetailResponseData = {
   ],
   recentSessions: [
     {
-      sessionId: "session-1",
+      sessionId: "550e8400-e29b-41d4-a716-446655440300",
       status: "active",
       startedAt: "2026-04-03T09:00:00.000Z",
       lastMessageAt: "2026-04-03T09:05:00.000Z",
       messageCount: 6,
+      latestUserSummary: "我已经完成索引了，接下来做什么？",
       latestAssistantSummary: "先确认项目索引完成。",
+      tokenUsage: {
+        promptTokens: 320,
+        completionTokens: 180,
+        totalTokens: 500,
+      },
     },
   ],
   materialPlan: {
@@ -187,6 +199,67 @@ const sampleDetail: AdminLearningPathDetailResponseData = {
   },
 }
 
+const sampleMaterialPlan: AdminLearningMaterialPlanSnapshot = sampleDetail.materialPlan!
+
+const sampleSessionList: AdminLearningPathSessionListResponseData = {
+  items: [
+    {
+      sessionId: "550e8400-e29b-41d4-a716-446655440300",
+      status: "active",
+      startedAt: "2026-04-03T09:00:00.000Z",
+      lastMessageAt: "2026-04-03T09:05:00.000Z",
+      messageCount: 6,
+      latestUserSummary: "我已经完成索引了，接下来做什么？",
+      latestAssistantSummary: "先确认项目索引完成。",
+      tokenUsage: {
+        promptTokens: 320,
+        completionTokens: 180,
+        totalTokens: 500,
+      },
+    },
+  ],
+  total: 1,
+  page: 1,
+  limit: 20,
+}
+
+const sampleSessionDetail: AdminLearningPathSessionDetailResponseData = {
+  session: {
+    sessionId: "550e8400-e29b-41d4-a716-446655440300",
+    status: "active",
+    startedAt: "2026-04-03T09:00:00.000Z",
+    lastMessageAt: "2026-04-03T09:05:00.000Z",
+    messageCount: 6,
+    tokenUsage: {
+      promptTokens: 320,
+      completionTokens: 180,
+      totalTokens: 500,
+    },
+  },
+  messages: [
+    {
+      messageId: "msg-user-1",
+      role: "user",
+      sequenceNo: 1,
+      contentText: "我已经完成索引了，接下来做什么？",
+      createdAt: "2026-04-03T09:01:00.000Z",
+      tokenUsage: null,
+    },
+    {
+      messageId: "msg-ai-1",
+      role: "assistant",
+      sequenceNo: 2,
+      contentText: "先确认项目索引完成，然后打开一个真实项目。",
+      createdAt: "2026-04-03T09:02:00.000Z",
+      tokenUsage: {
+        promptTokens: 320,
+        completionTokens: 180,
+        totalTokens: 500,
+      },
+    },
+  ],
+}
+
 test("admin learning list returns 403 without admin", async () => {
   const handler = createAdminLearningPathListGetHandler({
     getRequestAdmin: async () => forbiddenAdmin,
@@ -247,6 +320,50 @@ test("admin learning detail returns 200 with data", async () => {
   assert.equal(res.status, 200)
   const body = await res.json()
   assert.equal(body.data.materialPlan.draftId, sampleDetail.materialPlan?.draftId)
+  assert.equal(body.data.recentSessions[0].latestUserSummary, sampleDetail.recentSessions[0]?.latestUserSummary)
+})
+
+test("admin learning material plan detail returns 200 with data", async () => {
+  const handler = createAdminLearningPathMaterialPlanDetailGetHandler({
+    getRequestAdmin: async () => okAdmin,
+    getAdminLearningPathMaterialPlanDetail: async () => sampleMaterialPlan,
+  })
+  const res = await handler(
+    new Request("http://localhost/api/admin/learning-paths/550e8400-e29b-41d4-a716-446655440100/draft"),
+    { params: Promise.resolve({ pathId: "550e8400-e29b-41d4-a716-446655440100" }) },
+  )
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.data.draftId, sampleMaterialPlan.draftId)
+})
+
+test("admin learning session list returns 200 with data", async () => {
+  const handler = createAdminLearningPathSessionListGetHandler({
+    getRequestAdmin: async () => okAdmin,
+    getAdminLearningPathSessionList: async () => sampleSessionList,
+  })
+  const res = await handler(
+    new Request("http://localhost/api/admin/learning-paths/550e8400-e29b-41d4-a716-446655440100/sessions?page=1&limit=20"),
+    { params: Promise.resolve({ pathId: "550e8400-e29b-41d4-a716-446655440100" }) },
+  )
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.data.items[0].latestUserSummary, sampleSessionList.items[0]?.latestUserSummary)
+})
+
+test("admin learning session detail returns 200 with user and assistant messages", async () => {
+  const handler = createAdminLearningPathSessionDetailGetHandler({
+    getRequestAdmin: async () => okAdmin,
+    getAdminLearningPathSessionDetail: async () => sampleSessionDetail,
+  })
+  const res = await handler(
+    new Request("http://localhost/api/admin/learning-paths/550e8400-e29b-41d4-a716-446655440100/sessions/550e8400-e29b-41d4-a716-446655440300"),
+    { params: Promise.resolve({ pathId: "550e8400-e29b-41d4-a716-446655440100", sessionId: "550e8400-e29b-41d4-a716-446655440300" }) },
+  )
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.data.messages[0].role, "user")
+  assert.equal(body.data.messages[1].tokenUsage.totalTokens, 500)
 })
 
 test("admin learning status route rejects invalid action", async () => {

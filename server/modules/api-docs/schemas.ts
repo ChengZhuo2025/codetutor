@@ -1818,6 +1818,13 @@ export const adminLearningPathIdParamsSchema = z
   })
   .openapi("AdminLearningPathIdParams")
 
+export const adminLearningPathSessionIdParamsSchema = z
+  .object({
+    pathId: z.string().uuid(),
+    sessionId: z.string().uuid(),
+  })
+  .openapi("AdminLearningPathSessionIdParams")
+
 export const adminLearningPathTimelineSchema = z
   .object({
     startedAt: z.string(),
@@ -1847,9 +1854,64 @@ export const adminLearningPathRecentSessionSchema = z
     startedAt: z.string(),
     lastMessageAt: z.string().nullable(),
     messageCount: z.number().int().nonnegative(),
+    latestUserSummary: z.string().nullable(),
     latestAssistantSummary: z.string().nullable(),
+    tokenUsage: z
+      .object({
+        promptTokens: z.number().int().nonnegative(),
+        completionTokens: z.number().int().nonnegative(),
+        totalTokens: z.number().int().nonnegative(),
+      })
+      .nullable(),
   })
   .openapi("AdminLearningPathRecentSession")
+
+export const adminLearningSessionListQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+  })
+  .openapi("AdminLearningSessionListQuery")
+
+export const adminLearningPathSessionListResponseDataSchema = z
+  .object({
+    items: z.array(adminLearningPathRecentSessionSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().positive(),
+    limit: z.number().int().positive(),
+  })
+  .openapi("AdminLearningPathSessionListResponseData")
+
+export const adminLearningPathSessionDetailResponseDataSchema = z
+  .object({
+    session: z.object({
+      sessionId: z.string().uuid(),
+      status: z.string(),
+      startedAt: z.string(),
+      lastMessageAt: z.string().nullable(),
+      messageCount: z.number().int().nonnegative(),
+      tokenUsage: z.object({
+        promptTokens: z.number().int().nonnegative(),
+        completionTokens: z.number().int().nonnegative(),
+        totalTokens: z.number().int().nonnegative(),
+      }).nullable(),
+    }),
+    messages: z.array(
+      z.object({
+        messageId: z.string(),
+        role: z.enum(["user", "assistant"]),
+        sequenceNo: z.number().int().positive(),
+        contentText: z.string().nullable(),
+        createdAt: z.string(),
+        tokenUsage: z.object({
+          promptTokens: z.number().int().nonnegative(),
+          completionTokens: z.number().int().nonnegative(),
+          totalTokens: z.number().int().nonnegative(),
+        }).nullable(),
+      }),
+    ),
+  })
+  .openapi("AdminLearningPathSessionDetailResponseData")
 
 export const adminLearningMaterialPlanSnapshotSchema = z
   .object({
