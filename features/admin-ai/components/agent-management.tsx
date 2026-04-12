@@ -17,7 +17,10 @@ import {
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
 import { ADMIN_ROUTES } from "@/constants/routes"
-import { formatDateTime } from "@/features/admin-ai/lib/view-model"
+import {
+  formatDateTime,
+  getAdminAIAgentScenarioTypeLabel,
+} from "@/features/admin-ai/lib/view-model"
 import { AgentFormSheet } from "./agent-form-sheet"
 import { ActiveStateBadge, ListFilterCard, ListPageHeader } from "./shared"
 
@@ -137,11 +140,11 @@ export function AgentManagement() {
                   }}
                   options={[
                     { value: "all", label: "全部场景" },
-                    { value: "teaching", label: "teaching" },
-                    { value: "blocked_help", label: "blocked_help" },
-                    { value: "task_review", label: "task_review" },
-                    { value: "completion_feedback", label: "completion_feedback" },
-                    { value: "path_guidance", label: "path_guidance" },
+                    { value: "teaching", label: getAdminAIAgentScenarioTypeLabel("teaching") },
+                    { value: "blocked_help", label: getAdminAIAgentScenarioTypeLabel("blocked_help") },
+                    { value: "task_review", label: getAdminAIAgentScenarioTypeLabel("task_review") },
+                    { value: "completion_feedback", label: getAdminAIAgentScenarioTypeLabel("completion_feedback") },
+                    { value: "path_guidance", label: getAdminAIAgentScenarioTypeLabel("path_guidance") },
                   ]}
                 />
                 <AdminSelect
@@ -196,7 +199,7 @@ export function AgentManagement() {
                             </div>
                           </td>
                           <td className="px-4 py-4 align-top">
-                            <p className="text-sm text-foreground">{item.scenarioType}</p>
+                            <p className="text-sm text-foreground">{getAdminAIAgentScenarioTypeLabel(item.scenarioType)}</p>
                           </td>
                           <td className="px-4 py-4 align-top">
                             <p className="text-sm text-foreground">{item.providerCode}</p>
@@ -220,7 +223,6 @@ export function AgentManagement() {
                               </Button>
                               <Button
                                 type="button"
-                                variant="outline"
                                 size="sm"
                                 className="h-8 px-2.5"
                                 onClick={() => {

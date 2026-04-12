@@ -25,7 +25,11 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
-import { prettyJson, safeJsonParse } from "@/features/admin-ai/lib/view-model"
+import {
+  getAdminAIAgentScenarioTypeLabel,
+  prettyJson,
+  safeJsonParse,
+} from "@/features/admin-ai/lib/view-model"
 
 const EMPTY_FORM = {
   code: "",
@@ -47,6 +51,14 @@ const EMPTY_FORM = {
 }
 
 type AgentFormState = typeof EMPTY_FORM
+
+const AGENT_SCENARIO_TYPE_OPTIONS = [
+  "teaching",
+  "blocked_help",
+  "task_review",
+  "completion_feedback",
+  "path_guidance",
+] as const
 
 function mapDetailToForm(detail: AdminAIAgentDetailResponseData["agent"]): AgentFormState {
   return {
@@ -91,6 +103,9 @@ export function AgentFormSheet({
   const [models, setModels] = useState<AdminAIModelListResponseData | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const scenarioTypeOptions = AGENT_SCENARIO_TYPE_OPTIONS.includes(form.scenarioType as (typeof AGENT_SCENARIO_TYPE_OPTIONS)[number])
+    ? AGENT_SCENARIO_TYPE_OPTIONS
+    : [...AGENT_SCENARIO_TYPE_OPTIONS, form.scenarioType]
 
   useEffect(() => {
     if (!open) {
@@ -241,11 +256,11 @@ export function AgentFormSheet({
                 <div className="space-y-1.5">
                   <Label htmlFor="agent-scenarioType">场景类型</Label>
                   <select id="agent-scenarioType" value={form.scenarioType} onChange={(event) => setForm((prev) => ({ ...prev, scenarioType: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
-                    <option value="teaching">teaching</option>
-                    <option value="blocked_help">blocked_help</option>
-                    <option value="task_review">task_review</option>
-                    <option value="completion_feedback">completion_feedback</option>
-                    <option value="path_guidance">path_guidance</option>
+                    {scenarioTypeOptions.map((item) => (
+                      <option key={item} value={item}>
+                        {getAdminAIAgentScenarioTypeLabel(item)}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="space-y-1.5">

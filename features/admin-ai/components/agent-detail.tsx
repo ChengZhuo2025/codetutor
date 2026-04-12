@@ -12,6 +12,10 @@ import {
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
 import { ADMIN_ROUTES } from "@/constants/routes"
+import {
+  getAdminAIAgentScenarioTypeLabel,
+  getAdminAIInteractionTypeLabel,
+} from "@/features/admin-ai/lib/view-model"
 import { AgentFormSheet } from "./agent-form-sheet"
 import { DetailPageHeader, JsonPreview, PageSection } from "./shared"
 
@@ -68,7 +72,7 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
       <DetailPageHeader
         backHref={`${ADMIN_ROUTES.ai}/agents`}
         title={data?.agent.name ?? "Agent 详情"}
-        description={data ? `${data.agent.code} · ${data.agent.scenarioType}` : "查看 Agent 模板、规则命中和 Skill 绑定。"}
+        description={data ? `${data.agent.code} · ${getAdminAIAgentScenarioTypeLabel(data.agent.scenarioType)}` : "查看 Agent 模板、规则命中和 Skill 绑定。"}
         action={
           <div className="flex items-center gap-2">
             <Button type="button" variant="outline" className="gap-1.5" onClick={() => void fetchDetail()}>
@@ -94,7 +98,7 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
             <PageSection title="基础信息" description="当前 Agent 的运行参数。">
               <dl className="divide-y divide-border">
                 <InfoRow label="Code" value={data.agent.code} />
-                <InfoRow label="场景类型" value={data.agent.scenarioType} />
+                <InfoRow label="场景类型" value={getAdminAIAgentScenarioTypeLabel(data.agent.scenarioType)} />
                 <InfoRow label="默认 Provider" value={data.agent.defaultProviderCode} />
                 <InfoRow label="默认 Model" value={data.agent.defaultModelCode} />
                 <InfoRow label="上下文消息上限" value={String(data.agent.contextMessageLimit)} />
@@ -131,7 +135,7 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
               <div className="space-y-3">
                 {data.bindings.length ? data.bindings.map((item) => (
                   <div key={item.bindingId} className="rounded-xl border border-border bg-background/60 p-4">
-                    <p className="text-sm font-medium text-foreground">{item.interactionType}</p>
+                    <p className="text-sm font-medium text-foreground">{getAdminAIInteractionTypeLabel(item.interactionType)}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       priority {item.priority}
                       {item.toolCode ? ` · ${item.toolCode}` : ""}

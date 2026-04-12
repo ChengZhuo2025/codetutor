@@ -106,7 +106,7 @@ export function AdminLoginForm() {
       </header>
 
       <div className="relative z-10 flex min-h-screen flex-col lg:flex-row">
-        <section className="relative flex w-full flex-col justify-center overflow-hidden px-6 pb-8 pt-14 sm:px-8 lg:min-h-screen lg:w-[54%] lg:px-9 lg:pb-8 lg:pt-14 xl:px-12">
+        <section className="relative flex w-full flex-col justify-center overflow-hidden px-6 pb-8 pt-12 sm:px-8 lg:min-h-screen lg:w-[54%] lg:px-9 lg:pb-8 lg:pt-14 xl:px-12">
           <div className="max-w-2xl pl-20">
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary dark:border-primary/35 dark:bg-primary/18">
               <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
@@ -117,8 +117,8 @@ export function AdminLoginForm() {
               <p className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground/90">
                 Admin control center
               </p>
-              <h1 className="mt-3 text-[2.6rem] font-semibold tracking-tight text-foreground leading-[1.02] lg:text-[2.9rem] xl:text-[3.15rem]">
-                统一进入后台工作台
+              <h1 className="mt-2 text-[2.6rem] font-bold tracking-tight text-foreground leading-[1.02] lg:text-[2.9rem] xl:text-[3.15rem]">
+                CodeTutor Admin
               </h1>
               <p className="mt-2 text-md leading-6 text-muted-foreground sm:text-[15px]">
                 面向管理员与 IT 运营人员的统一入口，用于处理用户、学习路径、AI 配置与系统治理。
@@ -151,14 +151,14 @@ export function AdminLoginForm() {
           <div className="w-full max-w-sm lg:max-w-md">
             <div className="rounded-[30px] border border-border/70 bg-card/88 p-5 shadow-[0_30px_100px_-44px_rgba(15,23,42,0.4)] backdrop-blur-2xl sm:p-6 lg:p-7">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_20px_48px_-24px_rgba(8,145,178,0.46)]">
-                  <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_20px_48px_-24px_rgba(8,145,178,0.46)]">
+                  <ShieldCheck className="h-6 w-6" aria-hidden="true" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  <p className="mt-1.5 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                     Secure admin sign in
                   </p>
-                  <h2 className="mt-1 text-[1.65rem] font-bold text-foreground">欢迎登录管理后台</h2>
+                  <h2 className="text-[1.5rem] font-bold text-foreground">欢迎登录管理后台</h2>
                 </div>
               </div>
 

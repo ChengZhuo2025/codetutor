@@ -24,7 +24,12 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
-import { prettyJson, safeJsonParse } from "@/features/admin-ai/lib/view-model"
+import { getLearningLevelLabel, getSelectionModeLabel } from "@/constants/learning-taxonomy"
+import {
+  getAdminAIInteractionTypeLabel,
+  prettyJson,
+  safeJsonParse,
+} from "@/features/admin-ai/lib/view-model"
 
 const EMPTY_FORM = {
   agentCode: "",
@@ -41,6 +46,25 @@ const EMPTY_FORM = {
 }
 
 type BindingFormState = typeof EMPTY_FORM
+
+const INTERACTION_TYPE_OPTIONS = [
+  "teaching",
+  "blocked_help",
+  "task_review",
+  "completion_feedback",
+  "path_guidance",
+] as const
+
+const LEARNING_LEVEL_OPTIONS = [
+  "beginner",
+  "intermediate",
+  "advanced",
+] as const
+
+const SELECTION_MODE_OPTIONS = [
+  "self_directed",
+  "preset_training",
+] as const
 
 function mapItemToForm(item: AdminAIAgentBindingListItem): BindingFormState {
   return {
@@ -78,6 +102,9 @@ export function BindingFormSheet({
   const toast = useAppToast()
   const [form, setForm] = useState<BindingFormState>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+  const interactionTypeOptions = INTERACTION_TYPE_OPTIONS.includes(form.interactionType as (typeof INTERACTION_TYPE_OPTIONS)[number])
+    ? INTERACTION_TYPE_OPTIONS
+    : [...INTERACTION_TYPE_OPTIONS, form.interactionType]
 
   useEffect(() => {
     if (!open) {
@@ -156,7 +183,18 @@ export function BindingFormSheet({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="binding-interactionType">交互类型</Label>
-                <Input id="binding-interactionType" value={form.interactionType} onChange={(event) => setForm((prev) => ({ ...prev, interactionType: event.target.value }))} />
+                <select
+                  id="binding-interactionType"
+                  value={form.interactionType}
+                  onChange={(event) => setForm((prev) => ({ ...prev, interactionType: event.target.value }))}
+                  className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none"
+                >
+                  {interactionTypeOptions.map((item) => (
+                    <option key={item} value={item}>
+                      {getAdminAIInteractionTypeLabel(item)}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="binding-toolId">Tool</Label>
@@ -180,17 +218,18 @@ export function BindingFormSheet({
                 <Label htmlFor="binding-learningLevel">学习等级</Label>
                 <select id="binding-learningLevel" value={form.learningLevel} onChange={(event) => setForm((prev) => ({ ...prev, learningLevel: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                   <option value="">全部等级</option>
-                  <option value="beginner">beginner</option>
-                  <option value="intermediate">intermediate</option>
-                  <option value="advanced">advanced</option>
+                  {LEARNING_LEVEL_OPTIONS.map((item) => (
+                    <option key={item} value={item}>{getLearningLevelLabel(item, "short")}</option>
+                  ))}
                 </select>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="binding-selectionMode">学习模式</Label>
                 <select id="binding-selectionMode" value={form.selectionMode} onChange={(event) => setForm((prev) => ({ ...prev, selectionMode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                   <option value="">全部模式</option>
-                  <option value="self_directed">self_directed</option>
-                  <option value="preset_training">preset_training</option>
+                  {SELECTION_MODE_OPTIONS.map((item) => (
+                    <option key={item} value={item}>{getSelectionModeLabel(item, "short")}</option>
+                  ))}
                 </select>
               </div>
               <div className="space-y-1.5">

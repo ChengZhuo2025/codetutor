@@ -87,7 +87,7 @@ export function LandingHowItWorks() {
           {marketingFitNotes.map((note, index) => (
             <div
               key={note.title}
-              className="flex min-h-[96px] items-center gap-4 rounded-[24px]  border border-border/70 bg-card px-5 py-4 transition-all hover:-translate-y-0.5 hover:border-brand/24 hover:bg-brand/4 animate-fadeUp dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none dark:hover:bg-surface-2"
+              className="flex min-h-[96px] items-center gap-4 rounded-[24px] bg-card px-5 py-4 transition-all hover:-translate-y-0.5 hover:border-brand/24 hover:bg-brand/4 animate-fadeUp dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none dark:hover:bg-surface-2"
               style={{ animationDelay: `${400 + index * 100}ms` }}
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/12 text-brand">

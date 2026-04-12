@@ -29,6 +29,10 @@ import { StatePanel } from "@/components/ui/state-panel"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
+import {
+  getLearningLevelLabel,
+  getSelectionModeLabel,
+} from "@/constants/learning-taxonomy"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
@@ -37,31 +41,35 @@ import {
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
 import { JsonPreview, ListPageHeader, PageSection } from "./shared"
-import { formatNumber, getInvocationStatusMeta } from "@/features/admin-ai/lib/view-model"
+import {
+  formatNumber,
+  getAdminAIInteractionTypeLabel,
+  getInvocationStatusMeta,
+} from "@/features/admin-ai/lib/view-model"
 
 const DEFAULT_PROMPT =
   "请给我一个最小可执行的 CLI 工作流建议，并说明如何验证结果。"
 const DEFAULT_CHANGE_REASON = "联调测试"
 
 const INTERACTION_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: "teaching", label: "教学对话 (teaching)" },
-  { value: "blocked_help", label: "卡关求助 (blocked_help)" },
-  { value: "task_review", label: "任务点评 (task_review)" },
-  { value: "completion_feedback", label: "完成反馈 (completion_feedback)" },
-  { value: "path_guidance", label: "路径引导 (path_guidance)" },
+  { value: "teaching", label: getAdminAIInteractionTypeLabel("teaching") },
+  { value: "blocked_help", label: getAdminAIInteractionTypeLabel("blocked_help") },
+  { value: "task_review", label: getAdminAIInteractionTypeLabel("task_review") },
+  { value: "completion_feedback", label: getAdminAIInteractionTypeLabel("completion_feedback") },
+  { value: "path_guidance", label: getAdminAIInteractionTypeLabel("path_guidance") },
 ]
 
 const PREVIEW_LEARNING_LEVEL_OPTIONS = [
   { value: "", label: "全部等级" },
-  { value: "beginner", label: "入门 (beginner)" },
-  { value: "intermediate", label: "进阶 (intermediate)" },
-  { value: "advanced", label: "高阶 (advanced)" },
+  { value: "beginner", label: getLearningLevelLabel("beginner", "short") },
+  { value: "intermediate", label: getLearningLevelLabel("intermediate", "short") },
+  { value: "advanced", label: getLearningLevelLabel("advanced", "short") },
 ]
 
 const PREVIEW_SELECTION_MODE_OPTIONS = [
   { value: "", label: "全部模式" },
-  { value: "self_directed", label: "自学 (self_directed)" },
-  { value: "preset_training", label: "预设训练 (preset_training)" },
+  { value: "self_directed", label: getSelectionModeLabel("self_directed", "short") },
+  { value: "preset_training", label: getSelectionModeLabel("preset_training", "short") },
 ]
 
 const PREVIEW_FORM_INITIAL = {

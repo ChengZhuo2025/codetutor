@@ -16,8 +16,17 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
+import {
+  getAdminAIInteractionTypeLabel,
+  getAdminAILearningLevelLabel,
+  getAdminAISelectionModeLabel,
+} from "@/features/admin-ai/lib/view-model"
 import { BindingFormSheet } from "./binding-form-sheet"
 import { ActiveStateBadge, ListFilterCard, ListPageHeader } from "./shared"
+
+function renderBindingScopeValue(value: string | null | undefined, fallbackLabel: string) {
+  return value ?? fallbackLabel
+}
 
 export function BindingManagement() {
   const [data, setData] = useState<AdminAIAgentBindingListResponseData | null>(null)
@@ -145,12 +154,16 @@ export function BindingManagement() {
                   <table className="w-full min-w-[1100px] table-fixed">
                     <thead className="bg-muted/40">
                       <tr className="border-b border-border">
-                        <th className="w-[24%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Agent</th>
-                        <th className="w-[14%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">交互类型</th>
-                        <th className="w-[28%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">命中范围</th>
-                        <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">优先级</th>
-                        <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
-                        <th className="w-[16%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
+                        <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Agent</th>
+                        <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">交互类型</th>
+                        <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Tool</th>
+                        <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">路径</th>
+                        <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">等级</th>
+                        <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">模式</th>
+                        <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Step</th>
+                        <th className="w-[6%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">优先级</th>
+                        <th className="w-[5%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
+                        <th className="w-[6%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -160,15 +173,22 @@ export function BindingManagement() {
                             <p className="text-sm font-medium text-foreground">{item.agentName}</p>
                           </td>
                           <td className="px-4 py-4 align-top">
-                            <p className="text-sm text-foreground">{item.interactionType}</p>
+                            <p className="text-sm text-foreground">{getAdminAIInteractionTypeLabel(item.interactionType)}</p>
                           </td>
                           <td className="px-4 py-4 align-top">
-                            <div className="space-y-1 text-xs text-muted-foreground">
-                              <p>{item.toolName ?? "全部 Tool"}</p>
-                              <p>{item.pathName ?? "全部 Path"}</p>
-                              <p>{item.learningLevel ?? "全部等级"} · {item.selectionMode ?? "全部模式"}</p>
-                              <p>{item.stepNo == null ? "全部 Step" : `Step ${item.stepNo}`}</p>
-                            </div>
+                            <p className="text-sm text-foreground">{renderBindingScopeValue(item.toolName, "全部 Tool")}</p>
+                          </td>
+                          <td className="px-4 py-4 align-top">
+                            <p className="text-sm text-foreground line-clamp-1">{renderBindingScopeValue(item.pathName, "全部 Path")}</p>
+                          </td>
+                          <td className="px-4 py-4 align-top">
+                            <p className="text-sm text-foreground">{getAdminAILearningLevelLabel(item.learningLevel, "全部等级")}</p>
+                          </td>
+                          <td className="px-4 py-4 align-top">
+                            <p className="text-sm text-foreground">{getAdminAISelectionModeLabel(item.selectionMode, "全部模式")}</p>
+                          </td>
+                          <td className="px-4 py-4 align-top">
+                            <p className="text-sm text-foreground">{item.stepNo == null ? "全部 Step" : `Step ${item.stepNo}`}</p>
                           </td>
                           <td className="px-4 py-4 align-top">
                             <p className="text-sm text-foreground">{item.priority}</p>

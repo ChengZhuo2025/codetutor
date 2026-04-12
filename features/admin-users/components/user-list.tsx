@@ -141,7 +141,7 @@ function ListRowActions({
       <Button type="button" variant="outline" size="sm" className="h-8 px-2.5" asChild>
         <Link href={`${ADMIN_ROUTES.users}/${item.userId}`}>详情</Link>
       </Button>
-      <Button type="button" variant="outline" size="sm" className="h-8 px-2.5" onClick={() => onEdit(item)}>
+      <Button type="button" size="sm" className="h-8 px-2.5" onClick={() => onEdit(item)}>
         编辑
       </Button>
       <Button

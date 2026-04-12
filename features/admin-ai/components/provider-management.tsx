@@ -211,7 +211,6 @@ export function ProviderManagement() {
                                 </Button>
                                 <Button
                                   type="button"
-                                  variant="outline"
                                   size="sm"
                                   className="h-8 px-2.5"
                                   onClick={() => {

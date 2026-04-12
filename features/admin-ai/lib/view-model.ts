@@ -1,3 +1,8 @@
+import {
+  getLearningLevelLabel,
+  getSelectionModeLabel,
+} from "@/constants/learning-taxonomy"
+
 export function formatDateTime(value: string | null) {
   if (!value) {
     return "暂无"
@@ -68,4 +73,41 @@ export function getInvocationStatusMeta(status: string) {
         className: "border-border bg-muted/60 text-muted-foreground",
       }
   }
+}
+
+export function getAdminAIInteractionTypeLabel(interactionType: string) {
+  switch (interactionType) {
+    case "teaching":
+      return "教学对话"
+    case "blocked_help":
+      return "卡关求助"
+    case "task_review":
+      return "任务点评"
+    case "completion_feedback":
+      return "完成反馈"
+    case "path_guidance":
+      return "路径引导"
+    default:
+      return interactionType
+  }
+}
+
+export function getAdminAIAgentScenarioTypeLabel(scenarioType: string) {
+  return getAdminAIInteractionTypeLabel(scenarioType)
+}
+
+export function getAdminAILearningLevelLabel(learningLevel: string | null | undefined, fallbackLabel: string) {
+  if (!learningLevel) {
+    return fallbackLabel
+  }
+
+  return getLearningLevelLabel(learningLevel, "short")
+}
+
+export function getAdminAISelectionModeLabel(selectionMode: string | null | undefined, fallbackLabel: string) {
+  if (!selectionMode) {
+    return fallbackLabel
+  }
+
+  return getSelectionModeLabel(selectionMode, "short")
 }

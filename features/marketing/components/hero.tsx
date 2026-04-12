@@ -87,7 +87,7 @@ export function LandingHero() {
           <span>AI 编程学习陪练平台 · MVP内测中</span>
         </div>
 
-        <h1 className="max-w-5xl text-4xl font-bold leading-[1.15] tracking-tight text-balance md:text-6xl lg:text-7xl animate-fadeUp animate-delay-100">
+        <h1 className="max-w-5xl text-4xl font-semibold leading-[1.15] tracking-tight text-balance md:text-6xl lg:text-7xl animate-fadeUp animate-delay-100">
           收藏夹里的教程, 不该只是看过
           <br />让 AI 导师陪你<span className="text-brand">真正做成</span>
         </h1>
