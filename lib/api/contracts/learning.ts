@@ -7,7 +7,6 @@ import type {
   LearningResume,
   LearningSupportOption,
   LearningTask,
-  LearningTip,
   Message,
   QuickAction,
   RecentPracticeRound,
@@ -121,7 +120,6 @@ export type LearningCurrentSessionResponseData = {
   recentPracticeRounds: RecentPracticeRound[]
   tasks: LearningTask[]
   knowledgeTags: LearningKnowledgeTag[]
-  tips: LearningTip[]
 }
 
 export type LearningPlanPreviewTaskContract = {

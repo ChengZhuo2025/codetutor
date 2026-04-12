@@ -860,7 +860,7 @@ SSE 事件补充：
 - 当前前端原型确实消费了 `planSummary`、`mission`、`resume`、`rightPanel`、`tasks` 等 read model，因此服务端首期可以直接聚合返回。
 - `planSummary.selectionMode` 为机器可读枚举：`self_directed`（自学模式）或 `preset_training`（预设训练），与 `selectionModeLabel` 同时返回；自学模式下前端可展示「教程链接生成计划」入口。
 - 若当前用户存在尚未确认的教程计划草稿，响应会带上 `pendingMaterialPlanDraft`（`draftId` / `intakeId` / `updatedAt`），供 `/learn` 刷新后自动恢复草稿编辑弹窗。
-- `quickActions`、`supportOptions`、`tips`、`knowledgeTags.color` 等字段偏展示层，可在首期先由前端保留静态配置；如果服务端返回，也应视为可选扩展字段，而不是底层数据库实体。
+- `quickActions`、`supportOptions`、`knowledgeTags.color` 等字段偏展示层，可在首期先由前端保留静态配置；如果服务端返回，也应视为可选扩展字段，而不是底层数据库实体。
 - `messages.role` 在服务端内部建议使用 `assistant`，若前端仍保留 `ai`，可在 BFF DTO 层做映射。
 
 ## 7.2.1 `POST /api/learning/restart-conversation`

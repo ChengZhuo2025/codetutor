@@ -1,14 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import {
   AlertCircle,
   AlertTriangle,
   ArrowRight,
   CheckCircle2,
   Compass,
-  ChevronLeft,
-  ChevronRight,
   Lightbulb,
   Lock,
 } from "lucide-react"
@@ -20,65 +17,91 @@ import {
 } from "@/components/layout/workspace-aside"
 import { PageSection } from "@/components/ui/page-section"
 import { StatePanel } from "@/components/ui/state-panel"
-import { USER_ICON_BUTTON_CLASS } from "@/components/ui/surface-styles"
 import type { LearningCurrentSessionResponseData } from "@/lib/api/contracts/learning"
 import { cn } from "@/lib/utils"
-
-// 常量定义
-const TIP_ROTATION_INTERVAL_MS = 7000
 
 type LearnRightPanelProps = {
   className?: string
   learningData: LearningCurrentSessionResponseData
 }
 
-const tipCardClassNames = [
-  "border-brand/30 bg-brand/12 dark:border-brand/25 dark:bg-[linear-gradient(135deg,rgba(31,198,164,0.16),rgba(7,18,27,0.92))]",
-  "border-amber-500/25 bg-amber-500/10 dark:border-gold/25 dark:bg-[linear-gradient(135deg,rgba(225,168,75,0.18),rgba(24,18,12,0.92))]",
-  "border-sky-500/25 bg-sky-500/8 dark:border-chart-5/25 dark:bg-[linear-gradient(135deg,rgba(63,118,255,0.16),rgba(10,16,30,0.92))]",
-]
-
 export function LearnRightPanel({ className, learningData }: LearnRightPanelProps) {
   const {
     knowledgeTags: learningKnowledgeTags,
     tasks: learningTasks,
-    tips: learningTips,
     mission,
     rightPanel,
   } = learningData
-  const [activeTipIndex, setActiveTipIndex] = useState(0)
-
-  const safeActiveTipIndex =
-    learningTips.length === 0
-      ? 0
-      : Math.min(activeTipIndex, learningTips.length - 1)
-
-  useEffect(() => {
-    if (learningTips.length <= 1) return
-
-    const timer = window.setInterval(() => {
-      setActiveTipIndex((prev) => {
-        const len = learningTips.length
-        const clamped = Math.min(Math.max(prev, 0), len - 1)
-        return (clamped + 1) % len
-      })
-    }, TIP_ROTATION_INTERVAL_MS)
-
-    return () => window.clearInterval(timer)
-  }, [learningTips.length])
-
-  const activeTip =
-    learningTips.length > 0 ? learningTips[safeActiveTipIndex] : undefined
 
   return (
     <WorkspaceAside className={className}>
       {mission ? (
         <>
           <PageSection
+            eyebrow="你现在学到哪了"
+            title="本关任务进行到哪一步"
+            description="这里按顺序列出本关内的各个步骤：已完成的会显示勾选；当前正在做的会标注「进行中」；尚未解锁的会在你完成前置步骤后依次开放。需要对照整条学习路径时，可点击「查看全部」。"
+          >
+            <div className="mb-3 flex items-center justify-end">
+              <a
+                href={ROUTES.map}
+                className="flex items-center gap-1 text-xs text-brand transition-colors hover:text-brand/80"
+              >
+                查看全部
+                <ArrowRight className="h-3 w-3" />
+              </a>
+            </div>
+            <div className="space-y-2">
+              {learningTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className={cn(
+                    WORKSPACE_ASIDE_INSET_CARD_CLASS,
+                    "text-sm",
+                    task.current
+                      ? "border-brand/25 bg-brand-dim/70"
+                      : "border-border/60 bg-surface-3/80",
+                  )}
+                >
+                  <div className="flex items-center gap-2.5">
+                    {task.done ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-brand" />
+                    ) : task.locked ? (
+                      <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    ) : (
+                      <div
+                        className={cn(
+                          "h-4 w-4 shrink-0 rounded-full border-2",
+                          task.current ? "border-brand" : "border-border/60",
+                        )}
+                      />
+                    )}
+
+                    <span
+                      className={cn(
+                        "truncate",
+                        task.current ? "font-medium text-foreground" : "text-muted-foreground",
+                        task.locked && "opacity-50",
+                      )}
+                    >
+                      {task.label}
+                    </span>
+
+                    {task.current ? (
+                      <span className="ml-auto shrink-0 rounded-full bg-brand px-1.5 py-0.5 text-[11px] font-medium text-brand-foreground">
+                        进行中
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </PageSection>
+
+          <PageSection
             eyebrow="现在只做这一步"
             title={rightPanel.currentStep}
             description={rightPanel.whyThisStep}
-            className="border-brand/20 bg-brand-dim/50"
             bodyClassName="pt-0"
           >
             <div className="grid gap-3 pt-4 pb-1">
@@ -157,148 +180,6 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                       </span>
                     ) : null}
                     <p className="text-sm leading-6 text-foreground/82">{caution.text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </PageSection>
-
-          <PageSection eyebrow="卡住时先这样做" title="技巧小贴士" description="执行过程中不确定时，优先用这些轻量提示把问题缩小。">
-            {activeTip ? (
-              <div className="space-y-3">
-                <div
-                  className={cn(
-                    "relative overflow-hidden rounded-[16px] border px-4 py-4",
-                    tipCardClassNames[safeActiveTipIndex % tipCardClassNames.length],
-                  )}
-                >
-                  <div className="absolute right-4 top-3 h-2 w-2 rounded-full bg-card ring-2 ring-border/60 dark:bg-background dark:shadow-[0_0_0_2px_rgba(255,255,255,0.12)] dark:ring-0" />
-                  <div className="max-w-full">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/55">
-                      Tip {safeActiveTipIndex + 1}
-                    </p>
-                    <p className="mt-3 text-base font-semibold leading-7 text-foreground">
-                      {activeTip.title}
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-foreground/78">{activeTip.body}</p>
-                  </div>
-                </div>
-
-                {learningTips.length > 1 ? (
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      {learningTips.map((tip, index) => (
-                        <button
-                          key={`${index}-${tip.title}`}
-                          type="button"
-                          aria-label={`查看提示 ${index + 1}`}
-                          onClick={() => setActiveTipIndex(index)}
-                          className={cn(
-                            "h-2.5 rounded-full transition-all",
-                            index === safeActiveTipIndex
-                              ? "w-6 bg-brand"
-                              : "w-2.5 bg-surface-4 hover:bg-surface-3",
-                          )}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        aria-label="上一条技巧"
-                        onClick={() =>
-                          setActiveTipIndex((prev) => {
-                            const len = learningTips.length
-                            const clamped = Math.min(Math.max(prev, 0), len - 1)
-                            return clamped === 0 ? len - 1 : clamped - 1
-                          })
-                        }
-                        className={cn(
-                          "flex h-8 w-8 items-center justify-center rounded-full",
-                          USER_ICON_BUTTON_CLASS,
-                        )}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="下一条技巧"
-                        onClick={() =>
-                          setActiveTipIndex((prev) => {
-                            const len = learningTips.length
-                            const clamped = Math.min(Math.max(prev, 0), len - 1)
-                            return (clamped + 1) % len
-                          })
-                        }
-                        className={cn(
-                          "flex h-8 w-8 items-center justify-center rounded-full",
-                          USER_ICON_BUTTON_CLASS,
-                        )}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </PageSection>
-
-          <PageSection
-            eyebrow="当前学习路径"
-            title="继续沿着这条路径推进"
-            description="地图页负责选关，这里保留当前路径状态，方便你边学边判断下一步。"
-          >
-            <div className="mb-3 flex items-center justify-end">
-              <a
-                href={ROUTES.map}
-                className="flex items-center gap-1 text-xs text-brand transition-colors hover:text-brand/80"
-              >
-                查看全部
-                <ArrowRight className="h-3 w-3" />
-              </a>
-            </div>
-            <div className="space-y-2">
-              {learningTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className={cn(
-                    WORKSPACE_ASIDE_INSET_CARD_CLASS,
-                    "text-sm",
-                    task.current
-                      ? "border-brand/25 bg-brand-dim/70"
-                      : "border-border/60 bg-surface-3/80",
-                  )}
-                >
-                  <div className="flex items-center gap-2.5">
-                    {task.done ? (
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-brand" />
-                    ) : task.locked ? (
-                      <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    ) : (
-                      <div
-                        className={cn(
-                          "h-4 w-4 shrink-0 rounded-full border-2",
-                          task.current ? "border-brand" : "border-border/60",
-                        )}
-                      />
-                    )}
-
-                    <span
-                      className={cn(
-                        "truncate",
-                        task.current ? "font-medium text-foreground" : "text-muted-foreground",
-                        task.locked && "opacity-50",
-                      )}
-                    >
-                      {task.label}
-                    </span>
-
-                    {task.current ? (
-                      <span className="ml-auto shrink-0 rounded-full bg-brand px-1.5 py-0.5 text-[11px] font-medium text-brand-foreground">
-                        进行中
-                      </span>
-                    ) : null}
                   </div>
                 </div>
               ))}

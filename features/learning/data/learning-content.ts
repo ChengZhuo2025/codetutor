@@ -194,20 +194,6 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
         label,
         color: knowledgeTagColors[index % knowledgeTagColors.length],
       })),
-      tips: [
-        {
-          title: "先看目标，不急着理解全部代码",
-          body: "本关的目标是识别 Agent 的使用场景，而不是一次学完 React 组件写法。",
-        },
-        {
-          title: "复杂任务优先 Agent",
-          body: "当你要生成整块代码、完整页面或多段逻辑时，先让 Agent 起草初版。",
-        },
-        {
-          title: "概念追问优先 Ask",
-          body: "遇到不懂的概念、报错原因或设计选择时，再用 Ask 继续深挖。",
-        },
-      ],
     },
   }
 

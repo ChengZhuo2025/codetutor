@@ -29,11 +29,7 @@ import {
   normalizeLearningMessagesPageSize,
   resolveLearningMessagesPage,
 } from "./history-logic.ts"
-import type { LearningTip, Message } from "@/features/learning/types"
-import {
-  renderLearningTips,
-  type LearningTipRenderContext,
-} from "./tip-templates"
+import type { Message } from "@/features/learning/types"
 
 type JsonRecord = Record<string, unknown>
 
@@ -155,27 +151,6 @@ function toPitfalls(input: unknown) {
       }
     })
     .filter((item): item is { text: string; isTrap?: boolean } => Boolean(item))
-}
-
-function buildLearningTips(input: {
-  currentStep: StepRow
-  nextStep: StepRow | null
-  knowledgePoints: string[]
-  masteryPoints: string[]
-  pitfalls: Array<{ text: string; isTrap?: boolean }>
-}): LearningTip[] {
-  const { currentStep, nextStep, knowledgePoints, masteryPoints, pitfalls } = input
-
-  const context: LearningTipRenderContext = {
-    currentStepTitle: currentStep.title,
-    currentStepGoal: currentStep.goal,
-    currentStepFocus: currentStep.focus,
-    nextStepTitle: nextStep?.title ?? null,
-    keyPoint: masteryPoints[0] ?? knowledgePoints[0] ?? "当前关卡目标",
-    primaryPitfall: pitfalls.find((item) => item.isTrap)?.text ?? pitfalls[0]?.text ?? null,
-  }
-
-  return renderLearningTips(context)
 }
 
 function getRelativeLastSeenLabel(input: string | null) {
@@ -878,13 +853,6 @@ export async function getLearningCurrentSessionData(
       label,
       color: KNOWLEDGE_TAG_COLORS[index % KNOWLEDGE_TAG_COLORS.length],
     })),
-    tips: buildLearningTips({
-      currentStep,
-      nextStep,
-      knowledgePoints,
-      masteryPoints,
-      pitfalls,
-    }),
   }
 }
 

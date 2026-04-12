@@ -97,7 +97,6 @@ export function getLearningPageMock() {
     recentPracticeRounds: session.recentPracticeRounds,
     learningTasks: session.tasks,
     learningKnowledgeTags: session.knowledgeTags,
-    learningTips: session.tips,
   }
 }
 

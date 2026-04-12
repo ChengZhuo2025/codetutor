@@ -28,6 +28,21 @@ assert.match(
   "LearnRightPanel should use shared workspace aside styles",
 )
 assert.match(learnSource, /<WorkspaceAside/, "LearnRightPanel should render WorkspaceAside")
+assert.doesNotMatch(
+  learnSource,
+  /卡住时先这样做|技巧小贴士/,
+  "LearnRightPanel should remove the distracting stuck-tip card",
+)
+assert.match(
+  learnSource,
+  /eyebrow="你现在学到哪了"[\s\S]*title="这一轮学习你正进行到这里"[\s\S]*description="上面是已经完成的，标着“进行中”的是当前这关，后面的会按顺序继续。"/,
+  "LearnRightPanel should use learner-friendly wording for the current path card",
+)
+assert.match(
+  learnSource,
+  /eyebrow="你现在学到哪了"[\s\S]*eyebrow="现在只做这一步"/,
+  "LearnRightPanel should place the current path card above the current-step card",
+)
 
 const mapSource = readFileSync(
   new URL("../features/progress/components/stage-detail-panel.tsx", import.meta.url),

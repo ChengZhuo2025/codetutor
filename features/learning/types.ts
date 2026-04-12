@@ -112,11 +112,6 @@ export type LearningCautionItem = {
   isTrap?: boolean
 }
 
-export type LearningTip = {
-  title: string
-  body: string
-}
-
 export type LearningMission = {
   title: string
   tool: string

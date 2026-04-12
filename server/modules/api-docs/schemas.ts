@@ -685,13 +685,6 @@ export const learningKnowledgeTagSchema = z
   })
   .openapi("LearningKnowledgeTag")
 
-export const learningTipSchema = z
-  .object({
-    title: z.string(),
-    body: z.string(),
-  })
-  .openapi("LearningTip")
-
 export const learningMissionSchema = z
   .object({
     title: z.string(),
@@ -748,7 +741,6 @@ export const learningCurrentSessionResponseDataSchema = z
     recentPracticeRounds: z.array(recentPracticeRoundSchema),
     tasks: z.array(learningTaskSchema),
     knowledgeTags: z.array(learningKnowledgeTagSchema),
-    tips: z.array(learningTipSchema),
   })
   .openapi("LearningCurrentSessionResponseData")
 

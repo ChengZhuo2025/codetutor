@@ -1201,20 +1201,6 @@ const successExamples = {
         color: "text-brand bg-brand-dim border-brand/20",
       },
     ],
-    tips: [
-      {
-        title: "先验证「完成第一次代码补全」最小结果",
-        body: "先围绕当前关卡目标完成一次最小可验证补全，确认核心动作跑通后再扩展。",
-      },
-      {
-        title: "优先对齐「知道何时需要重新索引」这一个判断标准",
-        body: "如果结果不稳定，先描述当前期望结果，再补充报错或截图，便于快速收敛问题。",
-      },
-      {
-        title: "卡住时先排这个高频卡点",
-        body: "先检查：不要一次索引过大的无关目录。修正后再继续推进下一步。",
-      },
-    ],
   },
   learningMessage: {
     conversationId: "conversation-1",
