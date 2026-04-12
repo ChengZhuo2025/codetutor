@@ -304,6 +304,11 @@ const structuredLearningMessageBlockSchema = z
       text: z.string(),
     }),
     z.object({
+      type: z.literal("code_block"),
+      language: z.string().nullable(),
+      code: z.string(),
+    }),
+    z.object({
       type: z.literal("unordered_list"),
       items: z.array(z.string()),
     }),

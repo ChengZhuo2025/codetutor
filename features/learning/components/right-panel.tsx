@@ -295,7 +295,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                     </span>
 
                     {task.current ? (
-                      <span className="ml-auto shrink-0 rounded-full bg-brand px-1.5 py-0.5 text-[11px] font-bold text-brand-foreground">
+                      <span className="ml-auto shrink-0 rounded-full bg-brand px-1.5 py-0.5 text-[11px] font-medium text-brand-foreground">
                         进行中
                       </span>
                     ) : null}

@@ -12,6 +12,7 @@ import { resolveMaterialPipelineModelsFromSnapshots } from "../server/modules/le
 import { resolveMaterialSourceAdapter } from "../server/modules/learning-materials/source-resolver.ts"
 import { extractJsonObjectString } from "../server/modules/learning-plans/json-parse.ts"
 import { assertDraftQualityReadyForConfirm } from "../server/modules/learning-plans/activation.ts"
+import { analyzePlannerSourceStructure } from "../server/modules/learning-plans/source-structure.ts"
 import { runPlanQualityGate } from "../server/modules/learning-plans/quality-gate.ts"
 import { readDraftQualitySignalsFromRunSourceSnapshot } from "../server/modules/learning-plans/service.ts"
 import {
@@ -597,6 +598,26 @@ test("buildMaterialChunkRows persists modality, sourceRef, evidenceType, and con
   })
 })
 
+test("analyzePlannerSourceStructure detects numbered tip tutorials and derives minimum task count", () => {
+  const result = analyzePlannerSourceStructure([
+    {
+      excerpt:
+        "Claude Code技巧大公开，15条让你少走弯路。分别如下：1、设置 cc 别名2、用 /init 重构 CLAUDE.md 3、使用其他 UI 4、Esc / rewind 5、反馈链路 6、LSP 插件 7、技能 8、计划模式 9、直接贴 bug 10、/clear 11、子代理 12、/btw 13、--worktree 14、MCP 15、告诉 Claude 看哪些文件",
+    },
+  ])
+
+  assert.equal(result.numberedItemCount, 15)
+  assert.equal(result.minimumTaskCount, 5)
+  assert.deepEqual(
+    result.numberedItemsPreview.slice(0, 3),
+    [
+      "1. 设置 cc 别名",
+      "2. 用 /init 重构 CLAUDE.md",
+      "3. 使用其他 UI",
+    ],
+  )
+})
+
 test("runPlanQualityGate falls back to pilot plan for weak evidence and generic long plans", async () => {
   const raw = plannerOutputSchema.parse({
     title: "抖音短教程计划",
@@ -628,6 +649,47 @@ test("runPlanQualityGate falls back to pilot plan for weak evidence and generic 
   assert.equal(result.qualityStatus, "pilot_fallback")
   assert.equal(result.plan.tasks.length, 3)
   assert.ok(result.qualityReport.warnings.some((warning) => warning.includes("试点计划")))
+})
+
+test("runPlanQualityGate asks for retry when numbered tutorial content is compressed into too few tasks", async () => {
+  const plan = plannerOutputSchema.parse({
+    title: "Claude Code 入门计划",
+    goal: "按教程顺序掌握 15 个技巧",
+    tasks: [
+      { taskNo: 1, title: "第一关", objective: "掌握技巧1-3：别名、/init、其他 UI", practiceSteps: ["配置别名", "初始化文档"], acceptanceCriteria: "前三个技巧完成", estimatedMinutes: 45, sourceRefs: ["c1"], masteryPoints: ["知道 cc 别名如何设置", "知道 CLAUDE.md 该如何初始化"], cautions: [{ text: "不要跳过别名实际验证", isTrap: true }] },
+      { taskNo: 2, title: "第二关", objective: "掌握技巧4-6：Esc、反馈链路、LSP", practiceSteps: ["练习 Esc", "安装 LSP"], acceptanceCriteria: "能演示交互控制", estimatedMinutes: 60, sourceRefs: ["c1"], masteryPoints: ["知道 Esc 和 rewind 的区别", "知道反馈链路如何提供"], cautions: [{ text: "不要只安装插件不验证效果" }] },
+      { taskNo: 3, title: "第三关", objective: "掌握技巧7-10：技能、计划模式、贴 bug、/clear", practiceSteps: ["调用技能", "清理上下文"], acceptanceCriteria: "能完成一次对话优化演练", estimatedMinutes: 60, sourceRefs: ["c1"], masteryPoints: ["知道技能如何使用", "知道什么时候该 /clear"], cautions: [{ text: "不要在旧上下文里硬切新任务" }] },
+      { taskNo: 4, title: "第四关", objective: "掌握技巧11-15：子代理、/btw、--worktree、MCP、指定文件", practiceSteps: ["体验子代理", "配置 MCP"], acceptanceCriteria: "能说明高级工作流要点", estimatedMinutes: 90, sourceRefs: ["c1"], masteryPoints: ["知道子代理的适用场景", "知道如何告诉 Claude 具体看哪些文件"], cautions: [{ text: "不要把 5 个新技巧一次性压成一个练习块", isTrap: true }] },
+    ],
+  })
+
+  const result = await runPlanQualityGate({
+    plan,
+    attempt: 1,
+    maxAttempts: 2,
+    evidenceCoverage: {
+      highConfidenceChars: 2400,
+      totalUsefulChars: 2600,
+      chunkCount: 2,
+      isSufficient: true,
+      isWeakEvidence: false,
+    },
+    sourceStructure: {
+      numberedItemCount: 15,
+      minimumTaskCount: 5,
+      numberedItemsPreview: [
+        "1. 设置 cc 别名",
+        "2. 用 /init 重构 CLAUDE.md",
+        "3. 使用其他 UI",
+      ],
+    },
+  })
+
+  assert.equal(result.decision, "retry")
+  assert.equal(result.plan.tasks.length, 4)
+  assert.ok(
+    result.qualityReport.warnings.some((warning) => warning.includes("至少拆成 5 关")),
+  )
 })
 
 test("runPlanQualityGate falls back after quality self-check keeps asking for retry on the final attempt", async () => {

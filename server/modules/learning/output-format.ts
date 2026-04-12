@@ -18,7 +18,7 @@ type OutputFormatTemplate = {
 
 const OUTPUT_FORMAT_TEMPLATES: Record<LearningInteractionType, OutputFormatTemplate> = {
   teaching: {
-    summaryInstruction: "第一段直接说明当前最值得做的一步，不要空泛铺垫。",
+    summaryInstruction: "第一段直接说明当前最值得做的一步，不要空泛铺垫；如果仍在当前关卡内推进，只能写“下一步/下一项练习”，不能写“下一关”。",
     sections: [
       {
         title: "当前建议",
@@ -30,7 +30,7 @@ const OUTPUT_FORMAT_TEMPLATES: Record<LearningInteractionType, OutputFormatTempl
       },
     ],
     requiredActionExample:
-      "继续当前关卡｜请根据当前上下文告诉我接下来最小的一步应该做什么。",
+      "进入下一步｜请继续当前关卡中的下一项练习，并告诉我先做什么。",
   },
   blocked_help: {
     summaryInstruction: "第一段先判断用户卡在哪里，并指出先排查什么。",
@@ -87,10 +87,10 @@ const OUTPUT_FORMAT_TEMPLATES: Record<LearningInteractionType, OutputFormatTempl
       },
     ],
     requiredActionExample:
-      "继续下一步｜请根据我刚完成的结果，告诉我当前最值得做的下一步。",
+      "进入下一关｜我已完成当前关卡，请带我进入下一关并告诉我开头第一步该做什么。",
   },
   path_guidance: {
-    summaryInstruction: "第一段直接回答当前下一步是什么，以及为什么先做它。",
+    summaryInstruction: "第一段直接回答当前下一步是什么，以及为什么先做它；如果仍在当前关卡内推进，只能写“下一步/下一项练习”，不能写“下一关”。",
     sections: [
       {
         title: "当前建议",
@@ -106,7 +106,7 @@ const OUTPUT_FORMAT_TEMPLATES: Record<LearningInteractionType, OutputFormatTempl
       },
     ],
     requiredActionExample:
-      "继续当前关卡｜请根据当前上下文告诉我接下来最小的一步应该做什么。",
+      "进入下一步｜请继续当前关卡中的下一项练习，并告诉我先做什么。",
   },
 }
 

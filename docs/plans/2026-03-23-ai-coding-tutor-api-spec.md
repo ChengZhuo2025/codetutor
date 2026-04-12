@@ -634,7 +634,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 当前接口已经真实落地并接入 `/learn`
 - 当前已接通真实 AI 编排链路：会话创建/复用、用户消息持久化、agent 解析、skill 上下文装配、provider 调用、assistant 消息持久化、`llm_invocations` 审计写入
 - 当前同时支持 `application/json` 与 `text/event-stream` 两种返回方式；当请求头 `Accept` 包含 `text/event-stream` 或请求体传 `stream=true` 时，返回 SSE
-- 当前消息返回与持久化都已显式包含 `structuredContent`，其中至少包含 `interactionType`、`variant`、`summary`、`blocks`、`sections`、`actions`
+- 当前消息返回与持久化都已显式包含 `structuredContent`，其中至少包含 `interactionType`、`variant`、`summary`、`blocks`、`sections`、`actions`；`blocks` / `sections.blocks` 当前支持 `heading`、`paragraph`、`code_block`、`unordered_list`、`ordered_list`
 
 请求体：
 
@@ -943,7 +943,7 @@ SSE 事件补充：
 
 - 仅允许读取当前登录用户自己的会话
 - `beforeSequenceNo` 和 `limit` 必须是正整数
-- assistant 历史消息若已落库存储 `structuredContent`，返回时应一并恢复；旧记录若缺失该字段，则服务端按兼容逻辑回填
+- assistant 历史消息若已落库存储 `structuredContent`，返回时应一并恢复；旧记录若缺失该字段，则服务端按兼容逻辑回填，包括 `code_block` 在内的结构化 block 也应兼容恢复
 
 ## 7.4 `POST /api/learning/plan-from-material`
 

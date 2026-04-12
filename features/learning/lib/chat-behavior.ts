@@ -101,6 +101,91 @@ export function shouldRenderStructuredMessageSection(input: {
   return input.blockCount > 0
 }
 
+export function canUseCompletionQuickAction(input: {
+  taskState: "pending" | "in_progress" | "blocked" | "completed"
+  messages: Array<{
+    role: "system" | "ai" | "user"
+    kind: "system_goal" | "coach" | "user_input" | "task_feedback"
+    content: string
+    interactionType:
+      | "teaching"
+      | "blocked_help"
+      | "task_review"
+      | "completion_feedback"
+      | "path_guidance"
+      | null
+    actionLabels: string[]
+    taskPatchStatus: "in_progress" | "blocked" | "completed" | null
+  }>
+}) {
+  if (input.taskState === "completed") {
+    return false
+  }
+
+  const hasUserEvidence = input.messages.some(
+    (message) => message.role === "user" && message.kind === "user_input",
+  )
+
+  if (!hasUserEvidence) {
+    return false
+  }
+
+  return [...input.messages].reverse().some((message) => {
+    if (message.role !== "ai") {
+      return false
+    }
+
+    if (
+      message.kind === "task_feedback"
+      || message.taskPatchStatus === "completed"
+      || message.interactionType === "completion_feedback"
+    ) {
+      return true
+    }
+
+    if (
+      message.interactionType !== "task_review"
+      && message.interactionType !== "path_guidance"
+    ) {
+      return false
+    }
+
+    if (
+      /(已满足本关.*完成标准|本关.*已完成|可以点击.?我完成了.?进入下一关|可以结束本关)/.test(
+        message.content,
+      )
+    ) {
+      return true
+    }
+
+    return message.actionLabels.some((label) => /完成本关|进入下一关/.test(label))
+  })
+}
+
+export function shouldCompleteCurrentTaskFromAssistantAction(input: {
+  messageKind: "system_goal" | "coach" | "user_input" | "task_feedback"
+  taskPatchStatus?: "in_progress" | "blocked" | "completed" | null
+  actionLabel: string
+  nextStep?: string | null
+}) {
+  if (input.messageKind === "task_feedback") {
+    return true
+  }
+
+  if (input.taskPatchStatus === "completed") {
+    return true
+  }
+
+  return false
+}
+
+export function shouldStabilizePendingAssistantTone(input: {
+  messageId: number
+  pendingAssistantMessageId: number | null
+}) {
+  return input.pendingAssistantMessageId === input.messageId
+}
+
 export function mergeAssistantActionIntoInput(
   currentInput: string,
   prompt: string,

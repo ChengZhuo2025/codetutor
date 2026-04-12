@@ -27,11 +27,14 @@ import type {
 } from "@/features/learning/types";
 import {
   buildComposerDraftFromAssistantAction,
+  canUseCompletionQuickAction,
   isExplicitTaskCompletionInput,
   mergeAssistantActionIntoInput,
+  shouldCompleteCurrentTaskFromAssistantAction,
   shouldRenderLearningResumeCard,
   shouldRenderMessageTaskPatch,
   shouldRenderStructuredMessageSection,
+  shouldStabilizePendingAssistantTone,
 } from "@/features/learning/lib/chat-behavior";
 import type {
   LearningCurrentSessionResponseData,
@@ -49,6 +52,7 @@ import { apiFetch, requestData } from "@/lib/api/client";
 import {
   buildStructuredLearningMessageContent,
   parseStoredStructuredLearningMessageContent,
+  resolveRenderableStructuredLearningMessageContent,
 } from "@/lib/learning/structured-message";
 import { cn } from "@/lib/utils";
 import { useAppEventTracker } from "@/providers/app-providers";
@@ -109,7 +113,8 @@ const MESSAGE_KIND_META = {
   },
   user_input: {
     badge: "我的反馈",
-    bubbleClass: "border-border/70 bg-surface-3/70 text-foreground",
+    bubbleClass:
+      "border-brand/80 bg-brand font-medium text-white dark:text-black",
     avatarClass: "bg-surface-4 text-muted-foreground",
     avatarLabel: "我",
   },
@@ -123,12 +128,12 @@ const MESSAGE_KIND_META = {
 
 const CHAT_TONE_CLASS = {
   info: {
-    panel: "border-border/10 bg-surface-3/70",
+    panel: "border-brand/5 bg-brand-dim/45",
     badge: "border-brand/20 bg-brand-dim/60 text-brand",
     icon: "text-brand",
   },
   warning: {
-    panel: "border-border/10 bg-surface-3/70",
+    panel: "border-brand/5 bg-brand-dim/45",
     badge: "border-gold/25 bg-gold-dim text-gold",
     icon: "text-gold",
   },
@@ -314,136 +319,99 @@ const ASSISTANT_MESSAGE_INTERACTION_META: Record<
 
 type MessageInlineToken =
   | { type: "text"; value: string }
-  | { type: "strong"; value: string };
-
-type MessageBlock =
-  | { type: "heading"; text: string }
-  | { type: "paragraph"; text: string }
-  | { type: "unordered_list"; items: string[] }
-  | { type: "ordered_list"; items: string[] };
+  | { type: "strong"; value: string }
+  | { type: "code"; value: string };
 
 function tokenizeInlineText(text: string): MessageInlineToken[] {
-  const parts = text.split(/\*\*(.*?)\*\*/g);
+  const tokens: MessageInlineToken[] = [];
+  const pattern = /(\*\*[^*]+\*\*|`[^`\n]+`)/g;
+  let lastIndex = 0;
 
-  return parts
-    .filter((part) => part.length > 0)
-    .map((part, index) =>
-      index % 2 === 1
-        ? { type: "strong" as const, value: part }
-        : { type: "text" as const, value: part },
-    );
-}
+  for (const match of text.matchAll(pattern)) {
+    const matched = match[0];
+    const start = match.index ?? 0;
 
-function renderInlineText(text: string, keyPrefix: string) {
-  return tokenizeInlineText(text).map((token, index) =>
-    token.type === "strong" ? (
-      <strong
-        key={`${keyPrefix}-strong-${index}`}
-        className="font-semibold text-foreground"
-      >
-        {token.value}
-      </strong>
-    ) : (
-      <span key={`${keyPrefix}-text-${index}`}>{token.value}</span>
-    ),
-  );
-}
-
-function parseMessageBlocks(text: string): MessageBlock[] {
-  const lines = text.split("\n");
-  const blocks: MessageBlock[] = [];
-  let paragraphBuffer: string[] = [];
-
-  const flushParagraph = () => {
-    if (paragraphBuffer.length === 0) {
-      return;
-    }
-
-    const textValue = paragraphBuffer.join(" ").trim();
-    if (textValue) {
-      blocks.push({
-        type: "paragraph",
-        text: textValue,
+    if (start > lastIndex) {
+      tokens.push({
+        type: "text",
+        value: text.slice(lastIndex, start),
       });
     }
-    paragraphBuffer = [];
-  };
 
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index]?.trim() ?? "";
-
-    if (!line) {
-      flushParagraph();
-      continue;
-    }
-
-    if (line.startsWith("**") && line.endsWith("**") && line.length > 4) {
-      flushParagraph();
-      blocks.push({
-        type: "heading",
-        text: line.slice(2, -2).trim(),
+    if (matched.startsWith("**") && matched.endsWith("**")) {
+      tokens.push({
+        type: "strong",
+        value: matched.slice(2, -2),
       });
-      continue;
-    }
-
-    if (line.startsWith("- ")) {
-      flushParagraph();
-      const items: string[] = [];
-      let pointer = index;
-
-      while (pointer < lines.length) {
-        const current = lines[pointer]?.trim() ?? "";
-        if (!current.startsWith("- ")) {
-          break;
-        }
-        items.push(current.slice(2).trim());
-        pointer += 1;
-      }
-
-      blocks.push({
-        type: "unordered_list",
-        items,
+    } else if (matched.startsWith("`") && matched.endsWith("`")) {
+      tokens.push({
+        type: "code",
+        value: matched.slice(1, -1),
       });
-      index = pointer - 1;
-      continue;
     }
 
-    if (/^\d+\. /.test(line)) {
-      flushParagraph();
-      const items: string[] = [];
-      let pointer = index;
-
-      while (pointer < lines.length) {
-        const current = lines[pointer]?.trim() ?? "";
-        if (!/^\d+\. /.test(current)) {
-          break;
-        }
-        items.push(current.replace(/^\d+\. /, "").trim());
-        pointer += 1;
-      }
-
-      blocks.push({
-        type: "ordered_list",
-        items,
-      });
-      index = pointer - 1;
-      continue;
-    }
-
-    paragraphBuffer.push(line);
+    lastIndex = start + matched.length;
   }
 
-  flushParagraph();
-  return blocks;
+  if (lastIndex < text.length) {
+    tokens.push({
+      type: "text",
+      value: text.slice(lastIndex),
+    });
+  }
+
+  return tokens.filter((token) => token.value.length > 0);
 }
 
-function renderPlainContent(text: string) {
+type PlainTextTone = "default" | "inverted";
+
+function renderInlineText(
+  text: string,
+  keyPrefix: string,
+  tone: PlainTextTone = "default",
+) {
+  const strongClass =
+    tone === "inverted"
+      ? "font-semibold text-white dark:text-black"
+      : "font-semibold text-foreground";
+  const codeClass =
+    tone === "inverted"
+      ? "rounded-sm bg-white/15 px-2 py-1 font-mono text-[0.92em] text-white dark:bg-black/10 dark:text-black"
+      : "rounded-sm bg-black/8 dark:bg-white/10 px-2 py-1 font-mono text-[0.92em] text-foreground";
+
+  return tokenizeInlineText(text).map((token, index) => {
+    if (token.type === "strong") {
+      return (
+        <strong key={`${keyPrefix}-strong-${index}`} className={strongClass}>
+          {token.value}
+        </strong>
+      );
+    }
+
+    if (token.type === "code") {
+      return (
+        <code key={`${keyPrefix}-code-${index}`} className={codeClass}>
+          {token.value}
+        </code>
+      );
+    }
+
+    return <span key={`${keyPrefix}-text-${index}`}>{token.value}</span>;
+  });
+}
+
+function renderPlainContent(text: string, tone: PlainTextTone = "default") {
+  const paragraphClass =
+    tone === "inverted"
+      ? "text-white/95 dark:text-black/90"
+      : "text-foreground/90";
+
   return text.split("\n").map((line, index) =>
     line === "" ? (
       <div key={`spacer-${index}`} className="h-2" />
     ) : (
-      <p key={`line-${index}`} className="text-foreground/90">
-        {renderInlineText(line, `plain-${index}`)}
+      <p key={`line-${index}`} className={paragraphClass}>
+        {renderInlineText(line, `plain-${index}`, tone)}
       </p>
     ),
   );
@@ -451,6 +419,9 @@ function renderPlainContent(text: string) {
 
 function resolveAssistantInteractionType(
   message: Message,
+  options?: {
+    allowContentHeuristics?: boolean;
+  },
 ): LearningInteractionType {
   if (message.structuredContent?.interactionType) {
     return message.structuredContent.interactionType;
@@ -469,7 +440,8 @@ function resolveAssistantInteractionType(
   if (
     title.includes("排查") ||
     message.taskPatch?.status === "blocked" ||
-    /报错|错误|failed|失败|卡住/i.test(content)
+    ((options?.allowContentHeuristics ?? true) &&
+      /报错|错误|failed|失败|卡住/i.test(content))
   ) {
     return "blocked_help";
   }
@@ -581,25 +553,37 @@ function renderAssistantMessageLead(
 }
 
 function renderStructuredContent(
+  title: string | undefined,
   text: string,
   kind: Message["kind"],
   interactionType: LearningInteractionType,
   variant: AssistantMessageVariant,
+  taskPatch?: Message["taskPatch"],
   structuredContent?: Message["structuredContent"],
 ) {
-  const fallbackBlocks = parseMessageBlocks(text);
+  const fallbackStructuredContent =
+    resolveRenderableStructuredLearningMessageContent({
+      title: title ?? null,
+      kind,
+      interactionType,
+      content: text,
+      taskPatch: taskPatch ?? null,
+      storedContent: structuredContent ?? null,
+    }) ?? structuredContent;
+  const fallbackBlocks = fallbackStructuredContent?.blocks ?? [];
   const firstFallbackBlock = fallbackBlocks[0] ?? null;
   const fallbackHasSummary = firstFallbackBlock?.type === "paragraph";
   const summaryText =
-    structuredContent?.summary ??
+    fallbackStructuredContent?.summary ??
     (fallbackHasSummary ? firstFallbackBlock.text : null);
   const detailBlocks =
-    structuredContent?.blocks ??
+    fallbackStructuredContent?.blocks ??
     (fallbackHasSummary ? fallbackBlocks.slice(1) : fallbackBlocks);
   const interactionMeta = ASSISTANT_MESSAGE_INTERACTION_META[interactionType];
   const sections =
-    structuredContent?.sections && structuredContent.sections.length > 0
-      ? structuredContent.sections
+    fallbackStructuredContent?.sections &&
+    fallbackStructuredContent.sections.length > 0
+      ? fallbackStructuredContent.sections
       : [
           {
             title: null,
@@ -626,7 +610,7 @@ function renderStructuredContent(
         <div className="rounded-2xl bg-background/50 px-3.5 py-3">
           <p
             className={cn(
-              "text-sm font-medium leading-6",
+              "whitespace-pre-wrap text-sm font-medium leading-6",
               interactionMeta.summaryClass,
             )}
           >
@@ -649,7 +633,7 @@ function renderStructuredContent(
               ? CHAT_TONE_CLASS.warning.panel
               : section.tone === "info"
                 ? interactionMeta.sectionClass
-                : "border-border/80 bg-surface-3";
+                : "border-brand/5 bg-brand-dim/45";
 
         return (
           <div
@@ -685,13 +669,33 @@ function renderStructuredContent(
                   return (
                     <p
                       key={`paragraph-${sectionIndex}-${blockIndex}`}
-                      className="text-sm leading-6 text-foreground/90"
+                      className="whitespace-pre-wrap text-sm leading-6 text-foreground/90"
                     >
                       {renderInlineText(
                         block.text,
                         `paragraph-${sectionIndex}-${blockIndex}`,
                       )}
                     </p>
+                  );
+                }
+
+                if (block.type === "code_block") {
+                  return (
+                    <div
+                      key={`code-${sectionIndex}-${blockIndex}`}
+                      className="overflow-hidden rounded-2xl border border-white/20 bg-black/90 dark:border-white/10 dark:bg-background/50"
+                    >
+                      {block.language ? (
+                        <div className="border-b border-white/20 px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.12em] text-white/70 dark:border-white/10">
+                          {block.language}
+                        </div>
+                      ) : null}
+                      <pre className="overflow-x-auto px-3.5 py-3 text-[13px] leading-6 text-white">
+                        <code className="block whitespace-pre font-mono">
+                          {block.code}
+                        </code>
+                      </pre>
+                    </div>
                   );
                 }
 
@@ -993,6 +997,33 @@ export function LearnChat({
     setResumeCardDismissed(false);
   }, [learningData.path.id, hasResume]);
   const inputHint = getInputHint(connectionState, isTyping, previewAttachment);
+  const canTriggerCompleteQuickAction = canUseCompletionQuickAction({
+    taskState,
+    messages: messages.map((message) => ({
+      role: message.role,
+      kind: message.kind,
+      content: message.content,
+      interactionType:
+        message.role === "ai"
+          ? resolveAssistantInteractionType(message)
+          : null,
+      actionLabels:
+        message.structuredContent?.actions?.map((action) => action.label) ??
+        [],
+      taskPatchStatus: message.taskPatch?.status ?? null,
+    })),
+  });
+
+  const scrollToConversationBottom = (behavior: ScrollBehavior = "smooth") => {
+    window.requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior });
+    });
+  };
+
+  const requestSessionRefresh = () => {
+    onRequestRefresh();
+    window.setTimeout(() => onRequestRefresh(), 180);
+  };
 
   useEffect(() => {
     setMessages(learningData.messages);
@@ -1299,10 +1330,7 @@ export function LearnChat({
       setFailedDraft(null);
       setInput("");
       setPreviewAttachment(null);
-
-      window.setTimeout(() => {
-        onRequestRefresh();
-      }, 400);
+      requestSessionRefresh();
     } catch (error) {
       setSendError(
         error instanceof Error ? error.message : "任务完成失败，请稍后重试。",
@@ -1651,6 +1679,47 @@ export function LearnChat({
     });
   };
 
+  const handleAdvanceToNextTask = async (prompt: string) => {
+    if (isTyping) return;
+
+    if (taskState !== "completed") {
+      await completeCurrentTask(prompt);
+      return;
+    }
+
+    requestSessionRefresh();
+    scrollToConversationBottom("auto");
+  };
+
+  const handleAssistantAction = (
+    message: Message,
+    action: {
+      label: string;
+      prompt: string;
+    },
+  ) => {
+    if (
+      shouldCompleteCurrentTaskFromAssistantAction({
+        messageKind: message.kind,
+        taskPatchStatus: message.taskPatch?.status ?? null,
+        actionLabel: action.label,
+        nextStep: message.nextStep ?? null,
+      })
+    ) {
+      void handleAdvanceToNextTask(action.prompt || action.label);
+      return;
+    }
+
+    handleAssistantActionPrefill(action);
+  };
+
+  const handleNextStepClick = (message: Message) => {
+    if (isTyping) return;
+    void handleAdvanceToNextTask(
+      message.nextStep ?? "我已经完成当前这一关，请进入下一关。",
+    );
+  };
+
   const handleRetry = () => {
     if (!failedDraft || connectionState !== "online") return;
     setSendError(null);
@@ -1674,6 +1743,7 @@ export function LearnChat({
     }
 
     textareaRef.current?.focus();
+    scrollToConversationBottom();
   };
 
   const handleLoadEarlierMessages = async () => {
@@ -2108,9 +2178,18 @@ export function LearnChat({
               messages.map((msg) => {
                 const meta = MESSAGE_KIND_META[msg.kind];
                 const isUser = msg.role === "user";
+                const shouldUseStablePendingTone =
+                  msg.role === "ai"
+                    ? shouldStabilizePendingAssistantTone({
+                        messageId: msg.id,
+                        pendingAssistantMessageId,
+                      })
+                    : false;
                 const interactionType =
                   msg.role === "ai"
-                    ? resolveAssistantInteractionType(msg)
+                    ? resolveAssistantInteractionType(msg, {
+                        allowContentHeuristics: !shouldUseStablePendingTone,
+                      })
                     : null;
                 const assistantVariant =
                   msg.role === "ai" && interactionType
@@ -2165,12 +2244,19 @@ export function LearnChat({
                         ) : (
                           <div className="space-y-1.5">
                             {msg.role === "user"
-                              ? renderPlainContent(msg.content)
+                              ? renderPlainContent(
+                                  msg.content,
+                                  msg.kind === "user_input"
+                                    ? "inverted"
+                                    : "default",
+                                )
                               : renderStructuredContent(
+                                  msg.title,
                                   msg.content,
                                   msg.kind,
                                   interactionType ?? "teaching",
                                   assistantVariant ?? "default",
+                                  msg.taskPatch,
                                   msg.structuredContent,
                                 )}
                           </div>
@@ -2229,9 +2315,7 @@ export function LearnChat({
                                 key={`message-action-${msg.id}-${actionIndex}`}
                                 type="button"
                                 disabled={isTyping}
-                                onClick={() =>
-                                  handleAssistantActionPrefill(action)
-                                }
+                                onClick={() => handleAssistantAction(msg, action)}
                                 className={cn(
                                   "px-3 py-2 text-sm font-medium",
                                   MESSAGE_ACTION_TONE_CLASS[action.tone],
@@ -2301,9 +2385,12 @@ export function LearnChat({
                       {msg.nextStep ? (
                         <button
                           type="button"
+                          onClick={() => handleNextStepClick(msg)}
+                          disabled={isTyping}
                           className={cn(
                             "flex items-center gap-2 self-start px-3 py-2 text-sm font-medium",
                             USER_BUTTON_PRIMARY_CLASS,
+                            isTyping && "pointer-events-none opacity-60",
                           )}
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
@@ -2365,20 +2452,33 @@ export function LearnChat({
 
             <div className="mb-3">
               <div className="flex flex-wrap gap-2">
-                {learningData.quickActions.map((action) => (
-                  <button
-                    key={action.label}
-                    type="button"
-                    onClick={() => handleQuickAction(action)}
-                    disabled={isTyping || connectionState !== "online"}
-                    className={cn(
-                      "px-3.5 py-1 text-[12px] font-medium",
-                      QUICK_ACTION_TONE_CLASS[action.tone],
-                    )}
-                  >
-                    {action.label}
-                  </button>
-                ))}
+                {learningData.quickActions.map((action) => {
+                  const isCompletionAction = action.label === "我完成了";
+                  const disabled =
+                    isTyping ||
+                    connectionState !== "online" ||
+                    (isCompletionAction && !canTriggerCompleteQuickAction);
+
+                  return (
+                    <button
+                      key={action.label}
+                      type="button"
+                      onClick={() => handleQuickAction(action)}
+                      disabled={disabled}
+                      title={
+                        isCompletionAction && !canTriggerCompleteQuickAction
+                          ? "先提交一次结果、代码或问题，再标记当前关卡完成。"
+                          : undefined
+                      }
+                      className={cn(
+                        "px-3.5 py-1 text-[12px] font-medium",
+                        QUICK_ACTION_TONE_CLASS[action.tone],
+                      )}
+                    >
+                      {action.label}
+                    </button>
+                  );
+                })}
                 {learningData.planSummary.selectionMode === "self_directed" &&
                 !learningData.planSummary.hasMaterialPlan ? (
                   <button

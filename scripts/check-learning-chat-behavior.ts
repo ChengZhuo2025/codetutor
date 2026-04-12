@@ -3,11 +3,14 @@ import assert from "node:assert/strict"
 
 import {
   buildComposerDraftFromAssistantAction,
+  canUseCompletionQuickAction,
   isExplicitTaskCompletionInput,
   mergeAssistantActionIntoInput,
+  shouldCompleteCurrentTaskFromAssistantAction,
   shouldRenderLearningResumeCard,
   shouldRenderMessageTaskPatch,
   shouldRenderStructuredMessageSection,
+  shouldStabilizePendingAssistantTone,
 } from "../features/learning/lib/chat-behavior.ts"
 
 test("shouldRenderMessageTaskPatch hides task patch while the assistant message is still streaming", () => {
@@ -84,8 +87,104 @@ test("isExplicitTaskCompletionInput recognizes strong completion intents but ign
   assert.equal(isExplicitTaskCompletionInput("我完成了"), true)
   assert.equal(isExplicitTaskCompletionInput("我已经完成第1关了，请开启下一关"), true)
   assert.equal(isExplicitTaskCompletionInput("这一关我已完成，可以继续下一步"), true)
+  assert.equal(isExplicitTaskCompletionInput("我已经准备好开始第2关的学习"), false)
+  assert.equal(isExplicitTaskCompletionInput("进入下一关"), false)
   assert.equal(isExplicitTaskCompletionInput("我完成了吗？"), false)
   assert.equal(isExplicitTaskCompletionInput("我还没完成，但想知道下一步"), false)
+})
+
+test("shouldCompleteCurrentTaskFromAssistantAction only promotes real completion actions", () => {
+  assert.equal(
+    shouldCompleteCurrentTaskFromAssistantAction({
+      messageKind: "task_feedback",
+      taskPatchStatus: "completed",
+      actionLabel: "继续下一步",
+      nextStep: "进入下一关：交互控制与智能辅助",
+    }),
+    true,
+  )
+
+  assert.equal(
+    shouldCompleteCurrentTaskFromAssistantAction({
+      messageKind: "coach",
+      taskPatchStatus: "in_progress",
+      actionLabel: "进入下一关",
+      nextStep: "进入下一关：交互控制与智能辅助",
+    }),
+    false,
+  )
+})
+
+test("canUseCompletionQuickAction requires both user evidence and assistant completion cue", () => {
+  assert.equal(
+    canUseCompletionQuickAction({
+      taskState: "in_progress",
+      messages: [
+        { role: "system", kind: "system_goal", content: "", interactionType: null, actionLabels: [], taskPatchStatus: null },
+        { role: "ai", kind: "coach", content: "先继续当前练习。", interactionType: "teaching", actionLabels: ["进入下一步"], taskPatchStatus: "in_progress" },
+      ],
+    }),
+    false,
+  )
+
+  assert.equal(
+    canUseCompletionQuickAction({
+      taskState: "in_progress",
+      messages: [
+        { role: "system", kind: "system_goal", content: "", interactionType: null, actionLabels: [], taskPatchStatus: null },
+        { role: "ai", kind: "coach", content: "先继续当前练习。", interactionType: "teaching", actionLabels: ["进入下一步"], taskPatchStatus: "in_progress" },
+        { role: "user", kind: "user_input", content: "我已经完成了这个小练习。", interactionType: null, actionLabels: [], taskPatchStatus: null },
+      ],
+    }),
+    false,
+  )
+
+  assert.equal(
+    canUseCompletionQuickAction({
+      taskState: "in_progress",
+      messages: [
+        { role: "system", kind: "system_goal", content: "", interactionType: null, actionLabels: [], taskPatchStatus: null },
+        { role: "user", kind: "user_input", content: "我已经完成了这个小练习。", interactionType: null, actionLabels: [], taskPatchStatus: null },
+        {
+          role: "ai",
+          kind: "coach",
+          content: "你已经满足本关完成标准，可以点击“我完成了”进入下一关。",
+          interactionType: "task_review",
+          actionLabels: ["进入下一关"],
+          taskPatchStatus: "in_progress",
+        },
+      ],
+    }),
+    true,
+  )
+
+  assert.equal(
+    canUseCompletionQuickAction({
+      taskState: "completed",
+      messages: [
+        { role: "user", kind: "user_input", content: "done", interactionType: null, actionLabels: [], taskPatchStatus: null },
+      ],
+    }),
+    false,
+  )
+})
+
+test("shouldStabilizePendingAssistantTone avoids content-based tone drift while streaming", () => {
+  assert.equal(
+    shouldStabilizePendingAssistantTone({
+      messageId: 7,
+      pendingAssistantMessageId: 7,
+    }),
+    true,
+  )
+
+  assert.equal(
+    shouldStabilizePendingAssistantTone({
+      messageId: 7,
+      pendingAssistantMessageId: null,
+    }),
+    false,
+  )
 })
 
 test("shouldRenderLearningResumeCard hides the resume prompt after manual dismissal", () => {

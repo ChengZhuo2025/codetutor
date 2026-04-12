@@ -26,7 +26,9 @@ import {
   buildIdempotentReplayResponse,
   doesAgentBindingMatchLearningScene,
   deriveTaskPatch,
+  finalizeAssistantTaskPatch,
   parseStoredTaskPatchMetadata,
+  resolveAssistantInteractionType,
   shouldPersistTaskPatch,
   taskPatchStatusToPersistentStatus,
 } from "./logic.ts"
@@ -261,6 +263,9 @@ function buildSystemPrompt(
     "你服务于 AI 编程学习教练产品，回答必须中文、直接、具体。",
     "不要虚构用户已经完成的结果，不要脱离当前关卡目标扩展过多。",
     "优先给当前一步、验证方式和下一步，而不是泛泛而谈。",
+    "系统里的“第 N 关”只指数据库中的真实关卡；在当前关卡内部继续推进多个练习时，只能称为“下一步 / 下一项练习 / 下一个技巧”，严禁自行发明“第4关 / 第5关 / 下一关”等新编号。",
+    "除非当前交互类型是 completion_feedback，或者你明确确认用户已满足当前关卡完成标准，否则不要建议“进入下一关”，也不要生成“第 N 关已完成”这类表述。",
+    "当前回复只能围绕本关目标、摘要和完成标准里明确出现的能力点展开，禁止引入不在本关范围内的新技巧编号、命令清单或额外课程结构。",
     "除非用户明确要求，否则不要输出 JSON。",
     "",
     "# 当前学习上下文",
@@ -895,17 +900,26 @@ async function persistAssistantResult(
   },
 ) {
   const assistantSequenceNo = input.userSequenceNo + 1
+  const assistantInteractionType = resolveAssistantInteractionType({
+    requestedInteractionType: input.interactionType,
+    assistantContent: input.providerResult.content,
+  })
+  const finalTaskPatch = finalizeAssistantTaskPatch({
+    taskId: input.task.id,
+    initialTaskPatch: input.taskPatch,
+    assistantContent: input.providerResult.content,
+  })
   const presentation = buildAssistantPresentation(
-    input.interactionType,
+    assistantInteractionType,
     input.providerResult.content,
     input.request.inputType,
   )
   const structuredContent = buildStructuredLearningMessageContent({
     title: presentation.title,
     kind: presentation.kind,
-    interactionType: input.interactionType,
+    interactionType: assistantInteractionType,
     content: presentation.content,
-    taskPatch: input.taskPatch,
+    taskPatch: finalTaskPatch,
   })
 
   const { data: assistantMessageData, error: assistantMessageError } = await input.supabase
@@ -929,12 +943,12 @@ async function persistAssistantResult(
       stream_chunk_count: input.providerResult.streamChunkCount,
       finish_reason: input.providerResult.finishReason,
       metadata: {
-        interactionType: input.interactionType,
+        interactionType: assistantInteractionType,
         agentCode: input.agent.code,
         title: presentation.title,
         kind: presentation.kind,
-        taskPatchStatus: input.taskPatch?.status ?? null,
-        taskPatchSuggestedNextAction: input.taskPatch?.suggestedNextAction ?? null,
+        taskPatchStatus: finalTaskPatch?.status ?? null,
+        taskPatchSuggestedNextAction: finalTaskPatch?.suggestedNextAction ?? null,
       },
       created_at: input.now,
     })
@@ -993,6 +1007,7 @@ async function persistAssistantResult(
     presentation,
     structuredContent,
     assistantMessageId: assistantMessageData.id,
+    taskPatch: finalTaskPatch,
   }
 }
 
@@ -1099,7 +1114,11 @@ export async function orchestrateLearningMessage(
       temperature: agent.temperature,
       maxOutputTokens: agent.max_output_tokens,
     })
-    const { presentation, structuredContent } = await persistAssistantResult({
+    const {
+      presentation,
+      structuredContent,
+      taskPatch: finalTaskPatch,
+    } = await persistAssistantResult({
       ...prepared,
       userId,
       request,
@@ -1118,7 +1137,7 @@ export async function orchestrateLearningMessage(
       assistantKind: presentation.kind,
       assistantContent: presentation.content,
       structuredContent,
-      taskPatch,
+      taskPatch: finalTaskPatch,
     })
   } catch (error) {
     const message =
@@ -1241,7 +1260,12 @@ export async function streamLearningMessage(
           },
         })
 
-        const { assistantMessageId, presentation, structuredContent } = await persistAssistantResult({
+        const {
+          assistantMessageId,
+          presentation,
+          structuredContent,
+          taskPatch: finalTaskPatch,
+        } = await persistAssistantResult({
           ...prepared,
           userId,
           request,
@@ -1251,6 +1275,17 @@ export async function streamLearningMessage(
           providerResult,
           taskPatch,
         })
+
+        if (
+          finalTaskPatch
+          && (
+            !taskPatch
+            || taskPatch.status !== finalTaskPatch.status
+            || taskPatch.suggestedNextAction !== finalTaskPatch.suggestedNextAction
+          )
+        ) {
+          send("task_patch", finalTaskPatch)
+        }
 
         send("assistant_done", {
           messageId: assistantMessageId,

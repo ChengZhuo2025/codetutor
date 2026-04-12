@@ -29,6 +29,7 @@ import { extractJsonObjectString } from "./json-parse.ts"
 import { invokePlannerModel } from "./planner-runtime.ts"
 import { buildPlannerUserMessage } from "./prompt.ts"
 import { runPlanQualityGate } from "./quality-gate.ts"
+import { analyzePlannerSourceStructure } from "./source-structure.ts"
 import {
   plannerTaskSchema,
   plannerOutputSchema,
@@ -1302,14 +1303,7 @@ export async function executeMaterialPlanGenerationRun(runId: string) {
     const { learningLevelLabel, targetToolName } =
       await loadProfileForPlanner(run.user_id)
 
-    const userMessage = buildPlannerUserMessage({
-      chunks,
-      userGoal: plannerInput?.userGoal ?? null,
-      weeklyHours: plannerInput?.weeklyHours ?? null,
-      currentConstraints: plannerInput?.currentConstraints ?? null,
-      targetToolName,
-      learningLevelLabel,
-    })
+    const sourceStructure = analyzePlannerSourceStructure(chunks)
 
     const intakeWarnings = sourceSnapshots.flatMap((snapshot) => readWarningsFromMetadata(snapshot.metadata))
     const evidenceCoverage = aggregateCoverageFromSourceSnapshots(sourceSnapshots)
@@ -1317,8 +1311,20 @@ export async function executeMaterialPlanGenerationRun(runId: string) {
 
     let plan: PlannerOutput | null = null
     let qualityGateResult: Awaited<ReturnType<typeof runPlanQualityGate>> | null = null
+    let retryFeedback: string | null = null
 
     for (let attempt = 1; attempt <= 2; attempt += 1) {
+      const userMessage = buildPlannerUserMessage({
+        chunks,
+        userGoal: plannerInput?.userGoal ?? null,
+        weeklyHours: plannerInput?.weeklyHours ?? null,
+        currentConstraints: plannerInput?.currentConstraints ?? null,
+        targetToolName,
+        learningLevelLabel,
+        sourceStructure,
+        retryFeedback,
+      })
+
       let planned: PlannerOutput
       try {
         planned = await invokePlannerWithRetry(userMessage)
@@ -1340,6 +1346,7 @@ export async function executeMaterialPlanGenerationRun(runId: string) {
         intakeWarnings,
         evidenceCoverage,
         qualityRuntime,
+        sourceStructure,
         attempt,
         maxAttempts: 2,
       })
@@ -1347,6 +1354,8 @@ export async function executeMaterialPlanGenerationRun(runId: string) {
       if (qualityGateResult.decision !== "retry") {
         break
       }
+
+      retryFeedback = qualityGateResult.qualityReport.warnings.at(-1) ?? "关卡拆分过粗，请按材料原始节奏重新规划。"
     }
 
     if (!plan || !qualityGateResult) {

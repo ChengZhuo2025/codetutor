@@ -23,6 +23,11 @@ export type StructuredLearningMessageBlock =
       text: string
     }
   | {
+      type: "code_block"
+      language: string | null
+      code: string
+    }
+  | {
       type: "unordered_list"
       items: string[]
     }
@@ -76,6 +81,62 @@ function normalizeText(value: string) {
   return value.trim()
 }
 
+function stripInlineMarkdown(value: string) {
+  return value
+    .replace(/\[([^[\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .trim()
+}
+
+function normalizeActionLabel(value: string) {
+  return stripInlineMarkdown(value)
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function normalizeActionPrompt(value: string) {
+  return stripInlineMarkdown(value)
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function normalizeInTaskAction(
+  action: StructuredLearningMessageAction,
+  interactionType: LearningInteractionType,
+): StructuredLearningMessageAction {
+  if (interactionType === "completion_feedback") {
+    return action
+  }
+
+  const label = normalizeActionLabel(action.label)
+  const prompt = normalizeActionPrompt(action.prompt)
+  const combined = `${label} ${prompt}`
+
+  if (/(巩固).*(第\s*\d+\s*关|下一关)/.test(combined)) {
+    return {
+      ...action,
+      label: "巩固本关技巧",
+      prompt: "我想再巩固一下当前这一关的一个技巧，请给我一个针对性的练习任务。",
+    }
+  }
+
+  if (/(进入|开始).*(第\s*\d+\s*关|下一关)|请介绍第\s*\d+\s*关/.test(combined)) {
+    return {
+      ...action,
+      label: "进入下一步",
+      prompt: "请继续当前关卡中的下一项练习，并告诉我先做什么。",
+    }
+  }
+
+  return {
+    ...action,
+    label,
+    prompt,
+  }
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0
 }
@@ -97,7 +158,7 @@ function parseBlocksFromText(text: string): {
       return
     }
 
-    const paragraph = paragraphBuffer.join(" ").trim()
+    const paragraph = paragraphBuffer.join("\n").trim()
     if (paragraph) {
       blocks.push({
         type: "paragraph",
@@ -108,7 +169,8 @@ function parseBlocksFromText(text: string): {
   }
 
   for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index]?.trim() ?? ""
+    const rawLine = lines[index] ?? ""
+    const line = rawLine.trim()
 
     if (!line) {
       flushParagraph()
@@ -130,6 +192,33 @@ function parseBlocksFromText(text: string): {
         type: "heading",
         text: line.slice(2, -2).trim(),
       })
+      continue
+    }
+
+    if (line.startsWith("```")) {
+      flushParagraph()
+
+      const language = line.slice(3).trim() || null
+      const codeLines: string[] = []
+      let pointer = index + 1
+
+      while (pointer < lines.length) {
+        const currentRawLine = lines[pointer] ?? ""
+        if (currentRawLine.trim().startsWith("```")) {
+          break
+        }
+
+        codeLines.push(currentRawLine)
+        pointer += 1
+      }
+
+      blocks.push({
+        type: "code_block",
+        language,
+        code: codeLines.join("\n").replace(/\n+$/, ""),
+      })
+
+      index = pointer < lines.length ? pointer : lines.length - 1
       continue
     }
 
@@ -224,8 +313,8 @@ function parseStructuredActionItem(
   }
 
   return {
-    label: match[1].trim(),
-    prompt: match[2].trim(),
+    label: normalizeActionLabel(match[1]),
+    prompt: normalizeActionPrompt(match[2]),
     tone: fallbackTone,
   }
 }
@@ -345,7 +434,7 @@ function buildStructuredActions(input: {
     }
 
     if (actions.length > 0) {
-      return actions
+      return actions.map((action) => normalizeInTaskAction(action, input.interactionType))
     }
   }
 
@@ -379,8 +468,8 @@ function buildStructuredActions(input: {
   ) {
     return [
       {
-        label: "继续下一步",
-        prompt: "请根据我刚完成的结果，告诉我当前最值得做的下一步。",
+        label: "进入下一关",
+        prompt: "我已完成当前关卡，请带我进入下一关并告诉我开头第一步该做什么。",
         tone: "success",
       },
     ]
@@ -418,8 +507,8 @@ function buildStructuredActions(input: {
 
   return [
     {
-      label: "继续当前关卡",
-      prompt: "请根据当前上下文告诉我接下来最小的一步应该做什么。",
+      label: "进入下一步",
+      prompt: "请继续当前关卡中的下一项练习，并告诉我先做什么。",
       tone: "primary",
     },
   ]
@@ -521,6 +610,31 @@ export function buildStructuredLearningMessageContent(
   }
 }
 
+export function resolveRenderableStructuredLearningMessageContent(
+  input: StructuredMessageInput & {
+    storedContent?: StructuredLearningMessageContent | null
+  },
+): StructuredLearningMessageContent | null {
+  const rebuiltContent = buildStructuredLearningMessageContent(input)
+  const storedContent = input.storedContent ?? null
+
+  if (!rebuiltContent) {
+    return storedContent
+  }
+
+  return {
+    interactionType: rebuiltContent.interactionType,
+    variant: rebuiltContent.variant,
+    summary: rebuiltContent.summary ?? storedContent?.summary ?? null,
+    blocks: rebuiltContent.blocks,
+    sections: rebuiltContent.sections,
+    actions:
+      rebuiltContent.actions.length > 0
+        ? rebuiltContent.actions
+        : storedContent?.actions ?? [],
+  }
+}
+
 export function parseStoredStructuredLearningMessageContent(
   value: unknown,
 ): StructuredLearningMessageContent | null {
@@ -590,6 +704,18 @@ export function parseStoredStructuredLearningMessageContent(
         }
       }
 
+      if (
+        item.type === "code_block"
+        && typeof item.code === "string"
+        && (item.language === null || isNonEmptyString(item.language))
+      ) {
+        return {
+          type: "code_block" as const,
+          language: item.language === null ? null : item.language.trim(),
+          code: item.code.replace(/\r\n/g, "\n"),
+        }
+      }
+
       if (item.type === "unordered_list" && isStringArray(item.items)) {
         return {
           type: "unordered_list" as const,
@@ -650,6 +776,18 @@ export function parseStoredStructuredLearningMessageContent(
                 if (blockRecord.type === "paragraph" && isNonEmptyString(blockRecord.text)) {
                   return { type: "paragraph" as const, text: blockRecord.text.trim() }
                 }
+                if (
+                  blockRecord.type === "code_block"
+                  && typeof blockRecord.code === "string"
+                  && (blockRecord.language === null || isNonEmptyString(blockRecord.language))
+                ) {
+                  return {
+                    type: "code_block" as const,
+                    language:
+                      blockRecord.language === null ? null : blockRecord.language.trim(),
+                    code: blockRecord.code.replace(/\r\n/g, "\n"),
+                  }
+                }
                 if (blockRecord.type === "unordered_list" && isStringArray(blockRecord.items)) {
                   return {
                     type: "unordered_list" as const,
@@ -696,8 +834,8 @@ export function parseStoredStructuredLearningMessageContent(
             }
 
             return {
-              label: item.label.trim(),
-              prompt: item.prompt.trim(),
+              label: normalizeActionLabel(item.label),
+              prompt: normalizeActionPrompt(item.prompt),
               tone: item.tone,
             } satisfies StructuredLearningMessageAction
           })
@@ -707,6 +845,9 @@ export function parseStoredStructuredLearningMessageContent(
           variant,
           blocks: normalizedBlocks,
         })
+  const normalizedActionItems = normalizedActions
+    .map((action) => normalizeInTaskAction(action, normalizedInteractionType))
+    .filter((action) => action.label.length > 0 && action.prompt.length > 0)
 
   return {
     interactionType: normalizedInteractionType,
@@ -714,6 +855,6 @@ export function parseStoredStructuredLearningMessageContent(
     summary: summary === null ? null : summary.trim(),
     blocks: normalizedBlocks,
     sections: normalizedSections,
-    actions: normalizedActions,
+    actions: normalizedActionItems,
   }
 }

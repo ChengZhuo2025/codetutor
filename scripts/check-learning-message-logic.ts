@@ -6,14 +6,18 @@ import {
   classifyLearningRouteError,
   deriveTaskPatch,
   doesAgentBindingMatchLearningScene,
+  finalizeAssistantTaskPatch,
   hasLearningResumeHistory,
   parseStoredTaskPatchMetadata,
+  resolveAssistantInteractionType,
   resolveLearningResponseMode,
   shouldPersistTaskPatch,
+  shouldTreatAssistantResponseAsCompletion,
 } from "../server/modules/learning/logic.ts"
 import {
   buildStructuredLearningMessageContent,
   parseStoredStructuredLearningMessageContent,
+  resolveRenderableStructuredLearningMessageContent,
 } from "../lib/learning/structured-message.ts"
 import {
   LearningAIProviderError,
@@ -108,6 +112,61 @@ test("deriveTaskPatch keeps normal teaching interactions in progress before task
       taskId: "task-2",
       status: "in_progress",
       suggestedNextAction: "继续围绕当前关卡做最小验证，并把结果反馈回来",
+    },
+  )
+})
+
+test("assistant completion detection only upgrades real pass/fail conclusions", () => {
+  assert.equal(
+    shouldTreatAssistantResponseAsCompletion(
+      "结合你之前对 /clear 的准确理解，你已经满足了本关的完成标准。",
+    ),
+    true,
+  )
+
+  assert.equal(
+    shouldTreatAssistantResponseAsCompletion(
+      "为了全面验收本关，我们还需要确认其他三项技巧的掌握情况。",
+    ),
+    false,
+  )
+})
+
+test("resolveAssistantInteractionType upgrades teaching replies that clearly confirm current-stage completion", () => {
+  assert.equal(
+    resolveAssistantInteractionType({
+      requestedInteractionType: "teaching",
+      assistantContent:
+        "非常好！结合你之前的展示，你已经满足了本关的完成标准。建议进入下一关。",
+    }),
+    "completion_feedback",
+  )
+
+  assert.equal(
+    resolveAssistantInteractionType({
+      requestedInteractionType: "teaching",
+      assistantContent: "现在进入关卡验收，请再选择至少一项进行演示。",
+    }),
+    "teaching",
+  )
+})
+
+test("finalizeAssistantTaskPatch upgrades accepted review replies into a completion-ready patch", () => {
+  assert.deepEqual(
+    finalizeAssistantTaskPatch({
+      taskId: "task-3",
+      initialTaskPatch: {
+        taskId: "task-3",
+        status: "in_progress",
+        suggestedNextAction: "继续围绕当前关卡做最小验证，并把结果反馈回来",
+      },
+      assistantContent:
+        "结合你之前对 /clear 的准确理解，你已经满足了本关的完成标准。",
+    }),
+    {
+      taskId: "task-3",
+      status: "completed",
+      suggestedNextAction: "你已达到本关完成标准，可点击“我完成了”进入下一关。",
     },
   )
 })
@@ -307,8 +366,8 @@ test("parseStoredStructuredLearningMessageContent restores persisted structured 
       ],
       actions: [
         {
-          label: "继续下一步",
-          prompt: "请根据我刚完成的结果，告诉我当前最值得做的下一步。",
+          label: "进入下一关",
+          prompt: "我已完成当前关卡，请带我进入下一关并告诉我开头第一步该做什么。",
           tone: "success",
         },
       ],
@@ -408,6 +467,127 @@ test("buildStructuredLearningMessageContent parses agent-native markdown heading
   )
 })
 
+test("buildStructuredLearningMessageContent preserves fenced code blocks for learn chat rendering", () => {
+  assert.deepEqual(
+    buildStructuredLearningMessageContent({
+      title: "最小示例",
+      kind: "coach",
+      interactionType: "teaching",
+      content: [
+        "先直接跑通这个最小示例。",
+        "",
+        "## 示例代码",
+        "```bash",
+        "pnpm lint",
+        "pnpm build",
+        "```",
+        "",
+        "## 关键提醒",
+        "- 需要在项目根目录执行",
+      ].join("\n"),
+    }),
+    {
+      interactionType: "teaching",
+      variant: "example",
+      summary: "先直接跑通这个最小示例。",
+      blocks: [
+        {
+          type: "heading",
+          text: "示例代码",
+        },
+        {
+          type: "code_block",
+          language: "bash",
+          code: "pnpm lint\npnpm build",
+        },
+        {
+          type: "heading",
+          text: "关键提醒",
+        },
+        {
+          type: "unordered_list",
+          items: ["需要在项目根目录执行"],
+        },
+      ],
+      sections: [
+        {
+          title: "示例代码",
+          tone: "info",
+          blocks: [
+            {
+              type: "code_block",
+              language: "bash",
+              code: "pnpm lint\npnpm build",
+            },
+          ],
+        },
+        {
+          title: "关键提醒",
+          tone: "info",
+          blocks: [
+            {
+              type: "unordered_list",
+              items: ["需要在项目根目录执行"],
+            },
+          ],
+        },
+      ],
+      actions: [
+        {
+          label: "给我最小示例",
+          prompt: "请给我一个最小可运行示例，并说明我该先验证什么。",
+          tone: "secondary",
+        },
+      ],
+    },
+  )
+})
+
+test("buildStructuredLearningMessageContent preserves single line breaks inside paragraphs", () => {
+  assert.deepEqual(
+    buildStructuredLearningMessageContent({
+      title: "排查建议",
+      kind: "coach",
+      interactionType: "blocked_help",
+      content: [
+        "先确认下面两点：",
+        "当前目录是否正确",
+        "分支是否切对了",
+      ].join("\n"),
+    })?.summary,
+    "先确认下面两点：\n当前目录是否正确\n分支是否切对了",
+  )
+})
+
+test("buildStructuredLearningMessageContent strips markdown from action labels and downgrades fake next-stage actions inside the current task", () => {
+  assert.deepEqual(
+    buildStructuredLearningMessageContent({
+      title: "下一步建议",
+      kind: "coach",
+      interactionType: "path_guidance",
+      content: [
+        "先完成本关当前这个练习，再继续。",
+        "",
+        "## 建议动作",
+        "- **进入下一关**｜请介绍第5关的内容和第一步应该做什么。",
+        "- **巩固第4关技巧**｜我想再练习一下 [具体技巧，如全局搜索]，有什么建议的练习任务？",
+      ].join("\n"),
+    })?.actions,
+    [
+      {
+        label: "进入下一步",
+        prompt: "请继续当前关卡中的下一项练习，并告诉我先做什么。",
+        tone: "secondary",
+      },
+      {
+        label: "巩固本关技巧",
+        prompt: "我想再巩固一下当前这一关的一个技巧，请给我一个针对性的练习任务。",
+        tone: "secondary",
+      },
+    ],
+  )
+})
+
 test("parseStoredStructuredLearningMessageContent falls back to inferred interactionType for legacy payload", () => {
   assert.deepEqual(
     parseStoredStructuredLearningMessageContent({
@@ -421,6 +601,160 @@ test("parseStoredStructuredLearningMessageContent falls back to inferred interac
       summary: "先补充完整报错。",
       blocks: [],
       sections: [],
+      actions: [
+        {
+          label: "补充报错信息",
+          prompt: "请补充当前执行命令、终端输出和你预期的结果。",
+          tone: "warning",
+        },
+      ],
+    },
+  )
+})
+
+test("parseStoredStructuredLearningMessageContent normalizes stored action labels and prompts", () => {
+  assert.deepEqual(
+    parseStoredStructuredLearningMessageContent({
+      interactionType: "path_guidance",
+      variant: "path_guidance",
+      summary: "继续推进当前关卡。",
+      blocks: [],
+      actions: [
+        {
+          label: "**进入下一关**",
+          prompt: "请介绍第5关的内容和第一步应该做什么。",
+          tone: "secondary",
+        },
+      ],
+    })?.actions,
+    [
+      {
+        label: "进入下一步",
+        prompt: "请继续当前关卡中的下一项练习，并告诉我先做什么。",
+        tone: "secondary",
+      },
+    ],
+  )
+})
+
+test("parseStoredStructuredLearningMessageContent restores persisted code blocks", () => {
+  assert.deepEqual(
+    parseStoredStructuredLearningMessageContent({
+      interactionType: "teaching",
+      variant: "example",
+      summary: "先执行下面这段代码。",
+      blocks: [
+        {
+          type: "code_block",
+          language: "typescript",
+          code: "const answer = 42;",
+        },
+      ],
+    }),
+    {
+      interactionType: "teaching",
+      variant: "example",
+      summary: "先执行下面这段代码。",
+      blocks: [
+        {
+          type: "code_block",
+          language: "typescript",
+          code: "const answer = 42;",
+        },
+      ],
+      sections: [
+        {
+          title: null,
+          tone: "info",
+          blocks: [
+            {
+              type: "code_block",
+              language: "typescript",
+              code: "const answer = 42;",
+            },
+          ],
+        },
+      ],
+      actions: [
+        {
+          label: "给我最小示例",
+          prompt: "请给我一个最小可运行示例，并说明我该先验证什么。",
+          tone: "secondary",
+        },
+      ],
+    },
+  )
+})
+
+test("resolveRenderableStructuredLearningMessageContent reparses raw markdown to repair legacy malformed stored blocks", () => {
+  assert.deepEqual(
+    resolveRenderableStructuredLearningMessageContent({
+      title: "排查建议",
+      kind: "coach",
+      interactionType: "blocked_help",
+      content: [
+        "先跑这段命令。",
+        "",
+        "```bash",
+        "pwd",
+        "git branch",
+        "```",
+      ].join("\n"),
+      storedContent: {
+        interactionType: "blocked_help",
+        variant: "blocked_help",
+        summary: "先跑这段命令。",
+        blocks: [
+          {
+            type: "paragraph",
+            text: "```bash pwd git branch ```",
+          },
+        ],
+        sections: [
+          {
+            title: null,
+            tone: "warning",
+            blocks: [
+              {
+                type: "paragraph",
+                text: "```bash pwd git branch ```",
+              },
+            ],
+          },
+        ],
+        actions: [
+          {
+            label: "补充报错信息",
+            prompt: "请补充当前执行命令、终端输出和你预期的结果。",
+            tone: "warning",
+          },
+        ],
+      },
+    }),
+    {
+      interactionType: "blocked_help",
+      variant: "blocked_help",
+      summary: "先跑这段命令。",
+      blocks: [
+        {
+          type: "code_block",
+          language: "bash",
+          code: "pwd\ngit branch",
+        },
+      ],
+      sections: [
+        {
+          title: null,
+          tone: "warning",
+          blocks: [
+            {
+              type: "code_block",
+              language: "bash",
+              code: "pwd\ngit branch",
+            },
+          ],
+        },
+      ],
       actions: [
         {
           label: "补充报错信息",

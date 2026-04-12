@@ -153,6 +153,70 @@ function buildBlockedHelpNextAction(content: string) {
   return "补充当前操作步骤、实际结果和你预期的差异点"
 }
 
+const ASSISTANT_COMPLETION_NEGATION_PATTERNS = [
+  /还需要确认/,
+  /还需确认/,
+  /再选择至少一项/,
+  /继续验收/,
+  /尚未达到/,
+  /未达到/,
+  /完成此项展示后/,
+  /即可判断/,
+]
+
+const ASSISTANT_COMPLETION_PATTERNS = [
+  /已经满足了?本关的完成标准/,
+  /已满足本关的完成标准/,
+  /已达到本关完成标准/,
+  /达到本关完成标准/,
+  /本关已通过验收/,
+  /验收(?:结论|合格)/,
+  /恭喜你成功掌握了第\s*\d+\s*关/,
+  /可(?:以)?进入下一关/,
+]
+
+export function shouldTreatAssistantResponseAsCompletion(content: string) {
+  const normalized = content.replace(/\s+/g, "").trim()
+  if (!normalized) {
+    return false
+  }
+
+  if (ASSISTANT_COMPLETION_NEGATION_PATTERNS.some((pattern) => pattern.test(normalized))) {
+    return false
+  }
+
+  return ASSISTANT_COMPLETION_PATTERNS.some((pattern) => pattern.test(normalized))
+}
+
+export function resolveAssistantInteractionType(input: {
+  requestedInteractionType: LearningInteractionType
+  assistantContent: string
+}) {
+  if (input.requestedInteractionType === "completion_feedback") {
+    return "completion_feedback" as const
+  }
+
+  return shouldTreatAssistantResponseAsCompletion(input.assistantContent)
+    ? "completion_feedback"
+    : input.requestedInteractionType
+}
+
+export function finalizeAssistantTaskPatch(input: {
+  taskId: string
+  initialTaskPatch: LearningTaskPatch | null
+  assistantContent: string
+}) {
+  if (shouldTreatAssistantResponseAsCompletion(input.assistantContent)) {
+    return {
+      taskId: input.taskId,
+      status: "completed" as const,
+      suggestedNextAction: "你已达到本关完成标准，可点击“我完成了”进入下一关。",
+    }
+  }
+
+  return input.initialTaskPatch
+}
+
 export function deriveTaskPatch(input: {
   taskId: string
   interactionType: LearningInteractionType
@@ -173,7 +237,7 @@ export function deriveTaskPatch(input: {
     return {
       taskId: input.taskId,
       status: "completed",
-      suggestedNextAction: "完成当前总结后，可进入下一关或回到地图查看进度",
+      suggestedNextAction: "你已达到本关完成标准，可点击“我完成了”进入下一关。",
     }
   }
 

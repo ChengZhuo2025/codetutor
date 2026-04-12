@@ -2,6 +2,7 @@ import "server-only"
 
 import { extractJsonObjectString } from "./json-parse.ts"
 import type { PlannerOutput } from "./schema.ts"
+import type { PlannerSourceStructure } from "./source-structure.ts"
 import {
   invokeMaterialPipelineModel,
   type MaterialPipelineRuntime,
@@ -39,6 +40,7 @@ type RunPlanQualityGateInput = {
   intakeWarnings?: string[]
   evidenceCoverage?: MaterialEvidenceCoverage | null
   qualityRuntime?: MaterialPipelineRuntime | null
+  sourceStructure?: PlannerSourceStructure | null
   attempt?: number
   maxAttempts?: number
 }
@@ -70,6 +72,10 @@ function buildRuleChecks(input: RunPlanQualityGateInput): QualityCheck[] {
     (sum, task) => sum + (task.estimatedMinutes ?? 0),
     0,
   )
+  const numberedTaskPacingMessage =
+    input.sourceStructure?.minimumTaskCount && input.sourceStructure.numberedItemCount
+      ? `材料中识别到约 ${input.sourceStructure.numberedItemCount} 个编号项，计划至少拆成 ${input.sourceStructure.minimumTaskCount} 关。`
+      : "编号型教程需要按材料节奏拆成足够细的关卡。"
 
   return [
     {
@@ -121,6 +127,14 @@ function buildRuleChecks(input: RunPlanQualityGateInput): QualityCheck[] {
         && input.plan.tasks.length > 5
       ),
       message: "弱证据来源不能直接输出过长计划。",
+    },
+    {
+      code: "NUMBERED_TUTORIAL_TASK_PACING",
+      passed:
+        input.evidenceCoverage?.isWeakEvidence
+        || !input.sourceStructure?.minimumTaskCount
+        || input.plan.tasks.length >= input.sourceStructure.minimumTaskCount,
+      message: numberedTaskPacingMessage,
     },
   ]
 }
@@ -247,6 +261,60 @@ export async function runPlanQualityGate(
   const maxAttempts = input.maxAttempts ?? 2
 
   if (!checks.every((check) => check.passed)) {
+    const failedChecks = checks.filter((check) => !check.passed)
+    const numberedTaskPacingFailed =
+      failedChecks.length === 1
+      && failedChecks[0]?.code === "NUMBERED_TUTORIAL_TASK_PACING"
+      && input.sourceStructure?.minimumTaskCount
+      && input.sourceStructure.numberedItemCount
+      && !input.evidenceCoverage?.isWeakEvidence
+
+    if (numberedTaskPacingFailed) {
+      const sourceStructure = input.sourceStructure
+      if (!sourceStructure?.minimumTaskCount || !sourceStructure.numberedItemCount) {
+        throw new Error("numbered tutorial pacing check requires source structure")
+      }
+
+      const retryWarning =
+        `材料中有约 ${sourceStructure.numberedItemCount} 个编号项，当前计划只有 ${input.plan.tasks.length} 关，至少拆成 ${sourceStructure.minimumTaskCount} 关。`
+
+      if (attempt < maxAttempts) {
+        return {
+          plan: input.plan,
+          qualityStatus: "passed",
+          decision: "retry",
+          qualityReport: {
+            status: "passed",
+            checks,
+            warnings: [...warnings, retryWarning],
+            selfCheck: {
+              enabled: false,
+              decision: "retry",
+              reason: "编号型教程关卡粒度过粗，退回重生成。",
+            },
+            fallbackReason: "numbered_outline_task_count_underflow",
+          },
+        }
+      }
+
+      return {
+        plan: input.plan,
+        qualityStatus: "passed",
+        decision: "pass",
+        qualityReport: {
+          status: "passed",
+          checks,
+          warnings: [...warnings, `${retryWarning} 已达到最后一次生成机会，请人工复核。`],
+          selfCheck: {
+            enabled: false,
+            decision: "skipped",
+            reason: "编号型教程关卡粒度仍偏粗，但已耗尽自动重试次数。",
+          },
+          fallbackReason: "numbered_outline_retry_exhausted",
+        },
+      }
+    }
+
     const fallbackPlan = buildPilotPlan(input.plan)
     return {
       plan: fallbackPlan,
