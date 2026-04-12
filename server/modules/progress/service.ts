@@ -44,6 +44,7 @@ type TaskRow = {
   id: string
   path_step_id: string
   status: string
+  last_conversation_id: string | null
 }
 
 type DailyCheckinRow = {
@@ -155,7 +156,7 @@ async function loadActivePath(userId: string) {
 
   const { data: tasks, error: taskError } = await supabase
     .from("user_tasks")
-    .select("id, path_step_id, status")
+    .select("id, path_step_id, status, last_conversation_id")
     .eq("user_learning_path_id", activePath.id)
 
   assertSupabaseSuccess(taskError, "failed to load active path tasks")

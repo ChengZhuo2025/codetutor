@@ -30,7 +30,8 @@ test("learning current-session route forwards sessionId and taskId query params"
         sessionId?: string | null
         taskId?: string | null
       }
-    | null = null
+    | null
+    | undefined = null
 
   const handler = createLearningCurrentSessionGetHandler({
     getRequestAuth: async () => ({ userId: "user-1" }),
@@ -70,7 +71,7 @@ test("learning current-session route forwards sessionId and taskId query params"
           currentRank: "新手",
           streakDays: 3,
           completedTaskCount: 2,
-          lastLearningAt: null,
+          lastLearningAt: "2026-04-03T09:00:00.000Z",
         },
         planSummary: {
           selectedToolName: "Cursor",
