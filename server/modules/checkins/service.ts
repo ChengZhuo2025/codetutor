@@ -174,6 +174,8 @@ export async function createDailyCheckin(userId: string): Promise<CheckinDailyRe
     actionHref: "/achievements",
     actionLabel: "查看成长",
     payload: {
+      source: "daily_checkin",
+      dedupeByDay: true,
       checkinDate: todayDate,
       streakDays: streakResult.nextStreakDays,
       scoreDelta: DAILY_CHECKIN_SCORE,

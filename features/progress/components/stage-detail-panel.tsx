@@ -33,7 +33,7 @@ export function StageDetailPanel({
   return (
     <WorkspaceAside as="div">
       <div className="sticky top-0 space-y-4">
-        <div className="rounded-[28px] border border-border/60 bg-surface-2 px-4 py-4 sm:px-5">
+        <div className="rounded-[28px] border border-border/60 bg-surface-1 px-4 py-4 sm:px-5">
           <div className="mb-3 flex items-center gap-2">
             <BookMarked
               className={cn("h-4 w-4", isDone ? "text-gold" : "text-brand")}

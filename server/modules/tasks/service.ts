@@ -343,12 +343,15 @@ export async function completeTask(
   assertSupabaseSuccess(profileError, "failed to update user profile score")
 
   await createProgressMilestoneNotification(userId, {
-    title: "任务已完成",
+    title: `第 ${currentStep.step_no} 关已完成`,
     content: buildCompletionSummary(currentStep.title, nextTaskTitle),
     actionHref: progression.pathCompleted ? ROUTES.history : ROUTES.learn,
     actionLabel: progression.pathCompleted ? "查看历史" : "继续学习",
     payload: {
+      source: `task_complete:${task.id}`,
       taskId: task.id,
+      stepNo: currentStep.step_no,
+      stepTitle: currentStep.title,
       pathId: path.id,
       nextTaskId: progression.nextTaskId,
       pathCompleted: progression.pathCompleted,

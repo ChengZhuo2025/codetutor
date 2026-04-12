@@ -290,6 +290,8 @@ export async function ensureDueInAppNotifications(userId: string): Promise<void>
     content: `现在已经到 ${settings.checkinTime} 了，去完成今天的学习打卡，保持连续进度。`,
     scheduledFor: buildShanghaiDateTimeIso(todayDate, settings.checkinTime),
     payload: {
+      source: "daily_checkin",
+      dedupeByDay: true,
       dayKey: getShanghaiDateKey(now),
       actionHref: ROUTES.achievements,
       actionLabel: "立即打卡",

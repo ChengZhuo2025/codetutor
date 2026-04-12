@@ -13,23 +13,21 @@ const statusConfig = {
   done: {
     icon: CheckCircle2,
     nodeStyle: "border-brand/55 bg-brand text-brand-foreground shadow-[0_0_0_6px_rgba(92,225,168,0.08)]",
-    cardStyle: "border-brand/22 bg-brand/10 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.18)] hover:border-brand/35 cursor-pointer dark:bg-brand/18",
+    cardStyle: "border-brand/10 bg-brand/5 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.18)] hover:border-brand/35 cursor-pointer dark:bg-brand/18",
     label: "已完成",
     labelStyle: "text-brand",
   },
   current: {
     icon: Play,
-    nodeStyle:
-      "border-brand bg-brand text-brand-foreground shadow-[0_0_30px_oklch(0.78_0.15_180/0.5)]",
-    cardStyle:
-      "border-brand/10 bg-brand/8 dark:border-brand/50 dark:bg-[linear-gradient(145deg,rgba(31,198,164,0.16),rgba(8,16,29,0.94))] dark:shadow-[0_24px_64px_-32px_oklch(0.78_0.15_180/0.55)] cursor-pointer",
+    nodeStyle: "border-brand bg-brand text-brand-foreground shadow-[0_0_30px_oklch(0.78_0.15_180/0.5)]",
+    cardStyle:"border-brand/60 bg-brand/8 dark:border-brand/50 dark:bg-[linear-gradient(145deg,rgba(31,198,164,0.16),rgba(8,16,29,0.94))] dark:shadow-[0_24px_64px_-32px_oklch(0.78_0.15_180/0.55)] cursor-pointer",
     label: "当前任务",
     labelStyle: "text-brand",
   },
   locked: {
     icon: Lock,
-    nodeStyle: "border-border/50 bg-surface-1/95 text-muted-foreground/50 shadow-[inset_0_1px_0_rgba(255,255,255,0.68)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
-    cardStyle: "border-border/70 bg-surface-1/95 shadow-[0_14px_34px_-30px_rgba(15,23,42,0.16)] cursor-pointer opacity-90 hover:opacity-100 dark:border-white/10 dark:bg-white/5",
+    nodeStyle: "border-border/50 bg-surface-2 text-muted-foreground/50 shadow-[inset_0_1px_0_rgba(255,255,255,0.68)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
+    cardStyle: "border-border/70 bg-surface-2 shadow-[0_14px_34px_-30px_rgba(15,23,42,0.16)] cursor-pointer opacity-90 hover:opacity-100 dark:border-white/10 dark:bg-white/5",
     label: "未解锁",
     labelStyle: "text-muted-foreground/65",
   },
@@ -102,7 +100,7 @@ export function StageTimeline({
                 className={cn(
                   "mb-4 flex-1 rounded-[28px] border p-4 transition-all",
                   cfg.cardStyle,
-                  isSelected ? "ring-1 ring-brand/40" : "",
+                  isSelected ? "ring-2 ring-brand/20" : "",
                 )}
               >
                 <div className="flex items-start justify-between gap-3">

@@ -551,7 +551,20 @@ export function FeedbackDialog({
                                     {ticket.feedbackTypeLabel}
                                   </span>
                                   {ticket.replyCount > 0 ? (
-                                    <span className="rounded-full border border-emerald-400/16 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-300">
+                                    <span
+                                      className={cn(
+                                        "inline-flex items-center gap-0.5 rounded-md border px-1.5 py-0.5 text-[11px] font-medium tabular-nums",
+                                        "border-sky-200 bg-sky-50 text-sky-900",
+                                        "dark:border-sky-400/35 dark:bg-sky-950/75 dark:text-sky-100",
+                                        isActive
+                                          ? "border-sky-300 bg-sky-100 dark:border-sky-300/50 dark:bg-sky-900/65"
+                                          : "dark:text-sky-200/95",
+                                      )}
+                                    >
+                                      <MessageSquareText
+                                        className="h-3 w-3 shrink-0 text-sky-600 dark:text-sky-300"
+                                        aria-hidden
+                                      />
                                       {ticket.replyCount} 条回复
                                     </span>
                                   ) : null}

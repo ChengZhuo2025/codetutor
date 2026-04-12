@@ -20,55 +20,8 @@ import { requestData } from "@/lib/api/client"
 import { PROFILE_UPDATED_EVENT } from "@/lib/profile/events"
 import type { RecentPracticeRound } from "@/features/learning/types"
 import type { LearningHistory } from "@/features/history/types"
-import { getShanghaiDateKeyFromIso } from "@/lib/datetime/shanghai-date-key"
+import { dedupeSidebarNotifications } from "@/lib/notifications/in-app-collection"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
-
-/**
- * 同源通知去重：按 source + 日期 分组，每组只保留最新一条（createdAt 最晚）
- * 解决"今天还没打卡"和"今日打卡成功"同时出现的矛盾
- */
-function dedupeNotifications(items: NotificationInAppItem[]): NotificationInAppItem[] {
-  const groups = new Map<string, NotificationInAppItem>()
-
-  for (const item of items) {
-    if (item.status === "dismissed") {
-      continue
-    }
-
-    const payload = item.payload ?? {}
-    const payloadRecord =
-      payload && typeof payload === "object" && !Array.isArray(payload)
-        ? (payload as Record<string, unknown>)
-        : {}
-
-    // Prefer semantic "day key" from payload (stable for business logic),
-    // otherwise fall back to Shanghai calendar day derived from createdAt.
-    const payloadDayKey =
-      typeof payloadRecord.checkinDate === "string"
-        ? payloadRecord.checkinDate
-        : typeof payloadRecord.dayKey === "string"
-          ? payloadRecord.dayKey
-          : null
-    const dateKey = payloadDayKey ?? getShanghaiDateKeyFromIso(item.createdAt) ?? item.createdAt.slice(0, 10)
-
-    // Prefer explicit source from payload, otherwise fall back to a stable semantic key.
-    // Using title avoids duplicates when backend emits the same reminder twice with different payload shapes.
-    const rawSource = payloadRecord.source
-    const source =
-      typeof rawSource === "string" ? rawSource : `${item.type}:${item.title}`
-
-    const key = `${source}:${dateKey}`
-
-    const existing = groups.get(key)
-    if (!existing || item.createdAt > existing.createdAt) {
-      groups.set(key, item)
-    }
-  }
-
-  return Array.from(groups.values()).sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  )
-}
 
 type WorkspaceSidebarDataState = {
   profile: ProfileMeResponseData | null
@@ -143,7 +96,7 @@ async function fetchWorkspaceSidebarData(): Promise<WorkspaceSidebarDataState> {
       fetchWorkspaceNotifications(),
       fetchWorkspaceRecentLearningPlans(),
     ])
-    const deduped = dedupeNotifications(notifications.items)
+    const deduped = dedupeSidebarNotifications(notifications.items)
 
     return {
       profile: session.profile,
@@ -163,7 +116,7 @@ async function fetchWorkspaceSidebarData(): Promise<WorkspaceSidebarDataState> {
       fetchWorkspaceNotifications(),
       fetchWorkspaceRecentLearningPlans(),
     ])
-    const deduped = dedupeNotifications(notifications.items)
+    const deduped = dedupeSidebarNotifications(notifications.items)
 
     return {
       profile,

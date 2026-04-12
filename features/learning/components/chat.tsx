@@ -683,10 +683,10 @@ function renderStructuredContent(
                   return (
                     <div
                       key={`code-${sectionIndex}-${blockIndex}`}
-                      className="overflow-hidden rounded-2xl border border-black/10 bg-black/8 dark:border-white/10 dark:bg-background/50"
+                      className="overflow-hidden rounded-2xl border border-brand/30 bg-background/70 dark:border-white/10 dark:bg-background/50"
                     >
                       {block.language ? (
-                        <div className="border-b border-black/10 px-3.5 py-2 font-bold text-[11px] uppercase tracking-[0.12em] text-foreground/70 dark:border-white/10">
+                        <div className="border-b border-brand/20 px-3.5 py-2 font-bold text-[11px] uppercase tracking-[0.12em] text-brand dark:border-white/10">
                           {block.language}
                         </div>
                       ) : null}

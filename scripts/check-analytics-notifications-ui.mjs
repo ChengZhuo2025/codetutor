@@ -9,6 +9,10 @@ const sidebarProviderSource = readFileSync(
   new URL("../providers/workspace-sidebar-provider.tsx", import.meta.url),
   "utf8",
 )
+const notificationCollectionSource = readFileSync(
+  new URL("../lib/notifications/in-app-collection.ts", import.meta.url),
+  "utf8",
+)
 const sidebarSource = readFileSync(
   new URL("../components/layout/dashboard-sidebar.tsx", import.meta.url),
   "utf8",
@@ -64,8 +68,14 @@ assert.match(
 
 assert.match(
   sidebarProviderSource,
-  /getShanghaiDateKeyFromIso/,
-  "WorkspaceSidebarDataProvider should use shared Shanghai date key helper",
+  /dedupeSidebarNotifications/,
+  "WorkspaceSidebarDataProvider should use the shared sidebar notification dedupe helper",
+)
+
+assert.match(
+  notificationCollectionSource,
+  /dedupeByDay/,
+  "Sidebar notification collection logic should only dedupe items explicitly marked for day-level collapse",
 )
 
 assert.match(
