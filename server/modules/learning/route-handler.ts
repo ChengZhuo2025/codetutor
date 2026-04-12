@@ -2,6 +2,7 @@ import type {
   LearningMessageRequest,
   LearningMessageResponseData,
   LearningMessagesResponseData,
+  LearningCurrentSessionResponseData,
 } from "../../../lib/api/contracts/learning.ts"
 import { jsonInternalErrorFromError } from "../../lib/route-error.ts"
 import {
@@ -9,6 +10,7 @@ import {
   jsonError,
   jsonSuccess,
 } from "../../lib/route-response.ts"
+import { withNoStoreHeaders } from "../../lib/response-cache.ts"
 import { parseLearningMessagesQuery } from "../../lib/request-validation.ts"
 import { executeLearningMessageRequest } from "./http-logic.ts"
 
@@ -120,6 +122,59 @@ export function createLearningMessagesGetHandler(dependencies: {
       return jsonSuccess(data)
     } catch (error) {
       return jsonInternalErrorFromError(error, "加载历史消息失败")
+    }
+  }
+}
+
+function readOptionalQueryParam(searchParams: URLSearchParams, key: string) {
+  const value = searchParams.get(key)
+
+  if (typeof value !== "string") {
+    return null
+  }
+
+  const normalized = value.trim()
+  return normalized.length > 0 ? normalized : null
+}
+
+export function createLearningCurrentSessionGetHandler(dependencies: {
+  getRequestAuth: (request: unknown) => Promise<{ userId: string } | null>
+  getRequestAuthHelpText: () => string
+  getLearningCurrentSessionData: (
+    userId: string,
+    input?: {
+      sessionId?: string | null
+      taskId?: string | null
+    },
+  ) => Promise<LearningCurrentSessionResponseData | null>
+}) {
+  return async function GET(request: GetRequestLike) {
+    try {
+      const auth = await dependencies.getRequestAuth(request)
+
+      if (!auth) {
+        return withNoStoreHeaders(jsonAuthRequired(dependencies.getRequestAuthHelpText()))
+      }
+
+      const searchParams = new URL(request.url).searchParams
+      const data = await dependencies.getLearningCurrentSessionData(auth.userId, {
+        sessionId: readOptionalQueryParam(searchParams, "sessionId"),
+        taskId: readOptionalQueryParam(searchParams, "taskId"),
+      })
+
+      if (!data) {
+        return withNoStoreHeaders(jsonError("NOT_FOUND", "当前用户还没有可恢复的学习任务。", 404))
+      }
+
+      return withNoStoreHeaders(jsonSuccess(data))
+    } catch (error) {
+      return withNoStoreHeaders(
+        jsonError(
+          "INTERNAL_ERROR",
+          error instanceof Error ? error.message : "加载学习会话失败",
+          500,
+        ),
+      )
     }
   }
 }

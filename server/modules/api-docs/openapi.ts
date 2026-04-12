@@ -1996,7 +1996,31 @@ registry.registerPath({
   operationId: "getLearningCurrentSession",
   tags: ["learning"],
   summary: "获取当前学习会话",
+  description:
+    "默认返回当前进行中的学习关卡；当传入 `sessionId` 或 `taskId` 时，可切换到指定关卡的复盘视图。`sessionId` 优先级高于 `taskId`。",
   security: [{ bearerAuth: [] }],
+  parameters: [
+    {
+      name: "sessionId",
+      in: "query",
+      required: false,
+      schema: {
+        type: "string",
+        format: "uuid",
+      },
+      description: "可选。指定已完成关卡对应的会话 ID，用于在 /learn 中打开该关卡的复盘记录。",
+    },
+    {
+      name: "taskId",
+      in: "query",
+      required: false,
+      schema: {
+        type: "string",
+        format: "uuid",
+      },
+      description: "可选。指定要打开的任务 ID；当未提供或无法解析 `sessionId` 时作为兜底定位。",
+    },
+  ],
   responses: {
     "200": successResponse(
       learningCurrentSessionResponseDataSchema,

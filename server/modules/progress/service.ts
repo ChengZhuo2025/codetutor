@@ -12,6 +12,7 @@ import { getCheckinDateKey } from "@/server/modules/checkins/logic"
 import { reconcileInterruptedLearningPaths } from "@/server/modules/learning-paths/service"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import type { Stage } from "@/features/progress/types"
+import { resolveStageReviewSummary } from "@/features/progress/lib/review-navigation"
 
 type JsonRecord = Record<string, unknown>
 
@@ -271,11 +272,18 @@ export async function getProgressMapData(
     return {
       id: step.step_no,
       taskId: task?.id ?? `task-${step.step_no}`,
+      reviewSessionId: task?.last_conversation_id ?? null,
       title: step.title,
       summary: step.summary,
       goal: step.goal,
       completionCriteria: step.completion_criteria ?? "",
-      reviewSummary: step.review_summary ?? "",
+      reviewSummary: resolveStageReviewSummary({
+        title: step.title,
+        reviewSummary: step.review_summary,
+        keyPoints: toStringArray(step.key_points),
+        summary: step.summary,
+        goal: step.goal,
+      }),
       xp: step.reward_score,
       status,
       tags: toStringArray(step.knowledge_points),

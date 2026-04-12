@@ -585,7 +585,7 @@ export function DashboardSidebar({
                     >
                       {unreadNotificationCount > 0
                         ? `${unreadNotificationCount} 条未读`
-                        : "已读完"}
+                        : "全部已读"}
                     </p>
                   </div>
                 </div>

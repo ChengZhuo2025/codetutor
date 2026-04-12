@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { AppShell } from "@/components/layout/app-shell"
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar"
 import { StatePanel } from "@/components/ui/state-panel"
@@ -17,6 +17,9 @@ import type { ApiRequestState } from "@/types/api"
 
 export function LearnPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const requestedSessionId = searchParams.get("sessionId")?.trim() || null
+  const requestedTaskId = searchParams.get("taskId")?.trim() || null
   const [refreshNonce, setRefreshNonce] = useState(0)
   const [materialDialog, setMaterialDialog] = useState({
     open: false,
@@ -32,8 +35,16 @@ export function LearnPage() {
     let cancelled = false
 
     async function loadSession() {
+      const query = new URLSearchParams()
+      if (requestedSessionId) {
+        query.set("sessionId", requestedSessionId)
+      }
+      if (requestedTaskId) {
+        query.set("taskId", requestedTaskId)
+      }
+
       const response = await apiClient.get<LearningCurrentSessionResponseData>(
-        "/learning/current-session",
+        `/learning/current-session${query.toString() ? `?${query.toString()}` : ""}`,
       )
 
       if (cancelled) {
@@ -89,7 +100,7 @@ export function LearnPage() {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshNonce])
+  }, [refreshNonce, requestedSessionId, requestedTaskId])
 
   useEffect(() => {
     if (sessionState.status !== "success") return

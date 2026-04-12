@@ -8,6 +8,7 @@ export type StagePitfall = {
 export type Stage = {
   id: number
   taskId: string
+  reviewSessionId?: string | null
   title: string
   summary: string
   goal: string

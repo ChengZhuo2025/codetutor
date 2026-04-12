@@ -164,7 +164,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                         id="checkinTime"
                         value={settings.checkinTime}
                         onChange={(value) => updateSetting("checkinTime", value)}
-                        className="w-32"
+                        className="w-32 border border-border/70 rounded-md bg-surface-3"
                       />
                     </div>
                   )}

@@ -130,22 +130,8 @@ export function StageTimeline({
                   </div>
                 </div>
 
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="rounded-full border border-border/70 bg-muted/60 px-2.5 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                    预计 {stage.estimatedTime}
-                  </span>
-                  {stage.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full border border-border/70 bg-muted/55 px-2.5 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm leading-5.5 text-foreground/78">
+                <div className="mt-3 border-t border-brand/20 pt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm leading-5.5 text-foreground/78 line-clamp-1">
                     {stage.status === "done"
                       ? stage.reviewSummary
                       : stage.status === "current"
@@ -168,12 +154,12 @@ export function StageTimeline({
                       继续学习
                     </button>
                   ) : stage.status === "done" ? (
-                    <span className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-brand/22 bg-brand/10 px-3.5 py-2 text-sm font-medium text-brand dark:bg-brand/16">
+                    <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-brand/22 bg-brand/10 px-3.5 py-2 text-sm font-medium text-brand dark:bg-brand/16">
                       <RotateCcw className="h-3.5 w-3.5" />
                       学习复盘
                     </span>
                   ) : (
-                    <span className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-border/70 bg-muted/60 px-3.5 py-2 text-sm text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                    <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3.5 py-2 text-sm text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                       <Lock className="h-3.5 w-3.5" />
                       解锁条件
                     </span>

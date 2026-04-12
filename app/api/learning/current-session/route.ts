@@ -1,31 +1,14 @@
 import type { NextRequest } from "next/server"
-import { ok, fail } from "@/server/lib/api-response"
-import { withNoStoreHeaders } from "@/server/lib/response-cache"
 import { getRequestAuth, getRequestAuthHelpText } from "@/server/lib/request-auth"
+import { createLearningCurrentSessionGetHandler } from "@/server/modules/learning/route-handler"
 import { getLearningCurrentSessionData } from "@/server/modules/learning/service"
 
+const getHandler = createLearningCurrentSessionGetHandler({
+  getRequestAuth: (request) => getRequestAuth(request as NextRequest),
+  getRequestAuthHelpText,
+  getLearningCurrentSessionData,
+})
+
 export async function GET(request: NextRequest) {
-  try {
-    const auth = await getRequestAuth(request)
-
-    if (!auth) {
-      return withNoStoreHeaders(fail("AUTH_REQUIRED", getRequestAuthHelpText(), 401))
-    }
-
-    const data = await getLearningCurrentSessionData(auth.userId)
-
-    if (!data) {
-      return withNoStoreHeaders(fail("NOT_FOUND", "当前用户还没有可恢复的学习任务。", 404))
-    }
-
-    return withNoStoreHeaders(ok(data))
-  } catch (error) {
-    return withNoStoreHeaders(
-      fail(
-        "INTERNAL_ERROR",
-        error instanceof Error ? error.message : "加载学习会话失败",
-        500,
-      ),
-    )
-  }
+  return getHandler(request)
 }

@@ -526,7 +526,7 @@ function renderAssistantMessageLead(
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={cn(
-                "rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                "rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
                 meta.chipClass,
               )}
             >
@@ -535,7 +535,7 @@ function renderAssistantMessageLead(
             {subtypeMeta ? (
               <span
                 className={cn(
-                  "rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                  "rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
                   subtypeMeta.chipClass,
                 )}
               >
@@ -543,7 +543,7 @@ function renderAssistantMessageLead(
               </span>
             ) : null}
           </div>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          <p className="mt-1 text-[13px] leading-6 text-muted-foreground">
             {subtypeMeta ? subtypeMeta.hint : meta.hint}
           </p>
         </div>
@@ -641,7 +641,7 @@ function renderStructuredContent(
             className={cn("rounded-2xl border px-3.5 py-3", sectionToneClass)}
           >
             {section.title ? (
-              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
+              <div className="mb-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
                 {renderInlineText(
                   section.title,
                   `section-title-${sectionIndex}`,
@@ -683,10 +683,10 @@ function renderStructuredContent(
                   return (
                     <div
                       key={`code-${sectionIndex}-${blockIndex}`}
-                      className="overflow-hidden rounded-2xl border border-brand/30 bg-black/8 dark:border-white/10 dark:bg-background/50"
+                      className="overflow-hidden rounded-2xl border border-black/10 bg-black/8 dark:border-white/10 dark:bg-background/50"
                     >
                       {block.language ? (
-                        <div className="border-b border-brand/30 px-3.5 py-2 font-mono text-[11px] tracking-[0.12em] text-brand dark:border-white/10">
+                        <div className="border-b border-black/10 px-3.5 py-2 font-bold text-[11px] uppercase tracking-[0.12em] text-foreground/70 dark:border-white/10">
                           {block.language}
                         </div>
                       ) : null}
@@ -2111,7 +2111,7 @@ export function LearnChat({
                     <div className="grid shrink-0 gap-3 sm:grid-cols-3 xl:w-[320px]">
                       <div className="rounded-[1.25rem] border border-border/55 bg-surface-1/92 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                         <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/75">
-                          建议时长
+                          预计时长
                         </p>
                         <p className="mt-2 text-md font-semibold text-foreground">
                           {mission.estimatedTime}
@@ -2357,7 +2357,7 @@ export function LearnChat({
                                   >
                                     {taskPatchMeta.badge}
                                   </span>
-                                  <span className="text-[11px] font-medium text-muted-foreground">
+                                  <span className="text-[12px] font-medium text-muted-foreground">
                                     当前任务状态已同步
                                   </span>
                                 </div>

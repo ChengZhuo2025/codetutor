@@ -13,6 +13,7 @@ import { MapHeader } from "@/features/progress/components/map-header"
 import { ProgressOverview } from "@/features/progress/components/progress-overview"
 import { StageDetailPanel } from "@/features/progress/components/stage-detail-panel"
 import { StageTimeline } from "@/features/progress/components/stage-timeline"
+import { buildLearningReviewHref } from "@/features/progress/lib/review-navigation"
 import { resolveAuthenticatedRedirectTo } from "@/lib/auth/client-session"
 import { apiClient } from "@/lib/api/client"
 import type {
@@ -177,7 +178,6 @@ export function MapPage() {
   const done = map.completedSteps
   const total = map.totalSteps
   const selected = map.stages.find((stage) => stage.id === selectedId) ?? currentStage
-  const nextStage = map.stages.find((stage) => stage.id > currentStage.id)
 
   return (
     <AppShell
@@ -192,7 +192,11 @@ export function MapPage() {
         <StageDetailPanel
           stage={selected}
           onContinueLearning={() => router.push(ROUTES.learn)}
-          onOpenReview={() => router.push(ROUTES.learn)}
+          onOpenReview={() =>
+            router.push(buildLearningReviewHref({
+              taskId: selected.taskId,
+              reviewSessionId: selected.reviewSessionId,
+            }))}
         />
       )}
       asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
@@ -212,7 +216,6 @@ export function MapPage() {
             total={total}
             summary={current.summary}
             currentStage={currentStage}
-            nextStage={nextStage}
             onContinueLearning={() => router.push(ROUTES.learn)}
             onOpenAchievements={() => router.push(ROUTES.achievements)}
           />

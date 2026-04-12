@@ -54,7 +54,7 @@ export function StageDetailPanel({
             <p className="text-lg font-semibold text-foreground">
               {stage.title}
             </p>
-            <p className="mt-1 text-sm leading-5 text-muted-foreground">
+            <p className="mt-2 text-sm leading-6 text-foreground/85">
               {stage.summary}
             </p>
           </div>
@@ -65,7 +65,7 @@ export function StageDetailPanel({
                 <Target className="h-3.5 w-3.5 text-brand" />
                 本关目标
               </div>
-              <p className="mt-2 text-sm leading-5 text-foreground">
+              <p className="mt-2 text-sm leading-6 text-foreground/85">
                 {stage.goal}
               </p>
             </div>
@@ -94,7 +94,7 @@ export function StageDetailPanel({
               <p className="text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
                 {isDone ? "复盘重点" : isLocked ? "解锁条件" : "完成标准"}
               </p>
-              <p className="mt-2 text-sm leading-5 text-foreground">
+              <p className="mt-2 text-sm leading-6 text-foreground/85">
                 {isDone
                   ? stage.reviewSummary
                   : isLocked
@@ -115,7 +115,7 @@ export function StageDetailPanel({
                 {stage.keyPoints.slice(0, 3).map((point) => (
                   <li
                     key={point}
-                    className="flex gap-2 text-sm leading-5 text-foreground/82"
+                    className="flex gap-2 text-sm leading-6 text-foreground/85"
                   >
                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
                     <span>{point}</span>

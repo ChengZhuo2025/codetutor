@@ -300,7 +300,7 @@ export function FeedbackDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className={cn(DIALOG_PANEL_CLASS, "max-h-[92vh] overflow-y-auto rounded-2xl sm:max-w-[750px]")}>
+      <DialogContent className={cn(DIALOG_PANEL_CLASS, "max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-[720px]")}>
         <div className="overflow-hidden rounded-2xl">
           <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
             <DialogHeader>
@@ -415,12 +415,12 @@ export function FeedbackDialog({
                     value={form.content}
                     onChange={(event) => updateField("content", event.target.value)}
                     placeholder="详细描述你遇到的问题、建议或希望优化的地方"
-                    rows={7}
+                    rows={4}
                     className={cn("resize-none rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>至少 10 个字符，尽量写清楚场景、问题和预期效果。</span>
-                    <span>{form.content.trim().length}/2000</span>
+                    <span>{form.content.trim().length}/1000</span>
                   </div>
                 </div>
 
@@ -529,13 +529,6 @@ export function FeedbackDialog({
                                   : "border-border/70 bg-surface-1/85 hover:border-border hover:bg-muted/60 hover:translate-x-[1px] dark:border-border/70 dark:bg-surface-2/82 dark:hover:border-border dark:hover:bg-foreground/6",
                               )}
                             >
-                            <span
-                              className={cn(
-                                "absolute inset-y-3 left-0 w-[3px] rounded-full transition-colors",
-                                isActive ? "bg-brand" : "bg-transparent group-hover:bg-foreground/12",
-                              )}
-                            />
-
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <p
@@ -672,7 +665,7 @@ export function FeedbackDialog({
                       </p>
 
                       {detailState.data.contactMethod ? (
-                        <div className={cn("mt-4 rounded-2xl px-3 py-3 text-sm text-muted-foreground", USER_PANEL_SUBTLE_SECTION_CLASS)}>
+                        <div className="mt-3 border-t border-border/70 pt-3 text-sm text-muted-foreground">
                           回访方式：{detailState.data.contactMethod}
                         </div>
                       ) : null}

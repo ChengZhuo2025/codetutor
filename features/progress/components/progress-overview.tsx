@@ -1,4 +1,4 @@
-import { ArrowRight, Play, CheckCircle2, Target, Zap } from "lucide-react"
+import { ArrowRight, Zap } from "lucide-react"
 import {
   USER_BUTTON_PRIMARY_CLASS,
   USER_PANEL_HERO_CARD_CLASS,
@@ -12,7 +12,6 @@ type ProgressOverviewProps = {
   total: number
   summary: MapSummary
   currentStage: Stage
-  nextStage?: Stage
   onContinueLearning: () => void
   onOpenAchievements: () => void
 }
@@ -22,7 +21,6 @@ export function ProgressOverview({
   total,
   summary,
   currentStage,
-  nextStage,
   onContinueLearning,
   onOpenAchievements,
 }: ProgressOverviewProps) {
@@ -30,6 +28,8 @@ export function ProgressOverview({
   const rankProgressPercent = Math.round(
     (summary.totalXP / Math.max(summary.totalXP + summary.remainingXPToNextRank, 1)) * 100,
   )
+  /** 最高段时 getRankSummary 中 next 与 current 为同一段位名，且剩余 XP 为 0 */
+  const isHighestRank = summary.currentRank === summary.nextRank
   const insetPanelClass =
     "rounded-2xl border border-border/70 bg-surface-2 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.68)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
   const infoPillClass =
@@ -114,39 +114,26 @@ export function ProgressOverview({
               </div>
             </div>
           </div>
-
-          <div className="px-4 py-4 sm:px-5">
-            <div className="grid gap-2.5 pb-1 dark:border-brand/15 lg:grid-cols-3">
-              <div className={cn(insetPanelClass, "px-3.5")}>
-                <div className="flex items-center gap-2 text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
-                  <Play className="h-3.5 w-3.5 text-brand" />
-                  当前目标
-                </div>
-                <p className="mt-1 text-sm leading-5 text-foreground/90">{currentStage.goal}</p>
-              </div>
-              <div className={cn(insetPanelClass, "px-3.5")}>
-                <div className="flex items-center gap-2 text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-brand" />
-                  完成标准
-                </div>
-                <p className="mt-1 text-sm leading-5 text-foreground/90">
-                  {currentStage.completionCriteria}
+          <div className="p-5">
+            <div className="rounded-[24px] border border-border/70 bg-surface-2 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.68)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              {!isHighestRank ? (
+                <p className="text-sm text-muted-foreground">
+                  距离{" "}
+                  <span className="font-semibold text-foreground">
+                    {summary.nextRank}
+                  </span>{" "}
+                  还差{" "}
+                  <span className="font-semibold text-brand">
+                    {summary.remainingXPToNextRank} XP
+                  </span>
+                  ，继续完成当前关卡即可积累。
                 </p>
-              </div>
-              <div className={cn(insetPanelClass, "px-3.5")}>
-                <div className="flex items-center gap-2 text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
-                  <Target className="h-3.5 w-3.5 text-chart-3" />
-                  下一步解锁
-                </div>
-                <p className="mt-1 text-sm font-semibold text-foreground">
-                  {nextStage ? `第 ${nextStage.id} 关 · ${nextStage.title}` : summary.nextRank}
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  当前已到达最高段位，后续成长将继续沉淀为更多
+                  XP、徽章和连续学习记录。
                 </p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  {nextStage
-                    ? "完成当前关卡后会自动进入下一步"
-                    : `继续推进可更快接近 ${summary.nextRank}`}
-                </p>
-              </div>
+              )}
             </div>
           </div>
         </div>

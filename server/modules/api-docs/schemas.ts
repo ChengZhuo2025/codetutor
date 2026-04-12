@@ -835,6 +835,7 @@ export const stageSchema = z
   .object({
     id: z.number().int(),
     taskId: z.string(),
+    reviewSessionId: z.string().uuid().nullable().optional(),
     title: z.string(),
     summary: z.string(),
     goal: z.string(),

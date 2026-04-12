@@ -20,6 +20,7 @@ import {
 import {
   reconcileInterruptedLearningPaths,
 } from "@/server/modules/learning-paths/service"
+import { resolveStageReviewSummary } from "@/features/progress/lib/review-navigation"
 import { normalizeUuid } from "@/server/lib/identifiers"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
 import { orchestrateLearningMessage } from "./orchestration.ts"
@@ -100,6 +101,8 @@ type StepRow = {
 
 type ConversationSessionRow = {
   id: string
+  user_task_id: string | null
+  status: string
 }
 
 type ConversationMessageRow = {
@@ -323,7 +326,51 @@ function toProfileData(
   }
 }
 
-function buildDefaultMessages(currentStep: StepRow): Message[] {
+function buildDefaultMessages(input: {
+  currentStep: StepRow
+  taskStatus: TaskRow["status"]
+}): Message[] {
+  const currentStep = input.currentStep
+
+  if (input.taskStatus === "completed") {
+    const reviewSummary = resolveStageReviewSummary({
+      title: currentStep.title,
+      reviewSummary: currentStep.review_summary,
+      keyPoints: toStringArray(currentStep.key_points),
+      summary: currentStep.summary,
+      goal: currentStep.goal,
+    })
+
+    return [
+      {
+        id: 1,
+        role: "system",
+        kind: "system_goal",
+        title: "本关复盘说明",
+        content: [
+          `你正在回看「${currentStep.title}」这一关。`,
+          "",
+          `复盘重点：${reviewSummary}`,
+          "建议先对照右侧的掌握点和注意事项，再回顾你当时的对话记录。",
+        ].join("\n"),
+        structuredContent: null,
+      },
+      {
+        id: 2,
+        role: "ai",
+        kind: "coach",
+        title: "AI 复盘引导",
+        content: reviewSummary,
+        structuredContent: buildStructuredLearningMessageContent({
+          title: "AI 复盘引导",
+          kind: "coach",
+          interactionType: "task_review",
+          content: reviewSummary,
+        }),
+      },
+    ]
+  }
+
   return [
     {
       id: 1,
@@ -359,45 +406,112 @@ function buildDefaultMessages(currentStep: StepRow): Message[] {
   ]
 }
 
-async function resolveActiveConversationForTask(
+async function resolveConversationForTask(
   userId: string,
   task: TaskRow,
+  input?: {
+    preferredConversationId?: string | null
+    allowClosedSession?: boolean
+  },
 ) {
   const supabase = createSupabaseAdminClient()
-  const preferredSessionId = normalizeUuid(task.last_conversation_id)
+  const preferredSessionId = normalizeUuid(
+    input?.preferredConversationId ?? task.last_conversation_id,
+  )
 
   if (preferredSessionId) {
-    const { data, error } = await supabase
+    let preferredQuery = supabase
       .from("conversation_sessions")
-      .select("id")
+      .select("id, user_task_id, status")
       .eq("id", preferredSessionId)
       .eq("user_id", userId)
-      .eq("status", "active")
       .eq("is_admin_test", false)
-      .maybeSingle()
+    if (!input?.allowClosedSession) {
+      preferredQuery = preferredQuery.eq("status", "active")
+    }
+
+    const { data, error } = await preferredQuery.maybeSingle()
 
     assertSupabaseSuccess(error, "failed to load preferred conversation session")
 
     const session = (data as ConversationSessionRow | null) ?? null
-    if (session) {
+    if (session && session.user_task_id === task.id) {
       return session
     }
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("conversation_sessions")
-    .select("id")
+    .select("id, user_task_id, status")
     .eq("user_id", userId)
     .eq("user_task_id", task.id)
-    .eq("status", "active")
     .eq("is_admin_test", false)
     .order("updated_at", { ascending: false })
     .limit(1)
-    .maybeSingle()
+
+  if (!input?.allowClosedSession) {
+    query = query.eq("status", "active")
+  }
+
+  const { data, error } = await query.maybeSingle()
 
   assertSupabaseSuccess(error, "failed to load active conversation session for task")
 
   return (data as ConversationSessionRow | null) ?? null
+}
+
+async function loadConversationSelection(
+  userId: string,
+  conversationId?: string | null,
+) {
+  const normalizedConversationId = normalizeUuid(conversationId)
+
+  if (!normalizedConversationId) {
+    return null
+  }
+
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("conversation_sessions")
+    .select("id, user_task_id, status")
+    .eq("id", normalizedConversationId)
+    .eq("user_id", userId)
+    .eq("is_admin_test", false)
+    .maybeSingle()
+
+  assertSupabaseSuccess(error, "failed to load requested conversation session")
+
+  return (data as ConversationSessionRow | null) ?? null
+}
+
+function resolveTaskForSessionView(input: {
+  tasks: TaskRow[]
+  currentTask: TaskRow
+  requestedTaskId?: string | null
+  requestedConversationTaskId?: string | null
+}) {
+  const candidateTaskIds = [
+    input.requestedConversationTaskId,
+    input.requestedTaskId,
+  ]
+
+  for (const candidateTaskId of candidateTaskIds) {
+    if (typeof candidateTaskId !== "string") {
+      continue
+    }
+
+    const normalizedTaskId = candidateTaskId.trim()
+    if (normalizedTaskId.length === 0) {
+      continue
+    }
+
+    const matchedTask = input.tasks.find((task) => task.id === normalizedTaskId)
+    if (matchedTask) {
+      return matchedTask
+    }
+  }
+
+  return input.currentTask
 }
 
 async function loadPersistedMessages(
@@ -489,7 +603,7 @@ async function assertConversationBelongsToUser(
   const supabase = createSupabaseAdminClient()
   const { data, error } = await supabase
     .from("conversation_sessions")
-    .select("id")
+    .select("id, user_task_id, status")
     .eq("id", conversationId)
     .eq("user_id", userId)
     .eq("is_admin_test", false)
@@ -520,7 +634,7 @@ export async function restartLearningConversationForCurrentTask(
     return null
   }
 
-  const activeConversation = await resolveActiveConversationForTask(userId, currentTask)
+  const activeConversation = await resolveConversationForTask(userId, currentTask)
 
   if (!activeConversation) {
     return {
@@ -592,6 +706,10 @@ export async function getLearningMessagesPage(
 
 export async function getLearningCurrentSessionData(
   userId: string,
+  input?: {
+    sessionId?: string | null
+    taskId?: string | null
+  },
 ): Promise<LearningCurrentSessionResponseData | null> {
   const state = await loadLearningState(userId)
 
@@ -613,8 +731,15 @@ export async function getLearningCurrentSessionData(
     return null
   }
 
+  const requestedConversation = await loadConversationSelection(userId, input?.sessionId)
+  const selectedTask = resolveTaskForSessionView({
+    tasks: state.tasks,
+    currentTask,
+    requestedTaskId: input?.taskId,
+    requestedConversationTaskId: requestedConversation?.user_task_id ?? null,
+  })
   const currentStep =
-    orderedSteps.find((step) => step.id === currentTask.path_step_id) ?? orderedSteps[0]
+    orderedSteps.find((step) => step.id === selectedTask.path_step_id) ?? orderedSteps[0]
 
   if (!currentStep) {
     return null
@@ -663,8 +788,24 @@ export async function getLearningCurrentSessionData(
       { text: "遇到困难时可以向 AI 导师求助，但先尝试自己解决", isTrap: false },
     ]
   }
-  const baseMessages = buildDefaultMessages(currentStep)
-  const activeConversation = await resolveActiveConversationForTask(userId, currentTask)
+  const reviewSummary = resolveStageReviewSummary({
+    title: currentStep.title,
+    reviewSummary: currentStep.review_summary,
+    keyPoints: masteryPoints,
+    summary: currentStep.summary,
+    goal: currentStep.goal,
+  })
+  const isSelectedTaskReview = selectedTask.id !== currentTask.id
+  const isCompletedReviewTask = selectedTask.status === "completed"
+  const baseMessages = buildDefaultMessages({
+    currentStep,
+    taskStatus: selectedTask.status,
+  })
+  const activeConversation = await resolveConversationForTask(userId, selectedTask, {
+    preferredConversationId: requestedConversation?.id ?? input?.sessionId ?? null,
+    allowClosedSession:
+      selectedTask.status === "completed" || requestedConversation !== null,
+  })
   const persistedMessagePage =
     activeConversation
       ? await loadPersistedMessages(activeConversation.id)
@@ -673,13 +814,120 @@ export async function getLearningCurrentSessionData(
   const totalSteps = Math.max(state.activePath.total_steps, orderedSteps.length)
   const currentProgressPercent =
     totalSteps > 0
-      ? Math.round(((state.activePath.completed_steps + (currentTask.status === "in_progress" ? 0.5 : 0)) / totalSteps) * 100)
+      ? Math.round(((state.activePath.completed_steps + (selectedTask.status === "in_progress" ? 0.5 : 0)) / totalSteps) * 100)
       : 0
   const shouldExposeResume = hasLearningResumeHistory({
-    completedSteps: state.activePath.completed_steps,
-    currentTaskLastConversationId: currentTask.last_conversation_id,
+    completedSteps: isSelectedTaskReview ? 0 : state.activePath.completed_steps,
+    currentTaskLastConversationId: selectedTask.last_conversation_id,
     persistedMessageCount: persistedMessages.length,
   })
+  const quickActions =
+    isCompletedReviewTask
+      ? []
+      : [
+          {
+            label: "我完成了",
+            tone: "primary",
+            helper: "推进任务",
+            category: "progress",
+          },
+          {
+            label: "帮我拆细一点",
+            tone: "secondary",
+            helper: "拆小当前步骤",
+            category: "help",
+          },
+          {
+            label: "我卡住了",
+            tone: "warning",
+            helper: "分层求助",
+            category: "help",
+          },
+          {
+            label: "给我一个例子",
+            tone: "secondary",
+            helper: "最小示例",
+            category: "hint",
+          },
+        ] as LearningCurrentSessionResponseData["quickActions"]
+  const supportOptions =
+    isCompletedReviewTask
+      ? []
+      : [
+          {
+            mode: "hint",
+            label: "给我一点提示",
+            description: "只提醒关键方向，不直接把答案展开。",
+            prompt: "给我一点提示",
+          },
+          {
+            mode: "breakdown",
+            label: "帮我缩小问题",
+            description: "把当前任务拆成更小的一步，先做最容易完成的部分。",
+            prompt: "帮我拆细一点",
+          },
+          {
+            mode: "minimal_example",
+            label: "给我最小示例",
+            description: "提供一个最小可运行例子，帮助你先跑通一次。",
+            prompt: "给我一个例子",
+          },
+        ] as LearningCurrentSessionResponseData["supportOptions"]
+  const responseSamples =
+    isCompletedReviewTask
+      ? []
+      : [
+          {
+            trigger: "我完成了",
+            kind: "task_feedback",
+            title: "任务反馈",
+            content: [
+              "很好，这一步已经完成。",
+              "",
+              "**你已经确认了当前关卡的关键能力：**",
+              `- ${currentStep.title}`,
+              nextStep
+                ? `- 接下来可以进入 ${nextStep.title}`
+                : "- 当前已是本路径最后一关，完成后该路径练习将全部结束",
+            ].join("\n"),
+            xp: currentStep.reward_score,
+            nextStep: nextStep
+              ? `进入下一关：${nextStep.title}`
+              : "完成本关后本路径练习全部结束，可前往学习地图查看进度",
+          },
+          {
+            trigger: "帮我拆细一点",
+            kind: "coach",
+            title: "拆小当前步骤",
+            content: [
+              "我们把这一步再缩小。",
+              "",
+              `1. 先只完成「${currentStep.title}」里最小的一次尝试`,
+              "2. 不追求一步到位，只要拿到第一个可验证结果",
+              "3. 再把结果发给我，我帮你判断下一步",
+            ].join("\n"),
+          },
+          {
+            trigger: "给我一点提示",
+            kind: "coach",
+            title: "轻量提示",
+            content:
+              currentStep.focus ??
+              "先用结果导向的话描述你要达成什么，而不是试图一次写完整规范。",
+          },
+          {
+            trigger: "给我一个例子",
+            kind: "coach",
+            title: "最小示例",
+            content: [
+              "你可以先尝试这个最小表达：",
+              "",
+              `**请帮我完成「${currentStep.title}」，目标是：${currentStep.goal}**`,
+              "",
+              "先验证一次最小结果，再决定是否扩展。",
+            ].join("\n"),
+          },
+        ] as LearningCurrentSessionResponseData["responseSamples"]
 
   return {
     conversationId: activeConversation?.id ?? null,
@@ -700,9 +948,9 @@ export async function getLearningCurrentSessionData(
       status: "in_progress",
     },
     task: {
-      taskId: currentTask.id,
+      taskId: selectedTask.id,
       title: currentStep.title,
-      status: mapTaskState(currentTask.status),
+      status: mapTaskState(selectedTask.status),
     },
     profile: toProfileData(state.profile, state.tool, completedTaskCount),
     planSummary: {
@@ -717,7 +965,7 @@ export async function getLearningCurrentSessionData(
         && (state.activePath.metadata as JsonRecord).seedSource === "plan_draft_confirmed",
     },
     resume:
-      shouldExposeResume
+      shouldExposeResume && !isSelectedTaskReview
         ? {
             title: "继续上次学习",
             summary: currentStep.summary,
@@ -732,122 +980,31 @@ export async function getLearningCurrentSessionData(
       tool: state.tool.name,
       stageLabel: `第 ${currentStep.step_no} 关 / 共 ${totalSteps} 关`,
       goal: currentStep.goal,
-      summary: currentStep.focus ?? currentStep.summary,
+      summary: isCompletedReviewTask ? reviewSummary : (currentStep.focus ?? currentStep.summary),
       estimatedTime: `约 ${currentStep.estimated_minutes ?? 10} 分钟`,
       reward: `+${currentStep.reward_score} XP`,
       progressLabel: `${state.activePath.completed_steps} / ${totalSteps} 关已完成`,
       progressPercent: currentProgressPercent,
       coachCue:
-        currentStep.focus ?? "先把任务做小，只验证当前这一关的核心能力，不要一次扩展太多。",
+        isCompletedReviewTask
+          ? "先回看这一步当时的目标、掌握点和对话记录，再总结哪些做法可以复用。"
+          : (currentStep.focus ?? "先把任务做小，只验证当前这一关的核心能力，不要一次扩展太多。"),
       nextPreviewIsFinal: isFinalPathStep,
       nextUnlockTitle: isFinalPathStep ? FINAL_PATH_STEP_TITLE : nextStep.title,
       nextUnlockSummary: nextUnlockSummaryOrPreview,
     },
     messages: [...baseMessages, ...persistedMessages],
-    quickActions: [
-      {
-        label: "我完成了",
-        tone: "primary",
-        helper: "推进任务",
-        category: "progress",
-      },
-      {
-        label: "帮我拆细一点",
-        tone: "secondary",
-        helper: "拆小当前步骤",
-        category: "help",
-      },
-      {
-        label: "我卡住了",
-        tone: "warning",
-        helper: "分层求助",
-        category: "help",
-      },
-      {
-        label: "给我一个例子",
-        tone: "secondary",
-        helper: "最小示例",
-        category: "hint",
-      },
-    ],
-    supportOptions: [
-      {
-        mode: "hint",
-        label: "给我一点提示",
-        description: "只提醒关键方向，不直接把答案展开。",
-        prompt: "给我一点提示",
-      },
-      {
-        mode: "breakdown",
-        label: "帮我缩小问题",
-        description: "把当前任务拆成更小的一步，先做最容易完成的部分。",
-        prompt: "帮我拆细一点",
-      },
-      {
-        mode: "minimal_example",
-        label: "给我最小示例",
-        description: "提供一个最小可运行例子，帮助你先跑通一次。",
-        prompt: "给我一个例子",
-      },
-    ],
-    responseSamples: [
-      {
-        trigger: "我完成了",
-        kind: "task_feedback",
-        title: "任务反馈",
-        content: [
-          "很好，这一步已经完成。",
-          "",
-          "**你已经确认了当前关卡的关键能力：**",
-          `- ${currentStep.title}`,
-          nextStep
-            ? `- 接下来可以进入 ${nextStep.title}`
-            : "- 当前已是本路径最后一关，完成后该路径练习将全部结束",
-        ].join("\n"),
-        xp: currentStep.reward_score,
-        nextStep: nextStep
-          ? `进入下一关：${nextStep.title}`
-          : "完成本关后本路径练习全部结束，可前往学习地图查看进度",
-      },
-      {
-        trigger: "帮我拆细一点",
-        kind: "coach",
-        title: "拆小当前步骤",
-        content: [
-          "我们把这一步再缩小。",
-          "",
-          `1. 先只完成「${currentStep.title}」里最小的一次尝试`,
-          "2. 不追求一步到位，只要拿到第一个可验证结果",
-          "3. 再把结果发给我，我帮你判断下一步",
-        ].join("\n"),
-      },
-      {
-        trigger: "给我一点提示",
-        kind: "coach",
-        title: "轻量提示",
-        content:
-          currentStep.focus ??
-          "先用结果导向的话描述你要达成什么，而不是试图一次写完整规范。",
-      },
-      {
-        trigger: "给我一个例子",
-        kind: "coach",
-        title: "最小示例",
-        content: [
-          "你可以先尝试这个最小表达：",
-          "",
-          `**请帮我完成「${currentStep.title}」，目标是：${currentStep.goal}**`,
-          "",
-          "先验证一次最小结果，再决定是否扩展。",
-        ].join("\n"),
-      },
-    ],
+    quickActions,
+    supportOptions,
+    responseSamples,
     rightPanel: {
       currentStep: currentStep.title,
-      whyThisStep: currentStep.focus ?? currentStep.summary,
+      whyThisStep: isCompletedReviewTask ? reviewSummary : (currentStep.focus ?? currentStep.summary),
       completionCriteria: currentStep.completion_criteria ?? currentStep.goal,
       hintIfStuck:
-        "如果不知道怎么描述，就先提交一句结果导向的话，再把报错或结果贴回来。",
+        isCompletedReviewTask
+          ? "如果一时想不起来，就先回看当时的目标、操作结果和 AI 给你的关键建议。"
+          : "如果不知道怎么描述，就先提交一句结果导向的话，再把报错或结果贴回来。",
       knowledgePoints,
       masteryPoints: masteryPoints.length > 0 ? masteryPoints : knowledgePoints,
       cautions: pitfalls,
