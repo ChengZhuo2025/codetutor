@@ -320,7 +320,7 @@ export function LearningPathSessionsPage({
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-2">
-                        <Badge variant={message.role === "user" ? "outline" : "secondary"} size="md">
+                        <Badge variant={message.role === "user" ? "outline" : "primary"} size="md">
                           {message.role === "user" ? "用户" : "AI"}
                         </Badge>
                         <span className="text-xs text-muted-foreground">#{message.sequenceNo}</span>
