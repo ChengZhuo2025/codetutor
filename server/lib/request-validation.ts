@@ -2105,6 +2105,7 @@ export function parsePlanDraftRegenerateBody(input: unknown): ValidationResult<{
   links?: string[]
   userGoal?: string | null
   weeklyHours?: number | null
+  currentConstraints?: string | null
 }> {
   if (input === null || input === undefined) {
     return ok({})
@@ -2145,10 +2146,20 @@ export function parsePlanDraftRegenerateBody(input: unknown): ValidationResult<{
     weeklyHours = body.weeklyHours
   }
 
+  let currentConstraints: string | null | undefined
+  if (body.currentConstraints !== undefined && body.currentConstraints !== null) {
+    if (typeof body.currentConstraints !== "string") {
+      return fail("BAD_REQUEST", "currentConstraints 必须是字符串。")
+    }
+    const trimmed = body.currentConstraints.trim()
+    currentConstraints = trimmed.length > 0 ? trimmed : null
+  }
+
   const data: {
     links?: string[]
     userGoal?: string | null
     weeklyHours?: number | null
+    currentConstraints?: string | null
   } = {}
 
   if (links !== undefined) {
@@ -2159,6 +2170,9 @@ export function parsePlanDraftRegenerateBody(input: unknown): ValidationResult<{
   }
   if (weeklyHours !== undefined) {
     data.weeklyHours = weeklyHours
+  }
+  if (currentConstraints !== undefined) {
+    data.currentConstraints = currentConstraints
   }
 
   return ok(data)
@@ -2287,6 +2301,9 @@ export function parsePlanDraftPatchBody(input: unknown): ValidationResult<{
         ) {
           return fail("VALIDATION_FAILED", "practiceSteps 必须是非空字符串数组。")
         }
+        if (task.practiceSteps.length < 1) {
+          return fail("VALIDATION_FAILED", "practiceSteps 至少保留 1 条。")
+        }
       }
 
       if (task.recommendedForWeek1 !== undefined && typeof task.recommendedForWeek1 !== "boolean") {
@@ -2350,12 +2367,18 @@ export function parsePlanDraftPatchBody(input: unknown): ValidationResult<{
         ) {
           return fail("VALIDATION_FAILED", "masteryPoints 必须是非空字符串数组。")
         }
+        if (task.masteryPoints.length < 2) {
+          return fail("VALIDATION_FAILED", "masteryPoints 至少保留 2 条。")
+        }
         normalizedTask.masteryPoints = (task.masteryPoints as string[]).map((p) => p.trim())
       }
 
       if (task.cautions !== undefined) {
         if (!Array.isArray(task.cautions)) {
           return fail("BAD_REQUEST", "cautions 必须是数组。")
+        }
+        if (task.cautions.length < 1) {
+          return fail("VALIDATION_FAILED", "cautions 至少保留 1 条。")
         }
         const cautions: Array<{ text: string; isTrap?: boolean }> = []
         for (const entry of task.cautions) {

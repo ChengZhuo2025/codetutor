@@ -452,8 +452,8 @@ export const learningPlanPreviewTaskSchema = z
     acceptanceCriteria: z.string(),
     estimatedMinutes: z.number().int().optional(),
     sourceRefs: z.array(z.string()),
-    masteryPoints: z.array(z.string()),
-    cautions: z.array(learningCautionItemSchema),
+    masteryPoints: z.array(z.string()).min(2),
+    cautions: z.array(learningCautionItemSchema).min(1),
   })
   .openapi("LearningPlanPreviewTask")
 
@@ -514,8 +514,8 @@ export const learningPlanDraftTaskDetailSchema = z
     estimatedMinutes: z.number().int().nullable(),
     sourceRefs: z.array(z.string()),
     goalAlignmentRefs: z.array(z.string()),
-    masteryPoints: z.array(z.string()),
-    cautions: z.array(learningCautionItemSchema),
+    masteryPoints: z.array(z.string()).min(2),
+    cautions: z.array(learningCautionItemSchema).min(1),
     recommendedForWeek1: z.boolean(),
     isUserEdited: z.boolean(),
   })
@@ -547,6 +547,12 @@ export const learningPlanDraftDetailResponseDataSchema = z
   .object({
     draftId: z.string().uuid(),
     intakeId: z.string().uuid(),
+    inputContext: z.object({
+      links: z.array(z.string().url()),
+      userGoal: z.string().nullable(),
+      weeklyHours: z.number().int().nullable(),
+      currentConstraints: z.string().nullable(),
+    }),
     title: z.string(),
     goal: z.string().nullable(),
     status: z.enum(["draft", "confirmed", "rejected", "superseded"]),
@@ -568,8 +574,8 @@ export const learningPlanDraftPatchTaskRequestSchema = z
     practiceSteps: z.array(z.string()).optional(),
     acceptanceCriteria: z.string().nullable().optional(),
     estimatedMinutes: z.number().int().min(15).max(240).nullable().optional(),
-    masteryPoints: z.array(z.string()).optional(),
-    cautions: z.array(learningCautionItemSchema).optional(),
+    masteryPoints: z.array(z.string()).min(2).optional(),
+    cautions: z.array(learningCautionItemSchema).min(1).optional(),
     recommendedForWeek1: z.boolean().optional(),
   })
   .openapi("LearningPlanDraftPatchTaskRequest")
@@ -595,6 +601,7 @@ export const learningPlanDraftRegenerateRequestSchema = z
     links: z.array(z.string().url()).min(1).max(5).optional(),
     userGoal: z.string().trim().optional(),
     weeklyHours: z.number().int().min(1).max(40).optional(),
+    currentConstraints: z.string().trim().optional(),
   })
   .openapi("LearningPlanDraftRegenerateRequest")
 
@@ -701,6 +708,11 @@ export const learningCurrentSessionResponseDataSchema = z
   .object({
     conversationId: z.string().nullable(),
     historyPagination: learningHistoryPaginationSchema,
+    pendingMaterialPlanDraft: z.object({
+      draftId: z.string().uuid(),
+      intakeId: z.string().uuid(),
+      updatedAt: z.string(),
+    }).nullable(),
     path: z.object({
       id: z.string(),
       status: z.literal("in_progress"),

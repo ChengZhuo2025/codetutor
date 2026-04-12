@@ -362,6 +362,16 @@ test("parsePlanDraftRegenerateBody allows empty object", () => {
   }
 })
 
+test("parsePlanDraftRegenerateBody preserves currentConstraints", () => {
+  const parsed = parsePlanDraftRegenerateBody({
+    currentConstraints: "  需要保留项目实战优先  ",
+  })
+  assert.equal(parsed.ok, true)
+  if (parsed.ok) {
+    assert.equal(parsed.data.currentConstraints, "需要保留项目实战优先")
+  }
+})
+
 test("parsePlanDraftPatchBody validates editable draft updates", () => {
   const parsed = parsePlanDraftPatchBody({
     title: "  新标题 ",
@@ -380,6 +390,57 @@ test("parsePlanDraftPatchBody validates editable draft updates", () => {
     assert.equal(parsed.data.tasks?.[0]?.estimatedMinutes, 45)
     assert.equal(parsed.data.tasks?.[0]?.recommendedForWeek1, true)
   }
+})
+
+test("parsePlanDraftPatchBody rejects tasks without practice steps", () => {
+  const parsed = parsePlanDraftPatchBody({
+    tasks: [
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        practiceSteps: [],
+      },
+    ],
+  })
+
+  assert.deepEqual(parsed, {
+    ok: false,
+    code: "VALIDATION_FAILED",
+    message: "practiceSteps 至少保留 1 条。",
+  })
+})
+
+test("parsePlanDraftPatchBody rejects tasks with too few mastery points", () => {
+  const parsed = parsePlanDraftPatchBody({
+    tasks: [
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        masteryPoints: ["只剩一条"],
+      },
+    ],
+  })
+
+  assert.deepEqual(parsed, {
+    ok: false,
+    code: "VALIDATION_FAILED",
+    message: "masteryPoints 至少保留 2 条。",
+  })
+})
+
+test("parsePlanDraftPatchBody rejects tasks without cautions", () => {
+  const parsed = parsePlanDraftPatchBody({
+    tasks: [
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        cautions: [],
+      },
+    ],
+  })
+
+  assert.deepEqual(parsed, {
+    ok: false,
+    code: "VALIDATION_FAILED",
+    message: "cautions 至少保留 1 条。",
+  })
 })
 
 test("plan draft task id parser keeps uuid validation semantics", () => {

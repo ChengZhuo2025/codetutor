@@ -1095,6 +1095,7 @@ const successExamples = {
       hasMore: false,
       nextBeforeSequenceNo: null,
     },
+    pendingMaterialPlanDraft: null,
     path: {
       id: "path-runtime-1",
       status: "in_progress",
@@ -1251,6 +1252,12 @@ const successExamples = {
   learningPlanDraftDetail: {
     draftId: "11111111-1111-4111-8111-111111111111",
     intakeId: "22222222-2222-4222-8222-222222222222",
+    inputContext: {
+      links: ["https://web.dev/learn/"],
+      userGoal: "我想跟着教程做一个最小可运行的页面练习",
+      weeklyHours: 6,
+      currentConstraints: "希望 2 周内完成，优先项目实战",
+    },
     title: "两周内跑通一个 Next.js 页面改造闭环",
     goal: "把教程知识转成一个可执行、可确认的页面改造练习。",
     status: "draft" as const,
@@ -2289,7 +2296,7 @@ registry.registerPath({
       "草稿确认成功",
       successExamples.learningPlanDraftConfirm,
     ),
-    ...commonErrorResponses(["401", "404", "409", "500"], {
+    ...commonErrorResponses(["401", "404", "409", "422", "500"], {
       "404": {
         description: "草稿不存在，或不属于当前用户。",
         example: {
@@ -2303,6 +2310,14 @@ registry.registerPath({
         example: {
           code: "PLAN_DRAFT_ALREADY_CONFIRMED",
           message: "当前学习计划草稿已确认，无需重复激活。",
+          data: null,
+        },
+      },
+      "422": {
+        description: "草稿任务缺少必要的本关要掌握或注意事项，无法确认。",
+        example: {
+          code: "AI_RESPONSE_INVALID",
+          message: "第 2 关“注意事项”至少保留 1 条后才能启用计划。",
           data: null,
         },
       },
@@ -2356,7 +2371,7 @@ registry.registerPath({
   path: "/api/learning/plan-drafts/{id}/regenerate",
   operationId: "postLearningPlanDraftRegenerate",
   tags: ["learning"],
-  summary: "重新生成学习计划草稿（可选更换链接）",
+  summary: "重新生成学习计划草稿（可选更换链接并保留原约束）",
   security: [{ bearerAuth: [] }],
   request: {
     params: routeIdParamsSchema,

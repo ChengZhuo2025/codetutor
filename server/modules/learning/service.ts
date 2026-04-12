@@ -69,6 +69,12 @@ type ActivePathRow = {
   metadata: JsonRecord
 }
 
+type PendingMaterialPlanDraftRow = {
+  id: string
+  intake_id: string
+  updated_at: string
+}
+
 type TaskRow = {
   id: string
   path_step_id: string
@@ -265,6 +271,20 @@ async function loadLearningState(userId: string) {
 
   assertSupabaseSuccess(stepError, "failed to load path steps")
 
+  const { data: pendingDraft, error: pendingDraftError } =
+    activePath.selection_mode !== "self_directed"
+      ? { data: null, error: null }
+      : await supabase
+          .from("learning_plan_drafts")
+          .select("id, intake_id, updated_at")
+          .eq("user_id", userId)
+          .eq("status", "draft")
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+  assertSupabaseSuccess(pendingDraftError, "failed to load pending material plan draft")
+
   if (!tool) {
     return null
   }
@@ -275,6 +295,7 @@ async function loadLearningState(userId: string) {
     activePath: activePath as ActivePathRow,
     tasks: (tasks ?? []) as TaskRow[],
     steps: (steps ?? []) as StepRow[],
+    pendingMaterialPlanDraft: pendingDraft as PendingMaterialPlanDraftRow | null,
   }
 }
 
@@ -658,6 +679,14 @@ export async function getLearningCurrentSessionData(
       hasMore: false,
       nextBeforeSequenceNo: null,
     },
+    pendingMaterialPlanDraft:
+      state.pendingMaterialPlanDraft
+        ? {
+            draftId: state.pendingMaterialPlanDraft.id,
+            intakeId: state.pendingMaterialPlanDraft.intake_id,
+            updatedAt: state.pendingMaterialPlanDraft.updated_at,
+          }
+        : null,
     path: {
       id: state.activePath.id,
       status: "in_progress",

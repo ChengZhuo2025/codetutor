@@ -1084,6 +1084,7 @@ erDiagram
 
 - `unique(draft_id, task_no)`
 - `mastery_points` 在 planner / PATCH 后应至少有 2 条，`cautions` 至少有 1 条；弱证据回退为试点计划时也不能丢失
+- 历史已确认的 `self_directed + plan_draft_confirmed` 路径若 `path_steps.key_points` / `pitfalls` 仍为空，迁移需按 `draftId + task_no` 回填，且不得覆盖已有非空值
 
 索引建议：
 

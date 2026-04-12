@@ -21,6 +21,7 @@ export function LearnPage() {
   const [materialDialog, setMaterialDialog] = useState({
     open: false,
     initialLinks: [] as string[],
+    initialDraftId: null as string | null,
   })
   const [sessionState, setSessionState] =
     useState<ApiRequestState<LearningCurrentSessionResponseData>>({
@@ -93,7 +94,36 @@ export function LearnPage() {
   useEffect(() => {
     if (sessionState.status !== "success") return
     if (sessionState.data.planSummary.selectionMode !== "self_directed") return
+    if (!sessionState.data.pendingMaterialPlanDraft) return
+    if (typeof window === "undefined") return
+
+    const userId = sessionState.data.profile.userId
+    const draftId = sessionState.data.pendingMaterialPlanDraft.draftId
+    const key = `learn:self_directed_pending_draft_prompted:${userId}:${draftId}`
+
+    try {
+      if (window.sessionStorage?.getItem(key) === "1") return
+      window.sessionStorage?.setItem(key, "1")
+      window.setTimeout(() => setMaterialDialog({
+        open: true,
+        initialLinks: [],
+        initialDraftId: draftId,
+      }), 0)
+    } catch (error) {
+      console.warn("Failed to access sessionStorage:", error)
+      window.setTimeout(() => setMaterialDialog({
+        open: true,
+        initialLinks: [],
+        initialDraftId: draftId,
+      }), 0)
+    }
+  }, [sessionState])
+
+  useEffect(() => {
+    if (sessionState.status !== "success") return
+    if (sessionState.data.planSummary.selectionMode !== "self_directed") return
     if (sessionState.data.planSummary.hasMaterialPlan) return
+    if (sessionState.data.pendingMaterialPlanDraft) return
     if (typeof window === "undefined") return
 
     const userId = sessionState.data.profile.userId
@@ -141,6 +171,7 @@ export function LearnPage() {
     setMaterialDialog({
       open: true,
       initialLinks: links ?? [],
+      initialDraftId: null,
     })
   }, [])
 
@@ -178,6 +209,7 @@ export function LearnPage() {
               onDialogOpenChange={handleMaterialPlanDialogOpened}
               onSessionRefresh={handleSessionRefresh}
               initialLinks={materialDialog.initialLinks}
+              initialDraftId={materialDialog.initialDraftId}
             />
           ) : null}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">

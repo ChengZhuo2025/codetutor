@@ -5,6 +5,7 @@ import { MaterialPlanError } from "../server/modules/learning-materials/errors.t
 import {
   createPlanDraftDetailHandler,
   createPlanDraftConfirmPostHandler,
+  createPlanDraftRegeneratePostHandler,
   createPlanFromMaterialPostHandler,
   createPlanDraftTaskRegeneratePostHandler,
 } from "../server/modules/learning-plans/route-handler.ts"
@@ -171,6 +172,12 @@ test("plan-draft detail get returns 200 with injected service", async () => {
     getPlanDraftDetailForUser: async () => ({
       draftId: "11111111-1111-4111-8111-111111111111",
       intakeId: "22222222-2222-4222-8222-222222222222",
+      inputContext: {
+        links: ["https://web.dev/learn/"],
+        userGoal: "目标",
+        weeklyHours: 6,
+        currentConstraints: "两周内完成",
+      },
       title: "草稿",
       goal: "目标",
       status: "draft",
@@ -198,6 +205,12 @@ test("plan-draft detail patch returns 200 with injected service", async () => {
     updatePlanDraftForUser: async () => ({
       draftId: "11111111-1111-4111-8111-111111111111",
       intakeId: "22222222-2222-4222-8222-222222222222",
+      inputContext: {
+        links: ["https://web.dev/learn/"],
+        userGoal: "新目标",
+        weeklyHours: 6,
+        currentConstraints: "两周内完成",
+      },
       title: "新标题",
       goal: "新目标",
       status: "draft",
@@ -221,6 +234,52 @@ test("plan-draft detail patch returns 200 with injected service", async () => {
   assert.equal(response.status, 200)
 })
 
+test("plan-draft regenerate forwards currentConstraints", async () => {
+  let received:
+    | {
+      links?: string[] | null
+      userGoal?: string | null
+      weeklyHours?: number | null
+      currentConstraints?: string | null
+    }
+    | null = null
+
+  const handler = createPlanDraftRegeneratePostHandler({
+    getRequestAuth: async () => ({ userId: "u1" }),
+    getRequestAuthHelpText: () => "",
+    regeneratePlanDraft: async (_userId, _draftId, input) => {
+      received = input
+      return {
+        processingMode: "async" as const,
+        intakeId: "22222222-2222-4222-8222-222222222222",
+        runId: "33333333-3333-4333-8333-333333333333",
+        draftId: null,
+        status: "queued" as const,
+      }
+    },
+  })
+
+  const response = await handler(
+    createJsonRequest(
+      "http://x",
+      JSON.stringify({
+        currentConstraints: "两周内完成，优先项目实战",
+      }),
+    ),
+    {
+      params: Promise.resolve({ id: "11111111-1111-4111-8111-111111111111" }),
+    },
+  )
+
+  assert.equal(response.status, 200)
+  assert.deepEqual(received, {
+    links: undefined,
+    userGoal: undefined,
+    weeklyHours: undefined,
+    currentConstraints: "两周内完成，优先项目实战",
+  })
+})
+
 test("plan-draft task regenerate returns 200 with injected service", async () => {
   const handler = createPlanDraftTaskRegeneratePostHandler({
     getRequestAuth: async () => ({ userId: "u1" }),
@@ -228,6 +287,12 @@ test("plan-draft task regenerate returns 200 with injected service", async () =>
     regeneratePlanDraftTaskForUser: async () => ({
       draftId: "11111111-1111-4111-8111-111111111111",
       intakeId: "22222222-2222-4222-8222-222222222222",
+      inputContext: {
+        links: ["https://web.dev/learn/"],
+        userGoal: "目标",
+        weeklyHours: 6,
+        currentConstraints: "两周内完成",
+      },
       title: "草稿",
       goal: "目标",
       status: "draft",

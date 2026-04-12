@@ -124,6 +124,22 @@ test("openapi document covers all registered api operations and special transpor
   assert.ok(securitySchemes.bearerAuth)
   assert.ok(securitySchemes.adminSecretHeader)
 
+  const currentSessionExample = (
+    paths["/api/learning/current-session"]?.get?.responses?.["200"]?.content?.["application/json"] as
+      | { example?: { data?: Record<string, unknown> } }
+      | undefined
+  )?.example?.data
+  assert.ok(currentSessionExample)
+  assert.ok("pendingMaterialPlanDraft" in (currentSessionExample ?? {}))
+
+  const draftDetailExample = (
+    paths["/api/learning/plan-drafts/{id}"]?.get?.responses?.["200"]?.content?.["application/json"] as
+      | { example?: { data?: Record<string, unknown> } }
+      | undefined
+  )?.example?.data
+  assert.ok(draftDetailExample)
+  assert.ok("inputContext" in (draftDetailExample ?? {}))
+
   const adminSecurity = paths["/api/admin/feedback"]?.get?.security ?? []
   assert.deepEqual(adminSecurity, [])
 

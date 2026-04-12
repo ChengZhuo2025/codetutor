@@ -73,6 +73,7 @@ export type MaterialPlanSubmissionInput = {
   userGoal?: string | null
   weeklyHours?: number | null
   currentConstraints?: string | null
+  sourceDraftId?: string | null
 }
 
 export type MaterialPlanSubmissionResult = {
@@ -397,7 +398,8 @@ export async function submitMaterialPlanGeneration(
     .insert({
       user_id: userId,
       intake_id: intakeId,
-      trigger_type: "submit",
+      draft_id: input.sourceDraftId ?? null,
+      trigger_type: input.sourceDraftId ? "regenerate" : "submit",
       status: "queued",
       source_snapshot: {
         links: normalizedLinks.map((item) => item.url),

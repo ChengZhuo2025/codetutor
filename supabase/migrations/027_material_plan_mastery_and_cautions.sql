@@ -25,6 +25,48 @@ SET
 WHERE jsonb_array_length(mastery_points) = 0
   AND jsonb_array_length(cautions) = 0;
 
+WITH confirmed_self_directed_steps AS (
+  SELECT
+    ps.id AS path_step_id,
+    ps.key_points,
+    ps.pitfalls,
+    dt.mastery_points,
+    dt.cautions
+  FROM public.user_learning_paths ulp
+  JOIN public.learning_paths lp
+    ON lp.id = ulp.template_path_id
+  JOIN public.path_steps ps
+    ON ps.path_id = ulp.template_path_id
+  JOIN public.learning_plan_draft_tasks dt
+    ON dt.draft_id::text = COALESCE(
+      NULLIF(ulp.metadata ->> 'draftId', ''),
+      NULLIF(lp.metadata ->> 'draft_id', '')
+    )
+   AND dt.task_no = ps.step_no
+  WHERE ulp.selection_mode = 'self_directed'
+    AND COALESCE(ulp.metadata ->> 'seedSource', '') = 'plan_draft_confirmed'
+    AND (
+      COALESCE(jsonb_array_length(ps.key_points), 0) = 0
+      OR COALESCE(jsonb_array_length(ps.pitfalls), 0) = 0
+    )
+)
+UPDATE public.path_steps ps
+SET
+  key_points = CASE
+    WHEN COALESCE(jsonb_array_length(ps.key_points), 0) = 0
+      AND COALESCE(jsonb_array_length(src.mastery_points), 0) >= 2
+      THEN src.mastery_points
+    ELSE ps.key_points
+  END,
+  pitfalls = CASE
+    WHEN COALESCE(jsonb_array_length(ps.pitfalls), 0) = 0
+      AND COALESCE(jsonb_array_length(src.cautions), 0) >= 1
+      THEN src.cautions
+    ELSE ps.pitfalls
+  END
+FROM confirmed_self_directed_steps src
+WHERE ps.id = src.path_step_id;
+
 UPDATE public.agent_templates
 SET
   system_prompt_template = $planner$你是「AI 编程学习教练」内的学习计划生成器。你必须只输出一段合法 JSON，不要 Markdown、不要代码围栏、不要前后说明文字。

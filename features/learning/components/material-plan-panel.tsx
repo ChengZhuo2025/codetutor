@@ -14,6 +14,7 @@ import type {
   LearningPlanDraftDetailResponseData,
   MaterialIntakeStatusResponseData,
   PlanDraftConfirmResponseData,
+  PlanDraftRegenerateRequestContract,
   PlanFromMaterialResponseData,
 } from "@/lib/api/contracts/learning"
 import { cn } from "@/lib/utils"
@@ -22,6 +23,7 @@ type MaterialPlanPanelProps = {
   onSessionRefresh: () => void
   className?: string
   defaultLinksText?: string
+  defaultDraftId?: string | null
   onDone?: () => void
 }
 
@@ -135,10 +137,29 @@ function getSelfCheckMeta(
   }
 }
 
+function getDraftTaskValidationError(
+  draftDetail: LearningPlanDraftDetailResponseData,
+) {
+  for (const task of draftDetail.tasks) {
+    const masteryPointCount = task.masteryPoints.filter((item) => item.trim().length > 0).length
+    if (masteryPointCount < 2) {
+      return `第 ${task.taskNo} 关“本关要掌握”至少保留 2 条。`
+    }
+
+    const cautionCount = task.cautions.filter((item) => item.text.trim().length > 0).length
+    if (cautionCount < 1) {
+      return `第 ${task.taskNo} 关“注意事项”至少保留 1 条。`
+    }
+  }
+
+  return null
+}
+
 export function MaterialPlanPanel({
   onSessionRefresh,
   className,
   defaultLinksText,
+  defaultDraftId,
   onDone,
 }: MaterialPlanPanelProps) {
   const [linksText, setLinksText] = useState(defaultLinksText ?? "")
@@ -185,8 +206,30 @@ export function MaterialPlanPanel({
       return
     }
 
+    setLinksText(res.data.inputContext.links.join("\n"))
+    setUserGoal(res.data.inputContext.userGoal ?? "")
+    setWeeklyHours(
+      res.data.inputContext.weeklyHours !== null
+        ? String(res.data.inputContext.weeklyHours)
+        : "",
+    )
+    setCurrentConstraints(res.data.inputContext.currentConstraints ?? "")
     setDraftDetail(res.data)
   }
+
+  useEffect(() => {
+    if (!defaultDraftId || draftDetail) {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      void loadDraftDetail(defaultDraftId)
+    }, 0)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [defaultDraftId, draftDetail])
 
   useEffect(() => {
     if (!intakeStatus || !ACTIVE_STATUSES.has(intakeStatus.status)) {
@@ -303,6 +346,12 @@ export function MaterialPlanPanel({
       return
     }
 
+    const validationError = getDraftTaskValidationError(draftDetail)
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
     setError(null)
     setBusyAction("save")
     const body: LearningPlanDraftPatchRequestContract = {
@@ -343,12 +392,9 @@ export function MaterialPlanPanel({
     setError(null)
     setBusyAction("regenerate")
     const links = parseLinks()
-    const body: {
-      links?: string[]
-      userGoal?: string
-      weeklyHours?: number
-    } = {
+    const body: PlanDraftRegenerateRequestContract = {
       userGoal: userGoal.trim() || undefined,
+      currentConstraints: currentConstraints.trim() || undefined,
     }
     if (links.length > 0) {
       body.links = links

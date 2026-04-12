@@ -11,7 +11,10 @@ import {
   submitMaterialPlanGeneration,
   type MaterialPlanSubmissionResult,
 } from "@/server/modules/learning-materials/service.ts"
-import { resolveMaterialPipelineModels } from "@/server/modules/learning-materials/providers.ts"
+import {
+  resolveMaterialPipelineModels,
+  type MaterialPipelineRuntime,
+} from "@/server/modules/learning-materials/providers.ts"
 import type { MaterialEvidenceCoverage } from "@/server/modules/learning-materials/normalizer.ts"
 
 import { confirmPlanDraft, type ConfirmDraftResult } from "./activation.ts"
@@ -38,12 +41,14 @@ export type PlanFromMaterialInput = {
   userGoal?: string | null
   weeklyHours?: number | null
   currentConstraints?: string | null
+  sourceDraftId?: string | null
 }
 
 export type PlanDraftRegenerateInput = {
   links?: string[] | null
   userGoal?: string | null
   weeklyHours?: number | null
+  currentConstraints?: string | null
 }
 
 export type PlanDraftTaskPatchInput = {
@@ -75,6 +80,12 @@ export type PlanFromMaterialResult = MaterialPlanSubmissionResult | {
 export type PlanDraftDetailResult = {
   draftId: string
   intakeId: string
+  inputContext: {
+    links: string[]
+    userGoal: string | null
+    weeklyHours: number | null
+    currentConstraints: string | null
+  }
   title: string
   goal: string | null
   status: "draft" | "confirmed" | "rejected" | "superseded"
@@ -115,6 +126,14 @@ type GenerationRunRow = {
   } | null
 }
 
+type DraftInputContext = PlanDraftDetailResult["inputContext"]
+
+type DraftQualityGateContext = {
+  intakeWarnings: string[]
+  evidenceCoverage: MaterialEvidenceCoverage | null
+  qualityRuntime: MaterialPipelineRuntime | null
+}
+
 function readStringArrayJson(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return []
@@ -146,6 +165,28 @@ function readCautionItemsJson(value: unknown): Array<{ text: string; isTrap?: bo
     .filter((item): item is { text: string; isTrap?: boolean } => Boolean(item))
 }
 
+function assertDraftTasksHaveSupplementalContent(tasks: Array<{
+  taskNo: number
+  masteryPoints: string[]
+  cautions: Array<{ text: string; isTrap?: boolean }>
+}>) {
+  for (const task of tasks) {
+    const masteryPoints = task.masteryPoints
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+    if (masteryPoints.length < 2) {
+      throw aiResponseInvalid(`第 ${task.taskNo} 关“本关要掌握”至少保留 2 条。`)
+    }
+
+    const cautions = task.cautions
+      .map((item) => ({ ...item, text: item.text.trim() }))
+      .filter((item) => item.text.length > 0)
+    if (cautions.length < 1) {
+      throw aiResponseInvalid(`第 ${task.taskNo} 关“注意事项”至少保留 1 条。`)
+    }
+  }
+}
+
 function readWarningsFromMetadata(value: unknown) {
   if (!value || typeof value !== "object") {
     return [] as string[]
@@ -155,6 +196,14 @@ function readWarningsFromMetadata(value: unknown) {
   return Array.isArray(warnings)
     ? warnings.filter((item): item is string => typeof item === "string")
     : []
+}
+
+function readStringOrNull(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
+}
+
+function readIntegerOrNull(value: unknown) {
+  return typeof value === "number" && Number.isInteger(value) ? value : null
 }
 
 function aggregateCoverageFromSourceSnapshots(
@@ -181,6 +230,35 @@ function aggregateCoverageFromSourceSnapshots(
     chunkCount: coverageItems.reduce((sum, item) => sum + item.chunkCount, 0),
     isSufficient: coverageItems.every((item) => item.isSufficient),
     isWeakEvidence: coverageItems.some((item) => item.isWeakEvidence),
+  }
+}
+
+export function readDraftQualitySignalsFromRunSourceSnapshot(value: unknown): Pick<
+  DraftQualityGateContext,
+  "intakeWarnings" | "evidenceCoverage"
+> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {
+      intakeWarnings: [],
+      evidenceCoverage: null,
+    }
+  }
+
+  const snapshots = Array.isArray((value as { sources?: unknown }).sources)
+    ? ((value as { sources: unknown[] }).sources
+      .filter((item): item is { metadata: Record<string, unknown> } => (
+        !!item
+        && typeof item === "object"
+        && !Array.isArray(item)
+        && !!(item as { metadata?: unknown }).metadata
+        && typeof (item as { metadata?: unknown }).metadata === "object"
+        && !Array.isArray((item as { metadata?: unknown }).metadata)
+      )))
+    : []
+
+  return {
+    intakeWarnings: snapshots.flatMap((snapshot) => readWarningsFromMetadata(snapshot.metadata)),
+    evidenceCoverage: aggregateCoverageFromSourceSnapshots(snapshots),
   }
 }
 
@@ -404,13 +482,44 @@ async function loadDraftTasks(
   }>
 }
 
+async function loadDraftInputContext(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  intakeId: string,
+): Promise<DraftInputContext> {
+  const { data: intakeData, error: intakeError } = await supabase
+    .from("learning_material_intakes")
+    .select("input_links, current_constraints, metadata")
+    .eq("id", intakeId)
+    .maybeSingle()
+
+  assertSupabaseSuccess(intakeError, "failed to load draft input context")
+
+  const intake = intakeData as {
+    input_links: unknown
+    current_constraints: string | null
+    metadata: unknown
+  } | null
+  const metadata = intake?.metadata && typeof intake.metadata === "object"
+    ? intake.metadata as Record<string, unknown>
+    : null
+
+  return {
+    links: readStringArrayJson(intake?.input_links),
+    userGoal: readStringOrNull(metadata?.userGoal),
+    weeklyHours: readIntegerOrNull(metadata?.weeklyHours),
+    currentConstraints: readStringOrNull(intake?.current_constraints),
+  }
+}
+
 function toDraftDetailResult(
   draft: Awaited<ReturnType<typeof loadDraftRowForUser>>,
   tasks: Awaited<ReturnType<typeof loadDraftTasks>>,
+  inputContext: DraftInputContext,
 ): PlanDraftDetailResult {
   return {
     draftId: draft.id,
     intakeId: draft.intake_id,
+    inputContext,
     title: draft.title,
     goal: draft.goal,
     status: draft.status,
@@ -465,6 +574,212 @@ function buildRawPlanFromDraftDetail(detail: PlanDraftDetailResult): PlannerOutp
   }
 }
 
+async function loadDraftQualityGateContext(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  intakeId: string,
+): Promise<DraftQualityGateContext> {
+  const { data: intakeData, error: intakeError } = await supabase
+    .from("learning_material_intakes")
+    .select("latest_run_id")
+    .eq("id", intakeId)
+    .maybeSingle()
+
+  assertSupabaseSuccess(intakeError, "failed to load draft quality gate intake")
+
+  const intake = intakeData as { latest_run_id: string | null } | null
+  let sourceSnapshot: unknown = null
+
+  if (intake?.latest_run_id) {
+    const { data: runData, error: runError } = await supabase
+      .from("learning_plan_generation_runs")
+      .select("source_snapshot")
+      .eq("id", intake.latest_run_id)
+      .maybeSingle()
+
+    assertSupabaseSuccess(runError, "failed to load latest run source snapshot")
+    sourceSnapshot = (runData as { source_snapshot?: unknown } | null)?.source_snapshot ?? null
+  }
+
+  if (!sourceSnapshot) {
+    const { data: fallbackRunData, error: fallbackRunError } = await supabase
+      .from("learning_plan_generation_runs")
+      .select("source_snapshot")
+      .eq("intake_id", intakeId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    assertSupabaseSuccess(fallbackRunError, "failed to load fallback run source snapshot")
+    sourceSnapshot =
+      (fallbackRunData as { source_snapshot?: unknown } | null)?.source_snapshot ?? null
+  }
+
+  const qualitySignals = readDraftQualitySignalsFromRunSourceSnapshot(sourceSnapshot)
+  const qualityRuntime = (await resolveMaterialPipelineModels()).quality
+
+  return {
+    ...qualitySignals,
+    qualityRuntime,
+  }
+}
+
+async function syncDraftTasksToPlan(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  draftId: string,
+  currentTasks: Awaited<ReturnType<typeof loadDraftTasks>>,
+  plan: PlannerOutput,
+  now: string,
+) {
+  const existingTasks = [...currentTasks].sort((a, b) => a.task_no - b.task_no)
+  const week1TaskIds: string[] = []
+
+  for (let index = 0; index < plan.tasks.length; index += 1) {
+    const plannedTask = plan.tasks[index]!
+    const existingTask = existingTasks[index]
+
+    if (existingTask) {
+      const { error: updateTaskError } = await supabase
+        .from("learning_plan_draft_tasks")
+        .update({
+          task_no: plannedTask.taskNo,
+          position: plannedTask.taskNo,
+          title: plannedTask.title.slice(0, 256),
+          objective: plannedTask.objective,
+          practice_steps: plannedTask.practiceSteps,
+          acceptance_criteria: plannedTask.acceptanceCriteria,
+          estimated_minutes: plannedTask.estimatedMinutes ?? null,
+          source_refs: plannedTask.sourceRefs,
+          goal_alignment_refs: plannedTask.goalAlignmentRefs,
+          mastery_points: plannedTask.masteryPoints,
+          cautions: plannedTask.cautions,
+          recommended_for_week_1: plan.week1TaskNos.includes(plannedTask.taskNo),
+          updated_at: now,
+        })
+        .eq("id", existingTask.id)
+        .eq("draft_id", draftId)
+
+      assertSupabaseSuccess(updateTaskError, "failed to sync draft task to quality-checked plan")
+
+      if (plan.week1TaskNos.includes(plannedTask.taskNo)) {
+        week1TaskIds.push(existingTask.id)
+      }
+      continue
+    }
+
+    const { data: insertedTask, error: insertTaskError } = await supabase
+      .from("learning_plan_draft_tasks")
+      .insert({
+        draft_id: draftId,
+        task_no: plannedTask.taskNo,
+        position: plannedTask.taskNo,
+        title: plannedTask.title.slice(0, 256),
+        objective: plannedTask.objective,
+        practice_steps: plannedTask.practiceSteps,
+        acceptance_criteria: plannedTask.acceptanceCriteria,
+        estimated_minutes: plannedTask.estimatedMinutes ?? null,
+        source_refs: plannedTask.sourceRefs,
+        goal_alignment_refs: plannedTask.goalAlignmentRefs,
+        mastery_points: plannedTask.masteryPoints,
+        cautions: plannedTask.cautions,
+        recommended_for_week_1: plan.week1TaskNos.includes(plannedTask.taskNo),
+        is_user_edited: false,
+        metadata: {},
+        created_at: now,
+        updated_at: now,
+      })
+      .select("id")
+      .single()
+
+    assertSupabaseSuccess(insertTaskError, "failed to insert quality-checked draft task")
+
+    if (plan.week1TaskNos.includes(plannedTask.taskNo) && insertedTask?.id) {
+      week1TaskIds.push(insertedTask.id as string)
+    }
+  }
+
+  const extraTaskIds = existingTasks.slice(plan.tasks.length).map((task) => task.id)
+  if (extraTaskIds.length > 0) {
+    const { error: deleteTaskError } = await supabase
+      .from("learning_plan_draft_tasks")
+      .delete()
+      .eq("draft_id", draftId)
+      .in("id", extraTaskIds)
+
+    assertSupabaseSuccess(deleteTaskError, "failed to prune extra draft tasks after quality check")
+  }
+
+  return week1TaskIds
+}
+
+async function revalidateAndPersistDraftQuality(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  input: {
+    draft: Awaited<ReturnType<typeof loadDraftRowForUser>>
+    draftInputContext: DraftInputContext
+    tasks: Awaited<ReturnType<typeof loadDraftTasks>>
+    title: string
+    goal: string | null
+    revisionNo: number
+    updatedAt: string
+  },
+) {
+  const provisionalDraft = {
+    ...input.draft,
+    title: input.title,
+    goal: input.goal,
+    revision_no: input.revisionNo,
+    quality_status: "pending",
+    quality_report: null,
+    week_1_task_ids: input.tasks
+      .filter((task) => task.recommended_for_week_1)
+      .map((task) => task.id),
+    updated_at: input.updatedAt,
+  }
+
+  const qualityGateContext = await loadDraftQualityGateContext(supabase, input.draft.intake_id)
+  const qualityGateResult = await runPlanQualityGate({
+    plan: buildRawPlanFromDraftDetail(
+      toDraftDetailResult(provisionalDraft, input.tasks, input.draftInputContext),
+    ),
+    weeklyHours: input.draftInputContext.weeklyHours,
+    intakeWarnings: qualityGateContext.intakeWarnings,
+    evidenceCoverage: qualityGateContext.evidenceCoverage,
+    qualityRuntime: qualityGateContext.qualityRuntime,
+  })
+
+  const week1TaskIds = await syncDraftTasksToPlan(
+    supabase,
+    input.draft.id,
+    input.tasks,
+    qualityGateResult.plan,
+    input.updatedAt,
+  )
+
+  const { error: draftUpdateError } = await supabase
+    .from("learning_plan_drafts")
+    .update({
+      title: qualityGateResult.plan.title,
+      goal: qualityGateResult.plan.goal,
+      raw_plan_json: qualityGateResult.plan,
+      editable_payload: {
+        title: qualityGateResult.plan.title,
+        goal: qualityGateResult.plan.goal,
+        alignmentTable: qualityGateResult.plan.alignmentTable,
+        warnings: qualityGateResult.plan.warnings,
+        week1TaskNos: qualityGateResult.plan.week1TaskNos,
+        tasks: qualityGateResult.plan.tasks,
+      },
+      week_1_task_ids: week1TaskIds,
+      revision_no: input.revisionNo,
+      quality_status: qualityGateResult.qualityStatus,
+      quality_report: qualityGateResult.qualityReport,
+      updated_at: input.updatedAt,
+    })
+    .eq("id", input.draft.id)
+
+  assertSupabaseSuccess(draftUpdateError, "failed to persist draft quality recheck result")
+}
+
 export async function createPlanFromMaterial(
   userId: string,
   input: PlanFromMaterialInput,
@@ -505,28 +820,95 @@ export async function regeneratePlanDraft(
   }
 
   let links = input.links?.filter(Boolean) ?? []
-  if (links.length === 0) {
+  let userGoal = input.userGoal
+  let weeklyHours = input.weeklyHours
+  let currentConstraints = input.currentConstraints
+  if (
+    links.length === 0
+    || userGoal === undefined
+    || weeklyHours === undefined
+    || currentConstraints === undefined
+  ) {
     const { data: intakeRow, error: intakeError } = await supabase
       .from("learning_material_intakes")
-      .select("input_links")
+      .select("input_links, current_constraints, metadata")
       .eq("id", row.intake_id)
       .maybeSingle()
 
     assertSupabaseSuccess(intakeError, "failed to load intake links")
-    links = readStringArrayJson(
-      (intakeRow as { input_links: unknown } | null)?.input_links,
-    )
+    const intake = intakeRow as {
+      input_links: unknown
+      current_constraints: string | null
+      metadata: unknown
+    } | null
+    const metadata = intake?.metadata && typeof intake.metadata === "object"
+      ? intake.metadata as Record<string, unknown>
+      : null
+
+    if (links.length === 0) {
+      links = readStringArrayJson(intake?.input_links)
+    }
+    if (userGoal === undefined) {
+      userGoal = readStringOrNull(metadata?.userGoal)
+    }
+    if (weeklyHours === undefined) {
+      weeklyHours = readIntegerOrNull(metadata?.weeklyHours)
+    }
+    if (currentConstraints === undefined) {
+      currentConstraints = intake?.current_constraints ?? null
+    }
+  }
+
+  if (userGoal === undefined || weeklyHours === undefined || currentConstraints === undefined) {
+    const { data: runRow, error: runError } = await supabase
+      .from("learning_plan_generation_runs")
+      .select("planner_input")
+      .eq("draft_id", draftId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    assertSupabaseSuccess(runError, "failed to load regenerate planner input")
+    const plannerInput = (runRow as { planner_input?: GenerationRunRow["planner_input"] } | null)
+      ?.planner_input
+    if (userGoal === undefined) {
+      userGoal = plannerInput?.userGoal ?? null
+    }
+    if (weeklyHours === undefined) {
+      weeklyHours = plannerInput?.weeklyHours ?? null
+    }
+    if (currentConstraints === undefined) {
+      currentConstraints = plannerInput?.currentConstraints ?? null
+    }
   }
 
   if (links.length === 0) {
     throw aiResponseInvalid("缺少有效教程链接。")
   }
 
-  return createPlanFromMaterial(userId, {
+  const result = await createPlanFromMaterial(userId, {
     links,
-    userGoal: input.userGoal,
-    weeklyHours: input.weeklyHours,
+    userGoal,
+    weeklyHours,
+    currentConstraints,
+    sourceDraftId: draftId,
   })
+
+  const now = new Date().toISOString()
+  const { error: supersedeError } = await supabase
+    .from("learning_plan_drafts")
+    .update({
+      status: "superseded",
+      superseded_by_draft_id: null,
+      updated_at: now,
+    })
+    .eq("id", draftId)
+    .eq("user_id", userId)
+    .eq("status", "draft")
+
+  assertSupabaseSuccess(supersedeError, "failed to mark old draft as superseded")
+
+  return result
 }
 
 export async function confirmPlanDraftForUser(
@@ -543,7 +925,8 @@ export async function getPlanDraftDetailForUser(
   const supabase = createSupabaseAdminClient()
   const draft = await loadDraftRowForUser(supabase, userId, draftId)
   const tasks = await loadDraftTasks(supabase, draftId)
-  return toDraftDetailResult(draft, tasks)
+  const inputContext = await loadDraftInputContext(supabase, draft.intake_id)
+  return toDraftDetailResult(draft, tasks, inputContext)
 }
 
 export async function updatePlanDraftForUser(
@@ -558,9 +941,25 @@ export async function updatePlanDraftForUser(
   }
 
   const currentTasks = await loadDraftTasks(supabase, draftId)
+  const draftInputContext = await loadDraftInputContext(supabase, draft.intake_id)
   const patchMap = new Map((input.tasks ?? []).map((task) => [task.id, task]))
   const now = new Date().toISOString()
   const nextRevisionNo = draft.revision_no + 1
+
+  assertDraftTasksHaveSupplementalContent(currentTasks.map((task) => {
+    const patch = patchMap.get(task.id)
+    return {
+      taskNo: task.task_no,
+      masteryPoints:
+        patch?.masteryPoints !== undefined
+          ? patch.masteryPoints
+          : readStringArrayJson(task.mastery_points),
+      cautions:
+        patch?.cautions !== undefined
+          ? patch.cautions
+          : readCautionItemsJson(task.cautions),
+    }
+  }))
 
   for (const task of currentTasks) {
     const patch = patchMap.get(task.id)
@@ -595,42 +994,15 @@ export async function updatePlanDraftForUser(
   }
 
   const refreshedTasks = await loadDraftTasks(supabase, draftId)
-  const baseDetail = toDraftDetailResult(draft, refreshedTasks)
-  const nextDetail: PlanDraftDetailResult = {
-    ...baseDetail,
+  await revalidateAndPersistDraftQuality(supabase, {
+    draft,
+    draftInputContext,
+    tasks: refreshedTasks,
     title: input.title !== undefined ? (input.title ?? draft.title) : draft.title,
     goal: input.goal !== undefined ? input.goal : draft.goal,
     revisionNo: nextRevisionNo,
-    qualityStatus: "pending",
-    qualityReport: null,
-    week1TaskIds: refreshedTasks
-      .filter((task) => task.recommended_for_week_1)
-      .map((task) => task.id),
     updatedAt: now,
-  }
-
-  const nextRawPlan = buildRawPlanFromDraftDetail(nextDetail)
-
-  const { error: draftUpdateError } = await supabase
-    .from("learning_plan_drafts")
-    .update({
-      title: nextDetail.title,
-      goal: nextDetail.goal,
-      raw_plan_json: nextRawPlan,
-      editable_payload: {
-        title: nextDetail.title,
-        goal: nextDetail.goal,
-        tasks: nextDetail.tasks,
-      },
-      week_1_task_ids: nextDetail.week1TaskIds,
-      revision_no: nextRevisionNo,
-      quality_status: "pending",
-      quality_report: null,
-      updated_at: now,
-    })
-    .eq("id", draftId)
-
-  assertSupabaseSuccess(draftUpdateError, "failed to update plan draft")
+  })
 
   const { error: revisionError } = await supabase
     .from("learning_plan_draft_revisions")
@@ -709,8 +1081,9 @@ export async function regeneratePlanDraftTaskForUser(
   taskId: string,
 ): Promise<PlanDraftDetailResult> {
   const supabase = createSupabaseAdminClient()
+  const draftRow = await loadDraftRowForUser(supabase, userId, draftId)
   const draft = await getPlanDraftDetailForUser(userId, draftId)
-  if (draft.status !== "draft") {
+  if (draftRow.status !== "draft") {
     throw planDraftAlreadyConfirmed("仅草稿状态可以重生成任务。")
   }
 
@@ -771,31 +1144,17 @@ export async function regeneratePlanDraftTaskForUser(
   assertSupabaseSuccess(taskUpdateError, "failed to update regenerated task")
 
   const refreshedDraft = await getPlanDraftDetailForUser(userId, draftId)
-  const nextRawPlan = buildRawPlanFromDraftDetail({
-    ...refreshedDraft,
+  const refreshedTasks = await loadDraftTasks(supabase, draftId)
+
+  await revalidateAndPersistDraftQuality(supabase, {
+    draft: draftRow,
+    draftInputContext: draft.inputContext,
+    tasks: refreshedTasks,
+    title: refreshedDraft.title,
+    goal: refreshedDraft.goal,
     revisionNo: nextRevisionNo,
-    qualityStatus: "pending",
-    qualityReport: null,
     updatedAt: now,
   })
-
-  const { error: draftUpdateError } = await supabase
-    .from("learning_plan_drafts")
-    .update({
-      raw_plan_json: nextRawPlan,
-      editable_payload: {
-        title: refreshedDraft.title,
-        goal: refreshedDraft.goal,
-        tasks: refreshedDraft.tasks,
-      },
-      revision_no: nextRevisionNo,
-      quality_status: "pending",
-      quality_report: null,
-      updated_at: now,
-    })
-    .eq("id", draftId)
-
-  assertSupabaseSuccess(draftUpdateError, "failed to update regenerated draft snapshot")
 
   const { error: revisionError } = await supabase
     .from("learning_plan_draft_revisions")
@@ -1035,6 +1394,20 @@ export async function executeMaterialPlanGenerationRun(runId: string) {
 
     assertSupabaseSuccess(finalizeDraftError, "failed to finalize draft quality report")
 
+    if (run.draft_id) {
+      const { error: supersedeLinkError } = await supabase
+        .from("learning_plan_drafts")
+        .update({
+          superseded_by_draft_id: draftId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", run.draft_id)
+        .eq("user_id", run.user_id)
+        .eq("status", "superseded")
+
+      assertSupabaseSuccess(supersedeLinkError, "failed to link superseded draft to regenerated draft")
+    }
+
     await updateRunAndIntakeProgress(supabase, run.id, run.intake_id, {
       status: "ready",
       processingStage: "ready",
@@ -1053,6 +1426,21 @@ export async function executeMaterialPlanGenerationRun(runId: string) {
   } catch (error) {
     const failure = getFailureInfo(error)
     const finishedAt = new Date().toISOString()
+
+    if (run.draft_id) {
+      const { error: restoreDraftError } = await supabase
+        .from("learning_plan_drafts")
+        .update({
+          status: "draft",
+          superseded_by_draft_id: null,
+          updated_at: finishedAt,
+        })
+        .eq("id", run.draft_id)
+        .eq("user_id", run.user_id)
+        .eq("status", "superseded")
+
+      assertSupabaseSuccess(restoreDraftError, "failed to restore superseded draft after regenerate failure")
+    }
 
     const { error: finalizeRunError } = await supabase
       .from("learning_plan_generation_runs")

@@ -11,7 +11,9 @@ import { douyinMaterialSourceAdapter } from "../server/modules/learning-material
 import { resolveMaterialPipelineModelsFromSnapshots } from "../server/modules/learning-materials/providers.ts"
 import { resolveMaterialSourceAdapter } from "../server/modules/learning-materials/source-resolver.ts"
 import { extractJsonObjectString } from "../server/modules/learning-plans/json-parse.ts"
+import { assertDraftQualityReadyForConfirm } from "../server/modules/learning-plans/activation.ts"
 import { runPlanQualityGate } from "../server/modules/learning-plans/quality-gate.ts"
+import { readDraftQualitySignalsFromRunSourceSnapshot } from "../server/modules/learning-plans/service.ts"
 import {
   plannerOutputSchema,
   validatePlannerBusinessRules,
@@ -243,6 +245,28 @@ test("parsePlanDraftPatchBody preserves mastery points and cautions", () => {
     { text: "不要一次改太多", isTrap: true },
     { text: "先做最小可验证版本" },
   ])
+})
+
+test("parsePlanDraftPatchBody rejects degraded mastery points and cautions", () => {
+  const masteryParsed = parsePlanDraftPatchBody({
+    tasks: [
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        masteryPoints: ["只保留一条"],
+      },
+    ],
+  })
+  assert.equal(masteryParsed.ok, false)
+
+  const cautionParsed = parsePlanDraftPatchBody({
+    tasks: [
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        cautions: [],
+      },
+    ],
+  })
+  assert.equal(cautionParsed.ok, false)
 })
 
 test("validatePlannerBusinessRules rejects non-sequential taskNo", () => {
@@ -795,4 +819,61 @@ test("runPlanQualityGate keeps timeout reason in selfCheck but not in warnings",
     result.qualityReport.warnings.some((warning) => warning.includes("timed out")),
     false,
   )
+})
+
+test("readDraftQualitySignalsFromRunSourceSnapshot restores warnings and evidence coverage", () => {
+  const result = readDraftQualitySignalsFromRunSourceSnapshot({
+    links: ["https://web.dev/learn/"],
+    sources: [
+      {
+        id: "source-1",
+        metadata: {
+          warnings: ["公开视频字幕不完整"],
+          evidenceCoverage: {
+            highConfidenceChars: 900,
+            totalUsefulChars: 1200,
+            chunkCount: 2,
+            isSufficient: true,
+            isWeakEvidence: false,
+          },
+        },
+      },
+      {
+        id: "source-2",
+        metadata: {
+          warnings: ["封面文字较少"],
+          evidenceCoverage: {
+            highConfidenceChars: 300,
+            totalUsefulChars: 500,
+            chunkCount: 1,
+            isSufficient: false,
+            isWeakEvidence: true,
+          },
+        },
+      },
+    ],
+  })
+
+  assert.deepEqual(result.intakeWarnings, ["公开视频字幕不完整", "封面文字较少"])
+  assert.deepEqual(result.evidenceCoverage, {
+    highConfidenceChars: 1200,
+    totalUsefulChars: 1700,
+    chunkCount: 3,
+    isSufficient: false,
+    isWeakEvidence: true,
+  })
+})
+
+test("assertDraftQualityReadyForConfirm rejects pending quality status", () => {
+  assert.throws(
+    () => assertDraftQualityReadyForConfirm("pending"),
+    (error: unknown) => {
+      assert.ok(error instanceof Error)
+      assert.match(error.message, /质量复检尚未完成/)
+      return true
+    },
+  )
+
+  assert.doesNotThrow(() => assertDraftQualityReadyForConfirm("passed"))
+  assert.doesNotThrow(() => assertDraftQualityReadyForConfirm("pilot_fallback"))
 })

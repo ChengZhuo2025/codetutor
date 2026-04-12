@@ -11,6 +11,7 @@ type MaterialPlanDialogProps = {
   onOpenChange: (open: boolean) => void
   onSessionRefresh: () => void
   initialLinks?: string[]
+  initialDraftId?: string | null
   /** 在 Radix 完成打开/关闭状态切换后调用，便于在界面已展示后再写 sessionStorage 等 */
   onDialogOpenChange?: (open: boolean) => void
 }
@@ -20,13 +21,14 @@ export function MaterialPlanDialog({
   onOpenChange,
   onSessionRefresh,
   initialLinks,
+  initialDraftId,
   onDialogOpenChange,
 }: MaterialPlanDialogProps) {
   const initialLinksText = useMemo(
     () => (initialLinks && initialLinks.length > 0 ? initialLinks.join("\n") : ""),
     [initialLinks],
   )
-  const panelKey = `${open ? "open" : "closed"}:${initialLinksText}`
+  const panelKey = `${open ? "open" : "closed"}:${initialLinksText}:${initialDraftId ?? "new"}`
 
   return (
     <Dialog
@@ -56,6 +58,7 @@ export function MaterialPlanDialog({
             key={panelKey}
             onSessionRefresh={onSessionRefresh}
             defaultLinksText={initialLinksText}
+            defaultDraftId={initialDraftId}
             onDone={() => onOpenChange(false)}
           />
         </div>

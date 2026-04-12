@@ -110,7 +110,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
             title="这一步真正要学会什么"
             description="进入实操前先对齐这关真正要掌握的判断标准。"
           >
-            <div className="mb-3 flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
               {learningKnowledgeTags.map((tag) => (
                 <span
                   key={tag.label}
@@ -123,7 +123,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                 </span>
               ))}
             </div>
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {rightPanel.masteryPoints.map((point, index) => (
                 <div key={point} className={cn(WORKSPACE_ASIDE_INSET_CARD_CLASS, "flex gap-2")}>
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand/18 text-xs font-semibold text-brand">
@@ -140,12 +140,12 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
             title="先避开这些高频卡点"
             description={rightPanel.hintIfStuck}
           >
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {rightPanel.cautions.map((caution, index) => (
                 <div key={`${caution.text}-${index}`} className={cn(WORKSPACE_ASIDE_INSET_CARD_CLASS, "flex gap-2")}>
                   <div
                     className={cn(
-                      "mt-2 h-1.5 w-1.5 shrink-0 rounded-full",
+                      "mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full",
                       caution.isTrap ? "bg-rose-500" : "bg-muted-foreground/45",
                     )}
                   />

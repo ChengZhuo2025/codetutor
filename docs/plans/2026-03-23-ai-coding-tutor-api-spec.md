@@ -739,6 +739,7 @@ SSE 事件补充：
   "message": "success",
   "data": {
     "conversationId": "uuid",
+    "pendingMaterialPlanDraft": null,
     "task": {
       "taskId": "task-ask-vs-agent",
       "title": "理解 Ask 与 Agent 的区别",
@@ -858,6 +859,7 @@ SSE 事件补充：
 
 - 当前前端原型确实消费了 `planSummary`、`mission`、`resume`、`rightPanel`、`tasks` 等 read model，因此服务端首期可以直接聚合返回。
 - `planSummary.selectionMode` 为机器可读枚举：`self_directed`（自学模式）或 `preset_training`（预设训练），与 `selectionModeLabel` 同时返回；自学模式下前端可展示「教程链接生成计划」入口。
+- 若当前用户存在尚未确认的教程计划草稿，响应会带上 `pendingMaterialPlanDraft`（`draftId` / `intakeId` / `updatedAt`），供 `/learn` 刷新后自动恢复草稿编辑弹窗。
 - `quickActions`、`supportOptions`、`tips`、`knowledgeTags.color` 等字段偏展示层，可在首期先由前端保留静态配置；如果服务端返回，也应视为可选扩展字段，而不是底层数据库实体。
 - `messages.role` 在服务端内部建议使用 `assistant`，若前端仍保留 `ai`，可在 BFF DTO 层做映射。
 
@@ -1037,6 +1039,8 @@ SSE 事件补充：
 业务规则：
 
 - 仅允许确认当前登录用户自己的、`status=draft` 的草稿；已确认再调返回 `409 PLAN_DRAFT_ALREADY_CONFIRMED`（并发下亦可能因状态冲突得到该码）
+- 若草稿刚经过 `PATCH` 或单任务重生成、`quality_status` 仍未完成复检（如 `pending`），confirm 返回 `422 AI_RESPONSE_INVALID`，阻止用户启用未复检草稿
+- 若任一任务缺少 `masteryPoints`（至少 2 条）或 `cautions`（至少 1 条），confirm 返回 `422 AI_RESPONSE_INVALID`，阻止把降级草稿写进正式学习路径
 - `learningPathId` 为 **用户路径实例** `user_learning_paths.id`（非模板 `learning_paths.id`）
 
 ## 7.6 `POST /api/learning/plan-drafts/{id}/regenerate`
@@ -1051,14 +1055,17 @@ SSE 事件补充：
 {
   "links": ["https://developer.mozilla.org/en-US/docs/Learn"],
   "userGoal": "我更希望任务聚焦页面实战，不想先看太多理论",
-  "weeklyHours": 4
+  "weeklyHours": 4,
+  "currentConstraints": "仍需控制在 2 周内完成"
 }
 ```
 
 业务规则：
 
-- 仅允许对当前用户名下 `status=draft` 的草稿操作；旧草稿标记为 `superseded` 并写入 `superseded_by_draft_id` 指向新草稿
-- `GET/PATCH /api/learning/plan-drafts/{id}` 返回并允许编辑 task 级 `masteryPoints` / `cautions`
+- 仅允许对当前用户名下 `status=draft` 的草稿操作；提交 regenerate 后旧草稿会立即标记为 `superseded`，待新草稿完成后再回填 `superseded_by_draft_id`
+- 若请求体未传 `currentConstraints`，服务端会自动复用原 intake 中保存的约束，避免全量重生成时丢失上下文
+- `GET /api/learning/plan-drafts/{id}` 会同时返回 `inputContext`（`links` / `userGoal` / `weeklyHours` / `currentConstraints`），供工作台刷新后恢复草稿上下文
+- `PATCH /api/learning/plan-drafts/{id}` 返回并允许编辑 task 级 `practiceSteps` / `masteryPoints` / `cautions`；PATCH 时 `practiceSteps` 至少保留 1 条，`masteryPoints` 至少保留 2 条，`cautions` 至少保留 1 条；PATCH 与 `POST /api/learning/plan-drafts/{id}/tasks/{taskId}/regenerate` 完成后都会立即重跑质量闸门，并把最新 `qualityStatus` / `qualityReport` 写回草稿
 - 不直接修改当前 active path；仅插入新 intake（若重新抓取）与新 draft
 
 ## 7.7 规划中：`POST /api/learning/stuck-help`

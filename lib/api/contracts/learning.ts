@@ -86,6 +86,11 @@ export type LearningRestartConversationResponseData = {
 export type LearningCurrentSessionResponseData = {
   conversationId: string | null
   historyPagination: LearningHistoryPagination
+  pendingMaterialPlanDraft: {
+    draftId: string
+    intakeId: string
+    updatedAt: string
+  } | null
   path: {
     id: string
     status: "in_progress"
@@ -164,6 +169,7 @@ export type PlanDraftRegenerateRequestContract = {
   links?: string[]
   userGoal?: string | null
   weeklyHours?: number | null
+  currentConstraints?: string | null
 }
 
 export type MaterialIntakeStatusResponseData = {
@@ -214,6 +220,12 @@ export type LearningPlanDraftQualityReport = {
 export type LearningPlanDraftDetailResponseData = {
   draftId: string
   intakeId: string
+  inputContext: {
+    links: string[]
+    userGoal: string | null
+    weeklyHours: number | null
+    currentConstraints: string | null
+  }
   title: string
   goal: string | null
   status: "draft" | "confirmed" | "rejected" | "superseded"

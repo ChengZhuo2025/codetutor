@@ -15,6 +15,7 @@ type DraftRow = {
   goal: string | null
   status: "draft" | "confirmed" | "rejected" | "superseded"
   revision_no: number
+  quality_status: string | null
   confirmed_template_path_id: string | null
   confirmed_user_learning_path_id: string | null
 }
@@ -72,6 +73,36 @@ function readCautionItemsJson(value: unknown): Array<{ text: string; isTrap?: bo
     .filter((item): item is { text: string; isTrap?: boolean } => Boolean(item))
 }
 
+function assertDraftTasksReadyForConfirm(tasks: DraftTaskRow[]) {
+  for (const task of tasks) {
+    const masteryPoints = readStringArrayJson(task.mastery_points)
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+    if (masteryPoints.length < 2) {
+      throw aiResponseInvalid(`第 ${task.task_no} 关“本关要掌握”至少保留 2 条后才能启用计划。`)
+    }
+
+    const cautions = readCautionItemsJson(task.cautions)
+      .map((item) => ({ ...item, text: item.text.trim() }))
+      .filter((item) => item.text.length > 0)
+    if (cautions.length < 1) {
+      throw aiResponseInvalid(`第 ${task.task_no} 关“注意事项”至少保留 1 条后才能启用计划。`)
+    }
+  }
+}
+
+export function assertDraftQualityReadyForConfirm(qualityStatus: string | null | undefined) {
+  if (qualityStatus === "passed" || qualityStatus === "pilot_fallback") {
+    return
+  }
+
+  if (qualityStatus === "pending") {
+    throw aiResponseInvalid("草稿刚被编辑或重生成，质量复检尚未完成，请稍后再确认。")
+  }
+
+  throw aiResponseInvalid("草稿质量状态异常，请重新生成或稍后重试。")
+}
+
 export async function confirmPlanDraft(
   userId: string,
   draftId: string,
@@ -81,7 +112,7 @@ export async function confirmPlanDraft(
   const { data: draftData, error: draftError } = await supabase
     .from("learning_plan_drafts")
     .select(
-      "id, user_id, intake_id, title, goal, status, revision_no, confirmed_template_path_id, confirmed_user_learning_path_id",
+      "id, user_id, intake_id, title, goal, status, revision_no, quality_status, confirmed_template_path_id, confirmed_user_learning_path_id",
     )
     .eq("id", draftId)
     .maybeSingle()
@@ -146,6 +177,8 @@ export async function confirmPlanDraft(
     throw planDraftAlreadyConfirmed()
   }
 
+  assertDraftQualityReadyForConfirm(draft.quality_status)
+
   const { data: taskRows, error: tasksError } = await supabase
     .from("learning_plan_draft_tasks")
     .select("id, task_no, title, objective, practice_steps, acceptance_criteria, estimated_minutes, source_refs, goal_alignment_refs, mastery_points, cautions, recommended_for_week_1")
@@ -157,6 +190,7 @@ export async function confirmPlanDraft(
   if (tasks.length === 0) {
     throw aiResponseInvalid("草稿没有任务明细。")
   }
+  assertDraftTasksReadyForConfirm(tasks)
 
   const { data: profileData, error: profileError } = await supabase
     .from("user_profiles")

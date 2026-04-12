@@ -32,6 +32,7 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
         hasMore: false,
         nextBeforeSequenceNo: null,
       },
+      pendingMaterialPlanDraft: null,
       path: {
         id: "path-instance-cursor-003",
         status: "in_progress",

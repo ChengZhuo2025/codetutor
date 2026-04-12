@@ -320,6 +320,7 @@ export function createPlanDraftRegeneratePostHandler(dependencies: {
         links: bodyParsed.data.links,
         userGoal: bodyParsed.data.userGoal,
         weeklyHours: bodyParsed.data.weeklyHours,
+        currentConstraints: bodyParsed.data.currentConstraints,
       })
 
       return jsonSuccess(result)
