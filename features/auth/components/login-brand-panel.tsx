@@ -69,20 +69,20 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
 
         {mode === "login" ? (
           <>
-            <h1 className="text-3xl font-bold leading-tight tracking-tight text-balance">
+            <h2 className="text-3xl font-bold leading-tight tracking-tight text-balance">
               不只是登录 
               <span className="text-brand"> 是直接回到今天要完成的第一步</span>
-            </h1>
+            </h2>
             <p className="mt-1 text-sm leading-7 text-muted-foreground">
               登录后立刻看到当前关卡、AI 教练提示和下一步待办，不需要重新回忆自己上次学到哪里。
             </p>
           </>
         ) : (
           <>
-            <h1 className="text-3xl font-bold leading-tight tracking-tight text-balance">
+            <h2 className="text-3xl font-bold leading-tight tracking-tight text-balance">
               从零开始也没关系
               <span className="text-brand"> AI 教练会陪你走完每一步</span>
-            </h1>
+            </h2>
             <p className="mt-1 text-sm leading-7 text-muted-foreground">
               注册后会根据你选择的工具和水平，自动生成一条适合你的学习路径，从第一步开始陪你练。
             </p>

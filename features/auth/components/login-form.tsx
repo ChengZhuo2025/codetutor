@@ -3,6 +3,14 @@
 import { ArrowRight, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   USER_BUTTON_PRIMARY_CLASS,
   USER_BUTTON_SECONDARY_CLASS,
 } from "@/components/ui/surface-styles";
@@ -36,6 +44,37 @@ type LoginFormProps = {
   onSubmit: () => void;
   onOAuthSubmit: (provider: AuthOAuthProvider) => void;
 };
+
+type AgreementDialogTriggerProps = {
+  triggerLabel: string;
+  title: string;
+  description: string;
+};
+
+function AgreementDialogTrigger({
+  triggerLabel,
+  title,
+  description,
+}: AgreementDialogTriggerProps) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className="underline underline-offset-2 transition-colors hover:text-foreground"
+        >
+          {triggerLabel}
+        </button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription className="leading-6">{description}</DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export function LoginForm({
   mode,
@@ -75,23 +114,27 @@ export function LoginForm({
         {/* 登录/注册切换 - 文字链接样式，与下方 tab 区分 */}
         <div className="mb-8 flex items-center justify-center gap-6">
           <button
+            type="button"
             onClick={() => mode !== "login" && onModeToggle()}
-            className={`text-base font-medium transition-colors ${
+            className={cn(
+              "text-base font-medium transition-colors",
               mode === "login"
                 ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+                : "text-muted-foreground hover:text-foreground",
+            )}
           >
             登录
           </button>
           <div className="h-4 w-px bg-border" />
           <button
+            type="button"
             onClick={() => mode !== "register" && onModeToggle()}
-            className={`text-base font-medium transition-colors ${
+            className={cn(
+              "text-base font-medium transition-colors",
               mode === "register"
                 ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+                : "text-muted-foreground hover:text-foreground",
+            )}
           >
             注册
           </button>
@@ -136,7 +179,6 @@ export function LoginForm({
                 value={phone}
                 onChange={(event) => onPhoneChange(event.target.value)}
                 maxLength={11}
-                aria-describedby="phone-hint"
               />
             </div>
           </div>
@@ -160,7 +202,6 @@ export function LoginForm({
                   value={code}
                   onChange={(event) => onCodeChange(event.target.value)}
                   maxLength={6}
-                  aria-describedby="code-hint"
                 />
               </div>
               <button
@@ -240,7 +281,7 @@ export function LoginForm({
                 key={provider.id}
                 type="button"
                 onClick={() => onOAuthSubmit(provider.id)}
-                disabled={isChecking || !available || isActive || isSubmitting}
+                disabled={isChecking || isActive || isSubmitting}
                 className={cn(
                   "group relative overflow-hidden rounded-2xl border px-4 py-3 text-left transition-all",
                   available
@@ -297,6 +338,7 @@ export function LoginForm({
         <p className="mt-5 text-center text-sm text-muted-foreground">
           {mode === "login" ? "还没有账号？" : "已有账号？"}
           <button
+            type="button"
             onClick={onModeToggle}
             className="ml-1 font-medium text-brand transition-colors hover:text-brand/80"
           >
@@ -306,13 +348,17 @@ export function LoginForm({
 
         <p className="mt-3 text-center text-xs leading-5 text-muted-foreground/60">
           登录即代表同意{" "}
-          <span className="cursor-pointer underline underline-offset-2 hover:text-foreground">
-            用户协议
-          </span>{" "}
+          <AgreementDialogTrigger
+            triggerLabel="用户协议"
+            title="用户协议"
+            description="使用条款页面正在整理中，正式上线前会同步提供完整协议内容。当前如需确认账号使用边界、验证码登录规则或服务约束，请通过联系我们入口获取人工说明。"
+          />{" "}
           与{" "}
-          <span className="cursor-pointer underline underline-offset-2 hover:text-foreground">
-            隐私政策
-          </span>
+          <AgreementDialogTrigger
+            triggerLabel="隐私政策"
+            title="隐私政策"
+            description="隐私政策页面正在整理中，当前可通过联系我们入口咨询数据使用、存储范围与隐私相关问题。正式上线前会补充完整的协议内容。"
+          />
         </p>
       </div>
     </div>

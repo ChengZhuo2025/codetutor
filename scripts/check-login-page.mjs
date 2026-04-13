@@ -9,12 +9,20 @@ const loginPageSource = readFileSync(
   new URL("../features/auth/pages/login-page.tsx", import.meta.url),
   "utf8",
 )
+const loginBrandPanelSource = readFileSync(
+  new URL("../features/auth/components/login-brand-panel.tsx", import.meta.url),
+  "utf8",
+)
 const oauthProvidersSource = readFileSync(
   new URL("../features/auth/lib/oauth-providers.tsx", import.meta.url),
   "utf8",
 )
 const callbackSource = readFileSync(
   new URL("../app/auth/callback/page.tsx", import.meta.url),
+  "utf8",
+)
+const globalsSource = readFileSync(
+  new URL("../app/globals.css", import.meta.url),
   "utf8",
 )
 
@@ -47,6 +55,31 @@ assert.match(
   loginPageSource,
   /ThemeToggle/,
   "Login page should expose the shared theme toggle in the top corner.",
+)
+assert.match(
+  loginPageSource,
+  /signOut\(\{ scope: "local" \}\)/,
+  "Login page should clear the local Supabase session when restoring a stale browser session fails.",
+)
+assert.match(
+  loginFormSource,
+  /DialogContent/,
+  "Login form should expose real agreement entry points instead of non-functional text spans.",
+)
+assert.doesNotMatch(
+  loginFormSource,
+  /disabled=\{isChecking \|\| !available \|\| isActive \|\| isSubmitting\}/,
+  "OAuth entry should stay reachable even when a provider is not yet enabled so the user can see the explanation.",
+)
+assert.doesNotMatch(
+  loginBrandPanelSource,
+  /<h1/,
+  "Brand panel should not introduce a second H1 on the desktop login layout.",
+)
+assert.doesNotMatch(
+  globalsSource,
+  /html\s*\{[^}]*scroll-behavior:\s*smooth;/s,
+  "Global html smooth scrolling should not be forced because it creates Next.js route transition warnings.",
 )
 assert.match(
   callbackSource,

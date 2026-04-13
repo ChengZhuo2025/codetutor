@@ -35,6 +35,12 @@ function withAuthorization(accessToken: string | null | undefined) {
 const WECHAT_PROVIDER = "wechat" as never
 const DOUYIN_PROVIDER = "douyin" as never
 
+async function clearBrowserAuthSession() {
+  const supabase = createSupabaseBrowserClient()
+  await supabase.auth.signOut({ scope: "local" }).catch(() => undefined)
+  await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined)
+}
+
 export function LoginPage() {
   const router = useRouter()
   const { trackEvent } = useAppEventTracker()
@@ -195,21 +201,21 @@ export function LoginPage() {
     let cancelled = false
 
     async function restoreExistingSession() {
-      const supabase = createSupabaseBrowserClient()
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      if (cancelled) {
-        return
-      }
-
-      if (!session?.access_token) {
-        await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined)
-        return
-      }
-
       try {
+        const supabase = createSupabaseBrowserClient()
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        if (cancelled) {
+          return
+        }
+
+        if (!session?.access_token) {
+          await clearBrowserAuthSession()
+          return
+        }
+
         const data = await requestData<AuthLoginResponseData>("/auth/login", {
           method: "POST",
           headers: withAuthorization(session.access_token),
@@ -223,9 +229,8 @@ export function LoginPage() {
         }
       } catch {
         if (!cancelled) {
-          await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined)
+          await clearBrowserAuthSession()
         }
-        // let the user stay on login and retry manually
       }
     }
 
