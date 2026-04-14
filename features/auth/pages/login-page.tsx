@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { APP_EVENTS } from "@/constants/events"
 import { ROUTES } from "@/constants/routes"
+import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { LoginBrandPanel } from "@/features/auth/components/login-brand-panel"
 import { LoginForm } from "@/features/auth/components/login-form"
 import {
@@ -43,6 +44,7 @@ async function clearBrowserAuthSession() {
 
 export function LoginPage() {
   const router = useRouter()
+  const toast = useAppToast()
   const { trackEvent } = useAppEventTracker()
   const [mode, setMode] = useState<AuthMode>("login")
   const [phone, setPhone] = useState("")
@@ -52,21 +54,7 @@ export function LoginPage() {
   const [isSendingCode, setIsSendingCode] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [oauthAvailability, setOauthAvailability] = useState<OAuthProviderAvailability | null>(null)
-  const [oauthState, setOauthState] = useState<{
-    status: "empty" | "loading" | "error"
-    provider: AuthOAuthProvider | null
-    message: string
-  }>({
-    status: "empty",
-    provider: null,
-    message: "",
-  })
-  const [isOauthPending, startOauthTransition] = useTransition()
-
-  const oauthActionLabel = mode === "login" ? "扫码登录" : "扫码注册"
-  const oauthActionDescription = mode === "login"
-    ? "手机号验证码和扫码入口共享同一登录页，不会因切换方式打断当前操作。"
-    : "注册时可直接走扫码授权，后续统一进入学习路径初始化流程。"
+  const [oauthPendingProvider, setOauthPendingProvider] = useState<AuthOAuthProvider | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -82,108 +70,49 @@ export function LoginPage() {
     }
   }, [])
 
-  useEffect(() => {
-    if (oauthState.status !== "error") {
-      return
-    }
-
-    const timer = window.setTimeout(() => {
-      setOauthState((current) => (
-        current.status === "error"
-          ? {
-              status: "empty",
-              provider: null,
-              message: "",
-            }
-          : current
-      ))
-    }, 5000)
-
-    return () => window.clearTimeout(timer)
-  }, [oauthState])
-
-  useEffect(() => {
-    setOauthState({
-      status: "empty",
-      provider: null,
-      message: "",
-    })
-  }, [mode])
-
   const oauthProvidersReady = oauthAvailability ?? {
     wechat: false,
     douyin: false,
   }
 
-  const availableOAuthProviderCount = Object.values(oauthProvidersReady).filter(Boolean).length
-  const oauthStatusMessage = oauthState.status === "empty"
-    ? availableOAuthProviderCount > 0
-      ? oauthActionDescription
-      : "微信和抖音扫码入口会在对应 Provider 完成配置后自动开放。"
-    : oauthState.message
-
-  const oauthStatusTitle = oauthState.status === "loading"
-    ? "正在打开扫码页"
-    : oauthState.status === "error"
-      ? "扫码登录暂不可用"
-      : oauthActionLabel
-
-  const oauthStatus = oauthState.status === "error"
-    ? "error"
-    : oauthState.status === "loading"
-      ? "loading"
-      : "empty"
-
-  const handleOAuthSubmit = (provider: AuthOAuthProvider) => {
+  const handleOAuthSubmit = async (provider: AuthOAuthProvider) => {
     if (!oauthProvidersReady[provider]) {
-      setOauthState({
-        status: "error",
-        provider,
-        message: "该扫码登录方式暂未开放，请先在 Supabase 控制台启用对应 Provider。",
-      })
+      toast.error(
+        "扫码登录暂不可用",
+        "该扫码登录方式暂未开放，请先在 Supabase 控制台启用对应 Provider。",
+      )
       return
     }
 
     const providerForSupabase = provider === "wechat" ? WECHAT_PROVIDER : DOUYIN_PROVIDER
-    const providerLabel = provider === "wechat" ? "微信" : "抖音"
 
     setErrorMessage(null)
-    setOauthState({
-      status: "loading",
-      provider,
-      message: `正在跳转到${providerLabel}扫码授权页。`,
-    })
+    setOauthPendingProvider(provider)
 
-    startOauthTransition(() => {
-      void (async () => {
-        try {
-          const supabase = createSupabaseBrowserClient()
-          const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: providerForSupabase,
-            options: {
-              redirectTo: `${window.location.origin}${ROUTES.authCallback}?provider=${provider}`,
-            },
-          })
+    try {
+      const supabase = createSupabaseBrowserClient()
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: providerForSupabase,
+        options: {
+          redirectTo: `${window.location.origin}${ROUTES.authCallback}?provider=${provider}`,
+        },
+      })
 
-          if (error) {
-            throw error
-          }
+      if (error) {
+        throw error
+      }
 
-          if (data.url) {
-            window.location.assign(data.url)
-            return
-          }
+      if (data.url) {
+        window.location.assign(data.url)
+        return
+      }
 
-          throw new Error(`${provider} oauth url missing`)
-        } catch (error) {
-          setOauthState({
-            status: "error",
-            provider,
-            message: toFriendlyAuthError(error, "oauth"),
-          })
-        }
-      })()
-    })
+      throw new Error(`${provider} oauth url missing`)
+    } catch (error) {
+      toast.error("扫码登录失败", toFriendlyAuthError(error, "oauth"))
+    } finally {
+      setOauthPendingProvider(null)
+    }
   }
   const [isPending, startSubmitting] = useTransition()
 
@@ -353,10 +282,7 @@ export function LoginPage() {
         statusMessage={statusMessage}
         errorMessage={errorMessage}
         oauthAvailability={oauthAvailability}
-        oauthStatus={oauthStatus}
-        oauthStatusTitle={oauthStatusTitle}
-        oauthStatusMessage={oauthStatusMessage}
-        activeOAuthProvider={isOauthPending ? oauthState.provider : null}
+        activeOAuthProvider={oauthPendingProvider}
         onModeToggle={() => {
           setErrorMessage(null)
           setMode((prev) => (prev === "login" ? "register" : "login"))

@@ -20,6 +20,7 @@ import {
   getOAuthProviderMeta,
   type OAuthProviderAvailability,
 } from "@/features/auth/lib/oauth-providers";
+import { isValidChinaMainlandPhone } from "@/features/auth/lib/phone-auth";
 import type { AuthMode, AuthOAuthProvider } from "@/features/auth/types";
 import { cn } from "@/lib/utils";
 
@@ -33,9 +34,6 @@ type LoginFormProps = {
   statusMessage: string;
   errorMessage: string | null;
   oauthAvailability: OAuthProviderAvailability | null;
-  oauthStatus: "empty" | "loading" | "error";
-  oauthStatusTitle: string;
-  oauthStatusMessage: string;
   activeOAuthProvider: AuthOAuthProvider | null;
   onModeToggle: () => void;
   onPhoneChange: (value: string) => void;
@@ -86,9 +84,6 @@ export function LoginForm({
   statusMessage,
   errorMessage,
   oauthAvailability,
-  oauthStatus,
-  oauthStatusTitle,
-  oauthStatusMessage,
   activeOAuthProvider,
   onModeToggle,
   onPhoneChange,
@@ -97,14 +92,21 @@ export function LoginForm({
   onSubmit,
   onOAuthSubmit,
 }: LoginFormProps) {
-  const isValidPhone = /^1[3-9]\d{9}$/.test(phone);
+  const isValidPhone = isValidChinaMainlandPhone(phone);
   const isValidCode = /^\d{6}$/.test(code);
   const canSubmit = isValidPhone && isValidCode;
   const oauthAvailabilityState = oauthAvailability ?? {
     wechat: false,
     douyin: false,
   };
-  const showOauthState = oauthStatus !== "empty";
+  const hasPhoneInput = phone.length > 0;
+  const showPhoneLengthHint = hasPhoneInput && phone.length < 11;
+  const showPhoneFormatError = phone.length === 11 && !isValidPhone;
+  const phoneValidationMessage = showPhoneLengthHint
+    ? `请输入 11 位中国大陆手机号，当前已输入 ${phone.length} 位。`
+    : showPhoneFormatError
+      ? "请输入真实的 11 位中国大陆手机号。"
+      : null;
 
   return (
     <div className="relative flex w-full flex-col items-center justify-center overflow-hidden px-6 py-8 lg:w-[40%]">
@@ -165,10 +167,34 @@ export function LoginForm({
             >
               手机号
             </label>
-            <div className="flex items-center gap-2 rounded-2xl border border-border bg-surface-2 px-4 py-3 transition-all focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.08)]">
-              <Phone className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">+86</span>
-              <div className="h-4 w-px bg-border/60" />
+            <div
+              className={cn(
+                "flex items-center gap-2 rounded-2xl border bg-surface-2 px-4 py-3 transition-all",
+                showPhoneFormatError
+                  ? "border-destructive/60 bg-destructive/5 shadow-[0_0_0_4px_oklch(0.64_0.21_25/0.12)] focus-within:border-destructive/70"
+                  : "border-border focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.08)]",
+              )}
+            >
+              <Phone
+                className={cn(
+                  "h-4 w-4",
+                  showPhoneFormatError ? "text-destructive" : "text-muted-foreground",
+                )}
+              />
+              <span
+                className={cn(
+                  "text-sm",
+                  showPhoneFormatError ? "text-destructive" : "text-muted-foreground",
+                )}
+              >
+                +86
+              </span>
+              <div
+                className={cn(
+                  "h-4 w-px",
+                  showPhoneFormatError ? "bg-destructive/35" : "bg-border/60",
+                )}
+              />
               <input
                 id="phone-input"
                 type="tel"
@@ -179,8 +205,27 @@ export function LoginForm({
                 value={phone}
                 onChange={(event) => onPhoneChange(event.target.value)}
                 maxLength={11}
+                aria-invalid={showPhoneFormatError}
+                aria-describedby={phoneValidationMessage ? "phone-input-hint" : undefined}
               />
             </div>
+            {phoneValidationMessage ? (
+              <div
+                id="phone-input-hint"
+                className={cn(
+                  "mt-2 flex items-center gap-2 px-1 text-xs",
+                  showPhoneFormatError ? "text-destructive" : "text-muted-foreground",
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 shrink-0 rounded-full",
+                    showPhoneFormatError ? "bg-destructive" : "bg-muted-foreground/55",
+                  )}
+                />
+                <span>{phoneValidationMessage}</span>
+              </div>
+            ) : null}
           </div>
 
           <div>
@@ -324,16 +369,6 @@ export function LoginForm({
             );
           })}
         </div>
-
-        {showOauthState ? (
-          <StatePanel
-            status={oauthStatus}
-            title={oauthStatusTitle}
-            description={oauthStatusMessage}
-            compact
-            className="mt-3"
-          />
-        ) : null}
 
         <p className="mt-5 text-center text-sm text-muted-foreground">
           {mode === "login" ? "还没有账号？" : "已有账号？"}

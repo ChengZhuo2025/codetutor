@@ -43,12 +43,37 @@ assert.match(
   /OAUTH_PROVIDERS\.map/,
   "Login form should render OAuth scan entries from the shared provider config.",
 )
+assert.match(
+  loginFormSource,
+  /phoneValidationMessage/,
+  "Login form should derive an inline phone validation hint instead of silently disabling send-code.",
+)
+assert.match(
+  loginFormSource,
+  /请输入 11 位中国大陆手机号|请输入真实的 11 位中国大陆手机号/,
+  "Login form should explain what is wrong with the current phone input.",
+)
+assert.match(
+  loginFormSource,
+  /border-destructive\/60|text-destructive/,
+  "Login form should visually distinguish an invalid completed phone number.",
+)
 assert.match(oauthProvidersSource, /微信扫码/, "OAuth provider config should expose the WeChat scan entry.")
 assert.match(oauthProvidersSource, /抖音扫码/, "OAuth provider config should expose the Douyin scan entry.")
 assert.match(
   loginPageSource,
   /loadOAuthProviderAvailability/,
   "Login page should load OAuth provider availability for stable login actions.",
+)
+assert.match(
+  loginPageSource,
+  /useAppToast/,
+  "Login page should use the shared app toast for OAuth unavailable feedback.",
+)
+assert.match(
+  loginPageSource,
+  /toast\.error\(/,
+  "Login page should surface OAuth unavailable feedback through the shared toast system.",
 )
 
 assert.match(
@@ -65,6 +90,21 @@ assert.match(
   loginFormSource,
   /DialogContent/,
   "Login form should expose real agreement entry points instead of non-functional text spans.",
+)
+assert.doesNotMatch(
+  loginFormSource,
+  /oauthStatus:\s*"empty"\s*\|\s*"loading"\s*\|\s*"error"/,
+  "Login form should not own inline OAuth status state once OAuth feedback uses the global toast.",
+)
+assert.doesNotMatch(
+  loginFormSource,
+  /oauthStatusTitle|oauthStatusMessage/,
+  "Login form should not render inline OAuth title/message props after switching to the global toast.",
+)
+assert.doesNotMatch(
+  loginFormSource,
+  /showOauthState/,
+  "Login form should no longer render the inline OAuth state panel.",
 )
 assert.doesNotMatch(
   loginFormSource,

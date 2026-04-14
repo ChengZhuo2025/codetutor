@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth";
 import type { NotificationInAppItem } from "@/lib/api/contracts/notifications";
+import type { LearningHistory } from "@/features/history/types";
 import { getInAppNotificationListTitle } from "@/lib/notifications/in-app-display";
 import { useWorkspaceSidebarData } from "@/providers/workspace-sidebar-provider";
 import { cn } from "@/lib/utils";
@@ -113,6 +114,15 @@ function SidebarRailAction({
       </TooltipContent>
     </Tooltip>
   );
+}
+
+function getRecentLearningPlanHref(status: LearningHistory["status"]) {
+  switch (status) {
+    case "in_progress":
+      return ROUTES.learn;
+    default:
+      return ROUTES.history;
+  }
 }
 
 export function DashboardSidebar({
@@ -226,7 +236,7 @@ export function DashboardSidebar({
   const subscription = SUBSCRIPTION_PLACEHOLDER;
   const rankTierProgress = getRankTierProgressForScore(resolvedProfile.currentScore);
   const progressPercent = rankTierProgress.percent;
-  const visibleRecentPlans = recentLearningPlans.slice(0, 5);
+  const visibleRecentPlans = recentLearningPlans.slice(0, 3);
   const latestNotification = notifications[0] ?? null;
 
   const historyStatusLabel = (status: string) => {
@@ -702,8 +712,9 @@ export function DashboardSidebar({
               {visibleRecentPlans.length > 0 ? (
                 <div className="space-y-1">
                   {visibleRecentPlans.map((plan) => (
-                    <button
+                    <Link
                       key={plan.id}
+                      href={getRecentLearningPlanHref(plan.status)}
                       className="flex w-full items-center justify-between rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-surface-3/90"
                       title={plan.title}
                     >
@@ -730,7 +741,7 @@ export function DashboardSidebar({
                       <span className="ml-2 shrink-0 text-xs text-muted-foreground/55">
                         {historyStatusLabel(plan.status)}
                       </span>
-                    </button>
+                    </Link>
                   ))}
                 </div>
               ) : (

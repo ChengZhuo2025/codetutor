@@ -60,6 +60,7 @@
     "test:map-page": "node scripts/check-map-page.mjs",
     "test:task-write-service": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-task-write-service.ts",
     "test:workspace-sidebar": "node scripts/check-workspace-sidebar.mjs",
+    "test:workspace-sidebar-recent-learning": "node scripts/check-workspace-sidebar-recent-learning.mjs",
     "test:settings-logout": "node scripts/check-settings-logout.mjs",
     "test:workspace-sidebar-cache": "node scripts/check-workspace-sidebar-cache.mjs",
     "test:workspace-layout-widths": "node scripts/check-workspace-layout-widths.mjs",
