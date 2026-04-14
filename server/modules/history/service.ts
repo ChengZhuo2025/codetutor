@@ -332,8 +332,8 @@ export async function updateHistoryPlanStatus(
   }
 
   if (action === "reactivate") {
-    if (path.status !== "interrupted") {
-      throw new Error("只有已中断的学习计划才可以重新激活。")
+    if (!["interrupted", "abandoned"].includes(path.status)) {
+      throw new Error("只有已中断或已放弃的学习计划才可以重新激活。")
     }
 
     const summary = await getLearningPathStatusSummary(userId)
@@ -348,12 +348,13 @@ export async function updateHistoryPlanStatus(
       .update({
         status: "active",
         interrupted_at: null,
+        abandoned_at: null,
         last_activity_at: now,
         updated_at: now,
       })
       .eq("id", path.id)
       .eq("user_id", userId)
-      .eq("status", "interrupted")
+      .in("status", ["interrupted", "abandoned"])
 
     assertSupabaseSuccess(error, "failed to reactivate learning path")
 

@@ -1464,10 +1464,10 @@ SSE 事件补充：
 业务规则：
 
 - `abandon` 仅允许对 `active` 计划执行，执行后状态转为 `abandoned`。
-- `reactivate` 仅允许对 `interrupted` 计划执行，执行后状态转为 `active`。
+- `reactivate` 允许对 `interrupted` 或 `abandoned` 计划执行，执行后状态转为 `active`。
 - `archive` 用于删除历史记录，只允许对 `completed`、`interrupted`、`abandoned` 执行，数据库实际转为 `archived` 软删除。
 - 同一时刻最多只允许 1 条 `active` 计划；若当前已有其他 `active` 计划，再激活中断计划时必须返回冲突错误。
-- `abandoned` 为用户主动放弃，不支持再次激活；若要重新学习，应新建学习计划。
+- `abandoned` 为用户主动放弃；历史记录会保留，用户之后仍可在 `/history` 中重新激活或删除该记录。
 
 ## 9.5 `POST /api/feedback`
 
@@ -1755,7 +1755,7 @@ SSE 事件补充：
 
 当前约束：
 
-- `reactivate` 仅允许对 `interrupted` 路径执行，且若该用户已有其他 `active` 路径则返回冲突。
+- `reactivate` 仅允许对 `interrupted` 或 `abandoned` 路径执行，且若该用户已有其他 `active` 路径则返回冲突。
 - `archive` 仅允许对 `completed`、`interrupted`、`abandoned` 路径执行；进行中的路径不可直接归档。
 - 所有状态写操作都必须通过后台专用 API，并写入管理员审计日志。
 

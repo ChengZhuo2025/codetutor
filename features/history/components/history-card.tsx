@@ -102,7 +102,7 @@ export function HistoryCard({
       )
     }
 
-    if (item.status === "interrupted") {
+    if (item.status === "interrupted" || item.status === "abandoned") {
       return (
         <>
           <Button

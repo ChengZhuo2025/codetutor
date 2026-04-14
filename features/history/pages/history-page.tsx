@@ -72,7 +72,7 @@ function getEmptyCopy(filter: HistoryFilter) {
   if (filter === "in_progress") {
     return {
       title: "当前没有进行中的学习计划",
-      description: "你可以重新激活已中断计划，或创建一条新的学习计划继续前进。",
+      description: "你可以重新激活已中断或已放弃计划，或创建一条新的学习计划继续前进。",
     }
   }
 
@@ -211,11 +211,18 @@ export function HistoryPage() {
   }
 
   const handleManageAction = (item: LearningHistory, action: HistoryPlanAction) => {
+    setFeedbackState(null)
     setActionTarget({ item, action })
   }
 
   const handleConfirmAction = async () => {
     if (!actionTarget) {
+      return
+    }
+
+    if (hasActivePlanConflict) {
+      setActionTarget(null)
+      router.push(ROUTES.learn)
       return
     }
 
@@ -249,7 +256,12 @@ export function HistoryPage() {
     } catch (error) {
       setFeedbackState({
         status: "error",
-        message: error instanceof Error ? error.message : "学习计划操作失败",
+        message:
+          error instanceof Error && error.message.includes("当前已有进行中的学习计划")
+            ? "你当前已有一条进行中的学习计划。请先进入该计划并处理后，再回来重新激活这条学习计划。"
+            : error instanceof Error
+              ? error.message
+              : "学习计划操作失败",
       })
     } finally {
       setIsMutating(false)
@@ -260,6 +272,16 @@ export function HistoryPage() {
   const pageItems = historyState.status === "success" ? historyState.data.items : []
   const pageTotal = historyState.status === "success" ? historyState.data.total : 0
   const pageHasMore = historyState.status === "success" ? historyState.data.hasMore : false
+  const hasActivePlanConflict = Boolean(
+    actionTarget
+      && actionTarget.action === "reactivate"
+      && pageSummary?.activeCount
+      && pageSummary.activeCount > 0
+      && pageSummary.activePlanId
+      && pageSummary.activePlanId !== actionTarget.item.id,
+  )
+  const recoverableCount =
+    pageSummary ? pageSummary.interruptedCount + pageSummary.abandonedCount : 0
   const headerActionLabel =
     pageSummary?.activeCount && pageSummary.activeCount > 0 ? "继续当前计划" : "新增学习计划"
 
@@ -351,7 +373,7 @@ export function HistoryPage() {
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">学习记录</h1>
                 <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                  回顾你参与过的所有学习计划，并按状态继续、复盘、放弃或清理记录。
+                  回顾你参与过的所有学习计划，并按状态继续、重新激活、复盘、放弃或清理记录。
                 </p>
               </div>
               <div className="shrink-0 lg:mt-0">{renderHeaderAction}</div>
@@ -369,11 +391,11 @@ export function HistoryPage() {
                 />
               ) : null}
 
-              {pageSummary && pageSummary.interruptedCount > 0 && pageSummary.activeCount === 0 ? (
+              {pageSummary && recoverableCount > 0 && pageSummary.activeCount === 0 ? (
                 <StatePanel
                   status="success"
                   title="你有可恢复的学习计划"
-                  description={`当前有 ${pageSummary.interruptedCount} 条已中断计划。你可以直接重新激活，也可以新建一条学习计划。`}
+                  description={`当前有 ${recoverableCount} 条可恢复计划（${pageSummary.interruptedCount} 条已中断，${pageSummary.abandonedCount} 条已放弃）。你可以直接重新激活，也可以新建一条学习计划。`}
                   compact
                   extra={
                     <div className="inline-flex items-center gap-2 rounded-full bg-brand/10 px-3 py-1 text-xs text-brand">
@@ -452,6 +474,7 @@ export function HistoryPage() {
         open={Boolean(actionTarget)}
         item={actionTarget?.item ?? null}
         action={actionTarget?.action ?? null}
+        hasActivePlanConflict={hasActivePlanConflict}
         isPending={isMutating}
         onOpenChange={(open) => {
           if (!open) {

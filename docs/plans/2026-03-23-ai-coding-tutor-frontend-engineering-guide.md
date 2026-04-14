@@ -366,7 +366,7 @@ features/<domain>/
 - 页面装配：`features/history/pages/history-page.tsx`
 - 当前真实依赖：`GET /api/history/recent`、`GET /api/history/[id]`、`POST /api/history/[id]/status`，侧栏 FAQ 仍为本地静态数据
 - 页面组件：`features/history/components/*`
-- 当前职责：展示历史学习计划列表，而不是最近对话消息列表；支持复盘详情、放弃当前计划、重新激活中断计划、删除历史记录
+- 当前职责：展示历史学习计划列表，而不是最近对话消息列表；支持复盘详情、放弃当前计划、重新激活中断或已放弃计划、删除历史记录
 
 ### 管理员登录页
 
