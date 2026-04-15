@@ -5,7 +5,7 @@
 > 版本：v0.4
 > 状态：Phase 1 已完成；**用户运营**、**学习运营**、**AI 运营** 与 **系统设置**已落地；细粒度权限、AI 深水区能力与更深用户域运营能力仍为后续阶段
 > 创建日期：2026-03-31
-> 更新日期：2026-04-05
+> 更新日期：2026-04-15
 > 适用阶段：MVP 后续运营化阶段
 > 关联文档：`docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md`、`docs/plans/2026-03-23-ai-coding-tutor-api-spec.md`、`docs/plans/2026-03-23-ai-coding-tutor-database-schema-design.md`、`docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md`、`docs/plans/2026-03-31-admin-console-phase1-design.md`、`docs/plans/2026-03-31-admin-console-phase1-implementation.md`
 
@@ -409,9 +409,15 @@ Agents 管理必须覆盖两类场景：
 | `max_context_tokens` | integer | 是 | 必须大于 `default_max_output_tokens` |
 | `default_max_output_tokens` | integer | 是 | 默认输出上限 |
 | `recommended_temperature` | number | 否 | 范围建议 `0-2` |
+| `model_family` | enum | 是 | 结构化模型类别：`chat` / `reasoning` / `asr` / `vision` / `other` |
+| `runtime_capabilities` | multi-select | 是 | 结构化运行时用途：`asr` / `vision` / `quality_check`；供 material intake / quality gate 回退选型 |
+| `connection_test_mode` | enum | 是 | 后台连接测试策略：`chat` / `audio_transcription` / `models_list` |
+| `reasoning_enabled` | boolean | 是 | 是否按推理模型处理；默认影响连接测试退化策略 |
+| `profile_group` | string | 否 | 结构化运营分组，如 `balanced_default` / `reasoning_lab` |
+| `notes` | string | 否 | 管理员可读备注 |
 | `pricing_metadata` | json editor | 否 | 成本元信息 |
 | `is_active` | boolean | 是 | 是否可被 agent 使用 |
-| `metadata` | json editor | 否 | 扩展字段，如 `profileGroup`、`routePolicy`、`capabilities`；其中 `capabilities` 现已被教程材料 intake worker 用于 `asr` / `vision` / `quality_check` 模型回退选择 |
+| `metadata` | json editor | 否 | 仅存少量高级扩展字段，如 `routePolicy`、`phase`；模型类别、用途、连接测试模式不再允许手填 JSON |
 | `changeReason` | string | 是 | 本次修改原因 |
 
 LLM 管理页的额外交互要求：

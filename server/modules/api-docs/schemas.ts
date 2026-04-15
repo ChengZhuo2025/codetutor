@@ -14,6 +14,9 @@ import {
   ADMIN_AI_INVOCATION_DATE_RANGES,
   ADMIN_AI_INVOCATION_STATUSES,
   ADMIN_AI_INVOCATION_STATUS_OPTIONS,
+  ADMIN_AI_MODEL_CONNECTION_TEST_MODES,
+  ADMIN_AI_MODEL_FAMILIES,
+  ADMIN_AI_MODEL_RUNTIME_CAPABILITIES,
   ADMIN_AI_PROVIDER_TYPES,
   ADMIN_AI_SKILL_SOURCE_TYPES,
   ADMIN_AI_SKILL_TRUST_LEVELS,
@@ -2262,11 +2265,24 @@ export const adminAIProviderTestConnectionResponseDataSchema = z
   })
   .openapi("AdminAIProviderTestConnectionResponseData")
 
+export const adminAIModelFamilySchema = z
+  .enum(ADMIN_AI_MODEL_FAMILIES)
+  .openapi("AdminAIModelFamily")
+
+export const adminAIModelRuntimeCapabilitySchema = z
+  .enum(ADMIN_AI_MODEL_RUNTIME_CAPABILITIES)
+  .openapi("AdminAIModelRuntimeCapability")
+
+export const adminAIModelConnectionTestModeSchema = z
+  .enum(ADMIN_AI_MODEL_CONNECTION_TEST_MODES)
+  .openapi("AdminAIModelConnectionTestMode")
+
 export const adminAIModelListItemSchema = z
   .object({
     modelId: z.string().uuid(),
     providerId: z.string().uuid(),
     providerCode: z.string(),
+    providerName: z.string(),
     code: z.string(),
     displayName: z.string(),
     modelName: z.string(),
@@ -2276,6 +2292,12 @@ export const adminAIModelListItemSchema = z
     maxContextTokens: z.number().int().positive(),
     defaultMaxOutputTokens: z.number().int().positive(),
     recommendedTemperature: z.number().nullable(),
+    modelFamily: adminAIModelFamilySchema,
+    runtimeCapabilities: z.array(adminAIModelRuntimeCapabilitySchema),
+    connectionTestMode: adminAIModelConnectionTestModeSchema,
+    reasoningEnabled: z.boolean(),
+    profileGroup: z.string().nullable(),
+    notes: z.string().nullable(),
     isActive: z.boolean(),
     linkedAgentCount: z.number().int().nonnegative(),
     createdAt: z.string(),
@@ -2321,6 +2343,12 @@ export const adminAIModelUpsertRequestSchema = z
     maxContextTokens: z.number().int().min(256).max(10000000),
     defaultMaxOutputTokens: z.number().int().min(1).max(1000000),
     recommendedTemperature: z.number().min(0).max(2).nullable(),
+    modelFamily: adminAIModelFamilySchema,
+    runtimeCapabilities: z.array(adminAIModelRuntimeCapabilitySchema),
+    connectionTestMode: adminAIModelConnectionTestModeSchema,
+    reasoningEnabled: z.boolean(),
+    profileGroup: z.string().max(128).nullable(),
+    notes: z.string().max(2000).nullable(),
     pricingMetadata: adminAIJsonRecordSchema,
     isActive: z.boolean(),
     metadata: adminAIJsonRecordSchema,

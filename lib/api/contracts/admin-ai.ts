@@ -15,6 +15,26 @@ export const ADMIN_AI_PROVIDER_SECRET_SOURCES = [
   "missing",
 ] as const
 
+export const ADMIN_AI_MODEL_FAMILIES = [
+  "chat",
+  "reasoning",
+  "asr",
+  "vision",
+  "other",
+] as const
+
+export const ADMIN_AI_MODEL_RUNTIME_CAPABILITIES = [
+  "asr",
+  "vision",
+  "quality_check",
+] as const
+
+export const ADMIN_AI_MODEL_CONNECTION_TEST_MODES = [
+  "chat",
+  "audio_transcription",
+  "models_list",
+] as const
+
 export const ADMIN_AI_AGENT_SCENARIO_TYPES = [
   "teaching",
   "blocked_help",
@@ -64,6 +84,9 @@ export const ADMIN_AI_INVOCATION_DATE_RANGES = [
 export type AdminAIProviderType = (typeof ADMIN_AI_PROVIDER_TYPES)[number]
 export type AdminAIAuthMode = (typeof ADMIN_AI_AUTH_MODES)[number]
 export type AdminAIProviderSecretSource = (typeof ADMIN_AI_PROVIDER_SECRET_SOURCES)[number]
+export type AdminAIModelFamily = (typeof ADMIN_AI_MODEL_FAMILIES)[number]
+export type AdminAIModelRuntimeCapability = (typeof ADMIN_AI_MODEL_RUNTIME_CAPABILITIES)[number]
+export type AdminAIModelConnectionTestMode = (typeof ADMIN_AI_MODEL_CONNECTION_TEST_MODES)[number]
 export type AdminAIAgentScenarioType = (typeof ADMIN_AI_AGENT_SCENARIO_TYPES)[number]
 export type AdminAISkillSourceType = (typeof ADMIN_AI_SKILL_SOURCE_TYPES)[number]
 export type AdminAISkillTrustLevel = (typeof ADMIN_AI_SKILL_TRUST_LEVELS)[number]
@@ -217,6 +240,12 @@ export type AdminAIModelListItem = {
   maxContextTokens: number
   defaultMaxOutputTokens: number
   recommendedTemperature: number | null
+  modelFamily: AdminAIModelFamily
+  runtimeCapabilities: AdminAIModelRuntimeCapability[]
+  connectionTestMode: AdminAIModelConnectionTestMode
+  reasoningEnabled: boolean
+  profileGroup: string | null
+  notes: string | null
   isActive: boolean
   linkedAgentCount: number
   createdAt: string
@@ -252,6 +281,12 @@ export type AdminAIModelUpsertRequest = {
   maxContextTokens: number
   defaultMaxOutputTokens: number
   recommendedTemperature: number | null
+  modelFamily: AdminAIModelFamily
+  runtimeCapabilities: AdminAIModelRuntimeCapability[]
+  connectionTestMode: AdminAIModelConnectionTestMode
+  reasoningEnabled: boolean
+  profileGroup: string | null
+  notes: string | null
   pricingMetadata: Record<string, unknown>
   isActive: boolean
   metadata: Record<string, unknown>

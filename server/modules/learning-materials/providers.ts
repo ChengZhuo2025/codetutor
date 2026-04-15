@@ -2,6 +2,7 @@ import "server-only"
 
 import { resolveProviderSecret } from "@/server/lib/secrets/provider-secret"
 import { LearningAIProviderError } from "@/server/modules/learning/errors.ts"
+import { modelSupportsRuntimeCapability } from "@/server/modules/ai/model-profile.ts"
 import {
   loadAIModelsSnapshot,
   loadAIProvidersSnapshot,
@@ -36,6 +37,7 @@ type AIModelRow = {
   default_max_output_tokens: number
   recommended_temperature: number | null
   is_active: boolean
+  runtime_capabilities?: string[] | null
   metadata?: {
     capabilities?: string[]
   } | null
@@ -74,7 +76,9 @@ function findCapabilityModel(
   capability: string,
 ) {
   return models.find((model) => (
-    model.is_active && model.metadata?.capabilities?.includes(capability)
+    model.is_active
+    && (capability === "asr" || capability === "vision" || capability === "quality_check")
+    && modelSupportsRuntimeCapability(model, capability)
   )) ?? null
 }
 

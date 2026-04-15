@@ -48,6 +48,11 @@ import {
   loadAIProvidersSnapshot,
   loadAISkillsSnapshot,
 } from "@/server/modules/ai/config-cache"
+import {
+  modelSupportsRuntimeCapability,
+  normalizeModelConnectionTestMode,
+  resolveStoredModelProfile,
+} from "@/server/modules/ai/model-profile.ts"
 import { invokeAIProvider, streamAIProvider } from "@/server/modules/learning/provider.ts"
 
 type AdminActorRow = {
@@ -99,6 +104,12 @@ type ModelRow = {
   default_max_output_tokens: number
   recommended_temperature: number | null
   pricing_metadata: Record<string, unknown>
+  model_family: string | null
+  runtime_capabilities: string[] | null
+  connection_test_mode: string | null
+  reasoning_enabled: boolean
+  profile_group: string | null
+  notes: string | null
   is_active: boolean
   version: number
   metadata: Record<string, unknown>
@@ -587,6 +598,16 @@ function mapModelListItem(
   agents: AgentRow[],
 ): AdminAIModelListItem {
   const provider = providerById.get(row.provider_id)
+  const profile = resolveStoredModelProfile({
+    modelFamily: row.model_family,
+    runtimeCapabilities: row.runtime_capabilities,
+    connectionTestMode: row.connection_test_mode,
+    reasoningEnabled: row.reasoning_enabled,
+    profileGroup: row.profile_group,
+    notes: row.notes,
+    metadata: row.metadata,
+  })
+
   return {
     modelId: row.id,
     providerId: row.provider_id,
@@ -601,6 +622,12 @@ function mapModelListItem(
     maxContextTokens: row.max_context_tokens,
     defaultMaxOutputTokens: row.default_max_output_tokens,
     recommendedTemperature: row.recommended_temperature,
+    modelFamily: profile.modelFamily,
+    runtimeCapabilities: profile.runtimeCapabilities,
+    connectionTestMode: profile.connectionTestMode,
+    reasoningEnabled: profile.reasoningEnabled,
+    profileGroup: profile.profileGroup,
+    notes: profile.notes,
     isActive: row.is_active,
     linkedAgentCount: agents.filter((agent) => agent.default_model_code === row.code).length,
     createdAt: row.created_at,
@@ -1254,29 +1281,6 @@ function isSuccessStatus(status: number, accepted?: number[]): boolean {
   return status >= 200 && status < 300
 }
 
-function readConnectionTestMode(meta: Record<string, unknown>): string | undefined {
-  const direct = readMetaString(meta, "connectionTest")
-  if (direct) {
-    return direct.toLowerCase()
-  }
-  const nested = meta.connectionTest
-  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
-    const mode = readMetaString(nested as Record<string, unknown>, "mode")
-    if (mode) {
-      return mode.toLowerCase()
-    }
-  }
-  return undefined
-}
-
-function readCapabilitiesList(meta: Record<string, unknown>): string[] {
-  const raw = meta.capabilities
-  if (!Array.isArray(raw)) {
-    return []
-  }
-  return raw.filter((item): item is string => typeof item === "string")
-}
-
 function modelNameLooksLikeSpeechAsr(modelName: string): boolean {
   const m = modelName.toLowerCase()
   return (
@@ -1289,20 +1293,26 @@ function modelNameLooksLikeSpeechAsr(modelName: string): boolean {
 
 /** 管理端模型连接测试：根据 metadata / 模型名推断探测方式 */
 function inferAdminModelConnectionTestKind(
-  row: Pick<ModelRow, "model_name" | "metadata">,
+  row: Pick<ModelRow, "model_name" | "metadata" | "connection_test_mode" | "runtime_capabilities" | "reasoning_enabled" | "profile_group">,
   requestModelName: string,
 ): "chat" | "audio_transcription" {
-  const meta = row.metadata ?? {}
-  const mode = readConnectionTestMode(meta)
-  if (mode === "audio_transcription" || mode === "asr" || mode === "speech_to_text") {
+  const profile = resolveStoredModelProfile({
+    connectionTestMode: row.connection_test_mode,
+    runtimeCapabilities: row.runtime_capabilities,
+    reasoningEnabled: row.reasoning_enabled,
+    profileGroup: row.profile_group,
+    metadata: row.metadata,
+  })
+
+  const mode = normalizeModelConnectionTestMode(profile.connectionTestMode)
+  if (mode === "audio_transcription") {
     return "audio_transcription"
   }
-  if (mode === "chat" || mode === "chat_completions") {
+  if (mode === "chat") {
     return "chat"
   }
 
-  const caps = readCapabilitiesList(meta).map((item) => item.toLowerCase())
-  if (caps.includes("asr") || caps.includes("speech_to_text")) {
+  if (profile.runtimeCapabilities.includes("asr")) {
     return "audio_transcription"
   }
 
@@ -1313,25 +1323,20 @@ function inferAdminModelConnectionTestKind(
   return "chat"
 }
 
-function normalizeCapabilityName(capability: string): string {
-  return capability.trim().toLowerCase().replace(/-/g, "_")
-}
-
-function modelHasQualityCheckCapability(row: Pick<ModelRow, "metadata">): boolean {
-  return readCapabilitiesList(row.metadata ?? {})
-    .map(normalizeCapabilityName)
-    .includes("quality_check")
+function modelHasQualityCheckCapability(row: Pick<ModelRow, "runtime_capabilities" | "metadata">): boolean {
+  return modelSupportsRuntimeCapability(row, "quality_check")
 }
 
 function inferReasoningChatModel(
-  row: Pick<ModelRow, "model_name" | "metadata">,
+  row: Pick<ModelRow, "model_name" | "metadata" | "reasoning_enabled" | "profile_group">,
   requestModelName: string,
 ): boolean {
-  const meta = row.metadata ?? {}
-  if (meta.enableThinking === true) {
-    return true
-  }
-  if (readMetaString(meta, "profileGroup") === "reasoning_lab") {
+  const profile = resolveStoredModelProfile({
+    reasoningEnabled: row.reasoning_enabled,
+    profileGroup: row.profile_group,
+    metadata: row.metadata,
+  })
+  if (profile.reasoningEnabled || profile.profileGroup === "reasoning_lab") {
     return true
   }
 
@@ -1350,9 +1355,20 @@ function inferReasoningChatModel(
 }
 
 export function inferAdminModelConnectionProbeStrategy(
-  row: Pick<ModelRow, "model_name" | "metadata">,
+  row: Pick<ModelRow, "model_name" | "metadata" | "connection_test_mode" | "runtime_capabilities" | "reasoning_enabled" | "profile_group">,
   requestModelName: string,
 ): "chat" | "audio_transcription" | "models_list" {
+  const profile = resolveStoredModelProfile({
+    connectionTestMode: row.connection_test_mode,
+    runtimeCapabilities: row.runtime_capabilities,
+    reasoningEnabled: row.reasoning_enabled,
+    profileGroup: row.profile_group,
+    metadata: row.metadata,
+  })
+  if (profile.connectionTestMode === "models_list") {
+    return "models_list"
+  }
+
   const testKind = inferAdminModelConnectionTestKind(row, requestModelName)
   if (testKind === "audio_transcription") {
     return "audio_transcription"
@@ -1922,11 +1938,22 @@ export async function getAdminAIModelDetail(
     return null
   }
 
+  const profile = resolveStoredModelProfile({
+    modelFamily: model.model_family,
+    runtimeCapabilities: model.runtime_capabilities,
+    connectionTestMode: model.connection_test_mode,
+    reasoningEnabled: model.reasoning_enabled,
+    profileGroup: model.profile_group,
+    notes: model.notes,
+    metadata: model.metadata,
+  })
+
   return {
     model: {
       modelId: model.id,
       providerId: model.provider_id,
       providerCode: providerById.get(model.provider_id)?.code ?? "",
+      providerName: providerById.get(model.provider_id)?.name ?? providerById.get(model.provider_id)?.code ?? "",
       code: model.code,
       displayName: model.display_name,
       modelName: model.model_name,
@@ -1936,6 +1963,12 @@ export async function getAdminAIModelDetail(
       maxContextTokens: model.max_context_tokens,
       defaultMaxOutputTokens: model.default_max_output_tokens,
       recommendedTemperature: model.recommended_temperature,
+      modelFamily: profile.modelFamily,
+      runtimeCapabilities: profile.runtimeCapabilities,
+      connectionTestMode: profile.connectionTestMode,
+      reasoningEnabled: profile.reasoningEnabled,
+      profileGroup: profile.profileGroup,
+      notes: profile.notes,
       pricingMetadata: model.pricing_metadata ?? {},
       isActive: model.is_active,
       version: model.version,
@@ -1972,6 +2005,12 @@ export async function createAdminAIModel(
       max_context_tokens: input.maxContextTokens,
       default_max_output_tokens: input.defaultMaxOutputTokens,
       recommended_temperature: input.recommendedTemperature,
+      model_family: input.modelFamily,
+      runtime_capabilities: input.runtimeCapabilities,
+      connection_test_mode: input.connectionTestMode,
+      reasoning_enabled: input.reasoningEnabled,
+      profile_group: input.profileGroup,
+      notes: input.notes,
       pricing_metadata: input.pricingMetadata,
       is_active: input.isActive,
       metadata: input.metadata,
@@ -2051,6 +2090,12 @@ export async function updateAdminAIModel(
       max_context_tokens: input.maxContextTokens,
       default_max_output_tokens: input.defaultMaxOutputTokens,
       recommended_temperature: input.recommendedTemperature,
+      model_family: input.modelFamily,
+      runtime_capabilities: input.runtimeCapabilities,
+      connection_test_mode: input.connectionTestMode,
+      reasoning_enabled: input.reasoningEnabled,
+      profile_group: input.profileGroup,
+      notes: input.notes,
       pricing_metadata: input.pricingMetadata,
       is_active: input.isActive,
       metadata: input.metadata,
@@ -2085,6 +2130,12 @@ export async function updateAdminAIModel(
         maxContextTokens: input.maxContextTokens,
         defaultMaxOutputTokens: input.defaultMaxOutputTokens,
         recommendedTemperature: input.recommendedTemperature,
+        modelFamily: input.modelFamily,
+        runtimeCapabilities: input.runtimeCapabilities,
+        connectionTestMode: input.connectionTestMode,
+        reasoningEnabled: input.reasoningEnabled,
+        profileGroup: input.profileGroup,
+        notes: input.notes,
         pricingMetadata: input.pricingMetadata,
         isActive: input.isActive,
         metadata: input.metadata,

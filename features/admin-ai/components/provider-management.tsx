@@ -161,12 +161,12 @@ export function ProviderManagement() {
                   <table className="w-full min-w-[1100px] table-fixed">
                     <thead className="bg-muted/40">
                       <tr className="border-b border-border">
-                        <th className="w-[20%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Provider</th>
-                        <th className="w-[14%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">类型 / 鉴权</th>
-                        <th className="w-[24%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Base URL</th>
-                        <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">运行配置</th>
+                        <th className="w-[18%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Provider</th>
+                        <th className="w-[15%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">类型 / 鉴权</th>
+                        <th className="w-[25%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Base URL</th>
+                        <th className="w-[14%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">运行配置</th>
                         <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">最近更新</th>
-                        <th className="w-[16%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
+                        <th className="w-[12%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">

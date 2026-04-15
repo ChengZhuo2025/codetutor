@@ -40,7 +40,7 @@ function withCollapsedTooltip(collapsed: boolean, label: string, node: ReactElem
 export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps) {
   const pathname = usePathname()
   const { session } = useAdminSession()
-  const [aiExpanded, setAiExpanded] = useState(pathname.startsWith(`${ADMIN_ROUTES.home}/ai`))
+  const [aiExpanded, setAiExpanded] = useState(true)
   const aiAccessible = canAccessAdminAI(session.roles)
 
   return (

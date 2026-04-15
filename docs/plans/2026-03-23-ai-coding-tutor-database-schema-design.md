@@ -179,6 +179,10 @@
 - `public.llm_invocations`
 - `public.event_logs`
 
+补充说明：
+
+- `public.ai_models` 已在 `028_add_ai_model_profile_fields.sql` 中补齐结构化画像字段：`model_family`、`runtime_capabilities`、`connection_test_mode`、`reasoning_enabled`、`profile_group`、`notes`；运行时先读这些主字段，再兼容历史 `metadata` 中的同义 key。
+
 ---
 
 ## 4. ER 关系图

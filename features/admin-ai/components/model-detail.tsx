@@ -14,6 +14,11 @@ import {
 } from "@/lib/api/admin-bff-client"
 import { ADMIN_ROUTES } from "@/constants/routes"
 import { adminAiModelBffDetailUrl } from "@/features/admin-ai/lib/model-admin-urls"
+import {
+  getAdminAIModelConnectionTestModeLabel,
+  getAdminAIModelFamilyLabel,
+  getAdminAIModelRuntimeCapabilityLabel,
+} from "@/features/admin-ai/lib/view-model"
 import { DetailPageHeader, JsonPreview, PageSection } from "./shared"
 import { ModelFormSheet } from "./model-form-sheet"
 
@@ -98,6 +103,12 @@ export function ModelDetail({ modelId }: ModelDetailProps) {
               <InfoRow label="Code" value={data.model.code} />
               <InfoRow label="展示名" value={data.model.displayName} />
               <InfoRow label="真实模型名" value={data.model.modelName} />
+              <InfoRow label="模型类别" value={getAdminAIModelFamilyLabel(data.model.modelFamily)} />
+              <InfoRow label="运行时用途" value={data.model.runtimeCapabilities.length ? data.model.runtimeCapabilities.map(getAdminAIModelRuntimeCapabilityLabel).join(" / ") : "无"} />
+              <InfoRow label="连接测试模式" value={getAdminAIModelConnectionTestModeLabel(data.model.connectionTestMode)} />
+              <InfoRow label="推理模式" value={data.model.reasoningEnabled ? "是" : "否"} />
+              <InfoRow label="配置分组" value={data.model.profileGroup ?? "暂无"} />
+              <InfoRow label="管理备注" value={data.model.notes ?? "暂无"} />
               <InfoRow label="最大上下文" value={String(data.model.maxContextTokens)} />
               <InfoRow label="默认输出上限" value={String(data.model.defaultMaxOutputTokens)} />
               <InfoRow label="推荐温度" value={data.model.recommendedTemperature == null ? "暂无" : String(data.model.recommendedTemperature)} />
@@ -123,7 +134,7 @@ export function ModelDetail({ modelId }: ModelDetailProps) {
               <JsonPreview value={data.model.pricingMetadata} />
             </PageSection>
 
-            <PageSection title="Metadata" description="运行时补充配置。">
+            <PageSection title="高级扩展 Metadata" description="仅展示少量未结构化的补充配置。">
               <JsonPreview value={data.model.metadata} />
             </PageSection>
           </div>

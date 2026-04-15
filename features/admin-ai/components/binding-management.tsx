@@ -154,7 +154,7 @@ export function BindingManagement() {
                   <table className="w-full min-w-[1100px] table-fixed">
                     <thead className="bg-muted/40">
                       <tr className="border-b border-border">
-                        <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Agent</th>
+                        <th className="w-[15%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Agent</th>
                         <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">交互类型</th>
                         <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Tool</th>
                         <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">路径</th>
@@ -162,8 +162,8 @@ export function BindingManagement() {
                         <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">模式</th>
                         <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Step</th>
                         <th className="w-[6%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">优先级</th>
-                        <th className="w-[5%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
-                        <th className="w-[6%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
+                        <th className="w-[6%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
+                        <th className="w-[7%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">

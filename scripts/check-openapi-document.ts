@@ -136,6 +136,15 @@ test("openapi document covers all registered api operations and special transpor
   assert.ok("pendingMaterialPlanDraft" in (currentSessionExample ?? {}))
   assert.ok(!("tips" in (currentSessionExample ?? {})))
 
+  const adminModelListExample = (
+    paths["/api/admin/ai/models"]?.get?.responses?.["200"]?.content?.["application/json"] as
+      | { example?: { data?: { items?: Array<Record<string, unknown>> } } }
+      | undefined
+  )?.example?.data?.items?.[0]
+  assert.equal(adminModelListExample?.modelFamily, "chat")
+  assert.deepEqual(adminModelListExample?.runtimeCapabilities, [])
+  assert.equal(adminModelListExample?.connectionTestMode, "chat")
+
   const draftDetailExample = (
     paths["/api/learning/plan-drafts/{id}"]?.get?.responses?.["200"]?.content?.["application/json"] as
       | { example?: { data?: Record<string, unknown> } }

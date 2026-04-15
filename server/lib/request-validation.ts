@@ -40,9 +40,15 @@ import {
   ADMIN_AI_ACTIVE_STATUS_OPTIONS,
   ADMIN_AI_AGENT_SCENARIO_TYPES,
   ADMIN_AI_AUTH_MODES,
+  ADMIN_AI_MODEL_CONNECTION_TEST_MODES,
+  ADMIN_AI_MODEL_FAMILIES,
+  ADMIN_AI_MODEL_RUNTIME_CAPABILITIES,
   ADMIN_AI_INVOCATION_DATE_RANGES,
   ADMIN_AI_INVOCATION_STATUS_OPTIONS,
   ADMIN_AI_PROVIDER_TYPES,
+  type AdminAIModelConnectionTestMode,
+  type AdminAIModelFamily,
+  type AdminAIModelRuntimeCapability,
   type AdminAIAgentScenarioType,
   type AdminAIAgentUpsertRequest,
   type AdminAIAgentBindingUpsertRequest,
@@ -856,6 +862,48 @@ function parseChangeReason(value: unknown) {
   return parsed
 }
 
+function parseEnumField<T extends string>(
+  value: unknown,
+  fieldName: string,
+  candidates: readonly T[],
+): ValidationResult<T> {
+  if (typeof value !== "string") {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是字符串。`)
+  }
+
+  const normalized = value.trim()
+  if (!candidates.includes(normalized as T)) {
+    return fail("VALIDATION_FAILED", `${fieldName} 不合法。`)
+  }
+
+  return ok(normalized as T)
+}
+
+function parseEnumStringArray<T extends string>(
+  value: unknown,
+  fieldName: string,
+  candidates: readonly T[],
+): ValidationResult<T[]> {
+  if (!Array.isArray(value)) {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是数组。`)
+  }
+
+  const normalized = value
+    .map((item) => typeof item === "string" ? item.trim() : null)
+    .filter((item): item is string => Boolean(item))
+
+  if (normalized.length !== value.length) {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是字符串数组。`)
+  }
+
+  const unique = Array.from(new Set(normalized))
+  if (!unique.every((item) => candidates.includes(item as T))) {
+    return fail("VALIDATION_FAILED", `${fieldName} 包含不支持的值。`)
+  }
+
+  return ok(unique as T[])
+}
+
 function parseSharedListPagination(searchParams: URLSearchParams, defaults?: { limit?: number }) {
   const rawLimit = searchParams.get("limit")
   const rawPage = searchParams.get("page")
@@ -1377,6 +1425,12 @@ const adminAIModelShapeSchema = z.object({
   maxContextTokens: z.unknown(),
   defaultMaxOutputTokens: z.unknown(),
   recommendedTemperature: z.unknown().optional(),
+  modelFamily: z.unknown(),
+  runtimeCapabilities: z.unknown(),
+  connectionTestMode: z.unknown(),
+  reasoningEnabled: z.unknown(),
+  profileGroup: z.unknown().optional(),
+  notes: z.unknown().optional(),
   pricingMetadata: z.unknown().optional(),
   isActive: z.unknown(),
   metadata: z.unknown().optional(),
@@ -1400,6 +1454,20 @@ export function parseAdminAIModelBody(input: unknown): ValidationResult<AdminAIM
   const maxContextTokens = parsePositiveInteger(shape.data.maxContextTokens, "maxContextTokens", 256, 10_000_000)
   const defaultMaxOutputTokens = parsePositiveInteger(shape.data.defaultMaxOutputTokens, "defaultMaxOutputTokens", 1, 1_000_000)
   const recommendedTemperature = parseNullableNumber(shape.data.recommendedTemperature, "recommendedTemperature", 0, 2)
+  const modelFamily = parseEnumField<AdminAIModelFamily>(shape.data.modelFamily, "modelFamily", ADMIN_AI_MODEL_FAMILIES)
+  const runtimeCapabilities = parseEnumStringArray<AdminAIModelRuntimeCapability>(
+    shape.data.runtimeCapabilities,
+    "runtimeCapabilities",
+    ADMIN_AI_MODEL_RUNTIME_CAPABILITIES,
+  )
+  const connectionTestMode = parseEnumField<AdminAIModelConnectionTestMode>(
+    shape.data.connectionTestMode,
+    "connectionTestMode",
+    ADMIN_AI_MODEL_CONNECTION_TEST_MODES,
+  )
+  const reasoningEnabled = parseBooleanField(shape.data.reasoningEnabled, "reasoningEnabled")
+  const profileGroup = parseTrimmedNullableString(shape.data.profileGroup, "profileGroup", 128)
+  const notes = parseTrimmedNullableString(shape.data.notes, "notes", 2_000)
   const pricingMetadata = parseJsonRecord(shape.data.pricingMetadata, "pricingMetadata")
   const isActive = parseBooleanField(shape.data.isActive, "isActive")
   const metadata = parseJsonRecord(shape.data.metadata, "metadata")
@@ -1413,7 +1481,28 @@ export function parseAdminAIModelBody(input: unknown): ValidationResult<AdminAIM
     return fail("VALIDATION_FAILED", "version 参数不合法，需为正整数。")
   }
 
-  if (!providerCode.ok || !code.ok || !displayName.ok || !modelName.ok || !supportsStream.ok || !supportsJsonMode.ok || !supportsToolCalling.ok || !maxContextTokens.ok || !defaultMaxOutputTokens.ok || !recommendedTemperature.ok || !pricingMetadata.ok || !isActive.ok || !metadata.ok || !changeReason.ok) {
+  if (
+    !providerCode.ok
+    || !code.ok
+    || !displayName.ok
+    || !modelName.ok
+    || !supportsStream.ok
+    || !supportsJsonMode.ok
+    || !supportsToolCalling.ok
+    || !maxContextTokens.ok
+    || !defaultMaxOutputTokens.ok
+    || !recommendedTemperature.ok
+    || !modelFamily.ok
+    || !runtimeCapabilities.ok
+    || !connectionTestMode.ok
+    || !reasoningEnabled.ok
+    || !profileGroup.ok
+    || !notes.ok
+    || !pricingMetadata.ok
+    || !isActive.ok
+    || !metadata.ok
+    || !changeReason.ok
+  ) {
     return fail("VALIDATION_FAILED", "Model 请求体字段不合法。")
   }
 
@@ -1428,6 +1517,12 @@ export function parseAdminAIModelBody(input: unknown): ValidationResult<AdminAIM
     maxContextTokens: maxContextTokens.data,
     defaultMaxOutputTokens: defaultMaxOutputTokens.data,
     recommendedTemperature: recommendedTemperature.data,
+    modelFamily: modelFamily.data,
+    runtimeCapabilities: runtimeCapabilities.data,
+    connectionTestMode: connectionTestMode.data,
+    reasoningEnabled: reasoningEnabled.data,
+    profileGroup: profileGroup.data,
+    notes: notes.data,
     pricingMetadata: pricingMetadata.data,
     isActive: isActive.data,
     metadata: metadata.data,

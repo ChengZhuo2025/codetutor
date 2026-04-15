@@ -353,6 +353,7 @@ test("resolveMaterialPipelineModelsFromSnapshots prefers env model and falls bac
       model_name: "asr-env-model",
       default_max_output_tokens: 4000,
       recommended_temperature: 0,
+      runtime_capabilities: ["asr"],
       is_active: true,
       metadata: { capabilities: ["asr"] },
     },
@@ -363,6 +364,7 @@ test("resolveMaterialPipelineModelsFromSnapshots prefers env model and falls bac
       model_name: "asr-capability-model",
       default_max_output_tokens: 4000,
       recommended_temperature: 0,
+      runtime_capabilities: ["asr"],
       is_active: true,
       metadata: { capabilities: ["asr"] },
     },
@@ -373,6 +375,7 @@ test("resolveMaterialPipelineModelsFromSnapshots prefers env model and falls bac
       model_name: "vision-env-model",
       default_max_output_tokens: 4000,
       recommended_temperature: 0,
+      runtime_capabilities: ["vision"],
       is_active: false,
       metadata: { capabilities: ["vision"] },
     },
@@ -383,6 +386,7 @@ test("resolveMaterialPipelineModelsFromSnapshots prefers env model and falls bac
       model_name: "vision-capability-model",
       default_max_output_tokens: 4000,
       recommended_temperature: 0,
+      runtime_capabilities: ["vision"],
       is_active: true,
       metadata: { capabilities: ["vision"] },
     },
@@ -401,6 +405,43 @@ test("resolveMaterialPipelineModelsFromSnapshots prefers env model and falls bac
   assert.equal(resolved.asr?.provider.code, "p-a")
   assert.equal(resolved.vision?.model.code, "vision-capability")
   assert.equal(resolved.vision?.provider.code, "p-a")
+})
+
+test("resolveMaterialPipelineModelsFromSnapshots falls back to legacy metadata capabilities when structured fields are absent", async () => {
+  const resolved = resolveMaterialPipelineModelsFromSnapshots({
+    providers: [
+      {
+        id: "provider-a",
+        code: "p-a",
+        provider_type: "openai_compatible" as const,
+        base_url: "https://provider-a.example.com",
+        auth_mode: "bearer" as const,
+        secret_ref: "A_SECRET",
+        secret_ciphertext: null,
+        secret_iv: null,
+        secret_auth_tag: null,
+        secret_key_version: null,
+        timeout_ms: 15_000,
+        retry_count: 1,
+        is_active: true,
+      },
+    ],
+    models: [
+      {
+        id: "m-1",
+        provider_id: "provider-a",
+        code: "quality-legacy",
+        model_name: "quality-legacy-model",
+        default_max_output_tokens: 4000,
+        recommended_temperature: 0,
+        is_active: true,
+        metadata: { capabilities: ["quality_check"] },
+      },
+    ],
+    env: {},
+  })
+
+  assert.equal(resolved.quality?.model.code, "quality-legacy")
 })
 
 test("extractMaterialEvidenceForSource stops before ASR when subtitles already make content sufficient", async () => {

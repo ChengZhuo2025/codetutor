@@ -201,11 +201,11 @@ export function SkillManagement() {
                     <table className="w-full min-w-[1100px] table-fixed">
                       <thead className="bg-muted/40">
                         <tr className="border-b border-border">
-                          <th className="w-[22%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Agent</th>
-                          <th className="w-[22%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Skill</th>
-                          <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">优先级</th>
-                          <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">必选</th>
-                          <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">预算</th>
+                          <th className="w-[24%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Agent</th>
+                          <th className="w-[26%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Skill</th>
+                          <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">优先级</th>
+                          <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">必选</th>
+                          <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">预算</th>
                           <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
                           <th className="w-[10%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
                         </tr>

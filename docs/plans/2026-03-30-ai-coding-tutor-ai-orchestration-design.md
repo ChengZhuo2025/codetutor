@@ -1161,9 +1161,15 @@ ai/skills/
 | `max_context_tokens` | `integer` | not null | 最大上下文 |
 | `default_max_output_tokens` | `integer` | not null | 默认最大输出 token |
 | `recommended_temperature` | `numeric(4,2)` | nullable | 推荐温度 |
+| `model_family` | `varchar(32)` | nullable | 管理后台主字段：模型类别，如 `chat` / `reasoning` / `asr` / `vision` |
+| `runtime_capabilities` | `text[]` | not null default `{}` | 管理后台主字段：运行时用途，如 `asr` / `vision` / `quality_check` |
+| `connection_test_mode` | `varchar(32)` | nullable | 管理后台主字段：连接测试模式，`chat` / `audio_transcription` / `models_list` |
+| `reasoning_enabled` | `boolean` | not null default false | 是否按推理类模型对待；后台连接测试默认退化为 `/models` 连通性验证 |
+| `profile_group` | `varchar(128)` | nullable | 管理后台可读分组，如 `balanced_default` / `reasoning_lab` |
+| `notes` | `text` | nullable | 写给管理员的备注说明 |
 | `pricing_metadata` | `jsonb` | not null default '{}' | 输入/输出计费信息 |
 | `is_active` | `boolean` | not null default true | 是否启用 |
-| `metadata` | `jsonb` | not null default '{}' | 模型特征、备注等扩展字段；当前 material intake pipeline 会读取 `metadata.capabilities`（如 `asr` / `vision` / `quality_check`）做运行时模型回退选择 |
+| `metadata` | `jsonb` | not null default '{}' | 仅存少量未结构化扩展字段；自 `028` 起主字段不再写入 `metadata`，运行时先读结构化列，再对历史 `metadata.capabilities` / `profileGroup` / `enableThinking` / `connectionTest` 做兼容兜底 |
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
 

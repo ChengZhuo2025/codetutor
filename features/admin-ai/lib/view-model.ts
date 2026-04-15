@@ -111,3 +111,46 @@ export function getAdminAISelectionModeLabel(selectionMode: string | null | unde
 
   return getSelectionModeLabel(selectionMode, "short")
 }
+
+export function getAdminAIModelFamilyLabel(modelFamily: string | null | undefined) {
+  switch (modelFamily) {
+    case "chat":
+      return "聊天"
+    case "reasoning":
+      return "推理"
+    case "asr":
+      return "ASR"
+    case "vision":
+      return "视觉"
+    case "other":
+      return "其他"
+    default:
+      return "未分类"
+  }
+}
+
+export function getAdminAIModelRuntimeCapabilityLabel(capability: string) {
+  switch (capability) {
+    case "asr":
+      return "ASR 转写"
+    case "vision":
+      return "视觉 / OCR"
+    case "quality_check":
+      return "质量校验"
+    default:
+      return capability
+  }
+}
+
+export function getAdminAIModelConnectionTestModeLabel(mode: string | null | undefined) {
+  switch (mode) {
+    case "chat":
+      return "Chat 探测"
+    case "audio_transcription":
+      return "音频转写探测"
+    case "models_list":
+      return "/models 连通性"
+    default:
+      return "自动推断"
+  }
+}

@@ -65,6 +65,12 @@ INSERT INTO public.ai_models (
   max_context_tokens,
   default_max_output_tokens,
   recommended_temperature,
+  model_family,
+  runtime_capabilities,
+  connection_test_mode,
+  reasoning_enabled,
+  profile_group,
+  notes,
   pricing_metadata,
   is_active,
   metadata,
@@ -83,6 +89,12 @@ SELECT
   seed.max_context_tokens,
   seed.default_max_output_tokens,
   seed.recommended_temperature,
+  seed.model_family,
+  seed.runtime_capabilities,
+  seed.connection_test_mode,
+  seed.reasoning_enabled,
+  seed.profile_group,
+  seed.notes,
   '{}'::jsonb,
   true,
   seed.metadata::jsonb,
@@ -99,7 +111,13 @@ JOIN (
       64000,
       4096,
       0.30::numeric,
-      '{"profileGroup":"balanced_default","phase":"phase1","routePolicy":"production_default"}'
+      'chat',
+      ARRAY[]::text[],
+      'chat',
+      false,
+      'balanced_default',
+      '默认主聊天模型',
+      '{"phase":"phase1","routePolicy":"production_default"}'
     ),
     (
       'a1000000-0000-0000-0000-000000000102'::uuid,
@@ -109,7 +127,13 @@ JOIN (
       64000,
       4096,
       0.40::numeric,
-      '{"profileGroup":"longform_coach","phase":"phase1","routePolicy":"production_default"}'
+      'chat',
+      ARRAY[]::text[],
+      'chat',
+      false,
+      'longform_coach',
+      '长文生成与讲解备用模型',
+      '{"phase":"phase1","routePolicy":"production_default"}'
     ),
     (
       'a1000000-0000-0000-0000-000000000103'::uuid,
@@ -119,7 +143,13 @@ JOIN (
       64000,
       4096,
       0.60::numeric,
-      '{"profileGroup":"reasoning_lab","phase":"phase1","routePolicy":"manual_test_only","enableThinking":true}'
+      'reasoning',
+      ARRAY[]::text[],
+      'models_list',
+      true,
+      'reasoning_lab',
+      '复杂推理与人工调试验证模型',
+      '{"phase":"phase1","routePolicy":"manual_test_only"}'
     )
 ) AS seed(
   id,
@@ -129,6 +159,12 @@ JOIN (
   max_context_tokens,
   default_max_output_tokens,
   recommended_temperature,
+  model_family,
+  runtime_capabilities,
+  connection_test_mode,
+  reasoning_enabled,
+  profile_group,
+  notes,
   metadata
 )
   ON provider.code = 'siliconflow'
@@ -143,6 +179,12 @@ SET
   max_context_tokens = EXCLUDED.max_context_tokens,
   default_max_output_tokens = EXCLUDED.default_max_output_tokens,
   recommended_temperature = EXCLUDED.recommended_temperature,
+  model_family = EXCLUDED.model_family,
+  runtime_capabilities = EXCLUDED.runtime_capabilities,
+  connection_test_mode = EXCLUDED.connection_test_mode,
+  reasoning_enabled = EXCLUDED.reasoning_enabled,
+  profile_group = EXCLUDED.profile_group,
+  notes = EXCLUDED.notes,
   pricing_metadata = EXCLUDED.pricing_metadata,
   is_active = EXCLUDED.is_active,
   metadata = EXCLUDED.metadata,

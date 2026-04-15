@@ -141,6 +141,7 @@ const sampleModelList: AdminAIModelListResponseData = {
       modelId: "550e8400-e29b-41d4-a716-446655440102",
       providerId: "550e8400-e29b-41d4-a716-446655440101",
       providerCode: "siliconflow",
+      providerName: "SiliconFlow",
       code: "deepseek-v3-2",
       displayName: "DeepSeek V3.2",
       modelName: "Pro/deepseek-ai/DeepSeek-V3.2",
@@ -150,6 +151,12 @@ const sampleModelList: AdminAIModelListResponseData = {
       maxContextTokens: 64000,
       defaultMaxOutputTokens: 4096,
       recommendedTemperature: 0.3,
+      modelFamily: "chat",
+      runtimeCapabilities: [],
+      connectionTestMode: "chat",
+      reasoningEnabled: false,
+      profileGroup: "balanced_default",
+      notes: "默认主聊天模型",
       isActive: true,
       linkedAgentCount: 4,
       createdAt: "2026-04-01T00:00:00.000Z",
@@ -166,6 +173,7 @@ const sampleModelDetail: AdminAIModelDetailResponseData = {
     modelId: "550e8400-e29b-41d4-a716-446655440102",
     providerId: "550e8400-e29b-41d4-a716-446655440101",
     providerCode: "siliconflow",
+    providerName: "SiliconFlow",
     code: "deepseek-v3-2",
     displayName: "DeepSeek V3.2",
     modelName: "Pro/deepseek-ai/DeepSeek-V3.2",
@@ -175,6 +183,12 @@ const sampleModelDetail: AdminAIModelDetailResponseData = {
     maxContextTokens: 64000,
     defaultMaxOutputTokens: 4096,
     recommendedTemperature: 0.3,
+    modelFamily: "chat",
+    runtimeCapabilities: [],
+    connectionTestMode: "chat",
+    reasoningEnabled: false,
+    profileGroup: "balanced_default",
+    notes: "默认主聊天模型",
     pricingMetadata: {},
     isActive: true,
     version: 1,
@@ -193,7 +207,9 @@ const sampleAgentList: AdminAIAgentListResponseData = {
       name: "Codex CLI 工作流教练",
       scenarioType: "teaching",
       providerCode: "siliconflow",
+      providerName: "SiliconFlow",
       modelCode: "deepseek-v3-2",
+      modelDisplayName: "DeepSeek V3.2",
       streamEnabled: true,
       isActive: true,
       bindingCount: 2,
@@ -286,7 +302,9 @@ const sampleInvocationList: AdminAIInvocationListResponseData = {
       sessionId: "550e8400-e29b-41d4-a716-446655440107",
       userId: "550e8400-e29b-41d4-a716-446655440108",
       providerCode: "siliconflow",
+      providerName: "SiliconFlow",
       modelCode: "deepseek-v3-2",
+      modelDisplayName: "DeepSeek V3.2",
       agentCode: "codex-cli-coach",
       status: "succeeded",
       streamEnabled: true,
@@ -372,6 +390,13 @@ const sampleTestResult: AdminAITestResponseData = {
     contentLength: 18,
   },
 }
+
+test("admin ai model list payload exposes structured model profile fields", () => {
+  const item = sampleModelList.items[0]
+  assert.equal(item.modelFamily, "chat")
+  assert.deepEqual(item.runtimeCapabilities, [])
+  assert.equal(item.connectionTestMode, "chat")
+})
 
 test("admin ai overview returns 403 without admin", async () => {
   const handler = createAdminAIOverviewGetHandler({

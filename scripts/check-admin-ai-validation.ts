@@ -199,12 +199,55 @@ test("parseAdminAIModelBody rejects missing changeReason", () => {
     maxContextTokens: 64000,
     defaultMaxOutputTokens: 4096,
     recommendedTemperature: 0.3,
+    modelFamily: "chat",
+    runtimeCapabilities: [],
+    connectionTestMode: "chat",
+    reasoningEnabled: false,
+    profileGroup: "balanced_default",
+    notes: "默认主聊天模型",
     pricingMetadata: {},
     isActive: true,
     metadata: {},
   })
 
   assert.equal(r.ok, false)
+})
+
+test("parseAdminAIModelBody accepts structured model profile fields", () => {
+  const r = parseAdminAIModelBody({
+    providerCode: " siliconflow ",
+    code: " deepseek-r1 ",
+    displayName: " DeepSeek R1 ",
+    modelName: " Pro/deepseek-ai/DeepSeek-R1 ",
+    supportsStream: true,
+    supportsJsonMode: false,
+    supportsToolCalling: false,
+    maxContextTokens: 64000,
+    defaultMaxOutputTokens: 4096,
+    recommendedTemperature: 0.6,
+    modelFamily: "reasoning",
+    runtimeCapabilities: ["quality_check"],
+    connectionTestMode: "models_list",
+    reasoningEnabled: true,
+    profileGroup: "reasoning_lab",
+    notes: " 质量闸门与复杂推理 ",
+    pricingMetadata: {},
+    isActive: true,
+    metadata: { routePolicy: "manual_test_only" },
+    changeReason: " 调整结构化字段 ",
+  })
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.equal(r.data.code, "deepseek-r1")
+    assert.equal(r.data.modelFamily, "reasoning")
+    assert.deepEqual(r.data.runtimeCapabilities, ["quality_check"])
+    assert.equal(r.data.connectionTestMode, "models_list")
+    assert.equal(r.data.reasoningEnabled, true)
+    assert.equal(r.data.profileGroup, "reasoning_lab")
+    assert.equal(r.data.notes, "质量闸门与复杂推理")
+    assert.deepEqual(r.data.metadata, { routePolicy: "manual_test_only" })
+  }
 })
 
 test("parseAdminAIAgentBindingBody accepts nullable targeting filters", () => {

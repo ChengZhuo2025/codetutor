@@ -108,13 +108,17 @@ export function AdminAccountMenu({ session }: AdminAccountMenuProps) {
         type="button"
         onClick={() => setMenuOpen((o) => !o)}
         className={cn(
-          "flex max-w-[200px] items-center gap-2 rounded-lg text-left text-sm text-foreground transition-[background-color,border-color,box-shadow] duration-150",
-          menuOpen && "bg-muted/70",
+            "group flex max-w-[200px] items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 text-left text-sm text-foreground",
+            "transition-[background-color,border-color,box-shadow,transform] duration-150 ease-out",
+            "hover:bg-muted/60 hover:border-border/70 hover:shadow-sm",
+            "active:scale-[0.985]",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            menuOpen && "bg-muted/70 border-border/80 shadow-sm",
         )}
         aria-expanded={menuOpen}
         aria-haspopup="menu"
       >
-        <span className="relative size-8 shrink-0 overflow-hidden rounded-full bg-muted ring-1 ring-border/50">
+        <span className="relative size-8 shrink-0 overflow-hidden rounded-full bg-muted ring-1 ring-border/50 transition-transform duration-150 ease-out group-hover:scale-[1.02]">
           {session.avatarUrl ? (
             <Image
               src={session.avatarUrl}
@@ -130,8 +134,8 @@ export function AdminAccountMenu({ session }: AdminAccountMenuProps) {
             </span>
           )}
         </span>
-        <span className="hidden max-w-36 text-left sm:flex sm:flex-col sm:items-start sm:leading-tight">
-          <span className="w-full truncate font-medium text-foreground">
+          <span className="hidden max-w-36 text-left sm:flex sm:flex-col sm:items-start sm:leading-tight">
+            <span className="w-full truncate font-medium text-foreground transition-colors duration-150 group-hover:text-foreground/95">
             {session.displayName || "管理员"}
           </span>
           <span className="mt-0.5 w-full truncate text-[11px] text-muted-foreground">

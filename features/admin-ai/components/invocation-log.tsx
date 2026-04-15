@@ -219,13 +219,13 @@ export function InvocationLog() {
                   <table className="w-full min-w-[1100px] table-fixed">
                     <thead className="bg-muted/40">
                       <tr className="border-b border-border">
-                        <th className="w-[24%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">调用</th>
-                        <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
+                        <th className="w-[28%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">调用</th>
+                        <th className="w-[7%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
                         <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Agent</th>
                         <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Provider / Model</th>
-                        <th className="w-[9%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Tokens</th>
+                        <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Tokens</th>
                         <th className="w-[9%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">耗时 / 结果</th>
-                        <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">时间</th>
+                        <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">时间</th>
                         <th className="w-[8%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
                       </tr>
                     </thead>
@@ -235,9 +235,9 @@ export function InvocationLog() {
                         return (
                           <tr key={item.invocationId} className="transition-colors hover:bg-muted/20">
                             <td className="px-4 py-4 align-top">
-                              <p className="break-all text-sm text-foreground">{item.invocationId}</p>
-                              <p className="mt-1 break-all text-xs text-muted-foreground">{item.sessionId}</p>
-                              <p className="mt-1 text-xs text-muted-foreground">user {item.userId}</p>
+                              <p className="break-all text-sm line-clamp-1 text-foreground">{item.invocationId}</p>
+                              <p className="mt-1 break-all text-xs line-clamp-1 text-muted-foreground">{item.sessionId}</p>
+                              <p className="mt-1 text-xs line-clamp-1 text-muted-foreground">user {item.userId}</p>
                             </td>
                             <td className="px-4 py-4 align-top">
                               <AdminListTag className={meta.className}>
@@ -245,7 +245,7 @@ export function InvocationLog() {
                               </AdminListTag>
                             </td>
                             <td className="px-4 py-4 align-top">
-                              <p className="text-sm text-foreground">{item.agentCode}</p>
+                              <p className="text-sm line-clamp-1 text-foreground">{item.agentCode}</p>
                             </td>
                             <td className="px-4 py-4 align-top">
                               <p className="text-sm text-foreground">{item.providerName}</p>

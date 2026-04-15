@@ -17,7 +17,12 @@ import {
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
 import { adminAiModelPageDetailUrl } from "@/features/admin-ai/lib/model-admin-urls"
-import { formatDateTime } from "@/features/admin-ai/lib/view-model"
+import {
+  formatDateTime,
+  getAdminAIModelConnectionTestModeLabel,
+  getAdminAIModelFamilyLabel,
+  getAdminAIModelRuntimeCapabilityLabel,
+} from "@/features/admin-ai/lib/view-model"
 import { ModelFormSheet } from "./model-form-sheet"
 import { ActiveStateBadge, ListFilterCard, ListPageHeader } from "./shared"
 
@@ -78,7 +83,7 @@ export function ModelManagement() {
       <div className="space-y-6">
         <ListPageHeader
           title="Model 管理"
-          description="管理 Provider 下的模型能力、上下文大小、默认输出长度与推荐温度。"
+          description="管理模型类别、运行时用途、连接测试模式，以及 Provider 下的上下文与输出参数。"
           total={data?.total}
           action={<div className="flex flex-wrap items-center gap-2">
             <Button type="button" variant="outline" className="gap-1.5" onClick={() => void fetchList()}>
@@ -155,12 +160,14 @@ export function ModelManagement() {
                   <table className="w-full min-w-[1100px] table-fixed">
                     <thead className="bg-muted/40">
                       <tr className="border-b border-border">
-                        <th className="w-[20%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Model</th>
-                        <th className="w-[24%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Provider / 真实模型</th>
-                        <th className="w-[18%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">能力开关</th>
-                        <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">上下文 / Agent</th>
-                        <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">最近更新</th>
-                        <th className="w-[16%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
+                        <th className="w-[18%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Model</th>
+                        <th className="w-[20%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Provider / 真实模型</th>
+                        <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">类型 / 用途</th>
+                        <th className="w-[13%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">测试 / 分组</th>
+                        <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">上下文 / Agent</th>
+                        <th className="w-[11%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">最近更新</th>
+                        <th className="w-[11%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">开关</th>
+                        <th className="w-[13%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -180,11 +187,18 @@ export function ModelManagement() {
                             <p className="mt-1 break-all text-xs text-muted-foreground">{item.modelName}</p>
                           </td>
                           <td className="px-4 py-4 align-top">
-                            <div className="space-y-1 text-xs text-muted-foreground">
-                              <p>{item.supportsStream ? "支持流式" : "非流式"}</p>
-                              <p>{item.supportsJsonMode ? "支持 JSON Mode" : "非 JSON Mode"}</p>
-                              <p>{item.supportsToolCalling ? "支持 Tool Calling" : "非 Tool Calling"}</p>
-                            </div>
+                            <p className="text-sm text-foreground">{getAdminAIModelFamilyLabel(item.modelFamily)}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {item.runtimeCapabilities.length
+                                ? item.runtimeCapabilities.map(getAdminAIModelRuntimeCapabilityLabel).join(" / ")
+                                : "无额外运行时用途"}
+                            </p>
+                            {item.notes ? <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.notes}</p> : null}
+                          </td>
+                          <td className="px-4 py-4 align-top">
+                            <p className="text-sm text-foreground">{getAdminAIModelConnectionTestModeLabel(item.connectionTestMode)}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{item.profileGroup ?? "未分组"}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{item.reasoningEnabled ? "推理模式" : "常规模型"}</p>
                           </td>
                           <td className="px-4 py-4 align-top">
                             <p className="text-sm text-foreground">{item.maxContextTokens}</p>
@@ -193,6 +207,13 @@ export function ModelManagement() {
                           </td>
                           <td className="px-4 py-4 align-top">
                             <p className="text-sm text-foreground">{formatDateTime(item.updatedAt)}</p>
+                          </td>
+                          <td className="px-4 py-4 align-top">
+                            <div className="space-y-1 text-xs text-muted-foreground">
+                              <p>{item.supportsStream ? "支持流式" : "非流式"}</p>
+                              <p>{item.supportsJsonMode ? "支持 JSON Mode" : "非 JSON Mode"}</p>
+                              <p>{item.supportsToolCalling ? "支持 Tool Calling" : "非 Tool Calling"}</p>
+                            </div>
                           </td>
                           <td className="px-4 py-4 align-top">
                             <div className="flex flex-wrap items-center justify-end gap-2">

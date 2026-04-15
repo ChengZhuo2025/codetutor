@@ -5,11 +5,17 @@ import {
   AdminConnectionTestButton,
   type AdminConnectionTestPhase,
 } from "@/features/admin-ai/components/admin-connection-test-button"
-import type {
-  AdminAIModelDetailResponseData,
-  AdminAIModelTestConnectionResponseData,
-  AdminAIModelUpsertRequest,
-  AdminAIProviderListResponseData,
+import {
+  ADMIN_AI_MODEL_CONNECTION_TEST_MODES,
+  ADMIN_AI_MODEL_FAMILIES,
+  ADMIN_AI_MODEL_RUNTIME_CAPABILITIES,
+  type AdminAIModelConnectionTestMode,
+  type AdminAIModelDetailResponseData,
+  type AdminAIModelFamily,
+  type AdminAIModelRuntimeCapability,
+  type AdminAIModelTestConnectionResponseData,
+  type AdminAIModelUpsertRequest,
+  type AdminAIProviderListResponseData,
 } from "@/lib/api/contracts/admin-ai"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { Button } from "@/components/ui/button"
@@ -29,14 +35,42 @@ import {
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
 import { adminAiModelBffDetailUrl } from "@/features/admin-ai/lib/model-admin-urls"
-import { prettyJson, safeJsonParse } from "@/features/admin-ai/lib/view-model"
+import {
+  getAdminAIModelConnectionTestModeLabel,
+  getAdminAIModelFamilyLabel,
+  getAdminAIModelRuntimeCapabilityLabel,
+  prettyJson,
+  safeJsonParse,
+} from "@/features/admin-ai/lib/view-model"
 import { AdminFieldLabel } from "./admin-field-label"
 
-/** 与抽屉内 Input / select 同系：底色与边框一致，保持扁平化样式 */
 const MODEL_BOOL_TILE_CLASS =
   "flex min-h-9 shrink-0 cursor-pointer items-center gap-2.5 rounded-md border border-border/90 bg-muted/45 px-3 py-2 text-sm text-foreground shadow-none has-[:focus-visible]:outline-none has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/50"
 
-const EMPTY_FORM = {
+type ModelFormState = {
+  providerCode: string
+  code: string
+  displayName: string
+  modelName: string
+  supportsStream: boolean
+  supportsJsonMode: boolean
+  supportsToolCalling: boolean
+  maxContextTokens: number
+  defaultMaxOutputTokens: number
+  recommendedTemperature: number
+  modelFamily: AdminAIModelFamily
+  runtimeCapabilities: AdminAIModelRuntimeCapability[]
+  connectionTestMode: AdminAIModelConnectionTestMode
+  reasoningEnabled: boolean
+  profileGroup: string
+  notes: string
+  pricingMetadataText: string
+  isActive: boolean
+  metadataText: string
+  changeReason: string
+}
+
+const EMPTY_FORM: ModelFormState = {
   providerCode: "",
   code: "",
   displayName: "",
@@ -47,13 +81,17 @@ const EMPTY_FORM = {
   maxContextTokens: 64000,
   defaultMaxOutputTokens: 4096,
   recommendedTemperature: 0.3,
+  modelFamily: "chat",
+  runtimeCapabilities: [],
+  connectionTestMode: "chat",
+  reasoningEnabled: false,
+  profileGroup: "balanced_default",
+  notes: "",
   pricingMetadataText: "{}",
   isActive: true,
   metadataText: "{}",
   changeReason: "",
 }
-
-type ModelFormState = typeof EMPTY_FORM
 
 function mapDetailToForm(detail: AdminAIModelDetailResponseData["model"]): ModelFormState {
   return {
@@ -67,6 +105,12 @@ function mapDetailToForm(detail: AdminAIModelDetailResponseData["model"]): Model
     maxContextTokens: detail.maxContextTokens,
     defaultMaxOutputTokens: detail.defaultMaxOutputTokens,
     recommendedTemperature: detail.recommendedTemperature ?? 0.3,
+    modelFamily: detail.modelFamily,
+    runtimeCapabilities: detail.runtimeCapabilities,
+    connectionTestMode: detail.connectionTestMode,
+    reasoningEnabled: detail.reasoningEnabled,
+    profileGroup: detail.profileGroup ?? "",
+    notes: detail.notes ?? "",
     pricingMetadataText: prettyJson(detail.pricingMetadata),
     isActive: detail.isActive,
     metadataText: prettyJson(detail.metadata),
@@ -176,10 +220,19 @@ export function ModelFormSheet({
 
   const description = useMemo(() => {
     if (!detail) {
-      return "管理 Provider 下的模型能力、上下文大小、默认输出长度与推荐温度。"
+      return "管理模型类别、运行时用途、连接测试模式与上下文参数。"
     }
     return `当前已关联 ${detail.linkedAgentCodes.length} 个 Agent。`
   }, [detail])
+
+  const capabilityOptions = useMemo(
+    () =>
+      ADMIN_AI_MODEL_RUNTIME_CAPABILITIES.map((capability) => ({
+        value: capability,
+        label: getAdminAIModelRuntimeCapabilityLabel(capability),
+      })),
+    [],
+  )
 
   const handleTestConnection = async () => {
     if (!modelId) {
@@ -254,6 +307,12 @@ export function ModelFormSheet({
         maxContextTokens: Number(form.maxContextTokens),
         defaultMaxOutputTokens: Number(form.defaultMaxOutputTokens),
         recommendedTemperature: Number(form.recommendedTemperature),
+        modelFamily: form.modelFamily,
+        runtimeCapabilities: form.runtimeCapabilities,
+        connectionTestMode: form.connectionTestMode,
+        reasoningEnabled: form.reasoningEnabled,
+        profileGroup: form.profileGroup.trim() || null,
+        notes: form.notes.trim() || null,
         pricingMetadata: safeJsonParse(form.pricingMetadataText),
         isActive: form.isActive,
         metadata: safeJsonParse(form.metadataText),
@@ -289,6 +348,15 @@ export function ModelFormSheet({
     } finally {
       setSaving(false)
     }
+  }
+
+  const toggleRuntimeCapability = (capability: AdminAIModelRuntimeCapability, checked: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      runtimeCapabilities: checked
+        ? Array.from(new Set([...prev.runtimeCapabilities, capability]))
+        : prev.runtimeCapabilities.filter((item) => item !== capability),
+    }))
   }
 
   return (
@@ -342,6 +410,60 @@ export function ModelFormSheet({
                 </div>
               </div>
 
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <AdminFieldLabel htmlFor="model-modelFamily" label="模型类别" required helpText="让管理员一眼区分聊天、推理、ASR、视觉等模型。" />
+                  <select
+                    id="model-modelFamily"
+                    value={form.modelFamily}
+                    onChange={(event) => setForm((prev) => ({ ...prev, modelFamily: event.target.value as AdminAIModelFamily }))}
+                    className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none"
+                  >
+                    {ADMIN_AI_MODEL_FAMILIES.map((item) => (
+                      <option key={item} value={item}>{getAdminAIModelFamilyLabel(item)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <AdminFieldLabel htmlFor="model-connectionTestMode" label="连接测试模式" required helpText="定义后台连接测试应该发起 chat、音频转写，还是仅验证 /models 连通性。" />
+                  <select
+                    id="model-connectionTestMode"
+                    value={form.connectionTestMode}
+                    onChange={(event) => setForm((prev) => ({ ...prev, connectionTestMode: event.target.value as AdminAIModelConnectionTestMode }))}
+                    className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none"
+                  >
+                    {ADMIN_AI_MODEL_CONNECTION_TEST_MODES.map((item) => (
+                      <option key={item} value={item}>{getAdminAIModelConnectionTestModeLabel(item)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <AdminFieldLabel htmlFor="model-profileGroup" label="配置分组" helpText="例如 balanced_default、reasoning_lab，用于后台识别分组。" />
+                  <Input id="model-profileGroup" value={form.profileGroup} onChange={(event) => setForm((prev) => ({ ...prev, profileGroup: event.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <AdminFieldLabel htmlFor="model-notes" label="管理备注" helpText="用于说明该模型在本项目中的实际用途或限制。" />
+                  <Input id="model-notes" value={form.notes} onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))} />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <AdminFieldLabel label="运行时用途" required helpText="用于当前项目真实链路：教程材料 ASR、视觉/OCR、学习计划质量校验。无用途可不选。" />
+                <div className="grid gap-2 md:grid-cols-3">
+                  {capabilityOptions.map((option) => (
+                    <label key={option.value} className={MODEL_BOOL_TILE_CLASS}>
+                      <input
+                        type="checkbox"
+                        className="shrink-0 rounded border-border accent-primary"
+                        checked={form.runtimeCapabilities.includes(option.value)}
+                        onChange={(event) => toggleRuntimeCapability(option.value, event.target.checked)}
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-2">
                 <label className={MODEL_BOOL_TILE_CLASS}>
                   <input
@@ -374,6 +496,15 @@ export function ModelFormSheet({
                   <input
                     type="checkbox"
                     className="shrink-0 rounded border-border accent-primary"
+                    checked={form.reasoningEnabled}
+                    onChange={(event) => setForm((prev) => ({ ...prev, reasoningEnabled: event.target.checked }))}
+                  />
+                  <span className="whitespace-nowrap">推理模式</span>
+                </label>
+                <label className={MODEL_BOOL_TILE_CLASS}>
+                  <input
+                    type="checkbox"
+                    className="shrink-0 rounded border-border accent-primary"
                     checked={form.isActive}
                     onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))}
                   />
@@ -386,21 +517,29 @@ export function ModelFormSheet({
                 <Textarea id="model-pricingMetadata" rows={6} value={form.pricingMetadataText} onChange={(event) => setForm((prev) => ({ ...prev, pricingMetadataText: event.target.value }))} />
               </div>
 
-              <div className="space-y-1.5">
-                <AdminFieldLabel
-                  htmlFor="model-metadata"
-                  label="Metadata JSON"
-                  helpText="可留空，默认填 {}。仅在需要记录模型额外能力标签或连通性策略时填写。"
-                />
-                <Textarea id="model-metadata" rows={6} value={form.metadataText} onChange={(event) => setForm((prev) => ({ ...prev, metadataText: event.target.value }))} />
-              </div>
+              <details className="rounded-xl border border-border bg-muted/20 px-4 py-3">
+                <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
+                  高级扩展配置
+                </summary>
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  `metadata` 仅用于 routePolicy、phase 等少量未结构化的附加信息，不应再承载模型类别、用途或连接测试模式。
+                </p>
+                <div className="mt-3 space-y-1.5">
+                  <AdminFieldLabel
+                    htmlFor="model-metadata"
+                    label="Metadata JSON"
+                    helpText="留空时保持 {}。仅在需要记录少量高级扩展信息时填写。"
+                  />
+                  <Textarea id="model-metadata" rows={6} value={form.metadataText} onChange={(event) => setForm((prev) => ({ ...prev, metadataText: event.target.value }))} />
+                </div>
+              </details>
 
               <div className="space-y-1.5">
                 <AdminFieldLabel
                   htmlFor="model-changeReason"
                   label="变更原因"
                   required
-                  helpText="用于审计记录。建议写明本次改动目的，例如“调整默认输出上限以降低超时率”。"
+                  helpText="用于审计记录。建议写明本次改动目的，例如“新增 ASR 用模型”或“改为 /models 连通性探测”。"
                 />
                 <Textarea id="model-changeReason" rows={4} value={form.changeReason} onChange={(event) => setForm((prev) => ({ ...prev, changeReason: event.target.value }))} />
               </div>
