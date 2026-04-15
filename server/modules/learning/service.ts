@@ -218,6 +218,85 @@ const FINAL_PATH_STEP_TITLE = "当前已是最后一关"
 const FINAL_PATH_STEP_PREVIEW =
   "你正处在本路径的最后一关；完成本关后，该学习计划在这条路径上的练习即全部结束。之后可到学习地图查看整体进度，或选择新的学习内容。"
 
+const LONG_FOCUS_MIN_LEN = 120
+
+function hasMaterialPlanFromPath(activePath: ActivePathRow): boolean {
+  return (
+    activePath.selection_mode === "self_directed"
+    && typeof (activePath.metadata as JsonRecord | undefined)?.seedSource === "string"
+    && (activePath.metadata as JsonRecord).seedSource === "plan_draft_confirmed"
+  )
+}
+
+function isLongInstructionText(text: string): boolean {
+  const t = text.trim()
+  if (t.length >= LONG_FOCUS_MIN_LEN) {
+    return true
+  }
+
+  const clauseBreaks = (t.match(/[；。]/g) ?? []).length
+  return clauseBreaks >= 2 && t.length >= 60
+}
+
+function resolveCoachCue(input: {
+  currentStep: StepRow
+  whyThisStep: string
+  hasMaterialPlan: boolean
+  isCompletedReviewTask: boolean
+}): string {
+  if (input.isCompletedReviewTask) {
+    return "先回看这一步当时的目标、掌握点和对话记录，再总结哪些做法可以复用。"
+  }
+
+  const focus =
+    typeof input.currentStep.focus === "string" ? input.currentStep.focus.trim() : ""
+  const why = input.whyThisStep.trim()
+
+  if (focus.length > 0 && focus === why && isLongInstructionText(focus)) {
+    if (input.hasMaterialPlan) {
+      return "计划已从你的材料生成。先按上方任务说明完成一小步；卡住时发截图或报错即可。"
+    }
+    return "先按上方任务说明完成一小步；有结果或疑问随时发给我。"
+  }
+
+  if (focus.length > 0) {
+    return focus
+  }
+
+  return "先把任务做小，只验证当前这一关的核心能力，不要一次扩展太多。"
+}
+
+function resolveDefaultCoachSeedContent(input: {
+  currentStep: StepRow
+  whyThisStep: string
+  hasMaterialPlan: boolean
+}): string {
+  const focus =
+    typeof input.currentStep.focus === "string" ? input.currentStep.focus.trim() : ""
+  const why = input.whyThisStep.trim()
+
+  if (focus.length > 0 && focus === why && isLongInstructionText(focus)) {
+    if (input.hasMaterialPlan) {
+      return [
+        "已从你的材料生成学习任务，练习说明在上方这张任务卡里。",
+        "",
+        "先按「完成标准」做最小的一步；完成后把你的产出、截图或报错发给我即可。",
+      ].join("\n")
+    }
+
+    return [
+      "练习说明在上方任务卡里，先按完成标准做一小步。",
+      "",
+      "完成后把结果或报错发给我，我们再一起往下推进。",
+    ].join("\n")
+  }
+
+  return (
+    input.currentStep.focus
+    ?? "先从一个最小实验开始，不要求一次理解全部概念。做完后把结果发给我，我们再判断下一步。"
+  )
+}
+
 async function loadLearningState(userId: string) {
   await reconcileInterruptedLearningPaths(userId)
 
@@ -329,6 +408,8 @@ function toProfileData(
 function buildDefaultMessages(input: {
   currentStep: StepRow
   taskStatus: TaskRow["status"]
+  hasMaterialPlan?: boolean
+  whyThisStep?: string
 }): Message[] {
   const currentStep = input.currentStep
 
@@ -367,9 +448,15 @@ function buildDefaultMessages(input: {
           interactionType: "task_review",
           content: reviewSummary,
         }),
-      },
-    ]
+    },
+  ]
   }
+
+  const coachSeedContent = resolveDefaultCoachSeedContent({
+    currentStep,
+    whyThisStep: input.whyThisStep ?? "",
+    hasMaterialPlan: input.hasMaterialPlan ?? false,
+  })
 
   return [
     {
@@ -391,16 +478,12 @@ function buildDefaultMessages(input: {
       role: "ai",
       kind: "coach",
       title: "AI 教练引导",
-      content:
-        currentStep.focus ??
-        "先从一个最小实验开始，不要求一次理解全部概念。做完后把结果发给我，我们再判断下一步。",
+      content: coachSeedContent,
       structuredContent: buildStructuredLearningMessageContent({
         title: "AI 教练引导",
         kind: "coach",
         interactionType: "teaching",
-        content:
-          currentStep.focus ??
-          "先从一个最小实验开始，不要求一次理解全部概念。做完后把结果发给我，我们再判断下一步。",
+        content: coachSeedContent,
       }),
     },
   ]
@@ -797,9 +880,14 @@ export async function getLearningCurrentSessionData(
   })
   const isSelectedTaskReview = selectedTask.id !== currentTask.id
   const isCompletedReviewTask = selectedTask.status === "completed"
+  const hasMaterialPlan = hasMaterialPlanFromPath(state.activePath)
+  const whyThisStep =
+    isCompletedReviewTask ? reviewSummary : (currentStep.focus ?? currentStep.summary)
   const baseMessages = buildDefaultMessages({
     currentStep,
     taskStatus: selectedTask.status,
+    hasMaterialPlan,
+    whyThisStep,
   })
   const activeConversation = await resolveConversationForTask(userId, selectedTask, {
     preferredConversationId: requestedConversation?.id ?? input?.sessionId ?? null,
@@ -959,10 +1047,7 @@ export async function getLearningCurrentSessionData(
       selectionModeLabel: getSelectionModeLabel(state.activePath.selection_mode),
       selectionMode: state.activePath.selection_mode,
       pathName: state.activePath.path_name_snapshot,
-      hasMaterialPlan:
-        state.activePath.selection_mode === "self_directed"
-        && typeof (state.activePath.metadata as JsonRecord | undefined)?.seedSource === "string"
-        && (state.activePath.metadata as JsonRecord).seedSource === "plan_draft_confirmed",
+      hasMaterialPlan,
     },
     resume:
       shouldExposeResume && !isSelectedTaskReview
@@ -985,10 +1070,12 @@ export async function getLearningCurrentSessionData(
       reward: `+${currentStep.reward_score} XP`,
       progressLabel: `${state.activePath.completed_steps} / ${totalSteps} 关已完成`,
       progressPercent: currentProgressPercent,
-      coachCue:
-        isCompletedReviewTask
-          ? "先回看这一步当时的目标、掌握点和对话记录，再总结哪些做法可以复用。"
-          : (currentStep.focus ?? "先把任务做小，只验证当前这一关的核心能力，不要一次扩展太多。"),
+      coachCue: resolveCoachCue({
+        currentStep,
+        whyThisStep,
+        hasMaterialPlan,
+        isCompletedReviewTask,
+      }),
       nextPreviewIsFinal: isFinalPathStep,
       nextUnlockTitle: isFinalPathStep ? FINAL_PATH_STEP_TITLE : nextStep.title,
       nextUnlockSummary: nextUnlockSummaryOrPreview,
@@ -999,7 +1086,7 @@ export async function getLearningCurrentSessionData(
     responseSamples,
     rightPanel: {
       currentStep: currentStep.title,
-      whyThisStep: isCompletedReviewTask ? reviewSummary : (currentStep.focus ?? currentStep.summary),
+      whyThisStep,
       completionCriteria: currentStep.completion_criteria ?? currentStep.goal,
       hintIfStuck:
         isCompletedReviewTask

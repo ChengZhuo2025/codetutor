@@ -71,8 +71,8 @@ const ASSISTANT_MESSAGE_VARIANT_META: Record<
   }
 > = {
   default: {
-    label: "教练引导",
-    hint: "先给你当前关卡最值得执行的一步。",
+    label: "学习引导",
+    hint: "这里是你这关的练习重点，按步骤做一小步就好。",
     panelClass: "border-brand/20 bg-background/50",
     iconClass: "text-brand",
     chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
@@ -142,8 +142,8 @@ const ASSISTANT_MESSAGE_INTERACTION_META: Record<
   AssistantMessageInteractionMeta
 > = {
   teaching: {
-    label: "教练引导",
-    hint: "围绕当前关卡给出最小下一步，先做成再扩展。",
+    label: "学习引导",
+    hint: "先看下面这段说明，从最容易验证的一小步开始。",
     panelClass: "border-brand/20 bg-background/50",
     iconClass: "text-brand",
     chipClass: "border-brand/20 bg-brand-dim/60 text-brand",

@@ -14,6 +14,11 @@ type LearnChatHeroProps = {
 }
 
 export function LearnChatHero({ mission, rightPanel }: LearnChatHeroProps) {
+  const coachCueTrimmed = mission?.coachCue?.trim() ?? ""
+  const whyTrimmed = rightPanel.whyThisStep?.trim() ?? ""
+  const showCoachReminder =
+    coachCueTrimmed.length > 0 && coachCueTrimmed !== whyTrimmed
+
   if (!mission) {
     return (
       <div className="rounded-[1.75rem] border border-border bg-surface-2/95 p-4 pb-6">
@@ -78,13 +83,15 @@ export function LearnChatHero({ mission, rightPanel }: LearnChatHeroProps) {
         </div>
       </div>
 
-      <div className="px-5 py-5 sm:px-6">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/90">
-          <Lightbulb className="h-3.5 w-3.5 text-gold" />
-          AI 教练提醒
+      {showCoachReminder ? (
+        <div className="px-5 py-5 sm:px-6">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/90">
+            <Lightbulb className="h-3.5 w-3.5 text-gold" />
+            AI 教练提醒
+          </div>
+          <p className="mt-1 ml-5 text-sm leading-7 text-muted-foreground">{mission.coachCue}</p>
         </div>
-        <p className="mt-1 ml-5 text-sm leading-7 text-muted-foreground">{mission.coachCue}</p>
-      </div>
+      ) : null}
     </div>
   )
 }
