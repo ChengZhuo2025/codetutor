@@ -39,6 +39,7 @@ import {
 } from "@/lib/api/admin-bff-client"
 import { AdminChangePasswordDialog } from "@/features/admin-shell/components/admin-change-password-dialog"
 import { AdminProfileEditDialog } from "@/features/admin-shell/components/admin-profile-edit-dialog"
+import { cn } from "@/lib/utils"
 
 type SettingsTab =
   | "profile"
@@ -147,10 +148,12 @@ function MetricCard({
   label,
   value,
   icon: Icon,
+  valueClassName,
 }: {
   label: string
   value: number
   icon: typeof Users
+  valueClassName?: string
 }) {
   return (
     <div className="rounded-xl border border-border bg-card px-4 py-3">
@@ -158,7 +161,7 @@ function MetricCard({
         <Icon className="h-4 w-4" />
         <p className="text-xs">{label}</p>
       </div>
-      <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{value}</p>
+      <p className={cn("mt-3 text-2xl font-semibold tracking-tight text-foreground", valueClassName)}>{value}</p>
     </div>
   )
 }
@@ -488,9 +491,9 @@ export function SystemSettings() {
       <div className="space-y-4">
         <div className="grid gap-3 md:grid-cols-4">
           <MetricCard label="管理员总数" value={stats?.totalAdminAccounts ?? 0} icon={Users} />
-          <MetricCard label="启用中" value={stats?.activeAdminAccounts ?? 0} icon={Shield} />
-          <MetricCard label="已停用" value={stats?.inactiveAdminAccounts ?? 0} icon={UserCog} />
-          <MetricCard label="已冻结" value={stats?.suspendedAdminAccounts ?? 0} icon={Lock} />
+          <MetricCard label="启用中" value={stats?.activeAdminAccounts ?? 0} icon={Shield} valueClassName="text-emerald-600 dark:text-emerald-400" />
+          <MetricCard label="已停用" value={stats?.inactiveAdminAccounts ?? 0} icon={UserCog} valueClassName="text-amber-600 dark:text-amber-400" />
+          <MetricCard label="已冻结" value={stats?.suspendedAdminAccounts ?? 0} icon={Lock} valueClassName="text-rose-600 dark:text-rose-400" />
         </div>
 
         <div className="rounded-2xl border border-border bg-card">

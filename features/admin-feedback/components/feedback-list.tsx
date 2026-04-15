@@ -462,6 +462,7 @@ export function FeedbackList() {
                   </td>
                   <td className="px-3 py-3 align-middle">
                     <AdminListTag
+                      size="lg"
                       variant={
                         item.priority === "high"
                           ? "danger"
@@ -475,6 +476,7 @@ export function FeedbackList() {
                   </td>
                   <td className="px-3 py-3 align-middle">
                     <AdminListTag
+                      size="lg"
                       variant={
                         item.status === "submitted"
                           ? "warning"

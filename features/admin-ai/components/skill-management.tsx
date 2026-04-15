@@ -20,6 +20,8 @@ import {
 import { SkillBindingSheet } from "./skill-binding-sheet"
 import { ActiveStateBadge, ListFilterCard, ListPageHeader } from "./shared"
 
+type SkillManagementTab = "bindings" | "registry"
+
 export function SkillManagement() {
   const [skillData, setSkillData] = useState<AdminAISkillListResponseData | null>(null)
   const [bindingData, setBindingData] = useState<AdminAIAgentSkillBindingListResponseData | null>(null)
@@ -33,6 +35,7 @@ export function SkillManagement() {
   const [bindingLimit, setBindingLimit] = useState("20")
   const [editingItem, setEditingItem] = useState<AdminAIAgentSkillBindingListItem | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<SkillManagementTab>("bindings")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [authExpired, setAuthExpired] = useState(false)
@@ -114,27 +117,37 @@ export function SkillManagement() {
           }
         />
 
-        <nav
-          className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground xl:hidden"
-          aria-label="页面区块跳转"
-        >
-          <a href="#admin-ai-skill-bindings" className="text-primary underline-offset-4 hover:underline">
-            跳到 Skill 绑定
-          </a>
-          <a href="#admin-ai-skill-registry" className="text-primary underline-offset-4 hover:underline">
-            跳到 Skill Registry
-          </a>
-        </nav>
+        <div className="flex flex-wrap gap-2 border-b border-border pb-3">
+          <button
+            type="button"
+            onClick={() => setActiveTab("bindings")}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "bindings"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+            }`}
+          >
+            Skill 绑定
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("registry")}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "registry"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+            }`}
+          >
+            Skill Registry
+          </button>
+        </div>
 
         {error && !skillData && !bindingData ? (
           <StatePanel status="error" title="获取 Skill 管理数据失败" description={error} actionLabel="重试" onAction={() => void fetchAll()} />
         ) : (
-          <div className="flex flex-col gap-8 xl:grid xl:grid-cols-2 xl:items-stretch xl:gap-6">
-            {/* Skill 绑定优先：窄屏首屏可见；宽屏左栏 */}
-            <section
-              id="admin-ai-skill-bindings"
-              className="flex min-h-0 scroll-mt-28 flex-col gap-3 xl:h-[calc(100vh-11rem)] xl:min-h-[min(420px,80vh)] xl:max-h-[calc(100vh-11rem)]"
-            >
+          <div className="space-y-3">
+            {activeTab === "bindings" ? (
+              <section className="flex min-h-0 flex-col gap-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <h2 className="text-base font-semibold text-foreground">Skill 绑定</h2>
@@ -156,9 +169,9 @@ export function SkillManagement() {
                 </Button>
               </div>
               <ListFilterCard>
-              <div className="flex flex-col gap-3 md:flex-row">
-                <div className="relative flex-1 min-w-32 max-w-md">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <div className="flex flex-col gap-3 md:flex-row">
+                  <div className="relative min-w-32 max-w-md flex-1">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       value={bindingKeyword}
                       onChange={(event) => setBindingKeyword(event.target.value)}
@@ -176,8 +189,8 @@ export function SkillManagement() {
                   </Button>
                 </div>
               </ListFilterCard>
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
-                <div className="min-h-0 flex-1 overflow-auto">
+              <div className="overflow-hidden rounded-xl border border-border bg-card">
+                <div className="overflow-x-auto">
                   {isLoading && !bindingData ? (
                     <div className="space-y-3 p-4">
                       {[1, 2, 3].map((item) => (
@@ -185,56 +198,54 @@ export function SkillManagement() {
                       ))}
                     </div>
                   ) : bindingData?.items.length ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[1100px] table-fixed">
-                        <thead className="sticky top-0 z-1 bg-muted/40 backdrop-blur-sm">
-                          <tr className="border-b border-border">
-                            <th className="w-[22%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Agent</th>
-                            <th className="w-[22%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Skill</th>
-                            <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">优先级</th>
-                            <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">必选</th>
-                            <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">预算</th>
-                            <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
-                            <th className="w-[10%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
+                    <table className="w-full min-w-[1100px] table-fixed">
+                      <thead className="bg-muted/40">
+                        <tr className="border-b border-border">
+                          <th className="w-[22%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Agent</th>
+                          <th className="w-[22%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Skill</th>
+                          <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">优先级</th>
+                          <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">必选</th>
+                          <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">预算</th>
+                          <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
+                          <th className="w-[10%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {bindingData.items.map((item) => (
+                          <tr key={item.bindingId} className="transition-colors hover:bg-muted/20">
+                            <td className="px-4 py-4 align-top">
+                              <p className="text-sm font-medium text-foreground">{item.agentName}</p>
+                            </td>
+                            <td className="px-4 py-4 align-top">
+                              <p className="text-sm text-foreground">{item.skillName}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">{item.skillCode}</p>
+                            </td>
+                            <td className="px-4 py-4 align-top text-sm text-foreground">{item.priority}</td>
+                            <td className="px-4 py-4 align-top text-sm text-foreground">{item.isRequired ? "必需" : "可选"}</td>
+                            <td className="px-4 py-4 align-top text-sm text-foreground">{item.contextBudgetTokens ?? "未设置"}</td>
+                            <td className="px-4 py-4 align-top">
+                              <ActiveStateBadge active={item.isActive} />
+                            </td>
+                            <td className="px-4 py-4 align-top">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 px-2.5"
+                                  onClick={() => {
+                                    setEditingItem(item)
+                                    setSheetOpen(true)
+                                  }}
+                                >
+                                  编辑
+                                </Button>
+                              </div>
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {bindingData.items.map((item) => (
-                            <tr key={item.bindingId} className="transition-colors hover:bg-muted/20">
-                              <td className="px-4 py-4 align-top">
-                                <p className="text-sm font-medium text-foreground">{item.agentName}</p>
-                              </td>
-                              <td className="px-4 py-4 align-top">
-                                <p className="text-sm text-foreground">{item.skillName}</p>
-                                <p className="mt-1 text-xs text-muted-foreground">{item.skillCode}</p>
-                              </td>
-                              <td className="px-4 py-4 align-top text-sm text-foreground">{item.priority}</td>
-                              <td className="px-4 py-4 align-top text-sm text-foreground">{item.isRequired ? "必需" : "可选"}</td>
-                              <td className="px-4 py-4 align-top text-sm text-foreground">{item.contextBudgetTokens ?? "未设置"}</td>
-                              <td className="px-4 py-4 align-top">
-                                <ActiveStateBadge active={item.isActive} />
-                              </td>
-                              <td className="px-4 py-4 align-top">
-                                <div className="flex items-center justify-end gap-2">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 px-2.5"
-                                    onClick={() => {
-                                      setEditingItem(item)
-                                      setSheetOpen(true)
-                                    }}
-                                  >
-                                    编辑
-                                  </Button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                        ))}
+                      </tbody>
+                    </table>
                   ) : (
                     <div className="p-4">
                       <StatePanel status="empty" title="暂无 Skill 绑定" description="当前筛选条件下没有匹配的 Skill 绑定。" />
@@ -258,12 +269,9 @@ export function SkillManagement() {
                   centerContent={<span>当前页显示 {bindingData?.items.length ?? 0} 条</span>}
                 />
               </div>
-            </section>
-
-            <section
-              id="admin-ai-skill-registry"
-              className="flex min-h-0 scroll-mt-28 flex-col gap-3 xl:h-[calc(100vh-11rem)] xl:min-h-[min(420px,80vh)] xl:max-h-[calc(100vh-11rem)]"
-            >
+              </section>
+            ) : (
+              <section className="flex min-h-0 flex-col gap-3">
               <div>
                 <h2 className="text-base font-semibold text-foreground">Skill Registry</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -292,8 +300,8 @@ export function SkillManagement() {
                   </Button>
                 </div>
               </ListFilterCard>
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
-                <div className="min-h-0 flex-1 overflow-auto">
+              <div className="overflow-hidden rounded-xl border border-border bg-card">
+                <div className="overflow-x-auto">
                   {isLoading && !skillData ? (
                     <div className="grid gap-3 p-4 xl:grid-cols-1">
                       {[1, 2, 3, 4].map((item) => (
@@ -301,37 +309,35 @@ export function SkillManagement() {
                       ))}
                     </div>
                   ) : skillData?.items.length ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[1200px] table-fixed">
-                        <thead className="sticky top-0 z-1 bg-muted/40 backdrop-blur-sm">
-                          <tr className="border-b border-border">
-                            <th className="w-[28%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Skill</th>
-                            <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">来源</th>
-                            <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">信任级别</th>
-                            <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">关联 Agent</th>
-                            <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
-                            <th className="w-[38%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">资源路径</th>
+                    <table className="w-full min-w-[1200px] table-fixed">
+                      <thead className="bg-muted/40">
+                        <tr className="border-b border-border">
+                          <th className="w-[28%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Skill</th>
+                          <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">来源</th>
+                          <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">信任级别</th>
+                          <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">关联 Agent</th>
+                          <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
+                          <th className="w-[38%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">资源路径</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {skillData.items.map((item) => (
+                          <tr key={item.skillId} className="transition-colors hover:bg-muted/20">
+                            <td className="px-4 py-4 align-top">
+                              <p className="text-sm font-medium text-foreground">{item.name}</p>
+                              <p className="mt-1 font-mono text-[11px] text-muted-foreground">{item.code}</p>
+                            </td>
+                            <td className="px-4 py-4 align-top text-sm text-foreground">{item.sourceType}</td>
+                            <td className="px-4 py-4 align-top text-sm text-foreground">{item.trustLevel}</td>
+                            <td className="px-4 py-4 align-top text-sm text-foreground">{item.linkedAgentCount}</td>
+                            <td className="px-4 py-4 align-top">
+                              <ActiveStateBadge active={item.isActive} />
+                            </td>
+                            <td className="px-4 py-4 align-top break-all text-xs text-muted-foreground">{item.entryResourcePath ?? item.manifestPath}</td>
                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {skillData.items.map((item) => (
-                            <tr key={item.skillId} className="transition-colors hover:bg-muted/20">
-                              <td className="px-4 py-4 align-top">
-                                <p className="text-sm font-medium text-foreground">{item.name}</p>
-                                <p className="mt-1 font-mono text-[11px] text-muted-foreground">{item.code}</p>
-                              </td>
-                              <td className="px-4 py-4 align-top text-sm text-foreground">{item.sourceType}</td>
-                              <td className="px-4 py-4 align-top text-sm text-foreground">{item.trustLevel}</td>
-                              <td className="px-4 py-4 align-top text-sm text-foreground">{item.linkedAgentCount}</td>
-                              <td className="px-4 py-4 align-top">
-                                <ActiveStateBadge active={item.isActive} />
-                              </td>
-                              <td className="px-4 py-4 align-top break-all text-xs text-muted-foreground">{item.entryResourcePath ?? item.manifestPath}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                        ))}
+                      </tbody>
+                    </table>
                   ) : (
                     <div className="p-4">
                       <StatePanel status="empty" title="暂无 Skill" description="当前筛选条件下没有匹配的 Skill。" />
@@ -355,7 +361,8 @@ export function SkillManagement() {
                   centerContent={<span>当前页显示 {skillData?.items.length ?? 0} 条</span>}
                 />
               </div>
-            </section>
+              </section>
+            )}
           </div>
         )}
       </div>
