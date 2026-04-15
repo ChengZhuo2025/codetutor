@@ -13,12 +13,12 @@ import {
 } from "lucide-react";
 import type { AdminLearningPathListResponseData } from "@/lib/api/contracts/admin-learning";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatePanel } from "@/components/ui/state-panel";
 import { ADMIN_ROUTES } from "@/constants/routes";
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer";
+import { AdminListTag } from "@/features/admin-shell/components/admin-list-tag";
 import { AdminSelect } from "@/features/admin-shell/components/admin-select";
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect";
 import {
@@ -368,12 +368,12 @@ export function LearningPathList() {
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Badge className={statusMeta.className}>
+                          <AdminListTag className={statusMeta.className}>
                             {statusMeta.label}
-                          </Badge>
-                          <Badge>{item.toolName}</Badge>
-                          <Badge>{item.learningLevelLabel}</Badge>
-                          <Badge>{item.selectionModeLabel}</Badge>
+                          </AdminListTag>
+                          <AdminListTag>{item.toolName}</AdminListTag>
+                          <AdminListTag>{item.learningLevelLabel}</AdminListTag>
+                          <AdminListTag>{item.selectionModeLabel}</AdminListTag>
                         </div>
                         <div className="mt-3 flex min-w-0 items-start gap-3">
                           {item.userAvatarUrl ? (

@@ -23,13 +23,13 @@ import type {
   AdminSettingsAuditLogListResponseData,
   AdminSettingsOverviewResponseData,
 } from "@/lib/api/contracts/admin-settings"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatePanel } from "@/components/ui/state-panel"
 import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
+import { AdminListTag } from "@/features/admin-shell/components/admin-list-tag"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
@@ -137,9 +137,9 @@ function getAuditActionLabel(action: string) {
 
 function RoleBadge({ role }: { role: AdminRoleCode }) {
   return (
-    <Badge size="lg" className={ROLE_BADGE_CLASS[role]}>
+    <AdminListTag className={ROLE_BADGE_CLASS[role]}>
       {ROLE_LABELS[role]}
-    </Badge>
+    </AdminListTag>
   )
 }
 
@@ -418,9 +418,9 @@ export function SystemSettings() {
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-lg font-semibold text-foreground">{overview.currentAdmin.displayName}</h2>
-                  <Badge size="lg" className={getStatusBadgeClass(overview.currentAdmin.status)}>
+                  <AdminListTag className={getStatusBadgeClass(overview.currentAdmin.status)}>
                     {getStatusLabel(overview.currentAdmin.status)}
-                  </Badge>
+                  </AdminListTag>
                 </div>
                 <p className="text-sm text-muted-foreground">{overview.currentAdmin.email ?? "暂无联系邮箱"}</p>
                 <div className="flex flex-wrap gap-2">
@@ -598,9 +598,9 @@ export function SystemSettings() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <Badge size="lg" className={getStatusBadgeClass(item.status)}>
+                          <AdminListTag className={getStatusBadgeClass(item.status)}>
                             {getStatusLabel(item.status)}
-                          </Badge>
+                          </AdminListTag>
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{formatDateTime(item.lastLoginAt)}</td>
                         <td className="px-4 py-3 text-muted-foreground">{formatDateTime(item.createdAt)}</td>

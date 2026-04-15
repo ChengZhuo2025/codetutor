@@ -4,10 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { RefreshCw, Search } from "lucide-react"
 import type { AdminAIInvocationListResponseData } from "@/lib/api/contracts/admin-ai"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatePanel } from "@/components/ui/state-panel"
+import { AdminListTag } from "@/features/admin-shell/components/admin-list-tag"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
@@ -240,9 +240,9 @@ export function InvocationLog() {
                               <p className="mt-1 text-xs text-muted-foreground">user {item.userId}</p>
                             </td>
                             <td className="px-4 py-4 align-top">
-                              <Badge size="sm" className={meta.className}>
+                              <AdminListTag className={meta.className}>
                                 {meta.label}
-                              </Badge>
+                              </AdminListTag>
                             </td>
                             <td className="px-4 py-4 align-top">
                               <p className="text-sm text-foreground">{item.agentCode}</p>

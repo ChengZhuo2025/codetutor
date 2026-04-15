@@ -11,11 +11,11 @@ import type {
 } from "@/lib/api/contracts/admin-users"
 import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
-import { Badge } from "@/components/ui/badge"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
+import { AdminListTag } from "@/features/admin-shell/components/admin-list-tag"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
@@ -473,11 +473,7 @@ export function UserList() {
                               <p className="truncate text-sm font-medium text-foreground">
                                 {item.nickname ?? "未命名用户"}
                               </p>
-                              {item.deletedAt ? (
-                                <Badge variant="danger" size="sm">
-                                  已删除
-                                </Badge>
-                              ) : null}
+                              {item.deletedAt ? <AdminListTag variant="danger">已删除</AdminListTag> : null}
                             </div>
                             <p className="truncate font-mono text-[11px] text-muted-foreground">
                               {item.authPhone || "暂无手机号"}
@@ -490,9 +486,9 @@ export function UserList() {
                       </td>
                       <td className="px-4 py-4 align-top">
                         <div className="space-y-2">
-                          <Badge size="sm" className={planStatusMeta.className}>
+                          <AdminListTag className={planStatusMeta.className}>
                             {planStatusMeta.label}
-                          </Badge>
+                          </AdminListTag>
                           <div>
                             <p className="truncate text-sm font-medium text-foreground">
                               {item.activePathName ?? "暂无进行中计划"}

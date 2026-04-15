@@ -13,6 +13,7 @@ import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
+import { AdminListTag } from "@/features/admin-shell/components/admin-list-tag"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import { ADMIN_ROUTES } from "@/constants/routes"
@@ -460,32 +461,32 @@ export function FeedbackList() {
                     {feedbackTypeLabels[item.feedbackType]}
                   </td>
                   <td className="px-3 py-3 align-middle">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-sm font-medium ${
+                    <AdminListTag
+                      variant={
                         item.priority === "high"
-                          ? "bg-destructive/15 text-destructive"
+                          ? "danger"
                           : item.priority === "medium"
-                            ? "bg-chart-2/20 text-chart-2"
-                            : "bg-muted text-muted-foreground"
-                      }`}
+                            ? "warning"
+                            : "neutral"
+                      }
                     >
                       {feedbackPriorityLabels[item.priority]}
-                    </span>
+                    </AdminListTag>
                   </td>
                   <td className="px-3 py-3 align-middle">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-sm font-medium ${
+                    <AdminListTag
+                      variant={
                         item.status === "submitted"
-                          ? "bg-chart-2/20 text-chart-2"
+                          ? "warning"
                           : item.status === "in_review"
-                            ? "bg-chart-1/20 text-chart-1"
+                            ? "info"
                             : item.status === "replied"
-                              ? "bg-primary/20 text-primary"
-                              : "bg-muted text-muted-foreground"
-                      }`}
+                              ? "success"
+                              : "neutral"
+                      }
                     >
                       {item.statusLabel}
-                    </span>
+                    </AdminListTag>
                   </td>
                   <td className="px-3 py-3 align-middle text-sm text-muted-foreground whitespace-nowrap">
                     {formatSubmittedAt(item.submittedAt)}
