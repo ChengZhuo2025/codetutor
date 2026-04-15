@@ -14,7 +14,6 @@ import type {
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Sheet,
   SheetContent,
@@ -41,6 +40,13 @@ import {
 } from "@/features/admin-ai/lib/provider-form-constraints"
 import { prettyJson } from "@/features/admin-ai/lib/view-model"
 import { ProviderSecretDisplay } from "./provider-secret-display"
+import { AdminFieldLabel } from "./admin-field-label"
+
+const SECRET_SOURCE_LABELS = {
+  database: "数据库加密托管",
+  env_fallback: "环境变量回退",
+  missing: "未配置",
+} as const
 
 const EMPTY_FORM = {
   code: "",
@@ -344,7 +350,16 @@ export function ProviderFormSheet({
       if (isAdminSessionExpiredError(error)) {
         onAuthExpired()
       }
-      toast.error(getAdminApiErrorMessage(error, providerId ? "更新 Provider 失败" : "创建 Provider 失败"))
+      const fallbackMessage = providerId ? "更新 Provider 失败" : "创建 Provider 失败"
+      const apiErrorMessage = getAdminApiErrorMessage(error, fallbackMessage)
+      if (
+        form.changeReason.trim().length < 2
+        || /Provider 请求体不合法|changeReason/i.test(apiErrorMessage)
+      ) {
+        toast.error("请填写变更原因（至少 2 个字符，最多 500 个字符）。")
+        return
+      }
+      toast.error(apiErrorMessage)
     } finally {
       setSaving(false)
     }
@@ -364,7 +379,12 @@ export function ProviderFormSheet({
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="provider-code">Code</Label>
+                  <AdminFieldLabel
+                    htmlFor="provider-code"
+                    label="Code"
+                    required
+                    helpText={codeLocked ? "当前有 Agent 将本 Provider 设为默认，不能修改 Code。请先在 Agent 管理中调整默认 Provider。" : undefined}
+                  />
                   <Input
                     id="provider-code"
                     value={form.code}
@@ -377,18 +397,13 @@ export function ProviderFormSheet({
                       setForm((prev) => ({ ...prev, code: event.target.value }))
                     }}
                   />
-                  {codeLocked ? (
-                    <p className="text-xs text-muted-foreground">
-                      当前有 Agent 将本 Provider 设为默认，不能修改 Code。请先在 Agent 管理中调整默认 Provider。
-                    </p>
-                  ) : null}
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="provider-name">名称</Label>
+                  <AdminFieldLabel htmlFor="provider-name" label="名称" required />
                   <Input id="provider-name" value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="provider-type">Provider 类型</Label>
+                  <AdminFieldLabel htmlFor="provider-type" label="Provider 类型" required />
                   <select id="provider-type" value={form.providerType} onChange={(event) => setForm((prev) => ({ ...prev, providerType: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                     <option value="openai_compatible">openai_compatible</option>
                     <option value="siliconflow">siliconflow</option>
@@ -396,7 +411,7 @@ export function ProviderFormSheet({
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="provider-authMode">鉴权方式</Label>
+                  <AdminFieldLabel htmlFor="provider-authMode" label="鉴权方式" required />
                   <select id="provider-authMode" value={form.authMode} onChange={(event) => setForm((prev) => ({ ...prev, authMode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                     <option value="bearer">bearer</option>
                     <option value="api_key_header">api_key_header</option>
@@ -405,13 +420,18 @@ export function ProviderFormSheet({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="provider-baseUrl">Base URL</Label>
+                <AdminFieldLabel htmlFor="provider-baseUrl" label="Base URL" required />
                 <Input id="provider-baseUrl" value={form.baseUrl} onChange={(event) => setForm((prev) => ({ ...prev, baseUrl: event.target.value }))} />
               </div>
 
               <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
                 <div className="space-y-1.5">
-                  <Label>当前 API Key</Label>
+                  <AdminFieldLabel
+                    label="当前 API Key"
+                    helpText={providerId && detail
+                      ? `密钥来源：${SECRET_SOURCE_LABELS[detail.provider.secretSource]}${detail.provider.envSecretRef ? `\n兼容 Env Secret Ref：${detail.provider.envSecretRef}` : ""}`
+                      : undefined}
+                  />
                   {providerId && detail ? (
                     <ProviderSecretDisplay
                       providerId={providerId}
@@ -419,13 +439,14 @@ export function ProviderFormSheet({
                       secretSource={detail.provider.secretSource}
                       envSecretRef={detail.provider.envSecretRef}
                       onAuthExpired={onAuthExpired}
+                      showSecretMeta={false}
                     />
                   ) : (
                     <p className="text-sm text-muted-foreground">新建 Provider 时请直接填写下方 API Key。</p>
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="provider-apiKey">新 API Key</Label>
+                  <AdminFieldLabel htmlFor="provider-apiKey" label="新 API Key" required={!providerId} />
                   <div className="flex items-center gap-2">
                     <Input
                       id="provider-apiKey"
@@ -451,15 +472,15 @@ export function ProviderFormSheet({
 
               <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
                 <div className="space-y-1.5">
-                  <Label htmlFor="provider-envSecretRef">兼容 Env Secret Ref</Label>
+                  <AdminFieldLabel htmlFor="provider-envSecretRef" label="兼容 Env Secret Ref" />
                   <Input id="provider-envSecretRef" value={form.envSecretRef} onChange={(event) => setForm((prev) => ({ ...prev, envSecretRef: event.target.value }))} placeholder="例如：SILICONFLOW_API_KEY（可留空）" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="provider-timeoutMs">超时 ms</Label>
+                  <AdminFieldLabel htmlFor="provider-timeoutMs" label="超时 ms" required />
                   <Input id="provider-timeoutMs" type="number" value={String(form.timeoutMs)} onChange={(event) => setForm((prev) => ({ ...prev, timeoutMs: Number(event.target.value) || 0 }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="provider-retryCount">重试次数</Label>
+                  <AdminFieldLabel htmlFor="provider-retryCount" label="重试次数" required />
                   <Input id="provider-retryCount" type="number" value={String(form.retryCount)} onChange={(event) => setForm((prev) => ({ ...prev, retryCount: Number(event.target.value) || 0 }))} />
                 </div>
               </div>
@@ -480,12 +501,16 @@ export function ProviderFormSheet({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="provider-metadata">Metadata JSON</Label>
+                <AdminFieldLabel
+                  htmlFor="provider-metadata"
+                  label="Metadata JSON"
+                  helpText={`可留空，默认填 {} 即可。\n仅在需要自定义“连接测试探测方式”时再填写，例如：\n{"connectionTest":{"path":"/text/chatcompletion_v2","method":"POST","body":{},"successHttpStatuses":[200,400]}}`}
+                />
                 <Textarea id="provider-metadata" rows={8} value={form.metadataText} onChange={(event) => setForm((prev) => ({ ...prev, metadataText: event.target.value }))} />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="provider-changeReason">变更原因</Label>
+                <AdminFieldLabel htmlFor="provider-changeReason" label="变更原因" required />
                 <Textarea id="provider-changeReason" rows={4} value={form.changeReason} onChange={(event) => setForm((prev) => ({ ...prev, changeReason: event.target.value }))} placeholder="例如：新增备用 provider / 调整 timeout 策略" />
               </div>
             </div>

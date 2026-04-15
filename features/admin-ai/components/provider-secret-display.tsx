@@ -24,6 +24,7 @@ type ProviderSecretDisplayProps = {
   secretSource: AdminAIProviderSecretSource
   envSecretRef: string | null
   onAuthExpired?: () => void
+  showSecretMeta?: boolean
 }
 
 export function ProviderSecretDisplay({
@@ -32,6 +33,7 @@ export function ProviderSecretDisplay({
   secretSource,
   envSecretRef,
   onAuthExpired,
+  showSecretMeta = true,
 }: ProviderSecretDisplayProps) {
   const toast = useAppToast()
   const [revealedSecret, setRevealedSecret] = useState<string | null>(null)
@@ -89,10 +91,12 @@ export function ProviderSecretDisplay({
           {revealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </Button>
       </div>
-      <div className="space-y-1 text-xs text-muted-foreground">
-        <p>密钥来源：{SECRET_SOURCE_LABELS[secretSource]}</p>
-        {envSecretRef ? <p>兼容 Env Secret Ref：{envSecretRef}</p> : null}
-      </div>
+      {showSecretMeta ? (
+        <div className="space-y-1 text-xs text-muted-foreground">
+          <p>密钥来源：{SECRET_SOURCE_LABELS[secretSource]}</p>
+          {envSecretRef ? <p>兼容 Env Secret Ref：{envSecretRef}</p> : null}
+        </div>
+      ) : null}
     </div>
   )
 }

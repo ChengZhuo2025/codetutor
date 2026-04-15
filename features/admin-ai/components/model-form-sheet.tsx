@@ -14,7 +14,6 @@ import type {
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Sheet,
   SheetContent,
@@ -31,6 +30,7 @@ import {
 } from "@/lib/api/admin-bff-client"
 import { adminAiModelBffDetailUrl } from "@/features/admin-ai/lib/model-admin-urls"
 import { prettyJson, safeJsonParse } from "@/features/admin-ai/lib/view-model"
+import { AdminFieldLabel } from "./admin-field-label"
 
 /** 与抽屉内 Input / select 同系：底色与边框一致，保持扁平化样式 */
 const MODEL_BOOL_TILE_CLASS =
@@ -305,7 +305,7 @@ export function ModelFormSheet({
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="model-providerCode">Provider</Label>
+                  <AdminFieldLabel htmlFor="model-providerCode" label="Provider" required />
                   <select id="model-providerCode" value={form.providerCode} onChange={(event) => setForm((prev) => ({ ...prev, providerCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                     <option value="">请选择 Provider</option>
                     {providers?.items.map((item) => (
@@ -314,30 +314,30 @@ export function ModelFormSheet({
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="model-code">Code</Label>
+                  <AdminFieldLabel htmlFor="model-code" label="Code" required />
                   <Input id="model-code" value={form.code} onChange={(event) => setForm((prev) => ({ ...prev, code: event.target.value }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="model-displayName">展示名</Label>
+                  <AdminFieldLabel htmlFor="model-displayName" label="展示名" required />
                   <Input id="model-displayName" value={form.displayName} onChange={(event) => setForm((prev) => ({ ...prev, displayName: event.target.value }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="model-modelName">真实模型名</Label>
+                  <AdminFieldLabel htmlFor="model-modelName" label="真实模型名" required />
                   <Input id="model-modelName" value={form.modelName} onChange={(event) => setForm((prev) => ({ ...prev, modelName: event.target.value }))} />
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="model-maxContextTokens">最大上下文</Label>
+                  <AdminFieldLabel htmlFor="model-maxContextTokens" label="最大上下文" required />
                   <Input id="model-maxContextTokens" type="number" value={String(form.maxContextTokens)} onChange={(event) => setForm((prev) => ({ ...prev, maxContextTokens: Number(event.target.value) || 0 }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="model-defaultMaxOutputTokens">默认输出上限</Label>
+                  <AdminFieldLabel htmlFor="model-defaultMaxOutputTokens" label="默认输出上限" required />
                   <Input id="model-defaultMaxOutputTokens" type="number" value={String(form.defaultMaxOutputTokens)} onChange={(event) => setForm((prev) => ({ ...prev, defaultMaxOutputTokens: Number(event.target.value) || 0 }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="model-recommendedTemperature">推荐温度</Label>
+                  <AdminFieldLabel htmlFor="model-recommendedTemperature" label="推荐温度" />
                   <Input id="model-recommendedTemperature" type="number" step="0.1" value={String(form.recommendedTemperature)} onChange={(event) => setForm((prev) => ({ ...prev, recommendedTemperature: Number(event.target.value) || 0 }))} />
                 </div>
               </div>
@@ -382,17 +382,26 @@ export function ModelFormSheet({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="model-pricingMetadata">Pricing Metadata JSON</Label>
+                <AdminFieldLabel htmlFor="model-pricingMetadata" label="Pricing Metadata JSON" />
                 <Textarea id="model-pricingMetadata" rows={6} value={form.pricingMetadataText} onChange={(event) => setForm((prev) => ({ ...prev, pricingMetadataText: event.target.value }))} />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="model-metadata">Metadata JSON</Label>
+                <AdminFieldLabel
+                  htmlFor="model-metadata"
+                  label="Metadata JSON"
+                  helpText="可留空，默认填 {}。仅在需要记录模型额外能力标签或连通性策略时填写。"
+                />
                 <Textarea id="model-metadata" rows={6} value={form.metadataText} onChange={(event) => setForm((prev) => ({ ...prev, metadataText: event.target.value }))} />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="model-changeReason">变更原因</Label>
+                <AdminFieldLabel
+                  htmlFor="model-changeReason"
+                  label="变更原因"
+                  required
+                  helpText="用于审计记录。建议写明本次改动目的，例如“调整默认输出上限以降低超时率”。"
+                />
                 <Textarea id="model-changeReason" rows={4} value={form.changeReason} onChange={(event) => setForm((prev) => ({ ...prev, changeReason: event.target.value }))} />
               </div>
             </div>

@@ -207,6 +207,7 @@ export type AdminAIModelListItem = {
   modelId: string
   providerId: string
   providerCode: string
+  providerName: string
   code: string
   displayName: string
   modelName: string
@@ -317,7 +318,9 @@ export type AdminAIAgentListItem = {
   name: string
   scenarioType: AdminAIAgentScenarioType
   providerCode: string
+  providerName: string
   modelCode: string
+  modelDisplayName: string
   streamEnabled: boolean
   isActive: boolean
   bindingCount: number
@@ -437,7 +440,9 @@ export type AdminAIInvocationListItem = {
   sessionId: string
   userId: string
   providerCode: string
+  providerName: string
   modelCode: string
+  modelDisplayName: string
   agentCode: string
   status: AdminAIInvocationStatus
   streamEnabled: boolean

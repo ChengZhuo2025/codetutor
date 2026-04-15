@@ -176,7 +176,7 @@ export function ModelManagement() {
                             </div>
                           </td>
                           <td className="px-4 py-4 align-top">
-                            <p className="text-sm text-foreground">{item.providerCode}</p>
+                            <p className="text-sm text-foreground">{item.providerName}</p>
                             <p className="mt-1 break-all text-xs text-muted-foreground">{item.modelName}</p>
                           </td>
                           <td className="px-4 py-4 align-top">

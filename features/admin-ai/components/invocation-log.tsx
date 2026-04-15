@@ -248,8 +248,8 @@ export function InvocationLog() {
                               <p className="text-sm text-foreground">{item.agentCode}</p>
                             </td>
                             <td className="px-4 py-4 align-top">
-                              <p className="text-sm text-foreground">{item.providerCode}</p>
-                              <p className="mt-1 text-xs text-muted-foreground">{item.modelCode}</p>
+                              <p className="text-sm text-foreground">{item.providerName}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">{item.modelDisplayName}</p>
                             </td>
                             <td className="px-4 py-4 align-top">
                               <p className="text-sm text-foreground">{formatNumber(item.totalTokens)}</p>

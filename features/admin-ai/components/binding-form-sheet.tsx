@@ -9,7 +9,6 @@ import type {
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Sheet,
   SheetContent,
@@ -30,6 +29,7 @@ import {
   prettyJson,
   safeJsonParse,
 } from "@/features/admin-ai/lib/view-model"
+import { AdminFieldLabel } from "./admin-field-label"
 
 const EMPTY_FORM = {
   agentCode: "",
@@ -173,7 +173,7 @@ export function BindingFormSheet({
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="binding-agentCode">Agent</Label>
+                <AdminFieldLabel htmlFor="binding-agentCode" label="Agent" required />
                 <select id="binding-agentCode" value={form.agentCode} onChange={(event) => setForm((prev) => ({ ...prev, agentCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                   <option value="">请选择 Agent</option>
                   {options?.agentOptions?.map((item) => (
@@ -182,7 +182,7 @@ export function BindingFormSheet({
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="binding-interactionType">交互类型</Label>
+                <AdminFieldLabel htmlFor="binding-interactionType" label="交互类型" required />
                 <select
                   id="binding-interactionType"
                   value={form.interactionType}
@@ -197,7 +197,7 @@ export function BindingFormSheet({
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="binding-toolId">Tool</Label>
+                <AdminFieldLabel htmlFor="binding-toolId" label="Tool" />
                 <select id="binding-toolId" value={form.toolId} onChange={(event) => setForm((prev) => ({ ...prev, toolId: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                   <option value="">全部 Tool</option>
                   {options?.toolOptions?.map((item) => (
@@ -206,7 +206,7 @@ export function BindingFormSheet({
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="binding-pathId">Path</Label>
+                <AdminFieldLabel htmlFor="binding-pathId" label="Path" />
                 <select id="binding-pathId" value={form.pathId} onChange={(event) => setForm((prev) => ({ ...prev, pathId: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                   <option value="">全部 Path</option>
                   {options?.pathOptions?.map((item) => (
@@ -215,7 +215,7 @@ export function BindingFormSheet({
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="binding-learningLevel">学习等级</Label>
+                <AdminFieldLabel htmlFor="binding-learningLevel" label="学习等级" />
                 <select id="binding-learningLevel" value={form.learningLevel} onChange={(event) => setForm((prev) => ({ ...prev, learningLevel: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                   <option value="">全部等级</option>
                   {LEARNING_LEVEL_OPTIONS.map((item) => (
@@ -224,7 +224,7 @@ export function BindingFormSheet({
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="binding-selectionMode">学习模式</Label>
+                <AdminFieldLabel htmlFor="binding-selectionMode" label="学习模式" />
                 <select id="binding-selectionMode" value={form.selectionMode} onChange={(event) => setForm((prev) => ({ ...prev, selectionMode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                   <option value="">全部模式</option>
                   {SELECTION_MODE_OPTIONS.map((item) => (
@@ -233,11 +233,11 @@ export function BindingFormSheet({
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="binding-stepNo">Step No</Label>
+                <AdminFieldLabel htmlFor="binding-stepNo" label="Step No" />
                 <Input id="binding-stepNo" value={form.stepNo} onChange={(event) => setForm((prev) => ({ ...prev, stepNo: event.target.value }))} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="binding-priority">Priority</Label>
+                <AdminFieldLabel htmlFor="binding-priority" label="Priority" required />
                 <Input id="binding-priority" type="number" value={String(form.priority)} onChange={(event) => setForm((prev) => ({ ...prev, priority: Number(event.target.value) || 0 }))} />
               </div>
             </div>
@@ -246,11 +246,11 @@ export function BindingFormSheet({
               启用
             </label>
             <div className="space-y-1.5">
-              <Label htmlFor="binding-metadata">Metadata JSON</Label>
+              <AdminFieldLabel htmlFor="binding-metadata" label="Metadata JSON" helpText="可留空，默认填 {}。用于记录该命中规则的补充信息。" />
               <Textarea id="binding-metadata" rows={6} value={form.metadataText} onChange={(event) => setForm((prev) => ({ ...prev, metadataText: event.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="binding-changeReason">变更原因</Label>
+              <AdminFieldLabel htmlFor="binding-changeReason" label="变更原因" required helpText="用于审计记录，建议写明本次规则调整目的。" />
               <Textarea id="binding-changeReason" rows={4} value={form.changeReason} onChange={(event) => setForm((prev) => ({ ...prev, changeReason: event.target.value }))} />
             </div>
           </div>

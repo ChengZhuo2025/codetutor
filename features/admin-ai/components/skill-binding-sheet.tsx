@@ -9,7 +9,6 @@ import type {
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Sheet,
   SheetContent,
@@ -25,6 +24,7 @@ import {
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
 import { prettyJson, safeJsonParse } from "@/features/admin-ai/lib/view-model"
+import { AdminFieldLabel } from "./admin-field-label"
 
 const EMPTY_FORM = {
   agentCode: "",
@@ -137,7 +137,7 @@ export function SkillBindingSheet({
         <div className="flex-1 overflow-y-auto px-6 py-5">
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="skill-binding-agentCode">Agent</Label>
+              <AdminFieldLabel htmlFor="skill-binding-agentCode" label="Agent" required />
               <select id="skill-binding-agentCode" value={form.agentCode} onChange={(event) => setForm((prev) => ({ ...prev, agentCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                 <option value="">请选择 Agent</option>
                 {options?.agentOptions?.map((item) => (
@@ -146,7 +146,7 @@ export function SkillBindingSheet({
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="skill-binding-skillCode">Skill</Label>
+              <AdminFieldLabel htmlFor="skill-binding-skillCode" label="Skill" required />
               <select id="skill-binding-skillCode" value={form.skillCode} onChange={(event) => setForm((prev) => ({ ...prev, skillCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                 <option value="">请选择 Skill</option>
                 {options?.skillOptions?.map((item) => (
@@ -156,11 +156,11 @@ export function SkillBindingSheet({
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="skill-binding-priority">Priority</Label>
+                <AdminFieldLabel htmlFor="skill-binding-priority" label="Priority" required />
                 <Input id="skill-binding-priority" type="number" value={String(form.priority)} onChange={(event) => setForm((prev) => ({ ...prev, priority: Number(event.target.value) || 0 }))} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="skill-binding-contextBudgetTokens">Context Budget Tokens</Label>
+                <AdminFieldLabel htmlFor="skill-binding-contextBudgetTokens" label="Context Budget Tokens" />
                 <Input id="skill-binding-contextBudgetTokens" type="number" value={String(form.contextBudgetTokens)} onChange={(event) => setForm((prev) => ({ ...prev, contextBudgetTokens: Number(event.target.value) || 0 }))} />
               </div>
             </div>
@@ -175,11 +175,11 @@ export function SkillBindingSheet({
               </label>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="skill-binding-metadata">Metadata JSON</Label>
+              <AdminFieldLabel htmlFor="skill-binding-metadata" label="Metadata JSON" helpText="可留空，默认填 {}。用于记录 Skill 绑定的附加信息。" />
               <Textarea id="skill-binding-metadata" rows={6} value={form.metadataText} onChange={(event) => setForm((prev) => ({ ...prev, metadataText: event.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="skill-binding-changeReason">变更原因</Label>
+              <AdminFieldLabel htmlFor="skill-binding-changeReason" label="变更原因" required helpText="用于审计记录，建议写明本次绑定调整原因。" />
               <Textarea id="skill-binding-changeReason" rows={4} value={form.changeReason} onChange={(event) => setForm((prev) => ({ ...prev, changeReason: event.target.value }))} />
             </div>
           </div>

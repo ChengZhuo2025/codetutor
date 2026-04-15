@@ -10,7 +10,6 @@ import type {
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Sheet,
   SheetContent,
@@ -30,6 +29,7 @@ import {
   prettyJson,
   safeJsonParse,
 } from "@/features/admin-ai/lib/view-model"
+import { AdminFieldLabel } from "./admin-field-label"
 
 const EMPTY_FORM = {
   code: "",
@@ -246,15 +246,15 @@ export function AgentFormSheet({
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="agent-code">Code</Label>
+                  <AdminFieldLabel htmlFor="agent-code" label="Code" required />
                   <Input id="agent-code" value={form.code} onChange={(event) => setForm((prev) => ({ ...prev, code: event.target.value }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="agent-name">名称</Label>
+                  <AdminFieldLabel htmlFor="agent-name" label="名称" required />
                   <Input id="agent-name" value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="agent-scenarioType">场景类型</Label>
+                  <AdminFieldLabel htmlFor="agent-scenarioType" label="场景类型" required />
                   <select id="agent-scenarioType" value={form.scenarioType} onChange={(event) => setForm((prev) => ({ ...prev, scenarioType: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                     {scenarioTypeOptions.map((item) => (
                       <option key={item} value={item}>
@@ -264,7 +264,7 @@ export function AgentFormSheet({
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="agent-defaultProviderCode">默认 Provider</Label>
+                  <AdminFieldLabel htmlFor="agent-defaultProviderCode" label="默认 Provider" required />
                   <select id="agent-defaultProviderCode" value={form.defaultProviderCode} onChange={(event) => setForm((prev) => ({ ...prev, defaultProviderCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                     <option value="">请选择</option>
                     {providers?.items.map((item) => (
@@ -273,7 +273,7 @@ export function AgentFormSheet({
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="agent-defaultModelCode">默认 Model</Label>
+                  <AdminFieldLabel htmlFor="agent-defaultModelCode" label="默认 Model" required />
                   <select id="agent-defaultModelCode" value={form.defaultModelCode} onChange={(event) => setForm((prev) => ({ ...prev, defaultModelCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
                     <option value="">请选择</option>
                     {models?.items.map((item) => (
@@ -282,37 +282,46 @@ export function AgentFormSheet({
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="agent-description">描述</Label>
+                  <AdminFieldLabel htmlFor="agent-description" label="描述" />
                   <Input id="agent-description" value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} />
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="agent-contextMessageLimit">上下文消息上限</Label>
+                  <AdminFieldLabel htmlFor="agent-contextMessageLimit" label="上下文消息上限" required />
                   <Input id="agent-contextMessageLimit" type="number" value={String(form.contextMessageLimit)} onChange={(event) => setForm((prev) => ({ ...prev, contextMessageLimit: Number(event.target.value) || 0 }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="agent-maxOutputTokens">最大输出 Tokens</Label>
+                  <AdminFieldLabel htmlFor="agent-maxOutputTokens" label="最大输出 Tokens" required />
                   <Input id="agent-maxOutputTokens" type="number" value={String(form.maxOutputTokens)} onChange={(event) => setForm((prev) => ({ ...prev, maxOutputTokens: Number(event.target.value) || 0 }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="agent-temperature">Temperature</Label>
+                  <AdminFieldLabel htmlFor="agent-temperature" label="Temperature" required />
                   <Input id="agent-temperature" type="number" step="0.1" value={String(form.temperature)} onChange={(event) => setForm((prev) => ({ ...prev, temperature: Number(event.target.value) || 0 }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="agent-topP">Top P</Label>
+                  <AdminFieldLabel htmlFor="agent-topP" label="Top P" />
                   <Input id="agent-topP" type="number" step="0.05" value={String(form.topP)} onChange={(event) => setForm((prev) => ({ ...prev, topP: Number(event.target.value) || 0 }))} />
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="agent-systemPromptTemplate">System Prompt</Label>
+                <AdminFieldLabel
+                  htmlFor="agent-systemPromptTemplate"
+                  label="System Prompt"
+                  required
+                  helpText="系统级提示词，定义 Agent 的稳定行为边界与输出风格。"
+                />
                   <Textarea id="agent-systemPromptTemplate" rows={10} value={form.systemPromptTemplate} onChange={(event) => setForm((prev) => ({ ...prev, systemPromptTemplate: event.target.value }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="agent-developerPromptTemplate">Developer Prompt</Label>
+                  <AdminFieldLabel
+                    htmlFor="agent-developerPromptTemplate"
+                    label="Developer Prompt"
+                    helpText="可选补充提示词。适合放可迭代策略，不建议覆盖系统级约束。"
+                  />
                   <Textarea id="agent-developerPromptTemplate" rows={10} value={form.developerPromptTemplate} onChange={(event) => setForm((prev) => ({ ...prev, developerPromptTemplate: event.target.value }))} />
                 </div>
               </div>
@@ -329,12 +338,21 @@ export function AgentFormSheet({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="agent-metadata">Metadata JSON</Label>
+                <AdminFieldLabel
+                  htmlFor="agent-metadata"
+                  label="Metadata JSON"
+                  helpText="可留空，默认填 {}。用于记录 Agent 的附加标签或调度提示。"
+                />
                 <Textarea id="agent-metadata" rows={6} value={form.metadataText} onChange={(event) => setForm((prev) => ({ ...prev, metadataText: event.target.value }))} />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="agent-changeReason">变更原因</Label>
+                <AdminFieldLabel
+                  htmlFor="agent-changeReason"
+                  label="变更原因"
+                  required
+                  helpText="用于审计记录。建议写明改动目的，例如“优化教学场景 system prompt”。"
+                />
                 <Textarea id="agent-changeReason" rows={4} value={form.changeReason} onChange={(event) => setForm((prev) => ({ ...prev, changeReason: event.target.value }))} />
               </div>
             </div>

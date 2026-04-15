@@ -202,8 +202,8 @@ export function AgentManagement() {
                             <p className="text-sm text-foreground">{getAdminAIAgentScenarioTypeLabel(item.scenarioType)}</p>
                           </td>
                           <td className="px-4 py-4 align-top">
-                            <p className="text-sm text-foreground">{item.providerCode}</p>
-                            <p className="mt-1 text-xs text-muted-foreground">{item.modelCode}</p>
+                            <p className="text-sm text-foreground">{item.providerName}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{item.modelDisplayName}</p>
                           </td>
                           <td className="px-4 py-4 align-top">
                             <p className="text-sm text-foreground">{item.bindingCount} 条规则</p>

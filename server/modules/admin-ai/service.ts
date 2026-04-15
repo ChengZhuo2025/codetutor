@@ -586,10 +586,12 @@ function mapModelListItem(
   providerById: Map<string, ProviderRow>,
   agents: AgentRow[],
 ): AdminAIModelListItem {
+  const provider = providerById.get(row.provider_id)
   return {
     modelId: row.id,
     providerId: row.provider_id,
-    providerCode: providerById.get(row.provider_id)?.code ?? "",
+    providerCode: provider?.code ?? "",
+    providerName: provider?.name ?? provider?.code ?? "",
     code: row.code,
     displayName: row.display_name,
     modelName: row.model_name,
@@ -662,14 +664,20 @@ function mapAgentListItem(
   row: AgentRow,
   bindings: AgentBindingRow[],
   skillBindings: AgentSkillBindingRow[],
+  providerByCode: Map<string, ProviderRow>,
+  modelByCode: Map<string, ModelRow>,
 ): AdminAIAgentListItem {
+  const provider = providerByCode.get(row.default_provider_code)
+  const model = modelByCode.get(row.default_model_code)
   return {
     agentId: row.id,
     code: row.code,
     name: row.name,
     scenarioType: row.scenario_type,
     providerCode: row.default_provider_code,
+    providerName: provider?.name ?? row.default_provider_code,
     modelCode: row.default_model_code,
+    modelDisplayName: model?.display_name ?? row.default_model_code,
     streamEnabled: row.stream_enabled,
     isActive: row.is_active,
     bindingCount: bindings.filter((binding) => binding.agent_code === row.code).length,
@@ -701,13 +709,21 @@ function mapSkillListItem(
   }
 }
 
-function mapInvocationListItem(row: InvocationRow): AdminAIInvocationListItem {
+function mapInvocationListItem(
+  row: InvocationRow,
+  providerByCode: Map<string, ProviderRow>,
+  modelByCode: Map<string, ModelRow>,
+): AdminAIInvocationListItem {
+  const provider = providerByCode.get(row.provider_code)
+  const model = modelByCode.get(row.model_code)
   return {
     invocationId: row.id,
     sessionId: row.session_id,
     userId: row.user_id,
     providerCode: row.provider_code,
+    providerName: provider?.name ?? row.provider_code,
     modelCode: row.model_code,
+    modelDisplayName: model?.display_name ?? row.model_code,
     agentCode: row.agent_code,
     status: row.status,
     streamEnabled: row.stream_enabled,
@@ -1131,9 +1147,111 @@ function normalizeProviderBaseUrl(baseUrl: string) {
   return baseUrl.trim().replace(/\/+$/, "")
 }
 
+type ProviderConnectionProbeConfig = {
+  path: string
+  method: "GET" | "POST"
+  body?: Record<string, unknown>
+  successStatuses?: number[]
+}
+
 function readMetaString(meta: Record<string, unknown>, key: string): string | undefined {
   const value = meta[key]
   return typeof value === "string" && value.trim() ? value.trim() : undefined
+}
+
+function readConnectionProbeConfigFromMetadata(meta: Record<string, unknown>): ProviderConnectionProbeConfig | null {
+  const nested = meta.connectionTest
+  if (!nested || typeof nested !== "object" || Array.isArray(nested)) {
+    return null
+  }
+
+  const config = nested as Record<string, unknown>
+  const path = readMetaString(config, "path")
+  if (!path) {
+    return null
+  }
+
+  const method = readMetaString(config, "method")?.toUpperCase() === "POST" ? "POST" : "GET"
+  const body = config.body
+  const bodyObject =
+    body && typeof body === "object" && !Array.isArray(body)
+      ? (body as Record<string, unknown>)
+      : undefined
+  const rawStatuses = config.successHttpStatuses
+  const statusItems = (Array.isArray(rawStatuses) ? rawStatuses : [])
+    .map((item) => typeof item === "number" ? item : Number.parseInt(String(item), 10))
+    .filter((value) => Number.isFinite(value) && value >= 100 && value <= 599)
+
+  return {
+    path,
+    method,
+    body: method === "POST" ? bodyObject : undefined,
+    successStatuses: statusItems.length > 0 ? statusItems : undefined,
+  }
+}
+
+function inferProviderConnectionProbePreset(
+  provider: Pick<ProviderRow, "provider_type" | "base_url" | "metadata">,
+): ProviderConnectionProbeConfig | null {
+  const metaConfig = readConnectionProbeConfigFromMetadata(provider.metadata ?? {})
+  if (metaConfig) {
+    return metaConfig
+  }
+
+  if (provider.provider_type !== "openai_compatible") {
+    return null
+  }
+
+  const host = provider.base_url.toLowerCase()
+  if (host.includes("minimaxi.com")) {
+    return {
+      path: "/text/chatcompletion_v2",
+      method: "POST",
+      body: {},
+      // MinMax 该接口在缺少业务参数时常返回 400；该状态可证明鉴权与网关连通。
+      successStatuses: [200, 400],
+    }
+  }
+
+  return null
+}
+
+function normalizeProbePath(path: string): string {
+  const trimmed = path.trim()
+  if (!trimmed) {
+    return "/models"
+  }
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`
+}
+
+function buildProviderProbeHeaders(input: {
+  providerType: AdminAIProviderTestConnectionRequest["providerType"]
+  authMode: AdminAIProviderTestConnectionRequest["authMode"]
+  secret: string
+  method: "GET" | "POST"
+}) {
+  const headers = new Headers()
+  if (input.providerType === "anthropic") {
+    headers.set("x-api-key", input.secret)
+    headers.set("anthropic-version", "2023-06-01")
+  } else if (input.authMode === "bearer") {
+    headers.set("Authorization", `Bearer ${input.secret}`)
+  } else {
+    headers.set("x-api-key", input.secret)
+  }
+
+  if (input.method === "POST") {
+    headers.set("Content-Type", "application/json")
+  }
+
+  return headers
+}
+
+function isSuccessStatus(status: number, accepted?: number[]): boolean {
+  if (accepted && accepted.length > 0) {
+    return accepted.includes(status)
+  }
+  return status >= 200 && status < 300
 }
 
 function readConnectionTestMode(meta: Record<string, unknown>): string | undefined {
@@ -1466,63 +1584,63 @@ async function probeProviderModelsEndpoint(input: {
   authMode: AdminAIProviderTestConnectionRequest["authMode"]
   secret: string
   timeoutMs: number
+  path?: string
+  method?: "GET" | "POST"
+  body?: Record<string, unknown>
+  successStatuses?: number[]
 }): Promise<AdminAIProviderTestConnectionResponseData> {
   const cappedMs = Math.min(30_000, Math.max(3_000, input.timeoutMs))
-  const modelsUrl = `${normalizeProviderBaseUrl(input.baseUrl)}/models`
+  const path = normalizeProbePath(input.path ?? "/models")
+  const probeUrl = `${normalizeProviderBaseUrl(input.baseUrl)}${path}`
   const controller = new AbortController()
   const timer = setTimeout(() => {
     controller.abort()
   }, cappedMs)
 
   try {
-    const headers = new Headers()
-    if (input.providerType === "anthropic") {
-      headers.set("x-api-key", input.secret)
-      headers.set("anthropic-version", "2023-06-01")
-    } else if (input.authMode === "bearer") {
-      headers.set("Authorization", `Bearer ${input.secret}`)
-    } else {
-      headers.set("x-api-key", input.secret)
-    }
+    const method = input.method ?? "GET"
+    const headers = buildProviderProbeHeaders({
+      providerType: input.providerType,
+      authMode: input.authMode,
+      secret: input.secret,
+      method,
+    })
 
-    const response = await fetch(modelsUrl, {
-      method: "GET",
+    const response = await fetch(probeUrl, {
+      method,
       headers,
+      ...(method === "POST" ? { body: JSON.stringify(input.body ?? {}) } : {}),
       signal: controller.signal,
     })
 
-    const bodyText = await response.text()
-
-    if (!response.ok) {
+    if (!isSuccessStatus(response.status, input.successStatuses)) {
       return {
         success: false,
         message: "连接失败",
         httpStatus: response.status,
-        testedPath: "/models",
+        testedPath: path,
       }
     }
-
-    void bodyText
 
     return {
       success: true,
       message: "连接成功",
       httpStatus: response.status,
-      testedPath: "/models",
+      testedPath: path,
     }
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       return {
         success: false,
         message: "连接超时",
-        testedPath: "/models",
+        testedPath: path,
       }
     }
 
     return {
       success: false,
       message: "连接失败",
-      testedPath: "/models",
+      testedPath: path,
     }
   } finally {
     clearTimeout(timer)
@@ -1559,6 +1677,24 @@ export async function testAdminAIProviderConnection(
       "VALIDATION_FAILED",
       "未找到可用 API Key：请在「新 API Key」中填写用于测试，或确保数据库/环境变量中已配置密钥。",
     )
+  }
+
+  const presetProbe = inferProviderConnectionProbePreset(row)
+  if (presetProbe) {
+    const presetResult = await probeProviderModelsEndpoint({
+      providerType: input.providerType,
+      baseUrl: input.baseUrl,
+      authMode: input.authMode,
+      secret,
+      timeoutMs: input.timeoutMs,
+      path: presetProbe.path,
+      method: presetProbe.method,
+      body: presetProbe.body,
+      successStatuses: presetProbe.successStatuses,
+    })
+    if (presetResult.success) {
+      return presetResult
+    }
   }
 
   return probeProviderModelsEndpoint({
@@ -1761,7 +1897,13 @@ export async function getAdminAIModelList(filters: {
   const filtered = models
     .map((row) => mapModelListItem(row, providerById, agents))
     .filter((row) =>
-      filterByKeyword(filters.keyword, [row.code, row.displayName, row.modelName, row.providerCode]),
+      filterByKeyword(filters.keyword, [
+        row.code,
+        row.displayName,
+        row.modelName,
+        row.providerCode,
+        row.providerName,
+      ]),
     )
 
   return paginate(filtered, filters.page, filters.limit)
@@ -1973,16 +2115,27 @@ export async function getAdminAIAgentList(filters: {
     scenarioType: filters.scenarioType,
   }
 
-  const [agents, bindings, skillBindings] = await Promise.all([
+  const [agents, bindings, skillBindings, providers, models] = await Promise.all([
     loadAgents(agentFilters),
     loadAgentBindings(),
     loadAgentSkillBindings(),
+    loadProviders(),
+    loadModels(),
   ])
+  const providerByCode = new Map(providers.map((row) => [row.code, row]))
+  const modelByCode = new Map(models.map((row) => [row.code, row]))
 
   const filtered = agents
-    .map((row) => mapAgentListItem(row, bindings, skillBindings))
+    .map((row) => mapAgentListItem(row, bindings, skillBindings, providerByCode, modelByCode))
     .filter((row) =>
-      filterByKeyword(filters.keyword, [row.code, row.name, row.providerCode, row.modelCode]),
+      filterByKeyword(filters.keyword, [
+        row.code,
+        row.name,
+        row.providerCode,
+        row.providerName,
+        row.modelCode,
+        row.modelDisplayName,
+      ]),
     )
 
   return paginate(filtered, filters.page, filters.limit)
@@ -2555,16 +2708,20 @@ export async function getAdminAIInvocationList(filters: {
     loadModels(),
     loadAgents(),
   ])
+  const providerByCode = new Map(providers.map((row) => [row.code, row]))
+  const modelByCode = new Map(models.map((row) => [row.code, row]))
 
   const mapped = result.rows
-    .map((row) => mapInvocationListItem(row))
+    .map((row) => mapInvocationListItem(row, providerByCode, modelByCode))
     .filter((row) =>
       filterByKeyword(filters.keyword, [
         row.invocationId,
         row.sessionId,
         row.userId,
         row.providerCode,
+        row.providerName,
         row.modelCode,
+        row.modelDisplayName,
         row.agentCode,
         row.errorCode,
       ]),
