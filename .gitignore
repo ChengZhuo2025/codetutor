@@ -9,6 +9,7 @@
 # Common ignores
 node_modules
 .next/
+next-env.d.ts
 
 # macOS metadata
 .DS_Store

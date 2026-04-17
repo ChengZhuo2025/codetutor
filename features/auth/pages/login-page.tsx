@@ -35,6 +35,12 @@ function withAuthorization(accessToken: string | null | undefined) {
 
 const WECHAT_PROVIDER = "wechat" as never
 const DOUYIN_PROVIDER = "douyin" as never
+const LEGAL_ACCEPTANCE_STORAGE_KEY = "codetutor-legal-acceptance-v1"
+
+type LegalAcceptanceRecord = {
+  acceptedAt: string
+  userAgent: string
+}
 
 async function clearBrowserAuthSession() {
   const supabase = createSupabaseBrowserClient()
@@ -55,6 +61,35 @@ export function LoginPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [oauthAvailability, setOauthAvailability] = useState<OAuthProviderAvailability | null>(null)
   const [oauthPendingProvider, setOauthPendingProvider] = useState<AuthOAuthProvider | null>(null)
+  const [agreedToLegal, setAgreedToLegal] = useState(false)
+  const [legalAcceptedAt, setLegalAcceptedAt] = useState<string | null>(null)
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(LEGAL_ACCEPTANCE_STORAGE_KEY)
+      if (!raw) return
+
+      const parsed = JSON.parse(raw) as LegalAcceptanceRecord
+      if (parsed.acceptedAt) {
+        setAgreedToLegal(true)
+        setLegalAcceptedAt(parsed.acceptedAt)
+      }
+    } catch {
+      // ignore broken local cache
+    }
+  }, [])
+
+  const persistLegalAcceptance = (acceptedAt: string) => {
+    try {
+      const payload: LegalAcceptanceRecord = {
+        acceptedAt,
+        userAgent: navigator.userAgent,
+      }
+      window.localStorage.setItem(LEGAL_ACCEPTANCE_STORAGE_KEY, JSON.stringify(payload))
+    } catch {
+      // ignore localStorage write failure
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -76,6 +111,11 @@ export function LoginPage() {
   }
 
   const handleOAuthSubmit = async (provider: AuthOAuthProvider) => {
+    if (!agreedToLegal) {
+      setErrorMessage("请先阅读并勾选同意《用户协议》和《隐私政策》。")
+      return
+    }
+
     if (!oauthProvidersReady[provider]) {
       toast.error(
         "扫码登录暂不可用",
@@ -173,6 +213,11 @@ export function LoginPage() {
   const sendCode = async () => {
     if (countdown > 0 || isSendingCode) return
 
+    if (!agreedToLegal) {
+      setErrorMessage("请先阅读并勾选同意《用户协议》和《隐私政策》。")
+      return
+    }
+
     const normalizedPhone = normalizePhoneInput(phone)
 
     if (!isValidChinaMainlandPhone(normalizedPhone)) {
@@ -228,6 +273,11 @@ export function LoginPage() {
       return
     }
 
+    if (!agreedToLegal) {
+      setErrorMessage("请先阅读并勾选同意《用户协议》和《隐私政策》。")
+      return
+    }
+
     setErrorMessage(null)
 
     startSubmitting(() => {
@@ -256,6 +306,7 @@ export function LoginPage() {
             mode,
             loginType: "phone",
             onboardingCompleted: data.onboardingCompleted,
+            legalAcceptedAt,
           })
 
           router.push(data.redirectTo)
@@ -283,6 +334,7 @@ export function LoginPage() {
         errorMessage={errorMessage}
         oauthAvailability={oauthAvailability}
         activeOAuthProvider={oauthPendingProvider}
+        agreedToLegal={agreedToLegal}
         onModeToggle={() => {
           setErrorMessage(null)
           setMode((prev) => (prev === "login" ? "register" : "login"))
@@ -295,6 +347,19 @@ export function LoginPage() {
         onSendCode={sendCode}
         onSubmit={handlePhoneSubmit}
         onOAuthSubmit={handleOAuthSubmit}
+        onAgreementChange={(checked) => {
+          setAgreedToLegal(checked)
+          setErrorMessage(null)
+
+          if (checked) {
+            const acceptedAt = new Date().toISOString()
+            setLegalAcceptedAt(acceptedAt)
+            persistLegalAcceptance(acceptedAt)
+            return
+          }
+
+          setLegalAcceptedAt(null)
+        }}
       />
     </div>
   )
