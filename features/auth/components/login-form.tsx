@@ -241,7 +241,7 @@ export function LoginForm({
       : null;
 
   return (
-    <div className="relative flex w-full flex-col items-center justify-center overflow-hidden px-6 py-8 lg:w-[40%]">
+    <div className="relative flex w-full flex-col items-center justify-center overflow-hidden px-6 py-6 lg:w-[40%]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,oklch(0.52_0.12_180/0.06),transparent_28%)] dark:bg-[radial-gradient(circle_at_top,oklch(0.78_0.15_180/0.08),transparent_28%)]" />
 
       <div className="relative z-10 w-full max-w-sm">
@@ -274,11 +274,11 @@ export function LoginForm({
           </button>
         </div>
 
-        <div className="mb-5">
+        <div className="mt-6 mb-6">
           <h1 className="text-[2rem] font-bold tracking-tight">
             {mode === "login" ? "欢迎回来" : "创建账号"}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {mode === "login"
               ? "请输入手机号验证码"
               : "使用手机号快速创建账号"}
@@ -525,7 +525,7 @@ export function LoginForm({
           })}
         </div>
 
-        <p className="mt-5 text-center text-sm text-muted-foreground">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           {mode === "login" ? "还没有账号？" : "已有账号？"}
           <button
             type="button"
@@ -536,9 +536,20 @@ export function LoginForm({
           </button>
         </p>
 
-        <p className="mt-3 text-center text-xs leading-5 text-muted-foreground/60">
+        <p className="mt-2 text-center text-xs leading-5 text-muted-foreground/60">
           未勾选协议前不可发送验证码或提交登录。
         </p>
+
+        <div className="mt-3 pt-2 border-t border-border/50 text-center">
+          <a
+            href="https://beian.miit.gov.cn"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-muted-foreground/70 hover:text-foreground transition-colors hover:underline"
+          >
+            ICP备案号: 沪ICP备2026015857号-1
+          </a>
+        </div>
       </div>
     </div>
   );

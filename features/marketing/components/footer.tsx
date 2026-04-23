@@ -123,9 +123,17 @@ export function LandingFooter() {
                 description="帮助中心内容正在建设中，你可以先通过联系我们获取人工支持。"
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              © {APP_COPYRIGHT_YEAR} {APP_NAME}. All rights reserved.
-            </p>
+            <div className="text-xs text-muted-foreground text-center md:text-right space-y-0.5">
+              <p>© {APP_COPYRIGHT_YEAR} {APP_NAME}. All rights reserved.</p>
+              <a
+                href="https://beian.miit.gov.cn"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-foreground transition-colors hover:underline"
+              >
+                沪ICP备2026015857号-1
+              </a>
+            </div>
           </div>
       </footer>
     </>
