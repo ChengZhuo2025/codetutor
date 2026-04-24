@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-PKG="${PKG:-/home/admin/app/package.tgz}"
+PKG="${PKG:-${package_download_path:-/home/admin/app/package.tgz}}"
 ROOT="${ROOT:-/var/www/code-tutor}"
 REL="${REL:-$ROOT/releases}"
 CUR="${CUR:-$ROOT/current}"
-NAME="${NAME:-code-tutor}"
+NAME="${NAME:-codetutor-web}"
 PORT="${PORT:-3000}"
 DOMAIN="${DOMAIN:-www.codetutor.cn}"
 KEEP_RELEASES="${KEEP_RELEASES:-3}"
@@ -30,14 +30,24 @@ check_http() {
   local expected="$2"
   local host_header="${3:-}"
   local code
+  local location=""
 
+  # Get status code
   if [ -n "$host_header" ]; then
     code="$(curl -sS -o /dev/null --max-time "$CURL_MAX_TIME" -H "$host_header" -w '%{http_code}' "$url" || true)"
+    location="$(curl -sS -o /dev/null --max-time "$CURL_MAX_TIME" -H "$host_header" -w '%{redirect_url}' "$url" 2>/dev/null || true)"
   else
     code="$(curl -sS -o /dev/null --max-time "$CURL_MAX_TIME" -w '%{http_code}' "$url" || true)"
+    location="$(curl -sS -o /dev/null --max-time "$CURL_MAX_TIME" -w '%{redirect_url}' "$url" 2>/dev/null || true)"
   fi
 
   if [ "$code" != "$expected" ]; then
+    echo "[DEPLOY][DEBUG] Health check failed for $url" >&2
+    echo "[DEPLOY][DEBUG]   Expected: $expected, Got: ${code:-curl_failed}" >&2
+    if [ -n "$location" ] && [ "$location" != "null" ] && [ -n "$location" ]; then
+      echo "[DEPLOY][DEBUG]   Redirects to: $location" >&2
+    fi
+    echo "[DEPLOY][DEBUG]   Tip: Check nginx config for HTTP->HTTPS or domain canonicalization redirects" >&2
     fail "health check failed: url=$url expected=$expected actual=${code:-curl_failed}"
   fi
 }
@@ -117,10 +127,13 @@ log "wait for app"
 sleep 3
 
 log "health checks"
+# Test direct to Node.js app (port $PORT)
 check_http "http://127.0.0.1:$PORT/" 200
 check_http "http://127.0.0.1:$PORT/admin/login" 200
 check_http "http://127.0.0.1:$PORT/api/auth/session" 401
-check_http "http://127.0.0.1/" 200 "Host: $DOMAIN"
+# Test with production domain header (may go through nginx proxy on port 80)
+# If this fails with 301, it usually means nginx is doing HTTP->HTTPS or www redirect
+check_http "http://127.0.0.1:$PORT/" 200 "Host: $DOMAIN"
 
 pm2 save >/dev/null
 
