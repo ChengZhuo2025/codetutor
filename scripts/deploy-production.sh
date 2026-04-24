@@ -120,7 +120,8 @@ if ! command -v pm2 >/dev/null; then
 fi
 
 log "restart pm2 app"
-pm2 delete "$NAME" >/dev/null 2>&1 || true
+# Clean up both current and legacy process names to prevent duplicates during name migration
+pm2 delete "$NAME" "code-tutor" "codetutor" >/dev/null 2>&1 || true
 pm2 start bash --name "$NAME" -- -lc "cd '$CUR' && export NODE_ENV=production PORT='$PORT' && exec pnpm start"
 
 log "wait for app"
