@@ -1556,9 +1556,12 @@ export function SystemSettings() {
                             {channel.qrImageUrl ? (
                               <div className="relative w-22 h-22 border border-border rounded overflow-hidden bg-white">
                                 <Image
-                                  src={channel.qrImageUrl}
+                                  src={channel.qrImageUrl!}
                                   alt="QR Preview"
+                                  width={88}
+                                  height={88}
                                   className="w-full h-full object-contain p-1"
+                                  unoptimized
                                 />
                               </div>
                             ) : (
@@ -1727,8 +1730,11 @@ export function SystemSettings() {
                           <div className="mt-3 pt-3 border-t">
                             <Image
                               src={ch.qrImageUrl}
-                              alt={ch.qrLabel}
+                              alt={ch.qrLabel || "QR Code"}
+                              width={88}
+                              height={88}
                               className="w-22 h-22 object-contain mx-auto rounded border border-border bg-white p-1"
+                              unoptimized
                             />
                           </div>
                         )}

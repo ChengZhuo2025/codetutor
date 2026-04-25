@@ -105,7 +105,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
           qrSeed: 13,
           icon: MessageCircle,
           accentClassName: "text-brand",
-          badgeClassName: "border-brand/20 bg-brand/10 text-brand",
+          badgeClassName: "text-brand",
           iconPanelClassName: "bg-brand/12 text-brand",
         },
         {
@@ -117,7 +117,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
           qrSeed: 29,
           icon: Smartphone,
           accentClassName: "text-chart-3",
-          badgeClassName: "border-chart-3/20 bg-chart-3/10 text-chart-3",
+          badgeClassName: "text-chart-3",
           iconPanelClassName: "bg-chart-3/12 text-chart-3",
         },
       ]
@@ -132,11 +132,12 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
         summary: ch.summary,
         qrLabel: ch.qrLabel,
         qrSeed: ch.qrSeed || (isWechat ? 13 : 29),
+        qrImageUrl: ch.qrImageUrl || null, // real uploaded QR (takes precedence)
         icon: isWechat ? MessageCircle : Smartphone,
         accentClassName: isWechat ? "text-brand" : "text-chart-3",
         badgeClassName: isWechat
-          ? "border-brand/20 bg-brand/10 text-brand"
-          : "border-chart-3/20 bg-chart-3/10 text-chart-3",
+          ? "text-brand"
+          : "text-chart-3",
         iconPanelClassName: isWechat
           ? "bg-brand/12 text-brand"
           : "bg-chart-3/12 text-chart-3",
@@ -271,18 +272,18 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                               </div>
                               <div>
                                 <div
-                                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${channel.badgeClassName}`}
+                                  className={`inline-flex text-sm font-semibold ${channel.badgeClassName}`}
                                 >
                                   {channel.title}
                                 </div>
-                                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                                <p className="text-sm leading-6 text-muted-foreground">
                                   {channel.summary}
                                 </p>
                               </div>
                             </div>
                           </div>
 
-                          <div className="mt-4 flex items-center justify-between gap-3 rounded-[12px] border border-border bg-muted/50 px-4 py-3 dark:border-white/8 dark:bg-black/10">
+                          <div className="mt-4 flex items-center justify-between gap-3 rounded-[12px] border border-border bg-muted/50 p-4 dark:border-white/8 dark:bg-black/10">
                             <div className="min-w-0">
                               <p className="truncate text-sm font-semibold text-foreground">
                                 {channel.maskedHandle}
