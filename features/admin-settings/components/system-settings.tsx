@@ -1505,10 +1505,7 @@ export function SystemSettings() {
                           <Input
                             value={
                               channel.maskedHandle ||
-                              computeMaskedHandle(
-                                channel.handle || "",
-                                channel.type,
-                              )
+                              computeMaskedHandle(channel.handle || "")
                             }
                             readOnly
                             className="bg-muted/50 cursor-not-allowed"
