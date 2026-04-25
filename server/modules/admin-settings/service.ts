@@ -15,6 +15,7 @@ import type {
   AdminSiteContactResponseData,
   AdminUpdateAdminAccountStatusRequest,
   AdminUpdateAdminAccountStatusResponseData,
+  ContactChannelConfig,
   UpdateSiteContactRequest,
 } from "@/lib/api/contracts/admin-settings"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
@@ -531,7 +532,7 @@ export async function getAdminSettingsAuditLogList(filters: {
 // Site Contact Settings (for enterprise contact management)
 // =============================================
 
-function computeMaskedHandle(handle: string, type: string): string {
+function computeMaskedHandle(handle: string, _type: string = "wechat"): string {
   if (!handle) return ""
   const h = handle.trim()
   if (h.length <= 6) return h
@@ -540,13 +541,16 @@ function computeMaskedHandle(handle: string, type: string): string {
 }
 
 function mapSiteContactRowToResponse(row: Record<string, unknown>): AdminSiteContactResponseData {
-  const rawChannels = (row.contact_channels as any[]) || []
+  const rawChannels = (row.contact_channels as unknown[]) || []
 
-  const channels = rawChannels.map((ch: any) => ({
-    ...ch,
-    maskedHandle: ch.maskedHandle || computeMaskedHandle(ch.handle || "", ch.type || "wechat"),
-    // qrImageUrl takes precedence; qrSeed is legacy
-  }))
+  const channels: ContactChannelConfig[] = rawChannels.map((ch) => {
+    const channel = ch as ContactChannelConfig
+    return {
+      ...channel,
+      maskedHandle: channel.maskedHandle || computeMaskedHandle(channel.handle || "", channel.type || "wechat"),
+      // qrImageUrl takes precedence; qrSeed is legacy
+    }
+  })
 
   return {
     companyName: row.company_name as string,
@@ -608,7 +612,7 @@ export async function uploadQrCodeImage(
     throw new Error("管理员ID无效")
   }
 
-  if (!QR_CODE_ALLOWED_TYPES.includes(file.type as any)) {
+  if (!QR_CODE_ALLOWED_TYPES.includes(file.type as (typeof QR_CODE_ALLOWED_TYPES)[number])) {
     throw new Error("二维码仅支持 JPG、PNG、WebP、GIF 格式")
   }
 
@@ -667,7 +671,7 @@ export async function updateSiteContactSettings(
   if (input.serviceHours !== undefined) updatePayload.service_hours = input.serviceHours
   if (input.contactChannels !== undefined) {
     // Ensure maskedHandle is computed before saving
-    updatePayload.contact_channels = (input.contactChannels as any[]).map((ch: any) => ({
+    updatePayload.contact_channels = (input.contactChannels as ContactChannelConfig[]).map((ch) => ({
       ...ch,
       maskedHandle: ch.maskedHandle || computeMaskedHandle(ch.handle || "", ch.type || "wechat"),
     }))

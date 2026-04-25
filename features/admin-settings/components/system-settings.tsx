@@ -23,11 +23,11 @@ import type {
   AdminSettingsAuditLogListResponseData,
   AdminSettingsOverviewResponseData,
   AdminSiteContactResponseData,
+  ContactChannelConfig,
   UpdateSiteContactRequest,
 } from "@/lib/api/contracts/admin-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -1205,19 +1205,21 @@ export function SystemSettings() {
     }
   };
 
-  const updateChannelField = (index: number, field: string, value: unknown) => {
+  const updateChannelField = (index: number, field: keyof ContactChannelConfig, value: string | number | null | undefined) => {
     setEditForm((prev) => {
       const channels = [...(prev.contactChannels || [])];
-      channels[index] = { ...channels[index], [field]: value };
+      if (!channels[index]) return prev;
+
+      channels[index] = { ...channels[index], [field]: value } as ContactChannelConfig;
+
       // Auto-generate maskedHandle if handle changed
       if (field === "handle") {
-        const h = value as string;
-        if (h.length > 6) {
-          channels[index].maskedHandle = h.slice(0, 3) + "****" + h.slice(-4);
-        } else {
-          channels[index].maskedHandle = h;
-        }
+        const h = String(value || "");
+        channels[index].maskedHandle = h.length > 6 
+          ? h.slice(0, 3) + "****" + h.slice(-4)
+          : h;
       }
+
       return { ...prev, contactChannels: channels };
     });
   };
@@ -1249,10 +1251,7 @@ export function SystemSettings() {
     }));
   };
 
-  const computeMaskedHandle = (
-    handle: string = "",
-    type: string = "wechat",
-  ): string => {
+  const computeMaskedHandle = (handle: string = ""): string => {
     if (!handle) return "";
     const h = handle.toString().trim();
     if (h.length <= 6) return h;
@@ -1285,10 +1284,6 @@ export function SystemSettings() {
     } finally {
       setContactLoading(false);
     }
-  };
-
-  const getChannelIconClass = (type: string) => {
-    return type === "wechat" ? "text-brand" : "text-chart-3";
   };
 
   const renderContactTab = () => {
@@ -1455,7 +1450,7 @@ export function SystemSettings() {
                           <Select
                             value={channel.type}
                             onValueChange={(value) =>
-                              updateChannelField(index, "type", value)
+                              updateChannelField(index, "type", value as "wechat" | "douyin")
                             }
                           >
                             <SelectTrigger>
