@@ -230,3 +230,32 @@ export function createAdminSettingsContactPatchHandler(dependencies: {
     }
   }
 }
+
+export function createQrCodeUploadPostHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  uploadQrCodeImage: (adminAccountId: string, file: File) => Promise<{ qrImageUrl: string; storagePath: string }>
+}) {
+  return async function POST(request: Request) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+
+      const formData = await request.formData()
+      const file = formData.get("file") as File
+
+      if (!file) {
+        return jsonError("BAD_REQUEST", "未提供文件", 400)
+      }
+
+      const result = await dependencies.uploadQrCodeImage(admin.adminId, file)
+      return jsonSuccess(result, "二维码上传成功")
+    } catch (error: unknown) {
+      console.error("QR upload error:", error)
+      const err = error as Error
+      return jsonError("INTERNAL_ERROR", err.message || "二维码上传失败", 500)
+    }
+  }
+}

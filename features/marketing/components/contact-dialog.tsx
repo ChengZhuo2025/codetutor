@@ -40,7 +40,8 @@ type ContactChannel = {
   maskedHandle: string
   summary: string
   qrLabel: string
-  qrSeed: number
+  qrSeed?: number
+  qrImageUrl?: string | null
   icon: LucideIcon
   accentClassName: string
   badgeClassName: string
@@ -299,11 +300,26 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                             </Button>
                           </div>
 
-                          <MockQr
-                            seed={channel.qrSeed}
-                            label={channel.qrLabel}
-                            className="mt-4 rounded-[14px] bg-muted/70 p-4 dark:bg-black/18"
-                          />
+                          {channel.qrImageUrl ? (
+                            <div className="mt-4 rounded-[14px] overflow-hidden border border-border bg-white p-3">
+                              <img 
+                                src={channel.qrImageUrl} 
+                                alt={channel.qrLabel}
+                                className="w-full h-auto max-h-[200px] object-contain mx-auto rounded"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none'
+                                  console.warn("QR image failed to load, falling back to mock")
+                                }}
+                              />
+                              <p className="text-center text-[10px] text-muted-foreground mt-3 font-medium">{channel.qrLabel}</p>
+                            </div>
+                          ) : (
+                            <MockQr
+                              seed={channel.qrSeed || 13}
+                              label={channel.qrLabel}
+                              className="mt-4 rounded-[14px] bg-muted/70 p-4 dark:bg-black/18"
+                            />
+                          )}
                         </div>
                       )
                     })}

@@ -129,10 +129,11 @@ export type AdminSettingsAuditLogListResponseData = {
 export type ContactChannelConfig = {
   title: string
   handle: string
-  maskedHandle: string
+  maskedHandle?: string // computed by backend/frontend from handle
   summary: string
   qrLabel: string
-  qrSeed: number
+  qrImageUrl?: string | null // real uploaded QR image URL (preferred over seed)
+  qrSeed?: number // legacy fallback for generated QR
   type: "wechat" | "douyin"
 }
 

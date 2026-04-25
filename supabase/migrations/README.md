@@ -47,5 +47,6 @@ As of the current MVP snapshot (after implementing enterprise contact management
 27. `027_material_plan_mastery_and_cautions.sql` — 掌握点与注意事项字段
 28. `028_add_ai_model_profile_fields.sql` — AI 模型结构化 profile 字段
 29. `029_create_site_contact_settings.sql` — **企业联系方式配置表**（单行 JSONB channels，支持管理后台 `/admin/settings/contact` 编辑，供营销 `ContactDialog` 动态加载；包含初始数据、RLS、审计支持）
+30. `030_create_qr_codes_bucket.sql` — **QR Codes Storage Bucket 说明**（需在 Supabase Dashboard → Storage 创建名为 `qr-codes` 的 **PUBLIC** bucket，以便真实二维码图片上传和公开 URL 访问）
 
-**最新状态**：迁移已达 029。新增 `site_contact_settings` 表实现了企业联系信息从硬编码到可管理后台维护的全链路（详见 `features/marketing/components/contact-dialog.tsx` 和 `features/admin-settings/components/system-settings.tsx` 中的「联系方式」tab）。
+**最新状态**：迁移已达 **030**。`site_contact_settings` + `qr-codes` bucket 实现了**真实二维码图片上传**（取代 MockQr/seed）和企业联系信息全链路管理（表单编辑 + 真实图片预览）。**关键操作**：请立即在 Supabase Dashboard 创建 `qr-codes` **PUBLIC** bucket（允许匿名读取）。上传成功后，管理后台和营销对话框将显示真实二维码图片。

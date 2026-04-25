@@ -20,6 +20,11 @@ import type {
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import { isUuid } from "@/server/lib/identifiers"
+import {
+  QR_CODE_BUCKET,
+  QR_CODE_MAX_BYTES,
+  QR_CODE_ALLOWED_TYPES,
+} from "@/lib/supabase/storage"
 
 type AdminAccountWithRolesRow = {
   id: string
@@ -526,16 +531,32 @@ export async function getAdminSettingsAuditLogList(filters: {
 // Site Contact Settings (for enterprise contact management)
 // =============================================
 
+function computeMaskedHandle(handle: string, type: string): string {
+  if (!handle) return ""
+  const h = handle.trim()
+  if (h.length <= 6) return h
+  // Common masking: first 3 + **** + last 4 (for phones) or appropriate for IDs
+  return h.slice(0, 3) + "****" + h.slice(-4)
+}
+
 function mapSiteContactRowToResponse(row: Record<string, unknown>): AdminSiteContactResponseData {
+  const rawChannels = (row.contact_channels as any[]) || []
+
+  const channels = rawChannels.map((ch: any) => ({
+    ...ch,
+    maskedHandle: ch.maskedHandle || computeMaskedHandle(ch.handle || "", ch.type || "wechat"),
+    // qrImageUrl takes precedence; qrSeed is legacy
+  }))
+
   return {
-    companyName: row.company_name,
-    address: row.address,
-    website: row.website,
-    contactEmail: row.contact_email,
-    serviceHours: row.service_hours,
-    contactChannels: row.contact_channels || [],
-    updatedAt: row.updated_at,
-    updatedByAdminId: row.updated_by_admin_id,
+    companyName: row.company_name as string,
+    address: row.address as string,
+    website: row.website as string,
+    contactEmail: row.contact_email as string,
+    serviceHours: row.service_hours as string,
+    contactChannels: channels,
+    updatedAt: row.updated_at as string | null,
+    updatedByAdminId: row.updated_by_admin_id as string | null,
   }
 }
 
@@ -579,6 +600,47 @@ async function writeSiteContactAudit(input: {
   }
 }
 
+export async function uploadQrCodeImage(
+  adminAccountId: string,
+  file: File,
+): Promise<{ qrImageUrl: string; storagePath: string }> {
+  if (!isUuid(adminAccountId)) {
+    throw new Error("管理员ID无效")
+  }
+
+  if (!QR_CODE_ALLOWED_TYPES.includes(file.type as any)) {
+    throw new Error("二维码仅支持 JPG、PNG、WebP、GIF 格式")
+  }
+
+  if (file.size > QR_CODE_MAX_BYTES) {
+    throw new Error("二维码图片不能超过 2MB")
+  }
+
+  const bytes = await file.arrayBuffer()
+  const supabase = createSupabaseAdminClient()
+  const extension = file.name.split(".").pop() || "png"
+  const timestamp = Date.now()
+  const objectPath = `qr-${timestamp}-${crypto.randomUUID()}.${extension}`
+
+  const { error: uploadError } = await supabase.storage
+    .from(QR_CODE_BUCKET)
+    .upload(objectPath, bytes, {
+      contentType: file.type,
+      upsert: true,
+    })
+
+  assertSupabaseSuccess(uploadError, "failed to upload qr code image")
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(QR_CODE_BUCKET).getPublicUrl(objectPath)
+
+  return {
+    qrImageUrl: publicUrl,
+    storagePath: objectPath,
+  }
+}
+
 export async function updateSiteContactSettings(
   adminAccountId: string,
   input: UpdateSiteContactRequest,
@@ -603,7 +665,13 @@ export async function updateSiteContactSettings(
   if (input.website !== undefined) updatePayload.website = input.website
   if (input.contactEmail !== undefined) updatePayload.contact_email = input.contactEmail
   if (input.serviceHours !== undefined) updatePayload.service_hours = input.serviceHours
-  if (input.contactChannels !== undefined) updatePayload.contact_channels = input.contactChannels
+  if (input.contactChannels !== undefined) {
+    // Ensure maskedHandle is computed before saving
+    updatePayload.contact_channels = (input.contactChannels as any[]).map((ch: any) => ({
+      ...ch,
+      maskedHandle: ch.maskedHandle || computeMaskedHandle(ch.handle || "", ch.type || "wechat"),
+    }))
+  }
 
   const { data, error } = await supabase
     .from("site_contact_settings")

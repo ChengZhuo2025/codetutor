@@ -2,6 +2,10 @@ export const PROFILE_AVATAR_BUCKET = "avatars"
 export const PROFILE_AVATAR_MAX_BYTES = 2 * 1024 * 1024
 export const PROFILE_AVATAR_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"] as const
 
+export const QR_CODE_BUCKET = "qr-codes"
+export const QR_CODE_MAX_BYTES = 2 * 1024 * 1024
+export const QR_CODE_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const
+
 export function getAvatarStoragePrefix(userId: string) {
   return `${userId}/`
 }
