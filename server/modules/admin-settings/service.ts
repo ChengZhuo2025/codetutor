@@ -12,8 +12,10 @@ import type {
   AdminSettingsAuditLogListResponseData,
   AdminSettingsOverviewResponseData,
   AdminSettingsRoleDefinition,
+  AdminSiteContactResponseData,
   AdminUpdateAdminAccountStatusRequest,
   AdminUpdateAdminAccountStatusResponseData,
+  UpdateSiteContactRequest,
 } from "@/lib/api/contracts/admin-settings"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
@@ -518,4 +520,112 @@ export async function getAdminSettingsAuditLogList(filters: {
     page,
     limit: filters.limit,
   }
+}
+
+// =============================================
+// Site Contact Settings (for enterprise contact management)
+// =============================================
+
+function mapSiteContactRowToResponse(row: Record<string, unknown>): AdminSiteContactResponseData {
+  return {
+    companyName: row.company_name,
+    address: row.address,
+    website: row.website,
+    contactEmail: row.contact_email,
+    serviceHours: row.service_hours,
+    contactChannels: row.contact_channels || [],
+    updatedAt: row.updated_at,
+    updatedByAdminId: row.updated_by_admin_id,
+  }
+}
+
+export async function loadSiteContactSettings(): Promise<AdminSiteContactResponseData> {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("site_contact_settings")
+    .select("*")
+    .eq("id", 1)
+    .single()
+
+  assertSupabaseSuccess(error, "failed to load site contact settings")
+
+  if (!data) {
+    throw new Error("SITE_CONTACT_SETTINGS_NOT_FOUND")
+  }
+
+  return mapSiteContactRowToResponse(data)
+}
+
+async function writeSiteContactAudit(input: {
+  adminAccountId: string
+  beforeSnapshot: Record<string, unknown>
+  afterSnapshot: Record<string, unknown>
+}) {
+  const supabase = createSupabaseAdminClient()
+  const { error } = await supabase.from("admin_audit_logs").insert({
+    admin_user_id: input.adminAccountId,
+    action: "site_contact_update" as AdminAuditAction,
+    target_type: "site_contact",
+    target_id: "1",
+    before_snapshot: input.beforeSnapshot,
+    after_snapshot: input.afterSnapshot,
+    reason: null,
+    request_context: null,
+  })
+
+  if (error) {
+    console.error("Failed to write site contact audit log:", error)
+    // Non-blocking for audit
+  }
+}
+
+export async function updateSiteContactSettings(
+  adminAccountId: string,
+  input: UpdateSiteContactRequest,
+): Promise<AdminSiteContactResponseData> {
+  if (!isUuid(adminAccountId)) {
+    const error = new Error("管理员ID无效")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+
+  const supabase = createSupabaseAdminClient()
+
+  // Load current state for audit snapshot
+  const before = await loadSiteContactSettings()
+
+  const updatePayload: Record<string, unknown> = {
+    updated_by_admin_id: adminAccountId,
+  }
+
+  if (input.companyName !== undefined) updatePayload.company_name = input.companyName
+  if (input.address !== undefined) updatePayload.address = input.address
+  if (input.website !== undefined) updatePayload.website = input.website
+  if (input.contactEmail !== undefined) updatePayload.contact_email = input.contactEmail
+  if (input.serviceHours !== undefined) updatePayload.service_hours = input.serviceHours
+  if (input.contactChannels !== undefined) updatePayload.contact_channels = input.contactChannels
+
+  const { data, error } = await supabase
+    .from("site_contact_settings")
+    .update(updatePayload)
+    .eq("id", 1)
+    .select("*")
+    .single()
+
+  assertSupabaseSuccess(error, "failed to update site contact settings")
+
+  const after = mapSiteContactRowToResponse(data!)
+
+  // Record audit (non-blocking)
+  try {
+    await writeSiteContactAudit({
+      adminAccountId,
+      beforeSnapshot: before,
+      afterSnapshot: after,
+    })
+  } catch (auditError) {
+    console.error("Audit write failed for site contact update:", auditError)
+  }
+
+  return after
 }

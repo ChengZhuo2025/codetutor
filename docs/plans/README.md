@@ -81,7 +81,7 @@
 ## 当前项目事实摘要
 
 - 当前仓库已经不是“纯前端 demo”，而是一个包含前端页面、`app/api` BFF、`server/modules` 服务层、Supabase 迁移与远程数据库接入脚本的同仓项目。
-- 当前真实用户端页面为 7 个：`/`、`/login`、`/onboarding`、`/learn`、`/map`、`/achievements`、`/history`；管理端已落地页面包括：`/admin/login`、`/admin`（总览）、`/admin/users`、`/admin/users/[userId]`、`/admin/learning`、`/admin/learning/[pathId]`、`/admin/ai`、`/admin/ai/providers`、`/admin/ai/providers/[providerId]`、`/admin/ai/models`、`/admin/ai/models/[modelId]`、`/admin/ai/agents`、`/admin/ai/agents/[agentId]`、`/admin/ai/bindings`、`/admin/ai/skills`、`/admin/ai/invocations`、`/admin/ai/invocations/[invocationId]`、`/admin/ai/test`、`/admin/settings`、`/admin/feedback`、`/admin/feedback/[id]`；另有内部开发用接口文档页 `/api-docs`。
+- 当前真实用户端页面为 7 个：`/`、`/login`、`/onboarding`、`/learn`、`/map`、`/achievements`、`/history`；管理端已落地页面包括：`/admin/login`、`/admin`（总览）、`/admin/users`、`/admin/users/[userId]`、`/admin/learning`、`/admin/learning/[pathId]`、`/admin/ai/*`、`/admin/settings`（新增「联系方式」tab支持企业联系信息全链路管理）、`/admin/feedback`、`/admin/feedback/[id]`；另有内部开发用接口文档页 `/api-docs`。新增 `/api/contact` 公共接口供营销对话框动态加载。
 - 当前已落地的真实接口包括：认证登录、认证会话摘要、用户档案、头像上传、onboarding、当前学习会话、学习消息发送、学习历史消息分页、任务完成与任务状态更新、自学模式教程链接计划异步生成、intake 状态轮询、草稿详情/编辑/单任务重生成/确认/重生成、每日打卡、地图/进度、成就汇总、历史学习计划、用户反馈与管理员反馈接口。
 - 当前运行时 API 文档已接入：`GET /api/docs/openapi` 返回 OpenAPI 3.1 文档，`/api-docs` 使用 Swagger UI 按标签展示接口，并补充常见响应示例与调试说明。
 - `/api-docs` 当前纳入管理员路由守卫：未登录会跳转到 `/admin/login?next=/api-docs`，登录后回跳；运行时文档已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning`、`admin-ai`、`admin-settings` 等管理端点分组。

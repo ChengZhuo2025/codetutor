@@ -1,4 +1,5 @@
 import { jsonError, jsonSuccess } from "@/server/lib/route-response"
+import type { UpdateSiteContactRequest } from "@/lib/api/contracts/admin-settings"
 import {
   parseAdminSettingsAccountListQuery,
   parseAdminSettingsAccountStatusBody,
@@ -166,6 +167,66 @@ export function createAdminSettingsAuditLogListGetHandler(dependencies: {
       return jsonSuccess(data, "操作审计列表读取成功")
     } catch {
       return jsonError("INTERNAL_ERROR", "操作审计列表读取失败", 500)
+    }
+  }
+}
+
+// Site Contact Settings Handlers (admin only for edit, overview includes read)
+export function createAdminSettingsContactGetHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  loadSiteContactSettings: () => Promise<unknown>
+}) {
+  return async function GET(request: unknown) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+
+      const data = await dependencies.loadSiteContactSettings()
+      return jsonSuccess(data, "企业联系方式读取成功")
+    } catch (error) {
+      console.error("Contact settings GET error:", error)
+      return jsonError("INTERNAL_ERROR", "企业联系方式读取失败", 500)
+    }
+  }
+}
+
+export function createAdminSettingsContactPatchHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  updateSiteContactSettings: (
+    adminAccountId: string,
+    input: UpdateSiteContactRequest
+  ) => Promise<unknown>
+}) {
+  return async function PATCH(request: Request) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+
+      let body: unknown
+      try {
+        body = await request.json()
+      } catch {
+        return jsonError("BAD_REQUEST", "无效的请求体", 400)
+      }
+
+      const data = await dependencies.updateSiteContactSettings(
+        admin.adminId,
+        body as UpdateSiteContactRequest
+      )
+      return jsonSuccess(data, "企业联系方式更新成功")
+    } catch (error: unknown) {
+      console.error("Contact settings PATCH error:", error)
+      const err = error as Error
+      if (err.name === "VALIDATION_FAILED") {
+        return jsonError("VALIDATION_FAILED", err.message, 400)
+      }
+      return jsonError("INTERNAL_ERROR", err.message || "企业联系方式更新失败", 500)
     }
   }
 }

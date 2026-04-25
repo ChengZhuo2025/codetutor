@@ -1568,6 +1568,50 @@ export const adminSettingsAuditLogListQuerySchema = z
   .openapi("AdminSettingsAuditLogListQuery")
 
 // ============================================
+// 企业联系方式管理 Schemas (for /admin/settings/contact and /api/contact)
+// ============================================
+
+export const contactChannelConfigSchema = z
+  .object({
+    title: z.string(),
+    handle: z.string(),
+    maskedHandle: z.string(),
+    summary: z.string(),
+    qrLabel: z.string(),
+    qrSeed: z.number().int().min(0),
+    type: z.enum(["wechat", "douyin"]),
+  })
+  .openapi("ContactChannelConfig")
+
+export const siteContactSettingsSchema = z
+  .object({
+    companyName: z.string().min(1),
+    address: z.string().min(1),
+    website: z.string().url(),
+    contactEmail: z.string().email(),
+    serviceHours: z.string(),
+    contactChannels: z.array(contactChannelConfigSchema),
+    updatedAt: z.string().nullable(),
+    updatedByAdminId: z.string().uuid().nullable().optional(),
+  })
+  .openapi("SiteContactSettings")
+
+export const adminSiteContactResponseDataSchema = siteContactSettingsSchema.openapi(
+  "AdminSiteContactResponseData"
+)
+
+export const updateSiteContactRequestSchema = z
+  .object({
+    companyName: z.string().min(1).optional(),
+    address: z.string().min(1).optional(),
+    website: z.string().url().optional(),
+    contactEmail: z.string().email().optional(),
+    serviceHours: z.string().optional(),
+    contactChannels: z.array(contactChannelConfigSchema).optional(),
+  })
+  .openapi("UpdateSiteContactRequest")
+
+// ============================================
 // 管理员看板 API Schemas
 // ============================================
 

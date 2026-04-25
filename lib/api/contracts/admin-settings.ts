@@ -125,3 +125,35 @@ export type AdminSettingsAuditLogListResponseData = {
   page: number
   limit: number
 }
+
+export type ContactChannelConfig = {
+  title: string
+  handle: string
+  maskedHandle: string
+  summary: string
+  qrLabel: string
+  qrSeed: number
+  type: "wechat" | "douyin"
+}
+
+export type SiteContactSettings = {
+  companyName: string
+  address: string
+  website: string
+  contactEmail: string
+  serviceHours: string
+  contactChannels: ContactChannelConfig[]
+  updatedAt: string | null
+  updatedByAdminId?: string | null
+}
+
+export type AdminSiteContactResponseData = SiteContactSettings
+
+export type UpdateSiteContactRequest = {
+  companyName?: string
+  address?: string
+  website?: string
+  contactEmail?: string
+  serviceHours?: string
+  contactChannels?: ContactChannelConfig[]
+}

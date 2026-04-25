@@ -45,6 +45,14 @@
 - `019_admin_user_soft_delete.sql`
 - `020_create_analytics_and_notifications.sql`
 - `021_add_ai_provider_encrypted_secrets.sql`
+- `022_add_admin_test_session_flag.sql`
+- `023_add_optimistic_lock_version.sql`
+- `024_async_material_plan_runs.sql`
+- `025_material_plan_editable_drafts.sql`
+- `026_learning_material_chunks_evidence_metadata.sql`
+- `027_material_plan_mastery_and_cautions.sql`
+- `028_add_ai_model_profile_fields.sql`
+- `029_create_site_contact_settings.sql` (新增企业联系方式配置表，支持管理后台编辑，供营销联系对话框动态加载)
 
 当前数据库中已落地的核心业务表包括：
 

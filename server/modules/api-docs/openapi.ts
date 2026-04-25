@@ -50,6 +50,8 @@ import {
   adminSettingsAuditLogListQuerySchema,
   adminSettingsAuditLogListResponseDataSchema,
   adminSettingsOverviewResponseDataSchema,
+  adminSiteContactResponseDataSchema,
+  updateSiteContactRequestSchema,
   adminFeedbackListQuerySchema,
   adminFeedbackListResponseDataSchema,
   adminFeedbackBatchDeleteRequestSchema,
@@ -1656,6 +1658,34 @@ const successExamples = {
     status: "inactive",
   },
   adminSettingsAuditLogList: adminSettingsAuditLogListExample,
+  adminSiteContact: {
+    companyName: "上海智酷数能科技有限公司",
+    address: "上海市崇明区长兴镇潘园公路1800号",
+    website: "https://www.zicool.cn",
+    contactEmail: "server@zicool.cn",
+    serviceHours: "工作日 10:00-19:00",
+    contactChannels: [
+      {
+        title: "客服微信",
+        handle: "18600165902",
+        maskedHandle: "186****5902",
+        summary: "产品/合作/试用咨询",
+        qrLabel: "微信扫码添加",
+        qrSeed: 13,
+        type: "wechat",
+      },
+      {
+        title: "官方抖音",
+        handle: "818740482",
+        maskedHandle: "81****82",
+        summary: "动态/案例/教程分享",
+        qrLabel: "抖音扫码关注",
+        qrSeed: 29,
+        type: "douyin",
+      },
+    ],
+    updatedAt: "2026-04-25T18:00:00Z",
+  },
   adminAIOverview: adminAIOverviewExample,
   adminAIProviderList: adminAIProviderListExample,
   adminAIProviderDetail: adminAIProviderDetailExample,
@@ -3811,6 +3841,73 @@ registry.registerPath({
       "操作审计列表读取成功",
     ),
     ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/settings/contact",
+  operationId: "getAdminSettingsContact",
+  tags: ["admin-settings"],
+  summary: "获取企业联系方式设置",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminSiteContactResponseDataSchema,
+      "AdminSiteContactResponse",
+      "企业联系方式读取成功",
+      successExamples.adminSiteContact,
+      "企业联系方式读取成功",
+    ),
+    ...commonErrorResponses(["403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/settings/contact",
+  operationId: "updateAdminSettingsContact",
+  tags: ["admin-settings"],
+  summary: "更新企业联系方式设置",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: updateSiteContactRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteContactResponseDataSchema,
+      "AdminSiteContactResponse",
+      "企业联系方式更新成功",
+      successExamples.adminSiteContact,
+      "企业联系方式更新成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/contact",
+  operationId: "getPublicContact",
+  tags: ["public", "marketing"],
+  summary: "公共企业联系方式 (供营销对话框使用)",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminSiteContactResponseDataSchema,
+      "SiteContactResponse",
+      "联系方式读取成功",
+      successExamples.adminSiteContact,
+      "联系方式读取成功",
+    ),
+    ...commonErrorResponses(["500"]),
   },
 })
 

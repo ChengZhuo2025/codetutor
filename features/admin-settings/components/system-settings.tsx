@@ -22,9 +22,12 @@ import type {
   AdminSettingsAuditLogListItem,
   AdminSettingsAuditLogListResponseData,
   AdminSettingsOverviewResponseData,
+  AdminSiteContactResponseData,
+  UpdateSiteContactRequest,
 } from "@/lib/api/contracts/admin-settings"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { StatePanel } from "@/components/ui/state-panel"
 import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
@@ -48,6 +51,7 @@ type SettingsTab =
   | "roles"
   | "audit"
   | "system"
+  | "contact"
 
 const TABS: Array<{ id: SettingsTab; label: string }> = [
   { id: "profile", label: "我的资料" },
@@ -56,6 +60,7 @@ const TABS: Array<{ id: SettingsTab; label: string }> = [
   { id: "roles", label: "角色权限" },
   { id: "audit", label: "操作审计" },
   { id: "system", label: "系统信息" },
+  { id: "contact", label: "联系方式" },
 ]
 
 const ROLE_LABELS: Record<AdminRoleCode, string> = {
@@ -239,6 +244,12 @@ export function SystemSettings() {
   const [auditError, setAuditError] = useState<string | null>(null)
   const [auditData, setAuditData] = useState<AdminSettingsAuditLogListResponseData | null>(null)
 
+  const [contactData, setContactData] = useState<AdminSiteContactResponseData | null>(null)
+  const [contactLoading, setContactLoading] = useState(false)
+  const [contactError, setContactError] = useState<string | null>(null)
+  const [isEditingContact, setIsEditingContact] = useState(false)
+  const [editForm, setEditForm] = useState<UpdateSiteContactRequest>({})
+
   useAdminSessionExpiryRedirect(authExpired)
 
   const canManageAccounts = overview?.currentAdmin.roles.includes("super_admin") ?? false
@@ -312,6 +323,34 @@ export function SystemSettings() {
     }
   }, [auditAction, auditKeywordApplied, auditLimit, auditPage, auditTargetType])
 
+  const refreshContact = useCallback(async () => {
+    setContactLoading(true)
+    setContactError(null)
+    try {
+      const result = await adminRequestData<AdminSiteContactResponseData>(
+        "/admin/settings/contact",
+        { method: "GET" },
+        "获取企业联系方式失败",
+      )
+      setContactData(result)
+      if (!isEditingContact) {
+        setEditForm({
+          companyName: result.companyName,
+          address: result.address,
+          website: result.website,
+          contactEmail: result.contactEmail,
+          serviceHours: result.serviceHours,
+          contactChannels: result.contactChannels,
+        })
+      }
+    } catch (error) {
+      setAuthExpired(isAdminSessionExpiredError(error))
+      setContactError(getAdminApiErrorMessage(error, "获取企业联系方式失败"))
+    } finally {
+      setContactLoading(false)
+    }
+  }, [isEditingContact])
+
   useEffect(() => {
     void refreshOverview()
   }, [refreshOverview])
@@ -320,13 +359,26 @@ export function SystemSettings() {
     if (activeTab === "accounts") {
       void refreshAccounts()
     }
-  }, [activeTab, refreshAccounts])
-
-  useEffect(() => {
     if (activeTab === "audit") {
       void refreshAuditLogs()
     }
-  }, [activeTab, refreshAuditLogs])
+    if (activeTab === "contact") {
+      void refreshContact()
+    }
+  }, [activeTab, refreshAccounts, refreshAuditLogs, refreshContact, refreshOverview])
+
+  useEffect(() => {
+    if (activeTab === "contact" && contactData) {
+      setEditForm({
+        companyName: contactData.companyName,
+        address: contactData.address,
+        website: contactData.website,
+        contactEmail: contactData.contactEmail,
+        serviceHours: contactData.serviceHours,
+        contactChannels: contactData.contactChannels,
+      })
+    }
+  }, [activeTab, contactData])
 
   const accountTotalPages = Math.max(
     1,
@@ -887,13 +939,218 @@ export function SystemSettings() {
     )
   }
 
+  const handleSaveContact = async () => {
+    const result = await confirm.prompt({
+      title: "确认保存企业联系方式？",
+      description: "更新后，用户端「联系我们」对话框将使用新数据。此操作会记录审计日志。",
+      confirmText: "保存更新",
+      cancelText: "取消",
+    })
+
+    if (!result.confirmed) {
+      return
+    }
+
+    setContactLoading(true)
+    try {
+      await adminRequestData(
+        "/admin/settings/contact",
+        {
+          method: "PATCH",
+          body: JSON.stringify(editForm),
+        },
+        "更新企业联系方式失败",
+      )
+      toast.success("企业联系方式更新成功")
+      setIsEditingContact(false)
+      await refreshContact()
+      await refreshOverview() // refresh if overview uses it
+    } catch (error) {
+      setAuthExpired(isAdminSessionExpiredError(error))
+      toast.error(getAdminApiErrorMessage(error, "更新企业联系方式失败"))
+    } finally {
+      setContactLoading(false)
+    }
+  }
+
+  const renderContactTab = () => {
+    if (contactLoading && !contactData) {
+      return <div className="rounded-xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">加载中…</div>
+    }
+
+    if (contactError || !contactData) {
+      return <StatePanel status="error" title="获取联系方式失败" description={contactError ?? "请稍后再试。"} />
+    }
+
+    const canEdit = overview?.currentAdmin.roles.includes("super_admin") ?? false
+
+    return (
+      <div className="space-y-6">
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight">企业联系方式管理</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                编辑后同步至营销页面的「联系我们」对话框
+              </p>
+            </div>
+            {canEdit && (
+              <Button
+                onClick={() => setIsEditingContact(!isEditingContact)}
+                variant={isEditingContact ? "outline" : "default"}
+              >
+                {isEditingContact ? "取消" : "编辑"}
+              </Button>
+            )}
+          </div>
+
+          {isEditingContact ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="text-xs uppercase tracking-widest text-muted-foreground mb-1 block">公司名称</label>
+                  <Input
+                    value={editForm.companyName || ""}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, companyName: e.target.value }))}
+                    placeholder="上海智酷数能科技有限公司"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-widest text-muted-foreground mb-1 block">联系邮箱</label>
+                  <Input
+                    value={editForm.contactEmail || ""}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, contactEmail: e.target.value }))}
+                    placeholder="server@zicool.cn"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-xs uppercase tracking-widest text-muted-foreground mb-1 block">联系地址</label>
+                  <Input
+                    value={editForm.address || ""}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, address: e.target.value }))}
+                    placeholder="上海市崇明区长兴镇潘园公路1800号"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-widest text-muted-foreground mb-1 block">官方网站</label>
+                  <Input
+                    value={editForm.website || ""}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, website: e.target.value }))}
+                    placeholder="https://www.zicool.cn"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-widest text-muted-foreground mb-1 block">服务时间</label>
+                  <Input
+                    value={editForm.serviceHours || ""}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, serviceHours: e.target.value }))}
+                    placeholder="工作日 10:00-19:00"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs uppercase tracking-widest text-muted-foreground mb-1 block">
+                  联系渠道 (JSON 数组)
+                </label>
+                <Textarea
+                  value={JSON.stringify(editForm.contactChannels || [], null, 2)}
+                  onChange={(e) => {
+                    try {
+                      const parsed = JSON.parse(e.target.value)
+                      setEditForm((prev) => ({ ...prev, contactChannels: parsed }))
+                    } catch {
+                      // Allow invalid temporarily
+                    }
+                  }}
+                  className="h-48 font-mono text-xs"
+                  placeholder='[{"title":"客服微信", "handle":"18600165902", ...}]'
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">编辑 JSON 后保存，QR 种子和样式由前端处理</p>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t">
+                <Button onClick={handleSaveContact} disabled={contactLoading} className="flex-1">
+                  {contactLoading ? "保存中..." : "保存全部变更"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditingContact(false)
+                    if (contactData) {
+                      setEditForm({
+                        companyName: contactData.companyName,
+                        address: contactData.address,
+                        website: contactData.website,
+                        contactEmail: contactData.contactEmail,
+                        serviceHours: contactData.serviceHours,
+                        contactChannels: contactData.contactChannels,
+                      })
+                    }
+                  }}
+                >
+                  取消
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                <div className="space-y-4">
+                  <div className="flex justify-between border-b pb-3">
+                    <span className="text-muted-foreground">公司名称</span>
+                    <span className="font-medium text-right">{contactData.companyName}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-3">
+                    <span className="text-muted-foreground">联系地址</span>
+                    <span className="font-medium text-right max-w-[200px]">{contactData.address}</span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex justify-between border-b pb-3">
+                    <span className="text-muted-foreground">官方网站</span>
+                    <a href={contactData.website} target="_blank" className="text-brand hover:underline font-medium">
+                      {contactData.website}
+                    </a>
+                  </div>
+                  <div className="flex justify-between border-b pb-3">
+                    <span className="text-muted-foreground">联系邮箱</span>
+                    <span className="font-medium">{contactData.contactEmail}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-3">
+                    <span className="text-muted-foreground">服务时间</span>
+                    <span className="font-medium">{contactData.serviceHours}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">联系渠道配置</p>
+                  <div className="flex-1 h-px bg-border"></div>
+                </div>
+                <div className="bg-muted/50 rounded-xl p-4 text-xs font-mono overflow-auto max-h-64 border">
+                  {JSON.stringify(contactData.contactChannels, null, 2)}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
+          此设置由管理后台维护，修改后 <code className="text-xs bg-muted px-1 rounded">/api/contact</code> 接口和营销联系对话框将自动更新。审计日志会记录每次修改。
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="space-y-6">
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">系统设置</h1>
           <p className="text-sm text-muted-foreground">
-            管理员治理设置，包括我的资料、安全设置、管理员账号、角色权限、操作审计和系统信息。
+            管理员治理设置，包括我的资料、安全设置、管理员账号、角色权限、操作审计、系统信息和联系方式。
           </p>
         </div>
 
@@ -920,6 +1177,7 @@ export function SystemSettings() {
         {activeTab === "roles" ? renderRolesTab() : null}
         {activeTab === "audit" ? renderAuditTab() : null}
         {activeTab === "system" ? renderSystemTab() : null}
+        {activeTab === "contact" ? renderContactTab() : null}
       </div>
 
       <AdminProfileEditDialog
