@@ -17,6 +17,10 @@ import {
 } from "lucide-react";
 import type { AdminRoleCode } from "@/lib/api/contracts/admin";
 import type {
+  AdminUpdateWechatPaymentSettingsRequest,
+  AdminWechatPaymentSettingsResponseData,
+} from "@/lib/api/contracts/payment";
+import type {
   AdminSettingsAdminAccountListItem,
   AdminSettingsAdminAccountListResponseData,
   AdminSettingsAuditLogListItem,
@@ -29,6 +33,7 @@ import type {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -60,7 +65,8 @@ type SettingsTab =
   | "roles"
   | "audit"
   | "system"
-  | "contact";
+  | "contact"
+  | "payment";
 
 const TABS: Array<{ id: SettingsTab; label: string }> = [
   { id: "profile", label: "我的资料" },
@@ -70,6 +76,7 @@ const TABS: Array<{ id: SettingsTab; label: string }> = [
   { id: "audit", label: "操作审计" },
   { id: "system", label: "系统信息" },
   { id: "contact", label: "联系方式" },
+  { id: "payment", label: "支付配置" },
 ];
 
 const ROLE_LABELS: Record<AdminRoleCode, string> = {
@@ -151,6 +158,8 @@ function getAuditActionLabel(action: string) {
       return "学习计划状态调整";
     case "site_contact_update":
       return "更新企业联系方式";
+    case "payment_settings_update":
+      return "更新微信支付配置";
     default:
       return action;
   }
@@ -284,6 +293,23 @@ export function SystemSettings() {
     serviceHours: "",
     contactChannels: [],
   });
+  const [paymentData, setPaymentData] =
+    useState<AdminWechatPaymentSettingsResponseData | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentSaving, setPaymentSaving] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentForm, setPaymentForm] =
+    useState<AdminUpdateWechatPaymentSettingsRequest>({
+      enabled: false,
+      appId: "",
+      mchId: "",
+      notifyUrl: "https://www.codetutor.cn/api/payment/wechat/notify",
+      merchantSerialNo: "",
+      merchantPrivateKeyPem: "",
+      apiV3Key: "",
+      wechatpayPublicKeyId: "",
+      wechatpayPublicKeyPem: "",
+    });
 
   useAdminSessionExpiryRedirect(authExpired);
 
@@ -397,6 +423,34 @@ export function SystemSettings() {
     }
   }, [isEditingContact]);
 
+  const refreshPayment = useCallback(async () => {
+    setPaymentLoading(true);
+    setPaymentError(null);
+    try {
+      const result =
+        await adminRequestData<AdminWechatPaymentSettingsResponseData>(
+          "/admin/settings/payment/wechat",
+          { method: "GET" },
+          "获取微信支付配置失败",
+        );
+      setPaymentData(result);
+      setPaymentForm((prev) => ({
+        ...prev,
+        enabled: result.enabled,
+        appId: result.appId ?? "",
+        mchId: result.mchId ?? "",
+        notifyUrl: result.notifyUrl ?? "https://www.codetutor.cn/api/payment/wechat/notify",
+        merchantSerialNo: result.merchantSerialNo ?? "",
+        wechatpayPublicKeyId: result.wechatpayPublicKeyId ?? "",
+      }));
+    } catch (error) {
+      setAuthExpired(isAdminSessionExpiredError(error));
+      setPaymentError(getAdminApiErrorMessage(error, "获取微信支付配置失败"));
+    } finally {
+      setPaymentLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void refreshOverview();
   }, [refreshOverview]);
@@ -411,11 +465,15 @@ export function SystemSettings() {
     if (activeTab === "contact") {
       void refreshContact();
     }
+    if (activeTab === "payment") {
+      void refreshPayment();
+    }
   }, [
     activeTab,
     refreshAccounts,
     refreshAuditLogs,
     refreshContact,
+    refreshPayment,
     refreshOverview,
   ]);
 
@@ -1174,6 +1232,126 @@ export function SystemSettings() {
     );
   };
 
+  const handleSavePayment = async () => {
+    const result = await confirm.prompt({
+      title: "确认保存微信支付配置？",
+      description:
+        "商户私钥、APIv3 密钥和微信支付公钥会加密存储到数据库。保存后用户端可创建真实扫码支付订单。",
+      confirmText: "保存配置",
+      cancelText: "取消",
+    });
+
+    if (!result.confirmed) return;
+
+    setPaymentSaving(true);
+    try {
+      await adminRequestData<AdminWechatPaymentSettingsResponseData>(
+        "/admin/settings/payment/wechat",
+        {
+          method: "PATCH",
+          body: JSON.stringify(paymentForm),
+        },
+        "更新微信支付配置失败",
+      );
+      toast.success("微信支付配置更新成功");
+      await refreshPayment();
+      await refreshOverview();
+    } catch (error) {
+      setAuthExpired(isAdminSessionExpiredError(error));
+      toast.error(getAdminApiErrorMessage(error, "更新微信支付配置失败"));
+    } finally {
+      setPaymentSaving(false);
+    }
+  };
+
+  const updatePaymentField = <K extends keyof AdminUpdateWechatPaymentSettingsRequest>(
+    field: K,
+    value: AdminUpdateWechatPaymentSettingsRequest[K],
+  ) => {
+    setPaymentForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const renderPaymentTab = () => (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">微信支付 Native 扫码支付</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              凭据不会写入 .env；商户私钥、APIv3 密钥、微信支付公钥会使用服务端主密钥加密后落库。
+            </p>
+          </div>
+          <AdminListTag className={paymentData?.configured ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700" : "border-amber-500/20 bg-amber-500/10 text-amber-700"}>
+            {paymentData?.configured ? "已配置" : "未完整配置"}
+          </AdminListTag>
+        </div>
+
+        {paymentError ? (
+          <StatePanel status="error" title="读取失败" description={paymentError} />
+        ) : paymentLoading ? (
+          <div className="rounded-xl border border-border bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
+            加载中…
+          </div>
+        ) : (
+          <div className="space-y-5">
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={paymentForm.enabled === true}
+                onChange={(event) => updatePaymentField("enabled", event.target.checked)}
+              />
+              启用微信支付
+            </label>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="payment-app-id">AppID</Label>
+                <Input id="payment-app-id" value={paymentForm.appId ?? ""} onChange={(event) => updatePaymentField("appId", event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="payment-mch-id">商户号 mchid</Label>
+                <Input id="payment-mch-id" value={paymentForm.mchId ?? ""} onChange={(event) => updatePaymentField("mchId", event.target.value)} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="payment-notify-url">支付回调地址</Label>
+                <Input id="payment-notify-url" value={paymentForm.notifyUrl ?? ""} onChange={(event) => updatePaymentField("notifyUrl", event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="payment-serial-no">商户证书序列号</Label>
+                <Input id="payment-serial-no" value={paymentForm.merchantSerialNo ?? ""} onChange={(event) => updatePaymentField("merchantSerialNo", event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="payment-public-key-id">微信支付公钥 ID</Label>
+                <Input id="payment-public-key-id" value={paymentForm.wechatpayPublicKeyId ?? ""} onChange={(event) => updatePaymentField("wechatpayPublicKeyId", event.target.value)} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="payment-api-v3-key">APIv3 密钥</Label>
+                <Input id="payment-api-v3-key" type="password" value={paymentForm.apiV3Key ?? ""} placeholder={paymentData?.apiV3KeyMasked ?? "32 字节密钥"} onChange={(event) => updatePaymentField("apiV3Key", event.target.value)} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="payment-private-key">商户私钥 apiclient_key.pem</Label>
+                <Textarea id="payment-private-key" rows={6} value={paymentForm.merchantPrivateKeyPem ?? ""} placeholder={paymentData?.merchantPrivateKeyMasked ?? "-----BEGIN PRIVATE KEY-----"} onChange={(event) => updatePaymentField("merchantPrivateKeyPem", event.target.value)} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="payment-public-key">微信支付公钥</Label>
+                <Textarea id="payment-public-key" rows={6} value={paymentForm.wechatpayPublicKeyPem ?? ""} placeholder={paymentData?.wechatpayPublicKeyMasked ?? "-----BEGIN PUBLIC KEY-----"} onChange={(event) => updatePaymentField("wechatpayPublicKeyPem", event.target.value)} />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => void refreshPayment()} disabled={paymentSaving}>
+                重新读取
+              </Button>
+              <Button type="button" onClick={() => void handleSavePayment()} disabled={paymentSaving}>
+                {paymentSaving ? "保存中…" : "保存微信支付配置"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const handleSaveContact = async () => {
     const result = await confirm.prompt({
       title: "确认保存企业联系方式？",
@@ -1760,7 +1938,7 @@ export function SystemSettings() {
             系统设置
           </h1>
           <p className="text-sm text-muted-foreground">
-            管理员治理设置，包括我的资料、安全设置、管理员账号、角色权限、操作审计、系统信息和联系方式。
+            管理员治理设置，包括我的资料、安全设置、管理员账号、角色权限、操作审计、系统信息、联系方式和支付配置。
           </p>
         </div>
 
@@ -1788,6 +1966,7 @@ export function SystemSettings() {
         {activeTab === "audit" ? renderAuditTab() : null}
         {activeTab === "system" ? renderSystemTab() : null}
         {activeTab === "contact" ? renderContactTab() : null}
+        {activeTab === "payment" ? renderPaymentTab() : null}
       </div>
 
       <AdminProfileEditDialog

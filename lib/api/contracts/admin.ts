@@ -126,6 +126,7 @@ export const ADMIN_AUDIT_ACTIONS = [
   "ai_agent_skill_binding_update",
   "ai_test_run",
   "site_contact_update",
+  "payment_settings_update",
 ] as const
 
 export type AdminAuditAction = (typeof ADMIN_AUDIT_ACTIONS)[number]

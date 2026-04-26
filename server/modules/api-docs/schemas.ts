@@ -25,6 +25,10 @@ import {
   USER_NOTIFICATION_STATUSES,
   USER_NOTIFICATION_TYPES,
 } from "@/lib/api/contracts/notifications"
+import {
+  PAYMENT_ORDER_STATUSES,
+  PAYMENT_PLAN_CODES,
+} from "@/lib/api/contracts/payment"
 
 extendZodWithOpenApi(z)
 
@@ -37,6 +41,8 @@ export const ApiErrorCodeSchema = z
     "CONFLICT",
     "VALIDATION_FAILED",
     "AI_PROVIDER_ERROR",
+    "PAYMENT_CONFIG_INCOMPLETE",
+    "PAYMENT_PROVIDER_ERROR",
     "MATERIAL_UNSUPPORTED_SOURCE",
     "MATERIAL_FETCH_FAILED",
     "MATERIAL_INSUFFICIENT_CONTENT",
@@ -1618,6 +1624,89 @@ export const uploadQrCodeResponseDataSchema = z
     storagePath: z.string(),
   })
   .openapi("UploadQrCodeResponseData")
+
+export const paymentPlanCodeSchema = z.enum(PAYMENT_PLAN_CODES).openapi("PaymentPlanCode")
+export const paymentOrderStatusSchema = z.enum(PAYMENT_ORDER_STATUSES).openapi("PaymentOrderStatus")
+
+export const subscriptionPlanItemSchema = z
+  .object({
+    code: paymentPlanCodeSchema,
+    name: z.string(),
+    priceCents: z.number().int().nonnegative(),
+    currency: z.literal("CNY"),
+    durationDays: z.number().int().positive(),
+    tierRank: z.number().int(),
+    description: z.string(),
+    features: z.array(z.string()),
+  })
+  .openapi("SubscriptionPlanItem")
+
+export const subscriptionMeResponseDataSchema = z
+  .object({
+    current: z.object({
+      planCode: z.string(),
+      planName: z.string(),
+      status: z.enum(["free", "active", "expired"]),
+      startsAt: z.string().nullable(),
+      expiresAt: z.string().nullable(),
+      remainingDays: z.number().int().nonnegative(),
+    }),
+    plans: z.array(subscriptionPlanItemSchema),
+  })
+  .openapi("SubscriptionMeResponseData")
+
+export const createWechatNativeOrderRequestSchema = z
+  .object({
+    planCode: paymentPlanCodeSchema,
+  })
+  .openapi("CreateWechatNativeOrderRequest")
+
+export const paymentOrderResponseDataSchema = z
+  .object({
+    orderNo: z.string(),
+    planCode: paymentPlanCodeSchema,
+    planName: z.string(),
+    amountCents: z.number().int().positive(),
+    currency: z.literal("CNY"),
+    status: paymentOrderStatusSchema,
+    codeUrl: z.string().nullable(),
+    expiresAt: z.string(),
+    paidAt: z.string().nullable(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .openapi("PaymentOrderResponseData")
+
+export const adminWechatPaymentSettingsResponseDataSchema = z
+  .object({
+    enabled: z.boolean(),
+    configured: z.boolean(),
+    appId: z.string().nullable(),
+    mchId: z.string().nullable(),
+    notifyUrl: z.string().nullable(),
+    merchantSerialNo: z.string().nullable(),
+    merchantPrivateKeyMasked: z.string(),
+    apiV3KeyMasked: z.string(),
+    wechatpayPublicKeyId: z.string().nullable(),
+    wechatpayPublicKeyMasked: z.string(),
+    updatedAt: z.string().nullable(),
+    updatedByAdminId: z.string().nullable(),
+  })
+  .openapi("AdminWechatPaymentSettingsResponseData")
+
+export const adminUpdateWechatPaymentSettingsRequestSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    appId: z.string().optional(),
+    mchId: z.string().optional(),
+    notifyUrl: z.string().url().optional(),
+    merchantSerialNo: z.string().optional(),
+    merchantPrivateKeyPem: z.string().optional(),
+    apiV3Key: z.string().optional(),
+    wechatpayPublicKeyId: z.string().optional(),
+    wechatpayPublicKeyPem: z.string().optional(),
+  })
+  .openapi("AdminUpdateWechatPaymentSettingsRequest")
 
 // ============================================
 // 管理员看板 API Schemas

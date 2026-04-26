@@ -16,7 +16,7 @@ Repeat the same steps for later migrations, keeping a new sequential file under 
 
 ## Current sequence
 
-As of the current MVP snapshot (after implementing enterprise contact management), the migration sequence continues through **029**:
+As of the current MVP snapshot (after implementing WeChat Native payment and subscription entitlement activation), the migration sequence continues through **034**:
 
 1. `001_init.sql` — 基础 schema 初始化
 2. `002_fix_update_updated_at_search_path.sql` — 修复 updated_at 触发器
@@ -48,5 +48,11 @@ As of the current MVP snapshot (after implementing enterprise contact management
 28. `028_add_ai_model_profile_fields.sql` — AI 模型结构化 profile 字段
 29. `029_create_site_contact_settings.sql` — **企业联系方式配置表**（单行 JSONB channels，支持管理后台 `/admin/settings/contact` 编辑，供营销 `ContactDialog` 动态加载；包含初始数据、RLS、审计支持）
 30. `030_create_qr_codes_bucket.sql` — **QR Codes Storage Bucket 说明**（需在 Supabase Dashboard → Storage 创建名为 `qr-codes` 的 **PUBLIC** bucket，以便真实二维码图片上传和公开 URL 访问）
+31. `031_fix_site_contact_rls_policy.sql` — 修复企业联系方式 RLS policy，确保后台服务与管理端更新路径稳定
+32. `032_optimize_site_contact_rls_subquery.sql` — 优化企业联系方式 RLS 子查询，降低策略重复计算
+33. `033_restrict_site_contact_update_policy_to_active_admins.sql` — 限制企业联系方式更新仅允许 active 管理员
+34. `034_create_payment_subscription_tables.sql` — **微信 Native 支付与订阅表**（支付配置、订阅套餐、支付订单、用户订阅、支付回调事件；商户私钥/APIv3 密钥/微信支付公钥加密落库）
 
-**最新状态**：迁移已达 **030**。`site_contact_settings` + `qr-codes` bucket 实现了**真实二维码图片上传**（取代 MockQr/seed）和企业联系信息全链路管理（表单编辑 + 真实图片预览）。**关键操作**：请立即在 Supabase Dashboard 创建 `qr-codes` **PUBLIC** bucket（允许匿名读取）。上传成功后，管理后台和营销对话框将显示真实二维码图片。
+**最新状态**：迁移已达 **034**。`site_contact_settings` + `qr-codes` bucket 实现了企业联系信息与真实二维码图片管理；`payment_settings`、`subscription_plans`、`payment_orders`、`user_subscriptions`、`payment_webhook_events` 支持微信 Native 扫码支付首版闭环。**下一次新增迁移请从 `035_*.sql` 开始。**
+
+**仍需人工确认**：如果目标 Supabase 项目尚未创建 `qr-codes` bucket，请在 Supabase Dashboard → Storage 创建名为 `qr-codes` 的 **PUBLIC** bucket（允许匿名读取），否则企业联系方式二维码上传会失败。

@@ -9,7 +9,7 @@
 ## 30 秒状态速览
 
 - 当前项目已不是纯原型仓库，而是“前端页面 + `app/api` + `server/modules` + Supabase migrations”的同仓 MVP。
-- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息、自学模式异步教程链接生成学习计划草稿（`plan-from-material` async intake、`material-intakes/{id}` 状态轮询、`plan-drafts/{id}` 详情/编辑、`plan-drafts/{id}/tasks/{taskId}/regenerate`、confirm·regenerate，以及 `raw text -> subtitle -> ASR -> OCR/vision` 多模态证据摄取、evidence metadata 落库、每关 `masteryPoints` / `cautions` 生成与编辑、编辑/单任务重生成后的即时质量复检、confirm 写入 `path_steps.key_points` / `pitfalls`、规则 + 可选小模型 quality gate）、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、管理后台 Phase 1（管理员登录/退出、总览看板、反馈工单）、**用户运营**（`/admin/users` 列表与筛选、`/admin/users/[userId]` 详情、CSV 导出、受控资料编辑、软删除/恢复、关联反馈工单）、**学习运营**（`/admin/learning` 列表与筛选、`/admin/learning/[pathId]` 详情、CSV 导出、最近会话摘要、`reactivate/archive` 状态操作）、**AI 运营**（`/admin/ai` 概览、providers/models/agents 列表与详情、bindings/skills、调用日志列表与详情、resolve preview、agent test）以及 **系统设置**（`/admin/settings`：资料、安全、管理员账号列表与启停、角色权限说明、操作审计、系统信息）。
+- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息、自学模式异步教程链接生成学习计划草稿、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、管理后台 Phase 1、**用户运营**、**学习运营**、**AI 运营**、**系统设置**（含联系方式与微信支付配置）以及 **微信 Native 扫码支付 + 订阅权益开通**（订阅查询、Native 下单、订单查询/同步、支付回调验签解密、支付成功后开通个人版/专业版权益）。
 - 当前代码技术栈以 `package.json` 为准：`Next.js 16.2.0`、`React 19.2.4`、`TypeScript 5.7.3`、`Tailwind CSS 4.2`、`shadcn/ui`、`Zod + zod-to-openapi + Swagger UI`；当前本地验证环境为 `Node.js 22.18.0`。
 - 已补运行时接口文档：`/api/docs/openapi` 输出 OpenAPI 3.1 JSON，`/api-docs` 提供 Swagger UI 查看与调试；文档 `info.description` 注明用户端主题偏好为前端 localStorage、无 REST 接口。
 - 用户端支持明暗主题切换（默认暗色，`next-themes` + `app/globals.css` 双套令牌），入口：营销顶栏、登录页右上角、工作台左侧栏底部设置行右侧。
@@ -17,7 +17,7 @@
 - `app/api` 当前已大量收敛为薄入口层，请求校验、统一响应、错误映射与部分路由编排已下沉到 `server/lib/*` 与各域 `route-handler.ts`。
 - 已落地数据侧：远程 Supabase、`001` 到 `028` 迁移（含 `018` 材料摄取与计划草稿表、`019` 用户软删除、`020` analytics/notifications、`021` Provider API Key 数据库加密托管、`024` async material intake / generation runs / chunks、`025` editable drafts / revisions、`026` material chunk evidence metadata、`027` 草稿任务 `mastery_points` / `cautions` 契约升级、planner prompt 同步与历史已确认自学路径 `key_points/pitfalls` 回填、`028` AI Model 结构化画像字段与 metadata 兼容回填）、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表、AI 会话 / provider / agent / skill / invocation 表，以及管理员账号/角色/审计日志表。
 - 已补 Phase 1 运行时性能与稳定性加固：进程内短 TTL 用户鉴权 / 管理员会话缓存、AI 配置快照缓存、关键接口限流与请求级观测头 / 结构化日志；当前仍未引入 Redis / 消息队列，缓存与限流均为单实例进程内实现。
-- 仍待实现：细粒度权限深化、用户域更深写能力如内部备注 / 人工积分调整、AI 域更深运营化能力（prompt 版本化、灰度/回滚、成本与稳定性面板等）、订阅支付域。（**用户运营**、**学习运营**、**AI 运营**、**系统设置**、**analytics 事件写入** 与 **通知设置落库/站内提醒** 已在代码中落地，不再归入「待实现」。）
+- 仍待实现：细粒度权限深化、用户域更深写能力如内部备注 / 人工积分调整、AI 域更深运营化能力（prompt 版本化、灰度/回滚、成本与稳定性面板等）、支付退款/自动续费/JSAPI/H5 变体。（**用户运营**、**学习运营**、**AI 运营**、**系统设置**、**analytics 事件写入**、**通知设置落库/站内提醒** 与 **微信 Native 扫码支付首版闭环** 已在代码中落地。）
 - 若只想最快了解真实现状，优先读：
   1. `docs/plans/README.md`
   2. `docs/plans/2026-03-23-ai-coding-tutor-frontend-engineering-guide.md`
@@ -48,6 +48,7 @@
 - [自由学习模式教程链接自动拆解实施方案](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-04-01-ai-coding-tutor-free-mode-material-plan-implementation.md)
 - [自由学习模式异步多模态实施计划](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-04-08-ai-coding-tutor-material-plan-async-multimodal-implementation-plan.md)
 - [管理后台设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-31-ai-coding-tutor-admin-console-design.md)
+- [微信 Native 支付验收文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-04-26-wechat-native-payment-acceptance.md)
 
 ## 当前目录中各文档职责
 
@@ -77,6 +78,8 @@
   基于 `2026-04-01` 目标态方案拆出的可执行实施计划，覆盖异步 intake、多模态解析、可编辑草稿工作台、质量闸门、通知恢复与文档同步顺序。
 - `2026-03-31-ai-coding-tutor-admin-console-design.md`
   管理后台的运营需求、技术方案、后端契约、数据库扩展与推进顺序主文档。
+- `2026-04-26-wechat-native-payment-acceptance.md`
+  微信 Native 扫码支付首版的配置清单、自动化验证与人工验收步骤。
 
 ## 当前项目事实摘要
 
@@ -97,7 +100,7 @@
 - 用户端与管理端登录态已完成分流：用户端使用 `app-user-session`，管理端使用 `admin-access-token` / `admin-refresh-token`，并由 `proxy.ts` 统一做入口路由守卫。
 - 工作台左侧栏数据缓存已收敛到 `app/(workspace)/layout.tsx` 的 `WorkspaceSidebarDataProvider`，在 `/learn`、`/map`、`/achievements`、`/history` 间切换时不再重复请求并产生加载跳动。
 - 当前学习计划状态机已区分 `active`、`interrupted`、`completed`、`abandoned`、`archived`；其中 `interrupted` 为连续 7 天无学习行为后的系统自动中断，`abandoned` 为用户主动放弃，但历史页仍支持重新激活。
-- 当前仍未落地的能力主要包括：细粒度权限控制深化、内部备注 / 人工积分调整等更深用户运营能力、订阅支付域，以及 AI 域更深层运营化与可视化配置能力（如 prompt 版本化、灰度/回滚、成本与稳定性面板；**用户运营、学习运营、AI 运营、系统设置、analytics 事件写入与通知设置落库/站内提醒已交付**）。
+- 当前仍未落地的能力主要包括：细粒度权限控制深化、内部备注 / 人工积分调整等更深用户运营能力、支付退款/自动续费/JSAPI/H5 变体，以及 AI 域更深层运营化与可视化配置能力（如 prompt 版本化、灰度/回滚、成本与稳定性面板；**用户运营、学习运营、AI 运营、系统设置、analytics 事件写入、通知设置落库/站内提醒、微信 Native 扫码支付首版闭环已交付**）。
 - 当前产品主线围绕 `user_learning_paths` 展开，`/learn`、`/map`、`/history` 共用这条主线。
 - 各文档如果同时包含“已实现”与“后续规划”两部分，应以文档中的“当前实现快照”或“已落地状态”说明为准；若与代码冲突，以代码和迁移为准，再回写文档。
 
@@ -115,7 +118,7 @@
 ### P2：商业化与基础设施增强
 
 - AI 第三阶段能力：按 `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 的 `15.3` 补齐后台前端配置页、调用日志查看、Prompt 灰度与回滚、成本与稳定性面板。
-- 订阅与支付域：补齐套餐权益、支付状态、订阅生命周期与前端订阅模块的真实接入。
+- 支付域深化：在已落地微信 Native 扫码支付、支付状态、订阅生命周期和前端订阅弹窗真实接入后，后续补退款、自动续费、JSAPI/H5 支付与支付运营后台。
 - 缓存与队列增强：当前已落地单实例进程内缓存、限流与基础请求观测；后续按实际流量再决定是否引入 Redis、异步队列、跨实例频控与更完整的分布式缓存。
 - 前端请求层与自动化测试增强：在必要时评估 React Query / SWR，并逐步补齐高频主链路自动化测试。
 
@@ -126,7 +129,7 @@
    当前 AI 相关权威设计以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准。
    其中第一阶段已完成；文档里的 `15.2 第二阶段`、`15.3 第三阶段` 目前都还没有开始。
 3. 然后再进入 `15.3 第三阶段` 的 AI 运营深水区能力，例如 prompt 版本化、灰度/回滚、成本与稳定性可视化配置。
-4. 最后再进入 `订阅支付 + Redis/共享队列 + 更完整测试体系`。
+4. 最后再进入 `支付深化 + Redis/共享队列 + 更完整测试体系`。
 
 ## 文档维护原则
 

@@ -51,6 +51,8 @@ import {
   adminSettingsAuditLogListResponseDataSchema,
   adminSettingsOverviewResponseDataSchema,
   adminSiteContactResponseDataSchema,
+  adminUpdateWechatPaymentSettingsRequestSchema,
+  adminWechatPaymentSettingsResponseDataSchema,
   updateSiteContactRequestSchema,
   adminFeedbackListQuerySchema,
   adminFeedbackListResponseDataSchema,
@@ -91,6 +93,7 @@ import {
   completeOnboardingResponseDataSchema,
   completeTaskRequestSchema,
   completeTaskResponseDataSchema,
+  createWechatNativeOrderRequestSchema,
   createApiSuccessResponseSchema,
   createFeedbackRequestSchema,
   createFeedbackResponseDataSchema,
@@ -119,6 +122,7 @@ import {
   notificationMutationResponseDataSchema,
   notificationSettingsDataSchema,
   openApiStreamResponseSchema,
+  paymentOrderResponseDataSchema,
   profileMeResponseDataSchema,
   progressCurrentResponseDataSchema,
   progressMapResponseDataSchema,
@@ -131,6 +135,7 @@ import {
   uploadQrCodeResponseDataSchema,
   uploadProfileAvatarRequestSchema,
   uploadProfileAvatarResponseDataSchema,
+  subscriptionMeResponseDataSchema,
 } from "./schemas.ts"
 
 const registry = new OpenAPIRegistry()
@@ -1688,6 +1693,65 @@ const successExamples = {
       },
     ],
     updatedAt: "2026-04-25T18:00:00Z",
+  },
+  adminWechatPaymentSettings: {
+    enabled: true,
+    configured: true,
+    appId: "wx1234567890abcdef",
+    mchId: "1900000001",
+    notifyUrl: "https://www.codetutor.cn/api/payment/wechat/notify",
+    merchantSerialNo: "7A1B2C3D4E5F",
+    merchantPrivateKeyMasked: "••••••••••",
+    apiV3KeyMasked: "••••••••••",
+    wechatpayPublicKeyId: "PUB_KEY_ID_011423",
+    wechatpayPublicKeyMasked: "••••••••••",
+    updatedAt: "2026-04-26T10:00:00Z",
+    updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
+  },
+  subscriptionMe: {
+    current: {
+      planCode: "personal_monthly",
+      planName: "个人版",
+      status: "active",
+      startsAt: "2026-04-26T10:00:00Z",
+      expiresAt: "2026-05-27T10:00:00Z",
+      remainingDays: 31,
+    },
+    plans: [
+      {
+        code: "personal_monthly",
+        name: "个人版",
+        priceCents: 3900,
+        currency: "CNY",
+        durationDays: 31,
+        tierRank: 10,
+        description: "无限学习，持续陪练",
+        features: ["无限 AI 导师对话", "完整学习进度追踪"],
+      },
+      {
+        code: "pro_monthly",
+        name: "专业版",
+        priceCents: 9900,
+        currency: "CNY",
+        durationDays: 31,
+        tierRank: 20,
+        description: "项目实战陪跑",
+        features: ["个人版全部功能", "项目实战陪跑"],
+      },
+    ],
+  },
+  paymentOrder: {
+    orderNo: "CT20260426100000ABC123",
+    planCode: "personal_monthly",
+    planName: "个人版",
+    amountCents: 3900,
+    currency: "CNY",
+    status: "prepay_created",
+    codeUrl: "weixin://wxpay/bizpayurl?pr=example",
+    expiresAt: "2026-04-26T10:30:00Z",
+    paidAt: null,
+    createdAt: "2026-04-26T10:00:00Z",
+    updatedAt: "2026-04-26T10:00:05Z",
   },
   adminSiteContactQrUpload: {
     qrImageUrl: "https://cdn.example.com/qr/wechat-20260425.png",
@@ -3901,6 +3965,54 @@ registry.registerPath({
 
 registry.registerPath({
   method: "get",
+  path: "/api/admin/settings/payment/wechat",
+  operationId: "getAdminWechatPaymentSettings",
+  tags: ["admin-settings", "payment"],
+  summary: "获取微信支付配置",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminWechatPaymentSettingsResponseDataSchema,
+      "AdminWechatPaymentSettingsResponse",
+      "微信支付配置读取成功",
+      successExamples.adminWechatPaymentSettings,
+      "微信支付配置读取成功",
+    ),
+    ...commonErrorResponses(["403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/settings/payment/wechat",
+  operationId: "updateAdminWechatPaymentSettings",
+  tags: ["admin-settings", "payment"],
+  summary: "更新微信支付配置",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminUpdateWechatPaymentSettingsRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminWechatPaymentSettingsResponseDataSchema,
+      "AdminWechatPaymentSettingsResponse",
+      "微信支付配置已更新",
+      successExamples.adminWechatPaymentSettings,
+      "微信支付配置已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
   path: "/api/contact",
   operationId: "getPublicContact",
   tags: ["public", "marketing"],
@@ -3915,6 +4027,113 @@ registry.registerPath({
       "联系方式读取成功",
     ),
     ...commonErrorResponses(["500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/subscription/me",
+  operationId: "getSubscriptionMe",
+  tags: ["payment"],
+  summary: "读取当前用户订阅与可购买套餐",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      subscriptionMeResponseDataSchema,
+      "SubscriptionMeResponse",
+      "订阅信息读取成功",
+      successExamples.subscriptionMe,
+      "订阅信息读取成功",
+    ),
+    ...commonErrorResponses(["401", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/payment/wechat/native-orders",
+  operationId: "createWechatNativeOrder",
+  tags: ["payment"],
+  summary: "创建微信 Native 扫码支付订单",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: createWechatNativeOrderRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      paymentOrderResponseDataSchema,
+      "WechatNativeOrderResponse",
+      "微信支付订单已创建",
+      successExamples.paymentOrder,
+      "微信支付订单已创建",
+    ),
+    ...commonErrorResponses(["401", "409", "422", "500", "502"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/payment/orders/{orderNo}",
+  operationId: "getPaymentOrder",
+  tags: ["payment"],
+  summary: "读取当前用户支付订单",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      paymentOrderResponseDataSchema,
+      "PaymentOrderResponse",
+      "支付订单读取成功",
+      successExamples.paymentOrder,
+      "支付订单读取成功",
+    ),
+    ...commonErrorResponses(["401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/payment/orders/{orderNo}/sync",
+  operationId: "syncPaymentOrder",
+  tags: ["payment"],
+  summary: "主动同步微信支付订单状态",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      paymentOrderResponseDataSchema,
+      "PaymentOrderSyncResponse",
+      "支付订单已同步",
+      { ...successExamples.paymentOrder, status: "paid", paidAt: "2026-04-26T10:05:00Z" },
+      "支付订单已同步",
+    ),
+    ...commonErrorResponses(["401", "404", "409", "500", "502"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/payment/wechat/notify",
+  operationId: "wechatPaymentNotify",
+  tags: ["payment"],
+  summary: "微信支付回调通知",
+  security: [],
+  responses: {
+    "200": jsonResponse(
+      z.object({ code: z.literal("SUCCESS"), message: z.string() }),
+      "微信支付回调处理成功",
+      { code: "SUCCESS", message: "成功" },
+    ),
+    "400": jsonResponse(
+      z.object({ code: z.literal("FAIL"), message: z.string() }),
+      "微信支付回调处理失败",
+      { code: "FAIL", message: "微信支付回调验签失败。" },
+    ),
   },
 })
 

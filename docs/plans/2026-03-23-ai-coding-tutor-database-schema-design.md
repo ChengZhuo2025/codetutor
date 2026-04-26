@@ -53,6 +53,7 @@
 - `027_material_plan_mastery_and_cautions.sql`
 - `028_add_ai_model_profile_fields.sql`
 - `029_create_site_contact_settings.sql` (新增企业联系方式配置表，支持管理后台编辑，供营销联系对话框动态加载)
+- `034_create_payment_subscription_tables.sql` (新增微信 Native 支付配置、订阅套餐、支付订单、用户订阅与支付回调事件表；`030`-`033` 为联系方式二维码与 RLS 修正迁移)
 
 当前数据库中已落地的核心业务表包括：
 
@@ -1481,6 +1482,16 @@ MVP 阶段建议谨慎使用软删除：
 - 用户当前任务
 - 用户当前成长结果
 
-只要这三个对象的建模、流水和约束设计稳定，MVP 的 AI 导师、任务推进和激励系统就能保持一致性，并为后续支付、社区、推荐和多模态扩展打下基础。
+## 6.30 支付与订阅表
+
+`034_create_payment_subscription_tables.sql` 落地微信 Native 扫码支付首版闭环：
+
+- `payment_settings`：单行微信支付配置表，保存 `appid`、`mchid`、回调地址、商户证书序列号、微信支付公钥 ID；商户私钥、APIv3 密钥、微信支付公钥用 AES-256-GCM 密文列保存，主密钥复用服务端 `AI_PROVIDER_SECRET_ENCRYPTION_KEY`。
+- `subscription_plans`：首批固定套餐，`personal_monthly` 为个人版 `3900` 分，`pro_monthly` 为专业版 `9900` 分，周期均为 31 天；营销文案可继续展示，但支付真源以该表为准。
+- `payment_orders`：用户支付订单，状态为 `created`、`prepay_created`、`paid`、`closed`、`expired`、`failed`；记录微信 `code_url`、交易号、回调 payload、支付时间和过期时间。
+- `user_subscriptions`：用户当前订阅权益，支付成功后 upsert；同套餐续费从当前有效期顺延，升级到更高套餐从支付成功时间开始。
+- `payment_webhook_events`：保存微信回调原始头、原始 payload、解密 payload 和事件 ID，用于审计与幂等排查。
+
+只要这些对象的建模、流水和约束设计稳定，MVP 的 AI 导师、任务推进、激励系统与首版商业化闭环就能保持一致性，并为后续退款、自动续费、JSAPI/H5 支付、社区、推荐和多模态扩展打下基础。
 
 自学模式下，教程链接摄取表与计划草稿表（`018`）在确认前保持与主路径实例解耦，确认后通过外键与 `learning_paths` / `user_learning_paths` 建立可追溯关联，避免草稿态污染权威任务状态。

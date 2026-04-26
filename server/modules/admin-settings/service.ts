@@ -61,7 +61,7 @@ type UserProfileAvatarRow = {
 type AdminAuditLogRow = {
   id: string
   action: AdminAuditAction
-  target_type: "admin_account" | "user_profile" | "user_learning_path" | "site_contact"
+  target_type: "admin_account" | "user_profile" | "user_learning_path" | "site_contact" | "payment_settings"
   target_id: string | null
   reason: string | null
   created_at: string
@@ -457,7 +457,7 @@ export async function updateAdminSettingsAdminAccountStatus(
 export async function getAdminSettingsAuditLogList(filters: {
   keyword?: string
   action: string
-  targetType: "all" | "admin_account" | "user_profile" | "user_learning_path" | "site_contact"
+  targetType: "all" | "admin_account" | "user_profile" | "user_learning_path" | "site_contact" | "payment_settings"
   limit: number
   page: number
 }): Promise<AdminSettingsAuditLogListResponseData> {

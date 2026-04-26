@@ -123,7 +123,7 @@ MVP 目标范围：
 当前仍未纳入或尚未实现范围：
 
 - 排行榜与社区
-- 支付系统
+- 支付系统：当前已落地微信 Native 扫码支付首版闭环，后续保留退款、自动续费、JSAPI/H5 扩展空间。
 - 企业协作
 - 移动端 App
 - 多模态截图解析
@@ -253,7 +253,7 @@ flowchart LR
 2. BFF 层：App Router Route Handlers，负责聚合前端所需接口
 3. 领域服务层：认证、学习编排、任务状态、积分段位、内容解析
 4. 数据层：阿里云 Supabase Postgres、Storage/Functions、埋点数据
-5. 外部能力层：AI Provider Layer、消息/支付等未来外部服务
+5. 外部能力层：AI Provider Layer、微信支付 Native 扫码支付、消息/支付等未来外部服务
 
 ---
 
@@ -899,7 +899,13 @@ flowchart TB
 
 - AI 编排服务独立
 - 成长系统与路径系统模块化强化
-- 接入支付、社区、企业能力
+- 在已落地微信 Native 扫码支付首版闭环的基础上，继续接入退款、自动续费、JSAPI/H5、社区、企业能力
+
+## 17.1 当前支付链路
+
+- 管理后台 `/admin/settings` 的「支付配置」维护商户号、AppID、回调地址、商户证书序列号、商户私钥、APIv3 密钥、微信支付公钥 ID 与公钥；敏感字段只加密落库，不放业务 `.env`。
+- 用户端订阅弹窗调用 `POST /api/payment/wechat/native-orders` 生成微信 `code_url` 并本地渲染二维码；`POST /api/payment/orders/{orderNo}/sync` 用作前端轮询兜底。
+- 微信回调 `POST /api/payment/wechat/notify` 先验签、再用 APIv3 密钥解密 `resource`，校验 `appid/mchid/amount/trade_state` 后幂等更新订单并开通订阅。
 
 ---
 
@@ -923,6 +929,6 @@ flowchart TB
 
 - 用最少的系统复杂度支撑最关键的业务闭环
 - 让 AI 对话、任务状态和成长体系三者保持统一
-- 既能快速上线验证，又为支付、社区、多模态和平台化演进保留空间
+- 既能快速上线验证，又为支付深化、社区、多模态和平台化演进保留空间
 
 如果后续产品验证成立，这套架构可以自然演进；如果验证失败，技术投入也不会因为过早复杂化而成为沉没成本。

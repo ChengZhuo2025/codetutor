@@ -27,7 +27,7 @@
 > - **用户运营**已落地：用户列表、详情、导出、受控资料更新、软删除与恢复、与反馈列表联动；路由为 `app/(admin-shell)/admin/users/*`，业务域为 `features/admin-users`，服务层为 `server/modules/admin-users`，OpenAPI 分组为 `admin-users`。
 > - **学习运营**已落地：学习路径实例列表、详情、CSV 导出、最近会话摘要、`reactivate / archive` 状态操作；路由为 `app/(admin-shell)/admin/learning/*`，业务域为 `features/admin-learning`，服务层为 `server/modules/admin-learning`，OpenAPI 分组为 `admin-learning`。
 > - **AI 运营**已落地：`/admin/ai` 概览、Provider/Model/Agent 列表与独立详情页、命中规则、Skill 绑定、调用日志列表与独立详情页、命中预览与真实 provider 测试；路由为 `app/(admin-shell)/admin/ai/*`，业务域为 `features/admin-ai`，服务层为 `server/modules/admin-ai`，OpenAPI 分组为 `admin-ai`。
-> - **系统设置**已落地：资料与安全入口复用、管理员账号列表与启停、角色权限说明、操作审计列表、系统信息；路由为 `app/(admin-shell)/admin/settings`，业务域为 `features/admin-settings`，服务层为 `server/modules/admin-settings`，OpenAPI 分组为 `admin-settings`。
+> - **系统设置**已落地：资料与安全入口复用、管理员账号列表与启停、角色权限说明、操作审计列表、系统信息、企业联系方式管理与微信支付配置加密托管；路由为 `app/(admin-shell)/admin/settings`，业务域为 `features/admin-settings`，服务层为 `server/modules/admin-settings` / `server/modules/payments`，OpenAPI 分组为 `admin-settings` 与 `payment`。
 > - 管理端鉴权主链路已切换为 `admin-access-token` / `admin-refresh-token` Cookie，会话守卫与 `/api-docs` 访问守卫已接入 `proxy.ts`。
 > - 运行时 API 文档（`/api/docs/openapi`、`/api-docs`）已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning`、`admin-ai`、`admin-settings` 分组。
 > - 本文中关于 `x-admin-secret` 的描述仅代表早期过渡方案背景，不再代表当前主实现。若与代码冲突，优先以 `docs/plans/2026-03-23-ai-coding-tutor-api-spec.md` 与实际代码为准。
@@ -123,7 +123,7 @@
 - 复杂可视化拖拽式配置系统
 - 多租户企业权限体系
 - 独立运营中台服务
-- 支付/订阅后台
+- 支付/订阅后台：首版微信 Native 支付配置已纳入系统设置；退款、自动续费、订单运营列表仍为后续范围。
 - 全量内容 CMS
 
 ---
@@ -526,7 +526,7 @@ Agents 管理页必须补齐的辅助能力：
 以下模块先在设计上预留，但不进入后台第一阶段：
 
 - 通知模板与通知发送后台
-- 订阅与支付后台
+- 订阅与支付后台：首版微信支付配置、Native 下单、回调和订阅开通已落地；后续补订单运营、退款与自动续费。
 - 课程/路径内容大规模可视化配置后台
 - 排行榜和社区运营后台
 
