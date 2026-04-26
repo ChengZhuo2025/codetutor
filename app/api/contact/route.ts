@@ -1,4 +1,5 @@
 import { jsonSuccess, jsonError } from "@/server/lib/route-response"
+import { withNoStoreHeaders } from "@/server/lib/response-cache"
 import { loadSiteContactSettings } from "@/server/modules/admin-settings/service"
 
 /**
@@ -8,7 +9,7 @@ import { loadSiteContactSettings } from "@/server/modules/admin-settings/service
 export async function GET() {
   try {
     const data = await loadSiteContactSettings()
-    return jsonSuccess(data, "联系方式读取成功")
+    return withNoStoreHeaders(jsonSuccess(data, "联系方式读取成功"))
   } catch (error) {
     console.error("Public contact GET error:", error)
     return jsonError("INTERNAL_ERROR", "联系方式读取失败", 500)

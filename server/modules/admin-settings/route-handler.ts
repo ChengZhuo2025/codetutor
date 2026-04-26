@@ -4,6 +4,7 @@ import {
   parseAdminSettingsAccountListQuery,
   parseAdminSettingsAccountStatusBody,
   parseAdminSettingsAuditListQuery,
+  parseAdminSettingsContactBody,
   parseRequiredRouteId,
 } from "@/server/lib/request-validation"
 import { isUuid } from "@/server/lib/identifiers"
@@ -143,7 +144,7 @@ export function createAdminSettingsAuditLogListGetHandler(dependencies: {
   getAdminSettingsAuditLogList: (filters: {
     keyword?: string
     action: string
-    targetType: "all" | "admin_account" | "user_profile" | "user_learning_path"
+    targetType: "all" | "admin_account" | "user_profile" | "user_learning_path" | "site_contact"
     limit: number
     page: number
   }) => Promise<unknown>
@@ -215,10 +216,12 @@ export function createAdminSettingsContactPatchHandler(dependencies: {
         return jsonError("BAD_REQUEST", "无效的请求体", 400)
       }
 
-      const data = await dependencies.updateSiteContactSettings(
-        admin.adminId,
-        body as UpdateSiteContactRequest
-      )
+      const parsed = parseAdminSettingsContactBody(body)
+      if (!parsed.ok) {
+        return jsonError(parsed.code, parsed.message, 400)
+      }
+
+      const data = await dependencies.updateSiteContactSettings(admin.adminId, parsed.data)
       return jsonSuccess(data, "企业联系方式更新成功")
     } catch (error: unknown) {
       console.error("Contact settings PATCH error:", error)

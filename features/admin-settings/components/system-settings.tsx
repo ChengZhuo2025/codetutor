@@ -149,6 +149,8 @@ function getAuditActionLabel(action: string) {
       return "恢复用户";
     case "learning_path_status_update":
       return "学习计划状态调整";
+    case "site_contact_update":
+      return "更新企业联系方式";
     default:
       return action;
   }
@@ -932,6 +934,7 @@ export function SystemSettings() {
                   { value: "password_change", label: "修改密码" },
                   { value: "admin_account_activate", label: "启用管理员" },
                   { value: "admin_account_deactivate", label: "停用管理员" },
+                  { value: "site_contact_update", label: "更新联系方式" },
                   { value: "user_profile_update", label: "更新用户资料" },
                   { value: "user_soft_delete", label: "软删除用户" },
                   { value: "user_restore", label: "恢复用户" },
@@ -953,6 +956,7 @@ export function SystemSettings() {
                   { value: "admin_account", label: "管理员账号" },
                   { value: "user_profile", label: "用户资料" },
                   { value: "user_learning_path", label: "学习计划" },
+                  { value: "site_contact", label: "企业联系方式" },
                 ]}
                 triggerClassName="h-10 min-w-[9rem] shrink-0"
               />

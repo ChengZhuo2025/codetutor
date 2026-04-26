@@ -1539,7 +1539,7 @@ export const adminSettingsAuditLogListItemSchema = z
   .object({
     id: z.string().uuid(),
     action: adminAuditActionSchema,
-    targetType: z.enum(["admin_account", "user_profile", "user_learning_path"]),
+    targetType: z.enum(["admin_account", "user_profile", "user_learning_path", "site_contact"]),
     targetId: z.string().nullable(),
     actorAdminAccountId: z.string(),
     actorDisplayName: z.string(),
@@ -1575,10 +1575,11 @@ export const contactChannelConfigSchema = z
   .object({
     title: z.string(),
     handle: z.string(),
-    maskedHandle: z.string(),
+    maskedHandle: z.string().optional(),
     summary: z.string(),
     qrLabel: z.string(),
-    qrSeed: z.number().int().min(0),
+    qrImageUrl: z.string().url().nullable().optional(),
+    qrSeed: z.number().int().min(0).optional(),
     type: z.enum(["wechat", "douyin"]),
   })
   .openapi("ContactChannelConfig")
@@ -1610,6 +1611,13 @@ export const updateSiteContactRequestSchema = z
     contactChannels: z.array(contactChannelConfigSchema).optional(),
   })
   .openapi("UpdateSiteContactRequest")
+
+export const uploadQrCodeResponseDataSchema = z
+  .object({
+    qrImageUrl: z.string().url(),
+    storagePath: z.string(),
+  })
+  .openapi("UploadQrCodeResponseData")
 
 // ============================================
 // 管理员看板 API Schemas

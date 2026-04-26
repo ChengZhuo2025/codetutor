@@ -61,7 +61,7 @@ type UserProfileAvatarRow = {
 type AdminAuditLogRow = {
   id: string
   action: AdminAuditAction
-  target_type: "admin_account" | "user_profile" | "user_learning_path"
+  target_type: "admin_account" | "user_profile" | "user_learning_path" | "site_contact"
   target_id: string | null
   reason: string | null
   created_at: string
@@ -457,7 +457,7 @@ export async function updateAdminSettingsAdminAccountStatus(
 export async function getAdminSettingsAuditLogList(filters: {
   keyword?: string
   action: string
-  targetType: "all" | "admin_account" | "user_profile" | "user_learning_path"
+  targetType: "all" | "admin_account" | "user_profile" | "user_learning_path" | "site_contact"
   limit: number
   page: number
 }): Promise<AdminSettingsAuditLogListResponseData> {
@@ -532,7 +532,7 @@ export async function getAdminSettingsAuditLogList(filters: {
 // Site Contact Settings (for enterprise contact management)
 // =============================================
 
-function computeMaskedHandle(handle: string, _type: string = "wechat"): string {
+function computeMaskedHandle(handle: string): string {
   if (!handle) return ""
   const h = handle.trim()
   if (h.length <= 6) return h
@@ -547,7 +547,7 @@ function mapSiteContactRowToResponse(row: Record<string, unknown>): AdminSiteCon
     const channel = ch as ContactChannelConfig
     return {
       ...channel,
-      maskedHandle: channel.maskedHandle || computeMaskedHandle(channel.handle || "", channel.type || "wechat"),
+      maskedHandle: channel.maskedHandle || computeMaskedHandle(channel.handle || ""),
       // qrImageUrl takes precedence; qrSeed is legacy
     }
   })
@@ -673,7 +673,7 @@ export async function updateSiteContactSettings(
     // Ensure maskedHandle is computed before saving
     updatePayload.contact_channels = (input.contactChannels as ContactChannelConfig[]).map((ch) => ({
       ...ch,
-      maskedHandle: ch.maskedHandle || computeMaskedHandle(ch.handle || "", ch.type || "wechat"),
+      maskedHandle: ch.maskedHandle || computeMaskedHandle(ch.handle || ""),
     }))
   }
 

@@ -27,6 +27,7 @@ export const ADMIN_SETTINGS_AUDIT_TARGET_TYPES = [
   "admin_account",
   "user_profile",
   "user_learning_path",
+  "site_contact",
 ] as const
 
 export type AdminSettingsAuditTargetType =

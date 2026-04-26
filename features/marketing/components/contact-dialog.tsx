@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import Image from "next/image"
 import type { LucideIcon } from "lucide-react"
 import type { AdminSiteContactResponseData } from "@/lib/api/contracts/admin-settings"
 import {
@@ -68,6 +69,7 @@ async function copyToClipboard(value: string) {
 
 export function ContactDialog({ triggerClassName }: ContactDialogProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
+  const [brokenQrImageKeys, setBrokenQrImageKeys] = useState<Set<string>>(new Set())
   const [contactData, setContactData] = useState<AdminSiteContactResponseData | null>(null)
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -260,6 +262,9 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                       const Icon = channel.icon
                       const copyKey = `${channel.title}-${channel.handle}`
                       const isCopied = copiedKey === copyKey
+                      const hasUsableQrImage = Boolean(
+                        channel.qrImageUrl && !brokenQrImageKeys.has(copyKey),
+                      )
 
                       return (
                         <div key={channel.title}>
@@ -301,14 +306,17 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                             </Button>
                           </div>
 
-                          {channel.qrImageUrl ? (
+                          {hasUsableQrImage ? (
                             <div className="mt-4 rounded-[14px] overflow-hidden border border-border bg-white p-3">
-                              <img 
-                                src={channel.qrImageUrl} 
+                              <Image
+                                src={channel.qrImageUrl!}
                                 alt={channel.qrLabel}
+                                width={320}
+                                height={320}
                                 className="w-full h-auto max-h-[200px] object-contain mx-auto rounded"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none'
+                                unoptimized
+                                onError={() => {
+                                  setBrokenQrImageKeys((prev) => new Set(prev).add(copyKey))
                                   console.warn("QR image failed to load, falling back to mock")
                                 }}
                               />
@@ -342,7 +350,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                       return (
                         <div
                           key={item.label}
-                          className="flex items-start gap-3 rounded-[14px] border border-border bg-muted/40 px-4 py-3 dark:border-white/8 dark:bg-white/[0.03]"
+                          className="flex items-start gap-3 rounded-[14px] border border-border bg-muted/40 px-4 py-3 dark:border-white/8 dark:bg-white/3"
                         >
                           <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-muted text-muted-foreground dark:bg-white/6">
                             <Icon className="h-4 w-4" />

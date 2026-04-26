@@ -34,7 +34,9 @@ import {
   type AdminSettingsAccountListStatus,
   type AdminSettingsAccountStatusAction,
   type AdminSettingsAuditTargetType,
+  type ContactChannelConfig,
   type AdminUpdateAdminAccountStatusRequest,
+  type UpdateSiteContactRequest,
 } from "@/lib/api/contracts/admin-settings"
 import {
   ADMIN_AI_ACTIVE_STATUS_OPTIONS,
@@ -2009,6 +2011,135 @@ export function parseAdminSettingsAccountStatusBody(
     action: shape.data.action as AdminSettingsAccountStatusAction,
     reason,
   })
+}
+
+const SITE_CONTACT_CHANNEL_TYPES = ["wechat", "douyin"] as const
+
+function parseSiteContactChannels(value: unknown): ValidationResult<ContactChannelConfig[]> {
+  if (!Array.isArray(value)) {
+    return fail("VALIDATION_FAILED", "contactChannels 必须是数组。")
+  }
+
+  const parsed: ContactChannelConfig[] = []
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      return fail("VALIDATION_FAILED", "contactChannels 中存在不合法对象。")
+    }
+
+    const row = item as Record<string, unknown>
+    const title = parseTrimmedRequiredString(row.title, "contactChannels.title", 1, 50)
+    const handle = parseTrimmedRequiredString(row.handle, "contactChannels.handle", 1, 100)
+    const summary = parseTrimmedRequiredString(row.summary, "contactChannels.summary", 1, 200)
+    const qrLabel = parseTrimmedRequiredString(row.qrLabel, "contactChannels.qrLabel", 1, 50)
+
+    if (!title.ok || !handle.ok || !summary.ok || !qrLabel.ok) {
+      return fail("VALIDATION_FAILED", "contactChannels 字段不合法。")
+    }
+
+    if (typeof row.type !== "string" || !SITE_CONTACT_CHANNEL_TYPES.includes(row.type as (typeof SITE_CONTACT_CHANNEL_TYPES)[number])) {
+      return fail("VALIDATION_FAILED", "contactChannels.type 不合法。")
+    }
+
+    let qrSeed: number | undefined
+    if (row.qrSeed !== undefined && row.qrSeed !== null) {
+      if (typeof row.qrSeed !== "number" || !Number.isInteger(row.qrSeed) || row.qrSeed < 0) {
+        return fail("VALIDATION_FAILED", "contactChannels.qrSeed 必须是非负整数。")
+      }
+      qrSeed = row.qrSeed
+    }
+
+    let qrImageUrl: string | null | undefined
+    if (row.qrImageUrl !== undefined) {
+      if (row.qrImageUrl === null) {
+        qrImageUrl = null
+      } else if (typeof row.qrImageUrl === "string") {
+        const normalizedQrImageUrl = row.qrImageUrl.trim()
+        if (normalizedQrImageUrl.length > 0 && !isValidUrl(normalizedQrImageUrl)) {
+          return fail("VALIDATION_FAILED", "contactChannels.qrImageUrl 必须是合法 URL。")
+        }
+        qrImageUrl = normalizedQrImageUrl.length > 0 ? normalizedQrImageUrl : null
+      } else {
+        return fail("VALIDATION_FAILED", "contactChannels.qrImageUrl 必须是字符串或 null。")
+      }
+    }
+
+    parsed.push({
+      title: title.data,
+      handle: handle.data,
+      summary: summary.data,
+      qrLabel: qrLabel.data,
+      ...(qrSeed !== undefined ? { qrSeed } : {}),
+      ...(qrImageUrl !== undefined ? { qrImageUrl } : {}),
+      type: row.type as ContactChannelConfig["type"],
+    })
+  }
+
+  return ok(parsed)
+}
+
+export function parseAdminSettingsContactBody(
+  input: unknown,
+): ValidationResult<UpdateSiteContactRequest> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return fail("BAD_REQUEST", "联系方式请求体不合法。")
+  }
+
+  const body = input as Record<string, unknown>
+  const data: UpdateSiteContactRequest = {}
+
+  if (body.companyName !== undefined) {
+    const companyName = parseTrimmedRequiredString(body.companyName, "companyName", 1, 200)
+    if (!companyName.ok) {
+      return fail("VALIDATION_FAILED", "companyName 不合法。")
+    }
+    data.companyName = companyName.data
+  }
+
+  if (body.address !== undefined) {
+    const address = parseTrimmedRequiredString(body.address, "address", 1, 500)
+    if (!address.ok) {
+      return fail("VALIDATION_FAILED", "address 不合法。")
+    }
+    data.address = address.data
+  }
+
+  if (body.website !== undefined) {
+    const website = parseTrimmedRequiredString(body.website, "website", 1, 255)
+    if (!website.ok || !isValidUrl(website.data)) {
+      return fail("VALIDATION_FAILED", "website 必须是 http(s) 链接。")
+    }
+    data.website = website.data
+  }
+
+  if (body.contactEmail !== undefined) {
+    const contactEmail = parseTrimmedRequiredString(body.contactEmail, "contactEmail", 3, 255)
+    if (!contactEmail.ok || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.data)) {
+      return fail("VALIDATION_FAILED", "contactEmail 格式不正确。")
+    }
+    data.contactEmail = contactEmail.data
+  }
+
+  if (body.serviceHours !== undefined) {
+    const serviceHours = parseTrimmedRequiredString(body.serviceHours, "serviceHours", 1, 100)
+    if (!serviceHours.ok) {
+      return fail("VALIDATION_FAILED", "serviceHours 不合法。")
+    }
+    data.serviceHours = serviceHours.data
+  }
+
+  if (body.contactChannels !== undefined) {
+    const channels = parseSiteContactChannels(body.contactChannels)
+    if (!channels.ok) {
+      return channels
+    }
+    data.contactChannels = channels.data
+  }
+
+  if (Object.keys(data).length === 0) {
+    return fail("VALIDATION_FAILED", "请至少提供一个要更新的字段。")
+  }
+
+  return ok(data)
 }
 
 const adminUserSoftDeleteShapeSchema = z.object({

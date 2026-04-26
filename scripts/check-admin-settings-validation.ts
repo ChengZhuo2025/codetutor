@@ -5,6 +5,7 @@ import {
   parseAdminSettingsAccountListQuery,
   parseAdminSettingsAuditListQuery,
   parseAdminSettingsAccountStatusBody,
+  parseAdminSettingsContactBody,
 } from "../server/lib/request-validation.ts"
 
 test("parseAdminSettingsAccountListQuery applies defaults", () => {
@@ -63,5 +64,37 @@ test("parseAdminSettingsAccountStatusBody trims reason", () => {
 
 test("parseAdminSettingsAccountStatusBody rejects invalid action", () => {
   const r = parseAdminSettingsAccountStatusBody({ action: "suspend" })
+  assert.equal(r.ok, false)
+})
+
+test("parseAdminSettingsContactBody validates and normalizes payload", () => {
+  const r = parseAdminSettingsContactBody({
+    companyName: "  上海智酷数能科技有限公司  ",
+    website: "https://www.zicool.cn",
+    contactEmail: "ops@zicool.cn",
+    serviceHours: "工作日 10:00-19:00",
+    contactChannels: [
+      {
+        title: "客服微信",
+        handle: "18600165902",
+        summary: "产品咨询",
+        qrLabel: "微信扫码添加",
+        qrImageUrl: "https://cdn.example.com/qr.png",
+        type: "wechat",
+      },
+    ],
+  })
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.equal(r.data.companyName, "上海智酷数能科技有限公司")
+    assert.equal(r.data.contactChannels?.[0]?.qrImageUrl, "https://cdn.example.com/qr.png")
+  }
+})
+
+test("parseAdminSettingsContactBody rejects non-http website", () => {
+  const r = parseAdminSettingsContactBody({
+    website: "javascript:alert(1)",
+  })
   assert.equal(r.ok, false)
 })

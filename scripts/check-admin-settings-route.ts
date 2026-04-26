@@ -6,6 +6,7 @@ import {
   createAdminSettingsAccountListGetHandler,
   createAdminSettingsAccountStatusPostHandler,
   createAdminSettingsAuditLogListGetHandler,
+  createAdminSettingsContactPatchHandler,
 } from "../server/modules/admin-settings/route-handler.ts"
 import type {
   AdminSettingsOverviewResponseData,
@@ -192,4 +193,25 @@ test("admin settings audit list returns 200", async () => {
   assert.equal(res.status, 200)
   const body = await res.json()
   assert.equal(body.data.items[0].targetType, "admin_account")
+})
+
+test("admin settings contact patch rejects invalid payload", async () => {
+  const handler = createAdminSettingsContactPatchHandler({
+    getRequestAdmin: async () => okAdmin,
+    updateSiteContactSettings: async () => {
+      throw new Error("should not call")
+    },
+  })
+
+  const res = await handler(
+    new Request("http://localhost/api/admin/settings/contact", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        website: "javascript:alert(1)",
+      }),
+    }),
+  )
+
+  assert.equal(res.status, 400)
 })

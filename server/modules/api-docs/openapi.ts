@@ -128,6 +128,7 @@ import {
   updateProfileMeRequestSchema,
   updateTaskStatusRequestSchema,
   updateTaskStatusResponseDataSchema,
+  uploadQrCodeResponseDataSchema,
   uploadProfileAvatarRequestSchema,
   uploadProfileAvatarResponseDataSchema,
 } from "./schemas.ts"
@@ -1671,6 +1672,7 @@ const successExamples = {
         maskedHandle: "186****5902",
         summary: "产品/合作/试用咨询",
         qrLabel: "微信扫码添加",
+        qrImageUrl: "https://cdn.example.com/qr/wechat.png",
         qrSeed: 13,
         type: "wechat",
       },
@@ -1680,11 +1682,16 @@ const successExamples = {
         maskedHandle: "81****82",
         summary: "动态/案例/教程分享",
         qrLabel: "抖音扫码关注",
+        qrImageUrl: null,
         qrSeed: 29,
         type: "douyin",
       },
     ],
     updatedAt: "2026-04-25T18:00:00Z",
+  },
+  adminSiteContactQrUpload: {
+    qrImageUrl: "https://cdn.example.com/qr/wechat-20260425.png",
+    storagePath: "qr-1714048000000-550e8400-e29b-41d4-a716-446655440000.png",
   },
   adminAIOverview: adminAIOverviewExample,
   adminAIProviderList: adminAIProviderListExample,
@@ -3908,6 +3915,35 @@ registry.registerPath({
       "联系方式读取成功",
     ),
     ...commonErrorResponses(["500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/settings/qr-upload",
+  operationId: "uploadAdminSettingsContactQrCode",
+  tags: ["admin-settings"],
+  summary: "上传联系方式二维码图片",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "multipart/form-data": {
+          schema: uploadProfileAvatarRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      uploadQrCodeResponseDataSchema,
+      "UploadAdminSettingsContactQrCodeResponse",
+      "二维码上传成功",
+      successExamples.adminSiteContactQrUpload,
+      "二维码上传成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
   },
 })
 
