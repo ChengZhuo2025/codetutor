@@ -1861,11 +1861,11 @@ SSE 事件补充：
 当前只支持 Web 端微信 Native 扫码支付，不支持 JSAPI/H5/退款/自动续费。
 
 - `GET /api/subscription/me` 返回当前订阅与可购买套餐。默认免费版；支付成功后返回个人版或专业版、有效期与剩余天数。
-- `POST /api/payment/wechat/native-orders` 请求体为 `{ "planCode": "personal_monthly" | "pro_monthly" }`，成功返回订单号、金额、状态、`codeUrl` 和过期时间。
+- `POST /api/payment/wechat/native-orders` 请求体为 `{ "planCode": "personal_monthly" | "pro_monthly" }`，成功返回订单号、金额、状态、`codeUrl` 和过期时间；服务端向微信下单时同步传入 `time_expire`。
 - `GET /api/payment/orders/{orderNo}` 仅允许订单所属用户读取。
-- `POST /api/payment/orders/{orderNo}/sync` 调用微信商户订单号查单接口；若微信返回 `SUCCESS`，复用回调完成逻辑更新订单并开通订阅。
-- `POST /api/payment/wechat/notify` 不需要用户登录，但必须通过 `Wechatpay-*` 头验签、公钥 ID 校验、APIv3 密钥解密、`appid/mchid/amount/trade_state` 校验；重复回调保持幂等。
-- 管理端 `GET/PATCH /api/admin/settings/payment/wechat` 管理 `appid`、`mchid`、回调地址、商户证书序列号、商户私钥、APIv3 密钥、微信支付公钥 ID 与公钥。敏感字段只加密存储和脱敏返回。
+- `POST /api/payment/orders/{orderNo}/sync` 调用微信商户订单号查单接口；响应必须通过微信支付响应签名头与公钥 ID 校验。若微信返回 `SUCCESS`，复用回调完成逻辑更新订单并开通订阅；若返回 `CLOSED`、`PAYERROR` 或本地订单已超时，则写入 `closed` / `failed` / `expired` 终态。
+- `POST /api/payment/wechat/notify` 不需要用户登录，但必须通过 `Wechatpay-*` 头验签、公钥 ID 校验、APIv3 密钥解密、`appid/mchid/amount/trade_state` 校验；重复回调通过数据库行锁与订单状态判断保持幂等。
+- 管理端 `GET/PATCH /api/admin/settings/payment/wechat` 管理 `appid`、`mchid`、回调地址、商户证书序列号、商户私钥、APIv3 密钥、微信支付公钥 ID 与公钥。敏感字段只加密存储和脱敏返回；PATCH 中密钥字段为空或缺省时表示保留原密文，只有显式填写新密钥才替换。
 
 ## 13. 典型错误响应示例
 

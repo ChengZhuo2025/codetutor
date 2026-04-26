@@ -16,10 +16,11 @@ import type {
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import {
-  applyPaidOrderToSubscriptionSnapshot,
   buildPaymentOrderNo,
   maskPaymentSecret,
+  normalizeWechatPaymentConfigPatch,
   normalizeWechatPaymentConfigInput,
+  normalizeWechatTradeStateForOrder,
 } from "./model.ts"
 import {
   buildWechatPayAuthorizationHeader,
@@ -31,6 +32,7 @@ const SETTINGS_ID = 1
 const SECRET_KEY_VERSION = "v1"
 const WECHAT_PAY_BASE_URL = "https://api.mch.weixin.qq.com"
 const ORDER_EXPIRES_IN_MS = 30 * 60 * 1000
+const WECHAT_PAY_REQUEST_TIMEOUT_MS = 8000
 
 type EncryptedSecret = {
   ciphertext: string
@@ -248,6 +250,27 @@ function mapOrder(row: PaymentOrderRow): PaymentOrderResponseData {
   }
 }
 
+export function validateWechatPayResponseHeaders(input: {
+  headers: Headers
+  expectedWechatpayPublicKeyId: string
+}) {
+  const signature = input.headers.get("Wechatpay-Signature")
+  const timestamp = input.headers.get("Wechatpay-Timestamp")
+  const nonce = input.headers.get("Wechatpay-Nonce")
+  const serial = input.headers.get("Wechatpay-Serial")
+  if (!signature || !timestamp || !nonce || !serial) {
+    const error = new Error("微信支付响应缺少签名头。")
+    error.name = "PAYMENT_PROVIDER_ERROR"
+    throw error
+  }
+  if (serial !== input.expectedWechatpayPublicKeyId) {
+    const error = new Error("微信支付响应公钥 ID 不匹配。")
+    error.name = "PAYMENT_PROVIDER_ERROR"
+    throw error
+  }
+  return { signature, timestamp, nonce }
+}
+
 async function callWechatPay<T>(input: {
   config: RuntimeWechatPaymentConfig
   method: "GET" | "POST"
@@ -255,28 +278,43 @@ async function callWechatPay<T>(input: {
   body?: Record<string, unknown>
 }) {
   const body = input.body ? JSON.stringify(input.body) : ""
-  const response = await fetch(`${WECHAT_PAY_BASE_URL}${input.pathWithQuery}`, {
-    method: input.method,
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "User-Agent": "CodeTutor/0.1",
-      "Authorization": buildWechatPayAuthorizationHeader({
-        method: input.method,
-        pathWithQuery: input.pathWithQuery,
-        body,
-        mchid: input.config.mchId,
-        serialNo: input.config.merchantSerialNo,
-        privateKeyPem: input.config.merchantPrivateKeyPem,
-      }),
-    },
-    body: body || undefined,
-  })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), WECHAT_PAY_REQUEST_TIMEOUT_MS)
+  let response: Response
+  try {
+    response = await fetch(`${WECHAT_PAY_BASE_URL}${input.pathWithQuery}`, {
+      method: input.method,
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "CodeTutor/0.1",
+        "Authorization": buildWechatPayAuthorizationHeader({
+          method: input.method,
+          pathWithQuery: input.pathWithQuery,
+          body,
+          mchid: input.config.mchId,
+          serialNo: input.config.merchantSerialNo,
+          privateKeyPem: input.config.merchantPrivateKeyPem,
+        }),
+      },
+      body: body || undefined,
+      signal: controller.signal,
+    })
+  } catch (fetchError) {
+    const error = new Error(fetchError instanceof Error && fetchError.name === "AbortError"
+      ? "微信支付请求超时。"
+      : "微信支付请求失败。")
+    error.name = "PAYMENT_PROVIDER_ERROR"
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
   const responseBody = await response.text()
-  const signature = response.headers.get("Wechatpay-Signature")
-  const timestamp = response.headers.get("Wechatpay-Timestamp")
-  const nonce = response.headers.get("Wechatpay-Nonce")
-  if (signature && timestamp && nonce) {
+  if (response.ok) {
+    const { signature, timestamp, nonce } = validateWechatPayResponseHeaders({
+      headers: response.headers,
+      expectedWechatpayPublicKeyId: input.config.wechatpayPublicKeyId,
+    })
     const verified = verifyWechatPaySignature({
       publicKeyPem: input.config.wechatpayPublicKeyPem,
       signature,
@@ -307,39 +345,57 @@ export async function updateWechatPaymentSettings(
   adminAccountId: string,
   input: AdminUpdateWechatPaymentSettingsRequest,
 ) {
-  const parsed = normalizeWechatPaymentConfigInput(input)
+  const supabase = createSupabaseAdminClient()
+  const before = await loadPaymentSettingsRow()
+  const parsed = normalizeWechatPaymentConfigPatch(input, {
+    enabled: before.enabled,
+    appId: before.app_id,
+    mchId: before.mch_id,
+    notifyUrl: before.notify_url,
+    merchantSerialNo: before.merchant_serial_no,
+    merchantPrivateKeyConfigured: Boolean(before.merchant_private_key_ciphertext),
+    apiV3KeyConfigured: Boolean(before.api_v3_key_ciphertext),
+    wechatpayPublicKeyId: before.wechatpay_public_key_id,
+    wechatpayPublicKeyConfigured: Boolean(before.wechatpay_public_key_ciphertext),
+  })
   if (!parsed.ok) {
     const error = new Error(parsed.message)
     error.name = "VALIDATION_FAILED"
     throw error
   }
 
-  const merchantPrivateKey = encryptSecret(parsed.data.merchantPrivateKeyPem)
-  const apiV3Key = encryptSecret(parsed.data.apiV3Key)
-  const wechatpayPublicKey = encryptSecret(parsed.data.wechatpayPublicKeyPem)
-  const supabase = createSupabaseAdminClient()
-  const before = await loadPaymentSettingsRow()
+  const updatePayload: Record<string, unknown> = {
+    enabled: parsed.data.enabled,
+    app_id: parsed.data.appId,
+    mch_id: parsed.data.mchId,
+    notify_url: parsed.data.notifyUrl,
+    merchant_serial_no: parsed.data.merchantSerialNo,
+    wechatpay_public_key_id: parsed.data.wechatpayPublicKeyId,
+    secret_key_version: SECRET_KEY_VERSION,
+    updated_by_admin_id: adminAccountId,
+  }
+  if (parsed.data.merchantPrivateKeyPem) {
+    const merchantPrivateKey = encryptSecret(parsed.data.merchantPrivateKeyPem)
+    updatePayload.merchant_private_key_ciphertext = merchantPrivateKey.ciphertext
+    updatePayload.merchant_private_key_iv = merchantPrivateKey.iv
+    updatePayload.merchant_private_key_auth_tag = merchantPrivateKey.authTag
+  }
+  if (parsed.data.apiV3Key) {
+    const apiV3Key = encryptSecret(parsed.data.apiV3Key)
+    updatePayload.api_v3_key_ciphertext = apiV3Key.ciphertext
+    updatePayload.api_v3_key_iv = apiV3Key.iv
+    updatePayload.api_v3_key_auth_tag = apiV3Key.authTag
+  }
+  if (parsed.data.wechatpayPublicKeyPem) {
+    const wechatpayPublicKey = encryptSecret(parsed.data.wechatpayPublicKeyPem)
+    updatePayload.wechatpay_public_key_ciphertext = wechatpayPublicKey.ciphertext
+    updatePayload.wechatpay_public_key_iv = wechatpayPublicKey.iv
+    updatePayload.wechatpay_public_key_auth_tag = wechatpayPublicKey.authTag
+  }
+
   const { data, error } = await supabase
     .from("payment_settings")
-    .update({
-      enabled: parsed.data.enabled,
-      app_id: parsed.data.appId,
-      mch_id: parsed.data.mchId,
-      notify_url: parsed.data.notifyUrl,
-      merchant_serial_no: parsed.data.merchantSerialNo,
-      merchant_private_key_ciphertext: merchantPrivateKey.ciphertext,
-      merchant_private_key_iv: merchantPrivateKey.iv,
-      merchant_private_key_auth_tag: merchantPrivateKey.authTag,
-      api_v3_key_ciphertext: apiV3Key.ciphertext,
-      api_v3_key_iv: apiV3Key.iv,
-      api_v3_key_auth_tag: apiV3Key.authTag,
-      wechatpay_public_key_id: parsed.data.wechatpayPublicKeyId,
-      wechatpay_public_key_ciphertext: wechatpayPublicKey.ciphertext,
-      wechatpay_public_key_iv: wechatpayPublicKey.iv,
-      wechatpay_public_key_auth_tag: wechatpayPublicKey.authTag,
-      secret_key_version: SECRET_KEY_VERSION,
-      updated_by_admin_id: adminAccountId,
-    })
+    .update(updatePayload)
     .eq("id", SETTINGS_ID)
     .select("*")
     .single()
@@ -392,6 +448,7 @@ export async function createWechatNativeOrder(userId: string, input: { planCode:
       description: `CodeTutor ${plan.name}`,
       out_trade_no: orderNo,
       notify_url: config.notifyUrl,
+      time_expire: expiresAt,
       amount: {
         total: plan.price_cents,
         currency: plan.currency,
@@ -431,46 +488,12 @@ async function completePaidOrder(row: PaymentOrderRow, transaction: Record<strin
     ? transaction.success_time
     : new Date().toISOString()
   const supabase = createSupabaseAdminClient()
-  const plan = await loadPlan(row.plan_code)
-  const { data: subscription } = await supabase
-    .from("user_subscriptions")
-    .select("*")
-    .eq("user_id", row.user_id)
-    .maybeSingle()
-  const nextSubscription = applyPaidOrderToSubscriptionSnapshot({
-    currentSubscription: subscription
-      ? {
-          planCode: (subscription as UserSubscriptionRow).plan_code,
-          expiresAt: (subscription as UserSubscriptionRow).expires_at,
-        }
-      : null,
-    paidAt,
-    purchasedPlan: {
-      planCode: plan.code,
-      tierRank: plan.tier_rank,
-      durationDays: plan.duration_days,
-    },
-  })
-
-  await supabase.from("user_subscriptions").upsert({
-    user_id: row.user_id,
-    plan_code: nextSubscription.planCode,
-    status: "active",
-    starts_at: nextSubscription.startsAt,
-    expires_at: nextSubscription.expiresAt,
-    source_order_no: row.order_no,
-  }, { onConflict: "user_id" })
-
   const { data: updated, error } = await supabase
-    .from("payment_orders")
-    .update({
-      status: "paid",
-      paid_at: paidAt,
-      wechat_transaction_id: typeof transaction.transaction_id === "string" ? transaction.transaction_id : null,
-      wechat_trade_state: typeof transaction.trade_state === "string" ? transaction.trade_state : "SUCCESS",
-      wechat_callback_payload: transaction,
+    .rpc("complete_paid_payment_order", {
+      p_order_no: row.order_no,
+      p_transaction: transaction,
+      p_paid_at: paidAt,
     })
-    .eq("id", row.id)
     .select("*")
     .single()
   assertSupabaseSuccess(error, "failed to mark order paid")
@@ -497,6 +520,25 @@ export async function syncPaymentOrderForUser(userId: string, orderNo: string) {
   })
   if (transaction.trade_state === "SUCCESS") {
     return mapOrder(await completePaidOrder(row, transaction))
+  }
+  const terminalStatus = normalizeWechatTradeStateForOrder({
+    tradeState: transaction.trade_state,
+    localExpiresAt: row.expires_at,
+  })
+  if (terminalStatus) {
+    const { data: updated, error: updateError } = await supabase
+      .from("payment_orders")
+      .update({
+        status: terminalStatus,
+        wechat_trade_state: typeof transaction.trade_state === "string" ? transaction.trade_state : terminalStatus.toUpperCase(),
+        wechat_callback_payload: transaction,
+      })
+      .eq("id", row.id)
+      .neq("status", "paid")
+      .select("*")
+      .single()
+    assertSupabaseSuccess(updateError, "failed to update terminal payment order")
+    return mapOrder(updated as PaymentOrderRow)
   }
   return mapOrder(row)
 }
@@ -551,13 +593,16 @@ export async function handleWechatPaymentNotify(input: {
     throw new Error("微信支付回调商户身份不匹配。")
   }
   const supabase = createSupabaseAdminClient()
-  await supabase.from("payment_webhook_events").insert({
+  const { error: eventInsertError } = await supabase.from("payment_webhook_events").insert({
     wechat_event_id: payload.id ?? null,
     order_no: orderNo,
     headers: Object.fromEntries(input.headers.entries()),
     payload,
     decrypted_payload: transaction,
   })
+  if (eventInsertError && eventInsertError.code !== "23505") {
+    assertSupabaseSuccess(eventInsertError, "failed to record payment webhook event")
+  }
   const { data, error } = await supabase
     .from("payment_orders")
     .select("*")

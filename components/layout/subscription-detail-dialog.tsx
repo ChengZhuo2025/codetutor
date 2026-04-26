@@ -25,6 +25,7 @@ import type { SubscriptionSnapshot } from "@/types/profile"
 import { requestData } from "@/lib/api/client"
 import type {
   PaymentOrderResponseData,
+  PaymentOrderStatus,
   PaymentPlanCode,
   SubscriptionMeResponseData,
   WechatNativeOrderResponseData,
@@ -33,6 +34,16 @@ import type {
 type SubscriptionDetailDialogProps = {
   subscription: SubscriptionSnapshot
   children: ReactNode
+}
+
+const TERMINAL_PAYMENT_STATUSES = new Set<PaymentOrderStatus>(["paid", "closed", "expired", "failed"])
+
+function getPaymentStatusLabel(status: PaymentOrderStatus) {
+  if (status === "paid") return "已支付"
+  if (status === "closed") return "已关闭"
+  if (status === "expired") return "已过期"
+  if (status === "failed") return "支付失败"
+  return "等待支付"
 }
 
 export function SubscriptionDetailDialog({
@@ -77,7 +88,7 @@ export function SubscriptionDetailDialog({
   }, [activeOrder?.codeUrl])
 
   useEffect(() => {
-    if (!activeOrder || activeOrder.status === "paid") return
+    if (!activeOrder || TERMINAL_PAYMENT_STATUSES.has(activeOrder.status)) return
     const timer = window.setInterval(() => {
       void requestData<PaymentOrderResponseData>(`/payment/orders/${activeOrder.orderNo}/sync`, {
         method: "POST",
@@ -86,6 +97,12 @@ export function SubscriptionDetailDialog({
         if (order.status === "paid") {
           setPaymentMessage("支付成功，订阅权益已开通。")
           void requestData<SubscriptionMeResponseData>("/subscription/me").then(setSubscriptionData)
+        } else if (order.status === "expired") {
+          setPaymentMessage("支付二维码已过期，请重新创建订单。")
+        } else if (order.status === "closed") {
+          setPaymentMessage("支付订单已关闭，请重新创建订单。")
+        } else if (order.status === "failed") {
+          setPaymentMessage("支付失败，请重新创建订单。")
         }
       }).catch(() => {
         setPaymentMessage("暂时无法同步支付状态，可稍后手动刷新。")
@@ -151,7 +168,7 @@ export function SubscriptionDetailDialog({
                     订单号：{activeOrder.orderNo}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    状态：{activeOrder.status === "paid" ? "已支付" : "等待支付"}
+                    状态：{getPaymentStatusLabel(activeOrder.status)}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -159,9 +176,15 @@ export function SubscriptionDetailDialog({
                       variant="outline"
                       onClick={() => {
                         void requestData<PaymentOrderResponseData>(`/payment/orders/${activeOrder.orderNo}/sync`, { method: "POST" })
-                          .then(setActiveOrder)
+                          .then((order) => {
+                            setActiveOrder(order)
+                            if (order.status === "expired") setPaymentMessage("支付二维码已过期，请重新创建订单。")
+                            if (order.status === "closed") setPaymentMessage("支付订单已关闭，请重新创建订单。")
+                            if (order.status === "failed") setPaymentMessage("支付失败，请重新创建订单。")
+                          })
                           .catch(() => setPaymentMessage("支付状态同步失败，请稍后重试。"))
                       }}
+                      disabled={TERMINAL_PAYMENT_STATUSES.has(activeOrder.status)}
                     >
                       刷新支付状态
                     </Button>

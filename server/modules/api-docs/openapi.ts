@@ -3988,6 +3988,7 @@ registry.registerPath({
   operationId: "updateAdminWechatPaymentSettings",
   tags: ["admin-settings", "payment"],
   summary: "更新微信支付配置",
+  description: "敏感字段为空或缺省时保留原密文；只有显式提交新的商户私钥、APIv3 密钥或微信支付公钥时才替换。",
   security: [],
   request: {
     body: {

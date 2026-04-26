@@ -904,8 +904,9 @@ flowchart TB
 ## 17.1 当前支付链路
 
 - 管理后台 `/admin/settings` 的「支付配置」维护商户号、AppID、回调地址、商户证书序列号、商户私钥、APIv3 密钥、微信支付公钥 ID 与公钥；敏感字段只加密落库，不放业务 `.env`。
-- 用户端订阅弹窗调用 `POST /api/payment/wechat/native-orders` 生成微信 `code_url` 并本地渲染二维码；`POST /api/payment/orders/{orderNo}/sync` 用作前端轮询兜底。
-- 微信回调 `POST /api/payment/wechat/notify` 先验签、再用 APIv3 密钥解密 `resource`，校验 `appid/mchid/amount/trade_state` 后幂等更新订单并开通订阅。
+- 用户端订阅弹窗调用 `POST /api/payment/wechat/native-orders` 生成带 `time_expire` 的微信 `code_url` 并本地渲染二维码；`POST /api/payment/orders/{orderNo}/sync` 用作前端轮询兜底，并把 `CLOSED`、`PAYERROR` 与本地超时映射为终态。
+- 微信查单响应必须具备 `Wechatpay-*` 签名头且 `Wechatpay-Serial` 匹配后台配置的微信支付公钥 ID；验签失败时 fail closed。
+- 微信回调 `POST /api/payment/wechat/notify` 先验签、再用 APIv3 密钥解密 `resource`，校验 `appid/mchid/amount/trade_state` 后调用带行锁的 `complete_paid_payment_order` RPC，幂等更新订单并确保订阅权益只开通一次。
 
 ---
 

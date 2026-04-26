@@ -9,7 +9,7 @@
 ## 30 秒状态速览
 
 - 当前项目已不是纯原型仓库，而是“前端页面 + `app/api` + `server/modules` + Supabase migrations”的同仓 MVP。
-- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息、自学模式异步教程链接生成学习计划草稿、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、管理后台 Phase 1、**用户运营**、**学习运营**、**AI 运营**、**系统设置**（含联系方式与微信支付配置）以及 **微信 Native 扫码支付 + 订阅权益开通**（订阅查询、Native 下单、订单查询/同步、支付回调验签解密、支付成功后开通个人版/专业版权益）。
+- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息、自学模式异步教程链接生成学习计划草稿、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、管理后台 Phase 1、**用户运营**、**学习运营**、**AI 运营**、**系统设置**（含联系方式与微信支付配置）以及 **微信 Native 扫码支付 + 订阅权益开通**（订阅查询、Native 下单、订单查询/同步、微信响应验签、支付回调验签解密、原子幂等开通个人版/专业版权益）。
 - 当前代码技术栈以 `package.json` 为准：`Next.js 16.2.0`、`React 19.2.4`、`TypeScript 5.7.3`、`Tailwind CSS 4.2`、`shadcn/ui`、`Zod + zod-to-openapi + Swagger UI`；当前本地验证环境为 `Node.js 22.18.0`。
 - 已补运行时接口文档：`/api/docs/openapi` 输出 OpenAPI 3.1 JSON，`/api-docs` 提供 Swagger UI 查看与调试；文档 `info.description` 注明用户端主题偏好为前端 localStorage、无 REST 接口。
 - 用户端支持明暗主题切换（默认暗色，`next-themes` + `app/globals.css` 双套令牌），入口：营销顶栏、登录页右上角、工作台左侧栏底部设置行右侧。
@@ -91,7 +91,7 @@
 - 当前接口文档不是“扫描整个 `app/api` 目录零维护生成”；新增或修改后端接口后，仍需同步更新 `server/modules/api-docs/openapi.ts` 与 `server/modules/api-docs/schemas.ts` 中的注册与 schema。
 - 当前 `app/api` 路由文件已不再普遍手写请求解析；请求体/查询参数校验、统一成功/失败响应、常见 `NOT_FOUND` / `BAD_REQUEST` 文案与错误映射，正在集中收敛到 `server/lib/request-validation.ts`、`server/lib/route-response.ts`、`server/lib/route-error.ts`、`server/lib/route-error-presets.ts` 以及各域 `route-handler.ts`。
 - 当前仓库顶层真实目录除了页面和服务端主目录外，还包含 `lib/auth`、`lib/learning`、`lib/mocks`、`server/services`、`server/utils`、`supabase/seeds` 等辅助或预留目录；目录阅读应以当前代码树为准，不再按最早设计稿假定不存在的层级。
-- 当前已落地的数据库迁移为 `001` 到 `028`，其中已包含学习主线核心表、用户资料字段升级、运营导出视图、头像 Storage bucket、反馈工单表、学习计划 `interrupted` 状态、成长写模型表 `score_ledgers` / `user_ranks` / `daily_checkins`、AI 会话/agent/provider/skill 相关表、管理员账号/角色/审计日志表、`018` 自学材料摄取与计划草稿相关表（`learning_material_*`、`learning_plan_draft*`）、`019` 用户软删除、`020` analytics/notifications、`021` Provider API Key 密文存储字段与加密托管能力，以及 `024` async material intake / chunks / generation runs、`025` editable draft / revision 扩展、`026` chunk evidence metadata 扩展、`027` 草稿任务 `mastery_points` / `cautions` 契约升级，与 `028` AI Model 结构化画像字段扩展。
+- 当前已落地的数据库迁移为 `001` 到 `035`，其中已包含学习主线核心表、用户资料字段升级、运营导出视图、头像 Storage bucket、反馈工单表、学习计划 `interrupted` 状态、成长写模型表 `score_ledgers` / `user_ranks` / `daily_checkins`、AI 会话/agent/provider/skill 相关表、管理员账号/角色/审计日志表、`018` 自学材料摄取与计划草稿相关表（`learning_material_*`、`learning_plan_draft*`）、`019` 用户软删除、`020` analytics/notifications、`021` Provider API Key 密文存储字段与加密托管能力，`024`-`028` 自学材料与 AI 模型画像扩展，`029`-`033` 企业联系方式与二维码/RLS 修正，`034` 微信支付与订阅表，以及 `035` 支付完成幂等 RPC。
 - 当前 Provider 密钥机制已不是“仅环境变量”：后台 `/admin/ai/providers` 支持查看脱敏值、按需明文读取、修改并加密保存到数据库；运行时优先读数据库密文，`envSecretRef` 仅作兼容环境变量回退；服务端必须配置 `AI_PROVIDER_SECRET_ENCRYPTION_KEY`。
 - 当前主学习闭环已真实打通：学习消息链路首版已完成 `conversation_sessions`、`conversation_messages`、provider / agent / skill 配置表、`POST /api/learning/message`、`GET /api/learning/current-session`、`GET /api/learning/messages`、SSE 流式输出、前端增量渲染、`task_patch` 状态联动、结构化 `structuredContent`（`interactionType / variant / summary / blocks / sections / actions`）与对应测试链路。
 - 当前已补 Phase 1 运行时加固：用户 Bearer 鉴权与管理员会话查找走进程内短 TTL 缓存，AI provider / model / agent / binding / skill 解析走配置快照缓存，`/api/learning/message`、用户 / 管理员登录与会话、Provider 密钥读取、agent test 等关键接口已接入限流、并发保护、`X-Request-Id` / `X-Auth-Cache` / `X-Config-Cache` / `X-Rate-Limit` / `Server-Timing` 观测头与结构化请求日志；这些能力当前都还是单实例进程内实现。
@@ -118,7 +118,7 @@
 ### P2：商业化与基础设施增强
 
 - AI 第三阶段能力：按 `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 的 `15.3` 补齐后台前端配置页、调用日志查看、Prompt 灰度与回滚、成本与稳定性面板。
-- 支付域深化：在已落地微信 Native 扫码支付、支付状态、订阅生命周期和前端订阅弹窗真实接入后，后续补退款、自动续费、JSAPI/H5 支付与支付运营后台。
+- 支付域深化：在已落地微信 Native 扫码支付、支付状态、订阅生命周期、原子幂等权益开通和前端订阅弹窗真实接入后，后续补退款、自动续费、JSAPI/H5 支付与支付运营后台。
 - 缓存与队列增强：当前已落地单实例进程内缓存、限流与基础请求观测；后续按实际流量再决定是否引入 Redis、异步队列、跨实例频控与更完整的分布式缓存。
 - 前端请求层与自动化测试增强：在必要时评估 React Query / SWR，并逐步补齐高频主链路自动化测试。
 

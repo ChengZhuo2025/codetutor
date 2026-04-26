@@ -1,6 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { createHash, createPublicKey, createSign } from "node:crypto"
+import { readFileSync } from "node:fs"
 
 import {
   buildWechatPayAuthorizationHeader,
@@ -9,8 +10,11 @@ import {
 } from "../server/modules/payments/wechat-crypto.ts"
 import {
   applyPaidOrderToSubscriptionSnapshot,
+  normalizeWechatPaymentConfigPatch,
   normalizeWechatPaymentConfigInput,
+  normalizeWechatTradeStateForOrder,
 } from "../server/modules/payments/model.ts"
+import { validateWechatPayResponseHeaders } from "../server/modules/payments/service.ts"
 import {
   createWechatNativeOrderPostHandler,
   createPaymentOrderGetHandler,
@@ -222,4 +226,130 @@ test("payment order detail route forbids reading another user's order", async ()
 test("wechat payment config masks stored secrets using stable digest metadata", () => {
   const digest = createHash("sha256").update(TEST_PUBLIC_KEY, "utf8").digest("hex")
   assert.equal(digest.length, 64)
+})
+
+test("wechat payment settings patch preserves existing secrets when inputs are blank", () => {
+  const parsed = normalizeWechatPaymentConfigPatch(
+    {
+      enabled: true,
+      notifyUrl: "https://www.codetutor.cn/api/payment/wechat/notify",
+      merchantPrivateKeyPem: "",
+      apiV3Key: "",
+      wechatpayPublicKeyPem: "",
+    },
+    {
+      enabled: true,
+      appId: "wx123",
+      mchId: "1900000001",
+      notifyUrl: "https://old.example.com/api/payment/wechat/notify",
+      merchantSerialNo: "SERIAL123",
+      merchantPrivateKeyConfigured: true,
+      apiV3KeyConfigured: true,
+      wechatpayPublicKeyId: "PUB_KEY_ID_123",
+      wechatpayPublicKeyConfigured: true,
+    },
+  )
+
+  assert.equal(parsed.ok, true)
+  if (parsed.ok) {
+    assert.equal(parsed.data.notifyUrl, "https://www.codetutor.cn/api/payment/wechat/notify")
+    assert.equal(parsed.data.merchantPrivateKeyPem, null)
+    assert.equal(parsed.data.apiV3Key, null)
+    assert.equal(parsed.data.wechatpayPublicKeyPem, null)
+  }
+})
+
+test("wechat payment settings patch can disable payment without clearing stored secrets", () => {
+  const parsed = normalizeWechatPaymentConfigPatch(
+    {
+      enabled: false,
+      merchantPrivateKeyPem: "",
+      apiV3Key: "",
+      wechatpayPublicKeyPem: "",
+    },
+    {
+      enabled: true,
+      appId: "wx123",
+      mchId: "1900000001",
+      notifyUrl: "https://www.codetutor.cn/api/payment/wechat/notify",
+      merchantSerialNo: "SERIAL123",
+      merchantPrivateKeyConfigured: true,
+      apiV3KeyConfigured: true,
+      wechatpayPublicKeyId: "PUB_KEY_ID_123",
+      wechatpayPublicKeyConfigured: true,
+    },
+  )
+
+  assert.equal(parsed.ok, true)
+  if (parsed.ok) {
+    assert.equal(parsed.data.enabled, false)
+    assert.equal(parsed.data.merchantPrivateKeyPem, null)
+    assert.equal(parsed.data.apiV3Key, null)
+    assert.equal(parsed.data.wechatpayPublicKeyPem, null)
+  }
+})
+
+test("wechat payment response verification requires signature headers and matching public key id", () => {
+  assert.throws(
+    () => validateWechatPayResponseHeaders({
+      headers: new Headers(),
+      expectedWechatpayPublicKeyId: "PUB_KEY_ID_123",
+    }),
+    /缺少签名头/,
+  )
+
+  assert.throws(
+    () => validateWechatPayResponseHeaders({
+      headers: new Headers({
+        "Wechatpay-Signature": "sig",
+        "Wechatpay-Timestamp": "1714051200",
+        "Wechatpay-Nonce": "nonce",
+        "Wechatpay-Serial": "OTHER_KEY",
+      }),
+      expectedWechatpayPublicKeyId: "PUB_KEY_ID_123",
+    }),
+    /公钥 ID 不匹配/,
+  )
+})
+
+test("wechat trade state maps local terminal statuses", () => {
+  assert.equal(
+    normalizeWechatTradeStateForOrder({
+      tradeState: "CLOSED",
+      localExpiresAt: "2026-04-26T10:00:00.000Z",
+      now: "2026-04-26T09:00:00.000Z",
+    }),
+    "closed",
+  )
+  assert.equal(
+    normalizeWechatTradeStateForOrder({
+      tradeState: "PAYERROR",
+      localExpiresAt: "2026-04-26T10:00:00.000Z",
+      now: "2026-04-26T09:00:00.000Z",
+    }),
+    "failed",
+  )
+  assert.equal(
+    normalizeWechatTradeStateForOrder({
+      tradeState: "USERPAYING",
+      localExpiresAt: "2026-04-26T10:00:00.000Z",
+      now: "2026-04-26T10:00:01.000Z",
+    }),
+    "expired",
+  )
+  assert.equal(
+    normalizeWechatTradeStateForOrder({
+      tradeState: "NOTPAY",
+      localExpiresAt: "2026-04-26T10:00:00.000Z",
+      now: "2026-04-26T09:00:00.000Z",
+    }),
+    null,
+  )
+})
+
+test("payment completion is implemented through a row-locking database RPC", () => {
+  const migration = readFileSync("supabase/migrations/035_harden_payment_order_completion.sql", "utf8")
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.complete_paid_payment_order/)
+  assert.match(migration, /FOR UPDATE/)
+  assert.match(migration, /IF v_order\.status = 'paid'/)
 })

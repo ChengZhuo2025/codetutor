@@ -1,5 +1,5 @@
 import { jsonAuthRequired, jsonError, jsonSuccess } from "@/server/lib/route-response"
-import { parsePaymentPlanCode, normalizeWechatPaymentConfigInput } from "./model.ts"
+import { parsePaymentPlanCode } from "./model.ts"
 import type {
   AdminUpdateWechatPaymentSettingsRequest,
 } from "@/lib/api/contracts/payment"
@@ -176,11 +176,7 @@ export function createAdminWechatPaymentSettingsPatchHandler(dependencies: {
         return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
       }
       const body = await request.json()
-      const parsed = normalizeWechatPaymentConfigInput(body as AdminUpdateWechatPaymentSettingsRequest)
-      if (!parsed.ok) {
-        return jsonError(parsed.code, parsed.message, 400)
-      }
-      const data = await dependencies.updateWechatPaymentSettings(admin.adminId, parsed.data)
+      const data = await dependencies.updateWechatPaymentSettings(admin.adminId, body as AdminUpdateWechatPaymentSettingsRequest)
       return jsonSuccess(data, "微信支付配置已更新")
     } catch (error) {
       return mapPaymentError(error)

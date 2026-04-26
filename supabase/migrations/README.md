@@ -6,9 +6,9 @@ This folder captures the SQL needed to bring the MVP Postgres schema live inside
 
 ## How to apply
 
-1. Prefer the repo helper command: `pnpm db:run:file -- <sql-file>`.
+1. Prefer the repo helper command with a path relative to the repository root: `pnpm db:run:file -- supabase/migrations/<sql-file>`.
 2. Execute each migration file in sequence, starting with `supabase/migrations/001_init.sql`.
-3. For an existing project that has already run `001_init.sql`, execute only the next unapplied file, such as `002_fix_update_updated_at_search_path.sql`.
+3. For an existing project that has already run `001_init.sql`, execute only the next unapplied file, such as `pnpm db:run:file -- supabase/migrations/002_fix_update_updated_at_search_path.sql`.
 4. If you need manual execution, you can also open the Supabase dashboard and run the same SQL in **SQL Editor**.
 5. Confirm no errors appear and then refresh `Table Editor` or rerun Security Advisor to verify the change.
 
@@ -16,7 +16,7 @@ Repeat the same steps for later migrations, keeping a new sequential file under 
 
 ## Current sequence
 
-As of the current MVP snapshot (after implementing WeChat Native payment and subscription entitlement activation), the migration sequence continues through **034**:
+As of the current MVP snapshot (after hardening WeChat Native payment and subscription entitlement activation), the migration sequence continues through **035**:
 
 1. `001_init.sql` — 基础 schema 初始化
 2. `002_fix_update_updated_at_search_path.sql` — 修复 updated_at 触发器
@@ -52,7 +52,8 @@ As of the current MVP snapshot (after implementing WeChat Native payment and sub
 32. `032_optimize_site_contact_rls_subquery.sql` — 优化企业联系方式 RLS 子查询，降低策略重复计算
 33. `033_restrict_site_contact_update_policy_to_active_admins.sql` — 限制企业联系方式更新仅允许 active 管理员
 34. `034_create_payment_subscription_tables.sql` — **微信 Native 支付与订阅表**（支付配置、订阅套餐、支付订单、用户订阅、支付回调事件；商户私钥/APIv3 密钥/微信支付公钥加密落库）
+35. `035_harden_payment_order_completion.sql` — **支付完成幂等硬化**（新增带行锁的 `complete_paid_payment_order` RPC，确保回调与主动查单并发时同一订单只开通一次订阅权益）
 
-**最新状态**：迁移已达 **034**。`site_contact_settings` + `qr-codes` bucket 实现了企业联系信息与真实二维码图片管理；`payment_settings`、`subscription_plans`、`payment_orders`、`user_subscriptions`、`payment_webhook_events` 支持微信 Native 扫码支付首版闭环。**下一次新增迁移请从 `035_*.sql` 开始。**
+**最新状态**：迁移已达 **035**。`site_contact_settings` + `qr-codes` bucket 实现了企业联系信息与真实二维码图片管理；`payment_settings`、`subscription_plans`、`payment_orders`、`user_subscriptions`、`payment_webhook_events` 支持微信 Native 扫码支付首版闭环；`complete_paid_payment_order` RPC 负责支付完成的原子化与幂等权益开通。**下一次新增迁移请从 `036_*.sql` 开始。**
 
 **仍需人工确认**：如果目标 Supabase 项目尚未创建 `qr-codes` bucket，请在 Supabase Dashboard → Storage 创建名为 `qr-codes` 的 **PUBLIC** bucket（允许匿名读取），否则企业联系方式二维码上传会失败。

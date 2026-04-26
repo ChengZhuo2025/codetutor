@@ -53,7 +53,7 @@
 - `027_material_plan_mastery_and_cautions.sql`
 - `028_add_ai_model_profile_fields.sql`
 - `029_create_site_contact_settings.sql` (新增企业联系方式配置表，支持管理后台编辑，供营销联系对话框动态加载)
-- `034_create_payment_subscription_tables.sql` (新增微信 Native 支付配置、订阅套餐、支付订单、用户订阅与支付回调事件表；`030`-`033` 为联系方式二维码与 RLS 修正迁移)
+- `034_create_payment_subscription_tables.sql` (新增微信 Native 支付配置、订阅套餐、支付订单、用户订阅与支付回调事件表；`035_harden_payment_order_completion.sql` 新增支付完成幂等 RPC；`030`-`033` 为联系方式二维码与 RLS 修正迁移)
 
 当前数据库中已落地的核心业务表包括：
 
@@ -1491,6 +1491,12 @@ MVP 阶段建议谨慎使用软删除：
 - `payment_orders`：用户支付订单，状态为 `created`、`prepay_created`、`paid`、`closed`、`expired`、`failed`；记录微信 `code_url`、交易号、回调 payload、支付时间和过期时间。
 - `user_subscriptions`：用户当前订阅权益，支付成功后 upsert；同套餐续费从当前有效期顺延，升级到更高套餐从支付成功时间开始。
 - `payment_webhook_events`：保存微信回调原始头、原始 payload、解密 payload 和事件 ID，用于审计与幂等排查。
+
+`035_harden_payment_order_completion.sql` 增加 `complete_paid_payment_order(order_no, transaction, paid_at)` RPC：
+
+- 通过 `payment_orders ... FOR UPDATE` 锁定单个订单，确保微信回调与前端主动查单并发时只执行一次订阅开通。
+- 如果订单已为 `paid`，直接返回现有订单；如果订单已经 `closed` / `expired` / `failed`，不再发放权益。
+- 如果支付成功时间晚于本地 `expires_at`，订单标记为 `expired`，避免过期订单继续开通权益。
 
 只要这些对象的建模、流水和约束设计稳定，MVP 的 AI 导师、任务推进、激励系统与首版商业化闭环就能保持一致性，并为后续退款、自动续费、JSAPI/H5 支付、社区、推荐和多模态扩展打下基础。
 
