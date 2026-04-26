@@ -47,6 +47,7 @@
     "test:admin-settings-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-admin-settings-route.ts",
     "test:admin-settings-pages": "node scripts/check-admin-settings-pages.mjs",
     "test:admin-settings": "pnpm test:admin-settings-validation && pnpm test:admin-settings-route && pnpm test:admin-settings-pages",
+    "test:subscription-dialog-logic": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-subscription-dialog-logic.ts",
     "test:payment-wechat": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-payment-wechat.ts",
     "test:admin-ai-validation": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-admin-ai-validation.ts",
     "test:admin-ai-provider-secret-helper": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-admin-ai-provider-secret-helper.ts",

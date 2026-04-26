@@ -23,6 +23,10 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { SubscriptionSnapshot } from "@/types/profile"
 import { requestData } from "@/lib/api/client"
+import {
+  getPaymentOrderErrorMessage,
+  getPlanActionState,
+} from "@/components/layout/subscription-detail-logic"
 import type {
   PaymentOrderResponseData,
   PaymentOrderStatus,
@@ -122,7 +126,7 @@ export function SubscriptionDetailDialog({
       setActiveOrder(order)
       setPaymentMessage("请使用微信扫码完成支付，支付后页面会自动同步状态。")
     } catch (error) {
-      setPaymentMessage(error instanceof Error ? error.message : "支付订单创建失败，请稍后重试。")
+      setPaymentMessage(getPaymentOrderErrorMessage(error))
     } finally {
       setLoadingPlanCode(null)
     }
@@ -207,6 +211,12 @@ export function SubscriptionDetailDialog({
                     : plan.name === "专业版"
                       ? "pro_monthly"
                       : null
+                const actionState = getPlanActionState({
+                  planCode,
+                  isCurrent,
+                  isDowngrade,
+                  loadingPlanCode,
+                })
 
                 return (
                   <div
@@ -282,39 +292,31 @@ export function SubscriptionDetailDialog({
 
                     {/* 按钮区域 */}
                     <div className="mt-4">
-                      {isCurrent ? (
-                        // 当前套餐：续费按钮
+                      {actionState.variant === "downgrade" || actionState.variant === "current" ? (
                         <Button
                           type="button"
-                          disabled={!planCode || loadingPlanCode === planCode}
-                          className={cn("w-full px-4 py-2.5 text-sm font-semibold", USER_BUTTON_PRIMARY_CLASS)}
-                          onClick={() => planCode && void createPaymentOrder(planCode)}
-                        >
-                          {loadingPlanCode === planCode ? "创建订单中…" : "立即续费"}
-                        </Button>
-                      ) : isDowngrade ? (
-                        // 更低套餐：不可点击的灰度按钮
-                        <button
                           disabled
+                          variant="outline"
                           className={cn(
-                            "flex w-full items-center justify-center px-4 py-2.5 text-sm font-medium",
-                            USER_PANEL_OUTLINE_BUTTON_CLASS,
+                            "w-full px-4 py-2.5 text-sm font-semibold",
+                            actionState.variant === "current"
+                              ? USER_BUTTON_PRIMARY_CLASS
+                              : USER_PANEL_OUTLINE_BUTTON_CLASS,
                           )}
                         >
-                          已有更高级套餐
-                        </button>
+                          {actionState.label}
+                        </Button>
                       ) : (
-                        // 更高套餐：升级按钮
                         <Button
                           type="button"
-                          disabled={!planCode || loadingPlanCode === planCode}
+                          disabled={actionState.disabled}
                           className={cn(
                             "w-full px-4 py-2.5 text-sm font-semibold",
                             plan.highlight ? USER_BUTTON_PRIMARY_CLASS : USER_PANEL_OUTLINE_BUTTON_CLASS,
                           )}
                           onClick={() => planCode && void createPaymentOrder(planCode)}
                         >
-                          {loadingPlanCode === planCode ? "创建订单中…" : "升级套餐"}
+                          {actionState.label}
                         </Button>
                       )}
                     </div>
