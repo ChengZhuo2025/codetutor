@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
 import QRCode from "qrcode"
-import { CalendarClock, Check, Crown, FileText, Lock, Loader2 } from "lucide-react"
+import { CalendarClock, Check, CheckCircle2, Crown, FileText, Loader2, Lock, MessageCircle } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -43,6 +43,22 @@ type SubscriptionDetailDialogProps = {
 }
 
 const TERMINAL_PAYMENT_STATUSES = new Set<PaymentOrderStatus>(["paid", "closed", "expired", "failed"])
+
+function PaymentChannelIcon({ channel }: { channel: PaymentChannel }) {
+  if (channel === "alipay") {
+    return (
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1677ff] text-base font-semibold text-white shadow-sm">
+        支
+      </span>
+    )
+  }
+
+  return (
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#07c160] text-white shadow-sm">
+      <MessageCircle className="h-5 w-5" aria-hidden="true" />
+    </span>
+  )
+}
 
 function getPaymentStatusLabel(status: PaymentOrderStatus) {
   if (status === "paid") return "已支付"
@@ -214,22 +230,41 @@ export function SubscriptionDetailDialog({
               <div className="rounded-xl border border-border/70 bg-surface-1/95 p-4">
                 <p className="mb-3 text-sm font-medium text-foreground">选择支付方式</p>
                 <div className="grid gap-3 md:grid-cols-2">
-                  {PAYMENT_CHANNEL_OPTIONS.map((option) => (
-                    <button
-                      key={option.channel}
-                      type="button"
-                      onClick={() => setSelectedPaymentChannel(option.channel)}
-                      className={cn(
-                        "rounded-xl border px-4 py-3 text-left transition-colors",
-                        selectedPaymentChannel === option.channel
-                          ? "border-brand bg-brand-dim/50 text-foreground"
-                          : "border-border bg-surface-2/70 text-muted-foreground hover:border-brand/40",
-                      )}
-                    >
-                      <span className="block text-sm font-semibold">{option.label}</span>
-                      <span className="mt-1 block text-xs">{option.description}</span>
-                    </button>
-                  ))}
+                  {PAYMENT_CHANNEL_OPTIONS.map((option) => {
+                    const selected = selectedPaymentChannel === option.channel
+
+                    return (
+                      <button
+                        key={option.channel}
+                        type="button"
+                        onClick={() => setSelectedPaymentChannel(option.channel)}
+                        aria-pressed={selected}
+                        className={cn(
+                          "group relative flex min-h-[74px] items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors",
+                          selected
+                            ? "border-brand bg-brand-dim/50 text-foreground"
+                            : "border-border bg-surface-2/70 text-muted-foreground hover:border-brand/40 hover:text-foreground",
+                        )}
+                      >
+                        <PaymentChannelIcon channel={option.channel} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold">{option.label}</span>
+                          <span className="mt-1 block text-xs">{option.description}</span>
+                        </span>
+                        <span
+                          className={cn(
+                            "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors",
+                            selected
+                              ? "border-brand bg-brand text-white"
+                              : "border-border bg-surface-1 text-transparent group-hover:border-brand/40",
+                          )}
+                          aria-hidden="true"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                        </span>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             ) : null}
