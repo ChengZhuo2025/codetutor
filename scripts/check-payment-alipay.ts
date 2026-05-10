@@ -1,8 +1,9 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { createPublicKey, createSign } from "node:crypto"
+import { createPublicKey, createSign, createVerify } from "node:crypto"
 
 import {
+  buildAlipaySignContent,
   buildAlipaySignedParams,
   verifyAlipayResponseSignature,
   verifyAlipaySignature,
@@ -64,16 +65,59 @@ test("buildAlipaySignedParams signs sorted RSA2 parameters", () => {
 
   assert.equal(signed.sign_type, "RSA2")
   assert.equal(typeof signed.sign, "string")
+  const verifier = createVerify("RSA-SHA256")
+  verifier.update(buildAlipaySignContent(signed), "utf8")
+  verifier.end()
+  assert.equal(verifier.verify(TEST_PUBLIC_KEY, signed.sign, "base64"), true)
   assert.equal(
     verifyAlipaySignature({
       params: signed,
+      publicKeyPem: TEST_PUBLIC_KEY,
+    }),
+    false,
+  )
+})
+
+test("buildAlipaySignContent includes sign_type for gateway request signing", () => {
+  const content = buildAlipaySignContent({
+    method: "alipay.trade.precreate",
+    app_id: "2021000000000000",
+    charset: "utf-8",
+    sign_type: "RSA2",
+    sign: "ignored",
+    biz_content: JSON.stringify({ out_trade_no: "CT202605100001" }),
+  })
+
+  assert.match(content, /&sign_type=RSA2/)
+  assert.doesNotMatch(content, /sign=ignored/)
+})
+
+test("verifyAlipaySignature excludes sign_type for Alipay notify verification", () => {
+  const notifyParams = {
+    app_id: "2021000000000000",
+    out_trade_no: "CT202605100001",
+    trade_status: "TRADE_SUCCESS",
+    total_amount: "39.00",
+    sign_type: "RSA2",
+  }
+  const signer = createSign("RSA-SHA256")
+  signer.update(buildAlipaySignContent(notifyParams, { excludeSignType: true }), "utf8")
+  signer.end()
+  const signedNotifyParams = {
+    ...notifyParams,
+    sign: signer.sign(TEST_PRIVATE_KEY).toString("base64"),
+  }
+
+  assert.equal(
+    verifyAlipaySignature({
+      params: signedNotifyParams,
       publicKeyPem: TEST_PUBLIC_KEY,
     }),
     true,
   )
   assert.equal(
     verifyAlipaySignature({
-      params: { ...signed, app_id: "tampered" },
+      params: { ...signedNotifyParams, total_amount: "99.00" },
       publicKeyPem: TEST_PUBLIC_KEY,
     }),
     false,

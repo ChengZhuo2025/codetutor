@@ -9,9 +9,16 @@ function stringifyAlipayValue(value: unknown) {
   return String(value)
 }
 
-export function buildAlipaySignContent(params: Record<string, unknown>) {
+export function buildAlipaySignContent(
+  params: Record<string, unknown>,
+  options: { excludeSignType?: boolean } = {},
+) {
   return Object.entries(params)
-    .filter(([key, value]) => key !== "sign" && key !== "sign_type" && value !== undefined && value !== null && String(value) !== "")
+    .filter(([key, value]) => {
+      if (key === "sign") return false
+      if (options.excludeSignType && key === "sign_type") return false
+      return value !== undefined && value !== null && String(value) !== ""
+    })
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([key, value]) => `${key}=${stringifyAlipayValue(value)}`)
     .join("&")
@@ -42,7 +49,7 @@ export function verifyAlipaySignature(input: {
   if (!signature) return false
   try {
     const verifier = createVerify("RSA-SHA256")
-    verifier.update(buildAlipaySignContent(input.params), "utf8")
+    verifier.update(buildAlipaySignContent(input.params, { excludeSignType: true }), "utf8")
     verifier.end()
     return verifier.verify(input.publicKeyPem, signature, "base64")
   } catch {
