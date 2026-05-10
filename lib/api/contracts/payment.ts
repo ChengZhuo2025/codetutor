@@ -1,5 +1,4 @@
-export const PAYMENT_PLAN_CODES = ["personal_monthly", "pro_monthly"] as const
-export type PaymentPlanCode = (typeof PAYMENT_PLAN_CODES)[number]
+export type PaymentPlanCode = string
 
 export const PAYMENT_ORDER_STATUSES = [
   "created",
@@ -20,6 +19,19 @@ export type SubscriptionPlanItem = {
   tierRank: number
   description: string
   features: string[]
+  periodLabel: string
+  ctaLabel: string
+  highlight: boolean
+  purchasable: boolean
+  active: boolean
+  displayOrder: number
+  archivedAt: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type SubscriptionPlansResponseData = {
+  plans: SubscriptionPlanItem[]
 }
 
 export type SubscriptionMeResponseData = {
@@ -81,4 +93,25 @@ export type AdminUpdateWechatPaymentSettingsRequest = {
   apiV3Key?: string
   wechatpayPublicKeyId?: string
   wechatpayPublicKeyPem?: string
+}
+
+export type AdminSubscriptionPlanListResponseData = {
+  items: SubscriptionPlanItem[]
+}
+
+export type AdminUpsertSubscriptionPlanRequest = {
+  code?: string
+  name?: string
+  priceCents?: number
+  currency?: "CNY"
+  durationDays?: number
+  tierRank?: number
+  description?: string
+  features?: string[]
+  periodLabel?: string
+  ctaLabel?: string
+  highlight?: boolean
+  purchasable?: boolean
+  active?: boolean
+  displayOrder?: number
 }

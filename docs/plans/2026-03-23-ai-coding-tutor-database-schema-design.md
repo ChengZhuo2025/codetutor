@@ -1487,7 +1487,7 @@ MVP 阶段建议谨慎使用软删除：
 `034_create_payment_subscription_tables.sql` 落地微信 Native 扫码支付首版闭环：
 
 - `payment_settings`：单行微信支付配置表，保存 `appid`、`mchid`、回调地址、商户证书序列号、微信支付公钥 ID；商户私钥、APIv3 密钥、微信支付公钥用 AES-256-GCM 密文列保存，主密钥复用服务端 `AI_PROVIDER_SECRET_ENCRYPTION_KEY`。
-- `subscription_plans`：首批固定套餐，`personal_monthly` 为个人版 `3900` 分，`pro_monthly` 为专业版 `9900` 分，周期均为 31 天；营销文案可继续展示，但支付真源以该表为准。
+- `subscription_plans`：订阅套餐权威表，已扩展展示排序、周期文案、CTA、推荐标记、可购买标记、上下架与软归档字段；初始化 `free`、`personal_monthly`、`pro_monthly` 三档，其中免费版仅展示不可购买，付费套餐由该表动态驱动下单校验。
 - `payment_orders`：用户支付订单，状态为 `created`、`prepay_created`、`paid`、`closed`、`expired`、`failed`；记录微信 `code_url`、交易号、回调 payload、支付时间和过期时间。
 - `user_subscriptions`：用户当前订阅权益，支付成功后 upsert；同套餐续费从当前有效期顺延，升级到更高套餐从支付成功时间开始。
 - `payment_webhook_events`：保存微信回调原始头、原始 payload、解密 payload 和事件 ID，用于审计与幂等排查。
@@ -1497,6 +1497,12 @@ MVP 阶段建议谨慎使用软删除：
 - 通过 `payment_orders ... FOR UPDATE` 锁定单个订单，确保微信回调与前端主动查单并发时只执行一次订阅开通。
 - 如果订单已为 `paid`，直接返回现有订单；如果订单已经 `closed` / `expired` / `failed`，不再发放权益。
 - 如果支付成功时间晚于本地 `expires_at`，订单标记为 `expired`，避免过期订单继续开通权益。
+
+`036_extend_subscription_plan_management.sql` 扩展 `subscription_plans` 的运营字段：
+
+- `period_label` / `cta_label` / `highlight` / `display_order` 支持首页和订阅弹窗展示。
+- `purchasable` 控制是否允许创建支付订单，免费版和纯展示套餐必须为 `false`。
+- `archived_at` 实现套餐软删除，避免破坏历史订单与订阅引用。
 
 只要这些对象的建模、流水和约束设计稳定，MVP 的 AI 导师、任务推进、激励系统与首版商业化闭环就能保持一致性，并为后续退款、自动续费、JSAPI/H5 支付、社区、推荐和多模态扩展打下基础。
 

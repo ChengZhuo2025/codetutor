@@ -27,7 +27,6 @@ import {
 } from "@/lib/api/contracts/notifications"
 import {
   PAYMENT_ORDER_STATUSES,
-  PAYMENT_PLAN_CODES,
 } from "@/lib/api/contracts/payment"
 
 extendZodWithOpenApi(z)
@@ -1625,7 +1624,7 @@ export const uploadQrCodeResponseDataSchema = z
   })
   .openapi("UploadQrCodeResponseData")
 
-export const paymentPlanCodeSchema = z.enum(PAYMENT_PLAN_CODES).openapi("PaymentPlanCode")
+export const paymentPlanCodeSchema = z.string().regex(/^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$/).openapi("PaymentPlanCode")
 export const paymentOrderStatusSchema = z.enum(PAYMENT_ORDER_STATUSES).openapi("PaymentOrderStatus")
 
 export const subscriptionPlanItemSchema = z
@@ -1638,8 +1637,23 @@ export const subscriptionPlanItemSchema = z
     tierRank: z.number().int(),
     description: z.string(),
     features: z.array(z.string()),
+    periodLabel: z.string(),
+    ctaLabel: z.string(),
+    highlight: z.boolean(),
+    purchasable: z.boolean(),
+    active: z.boolean(),
+    displayOrder: z.number().int(),
+    archivedAt: z.string().nullable(),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
   })
   .openapi("SubscriptionPlanItem")
+
+export const subscriptionPlansResponseDataSchema = z
+  .object({
+    plans: z.array(subscriptionPlanItemSchema),
+  })
+  .openapi("SubscriptionPlansResponseData")
 
 export const subscriptionMeResponseDataSchema = z
   .object({
@@ -1707,6 +1721,31 @@ export const adminUpdateWechatPaymentSettingsRequestSchema = z
     wechatpayPublicKeyPem: z.string().optional(),
   })
   .openapi("AdminUpdateWechatPaymentSettingsRequest")
+
+export const adminSubscriptionPlanListResponseDataSchema = z
+  .object({
+    items: z.array(subscriptionPlanItemSchema),
+  })
+  .openapi("AdminSubscriptionPlanListResponseData")
+
+export const adminUpsertSubscriptionPlanRequestSchema = z
+  .object({
+    code: paymentPlanCodeSchema.optional(),
+    name: z.string().optional(),
+    priceCents: z.number().int().nonnegative().optional(),
+    currency: z.literal("CNY").optional(),
+    durationDays: z.number().int().positive().optional(),
+    tierRank: z.number().int().optional(),
+    description: z.string().optional(),
+    features: z.array(z.string()).optional(),
+    periodLabel: z.string().optional(),
+    ctaLabel: z.string().optional(),
+    highlight: z.boolean().optional(),
+    purchasable: z.boolean().optional(),
+    active: z.boolean().optional(),
+    displayOrder: z.number().int().optional(),
+  })
+  .openapi("AdminUpsertSubscriptionPlanRequest")
 
 // ============================================
 // 管理员看板 API Schemas

@@ -1,8 +1,5 @@
 import "server-only"
 
-export const PAID_PLAN_CODES = ["personal_monthly", "pro_monthly"] as const
-export type PaidPlanCode = (typeof PAID_PLAN_CODES)[number]
-
 export type WechatPaymentConfigInput = {
   enabled?: unknown
   appId?: unknown
@@ -218,11 +215,12 @@ export function normalizeWechatPaymentConfigPatch(
   }
 }
 
-export function parsePaymentPlanCode(value: unknown): ParseResult<PaidPlanCode> {
-  if (typeof value !== "string" || !PAID_PLAN_CODES.includes(value as PaidPlanCode)) {
+export function parsePaymentPlanCode(value: unknown): ParseResult<string> {
+  const normalized = typeof value === "string" ? value.trim() : ""
+  if (!/^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$/.test(normalized)) {
     return { ok: false, code: "VALIDATION_FAILED", message: "套餐编码不合法。" }
   }
-  return { ok: true, data: value as PaidPlanCode }
+  return { ok: true, data: normalized }
 }
 
 export function buildPaymentOrderNo(date = new Date()) {

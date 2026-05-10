@@ -17,8 +17,11 @@ import {
 } from "lucide-react";
 import type { AdminRoleCode } from "@/lib/api/contracts/admin";
 import type {
+  AdminSubscriptionPlanListResponseData,
+  AdminUpsertSubscriptionPlanRequest,
   AdminUpdateWechatPaymentSettingsRequest,
   AdminWechatPaymentSettingsResponseData,
+  SubscriptionPlanItem,
 } from "@/lib/api/contracts/payment";
 import type {
   AdminSettingsAdminAccountListItem,
@@ -66,6 +69,7 @@ type SettingsTab =
   | "audit"
   | "system"
   | "contact"
+  | "plans"
   | "payment";
 
 const TABS: Array<{ id: SettingsTab; label: string }> = [
@@ -76,8 +80,26 @@ const TABS: Array<{ id: SettingsTab; label: string }> = [
   { id: "audit", label: "操作审计" },
   { id: "system", label: "系统信息" },
   { id: "contact", label: "联系方式" },
+  { id: "plans", label: "订阅套餐" },
   { id: "payment", label: "支付配置" },
 ];
+
+const EMPTY_PLAN_FORM: AdminUpsertSubscriptionPlanRequest = {
+  code: "",
+  name: "",
+  priceCents: 0,
+  currency: "CNY",
+  durationDays: 31,
+  tierRank: 0,
+  description: "",
+  features: [""],
+  periodLabel: "/月",
+  ctaLabel: "立即订阅",
+  highlight: false,
+  purchasable: true,
+  active: true,
+  displayOrder: 0,
+};
 
 const ROLE_LABELS: Record<AdminRoleCode, string> = {
   super_admin: "超级管理员",
@@ -310,6 +332,14 @@ export function SystemSettings() {
       wechatpayPublicKeyId: "",
       wechatpayPublicKeyPem: "",
     });
+  const [planData, setPlanData] =
+    useState<AdminSubscriptionPlanListResponseData | null>(null);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [plansSaving, setPlansSaving] = useState(false);
+  const [plansError, setPlansError] = useState<string | null>(null);
+  const [editingPlanCode, setEditingPlanCode] = useState<string | null>(null);
+  const [planForm, setPlanForm] =
+    useState<AdminUpsertSubscriptionPlanRequest>(EMPTY_PLAN_FORM);
 
   useAdminSessionExpiryRedirect(authExpired);
 
@@ -451,6 +481,25 @@ export function SystemSettings() {
     }
   }, []);
 
+  const refreshPlans = useCallback(async () => {
+    setPlansLoading(true);
+    setPlansError(null);
+    try {
+      const result =
+        await adminRequestData<AdminSubscriptionPlanListResponseData>(
+          "/admin/settings/subscription-plans",
+          { method: "GET" },
+          "获取订阅套餐失败",
+        );
+      setPlanData(result);
+    } catch (error) {
+      setAuthExpired(isAdminSessionExpiredError(error));
+      setPlansError(getAdminApiErrorMessage(error, "获取订阅套餐失败"));
+    } finally {
+      setPlansLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void refreshOverview();
   }, [refreshOverview]);
@@ -468,12 +517,16 @@ export function SystemSettings() {
     if (activeTab === "payment") {
       void refreshPayment();
     }
+    if (activeTab === "plans") {
+      void refreshPlans();
+    }
   }, [
     activeTab,
     refreshAccounts,
     refreshAuditLogs,
     refreshContact,
     refreshPayment,
+    refreshPlans,
     refreshOverview,
   ]);
 
@@ -1352,6 +1405,271 @@ export function SystemSettings() {
     </div>
   );
 
+  const startCreatePlan = () => {
+    setEditingPlanCode(null);
+    setPlanForm(EMPTY_PLAN_FORM);
+  };
+
+  const startEditPlan = (plan: SubscriptionPlanItem) => {
+    setEditingPlanCode(plan.code);
+    setPlanForm({
+      code: plan.code,
+      name: plan.name,
+      priceCents: plan.priceCents,
+      currency: plan.currency,
+      durationDays: plan.durationDays,
+      tierRank: plan.tierRank,
+      description: plan.description,
+      features: plan.features.length > 0 ? plan.features : [""],
+      periodLabel: plan.periodLabel,
+      ctaLabel: plan.ctaLabel,
+      highlight: plan.highlight,
+      purchasable: plan.purchasable,
+      active: plan.active,
+      displayOrder: plan.displayOrder,
+    });
+  };
+
+  const updatePlanField = <K extends keyof AdminUpsertSubscriptionPlanRequest>(
+    field: K,
+    value: AdminUpsertSubscriptionPlanRequest[K],
+  ) => {
+    setPlanForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updatePlanFeature = (index: number, value: string) => {
+    setPlanForm((prev) => {
+      const features = [...(prev.features ?? [])];
+      features[index] = value;
+      return { ...prev, features };
+    });
+  };
+
+  const handleSavePlan = async () => {
+    setPlansSaving(true);
+    try {
+      const payload = {
+        ...planForm,
+        features: (planForm.features ?? []).map((item) => item.trim()).filter(Boolean),
+      };
+      await adminRequestData(
+        editingPlanCode
+          ? `/admin/settings/subscription-plans/${editingPlanCode}`
+          : "/admin/settings/subscription-plans",
+        {
+          method: editingPlanCode ? "PATCH" : "POST",
+          body: JSON.stringify(payload),
+        },
+        editingPlanCode ? "编辑套餐失败" : "创建套餐失败",
+      );
+      toast.success(editingPlanCode ? "编辑套餐成功" : "创建套餐成功");
+      setEditingPlanCode(null);
+      setPlanForm(EMPTY_PLAN_FORM);
+      await refreshPlans();
+    } catch (error) {
+      setAuthExpired(isAdminSessionExpiredError(error));
+      toast.error(getAdminApiErrorMessage(error, editingPlanCode ? "编辑套餐失败" : "创建套餐失败"));
+    } finally {
+      setPlansSaving(false);
+    }
+  };
+
+  const handleArchivePlan = async (plan: SubscriptionPlanItem) => {
+    const result = await confirm.prompt({
+      title: "确认归档套餐？",
+      description: `归档套餐「${plan.name}」后，用户端不再展示且不可购买；历史订单和订阅记录会保留。`,
+      confirmText: "归档套餐",
+      cancelText: "取消",
+      destructive: true,
+    });
+    if (!result.confirmed) return;
+    try {
+      await adminRequestData(
+        `/admin/settings/subscription-plans/${plan.code}`,
+        { method: "DELETE" },
+        "归档套餐失败",
+      );
+      toast.success("归档套餐成功");
+      await refreshPlans();
+    } catch (error) {
+      setAuthExpired(isAdminSessionExpiredError(error));
+      toast.error(getAdminApiErrorMessage(error, "归档套餐失败"));
+    }
+  };
+
+  const renderPlansTab = () => {
+    const plans = planData?.items ?? [];
+    return (
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="rounded-2xl border border-border bg-card">
+          <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-4">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">订阅套餐</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                管理用户端首页与「套餐订阅与续费」弹窗展示的套餐。
+              </p>
+            </div>
+            <Button type="button" onClick={startCreatePlan}>
+              <Plus className="h-4 w-4" />
+              创建套餐
+            </Button>
+          </div>
+          {plansError ? (
+            <div className="p-4">
+              <StatePanel status="error" title="读取失败" description={plansError} />
+            </div>
+          ) : plansLoading && !planData ? (
+            <div className="px-4 py-6 text-sm text-muted-foreground">加载中…</div>
+          ) : plans.length === 0 ? (
+            <div className="p-4">
+              <EmptyHint text="暂无订阅套餐。" />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30 text-left text-xs text-muted-foreground">
+                    <th className="px-4 py-3">套餐</th>
+                    <th className="px-4 py-3">价格</th>
+                    <th className="px-4 py-3">状态</th>
+                    <th className="px-4 py-3">排序</th>
+                    <th className="px-4 py-3 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {plans.map((plan) => (
+                    <tr key={plan.code} className="border-b border-border/80 last:border-b-0">
+                      <td className="px-4 py-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-foreground">{plan.name}</p>
+                            {plan.highlight ? <AdminListTag className="border-brand/20 bg-brand/10 text-brand">推荐</AdminListTag> : null}
+                          </div>
+                          <p className="font-mono text-[11px] text-muted-foreground">{plan.code}</p>
+                          <p className="max-w-md text-xs text-muted-foreground">{plan.description}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        ¥{(plan.priceCents / 100).toFixed(plan.priceCents % 100 === 0 ? 0 : 2)}{plan.periodLabel}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-2">
+                          <AdminListTag className={plan.active ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700" : "border-amber-500/20 bg-amber-500/10 text-amber-700"}>
+                            {plan.active ? "上架" : "下架"}
+                          </AdminListTag>
+                          <AdminListTag className={plan.purchasable ? "border-sky-500/20 bg-sky-500/10 text-sky-700" : "border-muted bg-muted text-muted-foreground"}>
+                            {plan.purchasable ? "可购买" : "仅展示"}
+                          </AdminListTag>
+                          {plan.archivedAt ? <AdminListTag className="border-rose-500/20 bg-rose-500/10 text-rose-700">已归档</AdminListTag> : null}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{plan.displayOrder}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-2">
+                          <Button type="button" variant="outline" size="sm" onClick={() => startEditPlan(plan)}>
+                            编辑套餐
+                          </Button>
+                          <Button type="button" variant="outline" size="sm" disabled={Boolean(plan.archivedAt)} onClick={() => void handleArchivePlan(plan)}>
+                            归档套餐
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <h3 className="text-base font-semibold text-foreground">
+            {editingPlanCode ? "编辑套餐" : "创建套餐"}
+          </h3>
+          <div className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="plan-code">套餐编码</Label>
+              <Input id="plan-code" value={planForm.code ?? ""} disabled={Boolean(editingPlanCode)} onChange={(event) => updatePlanField("code", event.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="plan-name">套餐名称</Label>
+              <Input id="plan-name" value={planForm.name ?? ""} onChange={(event) => updatePlanField("name", event.target.value)} />
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="plan-price">价格（分）</Label>
+                <Input id="plan-price" type="number" value={planForm.priceCents ?? 0} onChange={(event) => updatePlanField("priceCents", Number(event.target.value))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="plan-period">周期文案</Label>
+                <Input id="plan-period" value={planForm.periodLabel ?? ""} onChange={(event) => updatePlanField("periodLabel", event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="plan-duration">有效期（天）</Label>
+                <Input id="plan-duration" type="number" value={planForm.durationDays ?? 31} onChange={(event) => updatePlanField("durationDays", Number(event.target.value))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="plan-rank">等级</Label>
+                <Input id="plan-rank" type="number" value={planForm.tierRank ?? 0} onChange={(event) => updatePlanField("tierRank", Number(event.target.value))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="plan-order">展示排序</Label>
+                <Input id="plan-order" type="number" value={planForm.displayOrder ?? 0} onChange={(event) => updatePlanField("displayOrder", Number(event.target.value))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="plan-cta">按钮文案</Label>
+                <Input id="plan-cta" value={planForm.ctaLabel ?? ""} onChange={(event) => updatePlanField("ctaLabel", event.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="plan-description">描述</Label>
+              <Textarea id="plan-description" rows={3} value={planForm.description ?? ""} onChange={(event) => updatePlanField("description", event.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>权益列表</Label>
+              {(planForm.features ?? [""]).map((feature, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input value={feature} onChange={(event) => updatePlanFeature(index, event.target.value)} />
+                  <Button type="button" variant="outline" onClick={() => setPlanForm((prev) => ({ ...prev, features: (prev.features ?? []).filter((_, itemIndex) => itemIndex !== index) }))}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button type="button" variant="outline" onClick={() => setPlanForm((prev) => ({ ...prev, features: [...(prev.features ?? []), ""] }))}>
+                <Plus className="h-4 w-4" />
+                添加权益
+              </Button>
+            </div>
+            <div className="grid gap-2 text-sm text-foreground">
+              {[
+                ["highlight", "推荐套餐"],
+                ["purchasable", "允许购买"],
+                ["active", "上架展示"],
+              ].map(([field, label]) => (
+                <label key={field} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(planForm[field as "highlight" | "purchasable" | "active"])}
+                    onChange={(event) => updatePlanField(field as "highlight" | "purchasable" | "active", event.target.checked)}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={startCreatePlan} disabled={plansSaving}>
+                重置
+              </Button>
+              <Button type="button" onClick={() => void handleSavePlan()} disabled={plansSaving}>
+                {plansSaving ? "保存中…" : "保存套餐"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const handleSaveContact = async () => {
     const result = await confirm.prompt({
       title: "确认保存企业联系方式？",
@@ -1938,7 +2256,7 @@ export function SystemSettings() {
             系统设置
           </h1>
           <p className="text-sm text-muted-foreground">
-            管理员治理设置，包括我的资料、安全设置、管理员账号、角色权限、操作审计、系统信息、联系方式和支付配置。
+            管理员治理设置，包括我的资料、安全设置、管理员账号、角色权限、操作审计、系统信息、联系方式、订阅套餐和支付配置。
           </p>
         </div>
 
@@ -1966,6 +2284,7 @@ export function SystemSettings() {
         {activeTab === "audit" ? renderAuditTab() : null}
         {activeTab === "system" ? renderSystemTab() : null}
         {activeTab === "contact" ? renderContactTab() : null}
+        {activeTab === "plans" ? renderPlansTab() : null}
         {activeTab === "payment" ? renderPaymentTab() : null}
       </div>
 

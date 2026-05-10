@@ -1,17 +1,12 @@
 import { jsonAuthRequired, jsonError, jsonSuccess } from "@/server/lib/route-response"
 import { parsePaymentPlanCode } from "./model.ts"
 import type {
+  AdminUpsertSubscriptionPlanRequest,
   AdminUpdateWechatPaymentSettingsRequest,
 } from "@/lib/api/contracts/payment"
 
 type RequestAuthResult = { ok: true; userId: string } | { ok: false; message: string }
 type RequestAdminResult = { ok: true; adminId: string } | { ok: false; message: string }
-
-type RequestLike = {
-  json: () => Promise<unknown>
-  text?: () => Promise<string>
-  headers?: Headers
-}
 
 function mapPaymentError(error: unknown) {
   if (error instanceof Error) {
@@ -32,7 +27,7 @@ export function createWechatNativeOrderPostHandler(dependencies: {
   getRequestUser: (request: unknown) => Promise<RequestAuthResult>
   createWechatNativeOrder: (userId: string, input: { planCode: string }) => Promise<unknown>
 }) {
-  return async function POST(request: RequestLike) {
+  return async function POST(request: Request) {
     try {
       const auth = await dependencies.getRequestUser(request)
       if (!auth.ok) {
@@ -123,6 +118,19 @@ export function createSubscriptionMeGetHandler(dependencies: {
   }
 }
 
+export function createSubscriptionPlansGetHandler(dependencies: {
+  getPublicSubscriptionPlans: () => Promise<unknown>
+}) {
+  return async function GET() {
+    try {
+      const data = await dependencies.getPublicSubscriptionPlans()
+      return jsonSuccess(data, "订阅套餐读取成功")
+    } catch {
+      return jsonError("INTERNAL_ERROR", "订阅套餐读取失败", 500)
+    }
+  }
+}
+
 export function createWechatPaymentNotifyPostHandler(dependencies: {
   handleWechatPaymentNotify: (input: {
     headers: Headers
@@ -169,7 +177,7 @@ export function createAdminWechatPaymentSettingsPatchHandler(dependencies: {
     input: AdminUpdateWechatPaymentSettingsRequest,
   ) => Promise<unknown>
 }) {
-  return async function PATCH(request: RequestLike) {
+  return async function PATCH(request: Request) {
     try {
       const admin = await dependencies.getRequestAdmin(request)
       if (!admin.ok) {
@@ -178,6 +186,109 @@ export function createAdminWechatPaymentSettingsPatchHandler(dependencies: {
       const body = await request.json()
       const data = await dependencies.updateWechatPaymentSettings(admin.adminId, body as AdminUpdateWechatPaymentSettingsRequest)
       return jsonSuccess(data, "微信支付配置已更新")
+    } catch (error) {
+      return mapPaymentError(error)
+    }
+  }
+}
+
+export function createAdminSubscriptionPlansGetHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Promise<RequestAdminResult>
+  getAdminSubscriptionPlans: () => Promise<unknown>
+}) {
+  return async function GET(request: unknown) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+      const data = await dependencies.getAdminSubscriptionPlans()
+      return jsonSuccess(data, "订阅套餐列表读取成功")
+    } catch {
+      return jsonError("INTERNAL_ERROR", "订阅套餐列表读取失败", 500)
+    }
+  }
+}
+
+export function createAdminSubscriptionPlansPostHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Promise<RequestAdminResult>
+  createAdminSubscriptionPlan: (
+    adminAccountId: string,
+    input: AdminUpsertSubscriptionPlanRequest,
+  ) => Promise<unknown>
+}) {
+  return async function POST(request: Request) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+      const data = await dependencies.createAdminSubscriptionPlan(
+        admin.adminId,
+        await request.json() as AdminUpsertSubscriptionPlanRequest,
+      )
+      return jsonSuccess(data, "订阅套餐已创建")
+    } catch (error) {
+      return mapPaymentError(error)
+    }
+  }
+}
+
+export function createAdminSubscriptionPlanPatchHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Promise<RequestAdminResult>
+  updateAdminSubscriptionPlan: (
+    adminAccountId: string,
+    code: string,
+    input: AdminUpsertSubscriptionPlanRequest,
+  ) => Promise<unknown | null>
+}) {
+  return async function PATCH(
+    request: Request,
+    context: { params: Promise<{ code: string }> },
+  ) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+      const { code } = await context.params
+      const parsed = parsePaymentPlanCode(code)
+      if (!parsed.ok) return jsonError(parsed.code, parsed.message, 400)
+      const data = await dependencies.updateAdminSubscriptionPlan(
+        admin.adminId,
+        parsed.data,
+        await request.json() as AdminUpsertSubscriptionPlanRequest,
+      )
+      if (!data) return jsonError("NOT_FOUND", "订阅套餐不存在。", 404)
+      return jsonSuccess(data, "订阅套餐已更新")
+    } catch (error) {
+      return mapPaymentError(error)
+    }
+  }
+}
+
+export function createAdminSubscriptionPlanDeleteHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Promise<RequestAdminResult>
+  archiveAdminSubscriptionPlan: (
+    adminAccountId: string,
+    code: string,
+  ) => Promise<unknown | null>
+}) {
+  return async function DELETE(
+    request: unknown,
+    context: { params: Promise<{ code: string }> },
+  ) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+      const { code } = await context.params
+      const parsed = parsePaymentPlanCode(code)
+      if (!parsed.ok) return jsonError(parsed.code, parsed.message, 400)
+      const data = await dependencies.archiveAdminSubscriptionPlan(admin.adminId, parsed.data)
+      if (!data) return jsonError("NOT_FOUND", "订阅套餐不存在。", 404)
+      return jsonSuccess(data, "订阅套餐已归档")
     } catch (error) {
       return mapPaymentError(error)
     }

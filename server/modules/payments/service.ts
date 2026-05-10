@@ -9,9 +9,13 @@ import {
 import type {
   AdminWechatPaymentSettingsResponseData,
   AdminUpdateWechatPaymentSettingsRequest,
+  AdminSubscriptionPlanListResponseData,
+  AdminUpsertSubscriptionPlanRequest,
   PaymentOrderResponseData,
   PaymentPlanCode,
   SubscriptionMeResponseData,
+  SubscriptionPlanItem,
+  SubscriptionPlansResponseData,
 } from "@/lib/api/contracts/payment"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
@@ -84,7 +88,16 @@ type SubscriptionPlanRow = {
   tier_rank: number
   description: string
   features: string[]
+  period_label: string | null
+  cta_label: string | null
+  highlight: boolean | null
+  purchasable: boolean | null
+  display_order: number | null
   active: boolean
+  archived_at: string | null
+  created_at: string
+  updated_at: string
+  updated_by_admin_id: string | null
 }
 
 type PaymentOrderRow = {
@@ -229,9 +242,110 @@ async function loadPlan(planCode: string) {
     .select("*")
     .eq("code", planCode)
     .eq("active", true)
+    .is("archived_at", null)
     .single()
   assertSupabaseSuccess(error, "failed to load subscription plan")
-  return data as SubscriptionPlanRow
+  const row = data as SubscriptionPlanRow
+  if (!row.purchasable) {
+    const validationError = new Error("该套餐暂不可购买。")
+    validationError.name = "VALIDATION_FAILED"
+    throw validationError
+  }
+  return row
+}
+
+function normalizePlanFeatures(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function mapPlan(row: SubscriptionPlanRow): SubscriptionPlanItem {
+  return {
+    code: row.code,
+    name: row.name,
+    priceCents: row.price_cents,
+    currency: row.currency,
+    durationDays: row.duration_days,
+    tierRank: row.tier_rank,
+    description: row.description,
+    features: normalizePlanFeatures(row.features),
+    periodLabel: row.period_label ?? "",
+    ctaLabel: row.cta_label ?? (row.purchasable ? "立即订阅" : "免费开始"),
+    highlight: row.highlight === true,
+    purchasable: row.purchasable === true,
+    active: row.active,
+    displayOrder: row.display_order ?? row.tier_rank,
+    archivedAt: row.archived_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+function validateSubscriptionPlanInput(
+  input: AdminUpsertSubscriptionPlanRequest,
+  options: { creating: boolean },
+) {
+  const code = input.code?.trim()
+  if (options.creating && (!code || !/^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$/.test(code))) {
+    const error = new Error("套餐编码必须为 3-64 位小写字母、数字、下划线或短横线。")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+  const name = input.name?.trim()
+  if (!name) {
+    const error = new Error("套餐名称不能为空。")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+  const priceCents = Number(input.priceCents ?? 0)
+  const durationDays = Number(input.durationDays ?? 31)
+  const tierRank = Number(input.tierRank ?? 0)
+  const displayOrder = Number(input.displayOrder ?? tierRank)
+  const features = normalizePlanFeatures(input.features)
+  if (!Number.isInteger(priceCents) || priceCents < 0) {
+    const error = new Error("套餐价格必须是非负整数分。")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+  if (input.purchasable === true && priceCents <= 0) {
+    const error = new Error("可购买套餐价格必须大于 0。")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+  if (!Number.isInteger(durationDays) || durationDays <= 0) {
+    const error = new Error("套餐有效期必须大于 0 天。")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+  if (!Number.isInteger(tierRank) || !Number.isInteger(displayOrder)) {
+    const error = new Error("套餐等级和排序必须是整数。")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+  if (features.length === 0) {
+    const error = new Error("套餐权益至少需要 1 条。")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+  return {
+    code,
+    name,
+    price_cents: priceCents,
+    currency: input.currency ?? "CNY",
+    duration_days: durationDays,
+    tier_rank: tierRank,
+    description: input.description?.trim() ?? "",
+    features,
+    period_label: input.periodLabel?.trim() ?? "",
+    cta_label: input.ctaLabel?.trim() ?? "",
+    highlight: input.highlight === true,
+    purchasable: input.purchasable === true,
+    active: input.active !== false,
+    display_order: displayOrder,
+  }
 }
 
 function mapOrder(row: PaymentOrderRow): PaymentOrderResponseData {
@@ -470,6 +584,134 @@ export async function createWechatNativeOrder(userId: string, input: { planCode:
   return mapOrder(updated as PaymentOrderRow)
 }
 
+export async function getPublicSubscriptionPlans(): Promise<SubscriptionPlansResponseData> {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("subscription_plans")
+    .select("*")
+    .eq("active", true)
+    .is("archived_at", null)
+    .order("display_order", { ascending: true })
+    .order("tier_rank", { ascending: true })
+  assertSupabaseSuccess(error, "failed to load public subscription plans")
+  return {
+    plans: ((data ?? []) as SubscriptionPlanRow[]).map(mapPlan),
+  }
+}
+
+export async function getAdminSubscriptionPlans(): Promise<AdminSubscriptionPlanListResponseData> {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("subscription_plans")
+    .select("*")
+    .order("archived_at", { ascending: true, nullsFirst: true })
+    .order("display_order", { ascending: true })
+    .order("tier_rank", { ascending: true })
+  assertSupabaseSuccess(error, "failed to load admin subscription plans")
+  return {
+    items: ((data ?? []) as SubscriptionPlanRow[]).map(mapPlan),
+  }
+}
+
+export async function createAdminSubscriptionPlan(
+  adminAccountId: string,
+  input: AdminUpsertSubscriptionPlanRequest,
+) {
+  const normalized = validateSubscriptionPlanInput(input, { creating: true })
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("subscription_plans")
+    .insert({
+      ...normalized,
+      code: normalized.code,
+      updated_by_admin_id: adminAccountId,
+    })
+    .select("*")
+    .single()
+  assertSupabaseSuccess(error, "failed to create subscription plan")
+  await supabase.from("admin_audit_logs").insert({
+    admin_user_id: adminAccountId,
+    action: "subscription_plan_create",
+    target_type: "subscription_plan",
+    target_id: null,
+    before_snapshot: null,
+    after_snapshot: mapPlan(data as SubscriptionPlanRow),
+    reason: null,
+    request_context: null,
+  })
+  return mapPlan(data as SubscriptionPlanRow)
+}
+
+export async function updateAdminSubscriptionPlan(
+  adminAccountId: string,
+  code: string,
+  input: AdminUpsertSubscriptionPlanRequest,
+) {
+  const normalized = validateSubscriptionPlanInput({ ...input, code }, { creating: false })
+  const supabase = createSupabaseAdminClient()
+  const { data: before, error: beforeError } = await supabase
+    .from("subscription_plans")
+    .select("*")
+    .eq("code", code)
+    .maybeSingle()
+  assertSupabaseSuccess(beforeError, "failed to load subscription plan before update")
+  if (!before) return null
+  const { data, error } = await supabase
+    .from("subscription_plans")
+    .update({
+      ...normalized,
+      updated_by_admin_id: adminAccountId,
+    })
+    .eq("code", code)
+    .select("*")
+    .single()
+  assertSupabaseSuccess(error, "failed to update subscription plan")
+  await supabase.from("admin_audit_logs").insert({
+    admin_user_id: adminAccountId,
+    action: "subscription_plan_update",
+    target_type: "subscription_plan",
+    target_id: null,
+    before_snapshot: mapPlan(before as SubscriptionPlanRow),
+    after_snapshot: mapPlan(data as SubscriptionPlanRow),
+    reason: null,
+    request_context: null,
+  })
+  return mapPlan(data as SubscriptionPlanRow)
+}
+
+export async function archiveAdminSubscriptionPlan(adminAccountId: string, code: string) {
+  const supabase = createSupabaseAdminClient()
+  const { data: before, error: beforeError } = await supabase
+    .from("subscription_plans")
+    .select("*")
+    .eq("code", code)
+    .maybeSingle()
+  assertSupabaseSuccess(beforeError, "failed to load subscription plan before archive")
+  if (!before) return null
+  const { data, error } = await supabase
+    .from("subscription_plans")
+    .update({
+      active: false,
+      archived_at: new Date().toISOString(),
+      updated_by_admin_id: adminAccountId,
+    })
+    .eq("code", code)
+    .select("*")
+    .single()
+  assertSupabaseSuccess(error, "failed to archive subscription plan")
+  await supabase.from("admin_audit_logs").insert({
+    admin_user_id: adminAccountId,
+    action: "subscription_plan_archive",
+    target_type: "subscription_plan",
+    target_id: null,
+    before_snapshot: mapPlan(before as SubscriptionPlanRow),
+    after_snapshot: mapPlan(data as SubscriptionPlanRow),
+    reason: null,
+    request_context: null,
+  })
+  return mapPlan(data as SubscriptionPlanRow)
+}
+
 export async function getPaymentOrderForUser(userId: string, orderNo: string) {
   const supabase = createSupabaseAdminClient()
   const { data, error } = await supabase
@@ -620,7 +862,7 @@ export async function getSubscriptionForUser(userId: string): Promise<Subscripti
   const supabase = createSupabaseAdminClient()
   const [{ data: plans, error: plansError }, { data: subscription, error: subscriptionError }] =
     await Promise.all([
-      supabase.from("subscription_plans").select("*").eq("active", true).order("tier_rank", { ascending: true }),
+      supabase.from("subscription_plans").select("*").eq("active", true).is("archived_at", null).order("display_order", { ascending: true }).order("tier_rank", { ascending: true }),
       supabase.from("user_subscriptions").select("*").eq("user_id", userId).maybeSingle(),
     ])
   assertSupabaseSuccess(plansError, "failed to load subscription plans")
@@ -641,15 +883,6 @@ export async function getSubscriptionForUser(userId: string): Promise<Subscripti
       expiresAt,
       remainingDays: expiresAt ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - now) / 86_400_000)) : 0,
     },
-    plans: rows.map((item) => ({
-      code: item.code,
-      name: item.name,
-      priceCents: item.price_cents,
-      currency: item.currency,
-      durationDays: item.duration_days,
-      tierRank: item.tier_rank,
-      description: item.description,
-      features: item.features ?? [],
-    })),
+    plans: rows.map(mapPlan),
   }
 }

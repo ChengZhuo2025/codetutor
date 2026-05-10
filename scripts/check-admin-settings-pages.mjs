@@ -42,6 +42,18 @@ assert.match(
 )
 
 assert.match(
+  settingsSource,
+  /订阅套餐/,
+  "The admin settings page should expose a subscription plans section",
+)
+
+assert.match(
+  settingsSource,
+  /创建套餐|编辑套餐|归档套餐/,
+  "The subscription plans section should expose create, edit, and archive operations",
+)
+
+assert.match(
   menuSource,
   /label: "系统设置".*active: true/s,
   "The admin menu should enable the system settings entry",

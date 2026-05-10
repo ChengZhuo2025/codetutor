@@ -1848,6 +1848,7 @@ SSE 事件补充：
 | `GET /api/notifications/in-app` | 是 | 读取站内提醒列表 |
 | `POST /api/notifications/{id}/read` | 是 | 标记提醒已读 |
 | `POST /api/notifications/{id}/dismiss` | 是 | 忽略提醒 |
+| `GET /api/subscription/plans` | 否 | 读取用户端可展示订阅套餐 |
 | `GET /api/subscription/me` | 是 | 读取当前用户订阅状态与可购买套餐 |
 | `POST /api/payment/wechat/native-orders` | 是 | 创建微信 Native 扫码支付订单，返回 `codeUrl` |
 | `GET /api/payment/orders/{orderNo}` | 是 | 读取当前用户支付订单 |
@@ -1860,12 +1861,14 @@ SSE 事件补充：
 
 当前只支持 Web 端微信 Native 扫码支付，不支持 JSAPI/H5/退款/自动续费。
 
-- `GET /api/subscription/me` 返回当前订阅与可购买套餐。默认免费版；支付成功后返回个人版或专业版、有效期与剩余天数。
-- `POST /api/payment/wechat/native-orders` 请求体为 `{ "planCode": "personal_monthly" | "pro_monthly" }`，成功返回订单号、金额、状态、`codeUrl` 和过期时间；服务端向微信下单时同步传入 `time_expire`。
+- `GET /api/subscription/plans` 返回用户端首页可展示套餐，数据来自 `subscription_plans`，只包含未归档且上架套餐。
+- `GET /api/subscription/me` 返回当前订阅与可展示套餐。默认免费版；支付成功后返回对应付费套餐、有效期与剩余天数。
+- `POST /api/payment/wechat/native-orders` 请求体为 `{ "planCode": string }`，服务端动态校验套餐必须存在、未归档、上架且 `purchasable=true`；成功返回订单号、金额、状态、`codeUrl` 和过期时间；服务端向微信下单时同步传入 `time_expire`。
 - `GET /api/payment/orders/{orderNo}` 仅允许订单所属用户读取。
 - `POST /api/payment/orders/{orderNo}/sync` 调用微信商户订单号查单接口；响应必须通过微信支付响应签名头与公钥 ID 校验。若微信返回 `SUCCESS`，复用回调完成逻辑更新订单并开通订阅；若返回 `CLOSED`、`PAYERROR` 或本地订单已超时，则写入 `closed` / `failed` / `expired` 终态。
 - `POST /api/payment/wechat/notify` 不需要用户登录，但必须通过 `Wechatpay-*` 头验签、公钥 ID 校验、APIv3 密钥解密、`appid/mchid/amount/trade_state` 校验；重复回调通过数据库行锁与订单状态判断保持幂等。
 - 管理端 `GET/PATCH /api/admin/settings/payment/wechat` 管理 `appid`、`mchid`、回调地址、商户证书序列号、商户私钥、APIv3 密钥、微信支付公钥 ID 与公钥。敏感字段只加密存储和脱敏返回；PATCH 中密钥字段为空或缺省时表示保留原密文，只有显式填写新密钥才替换。
+- 管理端 `GET/POST /api/admin/settings/subscription-plans` 与 `PATCH/DELETE /api/admin/settings/subscription-plans/{code}` 管理订阅套餐。DELETE 为软删除归档，归档后用户端不可见且不可购买，历史订单和订阅引用保留。
 
 ## 13. 典型错误响应示例
 

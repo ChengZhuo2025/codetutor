@@ -49,3 +49,19 @@ test("payment config incomplete error is converted to a clear user-facing messag
     "当前暂未开放在线支付：微信支付配置未启用或不完整。请稍后再试，或联系管理员完成支付配置。",
   )
 })
+
+test("dynamic non-purchasable plans are disabled without relying on hardcoded plan codes", () => {
+  assert.deepEqual(
+    getPlanActionState({
+      planCode: null,
+      isCurrent: false,
+      isDowngrade: false,
+      loadingPlanCode: null,
+    }),
+    {
+      disabled: true,
+      label: "暂不可购买",
+      variant: "unavailable",
+    },
+  )
+})

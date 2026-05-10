@@ -16,7 +16,7 @@ Repeat the same steps for later migrations, keeping a new sequential file under 
 
 ## Current sequence
 
-As of the current MVP snapshot (after hardening WeChat Native payment and subscription entitlement activation), the migration sequence continues through **035**:
+As of the current MVP snapshot (after adding subscription plan management), the migration sequence continues through **036**:
 
 1. `001_init.sql` — 基础 schema 初始化
 2. `002_fix_update_updated_at_search_path.sql` — 修复 updated_at 触发器
@@ -53,7 +53,8 @@ As of the current MVP snapshot (after hardening WeChat Native payment and subscr
 33. `033_restrict_site_contact_update_policy_to_active_admins.sql` — 限制企业联系方式更新仅允许 active 管理员
 34. `034_create_payment_subscription_tables.sql` — **微信 Native 支付与订阅表**（支付配置、订阅套餐、支付订单、用户订阅、支付回调事件；商户私钥/APIv3 密钥/微信支付公钥加密落库）
 35. `035_harden_payment_order_completion.sql` — **支付完成幂等硬化**（新增带行锁的 `complete_paid_payment_order` RPC，确保回调与主动查单并发时同一订单只开通一次订阅权益）
+36. `036_extend_subscription_plan_management.sql` — **订阅套餐运营化管理**（扩展套餐展示字段、可购买/推荐/排序/归档能力，并初始化免费版、个人版、专业版三档数据）
 
-**最新状态**：迁移已达 **035**。`site_contact_settings` + `qr-codes` bucket 实现了企业联系信息与真实二维码图片管理；`payment_settings`、`subscription_plans`、`payment_orders`、`user_subscriptions`、`payment_webhook_events` 支持微信 Native 扫码支付首版闭环；`complete_paid_payment_order` RPC 负责支付完成的原子化与幂等权益开通。**下一次新增迁移请从 `036_*.sql` 开始。**
+**最新状态**：迁移已达 **036**。`site_contact_settings` + `qr-codes` bucket 实现了企业联系信息与真实二维码图片管理；`payment_settings`、`subscription_plans`、`payment_orders`、`user_subscriptions`、`payment_webhook_events` 支持微信 Native 扫码支付首版闭环；`subscription_plans` 已支持后台自定义展示、上下架、可购买、推荐与软归档；`complete_paid_payment_order` RPC 负责支付完成的原子化与幂等权益开通。**下一次新增迁移请从 `037_*.sql` 开始。**
 
 **仍需人工确认**：如果目标 Supabase 项目尚未创建 `qr-codes` bucket，请在 Supabase Dashboard → Storage 创建名为 `qr-codes` 的 **PUBLIC** bucket（允许匿名读取），否则企业联系方式二维码上传会失败。

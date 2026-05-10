@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -9,13 +10,53 @@ import {
   USER_BUTTON_SECONDARY_CLASS,
 } from "@/components/ui/surface-styles"
 import { marketingPlans } from "@/features/marketing/data/marketing-content"
+import type { MarketingPlan } from "@/features/marketing/types"
 import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
+import { requestData } from "@/lib/api/client"
+import type { SubscriptionPlansResponseData } from "@/lib/api/contracts/payment"
 import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
+
+function formatPlanPrice(priceCents: number) {
+  if (priceCents === 0) return "¥0"
+  return `¥${(priceCents / 100).toFixed(priceCents % 100 === 0 ? 0 : 2)}`
+}
+
+function mapSubscriptionPlanToMarketingPlan(
+  plan: SubscriptionPlansResponseData["plans"][number],
+): MarketingPlan {
+  return {
+    name: plan.name,
+    price: formatPlanPrice(plan.priceCents),
+    period: plan.periodLabel,
+    desc: plan.description,
+    highlight: plan.highlight,
+    features: plan.features,
+    cta: plan.ctaLabel || (plan.purchasable ? "立即订阅" : "免费开始"),
+    href: "/login",
+  }
+}
 
 export function LandingPricing() {
   const { authState, ctaHref, ctaLabel } = useLandingAuthState()
   const { trackEvent } = useAppEventTracker()
+  const [plans, setPlans] = useState<MarketingPlan[]>(marketingPlans)
+
+  useEffect(() => {
+    let cancelled = false
+    void requestData<SubscriptionPlansResponseData>("/subscription/plans")
+      .then((data) => {
+        if (!cancelled && data.plans.length > 0) {
+          setPlans(data.plans.map(mapSubscriptionPlanToMarketingPlan))
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPlans(marketingPlans)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <section id="pricing" className="relative bg-surface-1 px-6 py-24">
@@ -35,7 +76,7 @@ export function LandingPricing() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {marketingPlans.map((plan) => (
+          {plans.map((plan) => (
             <div
               key={plan.name}
               className={cn(

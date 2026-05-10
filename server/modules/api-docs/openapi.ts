@@ -50,7 +50,9 @@ import {
   adminSettingsAuditLogListQuerySchema,
   adminSettingsAuditLogListResponseDataSchema,
   adminSettingsOverviewResponseDataSchema,
+  adminSubscriptionPlanListResponseDataSchema,
   adminSiteContactResponseDataSchema,
+  adminUpsertSubscriptionPlanRequestSchema,
   adminUpdateWechatPaymentSettingsRequestSchema,
   adminWechatPaymentSettingsResponseDataSchema,
   updateSiteContactRequestSchema,
@@ -136,6 +138,8 @@ import {
   uploadProfileAvatarRequestSchema,
   uploadProfileAvatarResponseDataSchema,
   subscriptionMeResponseDataSchema,
+  subscriptionPlanItemSchema,
+  subscriptionPlansResponseDataSchema,
 } from "./schemas.ts"
 
 const registry = new OpenAPIRegistry()
@@ -1719,6 +1723,23 @@ const successExamples = {
     },
     plans: [
       {
+        code: "free",
+        name: "免费版",
+        priceCents: 0,
+        currency: "CNY",
+        durationDays: 31,
+        tierRank: 0,
+        description: "探索产品核心体验",
+        features: ["每月 30 次 AI 对话", "学习进度追踪"],
+        periodLabel: "",
+        ctaLabel: "免费开始",
+        highlight: false,
+        purchasable: false,
+        active: true,
+        displayOrder: 10,
+        archivedAt: null,
+      },
+      {
         code: "personal_monthly",
         name: "个人版",
         priceCents: 3900,
@@ -1727,6 +1748,13 @@ const successExamples = {
         tierRank: 10,
         description: "无限学习，持续陪练",
         features: ["无限 AI 导师对话", "完整学习进度追踪"],
+        periodLabel: "/月",
+        ctaLabel: "立即订阅",
+        highlight: true,
+        purchasable: true,
+        active: true,
+        displayOrder: 20,
+        archivedAt: null,
       },
       {
         code: "pro_monthly",
@@ -1737,6 +1765,34 @@ const successExamples = {
         tierRank: 20,
         description: "项目实战陪跑",
         features: ["个人版全部功能", "项目实战陪跑"],
+        periodLabel: "/月",
+        ctaLabel: "立即订阅",
+        highlight: false,
+        purchasable: true,
+        active: true,
+        displayOrder: 30,
+        archivedAt: null,
+      },
+    ],
+  },
+  subscriptionPlans: {
+    plans: [
+      {
+        code: "free",
+        name: "免费版",
+        priceCents: 0,
+        currency: "CNY",
+        durationDays: 31,
+        tierRank: 0,
+        description: "探索产品核心体验",
+        features: ["每月 30 次 AI 对话", "学习进度追踪"],
+        periodLabel: "",
+        ctaLabel: "免费开始",
+        highlight: false,
+        purchasable: false,
+        active: true,
+        displayOrder: 10,
+        archivedAt: null,
       },
     ],
   },
@@ -4033,6 +4089,25 @@ registry.registerPath({
 
 registry.registerPath({
   method: "get",
+  path: "/api/subscription/plans",
+  operationId: "getSubscriptionPlans",
+  tags: ["payment", "marketing"],
+  summary: "读取用户端可展示订阅套餐",
+  security: [],
+  responses: {
+    "200": successResponse(
+      subscriptionPlansResponseDataSchema,
+      "SubscriptionPlansResponse",
+      "订阅套餐读取成功",
+      successExamples.subscriptionPlans,
+      "订阅套餐读取成功",
+    ),
+    ...commonErrorResponses(["500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
   path: "/api/subscription/me",
   operationId: "getSubscriptionMe",
   tags: ["payment"],
@@ -4047,6 +4122,102 @@ registry.registerPath({
       "订阅信息读取成功",
     ),
     ...commonErrorResponses(["401", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/settings/subscription-plans",
+  operationId: "getAdminSubscriptionPlans",
+  tags: ["admin-settings", "payment"],
+  summary: "获取后台订阅套餐列表",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminSubscriptionPlanListResponseDataSchema,
+      "AdminSubscriptionPlanListResponse",
+      "订阅套餐列表读取成功",
+      { items: successExamples.subscriptionMe.plans },
+      "订阅套餐列表读取成功",
+    ),
+    ...commonErrorResponses(["403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/settings/subscription-plans",
+  operationId: "createAdminSubscriptionPlan",
+  tags: ["admin-settings", "payment"],
+  summary: "创建订阅套餐",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminUpsertSubscriptionPlanRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      subscriptionPlanItemSchema,
+      "AdminSubscriptionPlanResponse",
+      "订阅套餐已创建",
+      successExamples.subscriptionMe.plans[0],
+      "订阅套餐已创建",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/settings/subscription-plans/{code}",
+  operationId: "updateAdminSubscriptionPlan",
+  tags: ["admin-settings", "payment"],
+  summary: "更新订阅套餐",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminUpsertSubscriptionPlanRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      subscriptionPlanItemSchema,
+      "AdminSubscriptionPlanResponse",
+      "订阅套餐已更新",
+      successExamples.subscriptionMe.plans[1],
+      "订阅套餐已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "delete",
+  path: "/api/admin/settings/subscription-plans/{code}",
+  operationId: "archiveAdminSubscriptionPlan",
+  tags: ["admin-settings", "payment"],
+  summary: "软删除归档订阅套餐",
+  security: [],
+  responses: {
+    "200": successResponse(
+      subscriptionPlanItemSchema,
+      "AdminSubscriptionPlanResponse",
+      "订阅套餐已归档",
+      { ...successExamples.subscriptionMe.plans[1], active: false, archivedAt: "2026-05-10T10:00:00Z" },
+      "订阅套餐已归档",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
   },
 })
 

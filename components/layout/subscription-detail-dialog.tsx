@@ -4,7 +4,6 @@ import { useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
 import QRCode from "qrcode"
 import { CalendarClock, Check, Crown, FileText, Lock, Loader2 } from "lucide-react"
-import { marketingPlans } from "@/features/marketing/data/marketing-content"
 import {
   Dialog,
   DialogContent,
@@ -60,10 +59,10 @@ export function SubscriptionDetailDialog({
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [loadingPlanCode, setLoadingPlanCode] = useState<PaymentPlanCode | null>(null)
   const [paymentMessage, setPaymentMessage] = useState<string | null>(null)
-  // 定义套餐等级顺序
-  const planTierOrder = ["免费版", "个人版", "专业版"]
   const currentPlanName = subscriptionData?.current.planName ?? subscription.planName
-  const currentPlanIndex = planTierOrder.indexOf(currentPlanName)
+  const plans = subscriptionData?.plans ?? []
+  const currentPlan = plans.find((plan) => plan.code === subscriptionData?.current.planCode)
+  const currentPlanTierRank = currentPlan?.tierRank ?? 0
   const currentExpiresAt = subscriptionData?.current.expiresAt
     ? new Date(subscriptionData.current.expiresAt).toLocaleDateString("zh-CN")
     : subscription.expiresAt
@@ -200,17 +199,16 @@ export function SubscriptionDetailDialog({
               </div>
             ) : null}
             {/* 套餐列表 - 显示全部3个套餐 */}
-            <div className="grid gap-4 md:grid-cols-3">
-              {marketingPlans.map((plan) => {
+            {plans.length === 0 ? (
+              <div className="rounded-xl border border-border/70 bg-surface-1/95 px-4 py-6 text-sm text-muted-foreground">
+                正在读取订阅套餐…
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-3">
+                {plans.map((plan) => {
                 const isCurrent = plan.name === currentPlanName
-                const planIndex = planTierOrder.indexOf(plan.name)
-                const isDowngrade = planIndex < currentPlanIndex // 更低套餐
-                const planCode =
-                  plan.name === "个人版"
-                    ? "personal_monthly"
-                    : plan.name === "专业版"
-                      ? "pro_monthly"
-                      : null
+                const isDowngrade = plan.tierRank < currentPlanTierRank
+                const planCode = plan.purchasable ? plan.code : null
                 const actionState = getPlanActionState({
                   planCode,
                   isCurrent,
@@ -220,7 +218,7 @@ export function SubscriptionDetailDialog({
 
                 return (
                   <div
-                    key={plan.name}
+                    key={plan.code}
                     className={cn(
                       "relative flex flex-col rounded-xl border p-4 transition-all",
                       isCurrent
@@ -257,18 +255,18 @@ export function SubscriptionDetailDialog({
                           "text-2xl font-bold",
                           isDowngrade ? "text-foreground/40" : "text-foreground"
                         )}>
-                          {plan.price}
+                          ¥{(plan.priceCents / 100).toFixed(plan.priceCents % 100 === 0 ? 0 : 2)}
                         </span>
-                        {plan.period && (
-                          <span className="text-sm text-muted-foreground">{plan.period}</span>
+                        {plan.periodLabel && (
+                          <span className="text-sm text-muted-foreground">{plan.periodLabel}</span>
                         )}
                       </div>
-                      {plan.desc && (
+                      {plan.description && (
                         <p className={cn(
                           "mt-1 text-xs",
                           isDowngrade ? "text-muted-foreground/40" : "text-muted-foreground"
                         )}>
-                          {plan.desc}
+                          {plan.description}
                         </p>
                       )}
                     </div>
@@ -292,7 +290,7 @@ export function SubscriptionDetailDialog({
 
                     {/* 按钮区域 */}
                     <div className="mt-4">
-                      {actionState.variant === "downgrade" || actionState.variant === "current" ? (
+                      {actionState.variant === "downgrade" || actionState.variant === "current" || actionState.variant === "unavailable" ? (
                         <Button
                           type="button"
                           disabled
@@ -322,8 +320,9 @@ export function SubscriptionDetailDialog({
                     </div>
                   </div>
                 )
-              })}
-            </div>
+                })}
+              </div>
+            )}
 
             {/* 当前套餐有效期信息 - 独立通栏卡片 */}
             <div className="rounded-xl border border-brand/25 bg-brand-dim/30 p-4">

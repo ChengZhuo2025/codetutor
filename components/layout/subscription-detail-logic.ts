@@ -3,7 +3,7 @@ import type { PaymentPlanCode } from "@/lib/api/contracts/payment"
 export type PlanActionState = {
   disabled: boolean
   label: string
-  variant: "current" | "downgrade" | "renew" | "upgrade"
+  variant: "current" | "downgrade" | "renew" | "upgrade" | "unavailable"
 }
 
 export function getPlanActionState(input: {
@@ -38,8 +38,16 @@ export function getPlanActionState(input: {
     }
   }
 
+  if (!input.planCode) {
+    return {
+      disabled: true,
+      label: "暂不可购买",
+      variant: "unavailable",
+    }
+  }
+
   return {
-    disabled: !input.planCode || isLoadingPaidPlan,
+    disabled: isLoadingPaidPlan,
     label: isLoadingPaidPlan ? "创建订单中…" : "升级套餐",
     variant: "upgrade",
   }

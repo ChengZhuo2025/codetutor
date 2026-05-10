@@ -210,6 +210,38 @@ test("wechat native order route returns config error before creating order", asy
   assert.equal(json.code, "PAYMENT_CONFIG_INCOMPLETE")
 })
 
+test("wechat native order route accepts dynamic plan codes for service validation", async () => {
+  let capturedPlanCode = ""
+  const handler = createWechatNativeOrderPostHandler({
+    getRequestUser: async () => ({ ok: true, userId: "user-1" }),
+    createWechatNativeOrder: async (_userId, input) => {
+      capturedPlanCode = input.planCode
+      return {
+        orderNo: "CT202604260001",
+        planCode: input.planCode,
+        planName: "团队版",
+        amountCents: 19900,
+        currency: "CNY",
+        status: "created",
+        codeUrl: null,
+        expiresAt: "2026-04-26T00:30:00.000Z",
+        paidAt: null,
+        createdAt: "2026-04-26T00:00:00.000Z",
+        updatedAt: "2026-04-26T00:00:00.000Z",
+      }
+    },
+  })
+
+  const res = await handler(new Request("http://localhost/api/payment/wechat/native-orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ planCode: "team_monthly" }),
+  }))
+
+  assert.equal(res.status, 200)
+  assert.equal(capturedPlanCode, "team_monthly")
+})
+
 test("payment order detail route forbids reading another user's order", async () => {
   const handler = createPaymentOrderGetHandler({
     getRequestUser: async () => ({ ok: true, userId: "user-1" }),
