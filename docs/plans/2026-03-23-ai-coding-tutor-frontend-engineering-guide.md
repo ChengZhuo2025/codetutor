@@ -55,15 +55,15 @@
 6. `/achievements`：成就页
 7. `/history`：学习记录页
 
-当前已可直接访问的管理端页面（Phase 1 + 用户运营 + 学习运营 + AI 运营 + 系统设置）：
+当前已可直接访问的管理端页面（Phase 1 + 用户运营 + 学习记录 + Ai 管理 + 系统设置）：
 
 8. `/admin/login`：管理员登录页
 9. `/admin`：总览看板页
 10. `/admin/users`：用户管理列表页（筛选、导出、行内编辑抽屉）
 11. `/admin/users/[userId]`：用户详情页
-12. `/admin/learning`：学习运营列表页（学习路径实例筛选、导出、详情跳转）
+12. `/admin/learning`：学习记录列表页（学习路径实例筛选、导出、详情跳转）
 13. `/admin/learning/[pathId]`：学习路径详情页（时间线、步骤、最近会话、状态操作）
-14. `/admin/ai`：AI 运营概览页
+14. `/admin/ai`：Ai 管理概览页
 15. `/admin/ai/providers`：Provider 管理页
 16. `/admin/ai/providers/[providerId]`：Provider 详情页
 17. `/admin/ai/models`：Model 管理页
@@ -389,7 +389,7 @@ features/<domain>/
 - 当前真实依赖：`GET/PATCH /api/admin/users`、`GET /api/admin/users/export`、`GET /api/admin/users/{userId}`、`POST .../soft-delete`、`POST .../restore`；详情页另拉 `GET /api/admin/feedback?userId=...` 展示最近工单
 - 页面组件：`features/admin-users/components/user-list.tsx`、`user-detail.tsx`、`user-edit-sheet.tsx` 等
 
-### 管理后台学习运营页
+### 管理后台学习记录页
 
 - 路由入口：`app/(admin-shell)/admin/learning/page.tsx`、`app/(admin-shell)/admin/learning/[pathId]/page.tsx`
 - 页面装配：`features/admin-learning/components/learning-path-list-page.tsx`、`features/admin-learning/components/learning-path-detail-page.tsx`
@@ -400,7 +400,7 @@ features/<domain>/
   - 详情页右侧展示用户快照，并可继续跳到 `/admin/users/[userId]`
   - 状态操作仅允许 `reactivate / archive`，统一走后台 API，而不是页面层直接改写
 
-### 管理后台 AI 运营页
+### 管理后台 Ai 管理页
 
 - 路由入口：
   `app/(admin-shell)/admin/ai/page.tsx`、
@@ -635,7 +635,7 @@ features/<domain>/
 - 尚未形成系统性的前端自动化测试覆盖
 - 通知设置、订阅模块、FAQ 仍是静态或占位实现
 - 埋点写入与通知设置落库尚未接入真实后端
-- 管理员后台当前已完成 Phase 1，并已落地用户运营、学习运营、AI 运营与系统设置；更深用户运营写能力、细粒度权限与 AI 深水区能力仍未开始
+- 管理员后台当前已完成 Phase 1，并已落地用户运营、学习记录、Ai 管理与系统设置；更深用户运营写能力、细粒度权限与 AI 深水区能力仍未开始
 
 因此，当前阶段的目标仍然是：
 
@@ -678,6 +678,6 @@ features/<domain>/
 1. 继续把剩余静态模块切到真实接口，优先级依次为埋点事件、通知设置、订阅模块。
 2. 为已接接口的高频页面补充页面级自动化测试或最小交互测试。
 3. 在确认请求复杂度继续上升后，再评估是否引入 Query 缓存层，而不是过早全局化。
-4. 继续推进管理员后台后续能力前，先保持用户侧与管理侧鉴权分流口径一致，避免两端状态判断逻辑漂移。（用户运营、学习运营、AI 运营与系统设置页面/API 已交付，新增后台域时继续遵守 `features/admin-*` 与 `server/modules/admin-*` 约定。）
+4. 继续推进管理员后台后续能力前，先保持用户侧与管理侧鉴权分流口径一致，避免两端状态判断逻辑漂移。（用户运营、学习记录、Ai 管理与系统设置页面/API 已交付，新增后台域时继续遵守 `features/admin-*` 与 `server/modules/admin-*` 约定。）
 
 如果后续目录与本说明出现偏差，应优先更新本文档，再继续扩展代码。

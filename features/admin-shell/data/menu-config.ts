@@ -37,13 +37,13 @@ export const menuItems: MenuItem[] = [
     active: true,
   },
   {
-    label: "学习运营",
+    label: "学习记录",
     href: "/admin/learning",
     icon: BookOpen,
     active: true,
   },
   {
-    label: "AI 运营",
+    label: "Ai 管理",
     href: "/admin/ai",
     icon: Bot,
     active: true,

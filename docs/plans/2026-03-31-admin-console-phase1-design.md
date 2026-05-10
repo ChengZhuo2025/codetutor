@@ -10,7 +10,7 @@
 >
 > 历史说明：本文聚焦 **Phase 1 原始范围**，用于保留当时的设计边界；**不作为当前管理后台完整能力的权威来源**。当前真实现状请优先查看 `docs/plans/README.md` 与 `docs/plans/2026-03-31-ai-coding-tutor-admin-console-design.md`。
 >
-> **2026-04-05 补充**：同仓已在 Phase 1 之后继续追加**用户管理**、**学习运营**、**AI 运营** 与 **系统设置**，这些后续模块不属于 Phase 1 原始验收包，但以代码与总设计文档为准。
+> **2026-04-05 补充**：同仓已在 Phase 1 之后继续追加**用户管理**、**学习记录**、**Ai 管理** 与 **系统设置**，这些后续模块不属于 Phase 1 原始验收包，但以代码与总设计文档为准。
 
 ---
 
@@ -37,8 +37,8 @@
 ### 1.3 不包含（Phase 1 原始范围内未承诺；部分已由后续迭代补齐）
 
 - ~~用户运营模块~~（已在后续迭代交付，见总设计文档 §5.3）
-- 学习运营模块
-- AI 运营模块
+- 学习记录模块
+- Ai 管理模块
 - 细粒度 UI 权限控制
 - 总览看板的完整数据分析
 
@@ -283,16 +283,16 @@ app/
 
 ### 4.3 侧边栏菜单
 
-Phase 1 只显示可访问的菜单项（未实现的显示为禁用）。**2026-04-05 代码对齐**：`用户管理`、`学习运营`、`AI 运营` 与 `系统设置` 已与 `features/admin-shell/data/menu-config.ts` 一致设为可点通。
+Phase 1 只显示可访问的菜单项（未实现的显示为禁用）。**2026-04-05 代码对齐**：`用户管理`、`学习记录`、`Ai 管理` 与 `系统设置` 已与 `features/admin-shell/data/menu-config.ts` 一致设为可点通。
 
 ```typescript
 const menuItems = [
   { label: "总览看板", href: "/admin", icon: LayoutDashboard, active: true },
   { label: "用户管理", href: "/admin/users", icon: Users, active: true },
   { label: "反馈工单", href: "/admin/feedback", icon: MessageSquare, active: true },
-  { label: "学习运营", href: "/admin/learning", icon: BookOpen, active: true },
+  { label: "学习记录", href: "/admin/learning", icon: BookOpen, active: true },
   {
-    label: "AI 运营",
+    label: "Ai 管理",
     href: "/admin/ai",
     icon: Bot,
     active: true,

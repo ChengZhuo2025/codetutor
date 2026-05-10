@@ -98,9 +98,9 @@ export function createAdminAIOverviewGetHandler(dependencies: {
       }
 
       const data = await dependencies.getAdminAIOverview(admin.adminId)
-      return jsonSuccess(data, "AI 运营概览读取成功")
+      return jsonSuccess(data, "Ai 管理概览读取成功")
     } catch {
-      return jsonError("INTERNAL_ERROR", "AI 运营概览读取失败", 500)
+      return jsonError("INTERNAL_ERROR", "Ai 管理概览读取失败", 500)
     }
   }
 }

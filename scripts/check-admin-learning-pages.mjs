@@ -42,7 +42,7 @@ const menuSource = readFileSync(
 
 assert.match(
   listSource,
-  /学习运营/,
+  /学习记录/,
   "The admin learning list should render the learning-ops title",
 )
 
@@ -108,7 +108,7 @@ assert.match(
 
 assert.match(
   menuSource,
-  /label: "学习运营".*active: true/s,
+  /label: "学习记录".*active: true/s,
   "The admin menu should enable the learning operations entry",
 )
 

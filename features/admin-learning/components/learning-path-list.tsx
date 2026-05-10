@@ -205,7 +205,7 @@ export function LearningPathList() {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            学习运营
+            学习记录
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             聚焦真实用户学习路径，查看进度、中断、完成与归档处理。

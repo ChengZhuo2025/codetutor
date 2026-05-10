@@ -278,7 +278,7 @@ async function assertCanAccessAI(adminAccountId: string) {
 
   const roles = normalizeRoles(actor)
   if (!roles.some((role) => AI_ALLOWED_ROLES.has(role))) {
-    throwNamedError("FORBIDDEN", "仅超级管理员或 AI 运营管理员可访问 AI 运营模块。")
+    throwNamedError("FORBIDDEN", "仅超级管理员或 Ai 管理管理员可访问 Ai 管理模块。")
   }
 
   return {

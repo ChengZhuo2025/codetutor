@@ -83,7 +83,7 @@ const ROLE_LABELS: Record<AdminRoleCode, string> = {
   super_admin: "超级管理员",
   support_admin: "客服管理员",
   ops_admin: "运营管理员",
-  ai_ops_admin: "AI 运营管理员",
+  ai_ops_admin: "Ai 管理管理员",
 };
 
 const ROLE_BADGE_CLASS: Record<AdminRoleCode, string> = {

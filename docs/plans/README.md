@@ -9,7 +9,7 @@
 ## 30 秒状态速览
 
 - 当前项目已不是纯原型仓库，而是“前端页面 + `app/api` + `server/modules` + Supabase migrations”的同仓 MVP。
-- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息、自学模式异步教程链接生成学习计划草稿、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、管理后台 Phase 1、**用户运营**、**学习运营**、**AI 运营**、**系统设置**（含联系方式与微信支付配置）以及 **微信 Native 扫码支付 + 订阅权益开通**（订阅查询、Native 下单、订单查询/同步、微信响应验签、支付回调验签解密、原子幂等开通个人版/专业版权益）。
+- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息、自学模式异步教程链接生成学习计划草稿、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、管理后台 Phase 1、**用户运营**、**学习记录**、**Ai 管理**、**系统设置**（含联系方式与微信支付配置）以及 **微信 Native 扫码支付 + 订阅权益开通**（订阅查询、Native 下单、订单查询/同步、微信响应验签、支付回调验签解密、原子幂等开通个人版/专业版权益）。
 - 当前代码技术栈以 `package.json` 为准：`Next.js 16.2.0`、`React 19.2.4`、`TypeScript 5.7.3`、`Tailwind CSS 4.2`、`shadcn/ui`、`Zod + zod-to-openapi + Swagger UI`；当前本地验证环境为 `Node.js 22.18.0`。
 - 已补运行时接口文档：`/api/docs/openapi` 输出 OpenAPI 3.1 JSON，`/api-docs` 提供 Swagger UI 查看与调试；文档 `info.description` 注明用户端主题偏好为前端 localStorage、无 REST 接口。
 - 用户端支持明暗主题切换（默认暗色，`next-themes` + `app/globals.css` 双套令牌），入口：营销顶栏、登录页右上角、工作台左侧栏底部设置行右侧。
@@ -17,7 +17,7 @@
 - `app/api` 当前已大量收敛为薄入口层，请求校验、统一响应、错误映射与部分路由编排已下沉到 `server/lib/*` 与各域 `route-handler.ts`。
 - 已落地数据侧：远程 Supabase、`001` 到 `028` 迁移（含 `018` 材料摄取与计划草稿表、`019` 用户软删除、`020` analytics/notifications、`021` Provider API Key 数据库加密托管、`024` async material intake / generation runs / chunks、`025` editable drafts / revisions、`026` material chunk evidence metadata、`027` 草稿任务 `mastery_points` / `cautions` 契约升级、planner prompt 同步与历史已确认自学路径 `key_points/pitfalls` 回填、`028` AI Model 结构化画像字段与 metadata 兼容回填）、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表、AI 会话 / provider / agent / skill / invocation 表，以及管理员账号/角色/审计日志表。
 - 已补 Phase 1 运行时性能与稳定性加固：进程内短 TTL 用户鉴权 / 管理员会话缓存、AI 配置快照缓存、关键接口限流与请求级观测头 / 结构化日志；当前仍未引入 Redis / 消息队列，缓存与限流均为单实例进程内实现。
-- 仍待实现：细粒度权限深化、用户域更深写能力如内部备注 / 人工积分调整、AI 域更深运营化能力（prompt 版本化、灰度/回滚、成本与稳定性面板等）、支付退款/自动续费/JSAPI/H5 变体。（**用户运营**、**学习运营**、**AI 运营**、**系统设置**、**analytics 事件写入**、**通知设置落库/站内提醒** 与 **微信 Native 扫码支付首版闭环** 已在代码中落地。）
+- 仍待实现：细粒度权限深化、用户域更深写能力如内部备注 / 人工积分调整、AI 域更深运营化能力（prompt 版本化、灰度/回滚、成本与稳定性面板等）、支付退款/自动续费/JSAPI/H5 变体。（**用户运营**、**学习记录**、**Ai 管理**、**系统设置**、**analytics 事件写入**、**通知设置落库/站内提醒** 与 **微信 Native 扫码支付首版闭环** 已在代码中落地。）
 - 若只想最快了解真实现状，优先读：
   1. `docs/plans/README.md`
   2. `docs/plans/2026-03-23-ai-coding-tutor-frontend-engineering-guide.md`
@@ -100,7 +100,7 @@
 - 用户端与管理端登录态已完成分流：用户端使用 `app-user-session`，管理端使用 `admin-access-token` / `admin-refresh-token`，并由 `proxy.ts` 统一做入口路由守卫。
 - 工作台左侧栏数据缓存已收敛到 `app/(workspace)/layout.tsx` 的 `WorkspaceSidebarDataProvider`，在 `/learn`、`/map`、`/achievements`、`/history` 间切换时不再重复请求并产生加载跳动。
 - 当前学习计划状态机已区分 `active`、`interrupted`、`completed`、`abandoned`、`archived`；其中 `interrupted` 为连续 7 天无学习行为后的系统自动中断，`abandoned` 为用户主动放弃，但历史页仍支持重新激活。
-- 当前仍未落地的能力主要包括：细粒度权限控制深化、内部备注 / 人工积分调整等更深用户运营能力、支付退款/自动续费/JSAPI/H5 变体，以及 AI 域更深层运营化与可视化配置能力（如 prompt 版本化、灰度/回滚、成本与稳定性面板；**用户运营、学习运营、AI 运营、系统设置、analytics 事件写入、通知设置落库/站内提醒、微信 Native 扫码支付首版闭环已交付**）。
+- 当前仍未落地的能力主要包括：细粒度权限控制深化、内部备注 / 人工积分调整等更深用户运营能力、支付退款/自动续费/JSAPI/H5 变体，以及 AI 域更深层运营化与可视化配置能力（如 prompt 版本化、灰度/回滚、成本与稳定性面板；**用户运营、学习记录、Ai 管理、系统设置、analytics 事件写入、通知设置落库/站内提醒、微信 Native 扫码支付首版闭环已交付**）。
 - 当前产品主线围绕 `user_learning_paths` 展开，`/learn`、`/map`、`/history` 共用这条主线。
 - 各文档如果同时包含“已实现”与“后续规划”两部分，应以文档中的“当前实现快照”或“已落地状态”说明为准；若与代码冲突，以代码和迁移为准，再回写文档。
 
@@ -113,7 +113,7 @@
 - AI 第二阶段能力：按 `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 的 `15.2` 落地更细粒度的 agent 控制，包括按不同工具/路径补 agent seed、按不同 `interactionType` 补专用 agent、补 prompt 版本化管理。
 - analytics 深化：当前已落地 `POST /api/analytics/event`、`event_logs` 与基础聚合函数；后续重点转为把聚合结果接到增长看板、留存/漏斗分析和更深运营指标。
 - 通知体系深化：当前已落地通知设置落库、站内提醒记录与工作台侧边栏提醒卡；后续如需邮件/微信真实发送或独立通知中心，再在现有模型上扩展。
-- 管理员后台后续阶段：在 Phase 1、用户运营、学习运营、AI 运营 与系统设置已交付的基础上，继续补齐细粒度权限控制深化、AI 域更深运营化能力，以及用户域的后续能力（如内部备注、人工积分调整等，以代码与 OpenAPI 为准）。
+- 管理员后台后续阶段：在 Phase 1、用户运营、学习记录、Ai 管理 与系统设置已交付的基础上，继续补齐细粒度权限控制深化、AI 域更深运营化能力，以及用户域的后续能力（如内部备注、人工积分调整等，以代码与 OpenAPI 为准）。
 
 ### P2：商业化与基础设施增强
 
@@ -124,11 +124,11 @@
 
 ### 当前建议开发顺序
 
-1. 先补 `管理员后台后续能力 + analytics/notifications 的运营化深化`（用户运营、学习运营、AI 运营、系统设置、analytics 事件写入与通知设置落库已交付；重点转为权限与审计深化、AI 更深运营化，以及更深用户运营写能力），把运营与运维能力接上。
+1. 先补 `管理员后台后续能力 + analytics/notifications 的运营化深化`（用户运营、学习记录、Ai 管理、系统设置、analytics 事件写入与通知设置落库已交付；重点转为权限与审计深化、AI 更深运营化，以及更深用户运营写能力），把运营与运维能力接上。
 2. 再继续做学习消息链路的运营化增强，优先落 `15.2 第二阶段`，例如不同工具/路径/交互类型的 agent 拆分与 prompt 版本化管理。
    当前 AI 相关权威设计以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准。
    其中第一阶段已完成；文档里的 `15.2 第二阶段`、`15.3 第三阶段` 目前都还没有开始。
-3. 然后再进入 `15.3 第三阶段` 的 AI 运营深水区能力，例如 prompt 版本化、灰度/回滚、成本与稳定性可视化配置。
+3. 然后再进入 `15.3 第三阶段` 的 Ai 管理深水区能力，例如 prompt 版本化、灰度/回滚、成本与稳定性可视化配置。
 4. 最后再进入 `支付深化 + Redis/共享队列 + 更完整测试体系`。
 
 ## 文档维护原则

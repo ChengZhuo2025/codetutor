@@ -36,7 +36,7 @@ const menuSource = readFileSync(
   "utf8",
 )
 
-assert.match(overviewSource, /AI 运营/, "The AI overview page should render the AI operations title")
+assert.match(overviewSource, /Ai 管理/, "The AI overview page should render the AI operations title")
 assert.match(overviewSource, /近 7 天调用|最近失败/, "The AI overview page should expose runtime overview cards")
 assert.match(providerSource, /Provider 管理|新建 Provider|Base URL/, "The Provider page should expose provider CRUD fields")
 assert.match(providerSource, /API Key|secretMasked|密钥来源/, "The Provider page should expose masked secret management affordances")
@@ -44,6 +44,6 @@ assert.match(modelManagementSource, /Model 管理|模型类型|运行时用途|�
 assert.match(modelFormSource, /模型类别|运行时用途|连接测试模式|高级扩展配置/, "The model form should expose structured fields and relegate metadata to advanced config")
 assert.match(agentSource, /Agent 管理|System Prompt|Developer Prompt/, "The Agent page should expose real agent template fields")
 assert.match(testSource, /命中预览|真实 AI 测试|llm_invocations/, "The test page should expose preview and real test flows")
-assert.match(menuSource, /label: "AI 运营".*active: true/s, "The admin menu should enable the AI operations entry")
+assert.match(menuSource, /label: "Ai 管理".*active: true/s, "The admin menu should enable the AI operations entry")
 
 console.log("Admin AI pages expose the expected information architecture and menu wiring.")

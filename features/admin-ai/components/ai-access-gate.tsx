@@ -13,7 +13,7 @@ export function AIAccessGate({ children }: { children: ReactNode }) {
       <StatePanel
         status="error"
         title="无访问权限"
-        description="AI 运营模块仅对超级管理员和 AI 运营管理员开放。"
+        description="Ai 管理模块仅对超级管理员和 Ai 管理管理员开放。"
       />
     )
   }

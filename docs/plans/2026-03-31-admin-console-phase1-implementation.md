@@ -10,7 +10,7 @@
 
 **Tech Stack:** Next.js 16.2.0 App Router, React 19.2.4, TypeScript 5.7.3, Supabase Auth, shadcn/ui, Tailwind CSS 4.2
 
-**2026-04-05 历史补充：** 同仓在 Phase 1 完成后，已继续追加 **用户管理**、**学习运营**、**AI 运营** 与 **系统设置**。这些后续模块不在本文任务编号范围内，后续阅读请转到总设计文档与 README。
+**2026-04-05 历史补充：** 同仓在 Phase 1 完成后，已继续追加 **用户管理**、**学习记录**、**Ai 管理** 与 **系统设置**。这些后续模块不在本文任务编号范围内，后续阅读请转到总设计文档与 README。
 
 ---
 
@@ -902,13 +902,13 @@ export const menuItems: MenuItem[] = [
     active: true,
   },
   {
-    label: "学习运营",
+    label: "学习记录",
     href: "/admin/learning",
     icon: BookOpen,
     active: true,
   },
   {
-    label: "AI 运营",
+    label: "Ai 管理",
     href: "/admin/ai",
     icon: Bot,
     active: false,
@@ -1068,8 +1068,8 @@ const breadcrumbMap: Record<string, string> = {
   "/admin": "总览看板",
   "/admin/users": "用户运营",
   "/admin/feedback": "反馈工单",
-  "/admin/learning": "学习运营",
-  "/admin/ai": "AI 运营 / 概览",
+  "/admin/learning": "学习记录",
+  "/admin/ai": "Ai 管理 / 概览",
   "/admin/settings": "系统设置",
 }
 

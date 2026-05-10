@@ -544,7 +544,7 @@ const adminSettingsOverviewExample = {
     {
       code: "ops_admin",
       name: "运营管理员",
-      description: "负责用户与学习运营。",
+      description: "负责用户与学习记录。",
       accountCount: 1,
     },
   ],
@@ -4172,15 +4172,15 @@ registry.registerPath({
   path: "/api/admin/ai/overview",
   operationId: "getAdminAIOverview",
   tags: ["admin-ai"],
-  summary: "AI 运营概览",
+  summary: "Ai 管理概览",
   security: [],
   responses: {
     "200": successResponse(
       adminAIOverviewResponseDataSchema,
       "AdminAIOverviewResponse",
-      "AI 运营概览读取成功",
+      "Ai 管理概览读取成功",
       successExamples.adminAIOverview,
-      "AI 运营概览读取成功",
+      "Ai 管理概览读取成功",
     ),
     ...commonErrorResponses(["403", "500"]),
   },

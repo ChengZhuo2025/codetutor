@@ -125,8 +125,8 @@ vendor/               # vendored 依赖（如 server-only）
 |------|------|
 | `/admin` | 看板总览 |
 | `/admin/users`、`/admin/users/[userId]` | 用户运营 |
-| `/admin/learning`、`/admin/learning/[pathId]` | 学习运营 |
-| `/admin/ai/*` | AI 运营（providers/models/agents/bindings/skills/invocations/test） |
+| `/admin/learning`、`/admin/learning/[pathId]` | 学习记录 |
+| `/admin/ai/*` | Ai 管理（providers/models/agents/bindings/skills/invocations/test） |
 | `/admin/settings` | 系统设置 |
 | `/admin/feedback`、`/admin/feedback/[id]` | 反馈工单 |
 

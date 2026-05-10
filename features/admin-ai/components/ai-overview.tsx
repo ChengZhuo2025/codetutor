@@ -29,12 +29,12 @@ export function AIOverview() {
       const result = await adminRequestData<AdminAIOverviewResponseData>(
         "/admin/ai/overview",
         { method: "GET" },
-        "获取 AI 运营概览失败",
+        "获取 Ai 管理概览失败",
       )
       setData(result)
     } catch (fetchError) {
       setAuthExpired(isAdminSessionExpiredError(fetchError))
-      setError(getAdminApiErrorMessage(fetchError, "获取 AI 运营概览失败"))
+      setError(getAdminApiErrorMessage(fetchError, "获取 Ai 管理概览失败"))
     } finally {
       setIsLoading(false)
     }
@@ -57,7 +57,7 @@ export function AIOverview() {
       ) : (
         <div className="space-y-6">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">AI 运营</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Ai 管理</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               基于真实 AI registry、命中规则、技能绑定和调用日志，查看当前生产配置与健康度。
             </p>

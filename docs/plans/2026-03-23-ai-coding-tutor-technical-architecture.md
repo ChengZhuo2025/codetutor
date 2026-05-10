@@ -64,13 +64,13 @@
 - 用户反馈提交、我的反馈记录、管理员反馈接口
 - `POST /api/analytics/event` 与 `event_logs` 已落地，前端 `trackEvent()` 会真实写入事件日志
 - 通知设置已落地真实偏好表、站内提醒记录表、工作台左侧栏提醒卡与关键时机 toast；邮件/微信当前仅保存偏好
-- 管理员后台 Phase 1（管理员登录/退出、总览看板、反馈工单）及**用户运营**（`/admin/users`、`/admin/users/[userId]`：列表筛选、详情、CSV 导出、受控资料更新、软删除/恢复）、**学习运营**（`/admin/learning`、`/admin/learning/[pathId]`：学习路径列表/导出、详情、最近会话摘要、`reactivate/archive` 状态操作）、**AI 运营**（`/admin/ai*`：概览、Provider/Model/Agent 列表与详情、Bindings/Skills、Invocation 日志列表与详情、resolve preview、agent test）与**系统设置**（`/admin/settings`：管理员治理概览、账号启停、审计日志）
+- 管理员后台 Phase 1（管理员登录/退出、总览看板、反馈工单）及**用户运营**（`/admin/users`、`/admin/users/[userId]`：列表筛选、详情、CSV 导出、受控资料更新、软删除/恢复）、**学习记录**（`/admin/learning`、`/admin/learning/[pathId]`：学习路径列表/导出、详情、最近会话摘要、`reactivate/archive` 状态操作）、**Ai 管理**（`/admin/ai*`：概览、Provider/Model/Agent 列表与详情、Bindings/Skills、Invocation 日志列表与详情、resolve preview、agent test）与**系统设置**（`/admin/settings`：管理员治理概览、账号启停、审计日志）
 - `POST /api/learning/message`、`GET /api/learning/messages` 已接入真实 AI 编排链路，包含会话持久化、历史分页、SiliconFlow provider、JSON / SSE 双返回、结构化 `structuredContent` 与 `task_patch` 联动
 - 已补 Phase 1 运行时加固：用户 Bearer 鉴权与管理员会话查找使用进程内短 TTL 缓存，AI provider / model / agent / binding / skill 读取使用配置快照缓存，`/api/learning/message`、用户 / 管理员登录与会话、Provider 密钥读取、agent test 等关键接口已接入限流、并发保护、请求级观测头与结构化请求日志
 
 当前尚未落地的链路包括：
 
-- 管理员后台后续能力（AI 运营深水区、细粒度权限、内部备注/人工积分调整等；**终端用户运营、学习运营、AI 运营、系统设置、analytics 与通知设置已交付**）
+- 管理员后台后续能力（Ai 管理深水区、细粒度权限、内部备注/人工积分调整等；**终端用户运营、学习记录、Ai 管理、系统设置、analytics 与通知设置已交付**）
 - 跨实例 Redis / 消息队列等增强型基础设施；当前缓存、限流与请求观测仍为单实例进程内实现
 
 当前代码与依赖快照补充：
