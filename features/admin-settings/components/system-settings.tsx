@@ -17,7 +17,9 @@ import {
 } from "lucide-react";
 import type { AdminRoleCode } from "@/lib/api/contracts/admin";
 import type {
+  AdminAlipayPaymentSettingsResponseData,
   AdminSubscriptionPlanListResponseData,
+  AdminUpdateAlipayPaymentSettingsRequest,
   AdminUpsertSubscriptionPlanRequest,
   AdminUpdateWechatPaymentSettingsRequest,
   AdminWechatPaymentSettingsResponseData,
@@ -182,6 +184,8 @@ function getAuditActionLabel(action: string) {
       return "更新企业联系方式";
     case "payment_settings_update":
       return "更新微信支付配置";
+    case "alipay_payment_settings_update":
+      return "更新支付宝支付配置";
     default:
       return action;
   }
@@ -332,6 +336,16 @@ export function SystemSettings() {
       wechatpayPublicKeyId: "",
       wechatpayPublicKeyPem: "",
     });
+  const [alipayData, setAlipayData] =
+    useState<AdminAlipayPaymentSettingsResponseData | null>(null);
+  const [alipayForm, setAlipayForm] =
+    useState<AdminUpdateAlipayPaymentSettingsRequest>({
+      enabled: false,
+      appId: "",
+      notifyUrl: "https://www.codetutor.cn/api/payment/alipay/notify",
+      appPrivateKeyPem: "",
+      alipayPublicKeyPem: "",
+    });
   const [planData, setPlanData] =
     useState<AdminSubscriptionPlanListResponseData | null>(null);
   const [plansLoading, setPlansLoading] = useState(false);
@@ -472,6 +486,20 @@ export function SystemSettings() {
         notifyUrl: result.notifyUrl ?? "https://www.codetutor.cn/api/payment/wechat/notify",
         merchantSerialNo: result.merchantSerialNo ?? "",
         wechatpayPublicKeyId: result.wechatpayPublicKeyId ?? "",
+      }));
+      const alipay =
+        await adminRequestData<AdminAlipayPaymentSettingsResponseData>(
+          "/admin/settings/payment/alipay",
+          { method: "GET" },
+          "获取支付宝支付配置失败",
+        );
+      setAlipayData(alipay);
+      setAlipayForm(() => ({
+        enabled: alipay.enabled,
+        appId: alipay.appId ?? "",
+        notifyUrl: alipay.notifyUrl ?? "https://www.codetutor.cn/api/payment/alipay/notify",
+        appPrivateKeyPem: "",
+        alipayPublicKeyPem: "",
       }));
     } catch (error) {
       setAuthExpired(isAdminSessionExpiredError(error));
@@ -1317,11 +1345,50 @@ export function SystemSettings() {
     }
   };
 
+  const handleSaveAlipayPayment = async () => {
+    const result = await confirm.prompt({
+      title: "确认保存支付宝支付配置？",
+      description:
+        "支付宝应用私钥和支付宝公钥会加密存储到数据库。保存后用户端可选择支付宝扫码支付。",
+      confirmText: "保存配置",
+      cancelText: "取消",
+    });
+
+    if (!result.confirmed) return;
+
+    setPaymentSaving(true);
+    try {
+      await adminRequestData<AdminAlipayPaymentSettingsResponseData>(
+        "/admin/settings/payment/alipay",
+        {
+          method: "PATCH",
+          body: JSON.stringify(alipayForm),
+        },
+        "更新支付宝支付配置失败",
+      );
+      toast.success("支付宝支付配置更新成功");
+      await refreshPayment();
+      await refreshOverview();
+    } catch (error) {
+      setAuthExpired(isAdminSessionExpiredError(error));
+      toast.error(getAdminApiErrorMessage(error, "更新支付宝支付配置失败"));
+    } finally {
+      setPaymentSaving(false);
+    }
+  };
+
   const updatePaymentField = <K extends keyof AdminUpdateWechatPaymentSettingsRequest>(
     field: K,
     value: AdminUpdateWechatPaymentSettingsRequest[K],
   ) => {
     setPaymentForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updateAlipayField = <K extends keyof AdminUpdateAlipayPaymentSettingsRequest>(
+    field: K,
+    value: AdminUpdateAlipayPaymentSettingsRequest[K],
+  ) => {
+    setAlipayForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const renderPaymentTab = () => (
@@ -1397,6 +1464,68 @@ export function SystemSettings() {
               </Button>
               <Button type="button" onClick={() => void handleSavePayment()} disabled={paymentSaving}>
                 {paymentSaving ? "保存中…" : "保存微信支付配置"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">支付宝扫码支付</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              使用支付宝开放平台普通公钥 RSA2 模式；应用私钥和支付宝公钥会加密落库。
+            </p>
+          </div>
+          <AdminListTag className={alipayData?.configured ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700" : "border-amber-500/20 bg-amber-500/10 text-amber-700"}>
+            {alipayData?.configured ? "已配置" : "未完整配置"}
+          </AdminListTag>
+        </div>
+
+        {paymentError ? null : paymentLoading ? (
+          <div className="rounded-xl border border-border bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
+            加载中…
+          </div>
+        ) : (
+          <div className="space-y-5">
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={alipayForm.enabled === true}
+                onChange={(event) => updateAlipayField("enabled", event.target.checked)}
+              />
+              启用支付宝支付
+            </label>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="alipay-app-id">支付宝 AppID</Label>
+                <Input id="alipay-app-id" value={alipayForm.appId ?? ""} onChange={(event) => updateAlipayField("appId", event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="alipay-sign-type">加签方式</Label>
+                <Input id="alipay-sign-type" value="RSA2 普通公钥" readOnly />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="alipay-notify-url">支付宝异步通知地址</Label>
+                <Input id="alipay-notify-url" value={alipayForm.notifyUrl ?? ""} onChange={(event) => updateAlipayField("notifyUrl", event.target.value)} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="alipay-private-key">支付宝应用私钥</Label>
+                <Textarea id="alipay-private-key" rows={6} value={alipayForm.appPrivateKeyPem ?? ""} placeholder={alipayData?.appPrivateKeyMasked ?? "-----BEGIN PRIVATE KEY-----"} onChange={(event) => updateAlipayField("appPrivateKeyPem", event.target.value)} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="alipay-public-key">支付宝公钥</Label>
+                <Textarea id="alipay-public-key" rows={6} value={alipayForm.alipayPublicKeyPem ?? ""} placeholder={alipayData?.alipayPublicKeyMasked ?? "-----BEGIN PUBLIC KEY-----"} onChange={(event) => updateAlipayField("alipayPublicKeyPem", event.target.value)} />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => void refreshPayment()} disabled={paymentSaving}>
+                重新读取
+              </Button>
+              <Button type="button" onClick={() => void handleSaveAlipayPayment()} disabled={paymentSaving}>
+                {paymentSaving ? "保存中…" : "保存支付宝支付配置"}
               </Button>
             </div>
           </div>

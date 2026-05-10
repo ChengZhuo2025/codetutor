@@ -16,7 +16,7 @@ test("openapi document covers all registered api operations and special transpor
     ),
   )
 
-  assert.equal(operations.length, 113)
+  assert.equal(operations.length, 117)
 
   assert.ok(paths["/api/auth/login"]?.post)
   assert.ok(paths["/api/profile/me"]?.get)
@@ -69,6 +69,8 @@ test("openapi document covers all registered api operations and special transpor
   assert.ok(paths["/api/admin/settings/contact"]?.patch)
   assert.ok(paths["/api/admin/settings/payment/wechat"]?.get)
   assert.ok(paths["/api/admin/settings/payment/wechat"]?.patch)
+  assert.ok(paths["/api/admin/settings/payment/alipay"]?.get)
+  assert.ok(paths["/api/admin/settings/payment/alipay"]?.patch)
   assert.ok(paths["/api/admin/settings/subscription-plans"]?.get)
   assert.ok(paths["/api/admin/settings/subscription-plans"]?.post)
   assert.ok(paths["/api/admin/settings/subscription-plans/{code}"]?.patch)
@@ -78,9 +80,11 @@ test("openapi document covers all registered api operations and special transpor
   assert.ok(paths["/api/subscription/plans"]?.get)
   assert.ok(paths["/api/subscription/me"]?.get)
   assert.ok(paths["/api/payment/wechat/native-orders"]?.post)
+  assert.ok(paths["/api/payment/alipay/precreate-orders"]?.post)
   assert.ok(paths["/api/payment/orders/{orderNo}"]?.get)
   assert.ok(paths["/api/payment/orders/{orderNo}/sync"]?.post)
   assert.ok(paths["/api/payment/wechat/notify"]?.post)
+  assert.ok(paths["/api/payment/alipay/notify"]?.post)
   assert.ok(paths["/api/admin/ai/overview"]?.get)
   assert.ok(paths["/api/admin/ai/providers"]?.get)
   assert.ok(paths["/api/admin/ai/providers"]?.post)

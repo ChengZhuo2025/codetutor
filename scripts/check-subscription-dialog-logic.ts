@@ -2,6 +2,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 
 import {
+  PAYMENT_CHANNEL_OPTIONS,
   getPaymentOrderErrorMessage,
   getPlanActionState,
 } from "../components/layout/subscription-detail-logic.ts"
@@ -47,6 +48,13 @@ test("payment config incomplete error is converted to a clear user-facing messag
   assert.equal(
     getPaymentOrderErrorMessage(new Error("微信支付配置未启用或不完整。")),
     "当前暂未开放在线支付：微信支付配置未启用或不完整。请稍后再试，或联系管理员完成支付配置。",
+  )
+})
+
+test("subscription dialog offers alipay before wechat", () => {
+  assert.deepEqual(
+    PAYMENT_CHANNEL_OPTIONS.map((option) => option.channel),
+    ["alipay", "wechat"],
   )
 })
 

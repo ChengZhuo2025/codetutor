@@ -332,12 +332,12 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 历史页 | `/history` | `GET /api/history/recent`、`GET /api/history/{id}`、`POST /api/history/{id}/status` | 当前前端实际需要的是“历史学习计划列表 + 详情复盘 + 状态操作”，而不是“最近对话列表” |
 | 通知设置 / 工作台提醒 | 设置菜单、`/learn`、`/map`、`/achievements`、`/history` 左侧栏 | `GET/PATCH /api/notifications/settings`、`GET /api/notifications/in-app`、`POST /api/notifications/{id}/read`、`POST /api/notifications/{id}/dismiss` | 当前已落地真实通知偏好、站内提醒记录、侧边栏提醒卡与关键时机 toast；邮件/微信仅保存偏好，暂未接真实下发通道 |
 | 反馈弹窗 | 设置菜单 / `/history` 侧栏 | `POST /api/feedback`、`GET /api/feedback/mine`、`GET /api/feedback/mine/{id}` | 用户可提交反馈并查看管理员回复 |
-| 套餐订阅 | 工作台订阅弹窗 | `GET /api/subscription/me`、`POST /api/payment/wechat/native-orders`、`GET /api/payment/orders/{orderNo}`、`POST /api/payment/orders/{orderNo}/sync`、`POST /api/payment/wechat/notify` | 当前已落地微信 Native 扫码支付首版闭环：个人版/专业版月度套餐、二维码下单、订单状态同步、回调验签解密、支付成功后开通订阅权益 |
+| 套餐订阅 | 工作台订阅弹窗 | `GET /api/subscription/me`、`POST /api/payment/wechat/native-orders`、`POST /api/payment/alipay/precreate-orders`、`GET /api/payment/orders/{orderNo}`、`POST /api/payment/orders/{orderNo}/sync`、`POST /api/payment/wechat/notify`、`POST /api/payment/alipay/notify` | 当前已落地微信 Native / 支付宝扫码支付首版闭环：个人版/专业版月度套餐、二维码下单、订单状态同步、回调验签、支付成功后开通订阅权益 |
 | 管理后台总览 | `/admin` | `GET /api/admin/dashboard/overview` | 当前已落地管理员会话守卫、总览看板与资料区 |
 | 用户运营 | `/admin/users`、`/admin/users/[userId]` | `GET /api/admin/users`、`GET /api/admin/users/export`、`GET /api/admin/users/{userId}`、`PATCH /api/admin/users/{userId}`、`POST /api/admin/users/{userId}/soft-delete`、`POST /api/admin/users/{userId}/restore` | 当前已落地列表筛选、导出、详情、资料维护、软删恢复与工单联动 |
 | 学习记录 | `/admin/learning`、`/admin/learning/[pathId]` | `GET /api/admin/learning-paths`、`GET /api/admin/learning-paths/export`、`GET /api/admin/learning-paths/{pathId}`、`POST /api/admin/learning-paths/{pathId}/status` | 当前已落地学习路径实例列表、详情、最近会话摘要与 `reactivate/archive` 状态操作 |
 | Ai 管理 | `/admin/ai`、`/admin/ai/providers`、`/admin/ai/providers/[providerId]`、`/admin/ai/models`、`/admin/ai/models/[modelId]`、`/admin/ai/agents`、`/admin/ai/agents/[agentId]`、`/admin/ai/bindings`、`/admin/ai/skills`、`/admin/ai/invocations`、`/admin/ai/invocations/[invocationId]`、`/admin/ai/test` | `GET /api/admin/ai/overview`、`GET/POST/PATCH /api/admin/ai/providers*`、`POST /api/admin/ai/providers/{providerId}/reveal-secret`、`GET/POST/PATCH /api/admin/ai/models*`、`GET/POST/PATCH /api/admin/ai/agents*`、`GET/POST/PATCH /api/admin/ai/agent-bindings*`、`GET /api/admin/ai/skills`、`GET/POST/PATCH /api/admin/ai/agent-skill-bindings*`、`GET /api/admin/ai/invocations`、`GET /api/admin/ai/invocations/{invocationId}`、`POST /api/admin/ai/resolve-preview`、`POST /api/admin/ai/agent/test` | 当前已落地 AI 配置真源管理、Provider API Key 脱敏展示 / 按需明文读取 / 数据库加密托管、列表页与独立详情页、命中规则/Skill 绑定、调用日志只读、命中预览与真实 Provider 测试链路；其中 `/api/admin/ai/models*` 已升级为结构化模型画像字段（`modelFamily` / `runtimeCapabilities` / `connectionTestMode` / `reasoningEnabled` / `profileGroup` / `notes`），仅保留 `metadata` 作为高级扩展区 |
-| 系统设置 | `/admin/settings` | `GET /api/admin/settings/overview`、`GET /api/admin/settings/admin-accounts`、`POST /api/admin/settings/admin-accounts/{adminAccountId}/status`、`GET /api/admin/settings/audit-logs`、`GET/PATCH /api/admin/settings/contact`、`GET/PATCH /api/admin/settings/payment/wechat`、`GET /api/contact` | 当前已落地资料/安全入口复用、管理员账号列表与启停、角色权限说明、操作审计、**企业联系方式全链路管理**、**微信支付配置加密托管** 与系统信息 |
+| 系统设置 | `/admin/settings` | `GET /api/admin/settings/overview`、`GET /api/admin/settings/admin-accounts`、`POST /api/admin/settings/admin-accounts/{adminAccountId}/status`、`GET /api/admin/settings/audit-logs`、`GET/PATCH /api/admin/settings/contact`、`GET/PATCH /api/admin/settings/payment/wechat`、`GET/PATCH /api/admin/settings/payment/alipay`、`GET /api/contact` | 当前已落地资料/安全入口复用、管理员账号列表与启停、角色权限说明、操作审计、**企业联系方式全链路管理**、**微信/支付宝支付配置加密托管** 与系统信息 |
 | 管理端反馈 | `/admin/feedback`、`/admin/feedback/[id]` | `GET /api/admin/feedback`、`GET /api/admin/feedback/{id}`、`POST /api/admin/feedback/{id}/reply`、`POST /api/admin/feedback/{id}/status` | 当前已落地列表筛选、详情回复与状态流转 |
 
 以下内容继续保留前端本地静态配置，不进入 MVP 首期后端：
@@ -1851,23 +1851,28 @@ SSE 事件补充：
 | `GET /api/subscription/plans` | 否 | 读取用户端可展示订阅套餐 |
 | `GET /api/subscription/me` | 是 | 读取当前用户订阅状态与可购买套餐 |
 | `POST /api/payment/wechat/native-orders` | 是 | 创建微信 Native 扫码支付订单，返回 `codeUrl` |
+| `POST /api/payment/alipay/precreate-orders` | 是 | 创建支付宝扫码支付订单，返回 `codeUrl` |
 | `GET /api/payment/orders/{orderNo}` | 是 | 读取当前用户支付订单 |
-| `POST /api/payment/orders/{orderNo}/sync` | 是 | 主动向微信查单并同步本地订单状态 |
+| `POST /api/payment/orders/{orderNo}/sync` | 是 | 按订单渠道主动查单并同步本地订单状态 |
 | `POST /api/payment/wechat/notify` | 否 | 微信支付回调通知；验签解密后幂等更新订单和订阅 |
+| `POST /api/payment/alipay/notify` | 否 | 支付宝支付异步通知；验签后幂等更新订单和订阅 |
 
 ---
 
-## 12A. 微信支付与订阅接口
+## 12A. 支付与订阅接口
 
-当前只支持 Web 端微信 Native 扫码支付，不支持 JSAPI/H5/退款/自动续费。
+当前支持 Web 端微信 Native 扫码支付与支付宝扫码支付，不支持 JSAPI/H5/退款/自动续费。
 
 - `GET /api/subscription/plans` 返回用户端首页可展示套餐，数据来自 `subscription_plans`，只包含未归档且上架套餐。
 - `GET /api/subscription/me` 返回当前订阅与可展示套餐。默认免费版；支付成功后返回对应付费套餐、有效期与剩余天数。
 - `POST /api/payment/wechat/native-orders` 请求体为 `{ "planCode": string }`，服务端动态校验套餐必须存在、未归档、上架且 `purchasable=true`；成功返回订单号、金额、状态、`codeUrl` 和过期时间；服务端向微信下单时同步传入 `time_expire`。
+- `POST /api/payment/alipay/precreate-orders` 请求体为 `{ "planCode": string }`，服务端动态校验套餐后调用支付宝 `alipay.trade.precreate`，成功返回订单号、金额、状态、`paymentChannel=alipay`、`codeUrl` 和过期时间。
 - `GET /api/payment/orders/{orderNo}` 仅允许订单所属用户读取。
-- `POST /api/payment/orders/{orderNo}/sync` 调用微信商户订单号查单接口；响应必须通过微信支付响应签名头与公钥 ID 校验。若微信返回 `SUCCESS`，复用回调完成逻辑更新订单并开通订阅；若返回 `CLOSED`、`PAYERROR` 或本地订单已超时，则写入 `closed` / `failed` / `expired` 终态。
+- `POST /api/payment/orders/{orderNo}/sync` 按 `paymentChannel` 分发查单：微信调用商户订单号查单接口，支付宝调用 `alipay.trade.query`。若渠道返回成功支付，复用回调完成逻辑更新订单并开通订阅；若渠道返回关闭/失败或本地订单已超时，则写入本地终态。
 - `POST /api/payment/wechat/notify` 不需要用户登录，但必须通过 `Wechatpay-*` 头验签、公钥 ID 校验、APIv3 密钥解密、`appid/mchid/amount/trade_state` 校验；重复回调通过数据库行锁与订单状态判断保持幂等。
+- `POST /api/payment/alipay/notify` 不需要用户登录，接收 `application/x-www-form-urlencoded`，必须通过支付宝 RSA2 验签、`app_id/out_trade_no/total_amount/trade_status` 校验；成功处理返回纯文本 `success`，失败返回 `fail`。
 - 管理端 `GET/PATCH /api/admin/settings/payment/wechat` 管理 `appid`、`mchid`、回调地址、商户证书序列号、商户私钥、APIv3 密钥、微信支付公钥 ID 与公钥。敏感字段只加密存储和脱敏返回；PATCH 中密钥字段为空或缺省时表示保留原密文，只有显式填写新密钥才替换。
+- 管理端 `GET/PATCH /api/admin/settings/payment/alipay` 管理支付宝普通公钥 RSA2 配置：`appId`、异步通知地址、应用私钥、支付宝公钥。敏感字段只加密存储和脱敏返回；PATCH 中密钥字段为空或缺省时表示保留原密文。
 - 管理端 `GET/POST /api/admin/settings/subscription-plans` 与 `PATCH/DELETE /api/admin/settings/subscription-plans/{code}` 管理订阅套餐。DELETE 为软删除归档，归档后用户端不可见且不可购买，历史订单和订阅引用保留。
 
 ## 13. 典型错误响应示例

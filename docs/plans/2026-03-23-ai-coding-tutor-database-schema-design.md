@@ -53,7 +53,7 @@
 - `027_material_plan_mastery_and_cautions.sql`
 - `028_add_ai_model_profile_fields.sql`
 - `029_create_site_contact_settings.sql` (新增企业联系方式配置表，支持管理后台编辑，供营销联系对话框动态加载)
-- `034_create_payment_subscription_tables.sql` (新增微信 Native 支付配置、订阅套餐、支付订单、用户订阅与支付回调事件表；`035_harden_payment_order_completion.sql` 新增支付完成幂等 RPC；`030`-`033` 为联系方式二维码与 RLS 修正迁移)
+- `034_create_payment_subscription_tables.sql` (新增微信 Native 支付配置、订阅套餐、支付订单、用户订阅与支付回调事件表；`035_harden_payment_order_completion.sql` 新增支付完成幂等 RPC；`037_add_alipay_scan_payment.sql` 扩展支付宝扫码支付配置与订单渠道字段；`030`-`033` 为联系方式二维码与 RLS 修正迁移)
 
 当前数据库中已落地的核心业务表包括：
 
@@ -1484,19 +1484,21 @@ MVP 阶段建议谨慎使用软删除：
 
 ## 6.30 支付与订阅表
 
-`034_create_payment_subscription_tables.sql` 落地微信 Native 扫码支付首版闭环：
+`034_create_payment_subscription_tables.sql` 落地微信 Native 扫码支付首版闭环，`037_add_alipay_scan_payment.sql` 扩展支付宝扫码支付：
 
-- `payment_settings`：单行微信支付配置表，保存 `appid`、`mchid`、回调地址、商户证书序列号、微信支付公钥 ID；商户私钥、APIv3 密钥、微信支付公钥用 AES-256-GCM 密文列保存，主密钥复用服务端 `AI_PROVIDER_SECRET_ENCRYPTION_KEY`。
+- `payment_settings`：单行支付配置表，保存微信 `appid`、`mchid`、回调地址、商户证书序列号、微信支付公钥 ID，以及支付宝 `appId`、异步通知地址、RSA2 普通公钥模式字段；微信商户私钥、APIv3 密钥、微信支付公钥、支付宝应用私钥、支付宝公钥均用 AES-256-GCM 密文列保存，主密钥复用服务端 `AI_PROVIDER_SECRET_ENCRYPTION_KEY`。
 - `subscription_plans`：订阅套餐权威表，已扩展展示排序、周期文案、CTA、推荐标记、可购买标记、上下架与软归档字段；初始化 `free`、`personal_monthly`、`pro_monthly` 三档，其中免费版仅展示不可购买，付费套餐由该表动态驱动下单校验。
-- `payment_orders`：用户支付订单，状态为 `created`、`prepay_created`、`paid`、`closed`、`expired`、`failed`；记录微信 `code_url`、交易号、回调 payload、支付时间和过期时间。
+- `payment_orders`：用户支付订单，状态为 `created`、`prepay_created`、`paid`、`closed`、`expired`、`failed`；通过 `payment_channel` 区分 `wechat` / `alipay`，记录二维码 `code_url`、微信/支付宝交易号、渠道状态、回调 payload、支付时间和过期时间。
 - `user_subscriptions`：用户当前订阅权益，支付成功后 upsert；同套餐续费从当前有效期顺延，升级到更高套餐从支付成功时间开始。
-- `payment_webhook_events`：保存微信回调原始头、原始 payload、解密 payload 和事件 ID，用于审计与幂等排查。
+- `payment_webhook_events`：保存微信/支付宝回调原始头、原始 payload、解密/标准化 payload 和事件 ID，用于审计与幂等排查。
 
 `035_harden_payment_order_completion.sql` 增加 `complete_paid_payment_order(order_no, transaction, paid_at)` RPC：
 
 - 通过 `payment_orders ... FOR UPDATE` 锁定单个订单，确保微信回调与前端主动查单并发时只执行一次订阅开通。
 - 如果订单已为 `paid`，直接返回现有订单；如果订单已经 `closed` / `expired` / `failed`，不再发放权益。
 - 如果支付成功时间晚于本地 `expires_at`，订单标记为 `expired`，避免过期订单继续开通权益。
+
+`037_add_alipay_scan_payment.sql` 同时扩展 `complete_paid_payment_order`，使微信回调、支付宝异步通知和前端主动查单共用同一个带行锁的订阅开通路径。
 
 `036_extend_subscription_plan_management.sql` 扩展 `subscription_plans` 的运营字段：
 

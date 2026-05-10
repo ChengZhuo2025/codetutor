@@ -48,6 +48,40 @@ export type NormalizedWechatPaymentConfigPatch = {
   wechatpayPublicKeyPem: string | null
 }
 
+export type AlipayPaymentConfigInput = {
+  enabled?: unknown
+  appId?: unknown
+  notifyUrl?: unknown
+  appPrivateKeyPem?: unknown
+  alipayPublicKeyPem?: unknown
+}
+
+export type NormalizedAlipayPaymentConfigInput = {
+  enabled: boolean
+  appId: string
+  notifyUrl: string
+  appPrivateKeyPem: string
+  alipayPublicKeyPem: string
+  signType: "RSA2"
+}
+
+export type ExistingAlipayPaymentConfigPatchSnapshot = {
+  enabled?: boolean
+  appId?: string | null
+  notifyUrl?: string | null
+  appPrivateKeyConfigured?: boolean
+  alipayPublicKeyConfigured?: boolean
+}
+
+export type NormalizedAlipayPaymentConfigPatch = {
+  enabled: boolean
+  appId: string
+  notifyUrl: string
+  appPrivateKeyPem: string | null
+  alipayPublicKeyPem: string | null
+  signType: "RSA2"
+}
+
 export type ParseResult<T> =
   | { ok: true; data: T }
   | { ok: false; code: "VALIDATION_FAILED"; message: string }
@@ -69,6 +103,20 @@ function validatePem(value: string, label: string) {
     return { ok: false as const, code: "VALIDATION_FAILED" as const, message: `${label} 必须是 PEM 格式。` }
   }
   return null
+}
+
+function wrapBase64Pem(base64: string, type: "PRIVATE KEY" | "PUBLIC KEY") {
+  const chunks = base64.match(/.{1,64}/g) ?? []
+  return `-----BEGIN ${type}-----\n${chunks.join("\n")}\n-----END ${type}-----`
+}
+
+function normalizeAlipayKeyPem(value: string, type: "PRIVATE KEY" | "PUBLIC KEY") {
+  const normalized = value.trim()
+  if (!normalized) return ""
+  if (normalized.includes("-----BEGIN")) return normalized
+  const compact = normalized.replace(/\s/g, "")
+  if (!/^[A-Za-z0-9+/=]+$/.test(compact)) return normalized
+  return wrapBase64Pem(compact, type)
 }
 
 export function normalizeWechatPaymentConfigInput(
@@ -215,6 +263,105 @@ export function normalizeWechatPaymentConfigPatch(
   }
 }
 
+function validateHttpsNotifyUrl(value: string, messagePrefix = "支付回调地址") {
+  if (!value) return null
+  try {
+    const url = new URL(value)
+    if (url.protocol !== "https:" || url.search) {
+      return { ok: false as const, code: "VALIDATION_FAILED" as const, message: `${messagePrefix}必须是 HTTPS 且不能包含查询参数。` }
+    }
+  } catch {
+    return { ok: false as const, code: "VALIDATION_FAILED" as const, message: `${messagePrefix}格式不正确。` }
+  }
+  return null
+}
+
+export function normalizeAlipayPaymentConfigInput(
+  input: AlipayPaymentConfigInput,
+): ParseResult<NormalizedAlipayPaymentConfigInput> {
+  const enabled = input.enabled === true
+  const fields = {
+    appId: requireField(input.appId, "支付宝 AppID"),
+    notifyUrl: requireField(input.notifyUrl, "支付宝异步通知地址"),
+    appPrivateKeyPem: requireField(input.appPrivateKeyPem, "支付宝应用私钥"),
+    alipayPublicKeyPem: requireField(input.alipayPublicKeyPem, "支付宝公钥"),
+  }
+  if (enabled) {
+    for (const result of Object.values(fields)) {
+      if (!result.ok) return result
+    }
+  }
+
+  const appId = fields.appId.ok ? fields.appId.data : ""
+  const notifyUrl = fields.notifyUrl.ok ? fields.notifyUrl.data : ""
+  const appPrivateKeyPem = normalizeAlipayKeyPem(fields.appPrivateKeyPem.ok ? fields.appPrivateKeyPem.data : "", "PRIVATE KEY")
+  const alipayPublicKeyPem = normalizeAlipayKeyPem(fields.alipayPublicKeyPem.ok ? fields.alipayPublicKeyPem.data : "", "PUBLIC KEY")
+
+  const notifyUrlError = validateHttpsNotifyUrl(notifyUrl, "支付宝异步通知地址")
+  if (notifyUrlError) return notifyUrlError
+  const privateKeyError = appPrivateKeyPem ? validatePem(appPrivateKeyPem, "支付宝应用私钥") : null
+  if (privateKeyError) return privateKeyError
+  const publicKeyError = alipayPublicKeyPem ? validatePem(alipayPublicKeyPem, "支付宝公钥") : null
+  if (publicKeyError) return publicKeyError
+
+  return {
+    ok: true,
+    data: {
+      enabled,
+      appId,
+      notifyUrl,
+      appPrivateKeyPem,
+      alipayPublicKeyPem,
+      signType: "RSA2",
+    },
+  }
+}
+
+export function normalizeAlipayPaymentConfigPatch(
+  input: AlipayPaymentConfigInput,
+  existing: ExistingAlipayPaymentConfigPatchSnapshot = {},
+): ParseResult<NormalizedAlipayPaymentConfigPatch> {
+  const enabled = input.enabled === undefined ? existing.enabled === true : input.enabled === true
+  const appId = mergeStringField(input.appId, existing.appId)
+  const notifyUrl = mergeStringField(input.notifyUrl, existing.notifyUrl)
+  const appPrivateKeyPem = trimString(input.appPrivateKeyPem)
+    ? normalizeAlipayKeyPem(trimString(input.appPrivateKeyPem), "PRIVATE KEY")
+    : null
+  const alipayPublicKeyPem = trimString(input.alipayPublicKeyPem)
+    ? normalizeAlipayKeyPem(trimString(input.alipayPublicKeyPem), "PUBLIC KEY")
+    : null
+
+  const notifyUrlError = validateHttpsNotifyUrl(notifyUrl, "支付宝异步通知地址")
+  if (notifyUrlError) return notifyUrlError
+  const privateKeyError = appPrivateKeyPem ? validatePem(appPrivateKeyPem, "支付宝应用私钥") : null
+  if (privateKeyError) return privateKeyError
+  const publicKeyError = alipayPublicKeyPem ? validatePem(alipayPublicKeyPem, "支付宝公钥") : null
+  if (publicKeyError) return publicKeyError
+
+  if (enabled) {
+    if (!appId) return { ok: false, code: "VALIDATION_FAILED", message: "支付宝 AppID 不能为空。" }
+    if (!notifyUrl) return { ok: false, code: "VALIDATION_FAILED", message: "支付宝异步通知地址不能为空。" }
+    if (!appPrivateKeyPem && !existing.appPrivateKeyConfigured) {
+      return { ok: false, code: "VALIDATION_FAILED", message: "支付宝应用私钥不能为空。" }
+    }
+    if (!alipayPublicKeyPem && !existing.alipayPublicKeyConfigured) {
+      return { ok: false, code: "VALIDATION_FAILED", message: "支付宝公钥不能为空。" }
+    }
+  }
+
+  return {
+    ok: true,
+    data: {
+      enabled,
+      appId,
+      notifyUrl,
+      appPrivateKeyPem,
+      alipayPublicKeyPem,
+      signType: "RSA2",
+    },
+  }
+}
+
 export function parsePaymentPlanCode(value: unknown): ParseResult<string> {
   const normalized = typeof value === "string" ? value.trim() : ""
   if (!/^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$/.test(normalized)) {
@@ -239,6 +386,18 @@ export function normalizeWechatTradeStateForOrder(input: {
   if (Number.isFinite(expiresAtTime) && expiresAtTime <= nowTime) return "expired"
   if (input.tradeState === "CLOSED" || input.tradeState === "REVOKED") return "closed"
   if (input.tradeState === "PAYERROR") return "failed"
+  return null
+}
+
+export function normalizeAlipayTradeStatusForOrder(input: {
+  tradeStatus: unknown
+  localExpiresAt: string
+  now?: string
+}): "closed" | "expired" | null {
+  const nowTime = new Date(input.now ?? new Date().toISOString()).getTime()
+  const expiresAtTime = new Date(input.localExpiresAt).getTime()
+  if (Number.isFinite(expiresAtTime) && expiresAtTime <= nowTime) return "expired"
+  if (input.tradeStatus === "TRADE_CLOSED") return "closed"
   return null
 }
 

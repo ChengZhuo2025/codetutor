@@ -1,4 +1,4 @@
-import type { PaymentPlanCode } from "@/lib/api/contracts/payment"
+import type { PaymentChannel, PaymentPlanCode } from "@/lib/api/contracts/payment"
 
 export type PlanActionState = {
   disabled: boolean
@@ -55,8 +55,27 @@ export function getPlanActionState(input: {
 
 export function getPaymentOrderErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : ""
-  if (message.includes("微信支付配置未启用或不完整") || message.includes("PAYMENT_CONFIG_INCOMPLETE")) {
-    return "当前暂未开放在线支付：微信支付配置未启用或不完整。请稍后再试，或联系管理员完成支付配置。"
+  if (message.includes("支付配置未启用或不完整") || message.includes("PAYMENT_CONFIG_INCOMPLETE")) {
+    return `当前暂未开放在线支付：${message.includes("支付配置") ? message : "支付配置未启用或不完整。"}请稍后再试，或联系管理员完成支付配置。`
   }
   return message || "支付订单创建失败，请稍后重试。"
 }
+
+export type PaymentChannelOption = {
+  channel: PaymentChannel
+  label: string
+  description: string
+}
+
+export const PAYMENT_CHANNEL_OPTIONS: PaymentChannelOption[] = [
+  {
+    channel: "alipay",
+    label: "支付宝",
+    description: "支付宝扫码支付",
+  },
+  {
+    channel: "wechat",
+    label: "微信",
+    description: "微信扫码支付",
+  },
+]

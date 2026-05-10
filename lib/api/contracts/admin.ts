@@ -127,6 +127,7 @@ export const ADMIN_AUDIT_ACTIONS = [
   "ai_test_run",
   "site_contact_update",
   "payment_settings_update",
+  "alipay_payment_settings_update",
   "subscription_plan_create",
   "subscription_plan_update",
   "subscription_plan_archive",

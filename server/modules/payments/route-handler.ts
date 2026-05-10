@@ -1,6 +1,7 @@
 import { jsonAuthRequired, jsonError, jsonSuccess } from "@/server/lib/route-response"
 import { parsePaymentPlanCode } from "./model.ts"
 import type {
+  AdminUpdateAlipayPaymentSettingsRequest,
   AdminUpsertSubscriptionPlanRequest,
   AdminUpdateWechatPaymentSettingsRequest,
 } from "@/lib/api/contracts/payment"
@@ -44,6 +45,33 @@ export function createWechatNativeOrderPostHandler(dependencies: {
         planCode: parsed.data,
       })
       return jsonSuccess(data, "微信支付订单已创建")
+    } catch (error) {
+      return mapPaymentError(error)
+    }
+  }
+}
+
+export function createAlipayPrecreateOrderPostHandler(dependencies: {
+  getRequestUser: (request: unknown) => Promise<RequestAuthResult>
+  createAlipayPrecreateOrder: (userId: string, input: { planCode: string }) => Promise<unknown>
+}) {
+  return async function POST(request: Request) {
+    try {
+      const auth = await dependencies.getRequestUser(request)
+      if (!auth.ok) {
+        return jsonAuthRequired(auth.message)
+      }
+
+      const body = await request.json()
+      const parsed = parsePaymentPlanCode((body as { planCode?: unknown })?.planCode)
+      if (!parsed.ok) {
+        return jsonError(parsed.code, parsed.message, 422)
+      }
+
+      const data = await dependencies.createAlipayPrecreateOrder(auth.userId, {
+        planCode: parsed.data,
+      })
+      return jsonSuccess(data, "支付宝支付订单已创建")
     } catch (error) {
       return mapPaymentError(error)
     }
@@ -152,6 +180,29 @@ export function createWechatPaymentNotifyPostHandler(dependencies: {
   }
 }
 
+export function createAlipayNotifyPostHandler(dependencies: {
+  handleAlipayPaymentNotify: (input: {
+    form: Record<string, string>
+  }) => Promise<void>
+}) {
+  return async function POST(request: Request) {
+    try {
+      const rawBody = await request.text()
+      await dependencies.handleAlipayPaymentNotify({
+        form: Object.fromEntries(new URLSearchParams(rawBody).entries()),
+      })
+      return new Response("success", {
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      })
+    } catch {
+      return new Response("fail", {
+        status: 400,
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      })
+    }
+  }
+}
+
 export function createAdminWechatPaymentSettingsGetHandler(dependencies: {
   getRequestAdmin: (request: unknown) => Promise<RequestAdminResult>
   getWechatPaymentSettings: () => Promise<unknown>
@@ -186,6 +237,46 @@ export function createAdminWechatPaymentSettingsPatchHandler(dependencies: {
       const body = await request.json()
       const data = await dependencies.updateWechatPaymentSettings(admin.adminId, body as AdminUpdateWechatPaymentSettingsRequest)
       return jsonSuccess(data, "微信支付配置已更新")
+    } catch (error) {
+      return mapPaymentError(error)
+    }
+  }
+}
+
+export function createAdminAlipayPaymentSettingsGetHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Promise<RequestAdminResult>
+  getAlipayPaymentSettings: () => Promise<unknown>
+}) {
+  return async function GET(request: unknown) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+      const data = await dependencies.getAlipayPaymentSettings()
+      return jsonSuccess(data, "支付宝支付配置读取成功")
+    } catch {
+      return jsonError("INTERNAL_ERROR", "支付宝支付配置读取失败", 500)
+    }
+  }
+}
+
+export function createAdminAlipayPaymentSettingsPatchHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Promise<RequestAdminResult>
+  updateAlipayPaymentSettings: (
+    adminAccountId: string,
+    input: AdminUpdateAlipayPaymentSettingsRequest,
+  ) => Promise<unknown>
+}) {
+  return async function PATCH(request: Request) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+      const body = await request.json()
+      const data = await dependencies.updateAlipayPaymentSettings(admin.adminId, body as AdminUpdateAlipayPaymentSettingsRequest)
+      return jsonSuccess(data, "支付宝支付配置已更新")
     } catch (error) {
       return mapPaymentError(error)
     }

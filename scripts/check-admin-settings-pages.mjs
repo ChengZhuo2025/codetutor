@@ -54,6 +54,24 @@ assert.match(
 )
 
 assert.match(
+  settingsSource,
+  /appPrivateKeyPem: ""/,
+  "The Alipay payment settings form should initialize the app private key as blank",
+)
+
+assert.match(
+  settingsSource,
+  /alipayPublicKeyPem: ""/,
+  "The Alipay payment settings form should initialize the public key as blank",
+)
+
+assert.match(
+  settingsSource,
+  /setAlipayForm\(\(\) => \(\{[\s\S]*appPrivateKeyPem: "",[\s\S]*alipayPublicKeyPem: "",[\s\S]*\}\)\)/,
+  "The Alipay payment settings refresh should clear sensitive key inputs after reading saved settings",
+)
+
+assert.match(
   menuSource,
   /label: "系统设置".*active: true/s,
   "The admin menu should enable the system settings entry",

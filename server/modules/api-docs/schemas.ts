@@ -1626,6 +1626,7 @@ export const uploadQrCodeResponseDataSchema = z
 
 export const paymentPlanCodeSchema = z.string().regex(/^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$/).openapi("PaymentPlanCode")
 export const paymentOrderStatusSchema = z.enum(PAYMENT_ORDER_STATUSES).openapi("PaymentOrderStatus")
+export const paymentChannelSchema = z.enum(["wechat", "alipay"]).openapi("PaymentChannel")
 
 export const subscriptionPlanItemSchema = z
   .object({
@@ -1675,6 +1676,12 @@ export const createWechatNativeOrderRequestSchema = z
   })
   .openapi("CreateWechatNativeOrderRequest")
 
+export const createAlipayPrecreateOrderRequestSchema = z
+  .object({
+    planCode: paymentPlanCodeSchema,
+  })
+  .openapi("CreateAlipayPrecreateOrderRequest")
+
 export const paymentOrderResponseDataSchema = z
   .object({
     orderNo: z.string(),
@@ -1683,6 +1690,7 @@ export const paymentOrderResponseDataSchema = z
     amountCents: z.number().int().positive(),
     currency: z.literal("CNY"),
     status: paymentOrderStatusSchema,
+    paymentChannel: paymentChannelSchema,
     codeUrl: z.string().nullable(),
     expiresAt: z.string(),
     paidAt: z.string().nullable(),
@@ -1721,6 +1729,30 @@ export const adminUpdateWechatPaymentSettingsRequestSchema = z
     wechatpayPublicKeyPem: z.string().optional(),
   })
   .openapi("AdminUpdateWechatPaymentSettingsRequest")
+
+export const adminAlipayPaymentSettingsResponseDataSchema = z
+  .object({
+    enabled: z.boolean(),
+    configured: z.boolean(),
+    appId: z.string().nullable(),
+    notifyUrl: z.string().nullable(),
+    signType: z.literal("RSA2"),
+    appPrivateKeyMasked: z.string(),
+    alipayPublicKeyMasked: z.string(),
+    updatedAt: z.string().nullable(),
+    updatedByAdminId: z.string().nullable(),
+  })
+  .openapi("AdminAlipayPaymentSettingsResponseData")
+
+export const adminUpdateAlipayPaymentSettingsRequestSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    appId: z.string().optional(),
+    notifyUrl: z.string().url().optional(),
+    appPrivateKeyPem: z.string().optional(),
+    alipayPublicKeyPem: z.string().optional(),
+  })
+  .openapi("AdminUpdateAlipayPaymentSettingsRequest")
 
 export const adminSubscriptionPlanListResponseDataSchema = z
   .object({

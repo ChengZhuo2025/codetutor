@@ -23,10 +23,13 @@ import { cn } from "@/lib/utils"
 import type { SubscriptionSnapshot } from "@/types/profile"
 import { requestData } from "@/lib/api/client"
 import {
+  PAYMENT_CHANNEL_OPTIONS,
   getPaymentOrderErrorMessage,
   getPlanActionState,
 } from "@/components/layout/subscription-detail-logic"
 import type {
+  AlipayPrecreateOrderResponseData,
+  PaymentChannel,
   PaymentOrderResponseData,
   PaymentOrderStatus,
   PaymentPlanCode,
@@ -58,6 +61,7 @@ export function SubscriptionDetailDialog({
   const [activeOrder, setActiveOrder] = useState<PaymentOrderResponseData | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [loadingPlanCode, setLoadingPlanCode] = useState<PaymentPlanCode | null>(null)
+  const [selectedPaymentChannel, setSelectedPaymentChannel] = useState<PaymentChannel>("alipay")
   const [paymentMessage, setPaymentMessage] = useState<string | null>(null)
   const currentPlanName = subscriptionData?.current.planName ?? subscription.planName
   const plans = subscriptionData?.plans ?? []
@@ -118,12 +122,17 @@ export function SubscriptionDetailDialog({
     setLoadingPlanCode(planCode)
     setPaymentMessage(null)
     try {
-      const order = await requestData<WechatNativeOrderResponseData>("/payment/wechat/native-orders", {
+      const order = selectedPaymentChannel === "alipay"
+        ? await requestData<AlipayPrecreateOrderResponseData>("/payment/alipay/precreate-orders", {
+          method: "POST",
+          body: JSON.stringify({ planCode }),
+        })
+        : await requestData<WechatNativeOrderResponseData>("/payment/wechat/native-orders", {
         method: "POST",
         body: JSON.stringify({ planCode }),
       })
       setActiveOrder(order)
-      setPaymentMessage("请使用微信扫码完成支付，支付后页面会自动同步状态。")
+      setPaymentMessage(`请使用${selectedPaymentChannel === "alipay" ? "支付宝" : "微信"}扫码完成支付，支付后页面会自动同步状态。`)
     } catch (error) {
       setPaymentMessage(getPaymentOrderErrorMessage(error))
     } finally {
@@ -159,7 +168,7 @@ export function SubscriptionDetailDialog({
                 <div className="flex min-h-[240px] items-center justify-center rounded-2xl bg-white p-3">
                   {qrDataUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={qrDataUrl} alt="微信支付二维码" className="h-60 w-60" />
+                    <img src={qrDataUrl} alt={`${activeOrder.paymentChannel === "alipay" ? "支付宝" : "微信"}支付二维码`} className="h-60 w-60" />
                   ) : (
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                   )}
@@ -172,6 +181,9 @@ export function SubscriptionDetailDialog({
                   </p>
                   <p className="text-sm text-muted-foreground">
                     状态：{getPaymentStatusLabel(activeOrder.status)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    支付方式：{activeOrder.paymentChannel === "alipay" ? "支付宝" : "微信"}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -195,6 +207,29 @@ export function SubscriptionDetailDialog({
                       返回套餐
                     </Button>
                   </div>
+                </div>
+              </div>
+            ) : null}
+            {!activeOrder ? (
+              <div className="rounded-xl border border-border/70 bg-surface-1/95 p-4">
+                <p className="mb-3 text-sm font-medium text-foreground">选择支付方式</p>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {PAYMENT_CHANNEL_OPTIONS.map((option) => (
+                    <button
+                      key={option.channel}
+                      type="button"
+                      onClick={() => setSelectedPaymentChannel(option.channel)}
+                      className={cn(
+                        "rounded-xl border px-4 py-3 text-left transition-colors",
+                        selectedPaymentChannel === option.channel
+                          ? "border-brand bg-brand-dim/50 text-foreground"
+                          : "border-border bg-surface-2/70 text-muted-foreground hover:border-brand/40",
+                      )}
+                    >
+                      <span className="block text-sm font-semibold">{option.label}</span>
+                      <span className="mt-1 block text-xs">{option.description}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             ) : null}

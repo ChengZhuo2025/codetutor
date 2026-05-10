@@ -51,8 +51,10 @@ import {
   adminSettingsAuditLogListResponseDataSchema,
   adminSettingsOverviewResponseDataSchema,
   adminSubscriptionPlanListResponseDataSchema,
+  adminAlipayPaymentSettingsResponseDataSchema,
   adminSiteContactResponseDataSchema,
   adminUpsertSubscriptionPlanRequestSchema,
+  adminUpdateAlipayPaymentSettingsRequestSchema,
   adminUpdateWechatPaymentSettingsRequestSchema,
   adminWechatPaymentSettingsResponseDataSchema,
   updateSiteContactRequestSchema,
@@ -96,6 +98,7 @@ import {
   completeTaskRequestSchema,
   completeTaskResponseDataSchema,
   createWechatNativeOrderRequestSchema,
+  createAlipayPrecreateOrderRequestSchema,
   createApiSuccessResponseSchema,
   createFeedbackRequestSchema,
   createFeedbackResponseDataSchema,
@@ -1712,6 +1715,17 @@ const successExamples = {
     updatedAt: "2026-04-26T10:00:00Z",
     updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
   },
+  adminAlipayPaymentSettings: {
+    enabled: true,
+    configured: true,
+    appId: "2021000000000000",
+    notifyUrl: "https://www.codetutor.cn/api/payment/alipay/notify",
+    signType: "RSA2" as const,
+    appPrivateKeyMasked: "••••••••••",
+    alipayPublicKeyMasked: "••••••••••",
+    updatedAt: "2026-05-10T10:00:00Z",
+    updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
+  },
   subscriptionMe: {
     current: {
       planCode: "personal_monthly",
@@ -1803,6 +1817,7 @@ const successExamples = {
     amountCents: 3900,
     currency: "CNY",
     status: "prepay_created",
+    paymentChannel: "wechat" as const,
     codeUrl: "weixin://wxpay/bizpayurl?pr=example",
     expiresAt: "2026-04-26T10:30:00Z",
     paidAt: null,
@@ -4070,6 +4085,55 @@ registry.registerPath({
 
 registry.registerPath({
   method: "get",
+  path: "/api/admin/settings/payment/alipay",
+  operationId: "getAdminAlipayPaymentSettings",
+  tags: ["admin-settings", "payment"],
+  summary: "获取支付宝支付配置",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminAlipayPaymentSettingsResponseDataSchema,
+      "AdminAlipayPaymentSettingsResponse",
+      "支付宝支付配置读取成功",
+      successExamples.adminAlipayPaymentSettings,
+      "支付宝支付配置读取成功",
+    ),
+    ...commonErrorResponses(["403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/settings/payment/alipay",
+  operationId: "updateAdminAlipayPaymentSettings",
+  tags: ["admin-settings", "payment"],
+  summary: "更新支付宝支付配置",
+  description: "使用普通公钥 RSA2 模式；敏感字段为空或缺省时保留原密文。",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminUpdateAlipayPaymentSettingsRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAlipayPaymentSettingsResponseDataSchema,
+      "AdminAlipayPaymentSettingsResponse",
+      "支付宝支付配置已更新",
+      successExamples.adminAlipayPaymentSettings,
+      "支付宝支付配置已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
   path: "/api/contact",
   operationId: "getPublicContact",
   tags: ["public", "marketing"],
@@ -4251,6 +4315,35 @@ registry.registerPath({
 })
 
 registry.registerPath({
+  method: "post",
+  path: "/api/payment/alipay/precreate-orders",
+  operationId: "createAlipayPrecreateOrder",
+  tags: ["payment"],
+  summary: "创建支付宝扫码支付订单",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: createAlipayPrecreateOrderRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      paymentOrderResponseDataSchema,
+      "AlipayPrecreateOrderResponse",
+      "支付宝支付订单已创建",
+      { ...successExamples.paymentOrder, paymentChannel: "alipay", codeUrl: "https://qr.alipay.com/example" },
+      "支付宝支付订单已创建",
+    ),
+    ...commonErrorResponses(["401", "409", "422", "500", "502"]),
+  },
+})
+
+registry.registerPath({
   method: "get",
   path: "/api/payment/orders/{orderNo}",
   operationId: "getPaymentOrder",
@@ -4274,7 +4367,7 @@ registry.registerPath({
   path: "/api/payment/orders/{orderNo}/sync",
   operationId: "syncPaymentOrder",
   tags: ["payment"],
-  summary: "主动同步微信支付订单状态",
+  summary: "主动同步支付订单状态",
   security: [{ bearerAuth: [] }],
   responses: {
     "200": successResponse(
@@ -4306,6 +4399,19 @@ registry.registerPath({
       "微信支付回调处理失败",
       { code: "FAIL", message: "微信支付回调验签失败。" },
     ),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/payment/alipay/notify",
+  operationId: "alipayPaymentNotify",
+  tags: ["payment"],
+  summary: "支付宝支付异步通知",
+  security: [],
+  responses: {
+    "200": jsonResponse(z.literal("success"), "支付宝支付回调处理成功", "success"),
+    "400": jsonResponse(z.literal("fail"), "支付宝支付回调处理失败", "fail"),
   },
 })
 

@@ -9,15 +9,15 @@
 ## 30 秒状态速览
 
 - 当前项目已不是纯原型仓库，而是“前端页面 + `app/api` + `server/modules` + Supabase migrations”的同仓 MVP。
-- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息、自学模式异步教程链接生成学习计划草稿、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、管理后台 Phase 1、**用户运营**、**学习记录**、**Ai 管理**、**系统设置**（含联系方式、订阅套餐与微信支付配置）以及 **微信 Native 扫码支付 + 订阅权益开通**（订阅查询、动态套餐读取、Native 下单、订单查询/同步、微信响应验签、支付回调验签解密、原子幂等开通订阅权益）。
+- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息、自学模式异步教程链接生成学习计划草稿、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、管理后台 Phase 1、**用户运营**、**学习记录**、**Ai 管理**、**系统设置**（含联系方式、订阅套餐、微信支付配置与支付宝支付配置）以及 **微信 Native / 支付宝扫码支付 + 订阅权益开通**（订阅查询、动态套餐读取、双渠道扫码下单、订单查询/同步、微信/支付宝回调验签、原子幂等开通订阅权益）。
 - 当前代码技术栈以 `package.json` 为准：`Next.js 16.2.0`、`React 19.2.4`、`TypeScript 5.7.3`、`Tailwind CSS 4.2`、`shadcn/ui`、`Zod + zod-to-openapi + Swagger UI`；当前本地验证环境为 `Node.js 22.18.0`。
 - 已补运行时接口文档：`/api/docs/openapi` 输出 OpenAPI 3.1 JSON，`/api-docs` 提供 Swagger UI 查看与调试；文档 `info.description` 注明用户端主题偏好为前端 localStorage、无 REST 接口。
 - 用户端支持明暗主题切换（默认暗色，`next-themes` + `app/globals.css` 双套令牌），入口：营销顶栏、登录页右上角、工作台左侧栏底部设置行右侧。
 - 用户端工作台共享壳层现已支持桌面端左右栏折叠：左侧可收起为 mini rail（保留 logo / 头像 / 导航 / 学习提醒 / 设置 / 主题 / 展开入口），右侧上下文栏可完全收起并由浮动按钮重新展开；状态保存在浏览器 `localStorage`，无 REST API。
 - `app/api` 当前已大量收敛为薄入口层，请求校验、统一响应、错误映射与部分路由编排已下沉到 `server/lib/*` 与各域 `route-handler.ts`。
-- 已落地数据侧：远程 Supabase、`001` 到 `036` 迁移（含 `018` 材料摄取与计划草稿表、`019` 用户软删除、`020` analytics/notifications、`021` Provider API Key 数据库加密托管、`024` async material intake / generation runs / chunks、`025` editable drafts / revisions、`026` material chunk evidence metadata、`027` 草稿任务 `mastery_points` / `cautions` 契约升级、planner prompt 同步与历史已确认自学路径 `key_points/pitfalls` 回填、`028` AI Model 结构化画像字段与 metadata 兼容回填、`034`-`036` 支付订阅与套餐管理）、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表、AI 会话 / provider / agent / skill / invocation 表，以及管理员账号/角色/审计日志表。
+- 已落地数据侧：远程 Supabase、`001` 到 `037` 迁移（含 `018` 材料摄取与计划草稿表、`019` 用户软删除、`020` analytics/notifications、`021` Provider API Key 数据库加密托管、`024` async material intake / generation runs / chunks、`025` editable drafts / revisions、`026` material chunk evidence metadata、`027` 草稿任务 `mastery_points` / `cautions` 契约升级、planner prompt 同步与历史已确认自学路径 `key_points/pitfalls` 回填、`028` AI Model 结构化画像字段与 metadata 兼容回填、`034`-`037` 支付订阅、套餐管理与支付宝扫码支付扩展）、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表、AI 会话 / provider / agent / skill / invocation 表，以及管理员账号/角色/审计日志表。
 - 已补 Phase 1 运行时性能与稳定性加固：进程内短 TTL 用户鉴权 / 管理员会话缓存、AI 配置快照缓存、关键接口限流与请求级观测头 / 结构化日志；当前仍未引入 Redis / 消息队列，缓存与限流均为单实例进程内实现。
-- 仍待实现：细粒度权限深化、用户域更深写能力如内部备注 / 人工积分调整、AI 域更深运营化能力（prompt 版本化、灰度/回滚、成本与稳定性面板等）、支付退款/自动续费/JSAPI/H5 变体。（**用户运营**、**学习记录**、**Ai 管理**、**系统设置**、**analytics 事件写入**、**通知设置落库/站内提醒** 与 **微信 Native 扫码支付首版闭环** 已在代码中落地。）
+- 仍待实现：细粒度权限深化、用户域更深写能力如内部备注 / 人工积分调整、AI 域更深运营化能力（prompt 版本化、灰度/回滚、成本与稳定性面板等）、支付退款/自动续费/JSAPI/H5 变体。（**用户运营**、**学习记录**、**Ai 管理**、**系统设置**、**analytics 事件写入**、**通知设置落库/站内提醒** 与 **微信 Native / 支付宝扫码支付首版闭环** 已在代码中落地。）
 - 若只想最快了解真实现状，优先读：
   1. `docs/plans/README.md`
   2. `docs/plans/2026-03-23-ai-coding-tutor-frontend-engineering-guide.md`
@@ -91,7 +91,7 @@
 - 当前接口文档不是“扫描整个 `app/api` 目录零维护生成”；新增或修改后端接口后，仍需同步更新 `server/modules/api-docs/openapi.ts` 与 `server/modules/api-docs/schemas.ts` 中的注册与 schema。
 - 当前 `app/api` 路由文件已不再普遍手写请求解析；请求体/查询参数校验、统一成功/失败响应、常见 `NOT_FOUND` / `BAD_REQUEST` 文案与错误映射，正在集中收敛到 `server/lib/request-validation.ts`、`server/lib/route-response.ts`、`server/lib/route-error.ts`、`server/lib/route-error-presets.ts` 以及各域 `route-handler.ts`。
 - 当前仓库顶层真实目录除了页面和服务端主目录外，还包含 `lib/auth`、`lib/learning`、`lib/mocks`、`server/services`、`server/utils`、`supabase/seeds` 等辅助或预留目录；目录阅读应以当前代码树为准，不再按最早设计稿假定不存在的层级。
-- 当前已落地的数据库迁移为 `001` 到 `036`，其中已包含学习主线核心表、用户资料字段升级、运营导出视图、头像 Storage bucket、反馈工单表、学习计划 `interrupted` 状态、成长写模型表 `score_ledgers` / `user_ranks` / `daily_checkins`、AI 会话/agent/provider/skill 相关表、管理员账号/角色/审计日志表、`018` 自学材料摄取与计划草稿相关表（`learning_material_*`、`learning_plan_draft*`）、`019` 用户软删除、`020` analytics/notifications、`021` Provider API Key 密文存储字段与加密托管能力，`024`-`028` 自学材料与 AI 模型画像扩展，`029`-`033` 企业联系方式与二维码/RLS 修正，`034` 微信支付与订阅表，`035` 支付完成幂等 RPC，以及 `036` 订阅套餐运营化管理字段与初始化数据。
+- 当前已落地的数据库迁移为 `001` 到 `037`，其中已包含学习主线核心表、用户资料字段升级、运营导出视图、头像 Storage bucket、反馈工单表、学习计划 `interrupted` 状态、成长写模型表 `score_ledgers` / `user_ranks` / `daily_checkins`、AI 会话/agent/provider/skill 相关表、管理员账号/角色/审计日志表、`018` 自学材料摄取与计划草稿相关表（`learning_material_*`、`learning_plan_draft*`）、`019` 用户软删除、`020` analytics/notifications、`021` Provider API Key 密文存储字段与加密托管能力，`024`-`028` 自学材料与 AI 模型画像扩展，`029`-`033` 企业联系方式与二维码/RLS 修正，`034` 微信支付与订阅表，`035` 支付完成幂等 RPC，`036` 订阅套餐运营化管理字段与初始化数据，以及 `037` 支付宝扫码支付渠道扩展。
 - 当前 Provider 密钥机制已不是“仅环境变量”：后台 `/admin/ai/providers` 支持查看脱敏值、按需明文读取、修改并加密保存到数据库；运行时优先读数据库密文，`envSecretRef` 仅作兼容环境变量回退；服务端必须配置 `AI_PROVIDER_SECRET_ENCRYPTION_KEY`。
 - 当前主学习闭环已真实打通：学习消息链路首版已完成 `conversation_sessions`、`conversation_messages`、provider / agent / skill 配置表、`POST /api/learning/message`、`GET /api/learning/current-session`、`GET /api/learning/messages`、SSE 流式输出、前端增量渲染、`task_patch` 状态联动、结构化 `structuredContent`（`interactionType / variant / summary / blocks / sections / actions`）与对应测试链路。
 - 当前已补 Phase 1 运行时加固：用户 Bearer 鉴权与管理员会话查找走进程内短 TTL 缓存，AI provider / model / agent / binding / skill 解析走配置快照缓存，`/api/learning/message`、用户 / 管理员登录与会话、Provider 密钥读取、agent test 等关键接口已接入限流、并发保护、`X-Request-Id` / `X-Auth-Cache` / `X-Config-Cache` / `X-Rate-Limit` / `Server-Timing` 观测头与结构化请求日志；这些能力当前都还是单实例进程内实现。
@@ -100,7 +100,7 @@
 - 用户端与管理端登录态已完成分流：用户端使用 `app-user-session`，管理端使用 `admin-access-token` / `admin-refresh-token`，并由 `proxy.ts` 统一做入口路由守卫。
 - 工作台左侧栏数据缓存已收敛到 `app/(workspace)/layout.tsx` 的 `WorkspaceSidebarDataProvider`，在 `/learn`、`/map`、`/achievements`、`/history` 间切换时不再重复请求并产生加载跳动。
 - 当前学习计划状态机已区分 `active`、`interrupted`、`completed`、`abandoned`、`archived`；其中 `interrupted` 为连续 7 天无学习行为后的系统自动中断，`abandoned` 为用户主动放弃，但历史页仍支持重新激活。
-- 当前仍未落地的能力主要包括：细粒度权限控制深化、内部备注 / 人工积分调整等更深用户运营能力、支付退款/自动续费/JSAPI/H5 变体，以及 AI 域更深层运营化与可视化配置能力（如 prompt 版本化、灰度/回滚、成本与稳定性面板；**用户运营、学习记录、Ai 管理、系统设置、analytics 事件写入、通知设置落库/站内提醒、微信 Native 扫码支付首版闭环已交付**）。
+- 当前仍未落地的能力主要包括：细粒度权限控制深化、内部备注 / 人工积分调整等更深用户运营能力、支付退款/自动续费/JSAPI/H5 变体，以及 AI 域更深层运营化与可视化配置能力（如 prompt 版本化、灰度/回滚、成本与稳定性面板；**用户运营、学习记录、Ai 管理、系统设置、analytics 事件写入、通知设置落库/站内提醒、微信 Native / 支付宝扫码支付首版闭环已交付**）。
 - 当前产品主线围绕 `user_learning_paths` 展开，`/learn`、`/map`、`/history` 共用这条主线。
 - 各文档如果同时包含“已实现”与“后续规划”两部分，应以文档中的“当前实现快照”或“已落地状态”说明为准；若与代码冲突，以代码和迁移为准，再回写文档。
 
@@ -118,7 +118,7 @@
 ### P2：商业化与基础设施增强
 
 - AI 第三阶段能力：按 `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 的 `15.3` 补齐后台前端配置页、调用日志查看、Prompt 灰度与回滚、成本与稳定性面板。
-- 支付域深化：在已落地微信 Native 扫码支付、支付状态、订阅生命周期、原子幂等权益开通和前端订阅弹窗真实接入后，后续补退款、自动续费、JSAPI/H5 支付与支付运营后台。
+- 支付域深化：在已落地微信 Native / 支付宝扫码支付、支付状态、订阅生命周期、原子幂等权益开通和前端订阅弹窗真实接入后，后续补退款、自动续费、JSAPI/H5 支付与支付运营后台。
 - 缓存与队列增强：当前已落地单实例进程内缓存、限流与基础请求观测；后续按实际流量再决定是否引入 Redis、异步队列、跨实例频控与更完整的分布式缓存。
 - 前端请求层与自动化测试增强：在必要时评估 React Query / SWR，并逐步补齐高频主链路自动化测试。
 

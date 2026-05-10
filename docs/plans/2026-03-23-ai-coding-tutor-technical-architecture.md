@@ -123,7 +123,7 @@ MVP 目标范围：
 当前仍未纳入或尚未实现范围：
 
 - 排行榜与社区
-- 支付系统：当前已落地微信 Native 扫码支付首版闭环，后续保留退款、自动续费、JSAPI/H5 扩展空间。
+- 支付系统：当前已落地微信 Native 与支付宝扫码支付首版闭环，后续保留退款、自动续费、JSAPI/H5 扩展空间。
 - 企业协作
 - 移动端 App
 - 多模态截图解析
@@ -899,14 +899,15 @@ flowchart TB
 
 - AI 编排服务独立
 - 成长系统与路径系统模块化强化
-- 在已落地微信 Native 扫码支付首版闭环的基础上，继续接入退款、自动续费、JSAPI/H5、社区、企业能力
+- 在已落地微信 Native 与支付宝扫码支付首版闭环的基础上，继续接入退款、自动续费、JSAPI/H5、社区、企业能力
 
 ## 17.1 当前支付链路
 
-- 管理后台 `/admin/settings` 的「支付配置」维护商户号、AppID、回调地址、商户证书序列号、商户私钥、APIv3 密钥、微信支付公钥 ID 与公钥；敏感字段只加密落库，不放业务 `.env`。
-- 用户端订阅弹窗调用 `POST /api/payment/wechat/native-orders` 生成带 `time_expire` 的微信 `code_url` 并本地渲染二维码；`POST /api/payment/orders/{orderNo}/sync` 用作前端轮询兜底，并把 `CLOSED`、`PAYERROR` 与本地超时映射为终态。
+- 管理后台 `/admin/settings` 的「支付配置」维护微信商户号、AppID、回调地址、商户证书序列号、商户私钥、APIv3 密钥、微信支付公钥 ID 与公钥，以及支付宝 AppID、异步通知地址、应用私钥与支付宝公钥；敏感字段只加密落库，不放业务 `.env`。
+- 用户端订阅弹窗先选择支付宝或微信。微信调用 `POST /api/payment/wechat/native-orders` 生成带 `time_expire` 的微信 `code_url`；支付宝调用 `POST /api/payment/alipay/precreate-orders` 生成支付宝 `qr_code`；前端统一本地渲染二维码。`POST /api/payment/orders/{orderNo}/sync` 用作前端轮询兜底，并按订单渠道映射终态。
 - 微信查单响应必须具备 `Wechatpay-*` 签名头且 `Wechatpay-Serial` 匹配后台配置的微信支付公钥 ID；验签失败时 fail closed。
 - 微信回调 `POST /api/payment/wechat/notify` 先验签、再用 APIv3 密钥解密 `resource`，校验 `appid/mchid/amount/trade_state` 后调用带行锁的 `complete_paid_payment_order` RPC，幂等更新订单并确保订阅权益只开通一次。
+- 支付宝回调 `POST /api/payment/alipay/notify` 接收表单异步通知，先 RSA2 验签，再校验 `app_id/out_trade_no/total_amount/trade_status`，成功支付后复用同一个带行锁的 `complete_paid_payment_order` RPC。
 
 ---
 

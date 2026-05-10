@@ -9,6 +9,7 @@ export const PAYMENT_ORDER_STATUSES = [
   "failed",
 ] as const
 export type PaymentOrderStatus = (typeof PAYMENT_ORDER_STATUSES)[number]
+export type PaymentChannel = "wechat" | "alipay"
 
 export type SubscriptionPlanItem = {
   code: PaymentPlanCode
@@ -50,6 +51,10 @@ export type CreateWechatNativeOrderRequest = {
   planCode: PaymentPlanCode
 }
 
+export type CreateAlipayPrecreateOrderRequest = {
+  planCode: PaymentPlanCode
+}
+
 export type PaymentOrderResponseData = {
   orderNo: string
   planCode: PaymentPlanCode
@@ -57,6 +62,7 @@ export type PaymentOrderResponseData = {
   amountCents: number
   currency: "CNY"
   status: PaymentOrderStatus
+  paymentChannel: PaymentChannel
   codeUrl: string | null
   expiresAt: string
   paidAt: string | null
@@ -65,6 +71,7 @@ export type PaymentOrderResponseData = {
 }
 
 export type WechatNativeOrderResponseData = PaymentOrderResponseData
+export type AlipayPrecreateOrderResponseData = PaymentOrderResponseData
 
 export type PaymentOrderSyncResponseData = PaymentOrderResponseData
 
@@ -93,6 +100,26 @@ export type AdminUpdateWechatPaymentSettingsRequest = {
   apiV3Key?: string
   wechatpayPublicKeyId?: string
   wechatpayPublicKeyPem?: string
+}
+
+export type AdminAlipayPaymentSettingsResponseData = {
+  enabled: boolean
+  configured: boolean
+  appId: string | null
+  notifyUrl: string | null
+  signType: "RSA2"
+  appPrivateKeyMasked: string
+  alipayPublicKeyMasked: string
+  updatedAt: string | null
+  updatedByAdminId: string | null
+}
+
+export type AdminUpdateAlipayPaymentSettingsRequest = {
+  enabled?: boolean
+  appId?: string
+  notifyUrl?: string
+  appPrivateKeyPem?: string
+  alipayPublicKeyPem?: string
 }
 
 export type AdminSubscriptionPlanListResponseData = {
