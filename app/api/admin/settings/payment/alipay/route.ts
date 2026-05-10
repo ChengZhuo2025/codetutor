@@ -10,12 +10,12 @@ import {
 } from "@/server/modules/payments/service"
 
 const getHandler = createAdminAlipayPaymentSettingsGetHandler({
-  getRequestAdmin,
+  getRequestAdmin: (request) => getRequestAdmin(request as NextRequest),
   getAlipayPaymentSettings,
 })
 
 const patchHandler = createAdminAlipayPaymentSettingsPatchHandler({
-  getRequestAdmin,
+  getRequestAdmin: (request) => getRequestAdmin(request as NextRequest),
   updateAlipayPaymentSettings,
 })
 
