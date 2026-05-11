@@ -177,6 +177,8 @@ test("admin finance service reads user profile phone for required contact displa
   )
 
   assert.match(serviceSource, /userPhone/)
-  assert.match(serviceSource, /select\("user_id,nickname,phone"\)/)
+  assert.match(serviceSource, /user_profile_export_view/)
+  assert.match(serviceSource, /select\("user_id,nickname,auth_phone"\)/)
+  assert.doesNotMatch(serviceSource, /select\("user_id,nickname,phone"\)/)
   assert.doesNotMatch(serviceSource, /select\("user_id,nickname,contact_email"\)/)
 })

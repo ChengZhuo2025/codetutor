@@ -169,14 +169,14 @@ type PaymentOrderRow = {
 type AdminFinanceOrderRow = PaymentOrderRow & {
   user_profiles?: {
     nickname: string | null
-    phone: string | null
+    auth_phone: string | null
   } | null
 }
 
 type UserProfileLiteRow = {
   user_id: string
   nickname: string | null
-  phone: string | null
+  auth_phone: string | null
 }
 
 type UserSubscriptionRow = {
@@ -507,7 +507,7 @@ function mapAdminFinanceOrder(row: AdminFinanceOrderRow): AdminFinanceOrderListI
     orderNo: row.order_no,
     userId: row.user_id,
     userNickname: row.user_profiles?.nickname ?? null,
-    userPhone: row.user_profiles?.phone ?? null,
+    userPhone: row.user_profiles?.auth_phone ?? null,
     planCode: row.plan_code,
     planName: row.plan_name,
     amountCents: row.amount_cents,
@@ -527,8 +527,8 @@ async function attachUserProfiles(rows: PaymentOrderRow[]): Promise<AdminFinance
   if (userIds.length === 0) return rows
   const supabase = createSupabaseAdminClient()
   const { data, error } = await supabase
-    .from("user_profiles")
-    .select("user_id,nickname,phone")
+    .from("user_profile_export_view")
+    .select("user_id,nickname,auth_phone")
     .in("user_id", userIds)
   assertSupabaseSuccess(error, "failed to load payment order user profiles")
   const profileMap = new Map(
