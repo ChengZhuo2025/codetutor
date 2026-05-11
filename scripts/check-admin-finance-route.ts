@@ -170,3 +170,12 @@ test("admin finance stats returns aggregate payload", async () => {
   const body = await res.json()
   assert.equal(body.data.overview.revenueCents, 3900)
 })
+
+test("admin finance service reads user profile contact_email, not a missing email column", async () => {
+  const serviceSource = await import("node:fs").then(({ readFileSync }) =>
+    readFileSync("server/modules/payments/service.ts", "utf8"),
+  )
+
+  assert.match(serviceSource, /select\("user_id,nickname,contact_email"\)/)
+  assert.doesNotMatch(serviceSource, /select\("user_id,nickname,email"\)/)
+})
