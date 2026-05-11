@@ -1,4 +1,4 @@
-import { BookOpen, Map, Trophy } from "lucide-react"
+import { BookOpen, Map, ReceiptText, Trophy } from "lucide-react"
 import { MARKETING_SECTIONS, ROUTES } from "@/constants/routes"
 import type { DashboardNavItem, NavItem } from "@/types/navigation"
 
@@ -26,6 +26,12 @@ export function getDashboardNavItems(activeHref: string): DashboardNavItem[] {
       label: "我的成就",
       href: ROUTES.achievements,
       active: activeHref === ROUTES.achievements,
+    },
+    {
+      icon: ReceiptText,
+      label: "订单管理",
+      href: ROUTES.orders,
+      active: activeHref === ROUTES.orders,
     },
   ]
 }

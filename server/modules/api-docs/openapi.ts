@@ -51,6 +51,9 @@ import {
   adminSettingsAuditLogListResponseDataSchema,
   adminSettingsOverviewResponseDataSchema,
   adminSubscriptionPlanListResponseDataSchema,
+  adminFinanceOrderDetailResponseDataSchema,
+  adminFinanceOrderListResponseDataSchema,
+  adminFinanceStatsResponseDataSchema,
   adminAlipayPaymentSettingsResponseDataSchema,
   adminSiteContactResponseDataSchema,
   adminUpsertSubscriptionPlanRequestSchema,
@@ -128,6 +131,7 @@ import {
   notificationSettingsDataSchema,
   openApiStreamResponseSchema,
   paymentOrderResponseDataSchema,
+  paymentOrderListResponseDataSchema,
   profileMeResponseDataSchema,
   progressCurrentResponseDataSchema,
   progressMapResponseDataSchema,
@@ -1823,6 +1827,66 @@ const successExamples = {
     paidAt: null,
     createdAt: "2026-04-26T10:00:00Z",
     updatedAt: "2026-04-26T10:00:05Z",
+  },
+  paymentOrderList: {
+    items: [],
+    total: 1,
+    page: 1,
+    pageSize: 10,
+    hasMore: false,
+    summary: {
+      totalCount: 1,
+      pendingCount: 1,
+      paidCount: 0,
+      closedCount: 0,
+      expiredCount: 0,
+      failedCount: 0,
+    },
+  },
+  adminFinanceOrderList: {
+    items: [
+      {
+        orderNo: "CT20260426100000ABC123",
+        userId: "user-123",
+        userNickname: "Bao",
+        userEmail: "bao@example.com",
+        planCode: "personal_monthly",
+        planName: "个人版",
+        amountCents: 3900,
+        currency: "CNY",
+        status: "paid",
+        paymentChannel: "alipay",
+        providerTradeNo: "202604262200",
+        paidAt: "2026-04-26T10:05:00Z",
+        expiresAt: "2026-04-26T10:30:00Z",
+        createdAt: "2026-04-26T10:00:00Z",
+        updatedAt: "2026-04-26T10:05:00Z",
+      },
+    ],
+    total: 1,
+    page: 1,
+    limit: 20,
+    stats: {
+      totalOrders: 1,
+      paidOrders: 1,
+      pendingOrders: 0,
+      revenueCents: 3900,
+    },
+  },
+  adminFinanceStats: {
+    range: { dateFrom: "2026-04-01", dateTo: "2026-04-30" },
+    overview: {
+      revenueCents: 3900,
+      paidOrders: 1,
+      pendingOrders: 0,
+      closedOrders: 0,
+      expiredOrders: 0,
+      failedOrders: 0,
+      averageOrderValueCents: 3900,
+    },
+    channelBreakdown: [{ channel: "alipay", revenueCents: 3900, paidOrders: 1 }],
+    planBreakdown: [{ planCode: "personal_monthly", planName: "个人版", revenueCents: 3900, paidOrders: 1 }],
+    dailyTrend: [{ date: "2026-04-26", revenueCents: 3900, paidOrders: 1 }],
   },
   adminSiteContactQrUpload: {
     qrImageUrl: "https://cdn.example.com/qr/wechat-20260425.png",
@@ -4345,6 +4409,25 @@ registry.registerPath({
 
 registry.registerPath({
   method: "get",
+  path: "/api/payment/orders",
+  operationId: "listPaymentOrders",
+  tags: ["payment"],
+  summary: "读取当前用户支付订单列表",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      paymentOrderListResponseDataSchema,
+      "PaymentOrderListResponse",
+      "支付订单列表读取成功",
+      { ...successExamples.paymentOrderList, items: [successExamples.paymentOrder] },
+      "支付订单列表读取成功",
+    ),
+    ...commonErrorResponses(["401", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
   path: "/api/payment/orders/{orderNo}",
   operationId: "getPaymentOrder",
   tags: ["payment"],
@@ -4359,6 +4442,25 @@ registry.registerPath({
       "支付订单读取成功",
     ),
     ...commonErrorResponses(["401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "delete",
+  path: "/api/payment/orders/{orderNo}",
+  operationId: "deletePaymentOrder",
+  tags: ["payment"],
+  summary: "用户软删除终态支付订单",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      paymentOrderResponseDataSchema,
+      "PaymentOrderDeleteResponse",
+      "支付订单已删除",
+      { ...successExamples.paymentOrder, status: "closed" },
+      "支付订单已删除",
+    ),
+    ...commonErrorResponses(["400", "401", "404", "500"]),
   },
 })
 
@@ -4378,6 +4480,127 @@ registry.registerPath({
       "支付订单已同步",
     ),
     ...commonErrorResponses(["401", "404", "409", "500", "502"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/payment/orders/{orderNo}/cancel",
+  operationId: "cancelPaymentOrder",
+  tags: ["payment"],
+  summary: "用户取消待支付订单",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      paymentOrderResponseDataSchema,
+      "PaymentOrderCancelResponse",
+      "支付订单已取消",
+      { ...successExamples.paymentOrder, status: "closed" },
+      "支付订单已取消",
+    ),
+    ...commonErrorResponses(["400", "401", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/finance/orders",
+  operationId: "getAdminFinanceOrders",
+  tags: ["admin-finance", "payment"],
+  summary: "后台财务订单列表",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminFinanceOrderListResponseDataSchema,
+      "AdminFinanceOrderListResponse",
+      "财务订单列表读取成功",
+      successExamples.adminFinanceOrderList,
+      "财务订单列表读取成功",
+    ),
+    ...commonErrorResponses(["403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/finance/orders/{orderNo}",
+  operationId: "getAdminFinanceOrderDetail",
+  tags: ["admin-finance", "payment"],
+  summary: "后台财务订单详情",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminFinanceOrderDetailResponseDataSchema,
+      "AdminFinanceOrderDetailResponse",
+      "财务订单详情读取成功",
+      {
+        order: {
+          ...successExamples.adminFinanceOrderList.items[0],
+          codeUrl: null,
+          userDeletedAt: null,
+          cancelledAt: null,
+          cancelReason: null,
+          wechatTransactionId: null,
+          alipayTradeNo: "202604262200",
+          prepayPayload: {},
+          callbackPayload: {},
+        },
+        timeline: [{ label: "创建订单", at: "2026-04-26T10:00:00Z", status: "created" }],
+      },
+      "财务订单详情读取成功",
+    ),
+    ...commonErrorResponses(["403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/finance/orders/{orderNo}/sync",
+  operationId: "syncAdminFinanceOrder",
+  tags: ["admin-finance", "payment"],
+  summary: "后台同步单个财务订单状态",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminFinanceOrderDetailResponseDataSchema,
+      "AdminFinanceOrderSyncResponse",
+      "财务订单已同步",
+      {
+        order: {
+          ...successExamples.adminFinanceOrderList.items[0],
+          codeUrl: null,
+          userDeletedAt: null,
+          cancelledAt: null,
+          cancelReason: null,
+          wechatTransactionId: null,
+          alipayTradeNo: "202604262200",
+          prepayPayload: {},
+          callbackPayload: {},
+        },
+        timeline: [{ label: "支付成功", at: "2026-04-26T10:05:00Z", status: "paid" }],
+      },
+      "财务订单已同步",
+    ),
+    ...commonErrorResponses(["403", "404", "409", "500", "502"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/finance/stats",
+  operationId: "getAdminFinanceStats",
+  tags: ["admin-finance", "payment"],
+  summary: "后台财务统计",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminFinanceStatsResponseDataSchema,
+      "AdminFinanceStatsResponse",
+      "财务统计读取成功",
+      successExamples.adminFinanceStats,
+      "财务统计读取成功",
+    ),
+    ...commonErrorResponses(["403", "500"]),
   },
 })
 

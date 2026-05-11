@@ -4,6 +4,8 @@ import type {
   AdminUpdateAlipayPaymentSettingsRequest,
   AdminUpsertSubscriptionPlanRequest,
   AdminUpdateWechatPaymentSettingsRequest,
+  PaymentChannel,
+  PaymentOrderStatus,
 } from "@/lib/api/contracts/payment"
 
 type RequestAuthResult = { ok: true; userId: string } | { ok: false; message: string }
@@ -99,6 +101,107 @@ export function createPaymentOrderGetHandler(dependencies: {
       return jsonSuccess(data, "支付订单读取成功")
     } catch {
       return jsonError("INTERNAL_ERROR", "支付订单读取失败", 500)
+    }
+  }
+}
+
+function parseUserOrderListQuery(request: Request) {
+  const url = new URL(request.url)
+  return {
+    page: Number(url.searchParams.get("page") ?? "1"),
+    pageSize: Number(url.searchParams.get("pageSize") ?? "10"),
+    status: (url.searchParams.get("status") ?? "all") as PaymentOrderStatus | "all",
+    channel: (url.searchParams.get("channel") ?? "all") as PaymentChannel | "all",
+  }
+}
+
+function parseAdminFinanceOrderQuery(request: Request) {
+  const url = new URL(request.url)
+  return {
+    page: Number(url.searchParams.get("page") ?? "1"),
+    limit: Number(url.searchParams.get("limit") ?? "20"),
+    status: (url.searchParams.get("status") ?? "all") as PaymentOrderStatus | "all",
+    channel: (url.searchParams.get("channel") ?? "all") as PaymentChannel | "all",
+    planCode: url.searchParams.get("planCode")?.trim() ?? "",
+    keyword: url.searchParams.get("keyword")?.trim() ?? "",
+    dateFrom: url.searchParams.get("dateFrom")?.trim() ?? "",
+    dateTo: url.searchParams.get("dateTo")?.trim() ?? "",
+  }
+}
+
+function parseAdminFinanceStatsQuery(request: Request) {
+  const url = new URL(request.url)
+  return {
+    dateFrom: url.searchParams.get("dateFrom")?.trim() ?? "",
+    dateTo: url.searchParams.get("dateTo")?.trim() ?? "",
+  }
+}
+
+export function createPaymentOrdersGetHandler(dependencies: {
+  getRequestUser: (request: unknown) => Promise<RequestAuthResult>
+  getPaymentOrdersForUser: (userId: string, query: {
+    page: number
+    pageSize: number
+    status: PaymentOrderStatus | "all"
+    channel: PaymentChannel | "all"
+  }) => Promise<unknown>
+}) {
+  return async function GET(request: Request) {
+    try {
+      const auth = await dependencies.getRequestUser(request)
+      if (!auth.ok) {
+        return jsonAuthRequired(auth.message)
+      }
+      const data = await dependencies.getPaymentOrdersForUser(auth.userId, parseUserOrderListQuery(request))
+      return jsonSuccess(data, "支付订单列表读取成功")
+    } catch {
+      return jsonError("INTERNAL_ERROR", "支付订单列表读取失败", 500)
+    }
+  }
+}
+
+export function createPaymentOrderCancelPostHandler(dependencies: {
+  getRequestUser: (request: unknown) => Promise<RequestAuthResult>
+  cancelPaymentOrderForUser: (userId: string, orderNo: string) => Promise<unknown | null>
+}) {
+  return async function POST(
+    request: unknown,
+    context: { params: Promise<{ orderNo: string }> },
+  ) {
+    try {
+      const auth = await dependencies.getRequestUser(request)
+      if (!auth.ok) {
+        return jsonAuthRequired(auth.message)
+      }
+      const { orderNo } = await context.params
+      const data = await dependencies.cancelPaymentOrderForUser(auth.userId, orderNo)
+      if (!data) return jsonError("NOT_FOUND", "支付订单不存在。", 404)
+      return jsonSuccess(data, "支付订单已取消")
+    } catch (error) {
+      return mapPaymentError(error)
+    }
+  }
+}
+
+export function createPaymentOrderDeleteHandler(dependencies: {
+  getRequestUser: (request: unknown) => Promise<RequestAuthResult>
+  softDeletePaymentOrderForUser: (userId: string, orderNo: string) => Promise<unknown | null>
+}) {
+  return async function DELETE(
+    request: unknown,
+    context: { params: Promise<{ orderNo: string }> },
+  ) {
+    try {
+      const auth = await dependencies.getRequestUser(request)
+      if (!auth.ok) {
+        return jsonAuthRequired(auth.message)
+      }
+      const { orderNo } = await context.params
+      const data = await dependencies.softDeletePaymentOrderForUser(auth.userId, orderNo)
+      if (!data) return jsonError("NOT_FOUND", "支付订单不存在。", 404)
+      return jsonSuccess(data, "支付订单已删除")
+    } catch (error) {
+      return mapPaymentError(error)
     }
   }
 }
@@ -382,6 +485,88 @@ export function createAdminSubscriptionPlanDeleteHandler(dependencies: {
       return jsonSuccess(data, "订阅套餐已归档")
     } catch (error) {
       return mapPaymentError(error)
+    }
+  }
+}
+
+export function createAdminFinanceOrdersGetHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Promise<RequestAdminResult>
+  getAdminFinanceOrders: (query: ReturnType<typeof parseAdminFinanceOrderQuery>) => Promise<unknown>
+}) {
+  return async function GET(request: Request) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+      const data = await dependencies.getAdminFinanceOrders(parseAdminFinanceOrderQuery(request))
+      return jsonSuccess(data, "财务订单列表读取成功")
+    } catch {
+      return jsonError("INTERNAL_ERROR", "财务订单列表读取失败", 500)
+    }
+  }
+}
+
+export function createAdminFinanceOrderDetailGetHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Promise<RequestAdminResult>
+  getAdminFinanceOrderDetail: (orderNo: string) => Promise<unknown | null>
+}) {
+  return async function GET(
+    request: unknown,
+    context: { params: Promise<{ orderNo: string }> },
+  ) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+      const { orderNo } = await context.params
+      const data = await dependencies.getAdminFinanceOrderDetail(orderNo)
+      if (!data) return jsonError("NOT_FOUND", "财务订单不存在。", 404)
+      return jsonSuccess(data, "财务订单详情读取成功")
+    } catch {
+      return jsonError("INTERNAL_ERROR", "财务订单详情读取失败", 500)
+    }
+  }
+}
+
+export function createAdminFinanceOrderSyncPostHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Promise<RequestAdminResult>
+  syncAdminFinanceOrder: (orderNo: string) => Promise<unknown | null>
+}) {
+  return async function POST(
+    request: unknown,
+    context: { params: Promise<{ orderNo: string }> },
+  ) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+      const { orderNo } = await context.params
+      const data = await dependencies.syncAdminFinanceOrder(orderNo)
+      if (!data) return jsonError("NOT_FOUND", "财务订单不存在。", 404)
+      return jsonSuccess(data, "财务订单已同步")
+    } catch (error) {
+      return mapPaymentError(error)
+    }
+  }
+}
+
+export function createAdminFinanceStatsGetHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Promise<RequestAdminResult>
+  getAdminFinanceStats: (query: ReturnType<typeof parseAdminFinanceStatsQuery>) => Promise<unknown>
+}) {
+  return async function GET(request: Request) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+      const data = await dependencies.getAdminFinanceStats(parseAdminFinanceStatsQuery(request))
+      return jsonSuccess(data, "财务统计读取成功")
+    } catch {
+      return jsonError("INTERNAL_ERROR", "财务统计读取失败", 500)
     }
   }
 }

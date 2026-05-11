@@ -13,6 +13,8 @@ import {
   Activity,
   FlaskConical,
   Settings,
+  ReceiptText,
+  BarChart3,
   Zap,
 } from "lucide-react"
 import type { MenuItem } from "../types"
@@ -56,6 +58,16 @@ export const menuItems: MenuItem[] = [
       { label: "Skill 管理", href: "/admin/ai/skills", icon: Layers, active: true },
       { label: "调用日志", href: "/admin/ai/invocations", icon: Activity, active: true },
       { label: "测试调试", href: "/admin/ai/test", icon: FlaskConical, active: true },
+    ],
+  },
+  {
+    label: "财务管理",
+    href: "/admin/finance",
+    icon: ReceiptText,
+    active: true,
+    children: [
+      { label: "订单列表", href: "/admin/finance/orders", icon: ReceiptText, active: true },
+      { label: "财务统计", href: "/admin/finance/stats", icon: BarChart3, active: true },
     ],
   },
   {

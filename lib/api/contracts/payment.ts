@@ -70,10 +70,109 @@ export type PaymentOrderResponseData = {
   updatedAt: string
 }
 
+export type PaymentOrderListSummary = {
+  totalCount: number
+  pendingCount: number
+  paidCount: number
+  closedCount: number
+  expiredCount: number
+  failedCount: number
+}
+
+export type PaymentOrderListResponseData = {
+  items: PaymentOrderResponseData[]
+  total: number
+  page: number
+  pageSize: number
+  hasMore: boolean
+  summary: PaymentOrderListSummary
+}
+
 export type WechatNativeOrderResponseData = PaymentOrderResponseData
 export type AlipayPrecreateOrderResponseData = PaymentOrderResponseData
 
 export type PaymentOrderSyncResponseData = PaymentOrderResponseData
+
+export type AdminFinanceOrderListItem = {
+  orderNo: string
+  userId: string
+  userNickname: string | null
+  userEmail: string | null
+  planCode: PaymentPlanCode
+  planName: string
+  amountCents: number
+  currency: "CNY"
+  status: PaymentOrderStatus
+  paymentChannel: PaymentChannel
+  providerTradeNo: string | null
+  paidAt: string | null
+  expiresAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type AdminFinanceOrderListResponseData = {
+  items: AdminFinanceOrderListItem[]
+  total: number
+  page: number
+  limit: number
+  stats: {
+    totalOrders: number
+    paidOrders: number
+    pendingOrders: number
+    revenueCents: number
+  }
+}
+
+export type AdminFinanceOrderDetailResponseData = {
+  order: AdminFinanceOrderListItem & {
+    codeUrl: string | null
+    userDeletedAt: string | null
+    cancelledAt: string | null
+    cancelReason: string | null
+    wechatTransactionId: string | null
+    alipayTradeNo: string | null
+    prepayPayload: Record<string, unknown>
+    callbackPayload: Record<string, unknown>
+  }
+  timeline: Array<{
+    label: string
+    at: string
+    status: PaymentOrderStatus | "created"
+  }>
+}
+
+export type AdminFinanceStatsResponseData = {
+  range: {
+    dateFrom: string
+    dateTo: string
+  }
+  overview: {
+    revenueCents: number
+    paidOrders: number
+    pendingOrders: number
+    closedOrders: number
+    expiredOrders: number
+    failedOrders: number
+    averageOrderValueCents: number
+  }
+  channelBreakdown: Array<{
+    channel: PaymentChannel
+    revenueCents: number
+    paidOrders: number
+  }>
+  planBreakdown: Array<{
+    planCode: PaymentPlanCode
+    planName: string
+    revenueCents: number
+    paidOrders: number
+  }>
+  dailyTrend: Array<{
+    date: string
+    revenueCents: number
+    paidOrders: number
+  }>
+}
 
 export type AdminWechatPaymentSettingsResponseData = {
   enabled: boolean

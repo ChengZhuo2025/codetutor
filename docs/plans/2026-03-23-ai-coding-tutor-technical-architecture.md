@@ -904,9 +904,10 @@ flowchart TB
 ## 17.1 当前支付链路
 
 - 管理后台 `/admin/settings` 的「支付配置」维护微信商户号、AppID、回调地址、商户证书序列号、商户私钥、APIv3 密钥、微信支付公钥 ID 与公钥，以及支付宝 AppID、异步通知地址、应用私钥与支付宝公钥；敏感字段只加密落库，不放业务 `.env`。
-- 用户端订阅弹窗先选择支付宝或微信。微信调用 `POST /api/payment/wechat/native-orders` 生成带 `time_expire` 的微信 `code_url`；支付宝调用 `POST /api/payment/alipay/precreate-orders` 生成支付宝 `qr_code`；前端统一本地渲染二维码。`POST /api/payment/orders/{orderNo}/sync` 用作前端轮询兜底，并按订单渠道映射终态。
+- 用户端订阅弹窗先选择支付宝或微信。微信调用 `POST /api/payment/wechat/native-orders` 生成带 `time_expire` 的微信 `code_url`；支付宝调用 `POST /api/payment/alipay/precreate-orders` 生成支付宝支付表单/二维码载荷；前端在订阅弹窗和 `/orders` 统一处理继续支付。`GET /api/payment/orders` 支持用户订单列表，`POST /api/payment/orders/{orderNo}/sync` 用作前端轮询兜底，并按订单渠道映射终态；`POST /api/payment/orders/{orderNo}/cancel` 与 `DELETE /api/payment/orders/{orderNo}` 分别支持待支付订单取消和终态订单用户端软删除。
 - 微信查单响应必须具备 `Wechatpay-*` 签名头且 `Wechatpay-Serial` 匹配后台配置的微信支付公钥 ID；验签失败时 fail closed。
 - 微信回调 `POST /api/payment/wechat/notify` 先验签、再用 APIv3 密钥解密 `resource`，校验 `appid/mchid/amount/trade_state` 后调用带行锁的 `complete_paid_payment_order` RPC，幂等更新订单并确保订阅权益只开通一次。
+- 管理后台财务管理首版提供 `/admin/finance/orders`、`/admin/finance/orders/[orderNo]`、`/admin/finance/stats`，服务端通过 `GET /api/admin/finance/orders`、`GET /api/admin/finance/orders/{orderNo}`、`POST /api/admin/finance/orders/{orderNo}/sync` 与 `GET /api/admin/finance/stats` 查询订单、手动同步状态和展示收入统计；首版不包含退款、发票、人工补单或人工改状态。
 - 支付宝回调 `POST /api/payment/alipay/notify` 接收表单异步通知，先 RSA2 验签，再校验 `app_id/out_trade_no/total_amount/trade_status`，成功支付后复用同一个带行锁的 `complete_paid_payment_order` RPC。
 
 ---

@@ -7,6 +7,7 @@ export const ROUTES = {
   map: "/map",
   achievements: "/achievements",
   history: "/history",
+  orders: "/orders",
   apiDocs: "/api-docs",
 } as const
 
@@ -16,6 +17,7 @@ export const USER_PROTECTED_ROUTES = [
   ROUTES.map,
   ROUTES.achievements,
   ROUTES.history,
+  ROUTES.orders,
 ] as const
 
 export const ADMIN_ROUTES = {
@@ -25,6 +27,7 @@ export const ADMIN_ROUTES = {
   users: "/admin/users",
   learning: "/admin/learning",
   ai: "/admin/ai",
+  finance: "/admin/finance",
   settings: "/admin/settings",
 } as const
 

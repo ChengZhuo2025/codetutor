@@ -428,7 +428,7 @@ export function SubscriptionDetailDialog({
                   </div>
                 </div>
                 <Link
-                  href="/login"
+                  href="/orders"
                   className={cn("flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium", USER_PANEL_OUTLINE_BUTTON_CLASS)}
                 >
                   <FileText className="h-4 w-4" />

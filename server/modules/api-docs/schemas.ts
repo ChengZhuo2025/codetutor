@@ -1699,6 +1699,110 @@ export const paymentOrderResponseDataSchema = z
   })
   .openapi("PaymentOrderResponseData")
 
+export const paymentOrderListResponseDataSchema = z
+  .object({
+    items: z.array(paymentOrderResponseDataSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().positive(),
+    pageSize: z.number().int().positive(),
+    hasMore: z.boolean(),
+    summary: z.object({
+      totalCount: z.number().int().nonnegative(),
+      pendingCount: z.number().int().nonnegative(),
+      paidCount: z.number().int().nonnegative(),
+      closedCount: z.number().int().nonnegative(),
+      expiredCount: z.number().int().nonnegative(),
+      failedCount: z.number().int().nonnegative(),
+    }),
+  })
+  .openapi("PaymentOrderListResponseData")
+
+export const adminFinanceOrderListItemSchema = z
+  .object({
+    orderNo: z.string(),
+    userId: z.string(),
+    userNickname: z.string().nullable(),
+    userEmail: z.string().nullable(),
+    planCode: paymentPlanCodeSchema,
+    planName: z.string(),
+    amountCents: z.number().int().positive(),
+    currency: z.literal("CNY"),
+    status: paymentOrderStatusSchema,
+    paymentChannel: paymentChannelSchema,
+    providerTradeNo: z.string().nullable(),
+    paidAt: z.string().nullable(),
+    expiresAt: z.string(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .openapi("AdminFinanceOrderListItem")
+
+export const adminFinanceOrderListResponseDataSchema = z
+  .object({
+    items: z.array(adminFinanceOrderListItemSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().positive(),
+    limit: z.number().int().positive(),
+    stats: z.object({
+      totalOrders: z.number().int().nonnegative(),
+      paidOrders: z.number().int().nonnegative(),
+      pendingOrders: z.number().int().nonnegative(),
+      revenueCents: z.number().int().nonnegative(),
+    }),
+  })
+  .openapi("AdminFinanceOrderListResponseData")
+
+export const adminFinanceOrderDetailResponseDataSchema = z
+  .object({
+    order: adminFinanceOrderListItemSchema.extend({
+      codeUrl: z.string().nullable(),
+      userDeletedAt: z.string().nullable(),
+      cancelledAt: z.string().nullable(),
+      cancelReason: z.string().nullable(),
+      wechatTransactionId: z.string().nullable(),
+      alipayTradeNo: z.string().nullable(),
+      prepayPayload: z.record(z.unknown()),
+      callbackPayload: z.record(z.unknown()),
+    }),
+    timeline: z.array(z.object({
+      label: z.string(),
+      at: z.string(),
+      status: z.union([paymentOrderStatusSchema, z.literal("created")]),
+    })),
+  })
+  .openapi("AdminFinanceOrderDetailResponseData")
+
+export const adminFinanceStatsResponseDataSchema = z
+  .object({
+    range: z.object({ dateFrom: z.string(), dateTo: z.string() }),
+    overview: z.object({
+      revenueCents: z.number().int().nonnegative(),
+      paidOrders: z.number().int().nonnegative(),
+      pendingOrders: z.number().int().nonnegative(),
+      closedOrders: z.number().int().nonnegative(),
+      expiredOrders: z.number().int().nonnegative(),
+      failedOrders: z.number().int().nonnegative(),
+      averageOrderValueCents: z.number().int().nonnegative(),
+    }),
+    channelBreakdown: z.array(z.object({
+      channel: paymentChannelSchema,
+      revenueCents: z.number().int().nonnegative(),
+      paidOrders: z.number().int().nonnegative(),
+    })),
+    planBreakdown: z.array(z.object({
+      planCode: paymentPlanCodeSchema,
+      planName: z.string(),
+      revenueCents: z.number().int().nonnegative(),
+      paidOrders: z.number().int().nonnegative(),
+    })),
+    dailyTrend: z.array(z.object({
+      date: z.string(),
+      revenueCents: z.number().int().nonnegative(),
+      paidOrders: z.number().int().nonnegative(),
+    })),
+  })
+  .openapi("AdminFinanceStatsResponseData")
+
 export const adminWechatPaymentSettingsResponseDataSchema = z
   .object({
     enabled: z.boolean(),

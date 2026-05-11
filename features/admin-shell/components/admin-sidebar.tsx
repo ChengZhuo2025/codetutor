@@ -41,6 +41,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
   const pathname = usePathname()
   const { session } = useAdminSession()
   const [aiExpanded, setAiExpanded] = useState(true)
+  const [financeExpanded, setFinanceExpanded] = useState(true)
   const aiAccessible = canAccessAdminAI(session.roles)
 
   return (
@@ -92,10 +93,12 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
             }
 
             if (item.children) {
+              const expanded = item.href === ADMIN_ROUTES.finance ? financeExpanded : aiExpanded
+              const setExpanded = item.href === ADMIN_ROUTES.finance ? setFinanceExpanded : setAiExpanded
               const parentLink = (
                 <button
                   type="button"
-                  onClick={() => setAiExpanded(!aiExpanded)}
+                  onClick={() => setExpanded(!expanded)}
                   className={cn(
                     navItemBase,
                     "w-full text-sidebar-foreground",
@@ -103,13 +106,13 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
                     "hover:bg-sidebar-accent/90 hover:text-sidebar-accent-foreground",
                     isActive && "bg-sidebar-accent text-sidebar-accent-foreground",
                   )}
-                  aria-expanded={aiExpanded}
+                  aria-expanded={expanded}
                 >
                   <Icon className="size-4 shrink-0 opacity-90" />
                   {!collapsed ? (
                     <>
                       <span className="min-w-0 flex-1 text-left">{item.label}</span>
-                      {aiExpanded
+                      {expanded
                         ? <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
                         : <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                       }
@@ -121,7 +124,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
               return (
                 <li key={item.href}>
                   {withCollapsedTooltip(collapsed, item.label, parentLink)}
-                  {aiExpanded && (
+                  {expanded && (
                     <ul
                       className={cn(
                         "mt-1 space-y-0.5 border-sidebar-border/80",

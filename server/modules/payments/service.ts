@@ -6,14 +6,22 @@ import {
   createHash,
   randomBytes,
 } from "node:crypto"
+import { PAYMENT_ORDER_STATUSES } from "@/lib/api/contracts/payment"
 import type {
   AdminAlipayPaymentSettingsResponseData,
+  AdminFinanceOrderDetailResponseData,
+  AdminFinanceOrderListItem,
+  AdminFinanceOrderListResponseData,
+  AdminFinanceStatsResponseData,
   AdminUpdateAlipayPaymentSettingsRequest,
   AdminWechatPaymentSettingsResponseData,
   AdminUpdateWechatPaymentSettingsRequest,
   AdminSubscriptionPlanListResponseData,
   AdminUpsertSubscriptionPlanRequest,
+  PaymentChannel,
+  PaymentOrderListResponseData,
   PaymentOrderResponseData,
+  PaymentOrderStatus,
   PaymentPlanCode,
   SubscriptionMeResponseData,
   SubscriptionPlanItem,
@@ -144,10 +152,31 @@ type PaymentOrderRow = {
   wechat_transaction_id: string | null
   payment_channel?: "wechat" | "alipay"
   alipay_trade_no?: string | null
+  wechat_prepay_payload?: Record<string, unknown> | null
+  wechat_callback_payload?: Record<string, unknown> | null
+  alipay_prepay_payload?: Record<string, unknown> | null
+  alipay_callback_payload?: Record<string, unknown> | null
+  user_deleted_at?: string | null
+  cancelled_at?: string | null
+  cancelled_by_user_id?: string | null
+  cancel_reason?: string | null
   paid_at: string | null
   expires_at: string
   created_at: string
   updated_at: string
+}
+
+type AdminFinanceOrderRow = PaymentOrderRow & {
+  user_profiles?: {
+    nickname: string | null
+    email: string | null
+  } | null
+}
+
+type UserProfileLiteRow = {
+  user_id: string
+  nickname: string | null
+  email: string | null
 }
 
 type UserSubscriptionRow = {
@@ -445,6 +474,98 @@ function mapOrder(row: PaymentOrderRow): PaymentOrderResponseData {
     paidAt: row.paid_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  }
+}
+
+function isPendingStatus(status: PaymentOrderStatus) {
+  return status === "created" || status === "prepay_created"
+}
+
+function normalizePage(value: unknown, fallback = 1) {
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
+}
+
+function normalizeLimit(value: unknown, fallback: number, max: number) {
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed) || parsed <= 0) return fallback
+  return Math.min(parsed, max)
+}
+
+function normalizeOrderStatus(value: unknown): PaymentOrderStatus | "all" {
+  return typeof value === "string" && (PAYMENT_ORDER_STATUSES as readonly string[]).includes(value)
+    ? value as PaymentOrderStatus
+    : "all"
+}
+
+function normalizePaymentChannelFilter(value: unknown): PaymentChannel | "all" {
+  return value === "wechat" || value === "alipay" ? value : "all"
+}
+
+function mapAdminFinanceOrder(row: AdminFinanceOrderRow): AdminFinanceOrderListItem {
+  return {
+    orderNo: row.order_no,
+    userId: row.user_id,
+    userNickname: row.user_profiles?.nickname ?? null,
+    userEmail: row.user_profiles?.email ?? null,
+    planCode: row.plan_code,
+    planName: row.plan_name,
+    amountCents: row.amount_cents,
+    currency: row.currency,
+    status: row.status,
+    paymentChannel: row.payment_channel ?? "wechat",
+    providerTradeNo: row.payment_channel === "alipay" ? row.alipay_trade_no ?? null : row.wechat_transaction_id,
+    paidAt: row.paid_at,
+    expiresAt: row.expires_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+async function attachUserProfiles(rows: PaymentOrderRow[]): Promise<AdminFinanceOrderRow[]> {
+  const userIds = Array.from(new Set(rows.map((row) => row.user_id)))
+  if (userIds.length === 0) return rows
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .select("user_id,nickname,email")
+    .in("user_id", userIds)
+  assertSupabaseSuccess(error, "failed to load payment order user profiles")
+  const profileMap = new Map(
+    ((data ?? []) as UserProfileLiteRow[]).map((profile) => [profile.user_id, profile]),
+  )
+  return rows.map((row) => ({
+    ...row,
+    user_profiles: profileMap.get(row.user_id) ?? null,
+  }))
+}
+
+function mapAdminFinanceOrderDetail(row: AdminFinanceOrderRow): AdminFinanceOrderDetailResponseData {
+  const channel = row.payment_channel ?? "wechat"
+  const prepayPayload = channel === "alipay" ? row.alipay_prepay_payload : row.wechat_prepay_payload
+  const callbackPayload = channel === "alipay" ? row.alipay_callback_payload : row.wechat_callback_payload
+  const timeline: AdminFinanceOrderDetailResponseData["timeline"] = [
+    { label: "创建订单", at: row.created_at, status: "created" },
+  ]
+  if (row.status === "prepay_created") timeline.push({ label: "生成支付凭证", at: row.updated_at, status: "prepay_created" })
+  if (row.cancelled_at) timeline.push({ label: "用户取消订单", at: row.cancelled_at, status: "closed" })
+  if (row.paid_at) timeline.push({ label: "支付成功", at: row.paid_at, status: "paid" })
+  if (row.status === "expired") timeline.push({ label: "订单过期", at: row.updated_at, status: "expired" })
+  if (row.status === "failed") timeline.push({ label: "支付失败", at: row.updated_at, status: "failed" })
+
+  return {
+    order: {
+      ...mapAdminFinanceOrder(row),
+      codeUrl: row.code_url,
+      userDeletedAt: row.user_deleted_at ?? null,
+      cancelledAt: row.cancelled_at ?? null,
+      cancelReason: row.cancel_reason ?? null,
+      wechatTransactionId: row.wechat_transaction_id,
+      alipayTradeNo: row.alipay_trade_no ?? null,
+      prepayPayload: prepayPayload ?? {},
+      callbackPayload: callbackPayload ?? {},
+    },
+    timeline,
   }
 }
 
@@ -1048,6 +1169,137 @@ export async function getPaymentOrderForUser(userId: string, orderNo: string) {
   return data ? mapOrder(data as PaymentOrderRow) : null
 }
 
+export async function getPaymentOrdersForUser(
+  userId: string,
+  query: {
+    page?: number
+    pageSize?: number
+    status?: PaymentOrderStatus | "all"
+    channel?: PaymentChannel | "all"
+  } = {},
+): Promise<PaymentOrderListResponseData> {
+  const page = normalizePage(query.page)
+  const pageSize = normalizeLimit(query.pageSize, 10, 50)
+  const status = normalizeOrderStatus(query.status)
+  const channel = normalizePaymentChannelFilter(query.channel)
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+  const supabase = createSupabaseAdminClient()
+
+  let listQuery = supabase
+    .from("payment_orders")
+    .select("*", { count: "exact" })
+    .eq("user_id", userId)
+    .is("user_deleted_at", null)
+    .order("created_at", { ascending: false })
+    .range(from, to)
+
+  if (status !== "all") listQuery = listQuery.eq("status", status)
+  if (channel !== "all") listQuery = listQuery.eq("payment_channel", channel)
+
+  const [{ data, error, count }, { data: summaryRows, error: summaryError }] = await Promise.all([
+    listQuery,
+    supabase
+      .from("payment_orders")
+      .select("status")
+      .eq("user_id", userId)
+      .is("user_deleted_at", null),
+  ])
+  assertSupabaseSuccess(error, "failed to load user payment orders")
+  assertSupabaseSuccess(summaryError, "failed to load user payment order summary")
+
+  const rows = (summaryRows ?? []) as Array<{ status: PaymentOrderStatus }>
+  const pendingCount = rows.filter((item) => isPendingStatus(item.status)).length
+  const statusCount = (target: PaymentOrderStatus) => rows.filter((item) => item.status === target).length
+
+  return {
+    items: ((data ?? []) as PaymentOrderRow[]).map(mapOrder),
+    total: count ?? 0,
+    page,
+    pageSize,
+    hasMore: from + ((data ?? []) as unknown[]).length < (count ?? 0),
+    summary: {
+      totalCount: rows.length,
+      pendingCount,
+      paidCount: statusCount("paid"),
+      closedCount: statusCount("closed"),
+      expiredCount: statusCount("expired"),
+      failedCount: statusCount("failed"),
+    },
+  }
+}
+
+export async function cancelPaymentOrderForUser(userId: string, orderNo: string) {
+  const supabase = createSupabaseAdminClient()
+  const { data: before, error: beforeError } = await supabase
+    .from("payment_orders")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("order_no", orderNo)
+    .is("user_deleted_at", null)
+    .maybeSingle()
+  assertSupabaseSuccess(beforeError, "failed to load payment order before cancel")
+  if (!before) return null
+  const row = before as PaymentOrderRow
+  if (!isPendingStatus(row.status)) {
+    const error = new Error("仅待支付订单可以取消。")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+  if (new Date(row.expires_at).getTime() <= Date.now()) {
+    const { data: expired, error: expiredError } = await supabase
+      .from("payment_orders")
+      .update({ status: "expired" })
+      .eq("id", row.id)
+      .select("*")
+      .single()
+    assertSupabaseSuccess(expiredError, "failed to mark expired payment order")
+    return mapOrder(expired as PaymentOrderRow)
+  }
+  const now = new Date().toISOString()
+  const { data, error } = await supabase
+    .from("payment_orders")
+    .update({
+      status: "closed",
+      cancelled_at: now,
+      cancelled_by_user_id: userId,
+      cancel_reason: "user_cancelled",
+    })
+    .eq("id", row.id)
+    .neq("status", "paid")
+    .select("*")
+    .single()
+  assertSupabaseSuccess(error, "failed to cancel payment order")
+  return mapOrder(data as PaymentOrderRow)
+}
+
+export async function softDeletePaymentOrderForUser(userId: string, orderNo: string) {
+  const supabase = createSupabaseAdminClient()
+  const { data: before, error: beforeError } = await supabase
+    .from("payment_orders")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("order_no", orderNo)
+    .is("user_deleted_at", null)
+    .maybeSingle()
+  assertSupabaseSuccess(beforeError, "failed to load payment order before delete")
+  if (!before) return null
+  const row = before as PaymentOrderRow
+  if (!["closed", "expired", "failed"].includes(row.status)) {
+    const error = new Error("仅已取消、已过期或失败订单可以删除。")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+  const { data, error } = await supabase
+    .from("payment_orders")
+    .update({ user_deleted_at: new Date().toISOString() })
+    .eq("id", row.id)
+    .select("*")
+    .single()
+  assertSupabaseSuccess(error, "failed to soft delete payment order")
+  return mapOrder(data as PaymentOrderRow)
+}
+
 async function completePaidOrder(row: PaymentOrderRow, transaction: Record<string, unknown>) {
   if (row.status === "paid") return row
   const paidAt = typeof transaction.success_time === "string"
@@ -1138,6 +1390,230 @@ export async function syncPaymentOrderForUser(userId: string, orderNo: string) {
     return mapOrder(updated as PaymentOrderRow)
   }
   return mapOrder(row)
+}
+
+export async function getAdminFinanceOrders(
+  query: {
+    page?: number
+    limit?: number
+    status?: PaymentOrderStatus | "all"
+    channel?: PaymentChannel | "all"
+    planCode?: string
+    keyword?: string
+    dateFrom?: string
+    dateTo?: string
+  } = {},
+): Promise<AdminFinanceOrderListResponseData> {
+  const page = normalizePage(query.page)
+  const limit = normalizeLimit(query.limit, 20, 100)
+  const status = normalizeOrderStatus(query.status)
+  const channel = normalizePaymentChannelFilter(query.channel)
+  const planCode = query.planCode?.trim() ?? ""
+  const keyword = query.keyword?.trim() ?? ""
+  const dateFrom = query.dateFrom?.trim() ?? ""
+  const dateTo = query.dateTo?.trim() ?? ""
+  const from = (page - 1) * limit
+  const to = from + limit - 1
+  const supabase = createSupabaseAdminClient()
+
+  let listQuery = supabase
+    .from("payment_orders")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to)
+  let statsQuery = supabase
+    .from("payment_orders")
+    .select("status, amount_cents")
+
+  if (status !== "all") {
+    listQuery = listQuery.eq("status", status)
+    statsQuery = statsQuery.eq("status", status)
+  }
+  if (channel !== "all") {
+    listQuery = listQuery.eq("payment_channel", channel)
+    statsQuery = statsQuery.eq("payment_channel", channel)
+  }
+  if (planCode) {
+    listQuery = listQuery.eq("plan_code", planCode)
+    statsQuery = statsQuery.eq("plan_code", planCode)
+  }
+  if (dateFrom) {
+    listQuery = listQuery.gte("created_at", `${dateFrom}T00:00:00.000Z`)
+    statsQuery = statsQuery.gte("created_at", `${dateFrom}T00:00:00.000Z`)
+  }
+  if (dateTo) {
+    listQuery = listQuery.lte("created_at", `${dateTo}T23:59:59.999Z`)
+    statsQuery = statsQuery.lte("created_at", `${dateTo}T23:59:59.999Z`)
+  }
+  if (keyword) {
+    listQuery = listQuery.or(`order_no.ilike.%${keyword}%,plan_name.ilike.%${keyword}%`)
+  }
+
+  const [{ data, error, count }, { data: statsRows, error: statsError }] = await Promise.all([
+    listQuery,
+    statsQuery,
+  ])
+  assertSupabaseSuccess(error, "failed to load admin finance orders")
+  assertSupabaseSuccess(statsError, "failed to load admin finance order stats")
+  const rows = (statsRows ?? []) as Array<{ status: PaymentOrderStatus; amount_cents: number }>
+  const paidRows = rows.filter((item) => item.status === "paid")
+  return {
+    items: (await attachUserProfiles((data ?? []) as PaymentOrderRow[])).map(mapAdminFinanceOrder),
+    total: count ?? 0,
+    page,
+    limit,
+    stats: {
+      totalOrders: rows.length,
+      paidOrders: paidRows.length,
+      pendingOrders: rows.filter((item) => isPendingStatus(item.status)).length,
+      revenueCents: paidRows.reduce((sum, item) => sum + item.amount_cents, 0),
+    },
+  }
+}
+
+export async function getAdminFinanceOrderDetail(orderNo: string) {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("payment_orders")
+    .select("*")
+    .eq("order_no", orderNo)
+    .maybeSingle()
+  assertSupabaseSuccess(error, "failed to load admin finance order detail")
+  if (!data) return null
+  const [row] = await attachUserProfiles([data as PaymentOrderRow])
+  return mapAdminFinanceOrderDetail(row)
+}
+
+export async function syncAdminFinanceOrder(orderNo: string) {
+  const detail = await getAdminFinanceOrderDetail(orderNo)
+  if (!detail) return null
+  const row = detail.order
+  if (row.status === "paid" || row.status === "closed" || row.status === "expired" || row.status === "failed") {
+    return detail
+  }
+  if (row.paymentChannel === "alipay") {
+    const config = await loadRuntimeAlipayPaymentConfig()
+    const transaction = await callAlipay<Record<string, unknown>>({
+      config,
+      method: "alipay.trade.query",
+      bizContent: { out_trade_no: orderNo },
+    })
+    const supabase = createSupabaseAdminClient()
+    const { data: current, error } = await supabase.from("payment_orders").select("*").eq("order_no", orderNo).single()
+    assertSupabaseSuccess(error, "failed to reload alipay admin finance order")
+    if (transaction.trade_status === "TRADE_SUCCESS" || transaction.trade_status === "TRADE_FINISHED") {
+      await completePaidOrder(current as PaymentOrderRow, transaction)
+    } else {
+      const terminalStatus = normalizeAlipayTradeStatusForOrder({
+        tradeStatus: transaction.trade_status,
+        localExpiresAt: row.expiresAt,
+      })
+      if (terminalStatus) {
+        await supabase.from("payment_orders").update({
+          status: terminalStatus,
+          alipay_trade_status: typeof transaction.trade_status === "string" ? transaction.trade_status : terminalStatus.toUpperCase(),
+          alipay_callback_payload: transaction,
+        }).eq("order_no", orderNo).neq("status", "paid")
+      }
+    }
+    return getAdminFinanceOrderDetail(orderNo)
+  }
+  const config = await loadRuntimeWechatPaymentConfig()
+  const transaction = await callWechatPay<Record<string, unknown>>({
+    config,
+    method: "GET",
+    pathWithQuery: `/v3/pay/transactions/out-trade-no/${encodeURIComponent(orderNo)}?mchid=${encodeURIComponent(config.mchId)}`,
+  })
+  const supabase = createSupabaseAdminClient()
+  const { data: current, error } = await supabase.from("payment_orders").select("*").eq("order_no", orderNo).single()
+  assertSupabaseSuccess(error, "failed to reload wechat admin finance order")
+  if (transaction.trade_state === "SUCCESS") {
+    await completePaidOrder(current as PaymentOrderRow, transaction)
+  } else {
+    const terminalStatus = normalizeWechatTradeStateForOrder({
+      tradeState: transaction.trade_state,
+      localExpiresAt: row.expiresAt,
+    })
+    if (terminalStatus) {
+      await supabase.from("payment_orders").update({
+        status: terminalStatus,
+        wechat_trade_state: typeof transaction.trade_state === "string" ? transaction.trade_state : terminalStatus.toUpperCase(),
+        wechat_callback_payload: transaction,
+      }).eq("order_no", orderNo).neq("status", "paid")
+    }
+  }
+  return getAdminFinanceOrderDetail(orderNo)
+}
+
+export async function getAdminFinanceStats(
+  query: { dateFrom?: string; dateTo?: string } = {},
+): Promise<AdminFinanceStatsResponseData> {
+  const now = new Date()
+  const defaultFrom = new Date(now.getTime() - 29 * 86_400_000).toISOString().slice(0, 10)
+  const dateFrom = query.dateFrom?.trim() || defaultFrom
+  const dateTo = query.dateTo?.trim() || now.toISOString().slice(0, 10)
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("payment_orders")
+    .select("status, amount_cents, payment_channel, plan_code, plan_name, created_at, paid_at")
+    .gte("created_at", `${dateFrom}T00:00:00.000Z`)
+    .lte("created_at", `${dateTo}T23:59:59.999Z`)
+  assertSupabaseSuccess(error, "failed to load admin finance stats")
+  const rows = (data ?? []) as Array<{
+    status: PaymentOrderStatus
+    amount_cents: number
+    payment_channel: PaymentChannel
+    plan_code: string
+    plan_name: string
+    created_at: string
+  }>
+  const paidRows = rows.filter((row) => row.status === "paid")
+  const revenueCents = paidRows.reduce((sum, row) => sum + row.amount_cents, 0)
+  const channelMap = new Map<PaymentChannel, { revenueCents: number; paidOrders: number }>()
+  const planMap = new Map<string, { planCode: string; planName: string; revenueCents: number; paidOrders: number }>()
+  const dayMap = new Map<string, { revenueCents: number; paidOrders: number }>()
+
+  for (const row of paidRows) {
+    const channel = row.payment_channel ?? "wechat"
+    const channelStat = channelMap.get(channel) ?? { revenueCents: 0, paidOrders: 0 }
+    channelStat.revenueCents += row.amount_cents
+    channelStat.paidOrders += 1
+    channelMap.set(channel, channelStat)
+
+    const planStat = planMap.get(row.plan_code) ?? {
+      planCode: row.plan_code,
+      planName: row.plan_name,
+      revenueCents: 0,
+      paidOrders: 0,
+    }
+    planStat.revenueCents += row.amount_cents
+    planStat.paidOrders += 1
+    planMap.set(row.plan_code, planStat)
+
+    const day = row.created_at.slice(0, 10)
+    const dayStat = dayMap.get(day) ?? { revenueCents: 0, paidOrders: 0 }
+    dayStat.revenueCents += row.amount_cents
+    dayStat.paidOrders += 1
+    dayMap.set(day, dayStat)
+  }
+
+  return {
+    range: { dateFrom, dateTo },
+    overview: {
+      revenueCents,
+      paidOrders: paidRows.length,
+      pendingOrders: rows.filter((row) => isPendingStatus(row.status)).length,
+      closedOrders: rows.filter((row) => row.status === "closed").length,
+      expiredOrders: rows.filter((row) => row.status === "expired").length,
+      failedOrders: rows.filter((row) => row.status === "failed").length,
+      averageOrderValueCents: paidRows.length ? Math.round(revenueCents / paidRows.length) : 0,
+    },
+    channelBreakdown: Array.from(channelMap.entries()).map(([channel, item]) => ({ channel, ...item })),
+    planBreakdown: Array.from(planMap.values()),
+    dailyTrend: Array.from(dayMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, item]) => ({ date, ...item })),
+  }
 }
 
 export async function handleAlipayPaymentNotify(input: {

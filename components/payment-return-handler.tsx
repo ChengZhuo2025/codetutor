@@ -14,8 +14,6 @@ export function PaymentReturnHandler() {
   useEffect(() => {
     const paymentReturn = searchParams.get("paymentReturn")
     const orderNo = searchParams.get("orderNo")
-    const paymentChannel = searchParams.get("paymentChannel")
-
     if (paymentReturn === "1" && orderNo) {
       void requestData<PaymentOrderResponseData>(`/payment/orders/${orderNo}/sync`, {
         method: "POST",
