@@ -31,3 +31,12 @@ test("admin finance components call finance APIs", () => {
   assert.match(detail, /\/admin\/finance\/orders\/\$\{orderNo\}/)
   assert.match(stats, /\/admin\/finance\/stats/)
 })
+
+test("admin finance stats uses dashboard chart components with empty states", () => {
+  const stats = readFileSync("features/admin-finance/components/admin-finance-stats-page.tsx", "utf8")
+
+  assert.match(stats, /AdminBarChart/)
+  assert.match(stats, /AdminAreaChart/)
+  assert.match(stats, /暂无渠道成交数据/)
+  assert.match(stats, /暂无套餐成交数据/)
+})
