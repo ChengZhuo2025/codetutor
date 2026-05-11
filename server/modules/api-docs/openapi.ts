@@ -4485,6 +4485,25 @@ registry.registerPath({
 
 registry.registerPath({
   method: "post",
+  path: "/api/payment/orders/{orderNo}/continue",
+  operationId: "continuePaymentOrder",
+  tags: ["payment"],
+  summary: "刷新待支付订单支付凭证",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    "200": successResponse(
+      paymentOrderResponseDataSchema,
+      "PaymentOrderContinueResponse",
+      "支付凭证已刷新",
+      successExamples.paymentOrder,
+      "支付凭证已刷新",
+    ),
+    ...commonErrorResponses(["400", "401", "404", "409", "500", "502"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
   path: "/api/payment/orders/{orderNo}/cancel",
   operationId: "cancelPaymentOrder",
   tags: ["payment"],

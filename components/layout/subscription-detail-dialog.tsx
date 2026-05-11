@@ -79,6 +79,7 @@ export function SubscriptionDetailDialog({
   const [loadingPlanCode, setLoadingPlanCode] = useState<PaymentPlanCode | null>(null)
   const [selectedPaymentChannel, setSelectedPaymentChannel] = useState<PaymentChannel>("alipay")
   const [paymentMessage, setPaymentMessage] = useState<string | null>(null)
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
   const currentPlanName = subscriptionData?.current.planName ?? subscription.planName
   const plans = subscriptionData?.plans ?? []
   const currentPlan = plans.find((plan) => plan.code === subscriptionData?.current.planCode)
@@ -164,6 +165,7 @@ export function SubscriptionDetailDialog({
       }
 
       setActiveOrder(order)
+      setPaymentDialogOpen(true)
       setPaymentMessage(`请使用${selectedPaymentChannel === "alipay" ? "支付宝" : "微信"}扫码完成支付，支付后页面会自动同步状态。`)
     } catch (error) {
       setPaymentMessage(getPaymentOrderErrorMessage(error))
@@ -172,7 +174,28 @@ export function SubscriptionDetailDialog({
     }
   }
 
+  function handlePaymentDialogOpenChange(nextOpen: boolean) {
+    setPaymentDialogOpen(nextOpen)
+  }
+
+  function syncActiveOrder() {
+    if (!activeOrder) return
+    void requestData<PaymentOrderResponseData>(`/payment/orders/${activeOrder.orderNo}/sync`, { method: "POST" })
+      .then((order) => {
+        setActiveOrder(order)
+        if (order.status === "paid") {
+          setPaymentMessage("支付成功，订阅权益已开通。")
+          void requestData<SubscriptionMeResponseData>("/subscription/me").then(setSubscriptionData)
+        }
+        if (order.status === "expired") setPaymentMessage("支付二维码已过期，请重新创建订单。")
+        if (order.status === "closed") setPaymentMessage("支付订单已关闭，请重新创建订单。")
+        if (order.status === "failed") setPaymentMessage("支付失败，请重新创建订单。")
+      })
+      .catch(() => setPaymentMessage("支付状态同步失败，请稍后重试。"))
+  }
+
   return (
+    <>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className={cn(DIALOG_GRADIENT_PANEL_CLASS, "max-h-[90vh] max-w-4xl overflow-y-auto rounded-2xl scrollbar-none sm:max-w-[860px]")}>
@@ -195,54 +218,7 @@ export function SubscriptionDetailDialog({
                 {paymentMessage}
               </div>
             ) : null}
-            {activeOrder ? (
-              <div className="grid gap-4 rounded-xl border border-border/70 bg-surface-1/95 p-4 md:grid-cols-[260px_1fr]">
-                <div className="flex min-h-[240px] items-center justify-center rounded-2xl bg-white p-3">
-                  {qrDataUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={qrDataUrl} alt={`${activeOrder.paymentChannel === "alipay" ? "支付宝" : "微信"}支付二维码`} className="h-60 w-60" />
-                  ) : (
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  )}
-                </div>
-                <div className="flex flex-col justify-center gap-3">
-                  <p className="text-lg font-semibold text-foreground">{activeOrder.planName}</p>
-                  <p className="text-3xl font-bold text-foreground">¥{(activeOrder.amountCents / 100).toFixed(0)}</p>
-                  <p className="text-sm text-muted-foreground">
-                    订单号：{activeOrder.orderNo}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    状态：{getPaymentStatusLabel(activeOrder.status)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    支付方式：{activeOrder.paymentChannel === "alipay" ? "支付宝" : "微信"}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        void requestData<PaymentOrderResponseData>(`/payment/orders/${activeOrder.orderNo}/sync`, { method: "POST" })
-                          .then((order) => {
-                            setActiveOrder(order)
-                            if (order.status === "expired") setPaymentMessage("支付二维码已过期，请重新创建订单。")
-                            if (order.status === "closed") setPaymentMessage("支付订单已关闭，请重新创建订单。")
-                            if (order.status === "failed") setPaymentMessage("支付失败，请重新创建订单。")
-                          })
-                          .catch(() => setPaymentMessage("支付状态同步失败，请稍后重试。"))
-                      }}
-                      disabled={TERMINAL_PAYMENT_STATUSES.has(activeOrder.status)}
-                    >
-                      刷新支付状态
-                    </Button>
-                    <Button type="button" variant="ghost" onClick={() => setActiveOrder(null)}>
-                      返回套餐
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-            {!activeOrder ? (
+            {!activeOrder || !paymentDialogOpen ? (
               <div className="rounded-xl border border-border/70 bg-surface-1/95 p-4">
                 <p className="mb-3 text-sm font-medium text-foreground">选择支付方式</p>
                 <div className="grid gap-3 md:grid-cols-2">
@@ -456,5 +432,74 @@ export function SubscriptionDetailDialog({
         </div>
       </DialogContent>
     </Dialog>
+    <Dialog open={paymentDialogOpen} onOpenChange={handlePaymentDialogOpenChange}>
+      <DialogContent className={cn(DIALOG_GRADIENT_PANEL_CLASS, "max-w-[calc(100%-2rem)] overflow-hidden p-0 sm:max-w-[520px]")}>
+        <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <MessageCircle className="h-5 w-5 text-brand" />
+              微信扫码支付
+            </DialogTitle>
+            <DialogDescription>
+              {activeOrder ? `订单 ${activeOrder.orderNo} 正在等待支付。` : "正在准备支付二维码。"}
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+        <div className="px-5 pb-5 pt-4">
+          <div className="grid gap-4 sm:grid-cols-[220px_1fr] sm:items-center">
+            <div className="mx-auto flex h-[220px] w-[220px] items-center justify-center rounded-2xl border border-border/60 bg-white p-3 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.55)]">
+              {qrDataUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={qrDataUrl} alt="微信支付二维码" className="h-full w-full" />
+              ) : (
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              )}
+            </div>
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm text-muted-foreground">套餐</p>
+                <p className="mt-1 text-lg font-semibold text-foreground">{activeOrder?.planName ?? "读取中"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">金额</p>
+                <p className="mt-1 text-3xl font-bold text-foreground">
+                  ¥{activeOrder ? (activeOrder.amountCents / 100).toFixed(activeOrder.amountCents % 100 === 0 ? 0 : 2) : "--"}
+                </p>
+              </div>
+              <p className="break-all text-sm text-muted-foreground">
+                订单号：{activeOrder?.orderNo ?? "--"}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                状态：{activeOrder ? getPaymentStatusLabel(activeOrder.status) : "等待支付"}
+              </p>
+              <p className="text-sm leading-5 text-muted-foreground">
+                请使用微信扫码完成支付，支付后页面会自动同步状态。
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className={USER_PANEL_OUTLINE_BUTTON_CLASS}
+              onClick={() => handlePaymentDialogOpenChange(false)}
+            >
+              返回套餐
+            </Button>
+            {activeOrder ? (
+              <Button
+                type="button"
+                className={USER_BUTTON_PRIMARY_CLASS}
+                disabled={TERMINAL_PAYMENT_STATUSES.has(activeOrder.status)}
+                onClick={syncActiveOrder}
+              >
+                刷新支付状态
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }

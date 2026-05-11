@@ -16,6 +16,7 @@ import type {
   NotificationInAppListResponseData,
   NotificationMutationResponseData,
 } from "@/lib/api/contracts/notifications"
+import type { SubscriptionMeResponseData } from "@/lib/api/contracts/payment"
 import { requestData } from "@/lib/api/client"
 import { PROFILE_UPDATED_EVENT } from "@/lib/profile/events"
 import type { RecentPracticeRound } from "@/features/learning/types"
@@ -25,6 +26,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
 type WorkspaceSidebarDataState = {
   profile: ProfileMeResponseData | null
+  subscription: SubscriptionMeResponseData | null
   recentPracticeRounds: RecentPracticeRound[]
   recentLearningPlans: LearningHistory[]
   notifications: NotificationInAppItem[]
@@ -86,20 +88,30 @@ async function fetchWorkspaceRecentLearningPlans() {
   }
 }
 
+async function fetchWorkspaceSubscription() {
+  try {
+    return await requestData<SubscriptionMeResponseData>("/subscription/me")
+  } catch {
+    return null
+  }
+}
+
 const WorkspaceSidebarDataContext =
   createContext<WorkspaceSidebarDataContextValue | null>(null)
 
 async function fetchWorkspaceSidebarData(): Promise<WorkspaceSidebarDataState> {
   try {
-    const [session, notifications, history] = await Promise.all([
+    const [session, notifications, history, subscription] = await Promise.all([
       requestData<LearningCurrentSessionResponseData>("/learning/current-session"),
       fetchWorkspaceNotifications(),
       fetchWorkspaceRecentLearningPlans(),
+      fetchWorkspaceSubscription(),
     ])
     const deduped = dedupeSidebarNotifications(notifications.items)
 
     return {
       profile: session.profile,
+      subscription,
       recentPracticeRounds: session.recentPracticeRounds,
       recentLearningPlans: history?.items ?? [],
       notifications: deduped,
@@ -111,15 +123,17 @@ async function fetchWorkspaceSidebarData(): Promise<WorkspaceSidebarDataState> {
   }
 
   try {
-    const [profile, notifications, history] = await Promise.all([
+    const [profile, notifications, history, subscription] = await Promise.all([
       requestData<ProfileMeResponseData>("/profile/me"),
       fetchWorkspaceNotifications(),
       fetchWorkspaceRecentLearningPlans(),
+      fetchWorkspaceSubscription(),
     ])
     const deduped = dedupeSidebarNotifications(notifications.items)
 
     return {
       profile,
+      subscription,
       recentPracticeRounds: [],
       recentLearningPlans: history?.items ?? [],
       notifications: deduped,
@@ -129,6 +143,7 @@ async function fetchWorkspaceSidebarData(): Promise<WorkspaceSidebarDataState> {
   } catch {
     return {
       profile: null,
+      subscription: null,
       recentPracticeRounds: [],
       recentLearningPlans: [],
       notifications: [],
@@ -141,6 +156,7 @@ async function fetchWorkspaceSidebarData(): Promise<WorkspaceSidebarDataState> {
 export function WorkspaceSidebarDataProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<WorkspaceSidebarDataState>({
     profile: null,
+    subscription: null,
     recentPracticeRounds: [],
     recentLearningPlans: [],
     notifications: [],
@@ -184,6 +200,7 @@ export function WorkspaceSidebarDataProvider({ children }: { children: ReactNode
       if (!session?.access_token) {
         setState({
           profile: null,
+          subscription: null,
           recentPracticeRounds: [],
           recentLearningPlans: [],
           notifications: [],

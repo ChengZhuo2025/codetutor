@@ -1,5 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 
 import {
   PAYMENT_CHANNEL_OPTIONS,
@@ -56,6 +57,15 @@ test("subscription dialog offers alipay before wechat", () => {
     PAYMENT_CHANNEL_OPTIONS.map((option) => option.channel),
     ["alipay", "wechat"],
   )
+})
+
+test("subscription dialog renders payment qr in a nested top-level dialog", () => {
+  const source = readFileSync(new URL("../components/layout/subscription-detail-dialog.tsx", import.meta.url), "utf8")
+
+  assert.match(source, /paymentDialogOpen/)
+  assert.match(source, /微信扫码支付/)
+  assert.match(source, /Dialog open=\{paymentDialogOpen\}/)
+  assert.doesNotMatch(source, /grid gap-4 rounded-xl border border-border\/70 bg-surface-1\/95 p-4 md:grid-cols-\[260px_1fr\]/)
 })
 
 test("dynamic non-purchasable plans are disabled without relying on hardcoded plan codes", () => {

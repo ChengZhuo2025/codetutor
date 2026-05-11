@@ -16,7 +16,7 @@ test("openapi document covers all registered api operations and special transpor
     ),
   )
 
-  assert.equal(operations.length, 124)
+  assert.equal(operations.length, 125)
 
   assert.ok(paths["/api/auth/login"]?.post)
   assert.ok(paths["/api/profile/me"]?.get)
@@ -85,6 +85,7 @@ test("openapi document covers all registered api operations and special transpor
   assert.ok(paths["/api/payment/orders/{orderNo}"]?.get)
   assert.ok(paths["/api/payment/orders/{orderNo}"]?.delete)
   assert.ok(paths["/api/payment/orders/{orderNo}/sync"]?.post)
+  assert.ok(paths["/api/payment/orders/{orderNo}/continue"]?.post)
   assert.ok(paths["/api/payment/orders/{orderNo}/cancel"]?.post)
   assert.ok(paths["/api/admin/finance/orders"]?.get)
   assert.ok(paths["/api/admin/finance/orders/{orderNo}"]?.get)

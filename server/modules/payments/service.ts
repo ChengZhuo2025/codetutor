@@ -1029,6 +1029,43 @@ export async function createAlipayPrecreateOrder(userId: string, input: { planCo
   return mapOrder(updated as PaymentOrderRow)
 }
 
+async function refreshWechatNativeOrderPrepay(row: PaymentOrderRow) {
+  const [config, plan] = await Promise.all([
+    loadRuntimeWechatPaymentConfig(),
+    loadPlan(row.plan_code),
+  ])
+  const result = await callWechatPay<{ code_url: string }>({
+    config,
+    method: "POST",
+    pathWithQuery: "/v3/pay/transactions/native",
+    body: {
+      appid: config.appId,
+      mchid: config.mchId,
+      description: `CodeTutor ${row.plan_name || plan.name}`,
+      out_trade_no: row.order_no,
+      notify_url: config.notifyUrl,
+      time_expire: row.expires_at,
+      amount: {
+        total: row.amount_cents,
+        currency: row.currency,
+      },
+    },
+  })
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("payment_orders")
+    .update({
+      status: "prepay_created",
+      code_url: result.code_url,
+      wechat_prepay_payload: result,
+    })
+    .eq("id", row.id)
+    .select("*")
+    .single()
+  assertSupabaseSuccess(error, "failed to refresh wechat payment order prepay")
+  return mapOrder(data as PaymentOrderRow)
+}
+
 export async function getPublicSubscriptionPlans(): Promise<SubscriptionPlansResponseData> {
   const supabase = createSupabaseAdminClient()
   const { data, error } = await supabase
@@ -1167,6 +1204,39 @@ export async function getPaymentOrderForUser(userId: string, orderNo: string) {
     .maybeSingle()
   assertSupabaseSuccess(error, "failed to load payment order")
   return data ? mapOrder(data as PaymentOrderRow) : null
+}
+
+export async function continuePaymentOrderForUser(userId: string, orderNo: string) {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("payment_orders")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("order_no", orderNo)
+    .is("user_deleted_at", null)
+    .maybeSingle()
+  assertSupabaseSuccess(error, "failed to load payment order before continue")
+  if (!data) return null
+  const row = data as PaymentOrderRow
+  if (!isPendingStatus(row.status)) {
+    const validationError = new Error("仅待支付订单可以继续支付。")
+    validationError.name = "VALIDATION_FAILED"
+    throw validationError
+  }
+  if (new Date(row.expires_at).getTime() <= Date.now()) {
+    const { data: expired, error: expiredError } = await supabase
+      .from("payment_orders")
+      .update({ status: "expired" })
+      .eq("id", row.id)
+      .select("*")
+      .single()
+    assertSupabaseSuccess(expiredError, "failed to mark expired payment order before continue")
+    return mapOrder(expired as PaymentOrderRow)
+  }
+  if ((row.payment_channel ?? "wechat") === "wechat" && !row.code_url) {
+    return refreshWechatNativeOrderPrepay(row)
+  }
+  return mapOrder(row)
 }
 
 export async function getPaymentOrdersForUser(

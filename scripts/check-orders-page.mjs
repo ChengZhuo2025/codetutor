@@ -25,6 +25,8 @@ test("orders page includes payment actions and history-style shell", () => {
   assert.match(page, /AppShell/)
   assert.match(page, /WorkspaceSidebar/)
   assert.match(page, /\/payment\/orders/)
+  assert.match(page, /DialogContent/)
+  assert.match(page, /\/payment\/orders\/\$\{order\.orderNo\}\/continue/)
   assert.match(list, /继续支付/)
   assert.match(list, /取消订单/)
   assert.match(list, /删除记录/)

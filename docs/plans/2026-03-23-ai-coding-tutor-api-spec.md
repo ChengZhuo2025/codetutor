@@ -1855,6 +1855,7 @@ SSE 事件补充：
 | `GET /api/payment/orders` | 是 | 读取当前用户支付订单列表，支持分页、状态和渠道筛选 |
 | `GET /api/payment/orders/{orderNo}` | 是 | 读取当前用户支付订单 |
 | `POST /api/payment/orders/{orderNo}/sync` | 是 | 按订单渠道主动查单并同步本地订单状态 |
+| `POST /api/payment/orders/{orderNo}/continue` | 是 | 继续支付待支付订单；微信订单缺少 `codeUrl` 时用原订单号重新生成 Native 支付凭证 |
 | `POST /api/payment/orders/{orderNo}/cancel` | 是 | 用户取消未过期待支付订单，订单进入 `closed` |
 | `DELETE /api/payment/orders/{orderNo}` | 是 | 用户软删除 `closed` / `expired` / `failed` 订单；后台和财务统计仍保留 |
 | `POST /api/payment/wechat/notify` | 否 | 微信支付回调通知；验签解密后幂等更新订单和订阅 |
@@ -1877,6 +1878,7 @@ SSE 事件补充：
 - `GET /api/payment/orders` 返回当前用户未软删除订单，按 `created_at desc` 分页，并返回 `summary` 供 `/orders` 状态筛选展示。
 - `GET /api/payment/orders/{orderNo}` 仅允许订单所属用户读取。
 - `POST /api/payment/orders/{orderNo}/sync` 按 `paymentChannel` 分发查单：微信调用商户订单号查单接口，支付宝调用 `alipay.trade.query`。若渠道返回成功支付，复用回调完成逻辑更新订单并开通订阅；若渠道返回关闭/失败或本地订单已超时，则写入本地终态。
+- `POST /api/payment/orders/{orderNo}/continue` 仅允许订单所属用户继续 `created` / `prepay_created` 且未过期待支付订单；微信订单若缺少 `codeUrl`，服务端使用原 `out_trade_no` 重新调用 Native 下单并写回支付凭证。
 - `POST /api/payment/orders/{orderNo}/cancel` 仅允许取消 `created` / `prepay_created` 且未过期订单；过期订单会先进入 `expired`，已支付订单不可取消。
 - `DELETE /api/payment/orders/{orderNo}` 仅允许用户软删除 `closed` / `expired` / `failed` 订单；`paid` 订单不可删除，避免订阅和财务对账缺失。
 - `POST /api/payment/wechat/notify` 不需要用户登录，但必须通过 `Wechatpay-*` 头验签、公钥 ID 校验、APIv3 密钥解密、`appid/mchid/amount/trade_state` 校验；重复回调通过数据库行锁与订单状态判断保持幂等。

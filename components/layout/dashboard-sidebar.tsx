@@ -125,6 +125,17 @@ function getRecentLearningPlanHref(status: LearningHistory["status"]) {
   }
 }
 
+function formatSubscriptionExpiresAt(expiresAt: string | null | undefined) {
+  if (!expiresAt) return "无期限";
+  const date = new Date(expiresAt);
+  if (Number.isNaN(date.getTime())) return "无期限";
+  return new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
 export function DashboardSidebar({
   items,
   widthClass = "w-64",
@@ -138,6 +149,7 @@ export function DashboardSidebar({
   const toast = useAppToast();
   const {
     profile,
+    subscription: subscriptionData,
     recentLearningPlans,
     notifications,
     unreadNotificationCount,
@@ -233,7 +245,15 @@ export function DashboardSidebar({
   };
 
   const resolvedProfile = displayProfile ?? fallbackProfile;
-  const subscription = SUBSCRIPTION_PLACEHOLDER;
+  const subscription = {
+    ...SUBSCRIPTION_PLACEHOLDER,
+    planName: subscriptionData?.current.planName ?? SUBSCRIPTION_PLACEHOLDER.planName,
+    expiresAt: formatSubscriptionExpiresAt(subscriptionData?.current.expiresAt),
+    remainingDays: subscriptionData?.current.remainingDays ?? SUBSCRIPTION_PLACEHOLDER.remainingDays,
+    renewalHint: subscriptionData?.current.expiresAt
+      ? `当前套餐剩余 ${subscriptionData.current.remainingDays} 天。`
+      : SUBSCRIPTION_PLACEHOLDER.renewalHint,
+  };
   const rankTierProgress = getRankTierProgressForScore(resolvedProfile.currentScore);
   const progressPercent = rankTierProgress.percent;
   const visibleRecentPlans = recentLearningPlans.slice(0, 3);

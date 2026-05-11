@@ -183,6 +183,29 @@ export function createPaymentOrderCancelPostHandler(dependencies: {
   }
 }
 
+export function createPaymentOrderContinuePostHandler(dependencies: {
+  getRequestUser: (request: unknown) => Promise<RequestAuthResult>
+  continuePaymentOrderForUser: (userId: string, orderNo: string) => Promise<unknown | null>
+}) {
+  return async function POST(
+    request: unknown,
+    context: { params: Promise<{ orderNo: string }> },
+  ) {
+    try {
+      const auth = await dependencies.getRequestUser(request)
+      if (!auth.ok) {
+        return jsonAuthRequired(auth.message)
+      }
+      const { orderNo } = await context.params
+      const data = await dependencies.continuePaymentOrderForUser(auth.userId, orderNo)
+      if (!data) return jsonError("NOT_FOUND", "支付订单不存在。", 404)
+      return jsonSuccess(data, "支付凭证已刷新")
+    } catch (error) {
+      return mapPaymentError(error)
+    }
+  }
+}
+
 export function createPaymentOrderDeleteHandler(dependencies: {
   getRequestUser: (request: unknown) => Promise<RequestAuthResult>
   softDeletePaymentOrderForUser: (userId: string, orderNo: string) => Promise<unknown | null>

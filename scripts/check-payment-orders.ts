@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 
 import {
   createPaymentOrderCancelPostHandler,
+  createPaymentOrderContinuePostHandler,
   createPaymentOrderDeleteHandler,
   createPaymentOrdersGetHandler,
 } from "../server/modules/payments/route-handler.ts"
@@ -97,6 +98,25 @@ test("payment order cancel returns updated order for owner", async () => {
   assert.equal(res.status, 200)
   const body = await res.json()
   assert.equal(body.data.status, "closed")
+})
+
+test("payment order continue returns refreshed payment credential for owner", async () => {
+  const handler = createPaymentOrderContinuePostHandler({
+    getRequestUser: async () => okUser,
+    continuePaymentOrderForUser: async (userId, orderNo) => ({
+      ...sampleOrder,
+      orderNo,
+      codeUrl: userId === "user-1" ? "weixin://wxpay/bizpayurl?pr=refreshed" : null,
+    }),
+  })
+
+  const res = await handler(
+    new Request("http://localhost/api/payment/orders/CT202605110001/continue", { method: "POST" }),
+    { params: Promise.resolve({ orderNo: "CT202605110001" }) },
+  )
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.data.codeUrl, "weixin://wxpay/bizpayurl?pr=refreshed")
 })
 
 test("payment order delete returns not found for inaccessible order", async () => {

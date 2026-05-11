@@ -2,15 +2,25 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import QRCode from "qrcode"
-import { Loader2, ReceiptText } from "lucide-react"
+import { CheckCircle2, Loader2, MessageCircle, ReceiptText, RefreshCw } from "lucide-react"
 import { AppShell } from "@/components/layout/app-shell"
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { Button } from "@/components/ui/button"
 import { StatePanel } from "@/components/ui/state-panel"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  DIALOG_GRADIENT_PANEL_CLASS,
   USER_BUTTON_PRIMARY_CLASS,
   USER_BUTTON_SECONDARY_CLASS,
+  USER_PANEL_DIVIDER_CLASS,
+  USER_PANEL_OUTLINE_BUTTON_CLASS,
 } from "@/components/ui/surface-styles"
 import { WORKSPACE_ASIDE_WIDTH_CLASS } from "@/constants/workspace-layout"
 import { ROUTES } from "@/constants/routes"
@@ -70,6 +80,7 @@ export function OrdersPage() {
   const [isMutating, setIsMutating] = useState(false)
   const [payingOrder, setPayingOrder] = useState<PaymentOrderResponseData | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const [payDialogOpen, setPayDialogOpen] = useState(false)
 
   const loadOrders = useCallback(async (filter: OrderFilter, page = 1, append = false) => {
     const params = new URLSearchParams({
@@ -131,17 +142,45 @@ export function OrdersPage() {
 
   const reloadFirstPage = async () => loadOrders(currentFilter, 1, false)
 
-  const handleContinuePay = (order: PaymentOrderResponseData) => {
-    if (order.paymentChannel === "alipay" && order.codeUrl?.includes("<form")) {
-      const container = document.createElement("div")
-      container.innerHTML = order.codeUrl
-      document.body.appendChild(container)
-      const form = container.querySelector("form") as HTMLFormElement | null
-      form?.submit()
-      toast.info("正在跳转到支付宝")
-      return
+  const handleContinuePay = async (order: PaymentOrderResponseData) => {
+    setIsMutating(true)
+    try {
+      const next = await requestData<PaymentOrderResponseData>(`/payment/orders/${order.orderNo}/continue`, { method: "POST" })
+      if (next.status !== "created" && next.status !== "prepay_created") {
+        toast.info("订单状态已更新")
+        await reloadFirstPage()
+        return
+      }
+      if (next.paymentChannel === "alipay" && next.codeUrl?.includes("<form")) {
+        const container = document.createElement("div")
+        container.innerHTML = next.codeUrl
+        document.body.appendChild(container)
+        const form = container.querySelector("form") as HTMLFormElement | null
+        form?.submit()
+        toast.info("正在跳转到支付宝")
+        return
+      }
+      if (!next.codeUrl) {
+        toast.error("支付二维码暂未生成，请稍后重试")
+        return
+      }
+      setPayingOrder(next)
+      setPayDialogOpen(true)
+      await reloadFirstPage()
+    } catch (error) {
+      if (order.paymentChannel === "alipay" && order.codeUrl?.includes("<form")) {
+        const container = document.createElement("div")
+        container.innerHTML = order.codeUrl
+        document.body.appendChild(container)
+        const form = container.querySelector("form") as HTMLFormElement | null
+        form?.submit()
+        toast.info("正在跳转到支付宝")
+        return
+      }
+      toast.error(error instanceof Error ? error.message : "继续支付失败")
+    } finally {
+      setIsMutating(false)
     }
-    setPayingOrder(order)
   }
 
   const handleSync = async (order: PaymentOrderResponseData) => {
@@ -154,6 +193,15 @@ export function OrdersPage() {
       toast.error(error instanceof Error ? error.message : "订单状态同步失败")
     } finally {
       setIsMutating(false)
+    }
+  }
+
+  const handlePaymentDialogOpenChange = (open: boolean) => {
+    setPayDialogOpen(open)
+    if (!open) {
+      setPayingOrder(null)
+      setQrDataUrl(null)
+      void reloadFirstPage()
     }
   }
 
@@ -198,18 +246,87 @@ export function OrdersPage() {
   return (
     <AppShell
       workspacePage="history"
-      mobileTitle="订单管理"
+      mobileTitle="订阅记录"
       mobileSubtitle={pageSummary ? `共 ${pageSummary.totalCount} 条订单` : "订阅与支付记录"}
       asideLabel="订单帮助"
       renderSidebar={({ mobile }) => <WorkspaceSidebar activeHref={ROUTES.orders} mobile={mobile} />}
       renderAside={() => <div className="p-5"><OrderSidebarPanels /></div>}
       asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
     >
+      <Dialog open={payDialogOpen} onOpenChange={handlePaymentDialogOpenChange}>
+        <DialogContent className={cn(DIALOG_GRADIENT_PANEL_CLASS, "max-w-[calc(100%-2rem)] overflow-hidden p-0 sm:max-w-[520px]")}>
+          <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <MessageCircle className="h-5 w-5 text-brand" />
+                微信扫码支付
+              </DialogTitle>
+              <DialogDescription>
+                {payingOrder ? `订单 ${payingOrder.orderNo} 正在等待支付。` : "正在准备支付二维码。"}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-5 pb-5 pt-4">
+            <div className="grid gap-4 sm:grid-cols-[220px_1fr] sm:items-center">
+              <div className="mx-auto flex h-[220px] w-[220px] items-center justify-center rounded-2xl border border-border/60 bg-white p-3 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.55)]">
+                {qrDataUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={qrDataUrl} alt="微信支付二维码" className="h-full w-full" />
+                ) : (
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                )}
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-muted-foreground">套餐</p>
+                  <p className="mt-1 text-lg font-semibold text-foreground">{payingOrder?.planName ?? "读取中"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">金额</p>
+                  <p className="mt-1 text-3xl font-bold text-foreground">
+                    ¥{payingOrder ? (payingOrder.amountCents / 100).toFixed(payingOrder.amountCents % 100 === 0 ? 0 : 2) : "--"}
+                  </p>
+                </div>
+                <p className="text-sm leading-5 text-muted-foreground">
+                  请使用微信扫码完成支付，支付后可点击刷新状态确认订阅权益。
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                className={USER_PANEL_OUTLINE_BUTTON_CLASS}
+                onClick={() => handlePaymentDialogOpenChange(false)}
+              >
+                关闭
+              </Button>
+              {payingOrder ? (
+                <Button
+                  type="button"
+                  className={USER_BUTTON_PRIMARY_CLASS}
+                  disabled={isMutating}
+                  onClick={() => handleSync(payingOrder)}
+                >
+                  {isMutating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  刷新状态
+                </Button>
+              ) : null}
+            </div>
+            {payingOrder?.status === "paid" ? (
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
+                <CheckCircle2 className="h-4 w-4" />
+                支付成功，订阅权益已开通。
+              </div>
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
       <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="shrink-0 border-b border-border/50 bg-surface-1/80 px-4 py-5 backdrop-blur-sm sm:px-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">订单管理</h1>
+              <h1 className="text-2xl font-bold tracking-tight">订阅记录</h1>
               <p className="mt-1 text-sm leading-5 text-muted-foreground">
                 查看订阅订单，继续支付待支付订单，或清理已取消记录。
               </p>
@@ -220,30 +337,6 @@ export function OrdersPage() {
 
         <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none">
           <div className="space-y-5 px-4 py-6 sm:px-6 sm:py-8">
-            {payingOrder ? (
-              <StatePanel
-                status="success"
-                title="继续支付"
-                description={`订单 ${payingOrder.orderNo} 正在等待支付。`}
-                compact
-                extra={
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                    <div className="flex h-40 w-40 items-center justify-center rounded-2xl bg-white p-2">
-                      {qrDataUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={qrDataUrl} alt="支付二维码" className="h-36 w-36" />
-                      ) : (
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                      )}
-                    </div>
-                    <Button type="button" variant="outline" onClick={() => setPayingOrder(null)}>
-                      收起支付码
-                    </Button>
-                  </div>
-                }
-              />
-            ) : null}
-
             {pageSummary ? (
               <div className="flex flex-wrap gap-2">
                 {ORDER_FILTERS.map((filter) => {
