@@ -48,14 +48,13 @@ export function buildWechatPayAuthorizationHeader(input: WechatPayAuthorizationI
   signer.end()
   const signature = signer.sign(input.privateKeyPem).toString("base64")
 
-  return [
-    "WECHATPAY2-SHA256-RSA2048",
+  return `WECHATPAY2-SHA256-RSA2048 ${[
     `mchid="${input.mchid}"`,
     `nonce_str="${nonce}"`,
     `signature="${signature}"`,
     `timestamp="${timestamp}"`,
     `serial_no="${input.serialNo}"`,
-  ].join(" ")
+  ].join(",")}`
 }
 
 export function buildWechatPayResponseMessage(input: {

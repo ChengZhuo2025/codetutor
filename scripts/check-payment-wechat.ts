@@ -66,6 +66,10 @@ test("buildWechatPayAuthorizationHeader signs canonical request fields", () => {
   })
 
   assert.match(header, /^WECHATPAY2-SHA256-RSA2048 /)
+  assert.match(
+    header,
+    /^WECHATPAY2-SHA256-RSA2048 mchid="1900000001",nonce_str="nonce-123",signature="[^"]+",timestamp="1714051200",serial_no="SERIAL123"$/,
+  )
   assert.match(header, /mchid="1900000001"/)
   assert.match(header, /serial_no="SERIAL123"/)
   assert.match(header, /nonce_str="nonce-123"/)
