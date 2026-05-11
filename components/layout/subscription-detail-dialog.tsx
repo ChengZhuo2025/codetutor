@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode, type SVGProps } from "react"
 import Link from "next/link"
 import QRCode from "qrcode"
-import { CalendarClock, Check, CheckCircle2, Crown, FileText, Loader2, Lock, MessageCircle } from "lucide-react"
+import { CalendarClock, Check, Crown, FileText, Loader2, Lock, MessageCircle } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -44,18 +44,52 @@ type SubscriptionDetailDialogProps = {
 
 const TERMINAL_PAYMENT_STATUSES = new Set<PaymentOrderStatus>(["paid", "closed", "expired", "failed"])
 
+function AlipayBrandIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <text
+        x="20"
+        y="27"
+        fill="currentColor"
+        fontFamily="MiSans, PingFang SC, Microsoft YaHei, sans-serif"
+        fontSize="25"
+        fontWeight="800"
+        textAnchor="middle"
+      >
+        支
+      </text>
+    </svg>
+  )
+}
+
+function WechatPayBrandIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M17.3 11.25c-5.12 0-9.28 3.48-9.28 7.78 0 2.49 1.4 4.71 3.57 6.14l-.8 2.42 2.95-1.4c1.1.4 2.3.62 3.56.62.36 0 .72-.02 1.07-.06a7.62 7.62 0 0 1-.5-2.72c0-4.35 3.8-7.9 8.62-8.2-1.35-2.7-4.86-4.58-9.19-4.58Z"
+        fill="currentColor"
+      />
+      <path
+        d="M27 17.2c-4.3 0-7.8 2.94-7.8 6.57s3.5 6.57 7.8 6.57c.98 0 1.92-.15 2.78-.43l2.48 1.17-.65-2.02c1.9-1.2 3.16-3.1 3.16-5.29 0-3.63-3.48-6.57-7.77-6.57Z"
+        fill="currentColor"
+      />
+      <path d="M14.44 17.64a1.04 1.04 0 1 1-2.08 0 1.04 1.04 0 0 1 2.08 0ZM22.2 17.64a1.04 1.04 0 1 1-2.08 0 1.04 1.04 0 0 1 2.08 0ZM25.02 23.12a.85.85 0 1 1-1.7 0 .85.85 0 0 1 1.7 0ZM31.47 23.12a.85.85 0 1 1-1.7 0 .85.85 0 0 1 1.7 0Z" fill="#07C160" />
+    </svg>
+  )
+}
+
 function PaymentChannelIcon({ channel }: { channel: PaymentChannel }) {
   if (channel === "alipay") {
     return (
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1677ff] text-base font-semibold text-white shadow-sm">
-        支
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1677ff] text-white shadow-sm">
+        <AlipayBrandIcon className="h-7 w-7" aria-hidden="true" />
       </span>
     )
   }
 
   return (
     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#07c160] text-white shadow-sm">
-      <MessageCircle className="h-5 w-5" aria-hidden="true" />
+      <WechatPayBrandIcon className="h-7 w-7" aria-hidden="true" />
     </span>
   )
 }
@@ -245,14 +279,14 @@ export function SubscriptionDetailDialog({
                         </span>
                         <span
                           className={cn(
-                            "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors",
+                            "flex h-6 w-6 shrink-0 items-center justify-center transition-colors",
                             selected
-                              ? "border-brand bg-brand text-white"
-                              : "border-border bg-surface-1 text-transparent group-hover:border-brand/40",
+                              ? "text-brand"
+                              : "rounded-full border border-border bg-surface-1 text-transparent group-hover:border-brand/40",
                           )}
                           aria-hidden="true"
                         >
-                          <CheckCircle2 className="h-4 w-4" />
+                          {selected ? <Check className="h-5 w-5 stroke-[3]" /> : null}
                         </span>
                       </button>
                     )
