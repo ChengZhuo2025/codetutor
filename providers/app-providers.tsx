@@ -3,11 +3,13 @@
 import {
   createContext,
   useContext,
+  Suspense,
 } from "react"
 import { ThemeProvider } from "next-themes"
 import { Analytics } from "@vercel/analytics/next"
 import { AppConfirmProvider } from "@/components/app-feedback/app-confirm-provider"
 import { AppToastProvider } from "@/components/app-feedback/app-toast-provider"
+import { PaymentReturnHandler } from "@/components/payment-return-handler"
 import { APP_EVENT_CHANNEL } from "@/constants/events"
 import type { AppEventName } from "@/constants/events"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
@@ -84,6 +86,9 @@ export function AppProviders({ children }: AppProvidersProps) {
       <AppEventContext.Provider value={{ trackEvent }}>
         <AppToastProvider>
           <AppConfirmProvider>
+            <Suspense fallback={null}>
+              <PaymentReturnHandler />
+            </Suspense>
             {children}
             <Analytics />
           </AppConfirmProvider>

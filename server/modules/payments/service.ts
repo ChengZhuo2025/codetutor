@@ -545,6 +545,54 @@ async function callWechatPay<T>(input: {
   return json
 }
 
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  }
+  return text.replace(/[&<>"']/g, (char) => map[char] ?? char)
+}
+
+async function callAlipayPagePay(input: {
+  config: RuntimeAlipayPaymentConfig
+  orderNo: string
+  totalAmount: string
+  subject: string
+  returnUrl: string
+}): Promise<string> {
+  const params = buildAlipaySignedParams({
+    privateKeyPem: input.config.appPrivateKeyPem,
+    params: {
+      app_id: input.config.appId,
+      method: "alipay.trade.page.pay",
+      charset: "utf-8",
+      sign_type: input.config.signType,
+      timestamp: new Date(Date.now() + 8 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 19),
+      version: "1.0",
+      notify_url: input.config.notifyUrl,
+      return_url: input.returnUrl,
+      biz_content: JSON.stringify({
+        out_trade_no: input.orderNo,
+        product_code: "FAST_INSTANT_TRADE_PAY",
+        total_amount: input.totalAmount,
+        subject: input.subject,
+      }),
+    },
+  })
+
+  const formFields = Object.entries(params)
+    .map(([key, value]) => `<input type="hidden" name="${escapeHtml(key)}" value="${escapeHtml(value)}" />`)
+    .join("\n    ")
+
+  return `<form id="alipaysubmit" name="alipaysubmit" action="${ALIPAY_GATEWAY_URL}" method="POST">
+    ${formFields}
+  </form>
+  <script>document.forms["alipaysubmit"].submit();</script>`
+}
+
 async function callAlipay<T>(input: {
   config: RuntimeAlipayPaymentConfig
   method: string
@@ -557,7 +605,7 @@ async function callAlipay<T>(input: {
       method: input.method,
       charset: "utf-8",
       sign_type: input.config.signType,
-      timestamp: new Date().toISOString().replace("T", " ").slice(0, 19),
+      timestamp: new Date(Date.now() + 8 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 19),
       version: "1.0",
       notify_url: input.config.notifyUrl,
       biz_content: JSON.stringify(input.bizContent),
@@ -592,9 +640,12 @@ async function callAlipay<T>(input: {
     throw error
   }
   const responseKey = `${input.method.replaceAll(".", "_")}_response`
-  const data = json[responseKey] as Record<string, unknown> | undefined
+  const data = (json[responseKey] ?? json.error_response) as Record<string, unknown> | undefined
   if (!data || data.code !== "10000") {
-    const error = new Error(typeof data?.sub_msg === "string" ? data.sub_msg : "支付宝支付请求失败。")
+    const subMsg = typeof data?.sub_msg === "string" ? data.sub_msg : ""
+    const subCode = typeof data?.sub_code === "string" ? data.sub_code : ""
+    const detail = [subCode, subMsg].filter(Boolean).join(": ")
+    const error = new Error(detail || "支付宝支付请求失败。")
     error.name = "PAYMENT_PROVIDER_ERROR"
     throw error
   }
@@ -834,23 +885,21 @@ export async function createAlipayPrecreateOrder(userId: string, input: { planCo
     .single()
   assertSupabaseSuccess(insertError, "failed to create alipay payment order")
 
-  const result = await callAlipay<{ qr_code: string }>({
+  const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/alipay/return`
+  const formHtml = await callAlipayPagePay({
     config,
-    method: "alipay.trade.precreate",
-    bizContent: {
-      out_trade_no: orderNo,
-      total_amount: amountCentsToAlipayAmount(plan.price_cents),
-      subject: `CodeTutor ${plan.name}`,
-      timeout_express: "30m",
-    },
+    orderNo,
+    totalAmount: amountCentsToAlipayAmount(plan.price_cents),
+    subject: `CodeTutor ${plan.name}`,
+    returnUrl,
   })
 
   const { data: updated, error } = await supabase
     .from("payment_orders")
     .update({
       status: "prepay_created",
-      code_url: result.qr_code,
-      alipay_prepay_payload: result,
+      code_url: formHtml,
+      alipay_prepay_payload: { method: "alipay.trade.page.pay", return_url: returnUrl },
     })
     .eq("id", (created as PaymentOrderRow).id)
     .select("*")

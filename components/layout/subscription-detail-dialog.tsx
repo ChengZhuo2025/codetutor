@@ -100,6 +100,9 @@ export function SubscriptionDetailDialog({
       setQrDataUrl(null)
       return
     }
+    if (activeOrder.codeUrl.includes("<form")) {
+      return
+    }
     void QRCode.toDataURL(activeOrder.codeUrl, {
       width: 240,
       margin: 1,
@@ -147,6 +150,19 @@ export function SubscriptionDetailDialog({
         method: "POST",
         body: JSON.stringify({ planCode }),
       })
+
+      if (selectedPaymentChannel === "alipay" && order.codeUrl?.includes("<form")) {
+        const container = document.createElement("div")
+        container.innerHTML = order.codeUrl
+        document.body.appendChild(container)
+        const form = container.querySelector("form") as HTMLFormElement
+        if (form) {
+          form.submit()
+          setPaymentMessage("正在跳转到支付宝...")
+        }
+        return
+      }
+
       setActiveOrder(order)
       setPaymentMessage(`请使用${selectedPaymentChannel === "alipay" ? "支付宝" : "微信"}扫码完成支付，支付后页面会自动同步状态。`)
     } catch (error) {
