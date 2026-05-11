@@ -21,6 +21,7 @@ type LearnChatRestartDialogProps = {
   onOpenChange: (open: boolean) => void
   restartSubmitting: boolean
   onConfirm: () => void
+  panelClassName?: string
 }
 
 export function LearnChatRestartDialog({
@@ -28,12 +29,13 @@ export function LearnChatRestartDialog({
   onOpenChange,
   restartSubmitting,
   onConfirm,
+  panelClassName,
 }: LearnChatRestartDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          DIALOG_PANEL_CLASS,
+          panelClassName ?? DIALOG_PANEL_CLASS,
           "max-h-[75vh] overflow-y-auto rounded-2xl p-0 sm:max-w-[400px]",
         )}
       >

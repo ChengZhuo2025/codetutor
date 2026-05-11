@@ -1722,7 +1722,7 @@ export const adminFinanceOrderListItemSchema = z
     orderNo: z.string(),
     userId: z.string(),
     userNickname: z.string().nullable(),
-    userEmail: z.string().nullable(),
+    userPhone: z.string().nullable(),
     planCode: paymentPlanCodeSchema,
     planName: z.string(),
     amountCents: z.number().int().positive(),

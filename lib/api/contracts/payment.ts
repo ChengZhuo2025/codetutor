@@ -97,7 +97,7 @@ export type AdminFinanceOrderListItem = {
   orderNo: string
   userId: string
   userNickname: string | null
-  userEmail: string | null
+  userPhone: string | null
   planCode: PaymentPlanCode
   planName: string
   amountCents: number

@@ -146,7 +146,7 @@ export function AdminFinanceOrdersPage() {
                   </td>
                   <td className="px-4 py-3">
                     <p>{item.userNickname ?? "未命名用户"}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{item.userEmail ?? item.userId}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{item.userPhone ?? item.userId}</p>
                   </td>
                   <td className="px-4 py-3 font-medium">{formatMoney(item.amountCents)}</td>
                   <td className="px-4 py-3"><OrderStatusBadge status={item.status} /></td>

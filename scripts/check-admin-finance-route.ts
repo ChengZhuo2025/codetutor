@@ -20,7 +20,7 @@ const order = {
   orderNo: "CT202605110001",
   userId: "user-1",
   userNickname: "Bao",
-  userEmail: "bao@example.com",
+  userPhone: "13800000000",
   planCode: "personal_monthly",
   planName: "个人版",
   amountCents: 3900,
@@ -171,11 +171,12 @@ test("admin finance stats returns aggregate payload", async () => {
   assert.equal(body.data.overview.revenueCents, 3900)
 })
 
-test("admin finance service reads user profile contact_email, not a missing email column", async () => {
+test("admin finance service reads user profile phone for required contact display", async () => {
   const serviceSource = await import("node:fs").then(({ readFileSync }) =>
     readFileSync("server/modules/payments/service.ts", "utf8"),
   )
 
-  assert.match(serviceSource, /select\("user_id,nickname,contact_email"\)/)
-  assert.doesNotMatch(serviceSource, /select\("user_id,nickname,email"\)/)
+  assert.match(serviceSource, /userPhone/)
+  assert.match(serviceSource, /select\("user_id,nickname,phone"\)/)
+  assert.doesNotMatch(serviceSource, /select\("user_id,nickname,contact_email"\)/)
 })

@@ -28,7 +28,11 @@ test("admin finance components call finance APIs", () => {
   const stats = readFileSync("features/admin-finance/components/admin-finance-stats-page.tsx", "utf8")
 
   assert.match(list, /\/admin\/finance\/orders/)
+  assert.match(list, /userPhone/)
+  assert.doesNotMatch(list, /userEmail/)
   assert.match(detail, /\/admin\/finance\/orders\/\$\{orderNo\}/)
+  assert.match(detail, /userPhone/)
+  assert.doesNotMatch(detail, /userEmail/)
   assert.match(stats, /\/admin\/finance\/stats/)
 })
 

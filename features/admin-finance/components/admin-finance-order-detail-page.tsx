@@ -93,7 +93,7 @@ export function AdminFinanceOrderDetailPage({ orderNo }: { orderNo: string }) {
           <dl className="mt-5 grid gap-4 sm:grid-cols-2">
             <div><dt className="text-sm text-muted-foreground">订单金额</dt><dd className="mt-1 text-2xl font-semibold">{formatMoney(order.amountCents)}</dd></div>
             <div><dt className="text-sm text-muted-foreground">Provider 交易号</dt><dd className="mt-1 break-all text-sm">{order.providerTradeNo ?? "暂无"}</dd></div>
-            <div><dt className="text-sm text-muted-foreground">用户</dt><dd className="mt-1 text-sm">{order.userNickname ?? "未命名用户"} · {order.userEmail ?? order.userId}</dd></div>
+            <div><dt className="text-sm text-muted-foreground">用户</dt><dd className="mt-1 text-sm">{order.userNickname ?? "未命名用户"} · {order.userPhone ?? order.userId}</dd></div>
             <div><dt className="text-sm text-muted-foreground">套餐编码</dt><dd className="mt-1 text-sm">{order.planCode}</dd></div>
             <div><dt className="text-sm text-muted-foreground">创建时间</dt><dd className="mt-1 text-sm">{formatDateTime(order.createdAt)}</dd></div>
             <div><dt className="text-sm text-muted-foreground">支付时间</dt><dd className="mt-1 text-sm">{formatDateTime(order.paidAt)}</dd></div>

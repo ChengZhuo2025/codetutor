@@ -43,6 +43,7 @@ import type {
 import { apiFetch, requestData } from "@/lib/api/client"
 import { buildStructuredLearningMessageContent } from "@/lib/learning/structured-message"
 import { useAppEventTracker } from "@/providers/app-providers"
+import { DIALOG_PANEL_CLASS } from "@/components/ui/surface-styles"
 
 const STREAMING_BATCH_SIZE = 16
 const STREAMING_BATCH_DELAY_MS = 70
@@ -1080,6 +1081,7 @@ export function LearnChat({
         open={restartDialogOpen}
         onOpenChange={setRestartDialogOpen}
         restartSubmitting={restartSubmitting}
+        panelClassName={DIALOG_PANEL_CLASS}
         onConfirm={() => {
           void confirmRestartConversation()
         }}
@@ -1091,6 +1093,7 @@ export function LearnChat({
         links={linkChoiceLinks}
         onGeneratePlan={handleGeneratePlanFromLinkChoice}
         onContinueChat={handleContinueChatFromLinkChoice}
+        panelClassName={DIALOG_PANEL_CLASS}
       />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

@@ -1849,7 +1849,7 @@ const successExamples = {
         orderNo: "CT20260426100000ABC123",
         userId: "user-123",
         userNickname: "Bao",
-        userEmail: "bao@example.com",
+        userPhone: "13800000000",
         planCode: "personal_monthly",
         planName: "个人版",
         amountCents: 3900,

@@ -22,6 +22,7 @@ type LearnChatLinkChoiceDialogProps = {
   links: string[]
   onGeneratePlan: () => void
   onContinueChat: () => Promise<void> | void
+  panelClassName?: string
 }
 
 export function LearnChatLinkChoiceDialog({
@@ -30,12 +31,13 @@ export function LearnChatLinkChoiceDialog({
   links,
   onGeneratePlan,
   onContinueChat,
+  panelClassName,
 }: LearnChatLinkChoiceDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          DIALOG_PANEL_CLASS,
+          panelClassName ?? DIALOG_PANEL_CLASS,
           "max-h-[75vh] overflow-y-auto rounded-2xl p-0 sm:max-w-[520px]",
         )}
       >

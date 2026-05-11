@@ -29,7 +29,7 @@ export function getDashboardNavItems(activeHref: string): DashboardNavItem[] {
     },
     {
       icon: ReceiptText,
-      label: "订单管理",
+      label: "订阅记录",
       href: ROUTES.orders,
       active: activeHref === ROUTES.orders,
     },
