@@ -42,6 +42,18 @@ type LegalAcceptanceRecord = {
   userAgent: string
 }
 
+type OAuthDialogState = {
+  provider: AuthOAuthProvider
+  url: string
+} | null
+
+type OAuthCompletedMessage = {
+  type: "codetutor.oauth.completed"
+  provider?: AuthOAuthProvider
+  redirectTo?: string
+  onboardingCompleted?: boolean
+}
+
 async function clearBrowserAuthSession() {
   const supabase = createSupabaseBrowserClient()
   await supabase.auth.signOut({ scope: "local" }).catch(() => undefined)
@@ -61,6 +73,7 @@ export function LoginPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [oauthAvailability, setOauthAvailability] = useState<OAuthProviderAvailability | null>(null)
   const [oauthPendingProvider, setOauthPendingProvider] = useState<AuthOAuthProvider | null>(null)
+  const [oauthDialog, setOauthDialog] = useState<OAuthDialogState>(null)
   const [agreedToLegal, setAgreedToLegal] = useState(false)
   const [legalAcceptedAt, setLegalAcceptedAt] = useState<string | null>(null)
 
@@ -110,6 +123,33 @@ export function LoginPage() {
     douyin: false,
   }
 
+  useEffect(() => {
+    function handleOAuthMessage(event: MessageEvent<OAuthCompletedMessage>) {
+      if (event.origin !== window.location.origin) {
+        return
+      }
+
+      if (event.data?.type !== "codetutor.oauth.completed" || !event.data.redirectTo) {
+        return
+      }
+
+      setOauthDialog(null)
+      setOauthPendingProvider(null)
+
+      trackEvent(APP_EVENTS.loginSubmit, {
+        mode,
+        loginType: event.data.provider ?? oauthDialog?.provider ?? "douyin",
+        onboardingCompleted: Boolean(event.data.onboardingCompleted),
+        legalAcceptedAt,
+      })
+
+      router.replace(event.data.redirectTo)
+    }
+
+    window.addEventListener("message", handleOAuthMessage)
+    return () => window.removeEventListener("message", handleOAuthMessage)
+  }, [legalAcceptedAt, mode, oauthDialog?.provider, router, trackEvent])
+
   const handleOAuthSubmit = async (provider: AuthOAuthProvider) => {
     if (!agreedToLegal) {
       setErrorMessage("请先阅读并勾选同意《用户协议》和《隐私政策》。")
@@ -129,6 +169,8 @@ export function LoginPage() {
     setErrorMessage(null)
     setOauthPendingProvider(provider)
 
+    let openedOAuthDialog = false
+
     try {
       const supabase = createSupabaseBrowserClient()
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -143,7 +185,11 @@ export function LoginPage() {
       }
 
       if (data.url) {
-        window.location.assign(data.url)
+        setOauthDialog({
+          provider,
+          url: data.url,
+        })
+        openedOAuthDialog = true
         return
       }
 
@@ -151,7 +197,9 @@ export function LoginPage() {
     } catch (error) {
       toast.error("扫码登录失败", toFriendlyAuthError(error, "oauth"))
     } finally {
-      setOauthPendingProvider(null)
+      if (!openedOAuthDialog) {
+        setOauthPendingProvider(null)
+      }
     }
   }
   const [isPending, startSubmitting] = useTransition()
@@ -334,6 +382,7 @@ export function LoginPage() {
         errorMessage={errorMessage}
         oauthAvailability={oauthAvailability}
         activeOAuthProvider={oauthPendingProvider}
+        oauthDialog={oauthDialog}
         agreedToLegal={agreedToLegal}
         onModeToggle={() => {
           setErrorMessage(null)
@@ -347,6 +396,14 @@ export function LoginPage() {
         onSendCode={sendCode}
         onSubmit={handlePhoneSubmit}
         onOAuthSubmit={handleOAuthSubmit}
+        onOAuthDialogOpenChange={(open) => {
+          if (open) {
+            return
+          }
+
+          setOauthDialog(null)
+          setOauthPendingProvider(null)
+        }}
         onAgreementChange={(checked) => {
           setAgreedToLegal(checked)
           setErrorMessage(null)

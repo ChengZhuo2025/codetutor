@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowRight, Phone } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, ExternalLink, Loader2, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -35,6 +36,10 @@ type LoginFormProps = {
   errorMessage: string | null;
   oauthAvailability: OAuthProviderAvailability | null;
   activeOAuthProvider: AuthOAuthProvider | null;
+  oauthDialog: {
+    provider: AuthOAuthProvider;
+    url: string;
+  } | null;
   agreedToLegal: boolean;
   onModeToggle: () => void;
   onPhoneChange: (value: string) => void;
@@ -42,6 +47,7 @@ type LoginFormProps = {
   onSendCode: () => void;
   onSubmit: () => void;
   onOAuthSubmit: (provider: AuthOAuthProvider) => void;
+  onOAuthDialogOpenChange: (open: boolean) => void;
   onAgreementChange: (checked: boolean) => void;
 };
 
@@ -204,6 +210,85 @@ function AgreementDialogTrigger({
   );
 }
 
+type OAuthScanDialogProps = {
+  dialog: LoginFormProps["oauthDialog"];
+  onOpenChange: (open: boolean) => void;
+};
+
+function OAuthScanDialog({ dialog, onOpenChange }: OAuthScanDialogProps) {
+  const [loadedFrameUrl, setLoadedFrameUrl] = useState<string | null>(null);
+  const meta = dialog ? getOAuthProviderMeta(dialog.provider) : null;
+  const Icon = meta?.icon;
+  const isFrameLoading = Boolean(dialog?.url && loadedFrameUrl !== dialog.url);
+
+  return (
+    <Dialog open={Boolean(dialog)} onOpenChange={onOpenChange}>
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[520px]">
+        <div className="border-b border-border/70 bg-surface-2/80 px-5 py-4">
+          <DialogHeader className="pr-8 text-left">
+            <div className="flex items-center gap-3">
+              {Icon ? (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border/70 bg-background">
+                  <Icon className="h-5 w-5" />
+                </div>
+              ) : null}
+              <div className="min-w-0">
+                <DialogTitle className="text-base">
+                  {meta ? `${meta.label}登录` : "扫码登录"}
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-xs leading-5">
+                  在弹窗内完成授权，成功后会自动回到学习流程。
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
+
+        <div className="relative bg-background">
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-24 bg-[radial-gradient(circle_at_top,oklch(0.68_0.16_180/0.12),transparent_62%)]" />
+          <div className="relative z-10 p-4">
+            <div className="relative h-[560px] max-h-[72vh] min-h-[420px] overflow-hidden rounded-xl border border-border/70 bg-white shadow-inner dark:bg-background">
+              {dialog ? (
+                <iframe
+                  title={meta ? `${meta.label}授权登录` : "扫码授权登录"}
+                  key={dialog.url}
+                  src={dialog.url}
+                  className="h-full w-full border-0 bg-white"
+                  referrerPolicy="origin"
+                  allow="clipboard-read; clipboard-write"
+                  onLoad={() => setLoadedFrameUrl(dialog.url)}
+                />
+              ) : null}
+              {isFrameLoading ? (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/80">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 border-t border-border/70 bg-surface-2/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs leading-5 text-muted-foreground">
+            若二维码区域无法加载，可能是授权方限制嵌入显示。
+          </p>
+          {dialog ? (
+            <a
+              href={dialog.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-border/70 bg-background px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-brand/40 hover:text-brand"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              新窗口打开
+            </a>
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function LoginForm({
   mode,
   phone,
@@ -215,6 +300,7 @@ export function LoginForm({
   errorMessage,
   oauthAvailability,
   activeOAuthProvider,
+  oauthDialog,
   agreedToLegal,
   onModeToggle,
   onPhoneChange,
@@ -222,6 +308,7 @@ export function LoginForm({
   onSendCode,
   onSubmit,
   onOAuthSubmit,
+  onOAuthDialogOpenChange,
   onAgreementChange,
 }: LoginFormProps) {
   const isValidPhone = isValidChinaMainlandPhone(phone);
@@ -517,13 +604,15 @@ export function LoginForm({
                         : "border-border/50 bg-background/65 text-muted-foreground",
                     )}
                   >
-                    {isActive ? "跳转中" : badgeLabel}
+                    {isActive ? "打开中" : badgeLabel}
                   </span>
                 </div>
               </button>
             );
           })}
         </div>
+
+        <OAuthScanDialog dialog={oauthDialog} onOpenChange={onOAuthDialogOpenChange} />
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {mode === "login" ? "还没有账号？" : "已有账号？"}

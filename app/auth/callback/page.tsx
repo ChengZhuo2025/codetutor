@@ -21,6 +21,43 @@ function withAuthorization(accessToken: string | null | undefined) {
   }
 }
 
+function getHashSessionTokens() {
+  if (typeof window === "undefined" || !window.location.hash) {
+    return null
+  }
+
+  const hashParams = new URLSearchParams(window.location.hash.slice(1))
+  const accessToken = hashParams.get("access_token")
+  const refreshToken = hashParams.get("refresh_token")
+
+  if (!accessToken) {
+    return null
+  }
+
+  return {
+    accessToken,
+    refreshToken,
+  }
+}
+
+function notifyParentAuthCompleted(data: AuthLoginResponseData, provider: string) {
+  if (typeof window === "undefined" || window.parent === window) {
+    return false
+  }
+
+  window.parent.postMessage(
+    {
+      type: "codetutor.oauth.completed",
+      provider,
+      redirectTo: data.redirectTo,
+      onboardingCompleted: data.onboardingCompleted,
+    },
+    window.location.origin,
+  )
+
+  return true
+}
+
 function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -40,14 +77,7 @@ function AuthCallbackContent() {
         return
       }
 
-      const code = searchParams.get("code")
       const providerParam = searchParams.get("provider")
-
-      if (!code) {
-        setStatus("error")
-        setMessage("缺少 OAuth 回调 code，无法完成登录。")
-        return
-      }
 
       if (!isOAuthProvider(providerParam)) {
         setStatus("error")
@@ -60,19 +90,58 @@ function AuthCallbackContent() {
 
       try {
         const supabase = createSupabaseBrowserClient()
-        const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code)
+        const code = searchParams.get("code")
+        let accessToken: string | null | undefined
 
-        if (error) {
-          throw error
+        if (code) {
+          const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code)
+
+          if (error) {
+            throw error
+          }
+
+          accessToken = exchangeData.session?.access_token
+        } else {
+          const hashTokens = getHashSessionTokens()
+
+          if (!hashTokens) {
+            setStatus("error")
+            setMessage("缺少 OAuth 回调 code 或 access_token，无法完成登录。")
+            return
+          }
+
+          if (hashTokens.refreshToken) {
+            const { data: sessionData, error } = await supabase.auth.setSession({
+              access_token: hashTokens.accessToken,
+              refresh_token: hashTokens.refreshToken,
+            })
+
+            if (error) {
+              throw error
+            }
+
+            accessToken = sessionData.session?.access_token
+          } else {
+            const {
+              data: { session },
+            } = await supabase.auth.getSession()
+
+            accessToken = session?.access_token ?? hashTokens.accessToken
+          }
         }
 
         const data = await requestData<AuthLoginResponseData>("/auth/login", {
           method: "POST",
-          headers: withAuthorization(exchangeData.session?.access_token),
+          headers: withAuthorization(accessToken),
           body: JSON.stringify({
             loginType: provider,
           }),
         })
+
+        if (!cancelled && notifyParentAuthCompleted(data, provider)) {
+          setMessage("登录成功，正在返回主页面。")
+          return
+        }
 
         if (!cancelled) {
           router.replace(data.redirectTo)
