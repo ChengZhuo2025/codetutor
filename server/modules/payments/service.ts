@@ -587,7 +587,7 @@ async function callAlipayPagePay(input: {
     .map(([key, value]) => `<input type="hidden" name="${escapeHtml(key)}" value="${escapeHtml(value)}" />`)
     .join("\n    ")
 
-  return `<form id="alipaysubmit" name="alipaysubmit" action="${ALIPAY_GATEWAY_URL}" method="POST">
+  return `<form id="alipaysubmit" name="alipaysubmit" action="${ALIPAY_GATEWAY_URL}?charset=utf-8" method="POST">
     ${formFields}
   </form>
   <script>document.forms["alipaysubmit"].submit();</script>`
