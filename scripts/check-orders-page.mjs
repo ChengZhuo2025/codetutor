@@ -31,6 +31,7 @@ test("orders page includes payment actions and history-style shell", () => {
   assert.match(page, /\/payment\/orders\/\$\{order\.orderNo\}\/continue/)
   assert.match(page, /订单状态同步失败/)
   assert.match(page, /订阅套餐/)
+  assert.match(page, /打开套餐订阅与续费/)
   assert.match(page, /EMPTY_SUBSCRIPTION_SNAPSHOT/)
   assert.match(list, /继续支付/)
   assert.match(list, /取消订单/)

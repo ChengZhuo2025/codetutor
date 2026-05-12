@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import QRCode from "qrcode"
-import { CheckCircle2, Loader2, MessageCircle, ReceiptText, RefreshCw } from "lucide-react"
+import { CheckCircle2, Crown, Loader2, MessageCircle, RefreshCw } from "lucide-react"
 import { AppShell } from "@/components/layout/app-shell"
 import { SubscriptionDetailDialog } from "@/components/layout/subscription-detail-dialog"
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar"
@@ -346,7 +346,16 @@ export function OrdersPage() {
                 查看订阅订单，继续支付待支付订单，或清理已取消记录。
               </p>
             </div>
-            <ReceiptText className="hidden h-6 w-6 text-brand lg:block" />
+            <SubscriptionDetailDialog subscription={EMPTY_SUBSCRIPTION_SNAPSHOT}>
+              <Button
+                type="button"
+                className={cn("w-full sm:w-auto", USER_BUTTON_PRIMARY_CLASS)}
+                aria-label="打开套餐订阅与续费"
+              >
+                <Crown className="h-4 w-4" />
+                订阅套餐
+              </Button>
+            </SubscriptionDetailDialog>
           </div>
         </div>
 
