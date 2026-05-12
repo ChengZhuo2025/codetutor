@@ -11,6 +11,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  PRIVACY_POLICY_CONTENT,
+  USER_AGREEMENT_CONTENT,
+  withLegalMeta,
+} from "@/features/legal/data/legal-content"
 import { marketingTools } from "@/features/marketing/data/marketing-content"
 import type { MarketingTool } from "@/features/marketing/types"
 import { AboutDialog } from "./about-dialog"
@@ -32,6 +37,12 @@ type ComingSoonDialogProps = {
   description: string
 }
 
+type LegalDialogProps = {
+  triggerLabel: string
+  title: string
+  content: string
+}
+
 function ComingSoonDialog({ triggerLabel, title, description }: ComingSoonDialogProps) {
   return (
     <Dialog>
@@ -44,6 +55,28 @@ function ComingSoonDialog({ triggerLabel, title, description }: ComingSoonDialog
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription className="leading-6">{description}</DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function LegalDialog({ triggerLabel, title, content }: LegalDialogProps) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button className="cursor-pointer transition-colors hover:text-foreground">
+          {triggerLabel}
+        </button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription asChild>
+            <div className="max-h-[65vh] overflow-y-auto whitespace-pre-line pr-1 text-sm leading-6 text-muted-foreground">
+              {content}
+            </div>
+          </DialogDescription>
         </DialogHeader>
       </DialogContent>
     </Dialog>
@@ -106,15 +139,15 @@ export function LandingFooter() {
                 triggerLabel="关于我们"
                 triggerClassName="cursor-pointer transition-colors hover:text-foreground"
               />
-              <ComingSoonDialog
+              <LegalDialog
                 triggerLabel="隐私政策"
                 title="隐私政策"
-                description="隐私政策页面正在整理中，当前可通过联系我们入口咨询数据使用和隐私相关问题。"
+                content={withLegalMeta(PRIVACY_POLICY_CONTENT)}
               />
-              <ComingSoonDialog
-                triggerLabel="使用条款"
-                title="使用条款"
-                description="使用条款页面正在整理中，正式上线前会同步提供完整协议内容。"
+              <LegalDialog
+                triggerLabel="用户协议"
+                title="用户协议"
+                content={withLegalMeta(USER_AGREEMENT_CONTENT)}
               />
               <ContactDialog triggerClassName="cursor-pointer transition-colors hover:text-foreground" />
               <ComingSoonDialog
