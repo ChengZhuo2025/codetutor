@@ -52,6 +52,12 @@ assert.match(
 
 assert.match(
   panelSource,
+  /sticky top-4/,
+  "material plan loading card should stay visible within the dialog scroll viewport",
+)
+
+assert.match(
+  panelSource,
   /aria-busy=\{isGeneratingPlan\}/,
   "material plan panel should expose busy state for the loading overlay",
 )
