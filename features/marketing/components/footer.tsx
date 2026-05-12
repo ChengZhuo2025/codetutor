@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { HelpCenterDialog } from "@/components/layout/help-center-dialog"
 import {
   PRIVACY_POLICY_CONTENT,
   USER_AGREEMENT_CONTENT,
@@ -31,34 +32,10 @@ const featuredFooterTools = marketingTools.filter(
     Boolean(tool.featuredInFooter && tool.downloadUrl && tool.logoSrc)
 )
 
-type ComingSoonDialogProps = {
-  triggerLabel: string
-  title: string
-  description: string
-}
-
 type LegalDialogProps = {
   triggerLabel: string
   title: string
   content: string
-}
-
-function ComingSoonDialog({ triggerLabel, title, description }: ComingSoonDialogProps) {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <button className="cursor-pointer transition-colors hover:text-foreground">
-          {triggerLabel}
-        </button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription className="leading-6">{description}</DialogDescription>
-        </DialogHeader>
-      </DialogContent>
-    </Dialog>
-  )
 }
 
 function LegalDialog({ triggerLabel, title, content }: LegalDialogProps) {
@@ -150,11 +127,7 @@ export function LandingFooter() {
                 content={withLegalMeta(USER_AGREEMENT_CONTENT)}
               />
               <ContactDialog triggerClassName="cursor-pointer transition-colors hover:text-foreground" />
-              <ComingSoonDialog
-                triggerLabel="帮助中心"
-                title="帮助中心"
-                description="帮助中心内容正在建设中，你可以先通过联系我们获取人工支持。"
-              />
+              <HelpCenterDialog />
             </div>
             <div className="text-xs text-muted-foreground text-center md:text-right space-y-0.5">
               <p>© {APP_COPYRIGHT_YEAR} {APP_NAME}. All rights reserved.</p>
