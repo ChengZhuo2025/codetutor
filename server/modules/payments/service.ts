@@ -795,6 +795,12 @@ async function callAlipay<T>(input: {
   return data as T
 }
 
+function isAlipayTradeNotExistError(error: unknown) {
+  return error instanceof Error
+    && error.name === "PAYMENT_PROVIDER_ERROR"
+    && (error.message.includes("ACQ.TRADE_NOT_EXIST") || error.message.includes("交易不存在"))
+}
+
 export async function getWechatPaymentSettings() {
   return presentPaymentSettings(await loadPaymentSettingsRow())
 }
@@ -1432,11 +1438,35 @@ export async function syncPaymentOrderForUser(userId: string, orderNo: string) {
   if (row.status === "paid") return mapOrder(row)
   if ((row.payment_channel) === "alipay") {
     const config = await loadRuntimeAlipayPaymentConfig()
-    const transaction = await callAlipay<Record<string, unknown>>({
-      config,
-      method: "alipay.trade.query",
-      bizContent: { out_trade_no: orderNo },
-    })
+    let transaction: Record<string, unknown>
+    try {
+      transaction = await callAlipay<Record<string, unknown>>({
+        config,
+        method: "alipay.trade.query",
+        bizContent: { out_trade_no: orderNo },
+      })
+    } catch (error) {
+      if (!isAlipayTradeNotExistError(error)) {
+        throw error
+      }
+      const { data: updated, error: updateError } = await supabase
+        .from("payment_orders")
+        .update({
+          status: "failed",
+          alipay_trade_status: "ACQ.TRADE_NOT_EXIST",
+          alipay_callback_payload: {
+            sub_code: "ACQ.TRADE_NOT_EXIST",
+            sub_msg: error instanceof Error ? error.message : "交易不存在",
+            synced_at: new Date().toISOString(),
+          },
+        })
+        .eq("id", row.id)
+        .neq("status", "paid")
+        .select("*")
+        .single()
+      assertSupabaseSuccess(updateError, "failed to mark missing alipay payment order")
+      return mapOrder(updated as PaymentOrderRow)
+    }
     if (transaction.trade_status === "TRADE_SUCCESS" || transaction.trade_status === "TRADE_FINISHED") {
       return mapOrder(await completePaidOrder(row, transaction))
     }

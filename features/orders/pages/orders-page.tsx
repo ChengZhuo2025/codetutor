@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import QRCode from "qrcode"
 import { CheckCircle2, Loader2, MessageCircle, ReceiptText, RefreshCw } from "lucide-react"
 import { AppShell } from "@/components/layout/app-shell"
+import { SubscriptionDetailDialog } from "@/components/layout/subscription-detail-dialog"
 import { WorkspaceSidebar } from "@/components/layout/workspace-sidebar"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { Button } from "@/components/ui/button"
@@ -32,10 +33,23 @@ import type {
   PaymentOrderStatus,
 } from "@/lib/api/contracts/payment"
 import type { ApiRequestState } from "@/types/api"
+import type { SubscriptionSnapshot } from "@/types/profile"
 import { OrderList } from "@/features/orders/components/order-list"
 import { OrderSidebarPanels } from "@/features/orders/components/order-sidebar-panels"
 
 const ORDER_PAGE_SIZE = 10
+
+const EMPTY_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {
+  planName: "免费版",
+  planPriceLabel: "¥0",
+  billingCycleLabel: "按需升级",
+  expiresAt: "无期限",
+  remainingDays: 0,
+  quotaLabel: "选择套餐后立即开通订阅权益",
+  renewalHint: "你可以选择适合当前学习节奏的套餐。",
+  primaryActionLabel: "订阅套餐",
+  secondaryActionLabel: "查看套餐",
+}
 
 type OrderFilter = "all" | "pending" | PaymentOrderStatus
 
@@ -191,6 +205,7 @@ export function OrdersPage() {
       await reloadFirstPage()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "订单状态同步失败")
+      await reloadFirstPage()
     } finally {
       setIsMutating(false)
     }
@@ -374,6 +389,13 @@ export function OrdersPage() {
                 isLoadingMore={isLoadingMore}
                 emptyTitle={emptyCopy.title}
                 emptyDescription={emptyCopy.description}
+                emptyAction={
+                  <SubscriptionDetailDialog subscription={EMPTY_SUBSCRIPTION_SNAPSHOT}>
+                    <Button type="button" className={USER_BUTTON_PRIMARY_CLASS}>
+                      订阅套餐
+                    </Button>
+                  </SubscriptionDetailDialog>
+                }
                 onContinuePay={handleContinuePay}
                 onSync={handleSync}
                 onCancel={handleCancel}

@@ -1,5 +1,6 @@
 "use client"
 
+import type { ReactNode } from "react"
 import { CreditCard, Loader2, RefreshCw, Trash2, XCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,6 +23,7 @@ type OrderListProps = {
   isLoadingMore: boolean
   emptyTitle: string
   emptyDescription: string
+  emptyAction?: ReactNode
   onContinuePay: (order: PaymentOrderResponseData) => void
   onSync: (order: PaymentOrderResponseData) => void
   onCancel: (order: PaymentOrderResponseData) => void
@@ -73,6 +75,7 @@ export function OrderList({
   isLoadingMore,
   emptyTitle,
   emptyDescription,
+  emptyAction,
   onContinuePay,
   onSync,
   onCancel,
@@ -80,7 +83,14 @@ export function OrderList({
   onLoadMore,
 }: OrderListProps) {
   if (items.length === 0) {
-    return <StatePanel status="empty" title={emptyTitle} description={emptyDescription} />
+    return (
+      <StatePanel
+        status="empty"
+        title={emptyTitle}
+        description={emptyDescription}
+        extra={emptyAction}
+      />
+    )
   }
 
   return (
