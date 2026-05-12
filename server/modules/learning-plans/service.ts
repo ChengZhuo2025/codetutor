@@ -224,6 +224,76 @@ function readIntegerOrNull(value: unknown) {
   return typeof value === "number" && Number.isInteger(value) ? value : null
 }
 
+function readStringArrayFromRecord(record: Record<string, unknown>, key: string) {
+  const value = record[key]
+  return Array.isArray(value)
+    ? value.map((item) => typeof item === "string" ? item.trim() : "").filter(Boolean)
+    : []
+}
+
+function buildLegacyTaskLessonBrief(task: Record<string, unknown>) {
+  const objective = readStringOrNull(task.objective)
+  const steps = readStringArrayFromRecord(task, "practiceSteps")
+  const acceptanceCriteria = readStringOrNull(task.acceptanceCriteria)
+  const basis = [
+    objective ? `本关先围绕“${objective}”建立操作方法。` : "本关先把教程内容转成一个可执行的小练习。",
+    steps.length > 0 ? `开始前先看清要做的动作：${steps.slice(0, 3).join("、")}。` : "开始前先确认目标、操作入口和成功标准。",
+    acceptanceCriteria ? `做的过程中用“${acceptanceCriteria}”判断是否达标。` : "做的过程中不要只看感觉，要用可提交证据判断是否达标。",
+  ].join("")
+
+  return basis.slice(0, 4000)
+}
+
+function buildLegacyTaskSubmissionGuide(task: Record<string, unknown>) {
+  const acceptanceCriteria = readStringOrNull(task.acceptanceCriteria)
+  return acceptanceCriteria
+    ? `提交截图、代码片段、终端输出或文字说明，证明你已经达到：${acceptanceCriteria}`
+    : defaultSubmissionGuide()
+}
+
+function buildLegacyTaskCheckpoints(task: Record<string, unknown>) {
+  const steps = readStringArrayFromRecord(task, "practiceSteps")
+  const acceptanceCriteria = readStringOrNull(task.acceptanceCriteria)
+  const checkpoints = [
+    steps[0] ? `能说明或展示已完成操作：${steps[0]}` : "提交内容能说明本关已完成实际操作。",
+    acceptanceCriteria ? `提交证据能对应验收标准：${acceptanceCriteria}` : "提交内容包含截图、代码、终端输出或文字说明等可检查证据。",
+    steps[1] ? `能说明或展示已完成操作：${steps[1]}` : null,
+  ].filter((item): item is string => Boolean(item))
+
+  return [...new Set(checkpoints)].slice(0, 8)
+}
+
+function upgradeLegacyPlannerOutput(raw: unknown) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return raw
+  }
+
+  const output = raw as Record<string, unknown>
+  if (!Array.isArray(output.tasks)) {
+    return raw
+  }
+
+  return {
+    ...output,
+    tasks: output.tasks.map((task) => {
+      if (!task || typeof task !== "object" || Array.isArray(task)) {
+        return task
+      }
+
+      const record = task as Record<string, unknown>
+      return {
+        ...record,
+        lessonBrief: readStringOrNull(record.lessonBrief) ?? buildLegacyTaskLessonBrief(record),
+        submissionGuide: readStringOrNull(record.submissionGuide) ?? buildLegacyTaskSubmissionGuide(record),
+        checkpoints:
+          readStringArrayFromRecord(record, "checkpoints").length > 0
+            ? readStringArrayFromRecord(record, "checkpoints")
+            : buildLegacyTaskCheckpoints(record),
+      }
+    }),
+  }
+}
+
 function aggregateCoverageFromSourceSnapshots(
   snapshots: Array<{ metadata: Record<string, unknown> }>,
 ): MaterialEvidenceCoverage | null {
@@ -280,7 +350,7 @@ export function readDraftQualitySignalsFromRunSourceSnapshot(value: unknown): Pi
   }
 }
 
-function tryParsePlannerOutput(content: string): PlannerOutput {
+export function parsePlannerOutputContent(content: string): PlannerOutput {
   const jsonStr = extractJsonObjectString(content)
   let raw: unknown
   try {
@@ -288,9 +358,9 @@ function tryParsePlannerOutput(content: string): PlannerOutput {
   } catch {
     throw aiResponseInvalid("模型返回内容不是合法 JSON。")
   }
-  const parsed = plannerOutputSchema.safeParse(raw)
+  const parsed = plannerOutputSchema.safeParse(upgradeLegacyPlannerOutput(raw))
   if (!parsed.success) {
-    throw aiResponseInvalid(parsed.error.message)
+    throw aiResponseInvalid("学习计划生成结果缺少必要字段或结构不完整，请稍后重试。")
   }
   const biz = validatePlannerBusinessRules(parsed.data)
   if (biz) {
@@ -302,10 +372,10 @@ function tryParsePlannerOutput(content: string): PlannerOutput {
 async function invokePlannerWithRetry(userContent: string): Promise<PlannerOutput> {
   const first = await invokePlannerModel(userContent)
   try {
-    return tryParsePlannerOutput(first.content)
+    return parsePlannerOutputContent(first.content)
   } catch {
     const second = await invokePlannerModel(userContent)
-    return tryParsePlannerOutput(second.content)
+    return parsePlannerOutputContent(second.content)
   }
 }
 

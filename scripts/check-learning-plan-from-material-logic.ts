@@ -13,6 +13,7 @@ import { douyinMaterialSourceAdapter } from "../server/modules/learning-material
 import { resolveMaterialPipelineModelsFromSnapshots } from "../server/modules/learning-materials/providers.ts"
 import { resolveMaterialSourceAdapter } from "../server/modules/learning-materials/source-resolver.ts"
 import { extractJsonObjectString } from "../server/modules/learning-plans/json-parse.ts"
+import { parsePlannerOutputContent } from "../server/modules/learning-plans/service.ts"
 import { assertDraftQualityReadyForConfirm } from "../server/modules/learning-plans/activation.ts"
 import { analyzePlannerSourceStructure } from "../server/modules/learning-plans/source-structure.ts"
 import { runPlanQualityGate } from "../server/modules/learning-plans/quality-gate.ts"
@@ -341,6 +342,76 @@ test("plannerOutputSchema rejects tasks without teaching content", () => {
   }
 
   assert.throws(() => plannerOutputSchema.parse(raw))
+})
+
+test("parsePlannerOutputContent upgrades legacy planner tasks with teaching fields", () => {
+  const parsed = parsePlannerOutputContent(JSON.stringify({
+    title: "Claude Code 入门计划",
+    goal: "按教程完成基础操作练习",
+    tasks: [
+      {
+        taskNo: 1,
+        title: "启动 Claude Code",
+        objective: "打开终端并启动 Claude Code，确认能进入交互界面。",
+        practiceSteps: ["打开项目目录", "运行 claude", "观察是否进入交互界面"],
+        acceptanceCriteria: "终端进入 Claude Code 交互界面，并能发送第一条请求。",
+        sourceRefs: ["u1-raw_text-0-0"],
+        masteryPoints: ["知道如何启动 Claude Code", "知道启动成功的终端表现"],
+        cautions: [{ text: "不要在错误目录启动后直接继续", isTrap: true }],
+      },
+      {
+        taskNo: 2,
+        title: "拆分第一个任务",
+        objective: "把一个需求拆成 Claude Code 可以执行的小步骤。",
+        practiceSteps: ["写出目标", "让 Claude 读取相关文件", "确认下一步动作"],
+        acceptanceCriteria: "能得到一份可执行的小步骤清单。",
+        sourceRefs: ["u1-raw_text-0-0"],
+        masteryPoints: ["知道如何描述任务目标", "知道如何让 AI 先读取上下文"],
+        cautions: [{ text: "不要一上来要求它直接大改代码" }],
+      },
+      {
+        taskNo: 3,
+        title: "提交练习结果",
+        objective: "整理终端输出和操作过程，交给 AI 教练检查。",
+        practiceSteps: ["复制关键输出", "说明你执行了哪些命令", "描述是否遇到报错"],
+        acceptanceCriteria: "提交内容能证明练习过程和结果。",
+        sourceRefs: ["u1-raw_text-0-1"],
+        masteryPoints: ["知道要提交哪些证据", "知道如何描述练习结果"],
+        cautions: [{ text: "不要只回复完成了而没有证据" }],
+      },
+    ],
+  }))
+
+  assert.equal(parsed.tasks[0]?.lessonBrief.includes("打开终端并启动 Claude Code"), true)
+  assert.match(parsed.tasks[0]?.submissionGuide ?? "", /截图|终端输出|文字说明/)
+  assert.ok((parsed.tasks[0]?.checkpoints.length ?? 0) >= 2)
+})
+
+test("parsePlannerOutputContent hides raw schema json for unrecoverable planner output", () => {
+  assert.throws(
+    () => parsePlannerOutputContent(JSON.stringify({
+      title: "坏计划",
+      goal: "验证错误展示",
+      tasks: [
+        {
+          taskNo: 1,
+          title: "只有一关",
+          objective: "缺少足够任务",
+          practiceSteps: ["做一下", "看一下"],
+          acceptanceCriteria: "完成",
+          sourceRefs: ["c1"],
+          masteryPoints: ["知道目标", "知道结果"],
+          cautions: [{ text: "不要跳过" }],
+        },
+      ],
+    })),
+    (error: unknown) => {
+      assert.ok(error instanceof Error)
+      assert.match(error.message, /学习计划生成结果缺少必要字段或结构不完整/)
+      assert.doesNotMatch(error.message, /invalid_type|\"path\"|lessonBrief/)
+      return true
+    },
+  )
 })
 
 test("parsePlanDraftPatchBody preserves mastery points and cautions", () => {

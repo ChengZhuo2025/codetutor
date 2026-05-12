@@ -16,7 +16,7 @@ Repeat the same steps for later migrations, keeping a new sequential file under 
 
 ## Current sequence
 
-As of the current MVP snapshot (after adding Alipay scan payment), the migration sequence continues through **037**:
+As of the current MVP snapshot (after payment RLS optimization), the migration sequence continues through **042**:
 
 1. `001_init.sql` — 基础 schema 初始化
 2. `002_fix_update_updated_at_search_path.sql` — 修复 updated_at 触发器
@@ -55,7 +55,11 @@ As of the current MVP snapshot (after adding Alipay scan payment), the migration
 35. `035_harden_payment_order_completion.sql` — **支付完成幂等硬化**（新增带行锁的 `complete_paid_payment_order` RPC，确保回调与主动查单并发时同一订单只开通一次订阅权益）
 36. `036_extend_subscription_plan_management.sql` — **订阅套餐运营化管理**（扩展套餐展示字段、可购买/推荐/排序/归档能力，并初始化免费版、个人版、专业版三档数据）
 37. `037_add_alipay_scan_payment.sql` — **支付宝扫码支付**（扩展支付配置、订单渠道、支付宝交易字段和回调事件索引；扩展支付完成 RPC 以支持微信/支付宝共用订阅开通）
+38. `038_extend_payment_order_management.sql` — **订单管理扩展**（新增用户取消、用户端软删除和财务查询索引）
+39. `039_finance_hardening.sql` — **财务与支付完成硬化**（放宽归档套餐支付完成开通条件，新增财务统计和用户订单汇总 RPC）
+40. `040_fix_security_definer_search_path.sql` — **RPC search_path 安全修复**（将支付/财务 `SECURITY DEFINER` RPC 固定为 `search_path = ''`，消除 Supabase Security Advisor 警示）
+41. `041_optimize_payment_rls_auth_uid.sql` — **支付 RLS 初始值优化**（将 `auth.uid()` 读取包装成标量子查询，减少 per-row 重复求值）
 
-**最新状态**：迁移已达 **037**。`site_contact_settings` + `qr-codes` bucket 实现了企业联系信息与真实二维码图片管理；`payment_settings`、`subscription_plans`、`payment_orders`、`user_subscriptions`、`payment_webhook_events` 支持微信 Native 与支付宝扫码支付闭环；`subscription_plans` 已支持后台自定义展示、上下架、可购买、推荐与软归档；`complete_paid_payment_order` RPC 负责支付完成的原子化与幂等权益开通。**下一次新增迁移请从 `038_*.sql` 开始。**
+**最新状态**：迁移已达 **041**。`site_contact_settings` + `qr-codes` bucket 实现了企业联系信息与真实二维码图片管理；`payment_settings`、`subscription_plans`、`payment_orders`、`user_subscriptions`、`payment_webhook_events` 支持微信 Native 与支付宝扫码支付闭环；`subscription_plans` 已支持后台自定义展示、上下架、可购买、推荐与软归档；`complete_paid_payment_order` RPC 负责支付完成的原子化与幂等权益开通；支付/财务 `SECURITY DEFINER` RPC 已固定空 `search_path`，支付相关 RLS policy 已按 `auth.uid()` 标量子查询做性能优化。**下一次新增迁移请从 `042_*.sql` 开始。**
 
 **仍需人工确认**：如果目标 Supabase 项目尚未创建 `qr-codes` bucket，请在 Supabase Dashboard → Storage 创建名为 `qr-codes` 的 **PUBLIC** bucket（允许匿名读取），否则企业联系方式二维码上传会失败。

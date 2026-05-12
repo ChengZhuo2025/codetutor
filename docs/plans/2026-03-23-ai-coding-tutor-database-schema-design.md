@@ -53,7 +53,7 @@
 - `027_material_plan_mastery_and_cautions.sql`
 - `028_add_ai_model_profile_fields.sql`
 - `029_create_site_contact_settings.sql` (新增企业联系方式配置表，支持管理后台编辑，供营销联系对话框动态加载)
-- `034_create_payment_subscription_tables.sql` (新增微信 Native 支付配置、订阅套餐、支付订单、用户订阅与支付回调事件表；`035_harden_payment_order_completion.sql` 新增支付完成幂等 RPC；`037_add_alipay_scan_payment.sql` 扩展支付宝扫码支付配置与订单渠道字段；`038_extend_payment_order_management.sql` 增加订单取消、用户端软删除与财务查询索引；`030`-`033` 为联系方式二维码与 RLS 修正迁移)
+- `034_create_payment_subscription_tables.sql` (新增微信 Native 支付配置、订阅套餐、支付订单、用户订阅与支付回调事件表；`035_harden_payment_order_completion.sql` 新增支付完成幂等 RPC；`037_add_alipay_scan_payment.sql` 扩展支付宝扫码支付配置与订单渠道字段；`038_extend_payment_order_management.sql` 增加订单取消、用户端软删除与财务查询索引；`039_finance_hardening.sql` 增加财务统计和用户订单汇总 RPC；`040_fix_security_definer_search_path.sql` 修复支付/财务 `SECURITY DEFINER` RPC 的 `search_path` 安全警示；`030`-`033` 为联系方式二维码与 RLS 修正迁移)
 
 当前数据库中已落地的核心业务表包括：
 
@@ -1501,6 +1501,10 @@ MVP 阶段建议谨慎使用软删除：
 `037_add_alipay_scan_payment.sql` 同时扩展 `complete_paid_payment_order`，使微信回调、支付宝异步通知和前端主动查单共用同一个带行锁的订阅开通路径。
 
 `038_extend_payment_order_management.sql` 增加 `payment_orders.user_deleted_at`、`cancelled_at`、`cancelled_by_user_id`、`cancel_reason`，并补充按创建时间、支付时间、渠道/状态、套餐和用户可见订单查询的索引。用户端软删除仅隐藏 `/orders` 列表，不影响后台财务、统计、回调幂等与订阅审计。
+
+`039_finance_hardening.sql` 增加 `finance_stats_daily(date_from, date_to)` 与 `user_payment_summary(user_id)` RPC，把后台财务统计和用户订单状态汇总下沉到数据库聚合；同时调整 `complete_paid_payment_order`，允许已归档但仍被历史订单引用的套餐完成支付后的权益开通。
+
+`040_fix_security_definer_search_path.sql` 将 `complete_paid_payment_order`、`finance_stats_daily`、`user_payment_summary` 的函数级 `search_path` 固定为空字符串，配合函数体内的 `public.*` schema-qualified 引用，消除 Supabase Security Advisor 的 `Function Search Path Mutable` 警示。
 
 `036_extend_subscription_plan_management.sql` 扩展 `subscription_plans` 的运营字段：
 
