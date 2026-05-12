@@ -164,8 +164,6 @@ export function LoginPage() {
       return
     }
 
-    const providerForSupabase = provider === "wechat" ? WECHAT_PROVIDER : DOUYIN_PROVIDER
-
     setErrorMessage(null)
     setOauthPendingProvider(provider)
 
@@ -173,10 +171,13 @@ export function LoginPage() {
 
     try {
       const supabase = createSupabaseBrowserClient()
+      const redirectTo = `${window.location.origin}${ROUTES.authCallback}?provider=${provider}`
+      const oauthProvider = provider === "wechat" ? WECHAT_PROVIDER : DOUYIN_PROVIDER
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: providerForSupabase,
+        provider: oauthProvider,
         options: {
-          redirectTo: `${window.location.origin}${ROUTES.authCallback}?provider=${provider}`,
+          redirectTo,
+          skipBrowserRedirect: true,
         },
       })
 
@@ -184,16 +185,28 @@ export function LoginPage() {
         throw error
       }
 
-      if (data.url) {
-        setOauthDialog({
-          provider,
-          url: data.url,
-        })
-        openedOAuthDialog = true
+      if (!data.url) {
+        throw new Error(`${provider} oauth url missing`)
+      }
+
+      // 弹出窗口而非页面跳转
+      const popup = window.open(
+        data.url,
+        "oauth_popup",
+        "width=600,height=700,scrollbars=yes,resizable=yes",
+      )
+
+      if (!popup || popup.closed) {
+        // 弹窗被浏览器拦截，降级为直接跳转
+        window.location.href = data.url
         return
       }
 
-      throw new Error(`${provider} oauth url missing`)
+      setOauthDialog({
+        provider,
+        url: data.url,
+      })
+      openedOAuthDialog = true
     } catch (error) {
       toast.error("扫码登录失败", toFriendlyAuthError(error, "oauth"))
     } finally {
@@ -202,6 +215,7 @@ export function LoginPage() {
       }
     }
   }
+
   const [isPending, startSubmitting] = useTransition()
 
   useEffect(() => {

@@ -160,6 +160,7 @@ export type LearningInteractionType =
   | "task_review"
   | "completion_feedback"
   | "path_guidance"
+  | "concept_qa"
 
 const textEncoder = new TextEncoder()
 
@@ -194,6 +195,10 @@ function resolveInteractionType(
     return "path_guidance"
   }
 
+  if (/(什么是|怎么理解|如何理解|解释一下|概念是|是什么意思|有什么作用|是做什么的|有什么区别|区别是什么|和.*的区别|对比.*和|干什么用的|干嘛的|有什么用)/i.test(content)) {
+    return "concept_qa"
+  }
+
   return "teaching"
 }
 
@@ -215,7 +220,9 @@ function buildAssistantPresentation(
           ? "下一步建议"
           : interactionType === "completion_feedback"
             ? "完成反馈"
-            : "AI 教练引导"
+            : interactionType === "concept_qa"
+              ? "概念解答"
+              : "AI 教练引导"
 
   const kind = interactionType === "completion_feedback" ? "task_feedback" : "coach"
 
@@ -258,16 +265,13 @@ function buildSystemPrompt(
   },
 ) {
   return [
+    // 🎯 角色身份
     input.agent.system_prompt_template,
     input.agent.developer_prompt_template ?? "",
-    "你服务于 AI 编程学习教练产品，回答必须中文、直接、具体。",
-    "不要虚构用户已经完成的结果，不要脱离当前关卡目标扩展过多。",
-    "优先给当前一步、验证方式和下一步，而不是泛泛而谈。",
-    "系统里的“第 N 关”只指数据库中的真实关卡；在当前关卡内部继续推进多个练习时，只能称为“下一步 / 下一项练习 / 下一个技巧”，严禁自行发明“第4关 / 第5关 / 下一关”等新编号。",
-    "除非当前交互类型是 completion_feedback，或者你明确确认用户已满足当前关卡完成标准，否则不要建议“进入下一关”，也不要生成“第 N 关已完成”这类表述。",
-    "当前回复只能围绕本关目标、摘要和完成标准里明确出现的能力点展开，禁止引入不在本关范围内的新技巧编号、命令清单或额外课程结构。",
-    "除非用户明确要求，否则不要输出 JSON。",
+    "你是用户的私人编程教练，既是导师也是答疑伙伴。",
+    "你服务于 AI 编程学习教练产品，回答必须使用中文，语气直接、具体、简洁。",
     "",
+    // 📋 当前学习上下文（所有决策的依据）
     "# 当前学习上下文",
     `工具：${input.tool.name} (${input.tool.code})`,
     `学习模式：${input.path.selection_mode}`,
@@ -279,6 +283,17 @@ function buildSystemPrompt(
     `完成标准：${input.step.completion_criteria ?? input.step.goal}`,
     `任务状态：${input.task.status}`,
     `本次交互类型：${input.interactionType}`,
+    "",
+    // ⚡ 行为准则
+    "# 行为准则",
+    "",
+    "常规教学：围绕当前关卡目标、摘要和完成标准组织回复，优先给出当前一步、验证方式和下一步计划。不要空泛铺垫，不要虚构用户已经完成的结果。",
+    "",
+    "概念问答：如果用户主动询问技术概念、术语解释或与编程相关的扩展知识（如“什么是字段映射”“如何优化提示词”），应直接以问答形式清晰解答，不必拘泥于关卡范围。",
+    "",
+    "关卡编号规则：系统里的“第 N 关”只指数据库中记录的真实关卡。在当前关卡内部继续推进多项练习时，只能称为“下一步 / 下一项练习 / 下一个技巧”，严禁自行发明“第4关 / 第5关 / 下一关”等新编号。除非当前交互类型是 completion_feedback，或者你已明确确认用户满足当前关卡完成标准，否则不要建议“进入下一关”，也不要生成“第 N 关已完成”这类表述。",
+    "",
+    "输出规范：除非用户明确要求，否则不要输出 JSON。",
     "",
     ...buildLearningOutputFormatGuide(input.interactionType),
     "",

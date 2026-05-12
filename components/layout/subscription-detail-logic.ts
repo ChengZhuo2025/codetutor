@@ -79,3 +79,8 @@ export const PAYMENT_CHANNEL_OPTIONS: PaymentChannelOption[] = [
     description: "微信扫码支付",
   },
 ]
+
+export function buildPaymentDialogTitle(channel: PaymentChannel): string {
+  if (channel === "alipay") return "支付宝网页支付"
+  return "微信扫码支付"
+}

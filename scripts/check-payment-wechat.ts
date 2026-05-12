@@ -10,6 +10,7 @@ import {
 } from "../server/modules/payments/wechat-crypto.ts"
 import {
   applyPaidOrderToSubscriptionSnapshot,
+  isFreshTimestamp,
   normalizeWechatPaymentConfigPatch,
   normalizeWechatPaymentConfigInput,
   normalizeWechatTradeStateForOrder,
@@ -388,4 +389,58 @@ test("payment completion is implemented through a row-locking database RPC", () 
   assert.match(migration, /CREATE OR REPLACE FUNCTION public\.complete_paid_payment_order/)
   assert.match(migration, /FOR UPDATE/)
   assert.match(migration, /IF v_order\.status = 'paid'/)
+})
+
+test("isFreshTimestamp rejects timestamps outside the 5-minute tolerance window", () => {
+  const now = Date.parse("2026-05-11T12:00:00.000Z")
+  // 窗内：与当前时间差 < 5 分钟
+  assert.equal(isFreshTimestamp(Math.floor(now / 1000), now), true)
+  assert.equal(isFreshTimestamp(Math.floor(now / 1000) - 299, now), true)
+  assert.equal(isFreshTimestamp(Math.floor(now / 1000) + 299, now), true)
+  // 窗外：> 5 分钟差距视为重放
+  assert.equal(isFreshTimestamp(Math.floor(now / 1000) - 301, now), false)
+  assert.equal(isFreshTimestamp(Math.floor(now / 1000) + 301, now), false)
+  // 非法输入
+  assert.equal(isFreshTimestamp(NaN, now), false)
+  assert.equal(isFreshTimestamp("abc" as unknown as number, now), false)
+})
+
+test("handleWechatPaymentNotify guards timestamp freshness against replay", () => {
+  const serviceSource = readFileSync("server/modules/payments/service.ts", "utf8")
+  // 必须在 handleWechatPaymentNotify 中调用 isFreshTimestamp 校验 Wechatpay-Timestamp
+  assert.match(serviceSource, /isFreshTimestamp\(Number\(timestamp\)/)
+})
+
+test("wechat notify handler masks internal error details in the response body", async () => {
+  const { createWechatPaymentNotifyPostHandler } = await import("../server/modules/payments/route-handler.ts")
+  const handler = createWechatPaymentNotifyPostHandler({
+    handleWechatPaymentNotify: async () => {
+      throw new Error("商户号不匹配 - mchid 泄露")
+    },
+  })
+  const res = await handler(new Request("http://localhost/api/payment/wechat/notify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: '{"id":"evt-123"}',
+  }))
+  assert.equal(res.status, 400)
+  const body = await res.json()
+  assert.equal(body.code, "FAIL")
+  assert.equal(body.message, "failed")
+  assert.ok(!JSON.stringify(body).includes("mchid"))
+  assert.ok(!JSON.stringify(body).includes("商户号"))
+})
+
+test("admin_audit_logs insert errors are surfaced rather than silently dropped", () => {
+  const source = readFileSync("server/modules/payments/service.ts", "utf8")
+  // 每处 admin_audit_logs insert 后必须有 assertSupabaseSuccess 或 console.error 兜底，
+  // 否则审计记录静默丢失，无法追溯敏感配置变更。
+  const insertMatches = [...source.matchAll(/\.from\("admin_audit_logs"\)\.insert\(/g)]
+  assert.ok(insertMatches.length > 0, "应有 admin_audit_logs insert 调用")
+  // 每个 insert 后面 600 字符内必须有 assertSupabaseSuccess 或 console.error
+  for (const match of insertMatches) {
+    const snippet = source.slice(match.index ?? 0, (match.index ?? 0) + 600)
+    const hasGuard = snippet.includes("assertSupabaseSuccess") || snippet.includes("console.error")
+    assert.ok(hasGuard, `admin_audit_logs insert 缺少错误处理：\n${snippet.slice(0, 120)}`)
+  }
 })

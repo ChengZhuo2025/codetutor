@@ -57,15 +57,31 @@ export function verifyAlipaySignature(input: {
   }
 }
 
+export function extractAlipayResponseRawSegment(rawBody: string, method: string): string | null {
+  if (!rawBody) return null
+  const responseKey = `${method.replaceAll(".", "_")}_response`
+  for (const key of [responseKey, "error_response"]) {
+    const marker = `"${key}":`
+    const keyIndex = rawBody.indexOf(marker)
+    if (keyIndex < 0) continue
+    const start = keyIndex + marker.length
+    const signMarker = rawBody.lastIndexOf(',"sign":')
+    if (signMarker > start) return rawBody.slice(start, signMarker)
+    const signMarkerFallback = rawBody.lastIndexOf(',"sign_type":')
+    if (signMarkerFallback > start) return rawBody.slice(start, signMarkerFallback)
+  }
+  return null
+}
+
 export function verifyAlipayResponseSignature(input: {
-  responsePayload: Record<string, unknown>
+  rawSegment: string
   signature: string
   publicKeyPem: string
 }) {
-  if (!input.signature) return false
+  if (!input.signature || !input.rawSegment) return false
   try {
     const verifier = createVerify("RSA-SHA256")
-    verifier.update(JSON.stringify(input.responsePayload), "utf8")
+    verifier.update(input.rawSegment, "utf8")
     verifier.end()
     return verifier.verify(input.publicKeyPem, input.signature, "base64")
   } catch {

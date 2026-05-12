@@ -300,8 +300,11 @@ export function createWechatPaymentNotifyPostHandler(dependencies: {
       })
       return Response.json({ code: "SUCCESS", message: "成功" })
     } catch (error) {
-      const message = error instanceof Error ? error.message : "回调处理失败"
-      return Response.json({ code: "FAIL", message }, { status: 400 })
+      // 回调响应必须脱敏，避免把内部校验细节（商户身份、密钥、订单号校验原因等）
+      // 回写给第三方；真实异常通过服务端日志追溯。
+      const detail = error instanceof Error ? error.message : "unknown"
+      console.warn("[payment.wechat.notify] handler failed", { detail })
+      return Response.json({ code: "FAIL", message: "failed" }, { status: 400 })
     }
   }
 }
@@ -320,7 +323,10 @@ export function createAlipayNotifyPostHandler(dependencies: {
       return new Response("success", {
         headers: { "Content-Type": "text/plain; charset=utf-8" },
       })
-    } catch {
+    } catch (error) {
+      // 回调响应必须脱敏，真实异常仅走服务端日志。
+      const detail = error instanceof Error ? error.message : "unknown"
+      console.warn("[payment.alipay.notify] handler failed", { detail })
       return new Response("fail", {
         status: 400,
         headers: { "Content-Type": "text/plain; charset=utf-8" },

@@ -34,13 +34,17 @@ import {
   normalizeAlipayPaymentConfigInput,
   normalizeAlipayTradeStatusForOrder,
   buildPaymentOrderNo,
+  isFreshTimestamp,
   maskPaymentSecret,
   normalizeWechatPaymentConfigPatch,
   normalizeWechatPaymentConfigInput,
   normalizeWechatTradeStateForOrder,
+  parseAlipayBeijingTimeToEpochSeconds,
+  sanitizePaymentKeyword,
 } from "./model.ts"
 import {
   buildAlipaySignedParams,
+  extractAlipayResponseRawSegment,
   verifyAlipayResponseSignature,
   verifyAlipaySignature,
 } from "./alipay-crypto.ts"
@@ -150,7 +154,7 @@ type PaymentOrderRow = {
   status: PaymentOrderResponseData["status"]
   code_url: string | null
   wechat_transaction_id: string | null
-  payment_channel?: "wechat" | "alipay"
+  payment_channel: "wechat" | "alipay"
   alipay_trade_no?: string | null
   wechat_prepay_payload?: Record<string, unknown> | null
   wechat_callback_payload?: Record<string, unknown> | null
@@ -468,7 +472,7 @@ function mapOrder(row: PaymentOrderRow): PaymentOrderResponseData {
     amountCents: row.amount_cents,
     currency: row.currency,
     status: row.status,
-    paymentChannel: row.payment_channel ?? "wechat",
+    paymentChannel: row.payment_channel,
     codeUrl: row.code_url,
     expiresAt: row.expires_at,
     paidAt: row.paid_at,
@@ -513,7 +517,7 @@ function mapAdminFinanceOrder(row: AdminFinanceOrderRow): AdminFinanceOrderListI
     amountCents: row.amount_cents,
     currency: row.currency,
     status: row.status,
-    paymentChannel: row.payment_channel ?? "wechat",
+    paymentChannel: row.payment_channel,
     providerTradeNo: row.payment_channel === "alipay" ? row.alipay_trade_no ?? null : row.wechat_transaction_id,
     paidAt: row.paid_at,
     expiresAt: row.expires_at,
@@ -541,7 +545,7 @@ async function attachUserProfiles(rows: PaymentOrderRow[]): Promise<AdminFinance
 }
 
 function mapAdminFinanceOrderDetail(row: AdminFinanceOrderRow): AdminFinanceOrderDetailResponseData {
-  const channel = row.payment_channel ?? "wechat"
+  const channel = row.payment_channel
   const prepayPayload = channel === "alipay" ? row.alipay_prepay_payload : row.wechat_prepay_payload
   const callbackPayload = channel === "alipay" ? row.alipay_callback_payload : row.wechat_callback_payload
   const timeline: AdminFinanceOrderDetailResponseData["timeline"] = [
@@ -754,7 +758,14 @@ async function callAlipay<T>(input: {
     clearTimeout(timeout)
   }
   const responseBody = await response.text()
-  const json = responseBody ? JSON.parse(responseBody) as Record<string, unknown> : {}
+  let json: Record<string, unknown>
+  try {
+    json = responseBody ? JSON.parse(responseBody) as Record<string, unknown> : {}
+  } catch {
+    const error = new Error("支付宝支付响应格式异常。")
+    error.name = "PAYMENT_PROVIDER_ERROR"
+    throw error
+  }
   if (!response.ok) {
     const error = new Error(`支付宝支付请求失败：${response.status}`)
     error.name = "PAYMENT_PROVIDER_ERROR"
@@ -770,9 +781,11 @@ async function callAlipay<T>(input: {
     error.name = "PAYMENT_PROVIDER_ERROR"
     throw error
   }
-  if (!verifyAlipayResponseSignature({
-    responsePayload: data,
-    signature: typeof json.sign === "string" ? json.sign : "",
+  const rawSegment = extractAlipayResponseRawSegment(responseBody, input.method)
+  const signature = typeof json.sign === "string" ? json.sign : ""
+  if (!rawSegment || !verifyAlipayResponseSignature({
+    rawSegment,
+    signature,
     publicKeyPem: input.config.alipayPublicKeyPem,
   })) {
     const error = new Error("支付宝支付响应验签失败。")
@@ -816,7 +829,6 @@ export async function updateWechatPaymentSettings(
     notify_url: parsed.data.notifyUrl,
     merchant_serial_no: parsed.data.merchantSerialNo,
     wechatpay_public_key_id: parsed.data.wechatpayPublicKeyId,
-    secret_key_version: SECRET_KEY_VERSION,
     updated_by_admin_id: adminAccountId,
   }
   if (parsed.data.merchantPrivateKeyPem) {
@@ -845,7 +857,7 @@ export async function updateWechatPaymentSettings(
     .select("*")
     .single()
   assertSupabaseSuccess(error, "failed to update payment settings")
-  await supabase.from("admin_audit_logs").insert({
+  const { error: auditError1 } = await supabase.from("admin_audit_logs").insert({
     admin_user_id: adminAccountId,
     action: "payment_settings_update",
     target_type: "payment_settings",
@@ -855,6 +867,7 @@ export async function updateWechatPaymentSettings(
     reason: null,
     request_context: null,
   })
+  if (auditError1) console.error("audit_log_insert_failed", { action: "payment_settings_update", error: auditError1.message })
   return presentPaymentSettings(data as PaymentSettingsRow)
 }
 
@@ -886,7 +899,6 @@ export async function updateAlipayPaymentSettings(
     alipay_app_id: parsed.data.appId,
     alipay_notify_url: parsed.data.notifyUrl,
     alipay_sign_type: parsed.data.signType,
-    secret_key_version: SECRET_KEY_VERSION,
     updated_by_admin_id: adminAccountId,
   }
   if (parsed.data.appPrivateKeyPem) {
@@ -909,7 +921,7 @@ export async function updateAlipayPaymentSettings(
     .select("*")
     .single()
   assertSupabaseSuccess(error, "failed to update alipay payment settings")
-  await supabase.from("admin_audit_logs").insert({
+  const { error: auditError2 } = await supabase.from("admin_audit_logs").insert({
     admin_user_id: adminAccountId,
     action: "alipay_payment_settings_update",
     target_type: "payment_settings",
@@ -919,6 +931,7 @@ export async function updateAlipayPaymentSettings(
     reason: null,
     request_context: null,
   })
+  if (auditError2) console.error("audit_log_insert_failed", { action: "alipay_payment_settings_update", error: auditError2.message })
   return presentAlipayPaymentSettings(data as PaymentSettingsRow)
 }
 
@@ -930,24 +943,8 @@ export async function createWechatNativeOrder(userId: string, input: { planCode:
   const now = new Date()
   const expiresAt = new Date(now.getTime() + ORDER_EXPIRES_IN_MS).toISOString()
   const orderNo = buildPaymentOrderNo(now)
-  const supabase = createSupabaseAdminClient()
-  const { data: created, error: insertError } = await supabase
-    .from("payment_orders")
-    .insert({
-      user_id: userId,
-      order_no: orderNo,
-      plan_code: plan.code,
-      plan_name: plan.name,
-      amount_cents: plan.price_cents,
-      currency: plan.currency,
-      payment_channel: "wechat",
-      status: "created",
-      expires_at: expiresAt,
-    })
-    .select("*")
-    .single()
-  assertSupabaseSuccess(insertError, "failed to create payment order")
 
+  // 先调三方拿 code_url；失败直接抛错，不会在数据库留下悬挂的 status='created' 行。
   const result = await callWechatPay<{ code_url: string }>({
     config,
     method: "POST",
@@ -966,18 +963,26 @@ export async function createWechatNativeOrder(userId: string, input: { planCode:
     },
   })
 
-  const { data: updated, error } = await supabase
+  const supabase = createSupabaseAdminClient()
+  const { data: created, error: insertError } = await supabase
     .from("payment_orders")
-    .update({
+    .insert({
+      user_id: userId,
+      order_no: orderNo,
+      plan_code: plan.code,
+      plan_name: plan.name,
+      amount_cents: plan.price_cents,
+      currency: plan.currency,
+      payment_channel: "wechat",
       status: "prepay_created",
       code_url: result.code_url,
       wechat_prepay_payload: result,
+      expires_at: expiresAt,
     })
-    .eq("id", (created as PaymentOrderRow).id)
     .select("*")
     .single()
-  assertSupabaseSuccess(error, "failed to update payment order prepay")
-  return mapOrder(updated as PaymentOrderRow)
+  assertSupabaseSuccess(insertError, "failed to create payment order")
+  return mapOrder(created as PaymentOrderRow)
 }
 
 export async function createAlipayPrecreateOrder(userId: string, input: { planCode: string }) {
@@ -988,6 +993,17 @@ export async function createAlipayPrecreateOrder(userId: string, input: { planCo
   const now = new Date()
   const expiresAt = new Date(now.getTime() + ORDER_EXPIRES_IN_MS).toISOString()
   const orderNo = buildPaymentOrderNo(now)
+
+  const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/alipay/return`
+  // 先向支付宝签名拿 form html；失败直接抛错，数据库不落任何记录。
+  const formHtml = await callAlipayPagePay({
+    config,
+    orderNo,
+    totalAmount: amountCentsToAlipayAmount(plan.price_cents),
+    subject: `CodeTutor ${plan.name}`,
+    returnUrl,
+  })
+
   const supabase = createSupabaseAdminClient()
   const { data: created, error: insertError } = await supabase
     .from("payment_orders")
@@ -999,34 +1015,15 @@ export async function createAlipayPrecreateOrder(userId: string, input: { planCo
       amount_cents: plan.price_cents,
       currency: plan.currency,
       payment_channel: "alipay",
-      status: "created",
+      status: "prepay_created",
+      code_url: formHtml,
+      alipay_prepay_payload: { method: "alipay.trade.page.pay", return_url: returnUrl },
       expires_at: expiresAt,
     })
     .select("*")
     .single()
   assertSupabaseSuccess(insertError, "failed to create alipay payment order")
-
-  const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/alipay/return`
-  const formHtml = await callAlipayPagePay({
-    config,
-    orderNo,
-    totalAmount: amountCentsToAlipayAmount(plan.price_cents),
-    subject: `CodeTutor ${plan.name}`,
-    returnUrl,
-  })
-
-  const { data: updated, error } = await supabase
-    .from("payment_orders")
-    .update({
-      status: "prepay_created",
-      code_url: formHtml,
-      alipay_prepay_payload: { method: "alipay.trade.page.pay", return_url: returnUrl },
-    })
-    .eq("id", (created as PaymentOrderRow).id)
-    .select("*")
-    .single()
-  assertSupabaseSuccess(error, "failed to update alipay payment order prepay")
-  return mapOrder(updated as PaymentOrderRow)
+  return mapOrder(created as PaymentOrderRow)
 }
 
 async function refreshWechatNativeOrderPrepay(row: PaymentOrderRow) {
@@ -1034,6 +1031,20 @@ async function refreshWechatNativeOrderPrepay(row: PaymentOrderRow) {
     loadRuntimeWechatPaymentConfig(),
     loadPlan(row.plan_code),
   ])
+  // 微信支付 v3：同一 out_trade_no 重新下单前必须先关单，否则会返回 ORDER_EXIST。
+  // 关单对 ORDERNOTEXIST / ORDER_CLOSED 等错误是“已达目标状态”，应当容忍。
+  try {
+    await callWechatPay<Record<string, unknown>>({
+      config,
+      method: "POST",
+      pathWithQuery: `/v3/pay/transactions/out-trade-no/${encodeURIComponent(row.order_no)}/close`,
+      body: { mchid: config.mchId },
+    })
+  } catch (closeError) {
+    const message = closeError instanceof Error ? closeError.message : ""
+    const ignorable = /ORDERNOTEXIST|ORDER_CLOSED|已关闭|不存在/.test(message)
+    if (!ignorable) throw closeError
+  }
   const result = await callWechatPay<{ code_url: string }>({
     config,
     method: "POST",
@@ -1111,7 +1122,7 @@ export async function createAdminSubscriptionPlan(
     .select("*")
     .single()
   assertSupabaseSuccess(error, "failed to create subscription plan")
-  await supabase.from("admin_audit_logs").insert({
+  const { error: auditError3 } = await supabase.from("admin_audit_logs").insert({
     admin_user_id: adminAccountId,
     action: "subscription_plan_create",
     target_type: "subscription_plan",
@@ -1121,6 +1132,7 @@ export async function createAdminSubscriptionPlan(
     reason: null,
     request_context: null,
   })
+  if (auditError3) console.error("audit_log_insert_failed", { action: "subscription_plan_create", error: auditError3.message })
   return mapPlan(data as SubscriptionPlanRow)
 }
 
@@ -1148,7 +1160,7 @@ export async function updateAdminSubscriptionPlan(
     .select("*")
     .single()
   assertSupabaseSuccess(error, "failed to update subscription plan")
-  await supabase.from("admin_audit_logs").insert({
+  const { error: auditError4 } = await supabase.from("admin_audit_logs").insert({
     admin_user_id: adminAccountId,
     action: "subscription_plan_update",
     target_type: "subscription_plan",
@@ -1158,7 +1170,16 @@ export async function updateAdminSubscriptionPlan(
     reason: null,
     request_context: null,
   })
+  if (auditError4) console.error("audit_log_insert_failed", { action: "subscription_plan_update", error: auditError4.message })
   return mapPlan(data as SubscriptionPlanRow)
+}
+
+export function assertNoPendingOrdersForPlan(pendingCount: number, planCode: string) {
+  if (pendingCount > 0) {
+    const error = new Error(`套餐 ${planCode} 仍有 ${pendingCount} 笔待支付订单，请先等待订单完成或过期后再归档。`)
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
 }
 
 export async function archiveAdminSubscriptionPlan(adminAccountId: string, code: string) {
@@ -1170,6 +1191,13 @@ export async function archiveAdminSubscriptionPlan(adminAccountId: string, code:
     .maybeSingle()
   assertSupabaseSuccess(beforeError, "failed to load subscription plan before archive")
   if (!before) return null
+  const { count: pendingCount, error: pendingError } = await supabase
+    .from("payment_orders")
+    .select("order_no", { count: "exact", head: true })
+    .eq("plan_code", code)
+    .in("status", ["created", "prepay_created"])
+  assertSupabaseSuccess(pendingError, "failed to count pending payment orders for plan")
+  assertNoPendingOrdersForPlan(pendingCount ?? 0, code)
   const { data, error } = await supabase
     .from("subscription_plans")
     .update({
@@ -1181,7 +1209,7 @@ export async function archiveAdminSubscriptionPlan(adminAccountId: string, code:
     .select("*")
     .single()
   assertSupabaseSuccess(error, "failed to archive subscription plan")
-  await supabase.from("admin_audit_logs").insert({
+  const { error: auditError5 } = await supabase.from("admin_audit_logs").insert({
     admin_user_id: adminAccountId,
     action: "subscription_plan_archive",
     target_type: "subscription_plan",
@@ -1191,6 +1219,7 @@ export async function archiveAdminSubscriptionPlan(adminAccountId: string, code:
     reason: null,
     request_context: null,
   })
+  if (auditError5) console.error("audit_log_insert_failed", { action: "subscription_plan_archive", error: auditError5.message })
   return mapPlan(data as SubscriptionPlanRow)
 }
 
@@ -1233,7 +1262,7 @@ export async function continuePaymentOrderForUser(userId: string, orderNo: strin
     assertSupabaseSuccess(expiredError, "failed to mark expired payment order before continue")
     return mapOrder(expired as PaymentOrderRow)
   }
-  if ((row.payment_channel ?? "wechat") === "wechat" && !row.code_url) {
+  if ((row.payment_channel) === "wechat" && !row.code_url) {
     return refreshWechatNativeOrderPrepay(row)
   }
   return mapOrder(row)
@@ -1267,20 +1296,21 @@ export async function getPaymentOrdersForUser(
   if (status !== "all") listQuery = listQuery.eq("status", status)
   if (channel !== "all") listQuery = listQuery.eq("payment_channel", channel)
 
-  const [{ data, error, count }, { data: summaryRows, error: summaryError }] = await Promise.all([
+  const [{ data, error, count }, { data: summaryRow, error: summaryError }] = await Promise.all([
     listQuery,
-    supabase
-      .from("payment_orders")
-      .select("status")
-      .eq("user_id", userId)
-      .is("user_deleted_at", null),
+    supabase.rpc("user_payment_summary", { p_user_id: userId }).single(),
   ])
   assertSupabaseSuccess(error, "failed to load user payment orders")
   assertSupabaseSuccess(summaryError, "failed to load user payment order summary")
 
-  const rows = (summaryRows ?? []) as Array<{ status: PaymentOrderStatus }>
-  const pendingCount = rows.filter((item) => isPendingStatus(item.status)).length
-  const statusCount = (target: PaymentOrderStatus) => rows.filter((item) => item.status === target).length
+  const summary = (summaryRow ?? {}) as {
+    totalCount?: number
+    pendingCount?: number
+    paidCount?: number
+    closedCount?: number
+    expiredCount?: number
+    failedCount?: number
+  }
 
   return {
     items: ((data ?? []) as PaymentOrderRow[]).map(mapOrder),
@@ -1289,12 +1319,12 @@ export async function getPaymentOrdersForUser(
     pageSize,
     hasMore: from + ((data ?? []) as unknown[]).length < (count ?? 0),
     summary: {
-      totalCount: rows.length,
-      pendingCount,
-      paidCount: statusCount("paid"),
-      closedCount: statusCount("closed"),
-      expiredCount: statusCount("expired"),
-      failedCount: statusCount("failed"),
+      totalCount: summary.totalCount ?? 0,
+      pendingCount: summary.pendingCount ?? 0,
+      paidCount: summary.paidCount ?? 0,
+      closedCount: summary.closedCount ?? 0,
+      expiredCount: summary.expiredCount ?? 0,
+      failedCount: summary.failedCount ?? 0,
     },
   }
 }
@@ -1400,7 +1430,7 @@ export async function syncPaymentOrderForUser(userId: string, orderNo: string) {
   if (!data) return null
   const row = data as PaymentOrderRow
   if (row.status === "paid") return mapOrder(row)
-  if ((row.payment_channel ?? "wechat") === "alipay") {
+  if ((row.payment_channel) === "alipay") {
     const config = await loadRuntimeAlipayPaymentConfig()
     const transaction = await callAlipay<Record<string, unknown>>({
       config,
@@ -1479,7 +1509,7 @@ export async function getAdminFinanceOrders(
   const status = normalizeOrderStatus(query.status)
   const channel = normalizePaymentChannelFilter(query.channel)
   const planCode = query.planCode?.trim() ?? ""
-  const keyword = query.keyword?.trim() ?? ""
+  const keyword = sanitizePaymentKeyword(query.keyword)
   const dateFrom = query.dateFrom?.trim() ?? ""
   const dateTo = query.dateTo?.trim() ?? ""
   const from = (page - 1) * limit
@@ -1624,65 +1654,29 @@ export async function getAdminFinanceStats(
   const dateTo = query.dateTo?.trim() || now.toISOString().slice(0, 10)
   const supabase = createSupabaseAdminClient()
   const { data, error } = await supabase
-    .from("payment_orders")
-    .select("status, amount_cents, payment_channel, plan_code, plan_name, created_at, paid_at")
-    .gte("created_at", `${dateFrom}T00:00:00.000Z`)
-    .lte("created_at", `${dateTo}T23:59:59.999Z`)
+    .rpc("finance_stats_daily", { p_date_from: dateFrom, p_date_to: dateTo })
+    .single()
   assertSupabaseSuccess(error, "failed to load admin finance stats")
-  const rows = (data ?? []) as Array<{
-    status: PaymentOrderStatus
-    amount_cents: number
-    payment_channel: PaymentChannel
-    plan_code: string
-    plan_name: string
-    created_at: string
-  }>
-  const paidRows = rows.filter((row) => row.status === "paid")
-  const revenueCents = paidRows.reduce((sum, row) => sum + row.amount_cents, 0)
-  const channelMap = new Map<PaymentChannel, { revenueCents: number; paidOrders: number }>()
-  const planMap = new Map<string, { planCode: string; planName: string; revenueCents: number; paidOrders: number }>()
-  const dayMap = new Map<string, { revenueCents: number; paidOrders: number }>()
-
-  for (const row of paidRows) {
-    const channel = row.payment_channel ?? "wechat"
-    const channelStat = channelMap.get(channel) ?? { revenueCents: 0, paidOrders: 0 }
-    channelStat.revenueCents += row.amount_cents
-    channelStat.paidOrders += 1
-    channelMap.set(channel, channelStat)
-
-    const planStat = planMap.get(row.plan_code) ?? {
-      planCode: row.plan_code,
-      planName: row.plan_name,
-      revenueCents: 0,
-      paidOrders: 0,
-    }
-    planStat.revenueCents += row.amount_cents
-    planStat.paidOrders += 1
-    planMap.set(row.plan_code, planStat)
-
-    const day = row.created_at.slice(0, 10)
-    const dayStat = dayMap.get(day) ?? { revenueCents: 0, paidOrders: 0 }
-    dayStat.revenueCents += row.amount_cents
-    dayStat.paidOrders += 1
-    dayMap.set(day, dayStat)
+  const row = (data ?? {}) as {
+    overview?: AdminFinanceStatsResponseData["overview"]
+    channel_breakdown?: AdminFinanceStatsResponseData["channelBreakdown"]
+    plan_breakdown?: AdminFinanceStatsResponseData["planBreakdown"]
+    daily_trend?: AdminFinanceStatsResponseData["dailyTrend"]
   }
-
   return {
     range: { dateFrom, dateTo },
-    overview: {
-      revenueCents,
-      paidOrders: paidRows.length,
-      pendingOrders: rows.filter((row) => isPendingStatus(row.status)).length,
-      closedOrders: rows.filter((row) => row.status === "closed").length,
-      expiredOrders: rows.filter((row) => row.status === "expired").length,
-      failedOrders: rows.filter((row) => row.status === "failed").length,
-      averageOrderValueCents: paidRows.length ? Math.round(revenueCents / paidRows.length) : 0,
+    overview: row.overview ?? {
+      revenueCents: 0,
+      paidOrders: 0,
+      pendingOrders: 0,
+      closedOrders: 0,
+      expiredOrders: 0,
+      failedOrders: 0,
+      averageOrderValueCents: 0,
     },
-    channelBreakdown: Array.from(channelMap.entries()).map(([channel, item]) => ({ channel, ...item })),
-    planBreakdown: Array.from(planMap.values()),
-    dailyTrend: Array.from(dayMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, item]) => ({ date, ...item })),
+    channelBreakdown: row.channel_breakdown ?? [],
+    planBreakdown: row.plan_breakdown ?? [],
+    dailyTrend: row.daily_trend ?? [],
   }
 }
 
@@ -1690,6 +1684,15 @@ export async function handleAlipayPaymentNotify(input: {
   form: Record<string, string>
 }) {
   const config = await loadRuntimeAlipayPaymentConfig()
+  // 支付宝仅支持 RSA2，其他 sign_type（包括遗留的 RSA/SHA1）一律拒绝，防止签名降级攻击。
+  if (input.form.sign_type && input.form.sign_type !== "RSA2") {
+    throw new Error("支付宝支付回调签名算法不支持。")
+  }
+  // 时间戳新鲜度校验：防止历史合法 notify 被重放攻击。
+  const notifyTs = parseAlipayBeijingTimeToEpochSeconds(input.form.notify_time)
+  if (!isFreshTimestamp(notifyTs)) {
+    throw new Error("支付宝支付回调时间戳已过期。")
+  }
   if (!verifyAlipaySignature({ params: input.form, publicKeyPem: config.alipayPublicKeyPem })) {
     throw new Error("支付宝支付回调验签失败。")
   }
@@ -1720,11 +1723,15 @@ export async function handleAlipayPaymentNotify(input: {
     .single()
   assertSupabaseSuccess(error, "failed to load alipay callback payment order")
   const row = data as PaymentOrderRow
-  if ((row.payment_channel ?? "wechat") !== "alipay") {
+  if ((row.payment_channel) !== "alipay") {
     throw new Error("支付宝支付回调订单渠道不匹配。")
   }
   if (parseAlipayAmountCents(input.form.total_amount) !== row.amount_cents) {
     throw new Error("支付宝支付回调金额不匹配。")
+  }
+  // 支付宝 notify 不包含 currency 字段，白名单放行 CNY 订单。
+  if (row.currency !== "CNY") {
+    throw new Error("支付宝支付回调币种不支持。")
   }
   const paidAt = input.form.gmt_payment
     ? `${input.form.gmt_payment.replace(" ", "T")}+08:00`
@@ -1746,6 +1753,10 @@ export async function handleWechatPaymentNotify(input: {
   const serial = input.headers.get("Wechatpay-Serial")
   if (!signature || !timestamp || !nonce || !serial) {
     throw new Error("微信支付回调缺少签名头。")
+  }
+  // 时间戳新鲜度校验：微信支付官方规范要求 ±5 分钟，防止重放攻击。
+  if (!isFreshTimestamp(Number(timestamp))) {
+    throw new Error("微信支付回调时间戳已过期。")
   }
   if (serial !== config.wechatpayPublicKeyId) {
     throw new Error("微信支付回调公钥 ID 不匹配。")
@@ -1804,6 +1815,12 @@ export async function handleWechatPaymentNotify(input: {
   const row = data as PaymentOrderRow
   if (Number(transaction.amount && typeof transaction.amount === "object" ? (transaction.amount as { total?: unknown }).total : null) !== row.amount_cents) {
     throw new Error("微信支付回调金额不匹配。")
+  }
+  const callbackCurrency = transaction.amount && typeof transaction.amount === "object"
+    ? (transaction.amount as { currency?: unknown }).currency
+    : null
+  if (callbackCurrency && callbackCurrency !== row.currency) {
+    throw new Error("微信支付回调币种不匹配。")
   }
   await completePaidOrder(row, transaction)
 }

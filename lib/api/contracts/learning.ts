@@ -21,6 +21,7 @@ export type LearningInteractionType =
   | "task_review"
   | "completion_feedback"
   | "path_guidance"
+  | "concept_qa"
 export type LearningTaskPatchStatus = "in_progress" | "blocked" | "completed"
 
 export type LearningTaskPatch = {

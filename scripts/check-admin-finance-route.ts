@@ -182,3 +182,34 @@ test("admin finance service reads user profile phone for required contact displa
   assert.doesNotMatch(serviceSource, /select\("user_id,nickname,phone"\)/)
   assert.doesNotMatch(serviceSource, /select\("user_id,nickname,contact_email"\)/)
 })
+
+test("sanitizePaymentKeyword strips PostgREST meta characters and preserves business input", async () => {
+  const { sanitizePaymentKeyword } = await import("../server/modules/payments/model.ts")
+  // 合法订单号不动
+  assert.equal(sanitizePaymentKeyword("CT202605110001"), "CT202605110001")
+  // 合法中文套餐名不动
+  assert.equal(sanitizePaymentKeyword("个人版"), "个人版")
+  // 允许空格与常见标点
+  assert.equal(sanitizePaymentKeyword("个人 版"), "个人 版")
+  // PostgREST 元字符被删除（包括 '.'，它是 op 分隔符）
+  assert.equal(sanitizePaymentKeyword("abc),(user_id.eq.uuid"), "abcuser_idequuid")
+  assert.equal(sanitizePaymentKeyword("%wild*"), "wild")
+  assert.equal(sanitizePaymentKeyword("first,second"), "firstsecond")
+  // 反斜杠与括号被删除
+  assert.equal(sanitizePaymentKeyword("a\\b(c)"), "abc")
+  // 过长字符串被裁剪到 64
+  const long = "a".repeat(200)
+  assert.equal(sanitizePaymentKeyword(long).length, 64)
+  // 非字符串安全回退为空
+  assert.equal(sanitizePaymentKeyword(undefined as unknown as string), "")
+})
+
+test("admin finance service wires sanitizePaymentKeyword into the keyword filter", async () => {
+  const serviceSource = await import("node:fs").then(({ readFileSync }) =>
+    readFileSync("server/modules/payments/service.ts", "utf8"),
+  )
+  // keyword 必须先经 sanitizePaymentKeyword 消毒再拼入 .or()，
+  // 否则 PostgREST 元字符（逗号、点、括号等）可被用于改写查询语义。
+  assert.match(serviceSource, /const keyword = sanitizePaymentKeyword\(/)
+  assert.doesNotMatch(serviceSource, /const keyword = query\.keyword\?\.trim\(\)/)
+})

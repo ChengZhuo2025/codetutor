@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowRight, ExternalLink, Loader2, Phone } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, ExternalLink, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -216,14 +216,41 @@ type OAuthScanDialogProps = {
 };
 
 function OAuthScanDialog({ dialog, onOpenChange }: OAuthScanDialogProps) {
-  const [loadedFrameUrl, setLoadedFrameUrl] = useState<string | null>(null);
+  const [popupClosed, setPopupClosed] = useState(false);
   const meta = dialog ? getOAuthProviderMeta(dialog.provider) : null;
   const Icon = meta?.icon;
-  const isFrameLoading = Boolean(dialog?.url && loadedFrameUrl !== dialog.url);
+
+  // 弹窗关闭后自动关闭对话框
+  useEffect(() => {
+    if (!dialog) return;
+
+    // dialog 变化时重置关闭状态
+    const resetTimer = setTimeout(() => setPopupClosed(false), 0);
+
+    const checkPopup = setInterval(() => {
+      const popup = window.open("", "oauth_popup");
+      if (!popup || popup.closed) {
+        setPopupClosed(true);
+        clearInterval(checkPopup);
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(resetTimer);
+      clearInterval(checkPopup);
+    };
+  }, [dialog]);
+
+  // 弹窗关闭后自动关闭对话框
+  useEffect(() => {
+    if (!popupClosed) return;
+    const timer = setTimeout(() => onOpenChange(false), 100);
+    return () => clearTimeout(timer);
+  }, [popupClosed, onOpenChange]);
 
   return (
     <Dialog open={Boolean(dialog)} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[520px]">
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[480px]">
         <div className="border-b border-border/70 bg-surface-2/80 px-5 py-4">
           <DialogHeader className="pr-8 text-left">
             <div className="flex items-center gap-3">
@@ -237,51 +264,43 @@ function OAuthScanDialog({ dialog, onOpenChange }: OAuthScanDialogProps) {
                   {meta ? `${meta.label}登录` : "扫码登录"}
                 </DialogTitle>
                 <DialogDescription className="mt-1 text-xs leading-5">
-                  在弹窗内完成授权，成功后会自动回到学习流程。
+                  在弹出的窗口中扫码完成授权，授权后自动关闭返回。
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
         </div>
 
-        <div className="relative bg-background">
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-24 bg-[radial-gradient(circle_at_top,oklch(0.68_0.16_180/0.12),transparent_62%)]" />
-          <div className="relative z-10 p-4">
-            <div className="relative h-[560px] max-h-[72vh] min-h-[420px] overflow-hidden rounded-xl border border-border/70 bg-white shadow-inner dark:bg-background">
-              {dialog ? (
-                <iframe
-                  title={meta ? `${meta.label}授权登录` : "扫码授权登录"}
-                  key={dialog.url}
-                  src={dialog.url}
-                  className="h-full w-full border-0 bg-white"
-                  referrerPolicy="origin"
-                  allow="clipboard-read; clipboard-write"
-                  onLoad={() => setLoadedFrameUrl(dialog.url)}
-                />
-              ) : null}
-              {isFrameLoading ? (
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/80">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                </div>
-              ) : null}
-            </div>
+        <div className="flex flex-col items-center gap-5 px-8 py-10 text-center">
+          <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-brand/20 bg-brand/5">
+            <ExternalLink className="h-10 w-10 text-brand" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-foreground">
+              授权窗口已打开
+            </p>
+            <p className="text-xs leading-5 text-muted-foreground">
+              请在浏览器弹出的新窗口中扫码完成授权。{" "}
+              {popupClosed ? "授权已完成或窗口已关闭。" : "等待授权完成…"}
+            </p>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-border/70 bg-surface-2/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs leading-5 text-muted-foreground">
-            若二维码区域无法加载，可能是授权方限制嵌入显示。
-          </p>
+        <div className="flex items-center justify-center gap-3 border-t border-border/70 bg-surface-2/70 px-5 py-4">
           {dialog ? (
-            <a
-              href={dialog.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-border/70 bg-background px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-brand/40 hover:text-brand"
+            <button
+              onClick={() => {
+                window.open(
+                  dialog.url,
+                  "oauth_popup",
+                  "width=600,height=700,scrollbars=yes,resizable=yes",
+                );
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:border-brand/40 hover:text-brand"
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              新窗口打开
-            </a>
+              重新打开授权窗口
+            </button>
           ) : null}
         </div>
       </DialogContent>

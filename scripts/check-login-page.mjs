@@ -75,6 +75,16 @@ assert.match(
   /toast\.error\(/,
   "Login page should surface OAuth unavailable feedback through the shared toast system.",
 )
+assert.match(
+  loginPageSource,
+  /signInWithOAuth/,
+  "Login page should obtain OAuth authorization URLs through Supabase JS instead of hand-written authorize requests.",
+)
+assert.doesNotMatch(
+  loginPageSource,
+  /\/auth\/v1\/authorize/,
+  "Login page should not POST to GoTrue authorize; the hosted OAuth authorize endpoint is browser-navigation based.",
+)
 
 assert.match(
   loginPageSource,

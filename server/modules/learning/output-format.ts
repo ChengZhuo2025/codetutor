@@ -4,6 +4,7 @@ export type LearningInteractionType =
   | "task_review"
   | "completion_feedback"
   | "path_guidance"
+  | "concept_qa"
 
 type OutputSectionSpec = {
   title: string
@@ -18,22 +19,22 @@ type OutputFormatTemplate = {
 
 const OUTPUT_FORMAT_TEMPLATES: Record<LearningInteractionType, OutputFormatTemplate> = {
   teaching: {
-    summaryInstruction: "第一段直接说明当前最值得做的一步，不要空泛铺垫；如果仍在当前关卡内推进，只能写“下一步/下一项练习”，不能写“下一关”。",
+    summaryInstruction: "第一段直接点出当前最值得做的一步。如果仍在当前关卡内，只能写“下一步/下一项练习”，不能写“下一关”。如果用户正在询问概念性知识，则不必拘泥于模板，直接以问答形式清晰解答即可。",
     sections: [
       {
         title: "当前建议",
-        instruction: "给 1-3 条围绕当前关卡的具体建议。",
+        instruction: "给出 1-3 条围绕当前关卡的具体建议。若用户询问的是概念问题，此部分可省略或替换为解答。",
       },
       {
         title: "关键提醒",
-        instruction: "说明最容易忽略的验证点、边界或误区。",
+        instruction: "说明最容易忽略的验证点、边界或误区。若用户询问概念问题，此部分可替换为相关注意事项。",
       },
     ],
     requiredActionExample:
       "进入下一步｜请继续当前关卡中的下一项练习，并告诉我先做什么。",
   },
   blocked_help: {
-    summaryInstruction: "第一段先判断用户卡在哪里，并指出先排查什么。",
+    summaryInstruction: "第一段先对用户的挫败感表示理解，然后判断卡在哪里，并指出先排查什么。",
     sections: [
       {
         title: "问题判断",
@@ -69,6 +70,12 @@ const OUTPUT_FORMAT_TEMPLATES: Record<LearningInteractionType, OutputFormatTempl
     ],
     requiredActionExample:
       "帮我复盘结果｜请根据我刚才的结果，帮我做一次简短复盘。",
+  },
+  concept_qa: {
+    summaryInstruction: "直接以问答形式回答用户的技术概念问题，清晰、简洁，不必套用模板结构。",
+    sections: [],
+    requiredActionExample:
+      "继续提问｜我还想再问一个相关的问题。",
   },
   completion_feedback: {
     summaryInstruction: "第一段先确认当前关卡已经完成，并给一句成长反馈。",
@@ -121,17 +128,26 @@ export function buildLearningOutputFormatGuide(
 ) {
   const template = getLearningOutputFormatTemplate(interactionType)
 
+  if (interactionType === "concept_qa") {
+    return [
+      "# 输出格式要求",
+      template.summaryInstruction,
+      "在回答末尾，可以提供 1-2 个相关建议动作供用户继续提问，格式为 `- 动作文案｜用户点击后应发送的话`。",
+      `可选动作示例：${template.requiredActionExample}`,
+    ]
+  }
+
   return [
     "# 输出格式要求",
-    "请严格使用可读的 Markdown 模板输出，保留二级标题。",
+    "请优先使用可读的 Markdown 组织内容，保留二级标题。",
     template.summaryInstruction,
     ...template.sections.flatMap((section) => [
       `## ${section.title}`,
       section.instruction,
     ]),
     "## 建议动作",
-    "这里必须给 1-2 条可点击动作，并严格使用 `- 动作文案｜用户点击后应发送的话` 的格式。",
-    `建议至少包含这一条动作：${template.requiredActionExample}`,
-    "如果某部分确实没有内容，可以省略对应二级标题，但“建议动作”默认应保留。",
+    "提供 1-2 条可点击动作，并使用 `- 动作文案｜用户点击后应发送的话` 的格式。",
+    `可参考动作：${template.requiredActionExample}`,
+    "教学模板中的某部分如果确实没有内容，可以省略对应二级标题；概念问答场景可以完全省略“建议动作”。",
   ]
 }

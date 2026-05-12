@@ -24,6 +24,7 @@ import type { SubscriptionSnapshot } from "@/types/profile"
 import { requestData } from "@/lib/api/client"
 import {
   PAYMENT_CHANNEL_OPTIONS,
+  buildPaymentDialogTitle,
   getPaymentOrderErrorMessage,
   getPlanActionState,
 } from "@/components/layout/subscription-detail-logic"
@@ -472,7 +473,7 @@ export function SubscriptionDetailDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <MessageCircle className="h-5 w-5 text-brand" />
-              微信扫码支付
+              {buildPaymentDialogTitle(activeOrder?.paymentChannel ?? selectedPaymentChannel)}
             </DialogTitle>
             <DialogDescription>
               {activeOrder ? `订单 ${activeOrder.orderNo} 正在等待支付。` : "正在准备支付二维码。"}

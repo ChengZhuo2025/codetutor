@@ -5,6 +5,7 @@ import { createPublicKey, createSign, createVerify } from "node:crypto"
 import {
   buildAlipaySignContent,
   buildAlipaySignedParams,
+  extractAlipayResponseRawSegment,
   verifyAlipayResponseSignature,
   verifyAlipaySignature,
 } from "../server/modules/payments/alipay-crypto.ts"
@@ -167,21 +168,22 @@ test("normalizeAlipayPaymentConfigInput accepts Alipay console bare keys", () =>
   }
 })
 
-test("verifyAlipayResponseSignature validates gateway response payload only", () => {
-  const responsePayload = {
-    code: "10000",
-    msg: "Success",
-    out_trade_no: "CT202605100001",
-    qr_code: "https://qr.alipay.com/example",
-  }
+test("verifyAlipayResponseSignature verifies the raw response segment bytes", () => {
+  // 构造一段真实 Alipay 同步响应 raw body——key 顺序不按字母、含特殊空白，
+  // 只有基于原始字节验签才能通过；JSON.parse/stringify 会破坏顺序和格式。
+  const innerSegment = '{"code":"10000","msg":"Success","out_trade_no":"CT202605100001","qr_code":"https://qr.alipay.com/example?a=1\\u002F2"}'
   const signer = createSign("RSA-SHA256")
-  signer.update(JSON.stringify(responsePayload), "utf8")
+  signer.update(innerSegment, "utf8")
   signer.end()
   const signature = signer.sign(TEST_PRIVATE_KEY).toString("base64")
+  const rawBody = `{"alipay_trade_query_response":${innerSegment},"sign":"${signature}"}`
+
+  const segment = extractAlipayResponseRawSegment(rawBody, "alipay.trade.query")
+  assert.equal(segment, innerSegment)
 
   assert.equal(
     verifyAlipayResponseSignature({
-      responsePayload,
+      rawSegment: segment ?? "",
       signature,
       publicKeyPem: TEST_PUBLIC_KEY,
     }),
@@ -189,12 +191,26 @@ test("verifyAlipayResponseSignature validates gateway response payload only", ()
   )
   assert.equal(
     verifyAlipayResponseSignature({
-      responsePayload: { ...responsePayload, qr_code: "tampered" },
+      rawSegment: innerSegment.replace("10000", "40004"),
       signature,
       publicKeyPem: TEST_PUBLIC_KEY,
     }),
     false,
   )
+})
+
+test("extractAlipayResponseRawSegment returns error_response segment when present", () => {
+  const innerSegment = '{"code":"40004","msg":"Business Failed","sub_code":"ACQ.TRADE_NOT_EXIST"}'
+  const rawBody = `{"error_response":${innerSegment},"sign":"noop"}`
+  assert.equal(
+    extractAlipayResponseRawSegment(rawBody, "alipay.trade.query"),
+    innerSegment,
+  )
+})
+
+test("extractAlipayResponseRawSegment returns null when segment cannot be located", () => {
+  assert.equal(extractAlipayResponseRawSegment("<html>502</html>", "alipay.trade.query"), null)
+  assert.equal(extractAlipayResponseRawSegment("", "alipay.trade.query"), null)
 })
 
 test("normalizeAlipayPaymentConfigPatch preserves configured secrets", () => {
@@ -286,4 +302,40 @@ test("alipay notify returns success on verified callback", async () => {
 
   assert.equal(res.status, 200)
   assert.equal(await res.text(), "success")
+})
+
+test("handleAlipayPaymentNotify guards timestamp freshness and sign_type", async () => {
+  const { readFileSync } = await import("node:fs")
+  const serviceSource = readFileSync("server/modules/payments/service.ts", "utf8")
+  // 必须校验支付宝 notify 的 notify_time 不早于/晚于当前 5 分钟
+  assert.match(serviceSource, /isFreshTimestamp\(/)
+  // 必须强校验 sign_type === "RSA2"（#13 一并覆盖）
+  assert.match(serviceSource, /input\.form\.sign_type !== "RSA2"/)
+})
+
+test("normalizeAlipayPaymentConfigInput preserves PKCS#1 style RSA private keys", () => {
+  // 支付宝开放平台旧版工具导出的是 PKCS#1（BEGIN RSA PRIVATE KEY）格式，
+  // 验证时不能强行把它改写成 PKCS#8，以免密钥无法解析。
+  const pkcs1Pem = TEST_PRIVATE_KEY.replace("BEGIN PRIVATE KEY", "BEGIN RSA PRIVATE KEY")
+    .replace("END PRIVATE KEY", "END RSA PRIVATE KEY")
+  const parsed = normalizeAlipayPaymentConfigInput({
+    enabled: true,
+    appId: "2021000000000000",
+    notifyUrl: "https://www.codetutor.cn/api/payment/alipay/notify",
+    appPrivateKeyPem: pkcs1Pem,
+    alipayPublicKeyPem: TEST_PUBLIC_KEY,
+  })
+  assert.equal(parsed.ok, true)
+  if (parsed.ok) {
+    assert.match(parsed.data.appPrivateKeyPem, /^-----BEGIN RSA PRIVATE KEY-----/)
+  }
+})
+
+test("callAlipay surfaces non-JSON gateway errors as PAYMENT_PROVIDER_ERROR", async () => {
+  const { readFileSync } = await import("node:fs")
+  const serviceSource = readFileSync("server/modules/payments/service.ts", "utf8")
+  // callAlipay 中 JSON.parse 必须有 try/catch，并把异常转成 PAYMENT_PROVIDER_ERROR
+  const callAlipayFn = serviceSource.slice(serviceSource.indexOf("async function callAlipay<"))
+  assert.match(callAlipayFn, /try \{\s*json = responseBody \?/)
+  assert.match(callAlipayFn, /支付宝支付响应格式异常/)
 })

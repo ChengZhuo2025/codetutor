@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs"
 
 import {
   PAYMENT_CHANNEL_OPTIONS,
+  buildPaymentDialogTitle,
   getPaymentOrderErrorMessage,
   getPlanActionState,
 } from "../components/layout/subscription-detail-logic.ts"
@@ -63,7 +64,7 @@ test("subscription dialog renders payment qr in a nested top-level dialog", () =
   const source = readFileSync(new URL("../components/layout/subscription-detail-dialog.tsx", import.meta.url), "utf8")
 
   assert.match(source, /paymentDialogOpen/)
-  assert.match(source, /微信扫码支付/)
+  assert.match(source, /buildPaymentDialogTitle\(/)
   assert.match(source, /Dialog open=\{paymentDialogOpen\}/)
   assert.doesNotMatch(source, /grid gap-4 rounded-xl border border-border\/70 bg-surface-1\/95 p-4 md:grid-cols-\[260px_1fr\]/)
 })
@@ -82,4 +83,30 @@ test("dynamic non-purchasable plans are disabled without relying on hardcoded pl
       variant: "unavailable",
     },
   )
+})
+
+test("buildPaymentDialogTitle returns channel-specific title", () => {
+  assert.equal(buildPaymentDialogTitle("wechat"), "微信扫码支付")
+  assert.equal(buildPaymentDialogTitle("alipay"), "支付宝网页支付")
+})
+
+test("subscription-detail-dialog derives payment dialog title from selectedPaymentChannel", () => {
+  const source = readFileSync(
+    new URL("../components/layout/subscription-detail-dialog.tsx", import.meta.url),
+    "utf8",
+  )
+  // 标题必须从 selectedPaymentChannel 派生，不能硬编码"微信扫码支付"
+  assert.match(source, /buildPaymentDialogTitle\(/)
+  assert.doesNotMatch(source, /<DialogTitle[^>]*>微信扫码支付<\/DialogTitle>/)
+})
+
+test("alipay return URL only redirects and does not grant subscription rights", () => {
+  const source = readFileSync(
+    new URL("../app/api/payment/alipay/return/route.ts", import.meta.url),
+    "utf8",
+  )
+  // return URL 只做重定向，不调用 completePaidOrder 或任何权益开通逻辑。
+  // 权益开通必须通过 /payment/orders/{orderNo}/sync 或 notify 回调确认。
+  assert.match(source, /NextResponse\.redirect/)
+  assert.doesNotMatch(source, /completePaidOrder|createSupabaseAdminClient|user_subscriptions/)
 })

@@ -131,3 +131,56 @@ test("payment order delete returns not found for inaccessible order", async () =
   )
   assert.equal(res.status, 404)
 })
+
+test("createWechatNativeOrder calls wechat first so failed prepay never leaves a dangling row", async () => {
+  const { readFileSync } = await import("node:fs")
+  const source = readFileSync("server/modules/payments/service.ts", "utf8")
+  // 下单链路必须先调 callWechatPay 拿到 code_url，成功后才 insert。
+  // 失败时应在 insert 之前就抛出 PAYMENT_PROVIDER_ERROR，不会留下 status='created' 的悬挂行。
+  const wechatFn = source.slice(source.indexOf("export async function createWechatNativeOrder("))
+  assert.ok(wechatFn.length > 0, "createWechatNativeOrder 未找到")
+  const insertIndex = wechatFn.indexOf(".from(\"payment_orders\")")
+  const callIndex = wechatFn.indexOf("callWechatPay<")
+  assert.ok(callIndex >= 0 && insertIndex >= 0)
+  assert.ok(callIndex < insertIndex, "callWechatPay 必须在 payment_orders insert 之前执行")
+})
+
+test("createAlipayPrecreateOrder calls alipay first so failed prepay never leaves a dangling row", async () => {
+  const { readFileSync } = await import("node:fs")
+  const source = readFileSync("server/modules/payments/service.ts", "utf8")
+  const alipayFn = source.slice(source.indexOf("export async function createAlipayPrecreateOrder("))
+  assert.ok(alipayFn.length > 0, "createAlipayPrecreateOrder 未找到")
+  const insertIndex = alipayFn.indexOf(".from(\"payment_orders\")")
+  const callIndex = alipayFn.indexOf("callAlipayPagePay(")
+  assert.ok(callIndex >= 0 && insertIndex >= 0)
+  assert.ok(callIndex < insertIndex, "callAlipayPagePay 必须在 payment_orders insert 之前执行")
+})
+
+test("buildPaymentOrderNo appends a CSPRNG suffix with sufficient entropy", async () => {
+  const { buildPaymentOrderNo } = await import("../server/modules/payments/model.ts")
+  const date = new Date("2026-05-11T12:00:00.000Z")
+  const samples = new Set<string>()
+  for (let i = 0; i < 200; i += 1) samples.add(buildPaymentOrderNo(date))
+  // 熵足够：200 次生成基本不碰撞
+  assert.ok(samples.size >= 199)
+  for (const no of samples) {
+    // CT + 14 位时间戳 + 8 位十六进制（来自 randomBytes(4)）
+    assert.match(no, /^CT\d{14}[0-9A-F]{8}$/)
+  }
+})
+
+test("mapOrder does not silently default payment_channel to wechat", async () => {
+  const { readFileSync } = await import("node:fs")
+  const source = readFileSync("server/modules/payments/service.ts", "utf8")
+  // payment_channel 迁移 037 已设为 NOT NULL DEFAULT 'wechat'，
+  // 不应再用 ?? "wechat" 兜底，否则数据损坏时会静默掩盖故障。
+  assert.doesNotMatch(source, /payment_channel \?\? "wechat"/)
+})
+
+test("service.ts does not write secret_key_version in update payloads", async () => {
+  const { readFileSync } = await import("node:fs")
+  const source = readFileSync("server/modules/payments/service.ts", "utf8")
+  // secret_key_version 是未完成的密钥轮换机制，写入但从不消费，
+  // 移除写入避免误导未来维护者。DB 字段保留向前兼容。
+  assert.doesNotMatch(source, /secret_key_version: SECRET_KEY_VERSION/)
+})

@@ -1,5 +1,7 @@
 import "server-only"
 
+import { randomBytes } from "node:crypto"
+
 export type WechatPaymentConfigInput = {
   enabled?: unknown
   appId?: unknown
@@ -372,7 +374,9 @@ export function parsePaymentPlanCode(value: unknown): ParseResult<string> {
 
 export function buildPaymentOrderNo(date = new Date()) {
   const stamp = date.toISOString().replace(/\D/g, "").slice(0, 14)
-  const suffix = Math.random().toString(36).slice(2, 8).toUpperCase()
+  // 用 CSPRNG 生成 8 位十六进制后缀（4 字节 = 4.2×10⁹ 种）。
+  // 之前用 Math.random() 熵不足且非安全随机源，高并发场景会偶发撞号。
+  const suffix = randomBytes(4).toString("hex").toUpperCase()
   return `CT${stamp}${suffix}`
 }
 
@@ -440,4 +444,34 @@ export function maskPaymentSecret(value: string | null | undefined) {
   if (normalized.includes("-----BEGIN")) return "••••••••••"
   if (normalized.length <= 8) return "*".repeat(8)
   return `${normalized.slice(0, 4)}${"*".repeat(Math.min(12, normalized.length - 8))}${normalized.slice(-4)}`
+}
+
+// 财务订单检索关键字消毒：PostgREST `.or()` DSL 中的元字符（逗号、括号、点、星号、
+// 反斜杠、通配符 %/_）必须剔除，以免调用方通过 keyword 注入改写查询语义。
+// 白名单保留字母数字、下划线、短横线、中文、空格。
+export function sanitizePaymentKeyword(value: unknown, maxLength = 64): string {
+  if (typeof value !== "string") return ""
+  const cleaned = value.replace(/[^A-Za-z0-9_\-·一-龥 ]+/g, "").trim()
+  return cleaned.slice(0, maxLength)
+}
+
+// 支付回调时间戳新鲜度校验：避免攻击者重放历史合法 notify。
+// 默认 ±5 分钟，与微信支付官方规范一致，支付宝同步采用。
+export function isFreshTimestamp(tsSeconds: number, nowMs = Date.now(), toleranceSec = 300): boolean {
+  if (typeof tsSeconds !== "number" || !Number.isFinite(tsSeconds)) return false
+  const deltaSec = Math.abs(Math.floor(nowMs / 1000) - tsSeconds)
+  return deltaSec <= toleranceSec
+}
+
+// 把支付宝 notify 的 `notify_time` / `gmt_payment`（格式：YYYY-MM-DD HH:mm:ss @ UTC+8）
+// 转换为 epoch seconds，便于新鲜度判定。无效值返回 NaN。
+export function parseAlipayBeijingTimeToEpochSeconds(value: string | undefined | null): number {
+  if (!value || typeof value !== "string") return NaN
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})$/)
+  if (!match) return NaN
+  const [, y, m, d, hh, mm, ss] = match
+  // 支付宝时间戳固定为北京时间 UTC+8
+  const iso = `${y}-${m}-${d}T${hh}:${mm}:${ss}+08:00`
+  const t = Date.parse(iso)
+  return Number.isFinite(t) ? Math.floor(t / 1000) : NaN
 }

@@ -113,6 +113,7 @@ export function canUseCompletionQuickAction(input: {
       | "task_review"
       | "completion_feedback"
       | "path_guidance"
+      | "concept_qa"
       | null
     actionLabels: string[]
     taskPatchStatus: "in_progress" | "blocked" | "completed" | null

@@ -197,6 +197,17 @@ const ASSISTANT_MESSAGE_INTERACTION_META: Record<
     orderedBadgeClass: "bg-brand/12 text-brand",
     listIconClass: "text-brand",
   },
+  concept_qa: {
+    label: "概念解答",
+    hint: "直接回答技术概念问题，不受关卡范围限制。",
+    panelClass: "border-sky-500/20 bg-background/50",
+    iconClass: "text-sky-500",
+    chipClass: "border-sky-500/20 bg-sky-500/10 text-sky-500",
+    summaryClass: "text-foreground",
+    sectionClass: "border-sky-500/16 bg-sky-500/8",
+    orderedBadgeClass: "bg-sky-500/12 text-sky-500",
+    listIconClass: "text-sky-500",
+  },
 }
 
 function tokenizeInlineText(text: string): MessageInlineToken[] {
