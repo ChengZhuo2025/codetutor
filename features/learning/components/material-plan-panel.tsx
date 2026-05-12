@@ -25,6 +25,7 @@ type MaterialPlanPanelProps = {
   defaultLinksText?: string
   defaultDraftId?: string | null
   onDone?: () => void
+  onGeneratingChange?: (isGenerating: boolean) => void
 }
 
 const ACTIVE_STATUSES = new Set([
@@ -161,6 +162,7 @@ export function MaterialPlanPanel({
   defaultLinksText,
   defaultDraftId,
   onDone,
+  onGeneratingChange,
 }: MaterialPlanPanelProps) {
   const [linksText, setLinksText] = useState(defaultLinksText ?? "")
   const [userGoal, setUserGoal] = useState("")
@@ -170,6 +172,24 @@ export function MaterialPlanPanel({
   const [draftDetail, setDraftDetail] = useState<LearningPlanDraftDetailResponseData | null>(null)
   const [busyAction, setBusyAction] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [displayProgressPercent, setDisplayProgressPercent] = useState(0)
+
+  const isIntakeGenerating = intakeStatus
+    ? ACTIVE_STATUSES.has(intakeStatus.status)
+    : false
+  const isGeneratingPlan =
+    isIntakeGenerating || busyAction === "generate" || busyAction === "regenerate"
+  const sourceProgressPercent = intakeStatus?.progressPercent ?? 0
+  const cappedSourceProgressPercent = isIntakeGenerating
+    ? Math.min(95, sourceProgressPercent)
+    : sourceProgressPercent
+  const renderedProgressPercent = isGeneratingPlan
+    ? displayProgressPercent
+    : sourceProgressPercent
+  const loadingProgressMessage =
+    intakeStatus?.progressMessage ?? "AI 正在整理教程内容和学习步骤"
+  const shouldShowIntakeError =
+    Boolean(intakeStatus?.errorMessage) && !draftDetail && intakeStatus?.status === "failed"
 
   const resolveMaterialPlanErrorMessage = (
     code: string | undefined,
@@ -230,6 +250,45 @@ export function MaterialPlanPanel({
       window.clearTimeout(timer)
     }
   }, [defaultDraftId, draftDetail])
+
+  useEffect(() => {
+    onGeneratingChange?.(isGeneratingPlan)
+
+    return () => {
+      onGeneratingChange?.(false)
+    }
+  }, [isGeneratingPlan, onGeneratingChange])
+
+  useEffect(() => {
+    if (!isGeneratingPlan) {
+      return
+    }
+
+    const syncTimer = window.setTimeout(() => {
+      setDisplayProgressPercent((current) =>
+        Math.max(current, Math.min(95, cappedSourceProgressPercent)),
+      )
+    }, 0)
+
+    const timer = window.setInterval(() => {
+      setDisplayProgressPercent((current) => {
+        const floor = Math.min(95, cappedSourceProgressPercent)
+        const base = Math.max(current, floor)
+
+        if (base >= 95) {
+          return 95
+        }
+
+        const increment = base < 35 ? 2 : base < 70 ? 1 : 0.35
+        return Math.min(95, Number((base + increment).toFixed(2)))
+      })
+    }, 900)
+
+    return () => {
+      window.clearTimeout(syncTimer)
+      window.clearInterval(timer)
+    }
+  }, [cappedSourceProgressPercent, isGeneratingPlan])
 
   useEffect(() => {
     if (!intakeStatus || !ACTIVE_STATUSES.has(intakeStatus.status)) {
@@ -455,12 +514,52 @@ export function MaterialPlanPanel({
 
   return (
     <PageSection
-      className={cn("max-w-full min-w-0 shrink-0", className)}
+      className={cn("relative max-w-full min-w-0 shrink-0", className)}
       eyebrow="自学路径"
       title="用教程链接生成学习计划"
       description="提交后会进入异步处理。首版支持 MDN、Next.js、web.dev，以及公开的抖音、小红书、B 站教程链接。确认后会替换当前进行中的自学计划。"
       bodyClassName="space-y-4"
+      aria-busy={isGeneratingPlan}
     >
+      {isGeneratingPlan ? (
+        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl border border-brand/12 bg-[linear-gradient(135deg,oklch(0.985_0.004_240/0.82),oklch(0.94_0.018_178/0.78)_46%,oklch(0.985_0.004_240/0.86))] px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-sm dark:border-brand/18 dark:bg-[linear-gradient(135deg,oklch(0.13_0.012_240/0.9),oklch(0.18_0.03_178/0.84)_48%,oklch(0.12_0.01_240/0.9))]">
+          <div className="pointer-events-none absolute inset-0 rounded-2xl bg-[linear-gradient(to_right,oklch(0.55_0.03_240/0.08)_1px,transparent_1px),linear-gradient(to_bottom,oklch(0.55_0.03_240/0.08)_1px,transparent_1px)] bg-[size:28px_28px] opacity-45 dark:opacity-20" />
+          <div className="relative w-full max-w-md rounded-2xl border border-brand/20 bg-surface-1/96 p-5 shadow-[0_24px_80px_-42px_rgba(15,23,42,0.55)] ring-1 ring-black/[0.04] dark:border-brand/18 dark:bg-[oklch(0.18_0.012_250/0.96)] dark:ring-white/10">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-brand/24 bg-brand/12 text-brand">
+                <Loader2 className="size-5 animate-spin" aria-hidden />
+              </div>
+              <div className="min-w-0">
+                <p className="text-base font-semibold text-foreground">正在生成学习计划</p>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                  {loadingProgressMessage}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                生成进度
+              </p>
+              <p className="text-sm font-medium text-foreground">
+                {Math.round(renderedProgressPercent)}%
+              </p>
+            </div>
+            <div className="relative mt-2 h-2.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className="relative h-full overflow-hidden rounded-full bg-brand transition-all duration-700 ease-out"
+                style={{ width: `${renderedProgressPercent}%` }}
+              >
+                <div className="absolute inset-y-0 w-16 animate-[material-plan-progress-shine_1.4s_ease-in-out_infinite] bg-white/35 blur-[1px]" />
+              </div>
+            </div>
+            <p className="mt-3 text-xs leading-5 text-muted-foreground">
+              生成过程中请保持弹框打开，完成后会自动进入草稿预览。
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       <div className="min-w-0 space-y-2">
         <p className="text-xs font-medium text-muted-foreground">教程链接（仅 1 条）</p>
         <Textarea
@@ -587,16 +686,16 @@ export function MaterialPlanPanel({
               </p>
             </div>
             <p className="text-sm text-muted-foreground">
-              {intakeStatus.progressPercent ?? 0}%
+              {Math.round(renderedProgressPercent)}%
             </p>
           </div>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-brand transition-all"
-              style={{ width: `${intakeStatus.progressPercent ?? 0}%` }}
+              style={{ width: `${renderedProgressPercent}%` }}
             />
           </div>
-          {intakeStatus.errorMessage ? (
+          {shouldShowIntakeError ? (
             <p className="mt-3 text-sm text-destructive">{intakeStatus.errorMessage}</p>
           ) : null}
         </div>

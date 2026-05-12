@@ -1,13 +1,12 @@
-import type { ReactNode } from "react"
+import type { ComponentProps, ReactNode } from "react"
 import { cn } from "@/lib/utils"
 
-type PageSectionProps = {
+type PageSectionProps = ComponentProps<"section"> & {
   eyebrow?: string
   title: string
   description?: ReactNode
   action?: ReactNode
   children: ReactNode
-  className?: string
   bodyClassName?: string
 }
 
@@ -19,9 +18,13 @@ export function PageSection({
   children,
   className,
   bodyClassName,
+  ...props
 }: PageSectionProps) {
   return (
-    <section className={cn("rounded-[28px] border border-border/60 bg-surface-2", className)}>
+    <section
+      className={cn("rounded-[28px] border border-border/60 bg-surface-2", className)}
+      {...props}
+    >
       <div className="flex flex-col gap-3 border-b border-border/50 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
         <div className="min-w-0">
           {eyebrow ? (

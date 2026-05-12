@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DIALOG_PANEL_CLASS, USER_PANEL_DIVIDER_CLASS } from "@/components/ui/surface-styles"
 import { MaterialPlanPanel } from "@/features/learning/components/material-plan-panel"
@@ -24,6 +24,7 @@ export function MaterialPlanDialog({
   initialDraftId,
   onDialogOpenChange,
 }: MaterialPlanDialogProps) {
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false)
   const initialLinksText = useMemo(
     () => (initialLinks && initialLinks.length > 0 ? initialLinks.join("\n") : ""),
     [initialLinks],
@@ -34,11 +35,15 @@ export function MaterialPlanDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
+        if (!next && isGeneratingPlan) {
+          return
+        }
         onDialogOpenChange?.(next)
         onOpenChange(next)
       }}
     >
       <DialogContent
+        showCloseButton={!isGeneratingPlan}
         className={cn(
           DIALOG_PANEL_CLASS,
           "max-h-[85vh] min-w-0 overflow-x-hidden overflow-y-auto rounded-2xl p-0 sm:max-w-[760px]",
@@ -60,6 +65,7 @@ export function MaterialPlanDialog({
             defaultLinksText={initialLinksText}
             defaultDraftId={initialDraftId}
             onDone={() => onOpenChange(false)}
+            onGeneratingChange={setIsGeneratingPlan}
           />
         </div>
       </DialogContent>

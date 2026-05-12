@@ -25,7 +25,7 @@
     "test:learning-message-output-format": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-output-format.ts",
     "test:learning-message-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-route.ts",
     "test:learn-chat-composition": "node scripts/check-learn-chat-composition.mjs",
-    "test:learning-plan-from-material": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-plan-from-material-logic.ts scripts/check-learning-plan-from-material-route.ts",
+    "test:learning-plan-from-material": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-plan-from-material-logic.ts scripts/check-learning-plan-from-material-route.ts scripts/check-learning-material-intake-route.ts scripts/check-material-plan-ready-status.ts",
     "test:api-request-validation": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-api-request-validation.ts",
     "test:request-validated-routes": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-request-validated-routes.ts",
     "test:openapi-document": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-openapi-document.ts",
