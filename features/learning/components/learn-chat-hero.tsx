@@ -1,6 +1,6 @@
 "use client"
 
-import { AlertCircle, Lightbulb, Target } from "lucide-react"
+import { AlertCircle, CheckCircle2, ClipboardCheck, Lightbulb, ListChecks, Target } from "lucide-react"
 import type { LearningCurrentSessionResponseData } from "@/lib/api/contracts/learning"
 import { cn } from "@/lib/utils"
 import {
@@ -92,6 +92,58 @@ export function LearnChatHero({ mission, rightPanel }: LearnChatHeroProps) {
           <p className="mt-1 ml-5 text-sm leading-7 text-muted-foreground">{mission.coachCue}</p>
         </div>
       ) : null}
+
+      <div className="grid gap-4 border-t border-border/60 px-5 py-5 sm:px-6 lg:grid-cols-[1.1fr_1fr]">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/90">
+            <Lightbulb className="h-3.5 w-3.5 text-gold" />
+            先理解方法
+          </div>
+          <p className="mt-2 text-sm leading-7 text-muted-foreground">
+            {rightPanel.lessonBrief}
+          </p>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/90">
+            <ListChecks className="h-3.5 w-3.5 text-brand" />
+            跟着做
+          </div>
+          <div className="mt-3 space-y-2">
+            {rightPanel.practiceSteps.map((step, index) => (
+              <div key={`${step}-${index}`} className="flex gap-2 text-sm leading-6 text-muted-foreground">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/15 text-[11px] font-semibold text-brand">
+                  {index + 1}
+                </span>
+                <span>{step}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-[1.25rem] border border-border/55 bg-surface-1/80 p-4 lg:col-span-2">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/90">
+            <ClipboardCheck className="h-3.5 w-3.5 text-brand" />
+            提交说明
+          </div>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            {rightPanel.submissionGuide}
+          </p>
+          {rightPanel.checkpoints.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {rightPanel.checkpoints.map((checkpoint) => (
+                <span
+                  key={checkpoint}
+                  className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-surface-2 px-2.5 py-1 text-xs text-muted-foreground"
+                >
+                  <CheckCircle2 className="h-3 w-3 text-brand" />
+                  {checkpoint}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </div>
     </div>
   )
 }

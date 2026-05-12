@@ -175,6 +175,16 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
         knowledgePoints: currentStage.tags,
         masteryPoints: currentStage.keyPoints,
         cautions: currentStage.pitfalls,
+        lessonBrief:
+          "先用结果导向的话描述你要生成的组件，不需要提前写实现细节。Agent 会根据目标生成完整文件，你要做的是观察产出是否符合目标。",
+        practiceSteps: [
+          "打开 Agent 面板",
+          "输入一句结果导向的需求",
+          "让 Agent 生成组件",
+          "运行页面并观察时钟是否每秒更新",
+        ],
+        submissionGuide: "提交生成后的组件代码片段、页面截图，或说明时钟是否能正常显示和更新。",
+        checkpoints: ["需求描述清楚", "组件能生成", "页面能运行", "时钟能自动更新"],
         nextStepPreview: `下一步会进入 ${nextStage.title}，继续建立更完整的 Cursor 协作工作流。`,
       },
       recentPracticeRounds: currentLearningPlan.stages.slice(0, 3).map((stage, index) => ({

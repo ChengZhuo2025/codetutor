@@ -959,7 +959,7 @@ SSE 事件补充：
 - 创建时立即返回 `processingMode=async`、`intakeId`、`runId` 和当前状态；前端通过 `GET /api/learning/material-intakes/{id}` 轮询进度
 - intake worker 现已固定按 `raw text -> subtitle -> ASR -> OCR/vision` 顺序提取证据；仅当前一层内容不足时才继续调用更贵模型
 - `learning_material_chunks` 现已稳定写入 `modality`、`source_ref`、`evidence_type`、`confidence`，供 planner 与质量闸门追溯证据
-- planner 生成的每个 task 除 `title/objective/practiceSteps/acceptanceCriteria` 外，还必须包含 `masteryPoints`（本关要掌握）与 `cautions`（注意事项，可含 `isTrap`）
+- planner 生成的每个 task 除 `title/objective/practiceSteps/acceptanceCriteria` 外，还必须包含 `lessonBrief`（AI 重写的新手教案）、`submissionGuide`（用户提交证据说明）、`checkpoints`（AI 验收检查点）、`masteryPoints`（本关要掌握）与 `cautions`（注意事项，可含 `isTrap`）
 - planner 输出进入规则质量闸门；若证据偏弱或计划质量不足，会自动降级为 3 关试点计划，并在草稿 `qualityReport` 中写出原因
 - 成功后写入 `learning_material_intakes` / `learning_material_chunks` / `learning_plan_generation_runs` / `learning_plan_drafts` / `learning_plan_draft_tasks` / `learning_plan_draft_revisions`，不直接改动当前 active path
 - 主工具与等级来自 `user_profiles`，无需在请求中传 `targetToolCode`
@@ -1017,7 +1017,7 @@ SSE 事件补充：
 实现说明：
 
 - 物化到 `learning_paths` + `path_steps` + `user_learning_paths` + `user_tasks`，与 onboarding 一致：先将用户所有 `active` 的 `user_learning_paths` 置为 `archived`，再插入新路径与任务，并更新 `current_task_id` / `last_active_task_id`
-- confirm 时将草稿任务的 `masteryPoints` 写入 `path_steps.key_points`，将 `cautions` 写入 `path_steps.pitfalls`，因此 `/learn` 右侧栏可直接消费精细化的“本关要掌握 / 注意事项”
+- confirm 时将草稿任务的 `masteryPoints` 写入 `path_steps.key_points`，将 `cautions` 写入 `path_steps.pitfalls`，并将 `lessonBrief` / `practiceSteps` / `submissionGuide` / `checkpoints` 写入 `path_steps.metadata`，因此 `/learn` 可先展示“先理解方法 / 跟着做 / 提交说明 / AI 检查点”，再进入反馈验收
 - 同一草稿重复确认幂等：返回已确认的 `learningPathId` 与 `currentTaskId`
 
 路径参数：
@@ -1042,7 +1042,7 @@ SSE 事件补充：
 
 - 仅允许确认当前登录用户自己的、`status=draft` 的草稿；已确认再调返回 `409 PLAN_DRAFT_ALREADY_CONFIRMED`（并发下亦可能因状态冲突得到该码）
 - 若草稿刚经过 `PATCH` 或单任务重生成、`quality_status` 仍未完成复检（如 `pending`），confirm 返回 `422 AI_RESPONSE_INVALID`，阻止用户启用未复检草稿
-- 若任一任务缺少 `masteryPoints`（至少 2 条）或 `cautions`（至少 1 条），confirm 返回 `422 AI_RESPONSE_INVALID`，阻止把降级草稿写进正式学习路径
+- 若任一任务缺少 `masteryPoints`（至少 2 条）或 `cautions`（至少 1 条），confirm 返回 `422 AI_RESPONSE_INVALID`，阻止把降级草稿写进正式学习路径；新生成草稿还会在 planner schema 阶段要求 `lessonBrief`、`submissionGuide` 与 `checkpoints`
 - `learningPathId` 为 **用户路径实例** `user_learning_paths.id`（非模板 `learning_paths.id`）
 
 ## 7.6 `POST /api/learning/plan-drafts/{id}/regenerate`
@@ -1067,7 +1067,7 @@ SSE 事件补充：
 - 仅允许对当前用户名下 `status=draft` 的草稿操作；提交 regenerate 后旧草稿会立即标记为 `superseded`，待新草稿完成后再回填 `superseded_by_draft_id`
 - 若请求体未传 `currentConstraints`，服务端会自动复用原 intake 中保存的约束，避免全量重生成时丢失上下文
 - `GET /api/learning/plan-drafts/{id}` 会同时返回 `inputContext`（`links` / `userGoal` / `weeklyHours` / `currentConstraints`），供工作台刷新后恢复草稿上下文
-- `PATCH /api/learning/plan-drafts/{id}` 返回并允许编辑 task 级 `practiceSteps` / `masteryPoints` / `cautions`；PATCH 时 `practiceSteps` 至少保留 1 条，`masteryPoints` 至少保留 2 条，`cautions` 至少保留 1 条；PATCH 与 `POST /api/learning/plan-drafts/{id}/tasks/{taskId}/regenerate` 完成后都会立即重跑质量闸门，并把最新 `qualityStatus` / `qualityReport` 写回草稿
+- `PATCH /api/learning/plan-drafts/{id}` 返回并允许编辑 task 级 `lessonBrief` / `practiceSteps` / `submissionGuide` / `checkpoints` / `masteryPoints` / `cautions`；PATCH 时 `practiceSteps` 至少保留 1 条，`checkpoints` 至少保留 2 条，`masteryPoints` 至少保留 2 条，`cautions` 至少保留 1 条；PATCH 与 `POST /api/learning/plan-drafts/{id}/tasks/{taskId}/regenerate` 完成后都会立即重跑质量闸门，并把最新 `qualityStatus` / `qualityReport` 写回草稿
 - 不直接修改当前 active path；仅插入新 intake（若重新抓取）与新 draft
 
 ## 7.7 规划中：`POST /api/learning/stuck-help`

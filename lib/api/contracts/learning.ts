@@ -116,6 +116,10 @@ export type LearningCurrentSessionResponseData = {
     knowledgePoints: string[]
     masteryPoints: string[]
     cautions: LearningCautionItem[]
+    lessonBrief: string
+    practiceSteps: string[]
+    submissionGuide: string
+    checkpoints: string[]
     nextStepPreview: string
   }
   recentPracticeRounds: RecentPracticeRound[]
@@ -127,7 +131,10 @@ export type LearningPlanPreviewTaskContract = {
   taskNo: number
   title: string
   objective: string
+  lessonBrief: string
   practiceSteps: string[]
+  submissionGuide: string
+  checkpoints: string[]
   acceptanceCriteria: string
   estimatedMinutes?: number
   sourceRefs: string[]
@@ -189,7 +196,10 @@ export type LearningPlanDraftTaskDetailContract = {
   position: number | null
   title: string
   objective: string
+  lessonBrief: string
   practiceSteps: string[]
+  submissionGuide: string
+  checkpoints: string[]
   acceptanceCriteria: string
   estimatedMinutes: number | null
   sourceRefs: string[]
@@ -241,7 +251,10 @@ export type LearningPlanDraftPatchTaskRequestContract = {
   id: string
   title?: string | null
   objective?: string | null
+  lessonBrief?: string | null
   practiceSteps?: string[]
+  submissionGuide?: string | null
+  checkpoints?: string[]
   acceptanceCriteria?: string | null
   estimatedMinutes?: number | null
   masteryPoints?: string[]

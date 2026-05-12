@@ -137,7 +137,7 @@ export function LandingFooter() {
                 rel="noopener noreferrer"
                 className="hover:text-foreground transition-colors hover:underline"
               >
-                沪ICP备2026015857号-1
+                沪ICP备2026015857号-2
               </a>
             </div>
           </div>

@@ -142,6 +142,19 @@ function getDraftTaskValidationError(
   draftDetail: LearningPlanDraftDetailResponseData,
 ) {
   for (const task of draftDetail.tasks) {
+    if (task.lessonBrief.trim().length < 20) {
+      return `第 ${task.taskNo} 关“先理解方法”需要写成可读的新手教案。`
+    }
+
+    if (task.submissionGuide.trim().length < 10) {
+      return `第 ${task.taskNo} 关“提交说明”需要明确用户做完后提交什么。`
+    }
+
+    const checkpointCount = task.checkpoints.filter((item) => item.trim().length > 0).length
+    if (checkpointCount < 2) {
+      return `第 ${task.taskNo} 关“AI 检查点”至少保留 2 条。`
+    }
+
     const masteryPointCount = task.masteryPoints.filter((item) => item.trim().length > 0).length
     if (masteryPointCount < 2) {
       return `第 ${task.taskNo} 关“本关要掌握”至少保留 2 条。`
@@ -420,7 +433,10 @@ export function MaterialPlanPanel({
         id: task.id,
         title: task.title,
         objective: task.objective,
+        lessonBrief: task.lessonBrief,
         practiceSteps: task.practiceSteps,
+        submissionGuide: task.submissionGuide,
+        checkpoints: task.checkpoints,
         acceptanceCriteria: task.acceptanceCriteria,
         estimatedMinutes: task.estimatedMinutes,
         masteryPoints: task.masteryPoints,
@@ -885,6 +901,25 @@ export function MaterialPlanPanel({
                 />
 
                 <Textarea
+                  value={task.lessonBrief}
+                  onChange={(e) =>
+                    setDraftDetail((current) =>
+                      current
+                        ? {
+                            ...current,
+                            tasks: current.tasks.map((item) =>
+                              item.id === task.id ? { ...item, lessonBrief: e.target.value } : item,
+                            ),
+                          }
+                        : current,
+                    )
+                  }
+                  rows={3}
+                  disabled={busyAction !== null}
+                  placeholder="先理解方法：把教程干货改写成新手能理解的教案"
+                />
+
+                <Textarea
                   value={task.practiceSteps.join("\n")}
                   onChange={(e) =>
                     setDraftDetail((current) =>
@@ -908,6 +943,54 @@ export function MaterialPlanPanel({
                   }
                   rows={3}
                   disabled={busyAction !== null}
+                />
+
+                <Textarea
+                  value={task.submissionGuide}
+                  onChange={(e) =>
+                    setDraftDetail((current) =>
+                      current
+                        ? {
+                            ...current,
+                            tasks: current.tasks.map((item) =>
+                              item.id === task.id
+                                ? { ...item, submissionGuide: e.target.value }
+                                : item,
+                            ),
+                          }
+                        : current,
+                    )
+                  }
+                  rows={2}
+                  disabled={busyAction !== null}
+                  placeholder="提交说明：告诉用户做完后该提交截图、代码、输出、Prompt 还是报错"
+                />
+
+                <Textarea
+                  value={task.checkpoints.join("\n")}
+                  onChange={(e) =>
+                    setDraftDetail((current) =>
+                      current
+                        ? {
+                            ...current,
+                            tasks: current.tasks.map((item) =>
+                              item.id === task.id
+                                ? {
+                                    ...item,
+                                    checkpoints: e.target.value
+                                      .split(/\r?\n/)
+                                      .map((point) => point.trim())
+                                      .filter(Boolean),
+                                  }
+                                : item,
+                            ),
+                          }
+                        : current,
+                    )
+                  }
+                  rows={3}
+                  disabled={busyAction !== null}
+                  placeholder={"AI 检查点（每行一条）\n例如：能看到成功运行截图\n例如：提交的 Prompt 包含目标和约束"}
                 />
 
                 <Textarea

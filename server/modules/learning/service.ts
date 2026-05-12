@@ -97,6 +97,7 @@ type StepRow = {
   knowledge_points: unknown
   key_points: unknown
   pitfalls: unknown
+  metadata: unknown
 }
 
 type ConversationSessionRow = {
@@ -154,6 +155,18 @@ function toPitfalls(input: unknown) {
       }
     })
     .filter((item): item is { text: string; isTrap?: boolean } => Boolean(item))
+}
+
+function readJsonRecord(value: unknown): JsonRecord {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {}
+  }
+  return value as JsonRecord
+}
+
+function readStringFromRecord(record: JsonRecord, key: string): string | null {
+  const value = record[key]
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
 }
 
 function getRelativeLastSeenLabel(input: string | null) {
@@ -345,7 +358,7 @@ async function loadLearningState(userId: string) {
       ? { data: [] as StepRow[], error: null }
       : await supabase
           .from("path_steps")
-          .select("id, step_no, title, summary, focus, goal, completion_criteria, review_summary, estimated_minutes, reward_score, knowledge_points, key_points, pitfalls")
+          .select("id, step_no, title, summary, focus, goal, completion_criteria, review_summary, estimated_minutes, reward_score, knowledge_points, key_points, pitfalls, metadata")
           .eq("path_id", activePath.template_path_id)
           .order("step_no", { ascending: true })
 
@@ -410,6 +423,9 @@ function buildDefaultMessages(input: {
   taskStatus: TaskRow["status"]
   hasMaterialPlan?: boolean
   whyThisStep?: string
+  practiceSteps?: string[]
+  submissionGuide?: string
+  checkpoints?: string[]
 }): Message[] {
   const currentStep = input.currentStep
 
@@ -467,9 +483,9 @@ function buildDefaultMessages(input: {
       content: [
         `本关只验证一件事：${currentStep.goal}`,
         "",
-        `1. 先完成「${currentStep.title}」`,
-        `2. 对照完成标准检查是否达成`,
-        "3. 把你的结果、截图或报错贴给我",
+        "先理解方法，再跟着步骤完成练习，最后提交可检查的结果。",
+        "",
+        `提交说明：${input.submissionGuide ?? "把你的结果、截图或报错贴给我"}`,
       ].join("\n"),
       structuredContent: null,
     },
@@ -842,6 +858,15 @@ export async function getLearningCurrentSessionData(
   const knowledgePoints = toStringArray(currentStep.knowledge_points)
   let masteryPoints = toStringArray(currentStep.key_points)
   let pitfalls = toPitfalls(currentStep.pitfalls)
+  const stepMetadata = readJsonRecord(currentStep.metadata)
+  const practiceSteps = toStringArray(stepMetadata.practiceSteps)
+  const lessonBrief = readStringFromRecord(stepMetadata, "lessonBrief")
+    ?? currentStep.focus
+    ?? currentStep.summary
+  const submissionGuide =
+    readStringFromRecord(stepMetadata, "submissionGuide")
+    ?? "完成后把你的产出、截图、代码、终端输出或报错信息发给 AI 教练。"
+  const checkpoints = toStringArray(stepMetadata.checkpoints)
 
   // 为自学模式生成的计划提供智能 fallback
   if (masteryPoints.length === 0) {
@@ -888,6 +913,9 @@ export async function getLearningCurrentSessionData(
     taskStatus: selectedTask.status,
     hasMaterialPlan,
     whyThisStep,
+    practiceSteps,
+    submissionGuide,
+    checkpoints,
   })
   const activeConversation = await resolveConversationForTask(userId, selectedTask, {
     preferredConversationId: requestedConversation?.id ?? input?.sessionId ?? null,
@@ -1095,6 +1123,10 @@ export async function getLearningCurrentSessionData(
       knowledgePoints,
       masteryPoints: masteryPoints.length > 0 ? masteryPoints : knowledgePoints,
       cautions: pitfalls,
+      lessonBrief,
+      practiceSteps,
+      submissionGuide,
+      checkpoints,
       nextStepPreview: nextUnlockSummaryOrPreview,
     },
     recentPracticeRounds: orderedSteps.slice(0, 3).map((step) => {

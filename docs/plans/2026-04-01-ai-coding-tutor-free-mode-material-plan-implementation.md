@@ -46,7 +46,8 @@
 2. 能说明“每一关依据了材料中的哪一段/哪种能力点”
 3. 可按时间预算校准
 4. 可在确认前共创编辑
-5. 可确认后直接接入当前 `/learn`、`/map`、`/history` 主链路
+5. 每一关都先教“怎么做”，再要求用户练习、提交证据和接受 AI 验收
+6. 可确认后直接接入当前 `/learn`、`/map`、`/history` 主链路
 
 ### 2.2 本版核心变化
 
@@ -56,6 +57,7 @@
 2. 从 `图文-only` 改为 `多模态摄取`
 3. 从 `整包 regenerate` 改为 `草稿可编辑 + 单关局部重生成`
 4. 从 `仅任务列表` 改为 `任务 + 用户目标对齐表 + 证据链 + 周预算校准`
+5. 从 `只给完成标准` 改为 `新手教案 + 可执行步骤 + 提交说明 + AI 检查点 + 完成标准`
 
 ### 2.3 范围冻结
 
@@ -843,13 +845,16 @@ planner 输入必须包含：
 1. `taskNo`
 2. `title`
 3. `objective`
-4. `practiceSteps`
-5. `acceptanceCriteria`
-6. `estimatedMinutes`
-7. `difficultyLevel`
-8. `sourceRefs`
-9. `goalAlignmentRefs`
-10. `whyThisTaskExists`
+4. `lessonBrief`：AI 将教程干货重写成适合新手理解的本关教案
+5. `practiceSteps`：用户可照做的具体操作步骤
+6. `submissionGuide`：做完后应提交的证据，如截图、代码、终端输出、Prompt 或报错
+7. `checkpoints`：AI 验收时对照的关键证据点
+8. `acceptanceCriteria`
+9. `estimatedMinutes`
+10. `difficultyLevel`
+11. `sourceRefs`
+12. `goalAlignmentRefs`
+13. `whyThisTaskExists`
 
 ## 12.5 局部重生成输入
 

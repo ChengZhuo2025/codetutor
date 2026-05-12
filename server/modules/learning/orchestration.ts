@@ -78,6 +78,9 @@ type StepRow = {
   focus: string | null
   goal: string
   completion_criteria: string | null
+  key_points: unknown
+  pitfalls: unknown
+  metadata: JsonRecord | null
 }
 
 type AgentBindingRow = {
@@ -253,6 +256,33 @@ function buildSkillContextText(
     .join("\n\n")
 }
 
+function readStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value.filter((item): item is string => typeof item === "string")
+}
+
+function readCautionTexts(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        return null
+      }
+      const text = (item as JsonRecord).text
+      return typeof text === "string" && text.trim().length > 0 ? text.trim() : null
+    })
+    .filter((item): item is string => Boolean(item))
+}
+
+function readStringMetadata(metadata: JsonRecord | null, key: string): string | null {
+  const value = metadata?.[key]
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
+}
+
 function buildSystemPrompt(
   input: {
     agent: AgentTemplateRow
@@ -279,7 +309,12 @@ function buildSystemPrompt(
     `路径：${input.path.path_name_snapshot} (${input.path.path_code_snapshot})`,
     `当前关卡：第 ${input.step.step_no} 关 - ${input.step.title}`,
     `关卡目标：${input.step.goal}`,
-    `关卡摘要：${input.step.focus ?? input.step.summary}`,
+    `先理解方法：${readStringMetadata(input.step.metadata, "lessonBrief") ?? input.step.focus ?? input.step.summary}`,
+    `跟着做：${readStringArray(input.step.metadata?.practiceSteps).map((step, index) => `${index + 1}. ${step}`).join("；") || input.step.summary}`,
+    `提交说明：${readStringMetadata(input.step.metadata, "submissionGuide") ?? "完成后提交产出、截图、代码、终端输出、Prompt、报错信息或文字描述。"}`,
+    `验收检查点：${readStringArray(input.step.metadata?.checkpoints).join("；") || input.step.completion_criteria || input.step.goal}`,
+    `本关要掌握：${readStringArray(input.step.key_points).join("；") || "无"}`,
+    `注意事项：${readCautionTexts(input.step.pitfalls).join("；") || "无"}`,
     `完成标准：${input.step.completion_criteria ?? input.step.goal}`,
     `任务状态：${input.task.status}`,
     `本次交互类型：${input.interactionType}`,
@@ -287,7 +322,9 @@ function buildSystemPrompt(
     // ⚡ 行为准则
     "# 行为准则",
     "",
-    "常规教学：围绕当前关卡目标、摘要和完成标准组织回复，优先给出当前一步、验证方式和下一步计划。不要空泛铺垫，不要虚构用户已经完成的结果。",
+    "常规教学：必须先教方法，再布置练习。回复顺序应为：1）用新手能懂的话解释本关方法；2）给出当前最小可执行步骤；3）说明用户做完应提交什么证据；4）说明 AI 会按哪些检查点验收。不要一开始就只要求用户反馈结果。",
+    "",
+    "验收与纠偏：当用户提交结果时，必须对照提交说明、验收检查点和完成标准判断是否通过；未通过时给一个最小修正动作，通过后再总结方法并推进。",
     "",
     "概念问答：如果用户主动询问技术概念、术语解释或与编程相关的扩展知识（如“什么是字段映射”“如何优化提示词”），应直接以问答形式清晰解答，不必拘泥于关卡范围。",
     "",
@@ -364,12 +401,12 @@ async function loadRuntimeState(userId: string, taskId?: string | null) {
     path.template_path_id
       ? supabase
           .from("path_steps")
-          .select("id, step_no, title, summary, focus, goal, completion_criteria")
+          .select("id, step_no, title, summary, focus, goal, completion_criteria, key_points, pitfalls, metadata")
           .eq("path_id", path.template_path_id)
           .order("step_no", { ascending: true })
       : supabase
           .from("path_steps")
-          .select("id, step_no, title, summary, focus, goal, completion_criteria")
+          .select("id, step_no, title, summary, focus, goal, completion_criteria, key_points, pitfalls, metadata")
           .eq("id", task.path_step_id)
 
   const { data: stepRows, error: stepError } = await stepQuery

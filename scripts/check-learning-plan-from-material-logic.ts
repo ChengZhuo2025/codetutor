@@ -150,6 +150,57 @@ test("plannerOutputSchema + business rules accept valid planner payload", () => 
         taskNo: 1,
         title: "第一步",
         objective: "跑通环境",
+        lessonBrief: "先确认本地环境能运行项目，再做后续页面修改。这样可以把环境问题和代码问题分开判断。",
+        practiceSteps: ["安装", "运行"],
+        submissionGuide: "提交启动成功的终端输出或本地页面截图。",
+        checkpoints: ["依赖安装成功", "开发服务器成功启动", "页面可以正常打开"],
+        acceptanceCriteria: "能启动",
+        estimatedMinutes: 30,
+        sourceRefs: ["c1"],
+        masteryPoints: ["知道如何启动项目", "知道成功运行的判断标准"],
+        cautions: [{ text: "不要跳过环境检查", isTrap: true }],
+      },
+      {
+        taskNo: 2,
+        title: "第二步",
+        objective: "改页面",
+        lessonBrief: "先找到页面入口，再做一个很小的文本改动，用最短路径确认改动会反映到界面。",
+        practiceSteps: ["编辑", "验证"],
+        submissionGuide: "提交修改前后的页面截图，或说明改了哪个文件和看到的页面变化。",
+        checkpoints: ["能定位页面文件", "只做一个最小改动", "能在浏览器看到变化"],
+        acceptanceCriteria: "页面更新",
+        sourceRefs: ["c1"],
+        masteryPoints: ["知道需要修改哪个页面", "知道如何验证页面已更新"],
+        cautions: [{ text: "不要一上来大改结构" }],
+      },
+      {
+        taskNo: 3,
+        title: "第三步",
+        objective: "复盘",
+        lessonBrief: "复盘时不要只记录结果，要把本次操作中可复用的判断方法写下来。",
+        practiceSteps: ["记录", "计划下一步"],
+        submissionGuide: "提交一段复盘文字，包含本次做法、验证方式和下一步计划。",
+        checkpoints: ["能说清本次做法", "能说清如何验证", "能列出下一步"],
+        acceptanceCriteria: "有清单",
+        sourceRefs: ["c1"],
+        masteryPoints: ["能复述这次练习的核心收获", "能列出下一步行动"],
+        cautions: [{ text: "不要只看结果不复盘原因" }],
+      },
+    ],
+  }
+  const parsed = plannerOutputSchema.parse(raw)
+  assert.equal(validatePlannerBusinessRules(parsed), null)
+})
+
+test("plannerOutputSchema rejects tasks without teaching content", () => {
+  const raw = {
+    title: "测试计划",
+    goal: "完成最小闭环",
+    tasks: [
+      {
+        taskNo: 1,
+        title: "第一步",
+        objective: "跑通环境",
         practiceSteps: ["安装", "运行"],
         acceptanceCriteria: "能启动",
         estimatedMinutes: 30,
@@ -176,42 +227,6 @@ test("plannerOutputSchema + business rules accept valid planner payload", () => 
         sourceRefs: ["c1"],
         masteryPoints: ["能复述这次练习的核心收获", "能列出下一步行动"],
         cautions: [{ text: "不要只看结果不复盘原因" }],
-      },
-    ],
-  }
-  const parsed = plannerOutputSchema.parse(raw)
-  assert.equal(validatePlannerBusinessRules(parsed), null)
-})
-
-test("plannerOutputSchema rejects tasks without mastery points and cautions", () => {
-  const raw = {
-    title: "测试计划",
-    goal: "完成最小闭环",
-    tasks: [
-      {
-        taskNo: 1,
-        title: "第一步",
-        objective: "跑通环境",
-        practiceSteps: ["安装", "运行"],
-        acceptanceCriteria: "能启动",
-        estimatedMinutes: 30,
-        sourceRefs: ["c1"],
-      },
-      {
-        taskNo: 2,
-        title: "第二步",
-        objective: "改页面",
-        practiceSteps: ["编辑", "验证"],
-        acceptanceCriteria: "页面更新",
-        sourceRefs: ["c1"],
-      },
-      {
-        taskNo: 3,
-        title: "第三步",
-        objective: "复盘",
-        practiceSteps: ["记录", "计划下一步"],
-        acceptanceCriteria: "有清单",
-        sourceRefs: ["c1"],
       },
     ],
   }
@@ -270,8 +285,21 @@ test("parsePlanDraftPatchBody rejects degraded mastery points and cautions", () 
   assert.equal(cautionParsed.ok, false)
 })
 
+function addTeachingFields<T extends { tasks: Array<Record<string, unknown>> }>(plan: T): T {
+  return {
+    ...plan,
+    tasks: plan.tasks.map((task, index) => ({
+      lessonBrief:
+        `先理解第 ${index + 1} 关的方法：按教程目标做最小动作，再用结果判断是否进入下一步。`,
+      submissionGuide: "提交截图、代码片段、终端输出或文字说明，证明本关已经完成。",
+      checkpoints: ["能完成最小操作", "能提交可检查的结果"],
+      ...task,
+    })),
+  }
+}
+
 test("validatePlannerBusinessRules rejects non-sequential taskNo", () => {
-  const raw = {
+  const raw = addTeachingFields({
     title: "测试计划",
     goal: "完成最小闭环",
     tasks: [
@@ -306,7 +334,7 @@ test("validatePlannerBusinessRules rejects non-sequential taskNo", () => {
         cautions: [{ text: "c1" }],
       },
     ],
-  }
+  })
   const parsed = plannerOutputSchema.parse(raw)
   assert.ok(validatePlannerBusinessRules(parsed))
 })
@@ -660,7 +688,7 @@ test("analyzePlannerSourceStructure detects numbered tip tutorials and derives m
 })
 
 test("runPlanQualityGate falls back to pilot plan for weak evidence and generic long plans", async () => {
-  const raw = plannerOutputSchema.parse({
+  const raw = plannerOutputSchema.parse(addTeachingFields({
     title: "抖音短教程计划",
     goal: "快速学会一个概念",
     warnings: ["公开页可提取文本较少。"],
@@ -672,7 +700,7 @@ test("runPlanQualityGate falls back to pilot plan for weak evidence and generic 
       { taskNo: 5, title: "第五步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"], masteryPoints: ["能指出关键概念", "能说明验证方式"], cautions: [{ text: "不要跳过记录过程" }] },
       { taskNo: 6, title: "第六步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"], masteryPoints: ["能复述关键信息", "能说明下一步"], cautions: [{ text: "不要把弱证据当成结论", isTrap: true }] },
     ],
-  })
+  }))
 
   const result = await runPlanQualityGate({
     plan: raw,
@@ -693,7 +721,7 @@ test("runPlanQualityGate falls back to pilot plan for weak evidence and generic 
 })
 
 test("runPlanQualityGate asks for retry when numbered tutorial content is compressed into too few tasks", async () => {
-  const plan = plannerOutputSchema.parse({
+  const plan = plannerOutputSchema.parse(addTeachingFields({
     title: "Claude Code 入门计划",
     goal: "按教程顺序掌握 15 个技巧",
     tasks: [
@@ -702,7 +730,7 @@ test("runPlanQualityGate asks for retry when numbered tutorial content is compre
       { taskNo: 3, title: "第三关", objective: "掌握技巧7-10：技能、计划模式、贴 bug、/clear", practiceSteps: ["调用技能", "清理上下文"], acceptanceCriteria: "能完成一次对话优化演练", estimatedMinutes: 60, sourceRefs: ["c1"], masteryPoints: ["知道技能如何使用", "知道什么时候该 /clear"], cautions: [{ text: "不要在旧上下文里硬切新任务" }] },
       { taskNo: 4, title: "第四关", objective: "掌握技巧11-15：子代理、/btw、--worktree、MCP、指定文件", practiceSteps: ["体验子代理", "配置 MCP"], acceptanceCriteria: "能说明高级工作流要点", estimatedMinutes: 90, sourceRefs: ["c1"], masteryPoints: ["知道子代理的适用场景", "知道如何告诉 Claude 具体看哪些文件"], cautions: [{ text: "不要把 5 个新技巧一次性压成一个练习块", isTrap: true }] },
     ],
-  })
+  }))
 
   const result = await runPlanQualityGate({
     plan,
@@ -734,7 +762,7 @@ test("runPlanQualityGate asks for retry when numbered tutorial content is compre
 })
 
 test("runPlanQualityGate falls back after quality self-check keeps asking for retry on the final attempt", async () => {
-  const plan = plannerOutputSchema.parse({
+  const plan = plannerOutputSchema.parse(addTeachingFields({
     title: "质量自检计划",
     goal: "完成一个最小改造",
     tasks: [
@@ -742,7 +770,7 @@ test("runPlanQualityGate falls back after quality self-check keeps asking for re
       { taskNo: 2, title: "第二步", objective: "根据材料完成一次页面结构改造并截图对比", practiceSteps: ["调整布局", "保存截图"], acceptanceCriteria: "页面结构更新且截图可对比", sourceRefs: ["c1"], masteryPoints: ["知道本关改动范围", "知道如何对比改造前后"], cautions: [{ text: "不要同时修改无关模块" }] },
       { taskNo: 3, title: "第三步", objective: "整理复盘并记录下一步优化清单", practiceSteps: ["记录问题", "列出优化项"], acceptanceCriteria: "产出一份复盘清单", sourceRefs: ["c1"], masteryPoints: ["能复述这次练习产出", "能列出下一步优化点"], cautions: [{ text: "不要只记录结果不记录原因" }] },
     ],
-  })
+  }))
 
   const result = await runPlanQualityGate(
     {
@@ -800,7 +828,7 @@ test("runPlanQualityGate falls back after quality self-check keeps asking for re
 })
 
 test("runPlanQualityGate skips low-risk quality self-check and does not invoke model", async () => {
-  const plan = plannerOutputSchema.parse({
+  const plan = plannerOutputSchema.parse(addTeachingFields({
     title: "低风险计划",
     goal: "完成基础学习闭环",
     tasks: [
@@ -808,7 +836,7 @@ test("runPlanQualityGate skips low-risk quality self-check and does not invoke m
       { taskNo: 2, title: "第二步", objective: "跟随材料完成一次页面结构调整并记录变化", practiceSteps: ["修改页面", "查看结果"], acceptanceCriteria: "页面结构按预期更新", estimatedMinutes: 60, sourceRefs: ["c1"], masteryPoints: ["知道这次要调整的结构点", "知道如何验证结构变化"], cautions: [{ text: "不要把视觉微调和结构改造混在一起" }] },
       { taskNo: 3, title: "第三步", objective: "整理本次练习结论并输出下一步计划", practiceSteps: ["记录结论", "列出下一步"], acceptanceCriteria: "输出一份复盘记录", estimatedMinutes: 30, sourceRefs: ["c1"], masteryPoints: ["能总结这次练习学会了什么", "能明确下一步行动"], cautions: [{ text: "不要遗漏阻塞点与解决方式" }] },
     ],
-  })
+  }))
 
   let invoked = false
   const result = await runPlanQualityGate(
@@ -860,7 +888,7 @@ test("runPlanQualityGate skips low-risk quality self-check and does not invoke m
 })
 
 test("runPlanQualityGate keeps timeout reason in selfCheck but not in warnings", async () => {
-  const plan = plannerOutputSchema.parse({
+  const plan = plannerOutputSchema.parse(addTeachingFields({
     title: "高风险计划",
     goal: "在证据不足时收缩学习范围",
     tasks: [
@@ -869,7 +897,7 @@ test("runPlanQualityGate keeps timeout reason in selfCheck but not in warnings",
       { taskNo: 3, title: "第三步", objective: "整理后续求证问题并准备补充资料", practiceSteps: ["整理问题", "准备资料"], acceptanceCriteria: "输出待验证问题列表", sourceRefs: ["c1"], masteryPoints: ["能提出待验证问题", "能说明需要补什么资料"], cautions: [{ text: "不要在证据不足时下定论" }] },
     ],
     warnings: ["材料证据仍偏弱"],
-  })
+  }))
 
   const result = await runPlanQualityGate(
     {

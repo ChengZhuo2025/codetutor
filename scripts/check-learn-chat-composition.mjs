@@ -72,6 +72,21 @@ assert.match(
   "learn chat hero should keep the current-step hero copy",
 )
 assert.match(
+  heroSource,
+  /先理解方法/,
+  "learn chat hero should teach the method before asking for practice evidence",
+)
+assert.match(
+  heroSource,
+  /跟着做/,
+  "learn chat hero should expose actionable practice steps",
+)
+assert.match(
+  heroSource,
+  /提交说明/,
+  "learn chat hero should explain what evidence the learner should submit",
+)
+assert.match(
   resumeSource,
   /继续上次学习提醒|关闭继续上次学习提醒/,
   "learn chat resume card should keep the dismissible resume affordance",

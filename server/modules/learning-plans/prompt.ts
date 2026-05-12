@@ -31,7 +31,11 @@ export function buildPlannerUserMessage(input: {
 
   parts.push("\n要求：")
   parts.push("- 高置信度证据优先；弱证据只能作为补充，不要据此编造细节。")
-  parts.push("- 每个任务都必须包含 masteryPoints（本关要掌握，2-6 条）和 cautions（注意事项，1-6 条）。")
+  parts.push("- 你不是简单摘录教程，而是把教程内容重写成适合新手照做的步骤化教案。")
+  parts.push("- 每个任务都必须包含 lessonBrief（先理解方法，解释为什么这么做、适用场景和操作前提）、practiceSteps（跟着做，2-20 条具体可执行步骤）、submissionGuide（做完后应提交什么证据）、checkpoints（AI 验收要看的 2-8 个证据点）、masteryPoints（本关要掌握，2-6 条）和 cautions（注意事项，1-6 条）。")
+  parts.push("- practiceSteps 不能写成“尝试优化”“验证效果”这类抽象动作；必须能让新手照着完成，例如打开哪个界面、输入什么、运行什么、观察什么。")
+  parts.push("- submissionGuide 必须明确要求用户提交截图、代码片段、终端输出、页面效果、Prompt、报错信息或文字描述中的一种或多种。")
+  parts.push("- checkpoints 必须和 submissionGuide、acceptanceCriteria 对齐，用于判断用户反馈是否真的达成本关。")
   parts.push("- cautions 中真正的高频误区请标记 isTrap=true。")
   if (input.sourceStructure?.numberedItemCount && input.sourceStructure.minimumTaskCount) {
     parts.push(

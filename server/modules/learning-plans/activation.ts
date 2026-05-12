@@ -33,6 +33,7 @@ type DraftTaskRow = {
   mastery_points: unknown
   cautions: unknown
   recommended_for_week_1: boolean
+  metadata: unknown
 }
 
 export type ConfirmDraftResult = {
@@ -71,6 +72,22 @@ function readCautionItemsJson(value: unknown): Array<{ text: string; isTrap?: bo
       }
     })
     .filter((item): item is { text: string; isTrap?: boolean } => Boolean(item))
+}
+
+function readJsonRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {}
+  }
+  return value as Record<string, unknown>
+}
+
+function readStringArrayJsonFromRecord(record: Record<string, unknown>, key: string): string[] {
+  return readStringArrayJson(record[key])
+}
+
+function readStringFromRecord(record: Record<string, unknown>, key: string): string | null {
+  const value = record[key]
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
 }
 
 function assertDraftTasksReadyForConfirm(tasks: DraftTaskRow[]) {
@@ -181,7 +198,7 @@ export async function confirmPlanDraft(
 
   const { data: taskRows, error: tasksError } = await supabase
     .from("learning_plan_draft_tasks")
-    .select("id, task_no, title, objective, practice_steps, acceptance_criteria, estimated_minutes, source_refs, goal_alignment_refs, mastery_points, cautions, recommended_for_week_1")
+    .select("id, task_no, title, objective, practice_steps, acceptance_criteria, estimated_minutes, source_refs, goal_alignment_refs, mastery_points, cautions, recommended_for_week_1, metadata")
     .eq("draft_id", draftId)
     .order("task_no", { ascending: true })
 
@@ -253,34 +270,44 @@ export async function confirmPlanDraft(
   assertSupabaseSuccess(pathInsertError, "failed to insert material learning path template")
   const templatePathId = insertedPath?.id as string
 
-  const stepInserts = tasks.map((t) => ({
-    path_id: templatePathId,
-    step_no: t.task_no,
-    title: t.title.slice(0, 128),
-    summary:
-      Array.isArray(t.practice_steps)
-        ? (t.practice_steps as string[]).join("；").slice(0, 4000)
-        : String(t.practice_steps).slice(0, 4000),
-    focus: null,
-    goal: t.objective.slice(0, 4000),
-    completion_criteria: t.acceptance_criteria.slice(0, 4000),
-    review_summary: null,
-    estimated_minutes: t.estimated_minutes ?? 45,
-    reward_score: 10,
-    knowledge_points: readStringArrayJson(t.mastery_points).slice(0, 4),
-    key_points: readStringArrayJson(t.mastery_points),
-    pitfalls: readCautionItemsJson(t.cautions),
-    difficulty_weight: 1,
-    is_required: true,
-    metadata: {
-      source_refs: t.source_refs,
-      goal_alignment_refs: t.goal_alignment_refs,
-      recommended_for_week_1: t.recommended_for_week_1,
-      draft_revision_no: draft.revision_no,
-    },
-    created_at: now,
-    updated_at: now,
-  }))
+  const stepInserts = tasks.map((t) => {
+    const metadata = readJsonRecord(t.metadata)
+    const practiceSteps = readStringArrayJson(t.practice_steps)
+    return {
+      path_id: templatePathId,
+      step_no: t.task_no,
+      title: t.title.slice(0, 128),
+      summary:
+        practiceSteps.length > 0
+          ? practiceSteps.join("；").slice(0, 4000)
+          : String(t.practice_steps).slice(0, 4000),
+      focus: readStringFromRecord(metadata, "lessonBrief")?.slice(0, 4000) ?? null,
+      goal: t.objective.slice(0, 4000),
+      completion_criteria: t.acceptance_criteria.slice(0, 4000),
+      review_summary: null,
+      estimated_minutes: t.estimated_minutes ?? 45,
+      reward_score: 10,
+      knowledge_points: readStringArrayJson(t.mastery_points).slice(0, 4),
+      key_points: readStringArrayJson(t.mastery_points),
+      pitfalls: readCautionItemsJson(t.cautions),
+      difficulty_weight: 1,
+      is_required: true,
+      metadata: {
+        source_refs: t.source_refs,
+        goal_alignment_refs: t.goal_alignment_refs,
+        recommended_for_week_1: t.recommended_for_week_1,
+        draft_revision_no: draft.revision_no,
+        lessonBrief: readStringFromRecord(metadata, "lessonBrief") ?? t.objective,
+        practiceSteps,
+        submissionGuide:
+          readStringFromRecord(metadata, "submissionGuide")
+          ?? "完成后把你的产出、截图、代码、终端输出或报错信息发给 AI 教练。",
+        checkpoints: readStringArrayJsonFromRecord(metadata, "checkpoints"),
+      },
+      created_at: now,
+      updated_at: now,
+    }
+  })
 
   const { data: insertedSteps, error: stepsError } = await supabase
     .from("path_steps")

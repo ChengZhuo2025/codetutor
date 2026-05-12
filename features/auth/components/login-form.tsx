@@ -522,7 +522,7 @@ export function LoginForm({
             rel="noopener noreferrer"
             className="text-xs text-muted-foreground/70 hover:text-foreground transition-colors hover:underline"
           >
-            ICP备案号: 沪ICP备2026015857号-1
+            ICP备案号: 沪ICP备2026015857号-2
           </a>
         </div>
       </div>

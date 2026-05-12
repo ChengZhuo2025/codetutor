@@ -56,7 +56,10 @@ export type PlanDraftTaskPatchInput = {
   id: string
   title?: string | null
   objective?: string | null
+  lessonBrief?: string | null
   practiceSteps?: string[]
+  submissionGuide?: string | null
+  checkpoints?: string[]
   acceptanceCriteria?: string | null
   estimatedMinutes?: number | null
   masteryPoints?: string[]
@@ -102,7 +105,10 @@ export type PlanDraftDetailResult = {
     position: number | null
     title: string
     objective: string
+    lessonBrief: string
     practiceSteps: string[]
+    submissionGuide: string
+    checkpoints: string[]
     acceptanceCriteria: string
     estimatedMinutes: number | null
     sourceRefs: string[]
@@ -164,6 +170,17 @@ function readCautionItemsJson(value: unknown): Array<{ text: string; isTrap?: bo
       }
     })
     .filter((item): item is { text: string; isTrap?: boolean } => Boolean(item))
+}
+
+function readJsonRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {}
+  }
+  return value as Record<string, unknown>
+}
+
+function defaultSubmissionGuide() {
+  return "完成后把你的产出、截图、代码、终端输出或报错信息发给 AI 教练。"
 }
 
 function assertDraftTasksHaveSupplementalContent(tasks: Array<{
@@ -385,7 +402,11 @@ async function persistDraftRow(
     mastery_points: task.masteryPoints,
     cautions: task.cautions,
     recommended_for_week_1: plan.week1TaskNos.includes(task.taskNo),
-    metadata: {},
+    metadata: {
+      lessonBrief: task.lessonBrief,
+      submissionGuide: task.submissionGuide,
+      checkpoints: task.checkpoints,
+    },
     created_at: now,
     updated_at: now,
   }))
@@ -458,7 +479,7 @@ async function loadDraftTasks(
   const { data: taskRows, error: taskError } = await supabase
     .from("learning_plan_draft_tasks")
     .select(
-      "id, task_no, position, title, objective, practice_steps, acceptance_criteria, estimated_minutes, source_refs, goal_alignment_refs, mastery_points, cautions, recommended_for_week_1, is_user_edited",
+      "id, task_no, position, title, objective, practice_steps, acceptance_criteria, estimated_minutes, source_refs, goal_alignment_refs, mastery_points, cautions, recommended_for_week_1, is_user_edited, metadata",
     )
     .eq("draft_id", draftId)
     .order("task_no", { ascending: true })
@@ -480,6 +501,7 @@ async function loadDraftTasks(
     cautions: unknown
     recommended_for_week_1: boolean
     is_user_edited: boolean
+    metadata: unknown
   }>
 }
 
@@ -530,22 +552,28 @@ function toDraftDetailResult(
     alignmentTable: draft.alignment_json,
     week1TaskIds: readStringArrayJson(draft.week_1_task_ids),
     updatedAt: draft.updated_at,
-    tasks: tasks.map((task) => ({
-      id: task.id,
-      taskNo: task.task_no,
-      position: task.position,
-      title: task.title,
-      objective: task.objective,
-      practiceSteps: readStringArrayJson(task.practice_steps),
-      acceptanceCriteria: task.acceptance_criteria,
-      estimatedMinutes: task.estimated_minutes,
-      sourceRefs: readStringArrayJson(task.source_refs),
-      goalAlignmentRefs: readStringArrayJson(task.goal_alignment_refs),
-      masteryPoints: readStringArrayJson(task.mastery_points),
-      cautions: readCautionItemsJson(task.cautions),
-      recommendedForWeek1: task.recommended_for_week_1,
-      isUserEdited: task.is_user_edited,
-    })),
+    tasks: tasks.map((task) => {
+      const metadata = readJsonRecord(task.metadata)
+      return {
+        id: task.id,
+        taskNo: task.task_no,
+        position: task.position,
+        title: task.title,
+        objective: task.objective,
+        lessonBrief: readStringOrNull(metadata.lessonBrief) ?? task.objective,
+        practiceSteps: readStringArrayJson(task.practice_steps),
+        submissionGuide: readStringOrNull(metadata.submissionGuide) ?? defaultSubmissionGuide(),
+        checkpoints: readStringArrayJson(metadata.checkpoints),
+        acceptanceCriteria: task.acceptance_criteria,
+        estimatedMinutes: task.estimated_minutes,
+        sourceRefs: readStringArrayJson(task.source_refs),
+        goalAlignmentRefs: readStringArrayJson(task.goal_alignment_refs),
+        masteryPoints: readStringArrayJson(task.mastery_points),
+        cautions: readCautionItemsJson(task.cautions),
+        recommendedForWeek1: task.recommended_for_week_1,
+        isUserEdited: task.is_user_edited,
+      }
+    }),
   }
 }
 
@@ -564,7 +592,10 @@ function buildRawPlanFromDraftDetail(detail: PlanDraftDetailResult): PlannerOutp
       taskNo: task.taskNo,
       title: task.title,
       objective: task.objective,
+      lessonBrief: task.lessonBrief,
       practiceSteps: task.practiceSteps,
+      submissionGuide: task.submissionGuide,
+      checkpoints: task.checkpoints,
       acceptanceCriteria: task.acceptanceCriteria,
       estimatedMinutes: task.estimatedMinutes ?? undefined,
       sourceRefs: task.sourceRefs,
@@ -654,6 +685,12 @@ async function syncDraftTasksToPlan(
           mastery_points: plannedTask.masteryPoints,
           cautions: plannedTask.cautions,
           recommended_for_week_1: plan.week1TaskNos.includes(plannedTask.taskNo),
+          metadata: {
+            ...readJsonRecord(existingTask.metadata),
+            lessonBrief: plannedTask.lessonBrief,
+            submissionGuide: plannedTask.submissionGuide,
+            checkpoints: plannedTask.checkpoints,
+          },
           updated_at: now,
         })
         .eq("id", existingTask.id)
@@ -684,7 +721,11 @@ async function syncDraftTasksToPlan(
         cautions: plannedTask.cautions,
         recommended_for_week_1: plan.week1TaskNos.includes(plannedTask.taskNo),
         is_user_edited: false,
-        metadata: {},
+        metadata: {
+          lessonBrief: plannedTask.lessonBrief,
+          submissionGuide: plannedTask.submissionGuide,
+          checkpoints: plannedTask.checkpoints,
+        },
         created_at: now,
         updated_at: now,
       })
@@ -968,12 +1009,29 @@ export async function updatePlanDraftForUser(
       continue
     }
 
+    const metadata = readJsonRecord(task.metadata)
+
     const { error: taskUpdateError } = await supabase
       .from("learning_plan_draft_tasks")
       .update({
         title: patch.title ?? task.title,
         objective: patch.objective ?? task.objective,
         practice_steps: patch.practiceSteps ?? task.practice_steps,
+        metadata: {
+          ...metadata,
+          lessonBrief:
+            patch.lessonBrief !== undefined
+              ? (patch.lessonBrief ?? task.objective)
+              : readStringOrNull(metadata.lessonBrief) ?? task.objective,
+          submissionGuide:
+            patch.submissionGuide !== undefined
+              ? (patch.submissionGuide ?? defaultSubmissionGuide())
+              : readStringOrNull(metadata.submissionGuide) ?? defaultSubmissionGuide(),
+          checkpoints:
+            patch.checkpoints !== undefined
+              ? patch.checkpoints
+              : readStringArrayJson(metadata.checkpoints),
+        },
         acceptance_criteria: patch.acceptanceCriteria ?? task.acceptance_criteria,
         estimated_minutes:
           patch.estimatedMinutes !== undefined ? patch.estimatedMinutes : task.estimated_minutes,
@@ -1038,6 +1096,10 @@ function buildTaskRegenerationUserMessage(input: {
   parts.push(`要重生成的 taskNo：${targetTask.taskNo}`)
   parts.push(`当前任务标题：${targetTask.title}`)
   parts.push(`当前任务目标：${targetTask.objective}`)
+  parts.push(`当前教案：${targetTask.lessonBrief}`)
+  parts.push(`当前操作步骤：${targetTask.practiceSteps.join("；") || "无"}`)
+  parts.push(`当前提交说明：${targetTask.submissionGuide}`)
+  parts.push(`当前检查点：${targetTask.checkpoints.join("；") || "无"}`)
   parts.push(`当前本关要掌握：${targetTask.masteryPoints.join("；") || "无"}`)
   parts.push(`当前注意事项：${targetTask.cautions.map((item) => item.text).join("；") || "无"}`)
   parts.push("现有任务列表：")
@@ -1048,7 +1110,7 @@ function buildTaskRegenerationUserMessage(input: {
   for (const chunk of input.chunks) {
     parts.push(`### ${chunk.id}\n${chunk.content}`)
   }
-  parts.push("要求：保留相同 taskNo；sourceRefs 只能引用上面的 chunk id；必须输出 masteryPoints 与 cautions；输出更具体、可执行。")
+  parts.push("要求：保留相同 taskNo；sourceRefs 只能引用上面的 chunk id；必须输出 lessonBrief、practiceSteps、submissionGuide、checkpoints、masteryPoints 与 cautions；输出更具体、可执行。")
   return parts.join("\n")
 }
 
@@ -1132,6 +1194,11 @@ export async function regeneratePlanDraftTaskForUser(
       objective: regeneratedTask.objective,
       practice_steps: regeneratedTask.practiceSteps,
       acceptance_criteria: regeneratedTask.acceptanceCriteria,
+      metadata: {
+        lessonBrief: regeneratedTask.lessonBrief,
+        submissionGuide: regeneratedTask.submissionGuide,
+        checkpoints: regeneratedTask.checkpoints,
+      },
       estimated_minutes: regeneratedTask.estimatedMinutes ?? null,
       source_refs: regeneratedTask.sourceRefs,
       mastery_points: regeneratedTask.masteryPoints,

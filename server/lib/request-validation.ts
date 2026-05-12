@@ -2445,7 +2445,10 @@ export function parsePlanDraftPatchBody(input: unknown): ValidationResult<{
     id: string
     title?: string | null
     objective?: string | null
+    lessonBrief?: string | null
     practiceSteps?: string[]
+    submissionGuide?: string | null
+    checkpoints?: string[]
     acceptanceCriteria?: string | null
     estimatedMinutes?: number | null
     recommendedForWeek1?: boolean
@@ -2465,7 +2468,10 @@ export function parsePlanDraftPatchBody(input: unknown): ValidationResult<{
       id: string
       title?: string | null
       objective?: string | null
+      lessonBrief?: string | null
       practiceSteps?: string[]
+      submissionGuide?: string | null
+      checkpoints?: string[]
       acceptanceCriteria?: string | null
       estimatedMinutes?: number | null
       recommendedForWeek1?: boolean
@@ -2496,7 +2502,10 @@ export function parsePlanDraftPatchBody(input: unknown): ValidationResult<{
       id: string
       title?: string | null
       objective?: string | null
+      lessonBrief?: string | null
       practiceSteps?: string[]
+      submissionGuide?: string | null
+      checkpoints?: string[]
       acceptanceCriteria?: string | null
       estimatedMinutes?: number | null
       recommendedForWeek1?: boolean
@@ -2536,6 +2545,18 @@ export function parsePlanDraftPatchBody(input: unknown): ValidationResult<{
         }
       }
 
+      if (task.checkpoints !== undefined) {
+        if (
+          !Array.isArray(task.checkpoints)
+          || task.checkpoints.some((point) => typeof point !== "string" || point.trim().length === 0)
+        ) {
+          return fail("VALIDATION_FAILED", "checkpoints 必须是非空字符串数组。")
+        }
+        if (task.checkpoints.length < 2) {
+          return fail("VALIDATION_FAILED", "checkpoints 至少保留 2 条。")
+        }
+      }
+
       if (task.recommendedForWeek1 !== undefined && typeof task.recommendedForWeek1 !== "boolean") {
         return fail("BAD_REQUEST", "recommendedForWeek1 必须是布尔值。")
       }
@@ -2544,7 +2565,10 @@ export function parsePlanDraftPatchBody(input: unknown): ValidationResult<{
         id: string
         title?: string | null
         objective?: string | null
+        lessonBrief?: string | null
         practiceSteps?: string[]
+        submissionGuide?: string | null
+        checkpoints?: string[]
         acceptanceCriteria?: string | null
         estimatedMinutes?: number | null
         recommendedForWeek1?: boolean
@@ -2567,8 +2591,28 @@ export function parsePlanDraftPatchBody(input: unknown): ValidationResult<{
           typeof task.objective === "string" ? task.objective.trim() || null : null
       }
 
+      if (task.lessonBrief !== undefined) {
+        if (task.lessonBrief !== null && typeof task.lessonBrief !== "string") {
+          return fail("BAD_REQUEST", "lessonBrief 必须是字符串。")
+        }
+        normalizedTask.lessonBrief =
+          typeof task.lessonBrief === "string" ? task.lessonBrief.trim() || null : null
+      }
+
       if (task.practiceSteps !== undefined) {
         normalizedTask.practiceSteps = (task.practiceSteps as string[]).map((step) => step.trim())
+      }
+
+      if (task.submissionGuide !== undefined) {
+        if (task.submissionGuide !== null && typeof task.submissionGuide !== "string") {
+          return fail("BAD_REQUEST", "submissionGuide 必须是字符串。")
+        }
+        normalizedTask.submissionGuide =
+          typeof task.submissionGuide === "string" ? task.submissionGuide.trim() || null : null
+      }
+
+      if (task.checkpoints !== undefined) {
+        normalizedTask.checkpoints = (task.checkpoints as string[]).map((point) => point.trim())
       }
 
       if (task.acceptanceCriteria !== undefined) {

@@ -99,6 +99,23 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
           </PageSection>
 
           <PageSection
+            eyebrow="先理解方法"
+            title="AI 已把教程改写成这关教案"
+            description={rightPanel.lessonBrief}
+          >
+            <div className="space-y-2">
+              {rightPanel.practiceSteps.map((step, index) => (
+                <div key={`${step}-${index}`} className={cn(WORKSPACE_ASIDE_INSET_CARD_CLASS, "flex gap-2")}>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand/18 text-xs font-semibold text-brand">
+                    {index + 1}
+                  </div>
+                  <p className="text-sm leading-6 text-foreground/85">{step}</p>
+                </div>
+              ))}
+            </div>
+          </PageSection>
+
+          <PageSection
             eyebrow="现在只做这一步"
             title={rightPanel.currentStep}
             description={rightPanel.whyThisStep}
@@ -107,12 +124,34 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
             <div className="grid gap-3 pt-4 pb-1">
               <div className={WORKSPACE_ASIDE_INSET_CARD_CLASS}>
                 <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
+                  提交说明
+                </p>
+                <p className="mt-2 text-sm leading-6 text-foreground">
+                  {rightPanel.submissionGuide}
+                </p>
+              </div>
+              <div className={WORKSPACE_ASIDE_INSET_CARD_CLASS}>
+                <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   完成标准
                 </p>
                 <p className="mt-2 text-sm leading-6 text-foreground">
                   {rightPanel.completionCriteria}
                 </p>
               </div>
+              {rightPanel.checkpoints.length > 0 ? (
+                <div className={WORKSPACE_ASIDE_INSET_CARD_CLASS}>
+                  <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
+                    AI 检查点
+                  </p>
+                  <div className="mt-2 space-y-1.5">
+                    {rightPanel.checkpoints.map((checkpoint) => (
+                      <p key={checkpoint} className="text-sm leading-6 text-foreground/82">
+                        {checkpoint}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <div className={WORKSPACE_ASIDE_INSET_CARD_CLASS}>
                 <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   <span>本关进度</span>
