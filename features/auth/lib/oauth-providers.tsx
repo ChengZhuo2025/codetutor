@@ -1,7 +1,6 @@
 import type { SVGProps } from "react"
 
 import type { AuthOAuthProvider } from "@/features/auth/types"
-import { getPublicSupabaseEnv } from "@/lib/supabase/env.ts"
 
 type ProviderIconProps = SVGProps<SVGSVGElement>
 
@@ -47,8 +46,6 @@ function DouyinIcon(props: ProviderIconProps) {
   )
 }
 
-export type OAuthProviderAvailability = Record<AuthOAuthProvider, boolean>
-
 type OAuthProviderMeta = {
   id: AuthOAuthProvider
   label: string
@@ -60,14 +57,14 @@ type OAuthProviderMeta = {
 export const OAUTH_PROVIDERS: OAuthProviderMeta[] = [
   {
     id: "wechat",
-    label: "微信扫码",
+    label: "微信扫码登录",
     description: "适合桌面端快速确认授权，回到当前学习进度。",
     accent: "from-[#20c35a]/24 via-[#15b74e]/12 to-transparent",
     icon: WechatIcon,
   },
   {
     id: "douyin",
-    label: "抖音扫码",
+    label: "抖音扫码登录",
     description: "适合内容创作者快速登录，后续将接入同一学习账号体系。",
     accent: "from-[#25F4EE]/22 via-[#FE2C55]/16 to-transparent",
     icon: DouyinIcon,
@@ -80,32 +77,4 @@ export function getOAuthProviderMeta(provider: AuthOAuthProvider) {
 
 export function isOAuthProvider(value: string | null | undefined): value is AuthOAuthProvider {
   return value === "wechat" || value === "douyin"
-}
-
-export async function loadOAuthProviderAvailability(): Promise<OAuthProviderAvailability> {
-  try {
-    const { url, anonKey } = getPublicSupabaseEnv()
-    const response = await fetch(`${url}/auth/v1/settings`, {
-      headers: {
-        apikey: anonKey,
-        Authorization: `Bearer ${anonKey}`,
-      },
-    })
-
-    if (!response.ok) {
-      return { wechat: false, douyin: false }
-    }
-
-    const settings = (await response.json()) as {
-      external_wechat_enabled?: unknown
-      external_douyin_enabled?: unknown
-    }
-
-    return {
-      wechat: Boolean(settings.external_wechat_enabled),
-      douyin: Boolean(settings.external_douyin_enabled),
-    }
-  } catch {
-    return { wechat: false, douyin: false }
-  }
 }

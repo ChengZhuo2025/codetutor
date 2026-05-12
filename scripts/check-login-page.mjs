@@ -62,23 +62,43 @@ assert.match(oauthProvidersSource, /微信扫码/, "OAuth provider config should
 assert.match(oauthProvidersSource, /抖音扫码/, "OAuth provider config should expose the Douyin scan entry.")
 assert.match(
   loginPageSource,
-  /loadOAuthProviderAvailability/,
-  "Login page should load OAuth provider availability for stable login actions.",
-)
-assert.match(
-  loginPageSource,
   /useAppToast/,
-  "Login page should use the shared app toast for OAuth unavailable feedback.",
+  "Login page should use the shared app toast for OAuth error feedback.",
 )
 assert.match(
   loginPageSource,
   /toast\.error\(/,
-  "Login page should surface OAuth unavailable feedback through the shared toast system.",
+  "Login page should surface OAuth errors through the shared toast system.",
+)
+assert.doesNotMatch(
+  loginPageSource,
+  /loadOAuthProviderAvailability|oauthAvailability|external_wechat_enabled|external_douyin_enabled/,
+  "Login page should not perform separate OAuth provider availability checks now that both scan providers are enabled.",
+)
+assert.doesNotMatch(
+  loginFormSource,
+  /检测中"|可用"|待开通"|badgeLabel|oauthAvailability/,
+  "OAuth scan entries should not render provider availability status badges.",
 )
 assert.match(
   loginPageSource,
   /signInWithOAuth/,
   "Login page should obtain OAuth authorization URLs through Supabase JS instead of hand-written authorize requests.",
+)
+assert.doesNotMatch(
+  loginPageSource,
+  /window\.open\(\s*data\.url/,
+  "Login page should not open OAuth authorization URLs in a separate popup before showing the scan dialog.",
+)
+assert.match(
+  loginFormSource,
+  /<iframe/,
+  "OAuth scan dialog should render the provider authorization page inline instead of only pointing to a separate popup.",
+)
+assert.match(
+  loginFormSource,
+  /正在加载二维码|isFrameLoading|onLoad=\{\(\) => setLoadedFrameId/,
+  "OAuth scan dialog should show a loading state while the embedded authorization page loads.",
 )
 assert.doesNotMatch(
   loginPageSource,

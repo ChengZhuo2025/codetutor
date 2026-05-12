@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ArrowRight, ExternalLink, Phone } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, ExternalLink, Phone, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,7 +19,6 @@ import { StatePanel } from "@/components/ui/state-panel";
 import {
   OAUTH_PROVIDERS,
   getOAuthProviderMeta,
-  type OAuthProviderAvailability,
 } from "@/features/auth/lib/oauth-providers";
 import { isValidChinaMainlandPhone } from "@/features/auth/lib/phone-auth";
 import type { AuthMode, AuthOAuthProvider } from "@/features/auth/types";
@@ -34,7 +33,6 @@ type LoginFormProps = {
   isSubmitting: boolean;
   statusMessage: string;
   errorMessage: string | null;
-  oauthAvailability: OAuthProviderAvailability | null;
   activeOAuthProvider: AuthOAuthProvider | null;
   oauthDialog: {
     provider: AuthOAuthProvider;
@@ -216,43 +214,21 @@ type OAuthScanDialogProps = {
 };
 
 function OAuthScanDialog({ dialog, onOpenChange }: OAuthScanDialogProps) {
-  const [popupClosed, setPopupClosed] = useState(false);
+  const [frameKey, setFrameKey] = useState(0);
+  const [loadedFrameId, setLoadedFrameId] = useState("");
   const meta = dialog ? getOAuthProviderMeta(dialog.provider) : null;
   const Icon = meta?.icon;
-
-  // 弹窗关闭后自动关闭对话框
-  useEffect(() => {
-    if (!dialog) return;
-
-    // dialog 变化时重置关闭状态
-    const resetTimer = setTimeout(() => setPopupClosed(false), 0);
-
-    const checkPopup = setInterval(() => {
-      const popup = window.open("", "oauth_popup");
-      if (!popup || popup.closed) {
-        setPopupClosed(true);
-        clearInterval(checkPopup);
-      }
-    }, 500);
-
-    return () => {
-      clearTimeout(resetTimer);
-      clearInterval(checkPopup);
-    };
-  }, [dialog]);
-
-  // 弹窗关闭后自动关闭对话框
-  useEffect(() => {
-    if (!popupClosed) return;
-    const timer = setTimeout(() => onOpenChange(false), 100);
-    return () => clearTimeout(timer);
-  }, [popupClosed, onOpenChange]);
+  const frameId = dialog ? `${dialog.provider}-${dialog.url}-${frameKey}` : "";
+  const isFrameLoading = Boolean(dialog && loadedFrameId !== frameId);
+  const refreshOAuthFrame = () => {
+    setFrameKey((current) => current + 1);
+  };
 
   return (
     <Dialog open={Boolean(dialog)} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[480px]">
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[440px]">
         <div className="border-b border-border/70 bg-surface-2/80 px-5 py-4">
-          <DialogHeader className="pr-8 text-left">
+          <DialogHeader className="pr-4 text-left">
             <div className="flex items-center gap-3">
               {Icon ? (
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border/70 bg-background">
@@ -264,43 +240,76 @@ function OAuthScanDialog({ dialog, onOpenChange }: OAuthScanDialogProps) {
                   {meta ? `${meta.label}登录` : "扫码登录"}
                 </DialogTitle>
                 <DialogDescription className="mt-1 text-xs leading-5">
-                  在弹出的窗口中扫码完成授权，授权后自动关闭返回。
+                  请在下方二维码区域完成授权，成功后会自动返回当前页面。
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
         </div>
 
-        <div className="flex flex-col items-center gap-5 px-8 py-10 text-center">
-          <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-brand/20 bg-brand/5">
-            <ExternalLink className="h-10 w-10 text-brand" />
+        <div className="flex flex-col gap-4 px-5 py-5">
+          <div className="relative flex h-[430px] items-center justify-center overflow-hidden rounded-2xl border border-border/70 bg-white shadow-sm">
+            {dialog ? (
+              <iframe
+                key={frameId}
+                title={`${meta?.label ?? "扫码"}授权二维码`}
+                src={dialog.url}
+                className="h-[340px] w-full border-0 bg-white"
+                onLoad={() => setLoadedFrameId(frameId)}
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                正在准备扫码授权...
+              </div>
+            )}
+            {dialog && isFrameLoading ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-white">
+                <div className="relative h-14 w-14">
+                  <div className="absolute inset-0 rounded-full border-4 border-brand/15" />
+                  <div className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-brand" />
+                  <div className="absolute inset-3 rounded-full bg-brand/10" />
+                </div>
+                <div className="space-y-1 text-center">
+                  <p className="text-sm font-semibold text-foreground">正在加载二维码</p>
+                  <p className="text-xs text-muted-foreground">请稍等，授权页面马上显示。</p>
+                </div>
+              </div>
+            ) : null}
           </div>
-          <div className="space-y-2">
-            <p className="text-sm font-semibold text-foreground">
-              授权窗口已打开
-            </p>
-            <p className="text-xs leading-5 text-muted-foreground">
-              请在浏览器弹出的新窗口中扫码完成授权。{" "}
-              {popupClosed ? "授权已完成或窗口已关闭。" : "等待授权完成…"}
-            </p>
+
+          <div className="rounded-2xl border border-brand/15 bg-brand-dim px-4 py-3 text-xs leading-5 text-muted-foreground">
+            <p className="font-medium text-foreground">等待扫码确认</p>
+            <p>如果二维码区域无法加载，请使用下方按钮在新窗口完成授权。</p>
           </div>
         </div>
 
         <div className="flex items-center justify-center gap-3 border-t border-border/70 bg-surface-2/70 px-5 py-4">
           {dialog ? (
-            <button
-              onClick={() => {
-                window.open(
-                  dialog.url,
-                  "oauth_popup",
-                  "width=600,height=700,scrollbars=yes,resizable=yes",
-                );
-              }}
-              className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:border-brand/40 hover:text-brand"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              重新打开授权窗口
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={refreshOAuthFrame}
+                className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:border-brand/40 hover:text-brand"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                刷新二维码
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  window.open(
+                    dialog.url,
+                    "oauth_popup",
+                    "width=600,height=700,scrollbars=yes,resizable=yes",
+                  );
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:border-brand/40 hover:text-brand"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                新窗口打开
+              </button>
+            </>
           ) : null}
         </div>
       </DialogContent>
@@ -317,7 +326,6 @@ export function LoginForm({
   isSubmitting,
   statusMessage,
   errorMessage,
-  oauthAvailability,
   activeOAuthProvider,
   oauthDialog,
   agreedToLegal,
@@ -333,10 +341,6 @@ export function LoginForm({
   const isValidPhone = isValidChinaMainlandPhone(phone);
   const isValidCode = /^\d{6}$/.test(code);
   const canSubmit = isValidPhone && isValidCode && agreedToLegal;
-  const oauthAvailabilityState = oauthAvailability ?? {
-    wechat: false,
-    douyin: false,
-  };
   const hasPhoneInput = phone.length > 0;
   const showPhoneLengthHint = hasPhoneInput && phone.length < 11;
   const showPhoneFormatError = phone.length === 11 && !isValidPhone;
@@ -576,23 +580,18 @@ export function LoginForm({
         <div className="mt-4 grid grid-cols-2 gap-3">
           {OAUTH_PROVIDERS.map((provider) => {
             const meta = getOAuthProviderMeta(provider.id);
-            const available = oauthAvailabilityState[provider.id];
-            const isChecking = oauthAvailability === null;
             const isActive = activeOAuthProvider === provider.id;
             const Icon = meta.icon;
-            const badgeLabel = isChecking ? "检测中" : available ? "可用" : "待开通";
 
             return (
               <button
                 key={provider.id}
                 type="button"
                 onClick={() => onOAuthSubmit(provider.id)}
-                disabled={isChecking || isActive || isSubmitting}
+                disabled={isActive || isSubmitting}
                 className={cn(
-                  "group relative overflow-hidden rounded-2xl border px-4 py-3 text-left transition-all",
-                  available
-                    ? "border-border/70 bg-surface-2 hover:-translate-y-0.5 hover:border-brand/30 hover:bg-surface-1"
-                    : "border-border/50 bg-surface-3/70",
+                  "group relative overflow-hidden rounded-2xl border border-border/70 bg-surface-2 transition-all hover:-translate-y-0.5 hover:border-brand/30 hover:bg-surface-1",
+                  (isActive || isSubmitting) && "cursor-not-allowed opacity-65 hover:translate-y-0",
                 )}
               >
                 <div
@@ -602,12 +601,9 @@ export function LoginForm({
                   )}
                 />
                 <div className="relative z-10 flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-5">
                     <div
-                      className={cn(
-                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border bg-background/70",
-                        available ? "border-brand/20 text-foreground" : "border-border/60 text-muted-foreground",
-                      )}
+                      className="flex h-10 w-13 shrink-0 items-center justify-center border-r border-brand/20 bg-background/70 text-foreground"
                     >
                       <Icon className="h-5 w-5" />
                     </div>
@@ -615,16 +611,6 @@ export function LoginForm({
                       <p className="text-sm font-semibold text-foreground">{meta.label}</p>
                     </div>
                   </div>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]",
-                      available
-                        ? "border-brand/30 bg-brand-dim text-brand"
-                        : "border-border/50 bg-background/65 text-muted-foreground",
-                    )}
-                  >
-                    {isActive ? "打开中" : badgeLabel}
-                  </span>
                 </div>
               </button>
             );

@@ -8,10 +8,6 @@ import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { LoginBrandPanel } from "@/features/auth/components/login-brand-panel"
 import { LoginForm } from "@/features/auth/components/login-form"
 import {
-  loadOAuthProviderAvailability,
-  type OAuthProviderAvailability,
-} from "@/features/auth/lib/oauth-providers"
-import {
   isValidChinaMainlandPhone,
   normalizePhoneInput,
   toFriendlyAuthError,
@@ -71,7 +67,6 @@ export function LoginPage() {
   const [lastSentPhone, setLastSentPhone] = useState("")
   const [isSendingCode, setIsSendingCode] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [oauthAvailability, setOauthAvailability] = useState<OAuthProviderAvailability | null>(null)
   const [oauthPendingProvider, setOauthPendingProvider] = useState<AuthOAuthProvider | null>(null)
   const [oauthDialog, setOauthDialog] = useState<OAuthDialogState>(null)
   const [agreedToLegal, setAgreedToLegal] = useState(false)
@@ -102,25 +97,6 @@ export function LoginPage() {
     } catch {
       // ignore localStorage write failure
     }
-  }
-
-  useEffect(() => {
-    let cancelled = false
-
-    void loadOAuthProviderAvailability().then((availability) => {
-      if (!cancelled) {
-        setOauthAvailability(availability)
-      }
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const oauthProvidersReady = oauthAvailability ?? {
-    wechat: false,
-    douyin: false,
   }
 
   useEffect(() => {
@@ -156,18 +132,8 @@ export function LoginPage() {
       return
     }
 
-    if (!oauthProvidersReady[provider]) {
-      toast.error(
-        "扫码登录暂不可用",
-        "该扫码登录方式暂未开放，请先在 Supabase 控制台启用对应 Provider。",
-      )
-      return
-    }
-
     setErrorMessage(null)
     setOauthPendingProvider(provider)
-
-    let openedOAuthDialog = false
 
     try {
       const supabase = createSupabaseBrowserClient()
@@ -189,30 +155,13 @@ export function LoginPage() {
         throw new Error(`${provider} oauth url missing`)
       }
 
-      // 弹出窗口而非页面跳转
-      const popup = window.open(
-        data.url,
-        "oauth_popup",
-        "width=600,height=700,scrollbars=yes,resizable=yes",
-      )
-
-      if (!popup || popup.closed) {
-        // 弹窗被浏览器拦截，降级为直接跳转
-        window.location.href = data.url
-        return
-      }
-
       setOauthDialog({
         provider,
         url: data.url,
       })
-      openedOAuthDialog = true
     } catch (error) {
+      setOauthPendingProvider(null)
       toast.error("扫码登录失败", toFriendlyAuthError(error, "oauth"))
-    } finally {
-      if (!openedOAuthDialog) {
-        setOauthPendingProvider(null)
-      }
     }
   }
 
@@ -394,7 +343,6 @@ export function LoginPage() {
         isSubmitting={isPending}
         statusMessage={statusMessage}
         errorMessage={errorMessage}
-        oauthAvailability={oauthAvailability}
         activeOAuthProvider={oauthPendingProvider}
         oauthDialog={oauthDialog}
         agreedToLegal={agreedToLegal}

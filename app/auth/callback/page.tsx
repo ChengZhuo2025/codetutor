@@ -41,21 +41,30 @@ function getHashSessionTokens() {
 }
 
 function notifyParentAuthCompleted(data: AuthLoginResponseData, provider: string) {
-  if (typeof window === "undefined" || window.parent === window) {
+  if (typeof window === "undefined") {
     return false
   }
 
-  window.parent.postMessage(
-    {
-      type: "codetutor.oauth.completed",
-      provider,
-      redirectTo: data.redirectTo,
-      onboardingCompleted: data.onboardingCompleted,
-    },
-    window.location.origin,
-  )
+  const payload = {
+    type: "codetutor.oauth.completed",
+    provider,
+    redirectTo: data.redirectTo,
+    onboardingCompleted: data.onboardingCompleted,
+  }
 
-  return true
+  let notified = false
+
+  if (window.parent !== window) {
+    window.parent.postMessage(payload, window.location.origin)
+    notified = true
+  }
+
+  if (window.opener && !window.opener.closed) {
+    window.opener.postMessage(payload, window.location.origin)
+    notified = true
+  }
+
+  return notified
 }
 
 function AuthCallbackContent() {
