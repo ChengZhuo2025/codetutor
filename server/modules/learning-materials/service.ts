@@ -456,6 +456,7 @@ export async function runMaterialIntake(
 
   const allChunks: MaterialChunk[] = []
   const sourceSnapshots: MaterialIntakeResult["sourceSnapshots"] = []
+  let lastFetchError: MaterialPlanError | null = null
 
   for (let i = 0; i < normalizedLinks.length; i += 1) {
     const current = normalizedLinks[i]!
@@ -542,9 +543,13 @@ export async function runMaterialIntake(
         contentExcerpt: excerpt,
         metadata,
       })
+      lastFetchError = null
     } catch (error) {
       const message = error instanceof MaterialPlanError ? error.message : "抓取失败"
       const code = error instanceof MaterialPlanError ? error.code : "MATERIAL_FETCH_FAILED"
+      lastFetchError = error instanceof MaterialPlanError
+        ? error
+        : materialFetchFailed(message)
 
       const { error: sourceError } = await supabase.from("learning_material_sources").insert({
         id: randomUUID(),
@@ -571,7 +576,7 @@ export async function runMaterialIntake(
   }
 
   if (allChunks.length === 0) {
-    throw materialFetchFailed()
+    throw lastFetchError ?? materialFetchFailed()
   }
 
   return {

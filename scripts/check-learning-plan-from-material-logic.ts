@@ -6,7 +6,9 @@ import { MaterialPlanError } from "../server/modules/learning-materials/errors.t
 import {
   buildMaterialChunkRows,
   extractMaterialEvidenceForSource,
+  runMaterialIntake,
 } from "../server/modules/learning-materials/service.ts"
+import { bilibiliMaterialSourceAdapter } from "../server/modules/learning-materials/adapters/bilibili.ts"
 import { douyinMaterialSourceAdapter } from "../server/modules/learning-materials/adapters/douyin.ts"
 import { resolveMaterialPipelineModelsFromSnapshots } from "../server/modules/learning-materials/providers.ts"
 import { resolveMaterialSourceAdapter } from "../server/modules/learning-materials/source-resolver.ts"
@@ -131,6 +133,113 @@ test("douyin adapter returns a friendly message when public fetch is blocked by 
         return true
       },
     )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test("bilibili adapter keeps public page text as evidence before expensive extraction", async () => {
+  const originalFetch = globalThis.fetch
+  const visibleTutorialText = "Claude Code 教程步骤：先打开终端，确认当前项目目录，再输入 claude 启动交互。接着把任务拆成小步，每一步先说明目标，再让工具读取文件，最后根据输出调整下一步。".repeat(15)
+
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const requestedUrl = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url
+    return {
+      ok: true,
+      url: requestedUrl,
+      text: async () => `
+        <html>
+          <head>
+            <title>装好 Claude Code，却不知道怎么用？_哔哩哔哩_bilibili</title>
+            <meta property="og:description" content="这期视频演示 Claude Code 的基础操作。" />
+            <meta property="og:image" content="//i2.hdslb.com/bfs/archive/cover.jpg" />
+          </head>
+          <body>
+            <main>${visibleTutorialText}</main>
+            <script>
+              window.__INITIAL_STATE__={"videoData":{"title":"装好 Claude Code，却不知道怎么用？","desc":"这期视频演示 Claude Code 的基础操作。","owner":{"name":"汤姆CC的AI工具箱"},"pic":"http://i2.hdslb.com/bfs/archive/cover.jpg"}};
+              (function(){})();
+            </script>
+          </body>
+        </html>
+      `,
+    } as Response
+  }) as typeof fetch
+
+  try {
+    const result = await bilibiliMaterialSourceAdapter.fetch(
+      "https://www.bilibili.com/video/BV18KocB4EK4/?spm_id_from=333.337.search-card.all.click",
+    )
+
+    assert.equal(result.title, "装好 Claude Code，却不知道怎么用？")
+    assert.equal(result.authorName, "汤姆CC的AI工具箱")
+    assert.ok(result.rawTextBlocks.join("\n").length >= 1200)
+    assert.ok(result.rawTextBlocks.join("\n").includes("Claude Code 教程步骤"))
+    assert.deepEqual(result.warnings, [])
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test("runMaterialIntake preserves the concrete single-link fetch failure", async () => {
+  const originalFetch = globalThis.fetch
+  const insertedSources: Array<Record<string, unknown>> = []
+  const supabase = {
+    from(table: string) {
+      assert.ok(["learning_material_sources"].includes(table))
+      return {
+        delete() {
+          return {
+            eq: async () => ({ error: null }),
+          }
+        },
+        insert(row: Record<string, unknown> | Array<Record<string, unknown>>) {
+          if (Array.isArray(row)) {
+            insertedSources.push(...row)
+          } else {
+            insertedSources.push(row)
+          }
+          return Promise.resolve({ error: null })
+        },
+      }
+    },
+  }
+
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const requestedUrl = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url
+    return {
+      ok: false,
+      status: 403,
+      url: requestedUrl,
+      text: async () => "",
+    } as Response
+  }) as typeof fetch
+
+  try {
+    await assert.rejects(
+      () =>
+        runMaterialIntake(
+          supabase as never,
+          "11111111-1111-4111-8111-111111111111",
+          ["https://www.bilibili.com/video/BV18KocB4EK4/"],
+          {
+            resolveMaterialPipelineModels: async () => ({
+              asr: null,
+              vision: null,
+              quality: null,
+            }),
+          },
+        ),
+      (error: unknown) => {
+        assert.ok(error instanceof MaterialPlanError)
+        assert.equal(error.code, "MATERIAL_FETCH_FAILED")
+        assert.equal(error.message, "页面返回状态 403。")
+        return true
+      },
+    )
+
+    assert.equal(insertedSources.length, 1)
+    assert.equal(insertedSources[0]?.fetch_status, "failed")
   } finally {
     globalThis.fetch = originalFetch
   }

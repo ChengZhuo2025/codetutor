@@ -19,6 +19,57 @@ function matchInlineJson(html: string, pattern: RegExp) {
   return html.match(pattern)?.[1] ?? null
 }
 
+function matchWindowJsonAssignment(html: string, variableName: "__INITIAL_STATE__" | "__playinfo__") {
+  const marker = `window.${variableName}=`
+  const markerIndex = html.indexOf(marker)
+  if (markerIndex < 0) {
+    return null
+  }
+
+  const objectStart = html.indexOf("{", markerIndex + marker.length)
+  if (objectStart < 0) {
+    return null
+  }
+
+  let depth = 0
+  let inString = false
+  let escaped = false
+
+  for (let index = objectStart; index < html.length; index += 1) {
+    const char = html[index]
+
+    if (inString) {
+      if (escaped) {
+        escaped = false
+      } else if (char === "\\") {
+        escaped = true
+      } else if (char === "\"") {
+        inString = false
+      }
+      continue
+    }
+
+    if (char === "\"") {
+      inString = true
+      continue
+    }
+
+    if (char === "{") {
+      depth += 1
+      continue
+    }
+
+    if (char === "}") {
+      depth -= 1
+      if (depth === 0) {
+        return html.slice(objectStart, index + 1)
+      }
+    }
+  }
+
+  return null
+}
+
 function pickDashUrl(
   items: Array<{ baseUrl?: string; base_url?: string }> | undefined,
 ) {
@@ -45,7 +96,8 @@ export const bilibiliMaterialSourceAdapter: MaterialSourceAdapter = {
         pic?: string
       }
     }>(
-      matchInlineJson(basics.rawHtml, /window\.__INITIAL_STATE__=(\{[\s\S]*?\});\(function\(/),
+      matchWindowJsonAssignment(basics.rawHtml, "__INITIAL_STATE__")
+        ?? matchInlineJson(basics.rawHtml, /window\.__INITIAL_STATE__=(\{[\s\S]*?\});\(function\(/),
     )
     const playinfo = safeJsonParse<{
       data?: {
@@ -55,7 +107,8 @@ export const bilibiliMaterialSourceAdapter: MaterialSourceAdapter = {
         }
       }
     }>(
-      matchInlineJson(basics.rawHtml, /window\.__playinfo__=(\{[\s\S]*?\})<\/script>/),
+      matchWindowJsonAssignment(basics.rawHtml, "__playinfo__")
+        ?? matchInlineJson(basics.rawHtml, /window\.__playinfo__=(\{[\s\S]*?\})<\/script>/),
     )
     const title = initialState?.videoData?.title ?? basics.title
     const description = initialState?.videoData?.desc?.trim() || basics.description
@@ -68,7 +121,12 @@ export const bilibiliMaterialSourceAdapter: MaterialSourceAdapter = {
       ...(videoUrl ? [{ kind: "video", url: videoUrl }] : []),
       ...(coverImageUrl ? [{ kind: "cover_image", url: coverImageUrl }] : []),
     ]
-    const rawTextBlocks = [title, description].map((item) => item?.trim()).filter(Boolean) as string[]
+    const rawTextBlocks = [...new Set(
+      [title, description, basics.text]
+        .map((item) => item?.trim())
+        .filter(Boolean) as string[],
+    )]
+    const rawTextLength = rawTextBlocks.join("\n").length
 
     return {
       canonicalUrl: basics.canonicalUrl,
@@ -81,7 +139,7 @@ export const bilibiliMaterialSourceAdapter: MaterialSourceAdapter = {
       mediaAssets,
       rawTextBlocks,
       warnings:
-        rawTextBlocks.join("\n").length < 400
+        rawTextLength < 400
           ? ["未拿到稳定字幕，先使用公开标题与简介，必要时继续升级到 ASR。"]
           : [],
     }
