@@ -292,7 +292,7 @@ function addTeachingFields<T extends { tasks: Array<Record<string, unknown>> }>(
       lessonBrief:
         `先理解第 ${index + 1} 关的方法：按教程目标做最小动作，再用结果判断是否进入下一步。`,
       submissionGuide: "提交截图、代码片段、终端输出或文字说明，证明本关已经完成。",
-      checkpoints: ["能完成最小操作", "能提交可检查的结果"],
+      checkpoints: ["截图或终端输出能证明最小操作完成", "能用文字说明提交证据对应的结果"],
       ...task,
     })),
   }
@@ -337,6 +337,63 @@ test("validatePlannerBusinessRules rejects non-sequential taskNo", () => {
   })
   const parsed = plannerOutputSchema.parse(raw)
   assert.ok(validatePlannerBusinessRules(parsed))
+})
+
+test("runPlanQualityGate flags generic teaching content and mismatched evidence checks", async () => {
+  const plan = plannerOutputSchema.parse({
+    title: "教学质量问题计划",
+    goal: "验证教学字段质量",
+    tasks: [
+      {
+        taskNo: 1,
+        title: "第一步",
+        objective: "完成一个可运行页面并记录验证结果",
+        lessonBrief: "先了解一下相关内容，然后继续熟悉概念，按感觉完成练习即可。",
+        practiceSteps: ["尝试优化", "验证效果"],
+        submissionGuide: "提交页面截图和终端输出。",
+        checkpoints: ["能说出学习感受", "能总结下一步"],
+        acceptanceCriteria: "页面可运行，并能提交截图和终端输出。",
+        sourceRefs: ["c1"],
+        masteryPoints: ["知道页面运行目标", "知道需要提交证据"],
+        cautions: [{ text: "不要跳过验证", isTrap: true }],
+      },
+      {
+        taskNo: 2,
+        title: "第二步",
+        objective: "根据教程完成一次具体改造并截图对比",
+        lessonBrief: "先理解改造范围，再用一个最小改动验证教程方法是否生效。",
+        practiceSteps: ["打开目标文件", "修改指定文案", "刷新页面观察变化"],
+        submissionGuide: "提交改造前后的页面截图。",
+        checkpoints: ["截图能看到改造前后差异", "能说明修改了哪个文件"],
+        acceptanceCriteria: "页面变化可见，并能说明修改位置。",
+        sourceRefs: ["c1"],
+        masteryPoints: ["知道改造范围", "知道如何验证页面变化"],
+        cautions: [{ text: "不要同时修改多个无关位置" }],
+      },
+      {
+        taskNo: 3,
+        title: "第三步",
+        objective: "整理本次练习方法并形成复盘记录",
+        lessonBrief: "复盘时要记录方法、证据和下一步，而不是只写完成了。",
+        practiceSteps: ["写下操作步骤", "贴上验证证据", "列出下一步"],
+        submissionGuide: "提交包含方法、证据和下一步的复盘文字。",
+        checkpoints: ["复盘包含方法", "复盘包含证据"],
+        acceptanceCriteria: "产出一份可追溯的复盘记录。",
+        sourceRefs: ["c1"],
+        masteryPoints: ["能复述方法", "能说明证据"],
+        cautions: [{ text: "不要只写结论不写过程" }],
+      },
+    ],
+  })
+
+  const result = await runPlanQualityGate({ plan })
+  const failedCodes = result.qualityReport.checks
+    .filter((check) => !check.passed)
+    .map((check) => check.code)
+
+  assert.ok(failedCodes.includes("LESSON_BRIEF_NOT_GENERIC"))
+  assert.ok(failedCodes.includes("PRACTICE_STEPS_ACTIONABLE"))
+  assert.ok(failedCodes.includes("CHECKPOINTS_MATCH_SUBMISSION_EVIDENCE"))
 })
 
 test("resolveMaterialPipelineModelsFromSnapshots prefers env model and falls back to capability when env model is inactive", async () => {

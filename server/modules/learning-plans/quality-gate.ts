@@ -50,7 +50,34 @@ type QualityGateDependencies = {
 }
 
 const GENERIC_OBJECTIVE_PATTERN = /(了解一下|熟悉概念|继续阅读资料|看看内容|知道大概)/i
+const GENERIC_LESSON_BRIEF_PATTERN = /(了解一下|熟悉概念|继续练习|按感觉|大概|相关内容|自行尝试|看一看)/i
+const ABSTRACT_PRACTICE_STEP_PATTERN = /(尝试优化|验证效果|继续练习|了解一下|熟悉概念|看看内容|自行尝试|按感觉)/i
+const EVIDENCE_KEYWORDS = [
+  "截图",
+  "代码",
+  "终端",
+  "输出",
+  "页面",
+  "prompt",
+  "Prompt",
+  "报错",
+  "日志",
+  "文件",
+  "链接",
+  "录屏",
+  "文字",
+  "说明",
+  "复盘",
+]
 const QUALITY_SKIP_REASON = "规则检查已覆盖当前低风险计划，跳过模型自检。"
+
+function hasEvidenceKeyword(text: string) {
+  return EVIDENCE_KEYWORDS.some((keyword) => text.includes(keyword))
+}
+
+function extractEvidenceKeywords(text: string) {
+  return EVIDENCE_KEYWORDS.filter((keyword) => text.includes(keyword))
+}
 
 function buildPilotPlan(plan: PlannerOutput): PlannerOutput {
   const tasks = plan.tasks.slice(0, 3).map((task, index) => ({
@@ -112,6 +139,41 @@ function buildRuleChecks(input: RunPlanQualityGateInput): QualityCheck[] {
         task.objective.trim().length >= 12 && !GENERIC_OBJECTIVE_PATTERN.test(task.objective)
       )),
       message: "任务 objective 不能过于空泛。",
+    },
+    {
+      code: "LESSON_BRIEF_NOT_GENERIC",
+      passed: input.plan.tasks.every((task) => (
+        task.lessonBrief.trim().length >= 30
+        && !GENERIC_LESSON_BRIEF_PATTERN.test(task.lessonBrief)
+        && task.lessonBrief !== task.objective
+      )),
+      message: "每关 lessonBrief 必须是具体的新手教案，不能只写泛化学习建议。",
+    },
+    {
+      code: "PRACTICE_STEPS_ACTIONABLE",
+      passed: input.plan.tasks.every((task) => (
+        task.practiceSteps.length >= 2
+        && task.practiceSteps.every((step) => (
+          step.trim().length >= 4
+          && !ABSTRACT_PRACTICE_STEP_PATTERN.test(step.trim())
+        ))
+      )),
+      message: "practiceSteps 必须是可照做的具体操作，不能只写抽象动作。",
+    },
+    {
+      code: "CHECKPOINTS_MATCH_SUBMISSION_EVIDENCE",
+      passed: input.plan.tasks.every((task) => {
+        const submissionKeywords = extractEvidenceKeywords(task.submissionGuide)
+        return (
+          submissionKeywords.length > 0
+          && task.checkpoints.length >= 2
+          && task.checkpoints.some((checkpoint) => (
+            hasEvidenceKeyword(checkpoint)
+            || submissionKeywords.some((keyword) => checkpoint.includes(keyword))
+          ))
+        )
+      }),
+      message: "checkpoints 必须和 submissionGuide 中要求提交的证据类型对齐。",
     },
     {
       code: "WEEKLY_HOURS_BALANCED",

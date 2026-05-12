@@ -92,6 +92,10 @@ export type AdminLearningPathDetailStep = {
   stepId: string
   stepNo: number
   title: string
+  lessonBrief: string | null
+  practiceSteps: string[]
+  submissionGuide: string | null
+  checkpoints: string[]
   status: "pending" | "in_progress" | "blocked" | "completed"
   rewardXp: number
   completedAt: string | null

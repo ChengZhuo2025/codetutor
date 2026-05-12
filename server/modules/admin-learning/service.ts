@@ -75,6 +75,9 @@ type StepRow = {
   step_no: number
   title: string
   reward_score: number
+  focus: string | null
+  summary: string | null
+  metadata: unknown
 }
 
 type SessionRow = {
@@ -95,6 +98,24 @@ type MaterialPlanDraftRow = {
   quality_status: string
   quality_report: Record<string, unknown> | null
   updated_at: string
+}
+
+function readJsonRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {}
+  }
+  return value as Record<string, unknown>
+}
+
+function readStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value.filter((item): item is string => typeof item === "string")
+}
+
+function readStringOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
 }
 
 type MaterialSourceRow = {
@@ -915,7 +936,7 @@ export async function getAdminLearningPathDetail(
       ? { data: [] as StepRow[], error: null }
       : await supabase
           .from("path_steps")
-          .select("id, path_id, step_no, title, reward_score")
+          .select("id, path_id, step_no, title, reward_score, focus, summary, metadata")
           .in("id", stepIds)
           .order("step_no", { ascending: true })
 
@@ -924,10 +945,15 @@ export async function getAdminLearningPathDetail(
   const taskByStepId = new Map(tasks.map((task) => [task.path_step_id, task]))
   const steps: AdminLearningPathDetailStep[] = ((stepData ?? []) as StepRow[]).map((step) => {
     const task = taskByStepId.get(step.id)
+    const metadata = readJsonRecord(step.metadata)
     return {
       stepId: step.id,
       stepNo: step.step_no,
       title: step.title,
+      lessonBrief: readStringOrNull(metadata.lessonBrief) ?? step.focus ?? null,
+      practiceSteps: readStringArray(metadata.practiceSteps),
+      submissionGuide: readStringOrNull(metadata.submissionGuide),
+      checkpoints: readStringArray(metadata.checkpoints),
       status:
         task?.status === "completed"
           ? "completed"

@@ -379,6 +379,47 @@ export function LearningPathDetail({ pathId }: LearningPathDetailProps) {
                           {stepMeta.label}
                         </Badge>
                       </div>
+                      {(step.lessonBrief || step.practiceSteps.length > 0 || step.submissionGuide || step.checkpoints.length > 0) ? (
+                        <div className="mt-4 rounded-xl border border-border/70 bg-muted/20 p-3">
+                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                            教案排查
+                          </p>
+                          {step.lessonBrief ? (
+                            <div className="mt-3">
+                              <p className="text-xs text-muted-foreground">先理解方法</p>
+                              <p className="mt-1 text-sm leading-6 text-foreground">{step.lessonBrief}</p>
+                            </div>
+                          ) : null}
+                          {step.practiceSteps.length > 0 ? (
+                            <div className="mt-3">
+                              <p className="text-xs text-muted-foreground">跟着做</p>
+                              <ol className="mt-1 list-decimal space-y-1 pl-5 text-sm leading-6 text-foreground">
+                                {step.practiceSteps.map((practiceStep) => (
+                                  <li key={practiceStep}>{practiceStep}</li>
+                                ))}
+                              </ol>
+                            </div>
+                          ) : null}
+                          {step.submissionGuide ? (
+                            <div className="mt-3">
+                              <p className="text-xs text-muted-foreground">提交说明</p>
+                              <p className="mt-1 text-sm leading-6 text-foreground">{step.submissionGuide}</p>
+                            </div>
+                          ) : null}
+                          {step.checkpoints.length > 0 ? (
+                            <div className="mt-3">
+                              <p className="text-xs text-muted-foreground">AI 检查点</p>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {step.checkpoints.map((checkpoint) => (
+                                  <Badge key={checkpoint} variant="outline">
+                                    {checkpoint}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                   )
                 })

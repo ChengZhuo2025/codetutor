@@ -66,6 +66,12 @@ assert.match(
 
 assert.match(
   detailSource,
+  /教案排查|先理解方法|跟着做|提交说明|AI 检查点/,
+  "The admin learning detail should expose lesson fields for generated-plan QA",
+)
+
+assert.match(
+  detailSource,
   /当前路径未关联教程链接草稿|该学习路径不是由教程链接生成计划确认后创建/,
   "The admin learning detail should explain when a path has no linked material-plan draft",
 )
