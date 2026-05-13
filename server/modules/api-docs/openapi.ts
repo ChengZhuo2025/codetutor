@@ -133,6 +133,7 @@ import {
   openApiStreamResponseSchema,
   paymentOrderResponseDataSchema,
   paymentOrderListResponseDataSchema,
+  paymentPlanCodeParamsSchema,
   profileMeResponseDataSchema,
   progressCurrentResponseDataSchema,
   progressMapResponseDataSchema,
@@ -4397,6 +4398,7 @@ registry.registerPath({
   summary: "更新订阅套餐",
   security: [],
   request: {
+    params: paymentPlanCodeParamsSchema,
     body: {
       required: true,
       content: {
@@ -4425,6 +4427,9 @@ registry.registerPath({
   tags: ["admin-settings", "payment"],
   summary: "软删除归档订阅套餐",
   security: [],
+  request: {
+    params: paymentPlanCodeParamsSchema,
+  },
   responses: {
     "200": successResponse(
       subscriptionPlanItemSchema,

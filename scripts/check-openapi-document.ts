@@ -155,6 +155,20 @@ test("openapi document covers all registered api operations and special transpor
   assert.ok(securitySchemes.bearerAuth)
   assert.ok(securitySchemes.adminSecretHeader)
 
+  const paymentPlanCodeSchema = document.components?.schemas?.PaymentPlanCode as
+    | { example?: unknown; pattern?: unknown }
+    | undefined
+  assert.equal(paymentPlanCodeSchema?.pattern, "^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$")
+  assert.equal(paymentPlanCodeSchema?.example, "personal_monthly")
+
+  const adminSubscriptionPlanCodeParams = paths["/api/admin/settings/subscription-plans/{code}"]?.patch
+    ?.parameters as Array<{ name?: string; in?: string; required?: boolean }> | undefined
+  assert.ok(
+    adminSubscriptionPlanCodeParams?.some(
+      (parameter) => parameter.name === "code" && parameter.in === "path" && parameter.required === true,
+    ),
+  )
+
   const currentSessionExample = (
     paths["/api/learning/current-session"]?.get?.responses?.["200"]?.content?.["application/json"] as
       | { example?: { data?: Record<string, unknown> } }

@@ -1681,7 +1681,18 @@ export const uploadQrCodeResponseDataSchema = z
   })
   .openapi("UploadQrCodeResponseData")
 
-export const paymentPlanCodeSchema = z.string().regex(/^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$/).openapi("PaymentPlanCode")
+export const paymentPlanCodeSchema = z
+  .string()
+  .regex(/^[a-z0-9][a-z0-9_-]{1,62}[a-z0-9]$/)
+  .openapi("PaymentPlanCode", {
+    description: "3-64 位套餐编码：小写字母/数字开头结尾，中间可含下划线或短横线。",
+    example: "personal_monthly",
+  })
+export const paymentPlanCodeParamsSchema = z
+  .object({
+    code: paymentPlanCodeSchema,
+  })
+  .openapi("PaymentPlanCodeParams")
 export const paymentOrderStatusSchema = z.enum(PAYMENT_ORDER_STATUSES).openapi("PaymentOrderStatus")
 export const paymentChannelSchema = z.enum(["wechat", "alipay"]).openapi("PaymentChannel")
 
