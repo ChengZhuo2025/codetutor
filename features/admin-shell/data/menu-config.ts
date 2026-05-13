@@ -61,16 +61,16 @@ export const menuItems: MenuItem[] = [
       { label: "Skill 管理", href: "/admin/ai/skills", icon: Layers, active: true },
       { label: "调用日志", href: "/admin/ai/invocations", icon: Activity, active: true },
       { label: "测试调试", href: "/admin/ai/test", icon: FlaskConical, active: true },
-      {
-        label: "多媒体管理",
-        href: "/admin/ai/media",
-        icon: FolderCog,
-        active: true,
-        children: [
-          { label: "转译设置", href: "/admin/ai/media/transcription-settings", icon: Mic, active: true },
-          { label: "附件管理", href: "/admin/ai/media/attachments", icon: Image, active: true },
-        ],
-      },
+    ],
+  },
+  {
+    label: "多媒体管理",
+    href: "/admin/ai/media",
+    icon: FolderCog,
+    active: true,
+    children: [
+      { label: "转译设置", href: "/admin/ai/media/transcription-settings", icon: Mic, active: true },
+      { label: "附件管理", href: "/admin/ai/media/attachments", icon: Image, active: true },
     ],
   },
   {

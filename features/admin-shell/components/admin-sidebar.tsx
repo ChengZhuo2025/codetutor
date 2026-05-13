@@ -45,9 +45,15 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
   const aiAccessible = canAccessAdminAI(session.roles)
 
   function isItemActive(item: MenuItem) {
-    return item.href === ADMIN_ROUTES.home
-      ? pathname === ADMIN_ROUTES.home
-      : pathname.startsWith(item.href) && item.href !== ADMIN_ROUTES.home
+    if (item.href === ADMIN_ROUTES.home) {
+      return pathname === ADMIN_ROUTES.home
+    }
+
+    if (item.children?.length) {
+      return pathname === item.href || pathname.startsWith(`${item.href}/`)
+    }
+
+    return pathname === item.href
   }
 
   function renderMenuItems(items: MenuItem[], level = 0) {
@@ -59,7 +65,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
         return null
       }
 
-      if (item.href === ADMIN_ROUTES.ai && !aiAccessible) {
+      if ((item.href === ADMIN_ROUTES.ai || item.href.startsWith(`${ADMIN_ROUTES.ai}/`)) && !aiAccessible) {
         return null
       }
 

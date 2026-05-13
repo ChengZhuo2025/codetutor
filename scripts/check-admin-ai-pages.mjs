@@ -63,7 +63,8 @@ assert.match(mediaSettingsSource, /转译设置|图片转译|语音转文本|文
 assert.match(mediaSettingsSource, /详情|编辑|modelOptions/, "The media settings page should expose detail and edit affordances")
 assert.match(mediaAttachmentsSource, /附件管理|图片|语音|时间段/, "The media attachments page should expose attachment filters")
 assert.match(menuSource, /label: "Ai 管理".*active: true/s, "The admin menu should enable the AI operations entry")
-assert.match(menuSource, /label: "多媒体管理".*children: \[/s, "The admin AI menu should expose multimedia management submenu")
+assert.match(menuSource, /label: "Ai 管理"[\s\S]*?\]\s*,\s*\},\s*\{\s*label: "多媒体管理"/, "Multimedia management should be a top-level menu directly after AI management")
+assert.match(menuSource, /label: "多媒体管理"[\s\S]*children: \[/, "The multimedia management menu should expose its submenu")
 assert.match(sidebarSource, /useState<Record<string, boolean>>\(\{\}\)/, "Admin sidebar submenu state should start empty")
 assert.match(sidebarSource, /expandedItems\[item\.href\] \?\? isActive/, "Admin sidebar submenus should default to collapsed and expand only for active routes")
 

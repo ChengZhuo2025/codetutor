@@ -161,12 +161,12 @@ export function MediaTranscriptionSettings() {
             <table className="w-full min-w-[960px] table-fixed">
               <thead className="bg-muted/40">
                 <tr className="border-b border-border">
-                  <th className="w-[18%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">类型</th>
-                  <th className="w-[24%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">当前模型</th>
-                  <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Provider / 用途</th>
-                  <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
-                  <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">更新时间</th>
-                  <th className="w-[14%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
+                  <th className="w-[26%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">类型</th>
+                  <th className="w-[18%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">当前模型</th>
+                  <th className="w-[14%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">Provider / 用途</th>
+                  <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">状态</th>
+                  <th className="w-[14%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">更新时间</th>
+                  <th className="w-[18%] px-4 py-3 text-right text-xs font-medium text-muted-foreground">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
