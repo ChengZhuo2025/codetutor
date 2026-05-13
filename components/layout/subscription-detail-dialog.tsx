@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState, type ReactNode } from "react"
-import Link from "next/link"
 import QRCode from "qrcode"
 import { CalendarClock, Check, CheckCircle2, Crown, FileText, Loader2, Lock, MessageCircle, XCircle } from "lucide-react"
 import {
@@ -214,7 +213,13 @@ export function SubscriptionDetailDialog({
   }
 
   function handleViewOrders() {
-    window.location.assign("/orders")
+    setPaymentDialogOpen(false)
+    setActiveOrder(null)
+    setQrDataUrl(null)
+    setOpen(false)
+    if (window.location.pathname !== "/orders") {
+      window.location.assign("/orders")
+    }
   }
 
   const paymentView = activeOrder?.status === "paid"
@@ -260,13 +265,14 @@ export function SubscriptionDetailDialog({
                     </p>
                   </div>
                 </div>
-                <Link
-                  href="/orders"
+                <button
+                  type="button"
+                  onClick={handleViewOrders}
                   className={cn("flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium", USER_PANEL_OUTLINE_BUTTON_CLASS)}
                 >
                   <FileText className="h-4 w-4" />
                   订阅记录
-                </Link>
+                </button>
               </div>
             </div>
 
@@ -378,7 +384,7 @@ export function SubscriptionDetailDialog({
                           "text-2xl font-bold",
                           isDowngrade ? "text-foreground/40" : "text-foreground"
                         )}>
-                          ¥{(plan.priceCents / 100).toFixed(plan.priceCents % 100 === 0 ? 0 : 2)}
+                          ¥{(plan.priceCents / 100).toFixed(2)}
                         </span>
                         {plan.periodLabel && (
                           <span className="text-sm text-muted-foreground">{plan.periodLabel}</span>
@@ -524,7 +530,7 @@ export function SubscriptionDetailDialog({
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-muted-foreground">金额</span>
                     <span className="text-right text-2xl font-bold text-foreground">
-                      ¥{activeOrder ? (activeOrder.amountCents / 100).toFixed(activeOrder.amountCents % 100 === 0 ? 0 : 2) : "--"}
+                      ¥{activeOrder ? (activeOrder.amountCents / 100).toFixed(2) : "--"}
                     </span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
@@ -558,7 +564,7 @@ export function SubscriptionDetailDialog({
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-muted-foreground">金额</span>
                     <span className="text-right text-xl font-bold text-foreground">
-                      ¥{activeOrder ? (activeOrder.amountCents / 100).toFixed(activeOrder.amountCents % 100 === 0 ? 0 : 2) : "--"}
+                      ¥{activeOrder ? (activeOrder.amountCents / 100).toFixed(2) : "--"}
                     </span>
                   </div>
                   <div className="flex items-start justify-between gap-3">

@@ -18,8 +18,7 @@ import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
 
 function formatPlanPrice(priceCents: number) {
-  if (priceCents === 0) return "¥0"
-  return `¥${(priceCents / 100).toFixed(priceCents % 100 === 0 ? 0 : 2)}`
+  return `¥${(priceCents / 100).toFixed(2)}`
 }
 
 function mapSubscriptionPlanToMarketingPlan(

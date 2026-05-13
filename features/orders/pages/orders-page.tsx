@@ -41,7 +41,7 @@ const ORDER_PAGE_SIZE = 10
 
 const EMPTY_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {
   planName: "免费版",
-  planPriceLabel: "¥0",
+  planPriceLabel: "¥0.00",
   billingCycleLabel: "按需升级",
   expiresAt: "无期限",
   remainingDays: 0,
@@ -299,7 +299,7 @@ export function OrdersPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">金额</p>
                   <p className="mt-1 text-3xl font-bold text-foreground">
-                    ¥{payingOrder ? (payingOrder.amountCents / 100).toFixed(payingOrder.amountCents % 100 === 0 ? 0 : 2) : "--"}
+                    ¥{payingOrder ? (payingOrder.amountCents / 100).toFixed(2) : "--"}
                   </p>
                 </div>
                 <p className="text-sm leading-5 text-muted-foreground">

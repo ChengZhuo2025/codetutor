@@ -41,7 +41,7 @@ const statusMeta: Record<PaymentOrderStatus, { label: string; variant: "neutral"
 }
 
 function formatAmount(cents: number) {
-  return `¥${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`
+  return `¥${(cents / 100).toFixed(2)}`
 }
 
 function formatDateTime(iso: string | null) {

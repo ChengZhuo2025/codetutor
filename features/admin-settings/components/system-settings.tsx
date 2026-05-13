@@ -1679,7 +1679,7 @@ export function SystemSettings() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        ¥{(plan.priceCents / 100).toFixed(plan.priceCents % 100 === 0 ? 0 : 2)}{plan.periodLabel}
+                        ¥{(plan.priceCents / 100).toFixed(2)}{plan.periodLabel}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-2">

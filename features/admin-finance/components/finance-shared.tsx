@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 
 export function formatMoney(cents: number) {
   return `¥${(cents / 100).toLocaleString("zh-CN", {
-    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
 }

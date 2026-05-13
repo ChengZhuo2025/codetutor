@@ -220,7 +220,7 @@ export const marketingBenefits: MarketingBenefit[] = [
 export const marketingPlans: MarketingPlan[] = [
   {
     name: "免费版",
-    price: "¥0",
+    price: "¥0.00",
     period: "",
     desc: "探索产品核心体验",
     highlight: false,
@@ -235,7 +235,7 @@ export const marketingPlans: MarketingPlan[] = [
   },
   {
     name: "个人版",
-    price: "¥39",
+    price: "¥39.00",
     period: "/月",
     desc: "无限学习，持续陪练",
     highlight: true,
@@ -251,7 +251,7 @@ export const marketingPlans: MarketingPlan[] = [
   },
   {
     name: "专业版",
-    price: "¥99",
+    price: "¥99.00",
     period: "/月",
     desc: "项目实战陪跑",
     highlight: false,
