@@ -776,6 +776,9 @@ async function preprocessLearningMessageAttachments(input: {
         if (!pipelineModels.asr) {
           throw new LearningValidationError("当前未配置 ASR 模型，暂时无法识别语音消息。")
         }
+        if (!attachment.signedUrl) {
+          throw new LearningValidationError("附件临时访问地址生成失败。")
+        }
 
         const result = await invokeMaterialAudioTranscription({
           runtime: pipelineModels.asr,
@@ -814,6 +817,11 @@ async function preprocessLearningMessageAttachments(input: {
         continue
       }
 
+      const imageUrl = attachment.dataUrl || attachment.signedUrl
+      if (!imageUrl) {
+        throw new LearningValidationError("附件临时访问地址生成失败。")
+      }
+
       const result = await invokeMaterialPipelineModel({
         runtime: pipelineModels.vision,
         systemPrompt: "你是学习对话截图理解助手。只输出 JSON：{\"visualSummary\":\"...\",\"extractedText\":\"...\"}。只描述图片中可见内容，不要编造。",
@@ -829,7 +837,7 @@ async function preprocessLearningMessageAttachments(input: {
           {
             type: "image_url",
             image_url: {
-              url: attachment.dataUrl || attachment.signedUrl,
+              url: imageUrl,
             },
           },
         ],

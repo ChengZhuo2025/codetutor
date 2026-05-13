@@ -30,7 +30,7 @@ import {
   normalizeLearningMessagesPageSize,
   resolveLearningMessagesPage,
 } from "./history-logic.ts"
-import type { Message } from "@/features/learning/types"
+import type { Message, MessageAttachment } from "@/features/learning/types"
 
 type JsonRecord = Record<string, unknown>
 
@@ -117,7 +117,7 @@ type ConversationMessageRow = {
   metadata: JsonRecord
 }
 
-function parseStoredMessageAttachments(value: unknown) {
+function parseStoredMessageAttachments(value: unknown): MessageAttachment[] {
   if (!Array.isArray(value)) {
     return []
   }
