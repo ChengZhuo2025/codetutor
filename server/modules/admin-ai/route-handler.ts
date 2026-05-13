@@ -1,4 +1,5 @@
 import { jsonError, jsonSuccess } from "@/server/lib/route-response"
+import type { NextRequest } from "next/server"
 import type {
   AdminAIAgentBindingUpsertRequest,
   AdminAIAgentScenarioType,
@@ -6,6 +7,7 @@ import type {
   AdminAIAgentUpsertRequest,
   AdminAIModelTestConnectionRequest,
   AdminAIModelTestConnectionResponseData,
+  AdminAIMediaTranscriptionSettingUpdateRequest,
   AdminAIModelUpsertRequest,
   AdminAIProviderSecretRevealResponseData,
   AdminAIProviderTestConnectionRequest,
@@ -20,6 +22,8 @@ import {
   parseAdminAIAgentListQuery,
   parseAdminAIAgentSkillBindingBody,
   parseAdminAIInvocationListQuery,
+  parseAdminAIMediaAttachmentListQuery,
+  parseAdminAIMediaTranscriptionSettingBody,
   parseAdminAIModelBody,
   parseAdminAIModelTestConnectionBody,
   parseAdminAIProviderBody,
@@ -43,9 +47,9 @@ type RequestAdminResult =
 
 type Awaitable<T> = T | Promise<T>
 
-async function requireAdmin(
-  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>,
-  request: unknown,
+async function requireAdmin<RequestLike>(
+  getRequestAdmin: (request: RequestLike) => Awaitable<RequestAdminResult>,
+  request: RequestLike,
 ) {
   const admin = await getRequestAdmin(request)
   if (!admin.ok) {
@@ -373,6 +377,108 @@ export function createAdminAIModelListHandler(dependencies: {
         return jsonError("INTERNAL_ERROR", "Model 创建失败", 500)
       }
     },
+  }
+}
+
+export function createAdminAIMediaTranscriptionSettingListGetHandler(dependencies: {
+  getRequestAdmin: (request: NextRequest) => Awaitable<RequestAdminResult>
+  getAdminAIMediaTranscriptionSettings: (adminAccountId: string) => Promise<unknown>
+}) {
+  return async function GET(request: NextRequest) {
+    try {
+      const admin = await requireAdmin(dependencies.getRequestAdmin, request)
+      if (!admin.ok) {
+        return admin.response
+      }
+
+      const data = await dependencies.getAdminAIMediaTranscriptionSettings(admin.adminId)
+      return jsonSuccess(data, "多媒体转译设置读取成功")
+    } catch (error) {
+      return mapCommonRouteError(error, "多媒体转译设置读取失败")
+    }
+  }
+}
+
+export function createAdminAIMediaTranscriptionSettingDetailPatchHandler(dependencies: {
+  getRequestAdmin: (request: NextRequest) => Awaitable<RequestAdminResult>
+  updateAdminAIMediaTranscriptionSetting: (
+    adminAccountId: string,
+    settingId: string,
+    input: AdminAIMediaTranscriptionSettingUpdateRequest,
+  ) => Promise<unknown | null>
+}) {
+  return async function PATCH(
+    request: NextRequest,
+    routeContext: { params: Promise<{ settingId: string }> },
+  ) {
+    try {
+      const admin = await requireAdmin(dependencies.getRequestAdmin, request)
+      if (!admin.ok) {
+        return admin.response
+      }
+
+      const { settingId: rawId } = await routeContext.params
+      const settingId = parseRequiredRouteId(rawId, "转译设置 ID 不合法。")
+      if (!settingId.ok) {
+        return jsonError(settingId.code, settingId.message, 400)
+      }
+
+      const parsed = parseAdminAIMediaTranscriptionSettingBody(await request.json())
+      if (!parsed.ok) {
+        return jsonError(parsed.code, parsed.message, 400)
+      }
+
+      const data = await dependencies.updateAdminAIMediaTranscriptionSetting(
+        admin.adminId,
+        settingId.data,
+        parsed.data,
+      )
+      if (!data) {
+        return jsonError("NOT_FOUND", "转译设置不存在。", 404)
+      }
+      return jsonSuccess(data, "转译设置已更新")
+    } catch (error) {
+      return mapCommonRouteError(error, "转译设置更新失败")
+    }
+  }
+}
+
+export function createAdminAIMediaAttachmentListGetHandler(dependencies: {
+  getRequestAdmin: (request: NextRequest) => Awaitable<RequestAdminResult>
+  getAdminAIMediaAttachments: (filters: {
+    adminAccountId: string
+    kind: "all" | "image" | "audio"
+    startDate?: string
+    endDate?: string
+    page: number
+    limit: number
+  }) => Promise<unknown>
+}) {
+  return async function GET(request: NextRequest) {
+    try {
+      const admin = await requireAdmin(dependencies.getRequestAdmin, request)
+      if (!admin.ok) {
+        return admin.response
+      }
+
+      const url = new URL(request.url)
+      const parsed = parseAdminAIMediaAttachmentListQuery(url.searchParams)
+      if (!parsed.ok) {
+        return jsonError(parsed.code, parsed.message, 400)
+      }
+
+      const data = await dependencies.getAdminAIMediaAttachments({
+        adminAccountId: admin.adminId,
+        kind: parsed.data.kind,
+        startDate: parsed.data.startDate,
+        endDate: parsed.data.endDate,
+        page: parsed.data.page,
+        limit: parsed.data.limit,
+      })
+      return jsonSuccess(data, "多媒体附件列表读取成功")
+    } catch (error) {
+      return mapCommonRouteError(error, "多媒体附件列表读取失败")
+    }
   }
 }
 

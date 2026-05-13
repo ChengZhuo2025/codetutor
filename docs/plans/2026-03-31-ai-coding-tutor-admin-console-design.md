@@ -26,7 +26,7 @@
 > - 管理后台 Phase 1 已落地管理员登录、会话、登出、改密、看板、反馈、管理员资料编辑（含头像上传）链路。
 > - **用户运营**已落地：用户列表、详情、导出、受控资料更新、软删除与恢复、与反馈列表联动；路由为 `app/(admin-shell)/admin/users/*`，业务域为 `features/admin-users`，服务层为 `server/modules/admin-users`，OpenAPI 分组为 `admin-users`。
 > - **学习记录**已落地：学习路径实例列表、详情、CSV 导出、最近会话摘要、`reactivate / archive` 状态操作；路由为 `app/(admin-shell)/admin/learning/*`，业务域为 `features/admin-learning`，服务层为 `server/modules/admin-learning`，OpenAPI 分组为 `admin-learning`。
-> - **Ai 管理**已落地：`/admin/ai` 概览、Provider/Model/Agent 列表与独立详情页、命中规则、Skill 绑定、调用日志列表与独立详情页、命中预览与真实 provider 测试；路由为 `app/(admin-shell)/admin/ai/*`，业务域为 `features/admin-ai`，服务层为 `server/modules/admin-ai`，OpenAPI 分组为 `admin-ai`。
+> - **Ai 管理**已落地：`/admin/ai` 概览、Provider/Model/Agent 列表与独立详情页、命中规则、Skill 绑定、调用日志列表与独立详情页、命中预览与真实 provider 测试，以及多媒体管理（转译设置、附件管理）；路由为 `app/(admin-shell)/admin/ai/*`，业务域为 `features/admin-ai`，服务层为 `server/modules/admin-ai`，OpenAPI 分组为 `admin-ai`。
 > - **系统设置**已落地：资料与安全入口复用、管理员账号列表与启停、角色权限说明、操作审计列表、系统信息、企业联系方式管理与微信支付配置加密托管；路由为 `app/(admin-shell)/admin/settings`，业务域为 `features/admin-settings`，服务层为 `server/modules/admin-settings` / `server/modules/payments`，OpenAPI 分组为 `admin-settings` 与 `payment`。
 > - 管理端鉴权主链路已切换为 `admin-access-token` / `admin-refresh-token` Cookie，会话守卫与 `/api-docs` 访问守卫已接入 `proxy.ts`。
 > - 运行时 API 文档（`/api/docs/openapi`、`/api-docs`）已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning`、`admin-ai`、`admin-settings` 分组。
@@ -279,6 +279,8 @@ LLM 管理不是只看调用日志，而是要能管理当前 AI registry。
   管理大模型供应商配置，如 `code`、`name`、`provider_type`、`base_url`、`auth_mode`、加密托管的 API Key、`envSecretRef`、超时、重试、是否启用。
 - `ai_models`
   管理具体 LLM 配置，如 `code`、`display_name`、`model_name`、所属 provider、stream/json/tool calling 能力、上下文长度、默认输出上限、推荐 temperature、定价元信息、启停状态。
+- `media_transcription_settings`
+  管理学习对话多媒体转译设置，包括图片转译、语音转文本和预留文本转语音的模型选择与启停。
 
 后台需要提供的典型能力：
 
@@ -366,6 +368,10 @@ Agents 管理必须覆盖两类场景：
   调用详情页，展示脱敏 request/response、上下游对象引用、错误信息与处理建议。
 - `/admin/ai/test`
   后台调试页，支持 resolve preview 与 agent test。
+- `/admin/ai/media/transcription-settings`
+  多媒体转译设置页，展示图片转译、语音转文本、文本转语音三类配置，支持详情与编辑。
+- `/admin/ai/media/attachments`
+  多媒体附件管理页，只读展示用户上传的图片、语音附件，支持按类型和时间段筛选。
 
 页面编排原则：
 
@@ -702,6 +708,7 @@ Agents 管理页必须补齐的辅助能力：
 | LLM 管理 | `GET /api/admin/ai/providers`、`POST /api/admin/ai/providers`、`GET /api/admin/ai/providers/{id}`、`PATCH /api/admin/ai/providers/{id}`、`GET /api/admin/ai/models`、`POST /api/admin/ai/models`、`GET /api/admin/ai/models/{id}`、`PATCH /api/admin/ai/models/{id}` | **已落地** |
 | Agents 管理 | `GET /api/admin/ai/agents`、`POST /api/admin/ai/agents`、`GET /api/admin/ai/agents/{id}`、`PATCH /api/admin/ai/agents/{id}`、`GET /api/admin/ai/agent-bindings`、`POST /api/admin/ai/agent-bindings`、`PATCH /api/admin/ai/agent-bindings/{id}`、`GET /api/admin/ai/agent-skill-bindings`、`POST /api/admin/ai/agent-skill-bindings`、`PATCH /api/admin/ai/agent-skill-bindings/{id}`、`GET /api/admin/ai/skills` | **已落地** |
 | AI 测试 | `POST /api/admin/ai/resolve-preview`、`POST /api/admin/ai/agent/test` | **已落地** |
+| 多媒体管理 | `GET /api/admin/ai/media/transcription-settings`、`PATCH /api/admin/ai/media/transcription-settings/{id}`、`GET /api/admin/ai/media/attachments` | **已落地** |
 | 审计 | `GET /api/admin/settings/audit-logs` | **已落地** |
 
 ### 7.5 写接口规范

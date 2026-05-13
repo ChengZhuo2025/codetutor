@@ -26,7 +26,20 @@ export const ADMIN_AI_MODEL_FAMILIES = [
 export const ADMIN_AI_MODEL_RUNTIME_CAPABILITIES = [
   "asr",
   "vision",
+  "tts",
   "quality_check",
+] as const
+
+export const ADMIN_AI_MEDIA_TRANSCRIPTION_TYPES = [
+  "image_translation",
+  "speech_to_text",
+  "text_to_speech",
+] as const
+
+export const ADMIN_AI_MEDIA_ATTACHMENT_KINDS = [
+  "all",
+  "image",
+  "audio",
 ] as const
 
 export const ADMIN_AI_MODEL_CONNECTION_TEST_MODES = [
@@ -89,6 +102,8 @@ export type AdminAIAuthMode = (typeof ADMIN_AI_AUTH_MODES)[number]
 export type AdminAIProviderSecretSource = (typeof ADMIN_AI_PROVIDER_SECRET_SOURCES)[number]
 export type AdminAIModelFamily = (typeof ADMIN_AI_MODEL_FAMILIES)[number]
 export type AdminAIModelRuntimeCapability = (typeof ADMIN_AI_MODEL_RUNTIME_CAPABILITIES)[number]
+export type AdminAIMediaTranscriptionType = (typeof ADMIN_AI_MEDIA_TRANSCRIPTION_TYPES)[number]
+export type AdminAIMediaAttachmentKindFilter = (typeof ADMIN_AI_MEDIA_ATTACHMENT_KINDS)[number]
 export type AdminAIModelConnectionTestMode = (typeof ADMIN_AI_MODEL_CONNECTION_TEST_MODES)[number]
 export type AdminAIAgentScenarioType = (typeof ADMIN_AI_AGENT_SCENARIO_TYPES)[number]
 export type AdminAISkillSourceType = (typeof ADMIN_AI_SKILL_SOURCE_TYPES)[number]
@@ -295,6 +310,79 @@ export type AdminAIModelUpsertRequest = {
   metadata: Record<string, unknown>
   version?: number
   changeReason: string
+}
+
+export type AdminAIMediaTranscriptionSettingItem = {
+  settingId: string
+  mediaType: AdminAIMediaTranscriptionType
+  label: string
+  description: string
+  requiredCapability: AdminAIModelRuntimeCapability | null
+  modelId: string | null
+  modelCode: string | null
+  modelDisplayName: string | null
+  providerCode: string | null
+  providerName: string | null
+  isEnabled: boolean
+  version: number
+  metadata: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+}
+
+export type AdminAIMediaModelOption = {
+  modelId: string
+  code: string
+  displayName: string
+  modelName: string
+  providerCode: string
+  providerName: string
+  runtimeCapabilities: AdminAIModelRuntimeCapability[]
+  isActive: boolean
+}
+
+export type AdminAIMediaTranscriptionSettingsResponseData = {
+  items: AdminAIMediaTranscriptionSettingItem[]
+  modelOptions: AdminAIMediaModelOption[]
+}
+
+export type AdminAIMediaTranscriptionSettingUpdateRequest = {
+  modelId: string | null
+  isEnabled: boolean
+  version?: number
+  changeReason: string
+}
+
+export type AdminAIMediaTranscriptionSettingUpdateResponseData = {
+  setting: AdminAIMediaTranscriptionSettingItem
+}
+
+export type AdminAIMediaAttachmentListItem = {
+  attachmentId: string
+  userId: string
+  sessionId: string | null
+  messageId: string | null
+  kind: "image" | "audio"
+  processingStatus: "pending" | "processing" | "completed" | "failed"
+  originalFilename: string | null
+  mimeType: string
+  sizeBytes: number
+  durationMs: number | null
+  width: number | null
+  height: number | null
+  extractedText: string | null
+  visualSummary: string | null
+  transcriptText: string | null
+  errorMessage: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type AdminAIMediaAttachmentListResponseData = {
+  items: AdminAIMediaAttachmentListItem[]
+  total: number
+  page: number
+  limit: number
 }
 
 export type AdminAIAgentBindingListItem = {

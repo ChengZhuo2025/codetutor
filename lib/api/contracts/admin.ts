@@ -124,6 +124,7 @@ export const ADMIN_AUDIT_ACTIONS = [
   "ai_agent_binding_update",
   "ai_agent_skill_binding_create",
   "ai_agent_skill_binding_update",
+  "ai_media_transcription_setting_update",
   "ai_test_run",
   "site_contact_update",
   "payment_settings_update",

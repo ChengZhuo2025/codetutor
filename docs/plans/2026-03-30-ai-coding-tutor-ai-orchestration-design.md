@@ -79,7 +79,7 @@
 - 当前学习消息链路已覆盖 logic / HTTP / output-format 测试，以及真实 provider / database 参与的 live JSON、live SSE 集成测试
 - 当前 provider 密钥主路径已改为“管理后台录入 -> 服务端加密 -> 数据库存储 -> 运行时解密”；若数据库密钥缺失，则仍可通过 `envSecretRef` 回退读取环境变量；若两者都不存在会返回 `AI_PROVIDER_ERROR`
 - 当前仓库已经具备适合承载该能力的基础设施：`app/api`、`server/modules`、Supabase Auth、Database、Storage、远程迁移执行脚本
-- **学习对话多模态附件**：`/learn` 已支持图片和语音附件。前端先调用 `POST /api/learning/attachments` 上传到私有 Storage，再在 `POST /api/learning/message` 传 `attachmentIds`；服务端验证归属后做 deterministic media preprocessing，图片走 `vision` capability 模型，语音走 `asr` capability 模型，处理结果写回 `learning_message_attachments` 并注入教学上下文。当前图片识别模型为阿里云百炼 `Qwen3.6-Flash`，语音识别模型为 `Qwen3-ASR-Flash`
+- **学习对话多模态附件**：`/learn` 已支持图片和语音附件。前端先调用 `POST /api/learning/attachments` 上传到私有 Storage，再在 `POST /api/learning/message` 传 `attachmentIds`；服务端验证归属后做 deterministic media preprocessing，图片转译和语音转文本模型由后台 `media_transcription_settings` 配置决定，处理结果写回 `learning_message_attachments` 并注入教学上下文。当前后台已预留 `text_to_speech` 配置，但尚未接入用户端 TTS 运行时调用。
 - **教程链接生成学习计划（Phase A/B）**：已落地专用接口 `POST /api/learning/plan-from-material`（及草稿 `confirm` / `regenerate`），计划生成使用 `agent_templates.code = self-study-material-planner` 与 `invokeAIProvider` 非流式 JSON，不经过 `POST /api/learning/message` 主消息编排；intake worker 现已按 `raw text -> subtitle -> ASR -> OCR/vision` 顺序做多模态证据摄取，并通过独立 quality gate 做规则校验；仅在弱证据、长计划、缺少时长估算或时长压力较高时才触发轻量化模型自检，自检超时只记入 `selfCheck.reason`，不再污染用户可见 warning
 - 当前仍未引入 Redis / 消息队列；上述缓存、限流与观测增强均为单实例进程内实现，属于第一阶段运行时加固而非分布式基础设施
 
@@ -1179,6 +1179,26 @@ ai/skills/
 - `uidx_ai_models_code`
 - `idx_ai_models_provider_id_active`
 
+### `media_transcription_settings`
+
+用途：
+
+- 管理学习对话多媒体预处理使用的模型配置。
+- 当前三类配置为 `image_translation`、`speech_to_text`、`text_to_speech`；前两类已接入学习对话附件预处理，文本转语音仅保留配置入口。
+- 该表只影响 `/learn` 对话附件预处理，不改变自学材料 intake 的 ASR / vision / quality 模型解析。
+
+字段：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | `uuid` | 主键 |
+| `media_type` | `media_transcription_type` | `image_translation` / `speech_to_text` / `text_to_speech` |
+| `model_id` | `uuid` | 关联 `ai_models.id`，可为空 |
+| `is_enabled` | `boolean` | 是否启用该类转译 |
+| `metadata` | `jsonb` | 扩展信息 |
+| `version` | `integer` | 乐观锁版本 |
+| `created_at` / `updated_at` | `timestamptz` | 创建与更新时间 |
+
 ---
 
 ## 11.3 Agent 配置层
@@ -1570,7 +1590,7 @@ ai/skills/
 3. 第一阶段不另外新增 `POST /api/learning/message/stream`，避免前后端维护两套路由。
 4. 多模态附件不直接塞入 `content_text`。图片和语音先落 `learning_message_attachments`，再通过 `attachmentIds` 进入主消息编排。
 5. 图片附件预处理使用 `data:<mime>;base64,...` 传给 vision 模型，避免私有 Storage signed URL 被 provider 侧网络阻断。
-6. `Qwen3-ASR-Flash` 使用 OpenAI-compatible `/chat/completions` 的 `input_audio` 格式，不走传统 `/audio/transcriptions` multipart 表单。
+6. `Qwen3-ASR-Flash` 使用 OpenAI-compatible `/chat/completions` 的 `input_audio` 格式，不走传统 `/audio/transcriptions` multipart 表单；是否选用该模型由后台语音转文本设置决定。
 
 ### 12.2.1 请求头
 

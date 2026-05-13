@@ -6,6 +6,7 @@ import {
   resolveMaterialPipelineModelsFromSnapshots,
   type MaterialPipelineRuntime,
 } from "../server/modules/learning-materials/providers.ts"
+import { resolveLearningMediaTranscriptionModelsFromSnapshots } from "../server/modules/admin-ai/media-service.ts"
 import { executeLearningMessageRequest } from "../server/modules/learning/http-logic.ts"
 
 const aliyunProvider = {
@@ -128,6 +129,64 @@ test("material pipeline env overrides can pin dedicated multimodal model codes",
 
   assert.equal(result.vision?.model.code, "qwen3-6-flash")
   assert.equal(result.asr?.model.code, "qwen3-asr-flash")
+})
+
+test("learning media transcription settings override capability fallback for chat attachments", () => {
+  const result = resolveLearningMediaTranscriptionModelsFromSnapshots({
+    providers: [aliyunProvider],
+    settings: [
+      {
+        id: "setting-image",
+        media_type: "image_translation",
+        model_id: "model-selected-vision",
+        is_enabled: true,
+      },
+      {
+        id: "setting-audio",
+        media_type: "speech_to_text",
+        model_id: "model-selected-asr",
+        is_enabled: true,
+      },
+    ],
+    models: [
+      {
+        id: "model-fallback-vision",
+        provider_id: "provider-aliyun",
+        code: "fallback-vision",
+        display_name: "Fallback Vision",
+        model_name: "fallback-vision",
+        default_max_output_tokens: 1200,
+        recommended_temperature: 0.1,
+        is_active: true,
+        runtime_capabilities: ["vision"],
+      },
+      {
+        id: "model-selected-vision",
+        provider_id: "provider-aliyun",
+        code: "selected-vision",
+        display_name: "Selected Vision",
+        model_name: "selected-vision",
+        default_max_output_tokens: 1200,
+        recommended_temperature: 0.1,
+        is_active: true,
+        runtime_capabilities: ["vision"],
+      },
+      {
+        id: "model-selected-asr",
+        provider_id: "provider-aliyun",
+        code: "selected-asr",
+        display_name: "Selected ASR",
+        model_name: "selected-asr",
+        default_max_output_tokens: 1200,
+        recommended_temperature: 0,
+        is_active: true,
+        runtime_capabilities: ["asr"],
+      },
+    ],
+  })
+
+  assert.equal(result.vision?.model.code, "selected-vision")
+  assert.equal(result.asr?.model.code, "selected-asr")
 })
 
 test("Qwen3-ASR Flash uses Bailian chat completions with input_audio data URL", async () => {

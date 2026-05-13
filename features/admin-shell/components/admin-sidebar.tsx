@@ -7,6 +7,7 @@ import { useState } from "react"
 import { ChevronDown, ChevronRight, PanelLeftClose, PanelLeft } from "lucide-react"
 import { ADMIN_ROUTES } from "@/constants/routes"
 import { menuItems, brandIcon } from "../data/menu-config"
+import type { MenuItem } from "../types"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useAdminSession } from "./admin-shell-client"
@@ -40,9 +41,108 @@ function withCollapsedTooltip(collapsed: boolean, label: string, node: ReactElem
 export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps) {
   const pathname = usePathname()
   const { session } = useAdminSession()
-  const [aiExpanded, setAiExpanded] = useState(true)
-  const [financeExpanded, setFinanceExpanded] = useState(true)
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
   const aiAccessible = canAccessAdminAI(session.roles)
+
+  function isItemActive(item: MenuItem) {
+    return item.href === ADMIN_ROUTES.home
+      ? pathname === ADMIN_ROUTES.home
+      : pathname.startsWith(item.href) && item.href !== ADMIN_ROUTES.home
+  }
+
+  function renderMenuItems(items: MenuItem[], level = 0) {
+    return items.map((item) => {
+      const isActive = isItemActive(item)
+      const Icon = item.icon
+
+      if (!item.active && item.href !== ADMIN_ROUTES.home) {
+        return null
+      }
+
+      if (item.href === ADMIN_ROUTES.ai && !aiAccessible) {
+        return null
+      }
+
+      if (item.children?.length) {
+        const expanded = expandedItems[item.href] ?? isActive
+        const parentLink = (
+          <button
+            type="button"
+            onClick={() => setExpandedItems((prev) => ({ ...prev, [item.href]: !expanded }))}
+            className={cn(
+              navItemBase,
+              "w-full text-sidebar-foreground",
+              collapsed ? "min-h-10 justify-center px-0 py-2" : "gap-2.5 px-3 py-2.5",
+              level > 0 && !collapsed && "py-2 text-xs",
+              "hover:bg-sidebar-accent/90 hover:text-sidebar-accent-foreground",
+              isActive && "bg-sidebar-accent text-sidebar-accent-foreground",
+            )}
+            aria-expanded={expanded}
+          >
+            <Icon className={cn("shrink-0 opacity-90", level > 0 ? "size-3.5" : "size-4")} />
+            {!collapsed ? (
+              <>
+                <span className="min-w-0 flex-1 text-left">{item.label}</span>
+                {expanded
+                  ? <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+                  : <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                }
+              </>
+            ) : null}
+          </button>
+        )
+
+        return (
+          <li key={item.href}>
+            {withCollapsedTooltip(collapsed, item.label, parentLink)}
+            {expanded ? (
+              <ul
+                className={cn(
+                  "mt-1 space-y-0.5 border-sidebar-border/80",
+                  collapsed ? "border-l-0 pl-0" : "ml-2.5 border-l-2 border-l-primary/15 pl-3",
+                )}
+              >
+                {renderMenuItems(item.children, level + 1)}
+              </ul>
+            ) : null}
+          </li>
+        )
+      }
+
+      const link = (
+        <Link
+          href={item.href}
+          className={cn(
+            navItemBase,
+            level > 0 ? "text-muted-foreground" : "text-sidebar-foreground",
+            collapsed ? "min-h-10 justify-center px-0 py-2" : "gap-2.5 px-3 py-2.5",
+            level > 0 && !collapsed && "gap-2 px-2 py-2 text-xs",
+            "hover:bg-sidebar-accent/90 hover:text-sidebar-accent-foreground",
+            isActive
+              && (level > 0
+                ? "bg-primary/12 font-semibold text-primary ring-1 ring-primary/15"
+                : "bg-primary/[0.14] font-semibold text-primary ring-1 ring-primary/20"),
+          )}
+        >
+          <Icon
+            className={cn(
+              "shrink-0",
+              level > 0 ? "size-3.5" : "size-4",
+              isActive ? "text-primary" : "opacity-90",
+            )}
+            aria-hidden
+          />
+          {!collapsed ? <span className="truncate">{item.label}</span> : null}
+        </Link>
+      )
+
+      return (
+        <li key={item.href}>
+          {withCollapsedTooltip(collapsed, item.label, link)}
+        </li>
+      )
+    })
+  }
 
   return (
     <aside
@@ -78,124 +178,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
         aria-label="管理后台主导航"
       >
         <ul className="space-y-1">
-          {menuItems.map((item) => {
-            const isActive = item.href === ADMIN_ROUTES.home
-              ? pathname === ADMIN_ROUTES.home
-              : pathname.startsWith(item.href) && item.href !== ADMIN_ROUTES.home
-            const Icon = item.icon
-
-            if (!item.active && item.href !== ADMIN_ROUTES.home) {
-              return null
-            }
-
-            if (item.href === ADMIN_ROUTES.ai && !aiAccessible) {
-              return null
-            }
-
-            if (item.children) {
-              const expanded = item.href === ADMIN_ROUTES.finance ? financeExpanded : aiExpanded
-              const setExpanded = item.href === ADMIN_ROUTES.finance ? setFinanceExpanded : setAiExpanded
-              const parentLink = (
-                <button
-                  type="button"
-                  onClick={() => setExpanded(!expanded)}
-                  className={cn(
-                    navItemBase,
-                    "w-full text-sidebar-foreground",
-                    collapsed ? "min-h-10 justify-center px-0 py-2" : "gap-2.5 px-3 py-2.5",
-                    "hover:bg-sidebar-accent/90 hover:text-sidebar-accent-foreground",
-                    isActive && "bg-sidebar-accent text-sidebar-accent-foreground",
-                  )}
-                  aria-expanded={expanded}
-                >
-                  <Icon className="size-4 shrink-0 opacity-90" />
-                  {!collapsed ? (
-                    <>
-                      <span className="min-w-0 flex-1 text-left">{item.label}</span>
-                      {expanded
-                        ? <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-                        : <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                      }
-                    </>
-                  ) : null}
-                </button>
-              )
-
-              return (
-                <li key={item.href}>
-                  {withCollapsedTooltip(collapsed, item.label, parentLink)}
-                  {expanded && (
-                    <ul
-                      className={cn(
-                        "mt-1 space-y-0.5 border-sidebar-border/80",
-                        collapsed ? "border-l-0 pl-0" : "ml-2.5 border-l-2 border-l-primary/15 pl-3",
-                      )}
-                    >
-                      {item.children.map((child) => {
-                        const isChildActive = child.href === `${ADMIN_ROUTES.home}/ai`
-                          ? pathname === `${ADMIN_ROUTES.home}/ai`
-                          : pathname.startsWith(child.href) && child.href !== `${ADMIN_ROUTES.home}/ai`
-                        const ChildIcon = child.icon
-
-                        if (!child.active) {
-                          return null
-                        }
-
-                        const childLink = (
-                          <Link
-                            href={child.href}
-                            className={cn(
-                              navItemBase,
-                              "text-muted-foreground",
-                              collapsed ? "min-h-9 justify-center px-0 py-2" : "gap-2 px-2 py-2 text-xs",
-                              "hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground",
-                              isChildActive
-                                && "bg-primary/12 font-semibold text-primary ring-1 ring-primary/15",
-                            )}
-                          >
-                            <ChildIcon className="size-3.5 shrink-0" />
-                            {!collapsed ? <span className="truncate text-sm">{child.label}</span> : null}
-                          </Link>
-                        )
-
-                        return (
-                          <li key={child.href}>
-                            {withCollapsedTooltip(collapsed, child.label, childLink)}
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
-                </li>
-              )
-            }
-
-            const link = (
-              <Link
-                href={item.href}
-                className={cn(
-                  navItemBase,
-                  "text-sidebar-foreground",
-                  collapsed ? "min-h-10 justify-center px-0 py-2" : "gap-2.5 px-3 py-2.5",
-                  "hover:bg-sidebar-accent/90 hover:text-sidebar-accent-foreground",
-                  isActive
-                    && "bg-primary/[0.14] font-semibold text-primary ring-1 ring-primary/20",
-                )}
-              >
-                <Icon
-                  className={cn("size-4 shrink-0", isActive ? "text-primary" : "opacity-90")}
-                  aria-hidden
-                />
-                {!collapsed ? <span className="truncate">{item.label}</span> : null}
-              </Link>
-            )
-
-            return (
-              <li key={item.href}>
-                {withCollapsedTooltip(collapsed, item.label, link)}
-              </li>
-            )
-          })}
+          {renderMenuItems(menuItems)}
         </ul>
       </nav>
 

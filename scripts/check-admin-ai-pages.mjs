@@ -31,8 +31,23 @@ const testSource = readFileSync(
   "utf8",
 )
 
+const mediaSettingsSource = readFileSync(
+  new URL("../features/admin-ai/components/media-transcription-settings.tsx", import.meta.url),
+  "utf8",
+)
+
+const mediaAttachmentsSource = readFileSync(
+  new URL("../features/admin-ai/components/media-attachments.tsx", import.meta.url),
+  "utf8",
+)
+
 const menuSource = readFileSync(
   new URL("../features/admin-shell/data/menu-config.ts", import.meta.url),
+  "utf8",
+)
+
+const sidebarSource = readFileSync(
+  new URL("../features/admin-shell/components/admin-sidebar.tsx", import.meta.url),
   "utf8",
 )
 
@@ -44,6 +59,12 @@ assert.match(modelManagementSource, /Model 管理|模型类型|运行时用途|�
 assert.match(modelFormSource, /模型类别|运行时用途|连接测试模式|高级扩展配置/, "The model form should expose structured fields and relegate metadata to advanced config")
 assert.match(agentSource, /Agent 管理|System Prompt|Developer Prompt/, "The Agent page should expose real agent template fields")
 assert.match(testSource, /命中预览|真实 AI 测试|llm_invocations/, "The test page should expose preview and real test flows")
+assert.match(mediaSettingsSource, /转译设置|图片转译|语音转文本|文本转语音/, "The media settings page should expose all transcription setting types")
+assert.match(mediaSettingsSource, /详情|编辑|modelOptions/, "The media settings page should expose detail and edit affordances")
+assert.match(mediaAttachmentsSource, /附件管理|图片|语音|时间段/, "The media attachments page should expose attachment filters")
 assert.match(menuSource, /label: "Ai 管理".*active: true/s, "The admin menu should enable the AI operations entry")
+assert.match(menuSource, /label: "多媒体管理".*children: \[/s, "The admin AI menu should expose multimedia management submenu")
+assert.match(sidebarSource, /useState<Record<string, boolean>>\(\{\}\)/, "Admin sidebar submenu state should start empty")
+assert.match(sidebarSource, /expandedItems\[item\.href\] \?\? isActive/, "Admin sidebar submenus should default to collapsed and expand only for active routes")
 
 console.log("Admin AI pages expose the expected information architecture and menu wiring.")

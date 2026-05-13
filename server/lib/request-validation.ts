@@ -48,7 +48,10 @@ import {
   ADMIN_AI_MODEL_RUNTIME_CAPABILITIES,
   ADMIN_AI_INVOCATION_DATE_RANGES,
   ADMIN_AI_INVOCATION_STATUS_OPTIONS,
+  ADMIN_AI_MEDIA_ATTACHMENT_KINDS,
   ADMIN_AI_PROVIDER_TYPES,
+  type AdminAIMediaAttachmentKindFilter,
+  type AdminAIMediaTranscriptionSettingUpdateRequest,
   type AdminAIModelConnectionTestMode,
   type AdminAIModelFamily,
   type AdminAIModelRuntimeCapability,
@@ -1200,6 +1203,63 @@ export function parseAdminAIInvocationListQuery(searchParams: URLSearchParams) {
     startDate,
     endDate,
     ...pagination.data,
+  })
+}
+
+export function parseAdminAIMediaAttachmentListQuery(searchParams: URLSearchParams) {
+  const pagination = parseSharedListPagination(searchParams)
+  if (!pagination.ok) {
+    return pagination
+  }
+
+  const rawKind = searchParams.get("kind")?.trim() || "all"
+  if (!ADMIN_AI_MEDIA_ATTACHMENT_KINDS.includes(rawKind as AdminAIMediaAttachmentKindFilter)) {
+    return fail("VALIDATION_FAILED", "kind 参数不合法。")
+  }
+
+  const startDate = searchParams.get("startDate")?.trim() || undefined
+  const endDate = searchParams.get("endDate")?.trim() || undefined
+  if (startDate && isNaN(Date.parse(startDate))) {
+    return fail("VALIDATION_FAILED", "startDate 格式不合法。")
+  }
+  if (endDate && isNaN(Date.parse(endDate))) {
+    return fail("VALIDATION_FAILED", "endDate 格式不合法。")
+  }
+
+  return ok({
+    kind: rawKind as AdminAIMediaAttachmentKindFilter,
+    startDate,
+    endDate,
+    ...pagination.data,
+  })
+}
+
+const adminAIMediaTranscriptionSettingShapeSchema = z.object({
+  modelId: z.unknown().nullable().optional(),
+  isEnabled: z.boolean(),
+  version: z.number().int().positive().optional(),
+  changeReason: z.string(),
+})
+
+export function parseAdminAIMediaTranscriptionSettingBody(
+  input: unknown,
+): ValidationResult<AdminAIMediaTranscriptionSettingUpdateRequest> {
+  const shape = adminAIMediaTranscriptionSettingShapeSchema.safeParse(input)
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "转译设置请求体不合法。")
+  }
+
+  const changeReason = shape.data.changeReason.trim()
+  if (!changeReason) {
+    return fail("VALIDATION_FAILED", "changeReason 不能为空。")
+  }
+
+  const modelId = normalizeOptionalString(shape.data.modelId)
+  return ok({
+    modelId,
+    isEnabled: shape.data.isEnabled,
+    version: shape.data.version,
+    changeReason,
   })
 }
 

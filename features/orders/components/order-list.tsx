@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { CreditCard, Loader2, RefreshCw, Trash2, XCircle } from "lucide-react"
+import { CreditCard, Loader2, RefreshCw, Trash2, XCircle, Calendar, Clock, } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { StatePanel } from "@/components/ui/state-panel"
@@ -120,17 +120,20 @@ export function OrderList({
                 <p className="text-2xl font-bold text-foreground">{formatAmount(order.amountCents)}</p>
               </div>
               <div className="grid gap-3 px-4 py-4 text-sm text-muted-foreground sm:grid-cols-3">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
                   <p className="text-xs">创建时间</p>
-                  <p className="font-medium text-foreground">{formatDateTime(order.createdAt)}</p>
+                  <p className="ml-1 font-medium text-foreground">{formatDateTime(order.createdAt)}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
                   <p className="text-xs">支付时间</p>
-                  <p className="font-medium text-foreground">{formatDateTime(order.paidAt)}</p>
+                  <p className="ml-1 font-medium text-foreground">{formatDateTime(order.paidAt)}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
                   <p className="text-xs">支付有效期</p>
-                  <p className="font-medium text-foreground">{formatDateTime(order.expiresAt)}</p>
+                  <p className="ml-1 font-medium text-foreground">{formatDateTime(order.expiresAt)}</p>
                 </div>
               </div>
               <div className="flex flex-wrap justify-end gap-2 border-t border-border/40 bg-muted/20 px-5 pt-3 pb-4">

@@ -27,8 +27,8 @@ import { touchLearningPathActivity } from "@/server/modules/learning-paths/servi
 import {
   invokeMaterialAudioTranscription,
   invokeMaterialPipelineModel,
-  resolveMaterialPipelineModels,
 } from "@/server/modules/learning-materials/providers"
+import { resolveLearningMediaTranscriptionModels } from "@/server/modules/admin-ai/media-service"
 import { LearningAIProviderError, LearningValidationError } from "./errors.ts"
 import { buildLearningOutputFormatGuide } from "./output-format.ts"
 import {
@@ -745,7 +745,7 @@ async function preprocessLearningMessageAttachments(input: {
     return [] as NormalizedLearningAttachment[]
   }
 
-  const pipelineModels = await resolveMaterialPipelineModels()
+  const pipelineModels = await resolveLearningMediaTranscriptionModels()
   const processed: NormalizedLearningAttachment[] = []
 
   for (const attachment of input.attachments) {

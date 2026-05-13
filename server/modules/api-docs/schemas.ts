@@ -14,6 +14,8 @@ import {
   ADMIN_AI_INVOCATION_DATE_RANGES,
   ADMIN_AI_INVOCATION_STATUSES,
   ADMIN_AI_INVOCATION_STATUS_OPTIONS,
+  ADMIN_AI_MEDIA_ATTACHMENT_KINDS,
+  ADMIN_AI_MEDIA_TRANSCRIPTION_TYPES,
   ADMIN_AI_MODEL_CONNECTION_TEST_MODES,
   ADMIN_AI_MODEL_FAMILIES,
   ADMIN_AI_MODEL_RUNTIME_CAPABILITIES,
@@ -2435,6 +2437,14 @@ export const adminAIInvocationDateRangeSchema = z
   .enum(ADMIN_AI_INVOCATION_DATE_RANGES)
   .openapi("AdminAIInvocationDateRange")
 
+export const adminAIMediaTranscriptionTypeSchema = z
+  .enum(ADMIN_AI_MEDIA_TRANSCRIPTION_TYPES)
+  .openapi("AdminAIMediaTranscriptionType")
+
+export const adminAIMediaAttachmentKindFilterSchema = z
+  .enum(ADMIN_AI_MEDIA_ATTACHMENT_KINDS)
+  .openapi("AdminAIMediaAttachmentKindFilter")
+
 export const adminAIPermissionsSchema = z
   .object({
     canView: z.boolean(),
@@ -2524,6 +2534,22 @@ export const adminAIInvocationListQuerySchema = z
     limit: paginationPositiveIntSchema.optional(),
   })
   .openapi("AdminAIInvocationListQuery")
+
+export const adminAIMediaAttachmentListQuerySchema = z
+  .object({
+    kind: adminAIMediaAttachmentKindFilterSchema.optional(),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
+    page: paginationPositiveIntSchema.optional(),
+    limit: paginationPositiveIntSchema.optional(),
+  })
+  .openapi("AdminAIMediaAttachmentListQuery")
+
+export const adminAIMediaTranscriptionSettingIdParamsSchema = z
+  .object({
+    settingId: z.string().min(1),
+  })
+  .openapi("AdminAIMediaTranscriptionSettingIdParams")
 
 export const adminAIProviderIdParamsSchema = z
   .object({
@@ -2761,6 +2787,93 @@ export const adminAIModelTestConnectionResponseDataSchema = z
     testedPath: z.string().optional(),
   })
   .openapi("AdminAIModelTestConnectionResponseData")
+
+export const adminAIMediaModelOptionSchema = z
+  .object({
+    modelId: z.string().uuid(),
+    code: z.string(),
+    displayName: z.string(),
+    modelName: z.string(),
+    providerCode: z.string(),
+    providerName: z.string(),
+    runtimeCapabilities: z.array(adminAIModelRuntimeCapabilitySchema),
+    isActive: z.boolean(),
+  })
+  .openapi("AdminAIMediaModelOption")
+
+export const adminAIMediaTranscriptionSettingItemSchema = z
+  .object({
+    settingId: z.string().uuid(),
+    mediaType: adminAIMediaTranscriptionTypeSchema,
+    label: z.string(),
+    description: z.string(),
+    requiredCapability: adminAIModelRuntimeCapabilitySchema.nullable(),
+    modelId: z.string().uuid().nullable(),
+    modelCode: z.string().nullable(),
+    modelDisplayName: z.string().nullable(),
+    providerCode: z.string().nullable(),
+    providerName: z.string().nullable(),
+    isEnabled: z.boolean(),
+    version: z.number().int().positive(),
+    metadata: adminAIJsonRecordSchema,
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .openapi("AdminAIMediaTranscriptionSettingItem")
+
+export const adminAIMediaTranscriptionSettingsResponseDataSchema = z
+  .object({
+    items: z.array(adminAIMediaTranscriptionSettingItemSchema),
+    modelOptions: z.array(adminAIMediaModelOptionSchema),
+  })
+  .openapi("AdminAIMediaTranscriptionSettingsResponseData")
+
+export const adminAIMediaTranscriptionSettingUpdateRequestSchema = z
+  .object({
+    modelId: z.string().uuid().nullable(),
+    isEnabled: z.boolean(),
+    version: z.number().int().positive().optional(),
+    changeReason: z.string().min(1).max(200),
+  })
+  .openapi("AdminAIMediaTranscriptionSettingUpdateRequest")
+
+export const adminAIMediaTranscriptionSettingUpdateResponseDataSchema = z
+  .object({
+    setting: adminAIMediaTranscriptionSettingItemSchema,
+  })
+  .openapi("AdminAIMediaTranscriptionSettingUpdateResponseData")
+
+export const adminAIMediaAttachmentListItemSchema = z
+  .object({
+    attachmentId: z.string().uuid(),
+    userId: z.string().uuid(),
+    sessionId: z.string().uuid().nullable(),
+    messageId: z.string().uuid().nullable(),
+    kind: z.enum(["image", "audio"]),
+    processingStatus: z.enum(["pending", "processing", "completed", "failed"]),
+    originalFilename: z.string().nullable(),
+    mimeType: z.string(),
+    sizeBytes: z.number().int().positive(),
+    durationMs: z.number().int().nonnegative().nullable(),
+    width: z.number().int().positive().nullable(),
+    height: z.number().int().positive().nullable(),
+    extractedText: z.string().nullable(),
+    visualSummary: z.string().nullable(),
+    transcriptText: z.string().nullable(),
+    errorMessage: z.string().nullable(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .openapi("AdminAIMediaAttachmentListItem")
+
+export const adminAIMediaAttachmentListResponseDataSchema = z
+  .object({
+    items: z.array(adminAIMediaAttachmentListItemSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().positive(),
+    limit: z.number().int().positive(),
+  })
+  .openapi("AdminAIMediaAttachmentListResponseData")
 
 export const adminAIAgentBindingListItemSchema = z
   .object({

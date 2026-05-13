@@ -54,6 +54,7 @@
 - `028_add_ai_model_profile_fields.sql`
 - `029_create_site_contact_settings.sql` (新增企业联系方式配置表，支持管理后台编辑，供营销联系对话框动态加载)
 - `034_create_payment_subscription_tables.sql` (新增微信 Native 支付配置、订阅套餐、支付订单、用户订阅与支付回调事件表；`035_harden_payment_order_completion.sql` 新增支付完成幂等 RPC；`037_add_alipay_scan_payment.sql` 扩展支付宝扫码支付配置与订单渠道字段；`038_extend_payment_order_management.sql` 增加订单取消、用户端软删除与财务查询索引；`039_finance_hardening.sql` 增加财务统计和用户订单汇总 RPC；`040_fix_security_definer_search_path.sql` 修复支付/财务 `SECURITY DEFINER` RPC 的 `search_path` 安全警示；`030`-`033` 为联系方式二维码与 RLS 修正迁移)
+- `045_create_media_transcription_settings.sql` (新增多媒体转译设置表，管理学习对话图片转译、语音转文本与预留文本转语音的模型选择)
 
 当前数据库中已落地的核心业务表包括：
 
@@ -78,6 +79,7 @@
 - `skill_packs`
 - `agent_skill_bindings`
 - `llm_invocations`
+- `media_transcription_settings`
 - `learning_material_intakes`
 - `learning_material_sources`
 - `learning_plan_drafts`
@@ -744,6 +746,38 @@ Storage：
 - 私有 bucket：`learning-chat-attachments`
 - 上传路径：`<userId>/<yyyy>/<mm>/<uuid>.<ext>`
 - 图片发送给 vision 模型时，服务端读取私有 Storage 文件并转换为 `data:<mime>;base64,...`，不依赖 provider 访问 signed URL
+
+## 6.9.2 `media_transcription_settings`
+
+用途：
+
+- 保存学习对话多媒体转译的后台配置真源
+- 当前包含 `image_translation`、`speech_to_text`、`text_to_speech` 三类；文本转语音仅为配置预留，尚未接入用户端运行时调用
+- 学习对话附件预处理读取该表选择模型，自学材料解析 pipeline 仍沿用独立模型解析策略
+
+字段建议：
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | `uuid` | PK | 设置主键 |
+| `media_type` | `media_transcription_type` | unique not null | `image_translation` / `speech_to_text` / `text_to_speech` |
+| `model_id` | `uuid` | nullable FK `ai_models.id` | 当前绑定模型 |
+| `is_enabled` | `boolean` | not null default false | 是否启用 |
+| `metadata` | `jsonb` | not null default '{}' | 扩展信息 |
+| `version` | `integer` | not null default 1 | 乐观锁版本 |
+| `created_at` | `timestamptz` | not null | 创建时间 |
+| `updated_at` | `timestamptz` | not null | 更新时间 |
+
+索引：
+
+- `idx_media_transcription_settings_model_id`
+
+约束：
+
+- 每种 `media_type` 只保留一条配置
+- 开启图片转译时应选择具备 `vision` runtime capability 的启用模型
+- 开启语音转文本时应选择具备 `asr` runtime capability 的启用模型
+- 文本转语音预留 `tts` runtime capability，当前可停用且 `model_id` 为空
 
 ## 6.10 `score_ledgers`
 

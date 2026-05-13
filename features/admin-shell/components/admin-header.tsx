@@ -19,6 +19,8 @@ const breadcrumbMap: Record<string, string> = {
   "/admin/ai/skills": "Ai 管理 / Skill 管理",
   "/admin/ai/invocations": "Ai 管理 / 调用日志",
   "/admin/ai/test": "Ai 管理 / 测试调试",
+  "/admin/ai/media/transcription-settings": "Ai 管理 / 多媒体管理 / 转译设置",
+  "/admin/ai/media/attachments": "Ai 管理 / 多媒体管理 / 附件管理",
   "/admin/settings": "系统设置",
 }
 

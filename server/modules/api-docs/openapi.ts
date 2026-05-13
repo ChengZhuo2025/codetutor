@@ -20,6 +20,12 @@ import {
   adminAIInvocationListQuerySchema,
   adminAIInvocationListResponseDataSchema,
   adminAIListQuerySchema,
+  adminAIMediaAttachmentListQuerySchema,
+  adminAIMediaAttachmentListResponseDataSchema,
+  adminAIMediaTranscriptionSettingIdParamsSchema,
+  adminAIMediaTranscriptionSettingsResponseDataSchema,
+  adminAIMediaTranscriptionSettingUpdateRequestSchema,
+  adminAIMediaTranscriptionSettingUpdateResponseDataSchema,
   adminAIModelDetailResponseDataSchema,
   adminAIModelIdParamsSchema,
   adminAIModelListResponseDataSchema,
@@ -762,6 +768,68 @@ const adminAIModelDetailExample = {
     },
   },
   linkedAgentCodes: ["learning_coach_default", "task_review_default"],
+}
+
+const adminAIMediaTranscriptionSettingsExample = {
+  items: [
+    {
+      settingId: "550e8400-e29b-41d4-a716-446655440521",
+      mediaType: "image_translation",
+      label: "图片转译",
+      description: "识别学习截图、报错图、代码图中的可见信息。",
+      requiredCapability: "vision",
+      modelId: "550e8400-e29b-41d4-a716-446655440520",
+      modelCode: "qwen3-6-flash",
+      modelDisplayName: "Qwen3.6 Flash Vision",
+      providerCode: "aliyuncs",
+      providerName: "Aliyun Bailian",
+      isEnabled: true,
+      version: 2,
+      metadata: {},
+      createdAt: EXAMPLE_NOW,
+      updatedAt: EXAMPLE_LATEST,
+    },
+  ],
+  modelOptions: [
+    {
+      modelId: "550e8400-e29b-41d4-a716-446655440520",
+      code: "qwen3-6-flash",
+      displayName: "Qwen3.6 Flash Vision",
+      modelName: "qwen3.6-flash",
+      providerCode: "aliyuncs",
+      providerName: "Aliyun Bailian",
+      runtimeCapabilities: ["vision"],
+      isActive: true,
+    },
+  ],
+}
+
+const adminAIMediaAttachmentListExample = {
+  items: [
+    {
+      attachmentId: "550e8400-e29b-41d4-a716-446655440522",
+      userId: "550e8400-e29b-41d4-a716-446655440001",
+      sessionId: "550e8400-e29b-41d4-a716-446655440300",
+      messageId: "550e8400-e29b-41d4-a716-446655440310",
+      kind: "audio",
+      processingStatus: "completed",
+      originalFilename: "voice.webm",
+      mimeType: "audio/webm",
+      sizeBytes: 32000,
+      durationMs: 12000,
+      width: null,
+      height: null,
+      extractedText: null,
+      visualSummary: null,
+      transcriptText: "请解释 worktree 的用法",
+      errorMessage: null,
+      createdAt: EXAMPLE_NOW,
+      updatedAt: EXAMPLE_LATEST,
+    },
+  ],
+  total: 1,
+  page: 1,
+  limit: 20,
 }
 
 const adminAIAgentBindingListExample = {
@@ -1935,6 +2003,11 @@ const successExamples = {
   adminAIModelTestConnectionOk: adminAIModelTestConnectionResponseExample,
   adminAIModelList: adminAIModelListExample,
   adminAIModelDetail: adminAIModelDetailExample,
+  adminAIMediaTranscriptionSettings: adminAIMediaTranscriptionSettingsExample,
+  adminAIMediaTranscriptionSettingUpdate: {
+    setting: adminAIMediaTranscriptionSettingsExample.items[0],
+  },
+  adminAIMediaAttachmentList: adminAIMediaAttachmentListExample,
   adminAIAgentList: adminAIAgentListExample,
   adminAIAgentDetail: adminAIAgentDetailExample,
   adminAIAgentBindingList: adminAIAgentBindingListExample,
@@ -5121,6 +5194,79 @@ registry.registerPath({
       "探测完成；success 为 false 时表示上游拒绝或网络异常。",
     ),
     ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/ai/media/transcription-settings",
+  operationId: "getAdminAIMediaTranscriptionSettings",
+  tags: ["admin-ai"],
+  summary: "多媒体转译设置列表",
+  description: "读取图片转译、语音转文本、文本转语音三类配置及可选 Model 列表。文本转语音当前仅配置预留。",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminAIMediaTranscriptionSettingsResponseDataSchema,
+      "AdminAIMediaTranscriptionSettingsResponse",
+      "多媒体转译设置读取成功",
+      successExamples.adminAIMediaTranscriptionSettings,
+      "多媒体转译设置读取成功",
+    ),
+    ...commonErrorResponses(["403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/ai/media/transcription-settings/{settingId}",
+  operationId: "patchAdminAIMediaTranscriptionSetting",
+  tags: ["admin-ai"],
+  summary: "更新多媒体转译设置",
+  security: [],
+  request: {
+    params: adminAIMediaTranscriptionSettingIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminAIMediaTranscriptionSettingUpdateRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminAIMediaTranscriptionSettingUpdateResponseDataSchema,
+      "AdminAIMediaTranscriptionSettingUpdateResponse",
+      "转译设置已更新",
+      successExamples.adminAIMediaTranscriptionSettingUpdate,
+      "转译设置已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/ai/media/attachments",
+  operationId: "getAdminAIMediaAttachments",
+  tags: ["admin-ai"],
+  summary: "多媒体附件列表",
+  description: "只读查看用户上传的图片与语音附件，支持按类型和时间段筛选。",
+  security: [],
+  request: {
+    query: adminAIMediaAttachmentListQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminAIMediaAttachmentListResponseDataSchema,
+      "AdminAIMediaAttachmentListResponse",
+      "多媒体附件列表读取成功",
+      successExamples.adminAIMediaAttachmentList,
+      "多媒体附件列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
   },
 })
 

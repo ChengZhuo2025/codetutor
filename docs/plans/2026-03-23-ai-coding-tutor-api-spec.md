@@ -336,7 +336,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 管理后台总览 | `/admin` | `GET /api/admin/dashboard/overview` | 当前已落地管理员会话守卫、总览看板与资料区 |
 | 用户运营 | `/admin/users`、`/admin/users/[userId]` | `GET /api/admin/users`、`GET /api/admin/users/export`、`GET /api/admin/users/{userId}`、`PATCH /api/admin/users/{userId}`、`POST /api/admin/users/{userId}/soft-delete`、`POST /api/admin/users/{userId}/restore` | 当前已落地列表筛选、导出、详情、资料维护、软删恢复与工单联动 |
 | 学习记录 | `/admin/learning`、`/admin/learning/[pathId]` | `GET /api/admin/learning-paths`、`GET /api/admin/learning-paths/export`、`GET /api/admin/learning-paths/{pathId}`、`POST /api/admin/learning-paths/{pathId}/status` | 当前已落地学习路径实例列表、详情、最近会话摘要与 `reactivate/archive` 状态操作 |
-| Ai 管理 | `/admin/ai`、`/admin/ai/providers`、`/admin/ai/providers/[providerId]`、`/admin/ai/models`、`/admin/ai/models/[modelId]`、`/admin/ai/agents`、`/admin/ai/agents/[agentId]`、`/admin/ai/bindings`、`/admin/ai/skills`、`/admin/ai/invocations`、`/admin/ai/invocations/[invocationId]`、`/admin/ai/test` | `GET /api/admin/ai/overview`、`GET/POST/PATCH /api/admin/ai/providers*`、`POST /api/admin/ai/providers/{providerId}/reveal-secret`、`GET/POST/PATCH /api/admin/ai/models*`、`GET/POST/PATCH /api/admin/ai/agents*`、`GET/POST/PATCH /api/admin/ai/agent-bindings*`、`GET /api/admin/ai/skills`、`GET/POST/PATCH /api/admin/ai/agent-skill-bindings*`、`GET /api/admin/ai/invocations`、`GET /api/admin/ai/invocations/{invocationId}`、`POST /api/admin/ai/resolve-preview`、`POST /api/admin/ai/agent/test` | 当前已落地 AI 配置真源管理、Provider API Key 脱敏展示 / 按需明文读取 / 数据库加密托管、列表页与独立详情页、命中规则/Skill 绑定、调用日志只读、命中预览与真实 Provider 测试链路；其中 `/api/admin/ai/models*` 已升级为结构化模型画像字段（`modelFamily` / `runtimeCapabilities` / `connectionTestMode` / `reasoningEnabled` / `profileGroup` / `notes`），仅保留 `metadata` 作为高级扩展区 |
+| Ai 管理 | `/admin/ai`、`/admin/ai/providers`、`/admin/ai/providers/[providerId]`、`/admin/ai/models`、`/admin/ai/models/[modelId]`、`/admin/ai/agents`、`/admin/ai/agents/[agentId]`、`/admin/ai/bindings`、`/admin/ai/skills`、`/admin/ai/invocations`、`/admin/ai/invocations/[invocationId]`、`/admin/ai/test`、`/admin/ai/media/transcription-settings`、`/admin/ai/media/attachments` | `GET /api/admin/ai/overview`、`GET/POST/PATCH /api/admin/ai/providers*`、`POST /api/admin/ai/providers/{providerId}/reveal-secret`、`GET/POST/PATCH /api/admin/ai/models*`、`GET/POST/PATCH /api/admin/ai/agents*`、`GET/POST/PATCH /api/admin/ai/agent-bindings*`、`GET /api/admin/ai/skills`、`GET/POST/PATCH /api/admin/ai/agent-skill-bindings*`、`GET /api/admin/ai/invocations`、`GET /api/admin/ai/invocations/{invocationId}`、`POST /api/admin/ai/resolve-preview`、`POST /api/admin/ai/agent/test`、`GET/PATCH /api/admin/ai/media/transcription-settings*`、`GET /api/admin/ai/media/attachments` | 当前已落地 AI 配置真源管理、Provider API Key 脱敏展示 / 按需明文读取 / 数据库加密托管、列表页与独立详情页、命中规则/Skill 绑定、调用日志只读、命中预览与真实 Provider 测试链路、多媒体转译设置与附件管理；其中 `/api/admin/ai/models*` 已升级为结构化模型画像字段（`modelFamily` / `runtimeCapabilities` / `connectionTestMode` / `reasoningEnabled` / `profileGroup` / `notes`），仅保留 `metadata` 作为高级扩展区 |
 | 系统设置 | `/admin/settings` | `GET /api/admin/settings/overview`、`GET /api/admin/settings/admin-accounts`、`POST /api/admin/settings/admin-accounts/{adminAccountId}/status`、`GET /api/admin/settings/audit-logs`、`GET/PATCH /api/admin/settings/contact`、`GET/PATCH /api/admin/settings/payment/wechat`、`GET/PATCH /api/admin/settings/payment/alipay`、`GET /api/contact` | 当前已落地资料/安全入口复用、管理员账号列表与启停、角色权限说明、操作审计、**企业联系方式全链路管理**、**微信/支付宝支付配置加密托管** 与系统信息 |
 | 管理端反馈 | `/admin/feedback`、`/admin/feedback/[id]` | `GET /api/admin/feedback`、`GET /api/admin/feedback/{id}`、`POST /api/admin/feedback/{id}/reply`、`POST /api/admin/feedback/{id}/status` | 当前已落地列表筛选、详情回复与状态流转 |
 
@@ -637,8 +637,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 当前同时支持 `application/json` 与 `text/event-stream` 两种返回方式；当请求头 `Accept` 包含 `text/event-stream` 或请求体传 `stream=true` 时，返回 SSE
 - 当前消息返回与持久化都已显式包含 `structuredContent`，其中至少包含 `interactionType`、`variant`、`summary`、`blocks`、`sections`、`actions`；`blocks` / `sections.blocks` 当前支持 `heading`、`paragraph`、`code_block`、`unordered_list`、`ordered_list`
 - 当前支持学习对话附件：前端先通过 `POST /api/learning/attachments` 上传图片或语音，再在本接口请求体传 `attachmentIds`；服务端会验证附件归属、执行图片理解或语音转写，并把附件处理结果写入用户消息的 `content_json.attachments`
-- 当前图片预处理使用 `vision` capability 模型，已切到阿里云百炼 `Qwen3.6-Flash`；服务端会把私有 Storage 图片读取为 `data:<mime>;base64,...` 后传给模型，避免 provider 无法访问 signed URL
-- 当前语音预处理使用 `asr` capability 模型，已切到阿里云百炼 `Qwen3-ASR-Flash`，通过 OpenAI-compatible `/chat/completions` 的 `input_audio` 调用
+- 当前图片预处理模型由管理后台 `Ai 管理 / 多媒体管理 / 转译设置` 中的 `image_translation` 配置决定；服务端会把私有 Storage 图片读取为 `data:<mime>;base64,...` 后传给模型，避免 provider 无法访问 signed URL
+- 当前语音预处理模型由 `speech_to_text` 配置决定；阿里云百炼 `Qwen3-ASR-Flash` 仍通过 OpenAI-compatible `/chat/completions` 的 `input_audio` 调用
 
 请求体：
 
@@ -723,7 +723,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - provider 调用失败
 - 用户当前无有效学习路径
 - 附件 ID 不存在、不是当前用户所有、数量超限或处理失败
-- 未配置 `vision` / `asr` capability 模型时，图片/语音预处理会返回明确错误
+- 后台未开启或未配置可用 `image_translation` / `speech_to_text` 模型时，图片/语音预处理会按类型跳过或返回明确错误
 
 SSE 事件补充：
 
