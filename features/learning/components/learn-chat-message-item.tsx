@@ -252,15 +252,12 @@ export function LearnChatMessageItem({
                       <span>
                         {attachment.type === "audio" ? "已附上语音" : "已附上截图"}：{attachment.name}
                       </span>
-                      {attachment.processingStatus ? (
+                    {attachment.processingStatus ? (
                         <span className="rounded-full border border-border/70 px-2 py-0.5">
                           {attachment.processingStatus}
                         </span>
                       ) : null}
                     </div>
-                    {attachment.transcriptText ? (
-                      <p className="leading-5">识别文本：{attachment.transcriptText}</p>
-                    ) : null}
                     {attachment.errorMessage ? (
                       <p className="leading-5 text-destructive">{attachment.errorMessage}</p>
                     ) : null}

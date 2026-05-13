@@ -680,16 +680,17 @@ export function LearnChat({
 
       const clientMessageId = createClientMessageId()
       const uploadedAttachment = await uploadDraftAttachment(draft.attachment)
+      const userVisibleContent =
+        draft.text ||
+        (draft.attachment?.type === "audio"
+          ? "我发送了一条语音消息，请帮我解答。"
+          : "我上传了一张截图，请帮我定位问题。")
       const userMessage: Message = {
         id: allocateMessageId(),
         role: "user",
         kind: "user_input",
         title: "我的反馈",
-        content:
-          draft.text ||
-          (draft.attachment?.type === "audio"
-            ? "我发送了一条语音消息，请帮我解答。"
-            : "我上传了一张截图，请帮我定位问题。"),
+        content: userVisibleContent,
         attachment: uploadedAttachment.attachment ?? undefined,
         attachments: uploadedAttachment.attachment ? [uploadedAttachment.attachment] : [],
       }
@@ -732,7 +733,7 @@ export function LearnChat({
           taskId: learningData.task.taskId,
           clientMessageId,
           inputType: "text",
-          content: draft.text,
+          content: userVisibleContent,
           attachmentIds: uploadedAttachment.attachmentIds,
           stream: true,
           clientContext: {

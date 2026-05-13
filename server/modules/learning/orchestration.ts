@@ -193,6 +193,7 @@ type PreparedLearningInvocation = {
   clientMessageId: string | null
   skills: Array<{ code: string; name: string; content: string }>
   attachments: NormalizedLearningAttachment[]
+  userVisibleContent: string
   normalizedUserContent: string
   providerMessages: AIChatMessage[]
 }
@@ -911,6 +912,26 @@ function buildNormalizedUserContent(
     .join("\n\n")
 }
 
+function buildUserVisibleContent(
+  request: LearningMessageRequest,
+  attachments: NormalizedLearningAttachment[],
+) {
+  const content = request.content.trim()
+  if (content.length > 0) {
+    return content
+  }
+
+  if (attachments.some((attachment) => attachment.kind === "audio")) {
+    return "我发送了一条语音消息，请帮我解答。"
+  }
+
+  if (attachments.some((attachment) => attachment.kind === "image")) {
+    return "我上传了一张截图，请帮我定位问题。"
+  }
+
+  return "我补充了一条消息。"
+}
+
 function modelSupportsCapability(model: ModelRow, capability: string) {
   return Array.isArray(model.runtime_capabilities)
     && model.runtime_capabilities.includes(capability)
@@ -1272,6 +1293,7 @@ async function prepareLearningInvocation(
     attachments: loadedAttachments,
     userText: request.content,
   })
+  const userVisibleContent = buildUserVisibleContent(request, attachments)
   const normalizedUserContent = buildNormalizedUserContent(request, attachments)
   const systemPrompt = buildSystemPrompt({
     agent,
@@ -1312,6 +1334,7 @@ async function prepareLearningInvocation(
     clientMessageId,
     skills,
     attachments,
+    userVisibleContent,
     normalizedUserContent,
     providerMessages,
   }
@@ -1336,7 +1359,7 @@ async function insertUserMessage(
       message_type: "plain_text",
       sequence_no: userSequenceNo,
       client_message_id: input.clientMessageId,
-      content_text: input.normalizedUserContent,
+      content_text: input.userVisibleContent,
       content_json: {
         attachments: input.attachments.map(attachmentToContract),
       },

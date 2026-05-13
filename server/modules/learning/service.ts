@@ -117,6 +117,22 @@ type ConversationMessageRow = {
   metadata: JsonRecord
 }
 
+type StoredMessageAttachment = {
+  id: string
+  kind: "image" | "audio"
+  original_filename: string | null
+  mime_type: string
+  size_bytes: number
+  duration_ms: number | null
+  processing_status: "pending" | "processing" | "completed" | "failed"
+  extracted_text: string | null
+  visual_summary: string | null
+  transcript_text: string | null
+  error_message: string | null
+  storage_bucket: string
+  storage_path: string
+}
+
 function parseStoredMessageAttachments(value: unknown): MessageAttachment[] {
   if (!Array.isArray(value)) {
     return []
@@ -153,6 +169,159 @@ function parseStoredMessageAttachments(value: unknown): MessageAttachment[] {
         errorMessage: typeof item.errorMessage === "string" ? item.errorMessage : null,
       }
     })
+}
+
+const ATTACHMENT_CONTEXT_PREFIXES = [
+  "用户随消息附带了以下多媒体附件。",
+  "附件 1（",
+]
+
+const ATTACHMENT_ONLY_FALLBACK_CONTENT = "用户发送了一条仅包含附件的消息。"
+
+function inferAttachmentOnlyVisibleContent(attachments: MessageAttachment[]) {
+  if (attachments.some((attachment) => attachment.type === "audio")) {
+    return "我发送了一条语音消息，请帮我解答。"
+  }
+
+  if (attachments.some((attachment) => attachment.type === "image")) {
+    return "我上传了一张截图，请帮我定位问题。"
+  }
+
+  return ATTACHMENT_ONLY_FALLBACK_CONTENT
+}
+
+function stripInjectedAttachmentContext(rawContent: string) {
+  let boundary = -1
+
+  for (const marker of ATTACHMENT_CONTEXT_PREFIXES) {
+    const index = rawContent.indexOf(marker)
+    if (index >= 0 && (boundary < 0 || index < boundary)) {
+      boundary = index
+    }
+  }
+
+  if (boundary < 0) {
+    return rawContent.trim()
+  }
+
+  return rawContent.slice(0, boundary).trim()
+}
+
+function resolvePersistedUserVisibleContent(input: {
+  contentText: string | null
+  metadata: JsonRecord
+  attachments: MessageAttachment[]
+}) {
+  const originalContent =
+    typeof input.metadata.originalContent === "string"
+      ? input.metadata.originalContent.trim()
+      : ""
+
+  if (originalContent.length > 0) {
+    return originalContent
+  }
+
+  const rawContent = typeof input.contentText === "string" ? input.contentText : ""
+  const strippedContent = stripInjectedAttachmentContext(rawContent)
+
+  if (
+    strippedContent.length > 0
+    && strippedContent !== ATTACHMENT_ONLY_FALLBACK_CONTENT
+  ) {
+    return strippedContent
+  }
+
+  if (input.attachments.length > 0) {
+    return inferAttachmentOnlyVisibleContent(input.attachments)
+  }
+
+  return strippedContent
+}
+
+async function applyAttachmentSignedUrlsToMessages(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  messages: Message[],
+) {
+  const attachmentIdSet = new Set<string>()
+  for (const message of messages) {
+    const attachments = message.attachments?.length
+      ? message.attachments
+      : message.attachment
+        ? [message.attachment]
+        : []
+
+    for (const attachment of attachments) {
+      if (attachment.id) {
+        attachmentIdSet.add(attachment.id)
+      }
+    }
+  }
+
+  const attachmentIds = Array.from(attachmentIdSet)
+  if (attachmentIds.length === 0) {
+    return messages
+  }
+
+  const { data, error } = await supabase
+    .from("learning_message_attachments")
+    .select(
+      "id, kind, original_filename, mime_type, size_bytes, duration_ms, processing_status, extracted_text, visual_summary, transcript_text, error_message, storage_bucket, storage_path",
+    )
+    .in("id", attachmentIds)
+
+  assertSupabaseSuccess(error, "failed to load persisted learning message attachments")
+
+  const rows = (data ?? []) as StoredMessageAttachment[]
+  const signedUrlMap = new Map<string, string>()
+
+  for (const row of rows) {
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from(row.storage_bucket)
+      .createSignedUrl(row.storage_path, 600)
+
+    assertSupabaseSuccess(
+      signedUrlError,
+      "failed to create signed url for persisted learning message attachment",
+    )
+
+    if (signedUrlData?.signedUrl) {
+      signedUrlMap.set(row.id, signedUrlData.signedUrl)
+    }
+  }
+
+  return messages.map((message) => {
+    const baseAttachments = message.attachments?.length
+      ? message.attachments
+      : message.attachment
+        ? [message.attachment]
+        : []
+
+    if (baseAttachments.length === 0) {
+      return message
+    }
+
+    const attachments = baseAttachments.map((attachment) => {
+      if (!attachment.id) {
+        return attachment
+      }
+
+      const signedUrl = signedUrlMap.get(attachment.id)
+      if (!signedUrl) {
+        return attachment
+      }
+
+      return {
+        ...attachment,
+        url: signedUrl,
+      }
+    })
+
+    return {
+      ...message,
+      attachment: attachments[0],
+      attachments,
+    }
+  })
 }
 
 const KNOWLEDGE_TAG_COLORS = [
@@ -689,8 +858,7 @@ async function loadPersistedMessages(
     pageSize,
   )
 
-  return {
-    messages: page.items.map((row) => {
+  const mappedMessages = page.items.map((row) => {
       const metadata = row.metadata ?? {}
       const title =
         typeof metadata.title === "string"
@@ -706,13 +874,18 @@ async function loadPersistedMessages(
           : "user_input"
 
       const attachments = parseStoredMessageAttachments(row.content_json?.attachments)
+      const userVisibleContent = resolvePersistedUserVisibleContent({
+        contentText: row.content_text,
+        metadata,
+        attachments,
+      })
 
       return {
         id: buildPersistedLearningMessageId(row.sequenceNo),
         role: row.role === "assistant" ? "ai" : "user",
         kind,
         title,
-        content: row.content_text ?? "",
+        content: row.role === "assistant" ? (row.content_text ?? "") : userVisibleContent,
         structuredContent:
           row.role === "assistant"
             ? parseStoredStructuredLearningMessageContent(
@@ -729,7 +902,15 @@ async function loadPersistedMessages(
         attachment: attachments[0],
         attachments,
       } satisfies Message
-    }),
+    })
+
+  const messagesWithSignedUrls = await applyAttachmentSignedUrlsToMessages(
+    supabase,
+    mappedMessages,
+  )
+
+  return {
+    messages: messagesWithSignedUrls,
     pagination: {
       hasMore: page.hasMore,
       nextBeforeSequenceNo: page.nextBeforeSequenceNo,
