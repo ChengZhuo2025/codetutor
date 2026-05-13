@@ -3,8 +3,23 @@
 ## Overview
 - **Feature**: `/learn` 学习对话图片与语音附件最小闭环
 - **Requirements Source**: `docs/plans/2026-05-13-learning-chat-multimodal-attachments.md`
-- **Test Coverage**: 附件上传、消息发送、后端预处理、历史回放、Admin AI 配置、错误处理
+- **Test Coverage**: 前端图片/语音输入、附件上传、消息发送、后端预处理、百炼 vision/ASR 模型路由、历史回放、Admin AI 配置、错误处理
 - **Last Updated**: 2026-05-13
+
+## Automated Test Strategy
+
+本功能的自动化验收分为单元测试、路由集成测试、运行时配置集成测试和 live provider 测试。
+
+| 层级 | 命令 | 覆盖内容 |
+| --- | --- | --- |
+| 单元测试 | `pnpm test:learning-multimodal-attachments` | `vision/asr` capability 模型解析、env override 固定模型、`Qwen3-ASR-Flash` 的 `input_audio` payload、`attachmentIds` 传入消息执行器 |
+| 路由集成测试 | `pnpm test:learning-attachments-route` | 附件上传鉴权、图片 MIME 校验、语音 60 秒边界、有效图片 metadata 透传 service |
+| 消息 HTTP 集成测试 | `pnpm test:learning-message-http-logic` | JSON/SSE 传输选择、纯附件消息、provider 错误映射、幂等 SSE replay |
+| 消息路由集成测试 | `pnpm test:learning-message-route` | `/api/learning/message` 鉴权、JSON 解析、JSON/SSE 响应、provider 错误映射 |
+| Live 集成测试 | `pnpm test:learning-message-live:json` | 真实 Supabase + provider 的学习消息 JSON 主链路 |
+| 数据库连通与配置 | `pnpm db:check` | 远端 Supabase 连接、核心学习工具数据可读 |
+
+前端录音 UI 的自动化覆盖当前以 lint + 人工 smoke 为主；需人工验证录音按钮、60 秒倒计时、主色进度条、波形动画、停止后音频预览和发送闭环。
 
 ## Functional Tests
 
@@ -25,6 +40,7 @@
   - message 请求体包含 `attachmentIds`。
   - 用户消息气泡展示图片附件。
   - AI 回复能结合图片摘要或视觉输入回答。
+  - 后端图片预处理使用 `Qwen3.6-Flash`，并以 `data:<mime>;base64,...` 形式传递私有图片内容。
 - **Postconditions**: `learning_message_attachments.message_id` 关联到用户消息。
 
 ### TC-F-002: 发送纯图片消息
@@ -53,12 +69,25 @@
   3. 点击停止。
   4. 确认语音预览出现后点击发送。
 - **Expected Results**:
-  - 录音时发送按钮不可用。
+  - 录音时发送按钮不可用，图片按钮不可用。
+  - 输入区切换为主色调录音状态，显示 60 秒倒计时、横向进度条和动态波形柱。
   - 停止后显示语音预览播放器。
   - 附件上传 kind 为 `audio`。
-  - 后端生成 `transcript_text` 并注入教学上下文。
+  - 后端通过 `Qwen3-ASR-Flash` 的 `/chat/completions` + `input_audio` 生成 `transcript_text` 并注入教学上下文。
   - AI 按语音内容回复。
 - **Postconditions**: 历史消息可显示语音附件与识别文本。
+
+### TC-F-005: Admin AI 媒体 Agent 默认模型展示
+- **Requirement**: Phase 4 media agent 配置与模型能力一致
+- **Priority**: Medium
+- **Preconditions**: 已执行 `supabase/seeds/005_ai_provider_and_model_registry.sql` 和 `supabase/seeds/006_ai_agent_and_binding_registry.sql`
+- **Test Steps**:
+  1. 登录管理后台。
+  2. 打开 AI 管理的 Agent 管理列表。
+  3. 查看“学习图片理解转译助手”和“学习语音转写助手”。
+- **Expected Results**:
+  - “学习图片理解转译助手”的默认 Provider / Model 为 `阿里云百炼 / Qwen3.6-Flash`。
+  - “学习语音转写助手”的默认 Provider / Model 为 `阿里云百炼 / Qwen3-ASR-Flash`。
 
 ### TC-F-004: 历史消息回放附件
 - **Requirement**: Phase 3 `GET /api/learning/messages` 返回附件元数据
@@ -91,6 +120,18 @@
 - **Expected Results**:
   - 接口返回 422。
   - 文案为“单条语音不能超过 60 秒。”
+
+### TC-E-004: 录音自动停止边界
+- **Requirement**: 前端录音最长 60 秒
+- **Priority**: Medium
+- **Test Steps**:
+  1. 点击麦克风按钮开始录音。
+  2. 不手动停止，等待倒计时到 `0:00`。
+- **Expected Results**:
+  - 录音自动停止。
+  - 自动生成语音附件预览。
+  - 发送按钮恢复可用。
+  - 上传时 `durationMs` 不超过 `60000`。
 
 ### TC-E-003: 文本消息不受附件能力影响
 - **Requirement**: 兼容原有纯文本学习消息
@@ -159,6 +200,8 @@
 | REQ-AUDIO-ASR | TC-F-003, TC-E-002, TC-ERR-002, TC-ST-001 | Complete |
 | REQ-HISTORY-REPLAY | TC-F-004 | Complete |
 | REQ-OWNERSHIP | TC-ERR-003 | Complete |
+| REQ-ADMIN-MEDIA-AGENTS | TC-F-005 | Complete |
+| REQ-RECORDING-UI | TC-F-003, TC-E-004 | Complete |
 
 ## Automated Verification Commands
 
@@ -166,6 +209,7 @@ Run:
 
 ```bash
 pnpm lint
+pnpm test:learning-multimodal-attachments
 pnpm test:learning-message-http-logic
 pnpm test:learning-attachments-route
 pnpm test:learning-message-route
@@ -178,3 +222,4 @@ pnpm db:check
 - Phase 5 当前实现的是单附件最小闭环：单条消息可发送一张图片或一条语音。
 - 图片历史回放当前返回附件元数据；私有图片长期回放如需显示原图，需要后续增加后端签名 URL 查询或代理读取接口。
 - AI 语音回复 TTS 不在本阶段范围内。
+- 浏览器麦克风授权、真实图片理解和真实语音识别仍需在本地 dev server 上做人工 smoke；自动化 live JSON 主要覆盖学习消息主链路，不上传真实媒体文件。

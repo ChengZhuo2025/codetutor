@@ -698,6 +698,53 @@ erDiagram
 - `idx_conversation_messages_session_sequence`
 - `idx_conversation_messages_task_id`
 
+## 6.9.1 `learning_message_attachments`
+
+用途：
+
+- 保存 `/learn` 学习对话中用户上传的图片和语音附件
+- 附件先上传到私有 Storage bucket，再在发送消息时由 `attachmentIds` 关联并触发图片理解或语音转写
+- 处理后的 `visual_summary` / `extracted_text` / `transcript_text` 会写回附件表，并同步进入 `conversation_messages.content_json.attachments`
+
+字段建议：
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | `uuid` | PK | 附件主键 |
+| `user_id` | `uuid` | FK | 附件归属用户 |
+| `session_id` | `uuid` | nullable | 上传时已知的学习会话 |
+| `message_id` | `uuid` | nullable | 发送消息成功后关联的用户消息 |
+| `kind` | `learning_message_attachment_kind` | not null | `image` / `audio` |
+| `processing_status` | `learning_message_attachment_status` | not null default `pending` | `pending` / `processing` / `completed` / `failed` |
+| `storage_bucket` | `text` | not null | 当前为 `learning-chat-attachments` |
+| `storage_path` | `text` | not null | 私有 Storage 路径 |
+| `original_filename` | `text` | nullable | 用户原始文件名 |
+| `mime_type` | `text` | not null | 文件 MIME |
+| `size_bytes` | `integer` | not null | 文件大小 |
+| `duration_ms` | `integer` | nullable | 语音时长 |
+| `width` | `integer` | nullable | 图片宽度 |
+| `height` | `integer` | nullable | 图片高度 |
+| `extracted_text` | `text` | nullable | 图片 OCR / 可见文本 |
+| `visual_summary` | `text` | nullable | 图片视觉摘要 |
+| `transcript_text` | `text` | nullable | 语音转写文本 |
+| `error_message` | `text` | nullable | 处理失败原因 |
+| `metadata` | `jsonb` | not null default '{}' | 客户端与处理扩展信息 |
+| `created_at` | `timestamptz` | not null | 创建时间 |
+| `updated_at` | `timestamptz` | not null | 更新时间 |
+
+索引建议：
+
+- `idx_learning_message_attachments_user_created_at`
+- `idx_learning_message_attachments_session_id`
+- `idx_learning_message_attachments_message_id`
+- `idx_learning_message_attachments_processing_status`
+
+Storage：
+
+- 私有 bucket：`learning-chat-attachments`
+- 上传路径：`<userId>/<yyyy>/<mm>/<uuid>.<ext>`
+- 图片发送给 vision 模型时，服务端读取私有 Storage 文件并转换为 `data:<mime>;base64,...`，不依赖 provider 访问 signed URL
+
 ## 6.10 `score_ledgers`
 
 用途：

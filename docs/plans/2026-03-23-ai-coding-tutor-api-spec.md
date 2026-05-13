@@ -636,6 +636,9 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 当前已接通真实 AI 编排链路：会话创建/复用、用户消息持久化、agent 解析、skill 上下文装配、provider 调用、assistant 消息持久化、`llm_invocations` 审计写入
 - 当前同时支持 `application/json` 与 `text/event-stream` 两种返回方式；当请求头 `Accept` 包含 `text/event-stream` 或请求体传 `stream=true` 时，返回 SSE
 - 当前消息返回与持久化都已显式包含 `structuredContent`，其中至少包含 `interactionType`、`variant`、`summary`、`blocks`、`sections`、`actions`；`blocks` / `sections.blocks` 当前支持 `heading`、`paragraph`、`code_block`、`unordered_list`、`ordered_list`
+- 当前支持学习对话附件：前端先通过 `POST /api/learning/attachments` 上传图片或语音，再在本接口请求体传 `attachmentIds`；服务端会验证附件归属、执行图片理解或语音转写，并把附件处理结果写入用户消息的 `content_json.attachments`
+- 当前图片预处理使用 `vision` capability 模型，已切到阿里云百炼 `Qwen3.6-Flash`；服务端会把私有 Storage 图片读取为 `data:<mime>;base64,...` 后传给模型，避免 provider 无法访问 signed URL
+- 当前语音预处理使用 `asr` capability 模型，已切到阿里云百炼 `Qwen3-ASR-Flash`，通过 OpenAI-compatible `/chat/completions` 的 `input_audio` 调用
 
 请求体：
 
@@ -647,6 +650,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
   "interactionType": "blocked_help",
   "inputType": "text",
   "content": "我卡在这里了，命令执行后报错。",
+  "attachmentIds": ["11111111-1111-4111-8111-111111111111"],
   "stream": false,
   "clientContext": {
     "pagePath": "/learn"
@@ -663,7 +667,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | `clientMessageId` | 否 | 前端幂等消息 ID；当前真实实现已支持并建议始终传入 |
 | `interactionType` | 否 | `teaching` / `blocked_help` / `task_review` / `completion_feedback` / `path_guidance`；为空时由服务端自动推断 |
 | `inputType` | 是 | `text` / `link` / `code` |
-| `content` | 是 | 用户输入内容 |
+| `content` | 是 | 用户输入内容；当 `attachmentIds` 非空时允许为空字符串 |
+| `attachmentIds` | 否 | 已通过 `POST /api/learning/attachments` 创建的附件 ID 列表；当前前端单条消息发送一张图片或一条语音 |
 | `stream` | 否 | `true` 时优先请求 SSE |
 | `clientContext` | 否 | 页面与调试上下文 |
 
@@ -717,6 +722,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 链接解析失败
 - provider 调用失败
 - 用户当前无有效学习路径
+- 附件 ID 不存在、不是当前用户所有、数量超限或处理失败
+- 未配置 `vision` / `asr` capability 模型时，图片/语音预处理会返回明确错误
 
 SSE 事件补充：
 
@@ -725,6 +732,57 @@ SSE 事件补充：
 - `assistant_delta`
 - `assistant_done`
 - `error`
+
+## 7.1.1 `POST /api/learning/attachments`
+
+用途：
+
+- 上传 `/learn` 学习对话中待发送的图片或语音附件
+- 返回附件 ID，供后续 `POST /api/learning/message` 的 `attachmentIds` 引用
+
+请求：
+
+- `Content-Type: multipart/form-data`
+- 字段：
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `file` | 是 | 上传文件 |
+| `kind` | 是 | `image` / `audio` |
+| `sessionId` | 否 | 当前会话 ID，允许为空 |
+| `durationMs` | 否 | 语音时长，毫秒 |
+| `width` | 否 | 图片宽度 |
+| `height` | 否 | 图片高度 |
+
+约束：
+
+- 图片支持 `image/png`、`image/jpeg`、`image/webp`，单文件最大 5MB
+- 语音支持浏览器录制常见格式 `webm`、`ogg`、`mp3`、`m4a/mp4`，单条最长 60 秒
+- 文件写入私有 Storage bucket `learning-chat-attachments`
+- 初始附件状态为 `pending`，真正的图片理解或语音转写在发送消息时执行
+
+成功响应示例：
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "attachment": {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "kind": "image",
+      "processingStatus": "pending",
+      "originalFilename": "screen.png",
+      "mimeType": "image/png",
+      "sizeBytes": 12345,
+      "durationMs": null,
+      "width": 1280,
+      "height": 720,
+      "createdAt": "2026-05-13T00:00:00.000Z"
+    }
+  }
+}
+```
 
 ## 7.2 `GET /api/learning/current-session`
 

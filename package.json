@@ -19,6 +19,7 @@
     "test:learning-message-http-logic": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-http-logic.ts",
     "test:learning-message-history-logic": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-history-logic.ts",
     "test:learning-attachments-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-attachments-route.ts",
+    "test:learning-multimodal-attachments": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-multimodal-attachments.ts",
     "test:learning-message-live:json": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-live-json.ts",
     "test:learning-message-live:sse": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-live-sse.ts",
     "test:learning-message-live": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-live.ts",
