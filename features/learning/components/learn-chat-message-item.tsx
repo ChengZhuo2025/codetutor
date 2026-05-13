@@ -222,7 +222,7 @@ export function LearnChatMessageItem({
               {attachments.map((attachment, index) => (
                 <div
                   key={attachment.id ?? `${attachment.name}-${index}`}
-                  className="overflow-hidden rounded-2xl border border-border/60 bg-background/55"
+                  className="overflow-hidden rounded-2xl border border-border/30 bg-background/25"
                 >
                   {attachment.type === "image" && attachment.url ? (
                     <Image
@@ -235,7 +235,7 @@ export function LearnChatMessageItem({
                     />
                   ) : attachment.type === "audio" ? (
                     <div className="flex items-center gap-2 px-3 py-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl bg-brand/75 text-brand-foreground">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl bg-brand/85 text-brand-foreground">
                         <Mic className="h-4 w-4" />
                       </div>
                       {attachment.url ? (
@@ -247,13 +247,13 @@ export function LearnChatMessageItem({
                       )}
                     </div>
                   ) : null}
-                  <div className="space-y-1 px-3 py-2 text-xs text-muted-foreground">
-                    <div className="flex flex-wrap items-center gap-2">
+                  <div className="space-y-1 px-3 py-2 text-xs">
+                    <div className="flex flex-wrap items-center gap-3">
                       <span>
                         {attachment.type === "audio" ? "已附上语音" : "已附上截图"}：{attachment.name}
                       </span>
                     {attachment.processingStatus ? (
-                        <span className="rounded-full border border-border/70 px-2 py-0.5">
+                        <span className="rounded-full border border-background/30 bg-background/20 px-2 py-0.5">
                           {attachment.processingStatus}
                         </span>
                       ) : null}
