@@ -52,7 +52,7 @@ export function LearnChatHero({ mission, rightPanel }: LearnChatHeroProps) {
       <div
         className={cn(
           USER_PANEL_HERO_TOP_SECTION_CLASS,
-          "px-5 py-5 sm:px-6 sm:py-6 relative",
+          "px-5 py-5 sm:px-6 sm:py-6",
         )}
       >
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-brand/80">
@@ -60,41 +60,44 @@ export function LearnChatHero({ mission, rightPanel }: LearnChatHeroProps) {
           现在只做这一步
         </div>
 
-        <div className="mt-6">
-            <p className="max-w-96 text-2xl font-bold tracking-tight text-foreground sm:text-[2.15rem]">
+        <div className="mt-6 flex gap-4 sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="max-w-[22rem] text-2xl font-bold tracking-tight text-foreground sm:text-[2.15rem]">
               {rightPanel.currentStep}
             </p>
-            <p className="mt-3 max-w-4xl text-[15px] leading-7 text-muted-foreground">
-              {rightPanel.whyThisStep}
-            </p>
+          </div>
+
+          <div className="flex shrink-0 flex-wrap items-stretch gap-3 sm:justify-end">
+            <div className="min-w-fit rounded-[1.25rem] border border-border/80 bg-surface-1/92 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/75">
+                预计时长
+              </p>
+              <p className="mt-1 whitespace-nowrap text-md font-semibold text-foreground">
+                {mission.estimatedTime}
+              </p>
+            </div>
+            <div className="min-w-fit rounded-[1.25rem] border border-border/80 bg-surface-1/92 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/75">
+                完成进度
+              </p>
+              <p className="mt-1 whitespace-nowrap text-md font-semibold text-foreground">
+                {progressLabel}
+              </p>
+            </div>
+            <div className="min-w-fit rounded-[1.25rem] border border-gold/30 bg-[linear-gradient(180deg,rgba(255,247,237,0.96),rgba(255,237,213,0.88))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:border-gold/20 dark:bg-[linear-gradient(180deg,rgba(120,53,15,0.24),rgba(120,53,15,0.16))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <p className="text-[11px] uppercase tracking-[0.12em] text-gold/80">
+                完成奖励
+              </p>
+              <p className="mt-1 whitespace-nowrap text-md font-bold text-gold">
+                {mission.reward}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="absolute top-6 right-5 flex shrink-0 flex-wrap items-stretch justify-end gap-3">
-          <div className="min-w-fit rounded-[1.25rem] border border-border/80 bg-surface-1/92 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-            <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/75">
-              预计时长
-            </p>
-            <p className="mt-1 whitespace-nowrap text-md font-semibold text-foreground">
-              {mission.estimatedTime}
-            </p>
-          </div>
-          <div className="min-w-fit rounded-[1.25rem] border border-border/80 bg-surface-1/92 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-            <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/75">
-              完成进度
-            </p>
-            <p className="mt-1 whitespace-nowrap text-md font-semibold text-foreground">
-              {progressLabel}
-            </p>
-          </div>
-          <div className="min-w-fit rounded-[1.25rem] border border-gold/30 bg-[linear-gradient(180deg,rgba(255,247,237,0.96),rgba(255,237,213,0.88))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:border-gold/20 dark:bg-[linear-gradient(180deg,rgba(120,53,15,0.24),rgba(120,53,15,0.16))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-            <p className="text-[11px] uppercase tracking-[0.12em] text-gold/80">
-              完成奖励
-            </p>
-            <p className="mt-1 whitespace-nowrap text-md font-bold text-gold">
-              {mission.reward}
-            </p>
-          </div>
-        </div>
+        <p className="mt-4 text-[15px] leading-7 text-muted-foreground">
+          {rightPanel.whyThisStep}
+        </p>
       </div>
 
       {showCoachReminder ? (

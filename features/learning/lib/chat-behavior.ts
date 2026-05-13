@@ -1,4 +1,16 @@
 import type { MessageTaskPatch } from "../types"
+import type { StructuredLearningMessageAction } from "@/lib/learning/structured-message"
+
+function stripAssistantActionMarkdown(value: string) {
+  return value
+    .replace(/\[([^[\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/\*\*/g, "")
+    .replace(/__/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+}
 
 function normalizePlaceholderSegments(prompt: string) {
   return prompt
@@ -61,17 +73,36 @@ export function isExplicitTaskCompletionInput(text: string) {
   return COMPLETION_SIGNAL_PATTERNS.some((pattern) => pattern.test(normalized))
 }
 
+export function normalizeAssistantAction<T extends { label: string; prompt: string }>(
+  action: T,
+): T {
+  return {
+    ...action,
+    label: stripAssistantActionMarkdown(action.label),
+    prompt: stripAssistantActionMarkdown(action.prompt),
+  }
+}
+
+export function normalizeAssistantActions(
+  actions: StructuredLearningMessageAction[],
+) {
+  return actions
+    .map(normalizeAssistantAction)
+    .filter((action) => action.label.length > 0 && action.prompt.length > 0)
+}
+
 export function buildComposerDraftFromAssistantAction(input: {
   label: string
   prompt: string
 }) {
-  const normalizedPrompt = normalizePlaceholderSegments(input.prompt.trim())
+  const normalizedAction = normalizeAssistantAction(input)
+  const normalizedPrompt = normalizePlaceholderSegments(normalizedAction.prompt)
     .replace(/____\s*，/g, "____，")
     .replace(/____\s*。/g, "____。")
     .replace(/\s{2,}/g, " ")
     .trim()
 
-  return normalizedPrompt || input.label.trim()
+  return normalizedPrompt || normalizedAction.label
 }
 
 export function shouldRenderMessageTaskPatch(

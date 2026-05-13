@@ -4,6 +4,7 @@ import Image from "next/image"
 import { CheckCircle2, Lightbulb, Mic, RefreshCw, Zap } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
+  normalizeAssistantActions,
   shouldRenderMessageTaskPatch,
   shouldStabilizePendingAssistantTone,
 } from "@/features/learning/lib/chat-behavior"
@@ -151,6 +152,10 @@ export function LearnChatMessageItem({
     : message.attachment
       ? [message.attachment]
       : []
+  const assistantActions =
+    message.role === "ai" && message.structuredContent?.actions?.length
+      ? normalizeAssistantActions(message.structuredContent.actions)
+      : []
 
   return (
     <div
@@ -281,9 +286,9 @@ export function LearnChatMessageItem({
           </div>
         ) : null}
 
-        {message.role === "ai" && message.structuredContent?.actions?.length ? (
+        {assistantActions.length ? (
           <div className="flex flex-wrap gap-2">
-            {message.structuredContent.actions.map((action, actionIndex) => (
+            {assistantActions.map((action, actionIndex) => (
               <button
                 key={`message-action-${message.id}-${actionIndex}`}
                 type="button"

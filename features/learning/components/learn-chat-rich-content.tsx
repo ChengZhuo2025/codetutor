@@ -1,6 +1,7 @@
 "use client"
 
-import { AlertCircle, CheckCircle2, Lightbulb, RefreshCw, Target } from "lucide-react"
+import { useEffect, useState } from "react"
+import { AlertCircle, Check, CheckCircle2, Copy, Lightbulb, RefreshCw, Target } from "lucide-react"
 import type { Message } from "@/features/learning/types"
 import type { LearningInteractionType, LearningTaskPatch } from "@/lib/api/contracts/learning"
 import {
@@ -588,6 +589,68 @@ function renderAssistantMessageLead(
   )
 }
 
+function CodeBlockCard({
+  code,
+  language,
+}: {
+  code: string
+  language: string | null
+}) {
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!copied) {
+      return undefined
+    }
+
+    const timer = window.setTimeout(() => {
+      setCopied(false)
+    }, 1500)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [copied])
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-brand/30 bg-background/70 dark:border-white/10 dark:bg-background/50">
+      <div className="flex items-center justify-between gap-3 border-b border-brand/20 px-3.5 py-2 dark:border-white/10">
+        <div className="min-w-0 flex-1 truncate font-bold text-[11px] uppercase tracking-[0.12em] text-brand">
+          {language ?? "code"}
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            void handleCopy()
+          }}
+          aria-label={copied ? "代码已复制" : "复制代码"}
+          title={copied ? "已复制" : "复制代码"}
+          className={cn(
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border transition-colors",
+            copied
+              ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
+              : "border-border/70 bg-surface-2 text-muted-foreground hover:border-brand/35 hover:text-brand",
+          )}
+        >
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+        </button>
+      </div>
+      <pre className="overflow-x-auto px-3.5 py-3 text-[13px] leading-6 text-foreground">
+        <code className="block whitespace-pre font-mono">{code}</code>
+      </pre>
+    </div>
+  )
+}
+
 export function renderStructuredContent(
   title: string | undefined,
   text: string,
@@ -705,19 +768,11 @@ export function renderStructuredContent(
 
                   if (block.type === "code_block") {
                     return (
-                      <div
+                      <CodeBlockCard
                         key={`code-${sectionIndex}-${blockIndex}`}
-                        className="overflow-hidden rounded-2xl border border-brand/30 bg-background/70 dark:border-white/10 dark:bg-background/50"
-                      >
-                        {block.language ? (
-                          <div className="border-b border-brand/20 px-3.5 py-2 font-bold text-[11px] uppercase tracking-[0.12em] text-brand dark:border-white/10">
-                            {block.language}
-                          </div>
-                        ) : null}
-                        <pre className="overflow-x-auto px-3.5 py-3 text-[13px] leading-6 text-foreground">
-                          <code className="block whitespace-pre font-mono">{block.code}</code>
-                        </pre>
-                      </div>
+                        code={block.code}
+                        language={block.language}
+                      />
                     )
                   }
 

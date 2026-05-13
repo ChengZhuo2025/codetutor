@@ -12,6 +12,7 @@ const heroSource = read("features/learning/components/learn-chat-hero.tsx")
 const messageListSource = read("features/learning/components/learn-chat-message-list.tsx")
 const resumeSource = read("features/learning/components/learn-chat-resume-card.tsx")
 const composerSource = read("features/learning/components/learn-chat-composer.tsx")
+const richContentSource = read("features/learning/components/learn-chat-rich-content.tsx")
 
 assert.match(
   learnPageSource,
@@ -87,6 +88,84 @@ assert.match(
   "learn chat hero should explain what evidence the learner should submit",
 )
 assert.match(
+  heroSource,
+  /mt-6 flex gap-4[\s\S]*sm:items-center[\s\S]*sm:justify-between[\s\S]*rightPanel\.currentStep/,
+  "learn chat hero should place title and stat cards in the same top row container",
+)
+assert.match(
+  heroSource,
+  /mt-4 text-\[15px\] leading-7 text-muted-foreground[\s\S]*rightPanel\.whyThisStep/,
+  "learn chat hero should render step description as a full-width paragraph below the top row",
+)
+assert.doesNotMatch(
+  heroSource,
+  /mt-6 flex gap-4[\s\S]*rightPanel\.whyThisStep/,
+  "learn chat hero top row should not include the long step description text block",
+)
+assert.match(
+  heroSource,
+  /max-w-\[22rem\] text-2xl font-bold/,
+  "learn chat hero top-row title block should keep a constrained width for side-by-side balance",
+)
+assert.match(
+  heroSource,
+  /flex shrink-0 flex-wrap items-stretch gap-3 sm:justify-end/,
+  "learn chat hero stats should stay on the right side within the top row",
+)
+assert.match(
+  heroSource,
+  /px-5 py-5 sm:px-6 sm:py-6[\s\S]*mt-4 text-\[15px\] leading-7 text-muted-foreground/,
+  "learn chat hero description should remain inside the same top section but on its own row",
+)
+assert.match(
+  heroSource,
+  /rightPanel\.whyThisStep/,
+  "learn chat hero should keep rendering whyThisStep copy",
+)
+assert.match(
+  heroSource,
+  /rightPanel\.currentStep/,
+  "learn chat hero should keep rendering currentStep title",
+)
+assert.match(
+  heroSource,
+  /mission\.estimatedTime/,
+  "learn chat hero should keep rendering estimated time stat",
+)
+assert.match(
+  heroSource,
+  /mission\.reward/,
+  "learn chat hero should keep rendering reward stat",
+)
+assert.match(
+  heroSource,
+  /progressLabel/,
+  "learn chat hero should keep rendering normalized progress label",
+)
+assert.match(heroSource, /mt-6 flex gap-4/, "learn chat hero should keep top-row spacing contract")
+assert.match(heroSource, /sm:items-center/, "learn chat hero top row should align items vertically at sm and above")
+assert.match(heroSource, /sm:justify-between/, "learn chat hero top row should split title and stats on larger screens")
+assert.match(
+  heroSource,
+  /mt-4 text-\[15px\] leading-7/,
+  "learn chat hero description should start below the top row with consistent rhythm",
+)
+assert.match(
+  heroSource,
+  /text-muted-foreground/,
+  "learn chat hero description should keep subdued supporting tone",
+)
+assert.match(
+  heroSource,
+  /flex items-center gap-2 text-xs font-semibold uppercase tracking-\[0\.12em\] text-brand\/80/,
+  "learn chat hero should keep the top eyebrow row",
+)
+assert.doesNotMatch(
+  heroSource,
+  /mt-3 max-w-4xl text-\[15px\] leading-7 text-muted-foreground/,
+  "learn chat hero should no longer keep description inside the title column",
+)
+assert.match(
   resumeSource,
   /继续上次学习提醒|关闭继续上次学习提醒/,
   "learn chat resume card should keep the dismissible resume affordance",
@@ -100,6 +179,31 @@ assert.match(
   composerSource,
   /消息输入框/,
   "learn chat composer should keep the accessible textarea label",
+)
+assert.match(
+  composerSource,
+  /onPaste=\{handlePaste\}/,
+  "learn chat composer should accept pasted image files",
+)
+assert.match(
+  composerSource,
+  /onDrop=\{handleDrop\}/,
+  "learn chat composer should accept dropped image files",
+)
+assert.match(
+  richContentSource,
+  /function CodeBlockCard/,
+  "learn chat rich content should render code blocks through a reusable card",
+)
+assert.match(
+  richContentSource,
+  /aria-label=\{copied \? "代码已复制" : "复制代码"\}/,
+  "learn chat code blocks should expose an accessible copy button",
+)
+assert.match(
+  richContentSource,
+  /navigator\.clipboard\.writeText\(code\)/,
+  "learn chat code copy button should copy the raw code text",
 )
 
 console.log("Learn chat composition and header collapse wiring are present.")

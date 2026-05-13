@@ -108,7 +108,7 @@ export function OrderList({
               key={order.orderNo}
               className="overflow-hidden rounded-[24px] border border-border/70 bg-surface-1/95 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.25)]"
             >
-              <div className="flex flex-col gap-4 border-b border-border/50 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-4 border-b border-border/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-lg font-semibold text-foreground">{order.planName}</h2>
@@ -120,20 +120,20 @@ export function OrderList({
                 <p className="text-2xl font-bold text-foreground">{formatAmount(order.amountCents)}</p>
               </div>
               <div className="grid gap-3 px-4 py-4 text-sm text-muted-foreground sm:grid-cols-3">
-                <div>
+                <div className="flex items-center gap-2">
                   <p className="text-xs">创建时间</p>
-                  <p className="mt-1 font-medium text-foreground">{formatDateTime(order.createdAt)}</p>
+                  <p className="font-medium text-foreground">{formatDateTime(order.createdAt)}</p>
                 </div>
-                <div>
+                <div className="flex items-center gap-2">
                   <p className="text-xs">支付时间</p>
-                  <p className="mt-1 font-medium text-foreground">{formatDateTime(order.paidAt)}</p>
+                  <p className="font-medium text-foreground">{formatDateTime(order.paidAt)}</p>
                 </div>
-                <div>
+                <div className="flex items-center gap-2">
                   <p className="text-xs">支付有效期</p>
-                  <p className="mt-1 font-medium text-foreground">{formatDateTime(order.expiresAt)}</p>
+                  <p className="font-medium text-foreground">{formatDateTime(order.expiresAt)}</p>
                 </div>
               </div>
-              <div className="flex flex-wrap justify-end gap-2 border-t border-border/40 bg-muted/20 px-4 py-3">
+              <div className="flex flex-wrap justify-end gap-2 border-t border-border/40 bg-muted/20 px-5 pt-3 pb-4">
                 {canContinue(order) ? (
                   <Button
                     type="button"

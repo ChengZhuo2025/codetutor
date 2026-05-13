@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { useCallback, useEffect, useRef, useState } from "react"
-import type { RefObject } from "react"
+import type { ClipboardEvent, DragEvent, RefObject } from "react"
 import { ImagePlus, Lightbulb, Mic, RefreshCw, Send, Square, WifiOff, X } from "lucide-react"
 import { StatePanel } from "@/components/ui/state-panel"
 import {
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils"
 
 export const TEXTAREA_MAX_HEIGHT = 24 * 4 + 12
 const MAX_AUDIO_RECORDING_MS = 60_000
+const ACCEPTED_IMAGE_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/webp"])
 
 const QUICK_ACTION_TONE_CLASS: Record<QuickAction["tone"], string> = {
   primary: USER_BUTTON_PRIMARY_CLASS,
@@ -63,6 +64,29 @@ function formatRecordingTime(ms: number) {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
   return `${minutes}:${String(seconds).padStart(2, "0")}`
+}
+
+function isAcceptedImageFile(file: File) {
+  return ACCEPTED_IMAGE_MIME_TYPES.has(file.type)
+}
+
+function findImageFile(files: FileList | File[]) {
+  return Array.from(files).find(isAcceptedImageFile) ?? null
+}
+
+function findImageFileFromItems(items: DataTransferItemList) {
+  for (const item of Array.from(items)) {
+    if (item.kind !== "file" || !ACCEPTED_IMAGE_MIME_TYPES.has(item.type)) {
+      continue
+    }
+
+    const file = item.getAsFile()
+    if (file) {
+      return file
+    }
+  }
+
+  return null
 }
 
 type LearnChatComposerProps = {
@@ -118,6 +142,7 @@ export function LearnChatComposer({
 }: LearnChatComposerProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [recordingElapsedMs, setRecordingElapsedMs] = useState(0)
+  const [isDraggingImage, setIsDraggingImage] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<BlobPart[]>([])
   const recordingStartedAtRef = useRef<number>(0)
@@ -203,6 +228,73 @@ export function LearnChatComposer({
 
     void startRecording()
   }
+
+  const canSelectImage = !isTyping && !isRecording && !previewAttachment
+
+  const handlePastedOrDroppedImage = useCallback(
+    (file: File | null) => {
+      if (!file || !canSelectImage) {
+        return false
+      }
+
+      onSelectAttachment(file)
+      return true
+    },
+    [canSelectImage, onSelectAttachment],
+  )
+
+  const handlePaste = useCallback(
+    (event: ClipboardEvent<HTMLTextAreaElement>) => {
+      const file =
+        findImageFileFromItems(event.clipboardData.items) ??
+        findImageFile(event.clipboardData.files)
+
+      if (handlePastedOrDroppedImage(file)) {
+        event.preventDefault()
+      }
+    },
+    [handlePastedOrDroppedImage],
+  )
+
+  const handleDragOver = useCallback(
+    (event: DragEvent<HTMLDivElement>) => {
+      const hasImage = Boolean(
+        findImageFileFromItems(event.dataTransfer.items) ??
+          findImageFile(event.dataTransfer.files),
+      )
+
+      if (!hasImage || !canSelectImage) {
+        event.dataTransfer.dropEffect = "none"
+        return
+      }
+
+      event.preventDefault()
+      event.dataTransfer.dropEffect = "copy"
+      setIsDraggingImage(true)
+    },
+    [canSelectImage],
+  )
+
+  const handleDragLeave = useCallback((event: DragEvent<HTMLDivElement>) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      setIsDraggingImage(false)
+    }
+  }, [])
+
+  const handleDrop = useCallback(
+    (event: DragEvent<HTMLDivElement>) => {
+      const file =
+        findImageFileFromItems(event.dataTransfer.items) ??
+        findImageFile(event.dataTransfer.files)
+
+      if (handlePastedOrDroppedImage(file)) {
+        event.preventDefault()
+      }
+
+      setIsDraggingImage(false)
+    },
+    [handlePastedOrDroppedImage],
+  )
 
   return (
     <div className="shrink-0 border-t border-border/50 bg-surface-1 px-4 pb-4 pt-3 sm:px-6">
@@ -344,7 +436,15 @@ export function LearnChatComposer({
           </div>
         ) : null}
 
-        <div className="rounded-4xl border border-border bg-surface-2 px-2.5 py-2 transition-colors focus-within:border-brand/60">
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={cn(
+            "rounded-4xl border border-border bg-surface-2 px-2.5 py-2 transition-colors focus-within:border-brand/60",
+            isDraggingImage && "border-brand/70 bg-brand/6 ring-2 ring-brand/20",
+          )}
+        >
           <div
             className={cn(
               "flex",
@@ -434,6 +534,7 @@ export function LearnChatComposer({
                     onSend()
                   }
                 }}
+                onPaste={handlePaste}
               />
             )}
 

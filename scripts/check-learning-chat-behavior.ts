@@ -6,6 +6,7 @@ import {
   canUseCompletionQuickAction,
   isExplicitTaskCompletionInput,
   mergeAssistantActionIntoInput,
+  normalizeAssistantAction,
   shouldCompleteCurrentTaskFromAssistantAction,
   shouldRenderLearningResumeCard,
   shouldRenderMessageTaskPatch,
@@ -80,6 +81,26 @@ test("buildComposerDraftFromAssistantAction converts placeholder-heavy prompts i
         "我已确认我的 macOS（版本：XXX）、内存（XX GB）和磁盘空间均满足要求，网络正常，并已准备好安装目录 `~/XXX`。",
     }),
     "我已确认我的 macOS（版本：____）、内存（____ GB）和磁盘空间均满足要求，网络正常，并已准备好安装目录 `~/____`。",
+  )
+})
+
+test("assistant quick actions strip markdown before rendering and composer prefill", () => {
+  const action = normalizeAssistantAction({
+    label: "**实现基础交互",
+    prompt:
+      "请修改 main.js 文件，实现点击按钮获取输入框文本，并打印到控制台。**",
+    tone: "secondary",
+  })
+
+  assert.deepEqual(action, {
+    label: "实现基础交互",
+    prompt: "请修改 main.js 文件，实现点击按钮获取输入框文本，并打印到控制台。",
+    tone: "secondary",
+  })
+
+  assert.equal(
+    buildComposerDraftFromAssistantAction(action),
+    "请修改 main.js 文件，实现点击按钮获取输入框文本，并打印到控制台。",
   )
 })
 
