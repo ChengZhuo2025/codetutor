@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { CheckCircle2, Lightbulb, RefreshCw, Zap } from "lucide-react"
+import { CheckCircle2, Lightbulb, Mic, RefreshCw, Zap } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   shouldRenderMessageTaskPatch,
@@ -146,6 +146,11 @@ export function LearnChatMessageItem({
     message.role === "ai" && interactionType
       ? resolveAssistantMessageVariant(message, interactionType)
       : null
+  const attachments = message.attachments?.length
+    ? message.attachments
+    : message.attachment
+      ? [message.attachment]
+      : []
 
   return (
     <div
@@ -207,19 +212,56 @@ export function LearnChatMessageItem({
             </div>
           )}
 
-          {message.attachment ? (
-            <div className="mt-3 overflow-hidden rounded-2xl border border-border/60 bg-background/55">
-              <Image
-                src={message.attachment.url}
-                alt={message.attachment.name}
-                width={320}
-                height={180}
-                unoptimized
-                className="h-auto w-full object-cover"
-              />
-              <div className="px-3 py-2 text-xs text-muted-foreground">
-                已附上截图：{message.attachment.name}
-              </div>
+          {attachments.length ? (
+            <div className="mt-3 space-y-2">
+              {attachments.map((attachment, index) => (
+                <div
+                  key={attachment.id ?? `${attachment.name}-${index}`}
+                  className="overflow-hidden rounded-2xl border border-border/60 bg-background/55"
+                >
+                  {attachment.type === "image" && attachment.url ? (
+                    <Image
+                      src={attachment.url}
+                      alt={attachment.name}
+                      width={320}
+                      height={180}
+                      unoptimized
+                      className="h-auto w-full object-cover"
+                    />
+                  ) : attachment.type === "audio" ? (
+                    <div className="flex items-center gap-2 px-3 py-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl bg-brand/75 text-brand-foreground">
+                        <Mic className="h-4 w-4" />
+                      </div>
+                      {attachment.url ? (
+                        <audio src={attachment.url} controls className="overflow-hidden rounded-3xl h-9 min-w-0 flex-1" />
+                      ) : (
+                        <div className="min-w-0 flex-1 text-sm text-foreground">
+                          语音消息
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                  <div className="space-y-1 px-3 py-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span>
+                        {attachment.type === "audio" ? "已附上语音" : "已附上截图"}：{attachment.name}
+                      </span>
+                      {attachment.processingStatus ? (
+                        <span className="rounded-full border border-border/70 px-2 py-0.5">
+                          {attachment.processingStatus}
+                        </span>
+                      ) : null}
+                    </div>
+                    {attachment.transcriptText ? (
+                      <p className="leading-5">识别文本：{attachment.transcriptText}</p>
+                    ) : null}
+                    {attachment.errorMessage ? (
+                      <p className="leading-5 text-destructive">{attachment.errorMessage}</p>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : null}
         </div>

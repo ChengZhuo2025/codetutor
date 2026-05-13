@@ -1,5 +1,7 @@
 import "server-only"
 
+import { Buffer } from "node:buffer"
+
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import {
   buildStructuredLearningMessageContent,
@@ -174,6 +176,7 @@ type LearningMessageAttachmentRow = {
 
 type NormalizedLearningAttachment = LearningMessageAttachmentRow & {
   signedUrl: string | null
+  dataUrl: string | null
 }
 
 type PreparedLearningInvocation = {
@@ -750,7 +753,7 @@ async function preprocessLearningMessageAttachments(input: {
       continue
     }
 
-    if (!attachment.signedUrl) {
+    if (!attachment.signedUrl && !attachment.dataUrl) {
       processed.push({
         ...attachment,
         processing_status: "failed",
@@ -826,7 +829,7 @@ async function preprocessLearningMessageAttachments(input: {
           {
             type: "image_url",
             image_url: {
-              url: attachment.signedUrl,
+              url: attachment.dataUrl || attachment.signedUrl,
             },
           },
         ],
@@ -905,6 +908,28 @@ function modelSupportsCapability(model: ModelRow, capability: string) {
     && model.runtime_capabilities.includes(capability)
 }
 
+async function loadAttachmentDataUrl(input: {
+  supabase: ReturnType<typeof createSupabaseAdminClient>
+  attachment: LearningMessageAttachmentRow
+}) {
+  if (input.attachment.kind !== "image") {
+    return null
+  }
+
+  const { data, error } = await input.supabase.storage
+    .from(input.attachment.storage_bucket)
+    .download(input.attachment.storage_path)
+
+  assertSupabaseSuccess(error, "failed to download learning image attachment")
+
+  if (!data) {
+    return null
+  }
+
+  const buffer = Buffer.from(await data.arrayBuffer())
+  return `data:${input.attachment.mime_type};base64,${buffer.toString("base64")}`
+}
+
 async function loadLearningMessageAttachments(input: {
   supabase: ReturnType<typeof createSupabaseAdminClient>
   userId: string
@@ -972,6 +997,10 @@ async function loadLearningMessageAttachments(input: {
       return {
         ...row,
         signedUrl: signedUrlData?.signedUrl ?? null,
+        dataUrl: await loadAttachmentDataUrl({
+          supabase: input.supabase,
+          attachment: row,
+        }),
       }
     }),
   )
@@ -984,7 +1013,7 @@ function buildProviderUserMessageContent(input: {
 }): string | AIChatContentPart[] {
   const visionImages = input.attachments.filter((attachment) => (
     attachment.kind === "image" &&
-    attachment.signedUrl &&
+    (attachment.dataUrl || attachment.signedUrl) &&
     modelSupportsCapability(input.model, "vision")
   ))
 
@@ -1000,7 +1029,7 @@ function buildProviderUserMessageContent(input: {
     ...visionImages.map((attachment) => ({
       type: "image_url" as const,
       image_url: {
-        url: attachment.signedUrl as string,
+        url: (attachment.dataUrl || attachment.signedUrl) as string,
       },
     })),
   ]

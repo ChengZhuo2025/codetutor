@@ -53,6 +53,59 @@ SET
   metadata = EXCLUDED.metadata,
   updated_at = NOW();
 
+INSERT INTO public.ai_providers (
+  id,
+  code,
+  name,
+  provider_type,
+  base_url,
+  auth_mode,
+  secret_ref,
+  supports_stream,
+  supports_json_mode,
+  timeout_ms,
+  retry_count,
+  is_active,
+  metadata,
+  created_at,
+  updated_at
+)
+VALUES (
+  'a1000000-0000-0000-0000-000000000002'::uuid,
+  'aliyuncs',
+  '阿里云百炼',
+  'openai_compatible',
+  'https://dashscope.aliyuncs.com/compatible-mode/v1',
+  'bearer',
+  NULL,
+  true,
+  false,
+  60000,
+  1,
+  true,
+  '{
+    "consoleUrl":"https://bailian.console.aliyun.com/",
+    "apiStyle":"openai-compatible",
+    "phase":"phase1"
+  }'::jsonb,
+  NOW(),
+  NOW()
+)
+ON CONFLICT (code) DO UPDATE
+SET
+  name = EXCLUDED.name,
+  provider_type = EXCLUDED.provider_type,
+  base_url = EXCLUDED.base_url,
+  auth_mode = EXCLUDED.auth_mode,
+  secret_ref = COALESCE(public.ai_providers.secret_ref, EXCLUDED.secret_ref),
+  supports_stream = EXCLUDED.supports_stream,
+  supports_json_mode = EXCLUDED.supports_json_mode,
+  timeout_ms = EXCLUDED.timeout_ms,
+  retry_count = EXCLUDED.retry_count,
+  is_active = EXCLUDED.is_active,
+  metadata = EXCLUDED.metadata,
+  updated_at = NOW();
+
 INSERT INTO public.ai_models (
   id,
   provider_id,
@@ -152,10 +205,10 @@ JOIN (
       '{"phase":"phase1","routePolicy":"manual_test_only"}'
     ),
     (
-      'a1000000-0000-0000-0000-000000000104'::uuid,
-      'qwen2-5-vl-72b',
-      'Qwen2.5-VL 72B',
-      'Qwen/Qwen2.5-VL-72B-Instruct',
+      'a1000000-0000-0000-0000-000000000106'::uuid,
+      'qwen3-6-flash',
+      'Qwen3.6-Flash',
+      'qwen3.6-flash',
       32000,
       2048,
       0.10::numeric,
@@ -168,10 +221,10 @@ JOIN (
       '{"phase":"phase1","routePolicy":"media_preprocess","capability":"vision"}'
     ),
     (
-      'a1000000-0000-0000-0000-000000000105'::uuid,
-      'sensevoice-small',
-      'SenseVoice Small',
-      'FunAudioLLM/SenseVoiceSmall',
+      'a1000000-0000-0000-0000-000000000107'::uuid,
+      'qwen3-asr-flash',
+      'Qwen3-ASR-Flash',
+      'qwen3-asr-flash',
       8000,
       1200,
       0.00::numeric,
@@ -199,7 +252,10 @@ JOIN (
   notes,
   metadata
 )
-  ON provider.code = 'siliconflow'
+  ON provider.code = CASE
+    WHEN seed.profile_group IN ('media_vision', 'media_asr') THEN 'aliyuncs'
+    ELSE 'siliconflow'
+  END
 ON CONFLICT (code) DO UPDATE
 SET
   provider_id = EXCLUDED.provider_id,
@@ -221,5 +277,11 @@ SET
   is_active = EXCLUDED.is_active,
   metadata = EXCLUDED.metadata,
   updated_at = NOW();
+
+UPDATE public.ai_models
+SET
+  is_active = false,
+  updated_at = NOW()
+WHERE code IN ('qwen2-5-vl-72b', 'sensevoice-small');
 
 COMMIT;

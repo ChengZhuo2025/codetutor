@@ -1,5 +1,7 @@
 import "server-only"
 
+import { Buffer } from "node:buffer"
+
 import { resolveProviderSecret } from "@/server/lib/secrets/provider-secret"
 import { LearningAIProviderError } from "@/server/modules/learning/errors.ts"
 import { modelSupportsRuntimeCapability } from "@/server/modules/ai/model-profile.ts"
@@ -225,6 +227,10 @@ export async function invokeMaterialAudioTranscription(input: {
   mediaUrl: string
   prompt?: string
 }) {
+  function isQwen3AsrModel(modelName: string) {
+    return modelName.toLowerCase() === "qwen3-asr-flash"
+  }
+
   function buildMediaDownloadHeaders(mediaUrl: string) {
     const headers = new Headers({
       "User-Agent": "CodeTutorMaterialBot/1.0 (+https://example.com)",
@@ -301,6 +307,24 @@ export async function invokeMaterialAudioTranscription(input: {
     return "mp3"
   }
 
+  function toQwenAsrAudioFormat(contentType: string, extension: string) {
+    const normalized = contentType.toLowerCase()
+    if (normalized.includes("wav")) {
+      return "wav"
+    }
+    if (normalized.includes("webm")) {
+      return "webm"
+    }
+    if (normalized.includes("mp4") || normalized.includes("m4a") || extension === "mp4") {
+      return "mp4"
+    }
+    if (normalized.includes("mpeg") || normalized.includes("mp3")) {
+      return "mp3"
+    }
+
+    return extension
+  }
+
   const controller = new AbortController()
   const timeout = setTimeout(() => {
     controller.abort()
@@ -333,20 +357,78 @@ export async function invokeMaterialAudioTranscription(input: {
       mediaResponse.headers.get("content-type") ?? "audio/mpeg",
     )
     const buffer = await mediaResponse.arrayBuffer()
-    const form = new FormData()
     const extension = inferFileExtension(input.mediaUrl, contentType)
-    form.append("file", new Blob([buffer], { type: contentType }), `material.${extension}`)
-    form.append("model", input.runtime.model.modelName)
-    form.append("response_format", "json")
-    if (input.prompt?.trim()) {
-      form.append("prompt", input.prompt.trim())
-    }
 
     const headers = new Headers()
     if (input.runtime.provider.authMode === "bearer") {
       headers.set("Authorization", `Bearer ${resolved.secret}`)
     } else {
       headers.set("x-api-key", resolved.secret)
+    }
+
+    if (isQwen3AsrModel(input.runtime.model.modelName)) {
+      headers.set("Content-Type", "application/json")
+
+      const response = await fetch(`${input.runtime.provider.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model: input.runtime.model.modelName,
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "input_audio",
+                  input_audio: {
+                    data: `data:${contentType};base64,${Buffer.from(buffer).toString("base64")}`,
+                    format: toQwenAsrAudioFormat(contentType, extension),
+                  },
+                },
+              ],
+            },
+          ],
+          stream: false,
+          asr_options: {
+            enable_itn: false,
+          },
+        }),
+        signal: controller.signal,
+      })
+
+      if (!response.ok) {
+        const errorText = (await response.text()).slice(0, 400)
+        throw new LearningAIProviderError(
+          `ASR request failed with status ${response.status}: ${errorText}`,
+        )
+      }
+
+      const payload = (await response.json()) as {
+        choices?: Array<{
+          message?: {
+            content?: string | Array<{ type?: string; text?: string }>
+          }
+        }>
+      }
+
+      const content = payload.choices?.[0]?.message?.content
+      const text = typeof content === "string"
+        ? content.trim()
+        : Array.isArray(content)
+          ? content.map((item) => (item?.type === "text" ? item.text ?? "" : "")).join("").trim()
+          : ""
+
+      return {
+        text,
+      }
+    }
+
+    const form = new FormData()
+    form.append("file", new Blob([buffer], { type: contentType }), `material.${extension}`)
+    form.append("model", input.runtime.model.modelName)
+    form.append("response_format", "json")
+    if (input.prompt?.trim()) {
+      form.append("prompt", input.prompt.trim())
     }
 
     const response = await fetch(`${input.runtime.provider.baseUrl}/audio/transcriptions`, {

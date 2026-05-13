@@ -10,7 +10,7 @@ import {
   getLearningChatAttachmentStoragePrefix,
   LEARNING_CHAT_ATTACHMENT_BUCKET,
 } from "@/lib/supabase/storage"
-import { assertSupabaseSuccess } from "@/server/lib/supabase-result"
+import { assertSupabaseSuccess } from "@/server/lib/supabase"
 
 type CreateLearningAttachmentInput = {
   kind: LearningMessageAttachmentKind

@@ -31,6 +31,7 @@ import {
 } from "@/features/learning/lib/chat-behavior"
 import type {
   LearningCurrentSessionResponseData,
+  LearningAttachmentCreateResponseData,
   LearningMessageResponseData,
   LearningMessagesResponseData,
   LearningRestartConversationResponseData,
@@ -50,16 +51,42 @@ const STREAMING_BATCH_DELAY_MS = 70
 
 type PendingDraft = {
   text: string
-  attachment: MessageAttachment | null
+  attachment: DraftAttachment | null
 }
 
 type SSEEventHandler = (event: string, data: Record<string, unknown>) => void
 
-function createAttachmentFromFile(file: File): MessageAttachment {
+type DraftAttachment = MessageAttachment & {
+  file: File
+  localUrl: string
+}
+
+function createImageAttachmentFromFile(file: File): DraftAttachment {
+  const localUrl = URL.createObjectURL(file)
+
   return {
     type: "image",
-    url: URL.createObjectURL(file),
+    url: localUrl,
+    localUrl,
     name: file.name,
+    mimeType: file.type,
+    sizeBytes: file.size,
+    file,
+  }
+}
+
+function createAudioAttachmentFromFile(file: File, durationMs: number | null): DraftAttachment {
+  const localUrl = URL.createObjectURL(file)
+
+  return {
+    type: "audio",
+    url: localUrl,
+    localUrl,
+    name: file.name,
+    mimeType: file.type,
+    sizeBytes: file.size,
+    durationMs,
+    file,
   }
 }
 
@@ -168,7 +195,7 @@ export function LearnChat({
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const [previewAttachment, setPreviewAttachment] =
-    useState<MessageAttachment | null>(null)
+    useState<DraftAttachment | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
   const [failedDraft, setFailedDraft] = useState<PendingDraft | null>(null)
   const [connectionState, setConnectionState] =
@@ -320,7 +347,7 @@ export function LearnChat({
   useEffect(() => {
     return () => {
       if (previewAttachment) {
-        URL.revokeObjectURL(previewAttachment.url)
+        URL.revokeObjectURL(previewAttachment.localUrl)
       }
     }
   }, [previewAttachment])
@@ -333,6 +360,65 @@ export function LearnChat({
 
   const createClientMessageId = () =>
     `msg_client_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+
+  const uploadDraftAttachment = async (
+    attachment: DraftAttachment | null,
+  ): Promise<{
+    attachmentIds: string[]
+    attachment: MessageAttachment | null
+  }> => {
+    if (!attachment) {
+      return {
+        attachmentIds: [],
+        attachment: null,
+      }
+    }
+
+    const formData = new FormData()
+    formData.set("file", attachment.file)
+    formData.set("kind", attachment.type)
+    if (conversationId) {
+      formData.set("sessionId", conversationId)
+    }
+    if (typeof attachment.durationMs === "number") {
+      formData.set("durationMs", String(Math.round(attachment.durationMs)))
+    }
+
+    const response = await apiFetch("/learning/attachments", {
+      method: "POST",
+      body: formData,
+    })
+    const apiResponse = (await response.json()) as {
+      code: string
+      message: string
+      data: LearningAttachmentCreateResponseData | null
+    }
+
+    if (apiResponse.code !== "OK" || !apiResponse.data) {
+      throw new Error(apiResponse.message || "附件上传失败，请稍后重试。")
+    }
+
+    const uploaded = apiResponse.data.attachment
+    const messageAttachment: MessageAttachment = {
+      id: uploaded.id,
+      type: uploaded.kind,
+      url: attachment.localUrl,
+      name: uploaded.originalFilename ?? attachment.name,
+      mimeType: uploaded.mimeType,
+      sizeBytes: uploaded.sizeBytes,
+      durationMs: uploaded.durationMs,
+      processingStatus: uploaded.processingStatus,
+      extractedText: uploaded.extractedText,
+      visualSummary: uploaded.visualSummary,
+      transcriptText: uploaded.transcriptText,
+      errorMessage: uploaded.errorMessage,
+    }
+
+    return {
+      attachmentIds: [uploaded.id],
+      attachment: messageAttachment,
+    }
+  }
 
   const clearStreamFlushTimer = () => {
     if (streamFlushTimerRef.current) {
@@ -572,23 +658,12 @@ export function LearnChat({
       return
     }
 
-    const userMessage: Message = {
-      id: allocateMessageId(),
-      role: "user",
-      kind: "user_input",
-      title: "我的反馈",
-      content: draft.text || "我上传了一张截图，请帮我定位问题。",
-      attachment: draft.attachment ?? undefined,
-    }
-
     trackEvent(APP_EVENTS.learningInputSend, {
       hasAttachment: Boolean(draft.attachment),
       contentLength: draft.text.length,
       taskId: learningData.task.taskId,
     })
 
-    setMessages((prev) => [...prev, userMessage])
-    resetAgent()
     setShowSupportOptions(false)
     setIsTyping(true)
 
@@ -604,6 +679,24 @@ export function LearnChat({
       }
 
       const clientMessageId = createClientMessageId()
+      const uploadedAttachment = await uploadDraftAttachment(draft.attachment)
+      const userMessage: Message = {
+        id: allocateMessageId(),
+        role: "user",
+        kind: "user_input",
+        title: "我的反馈",
+        content:
+          draft.text ||
+          (draft.attachment?.type === "audio"
+            ? "我发送了一条语音消息，请帮我解答。"
+            : "我上传了一张截图，请帮我定位问题。"),
+        attachment: uploadedAttachment.attachment ?? undefined,
+        attachments: uploadedAttachment.attachment ? [uploadedAttachment.attachment] : [],
+      }
+
+      setMessages((prev) => [...prev, userMessage])
+      resetAgent()
+
       let assistantInserted = false
 
       const ensureAssistantMessage = (
@@ -639,7 +732,8 @@ export function LearnChat({
           taskId: learningData.task.taskId,
           clientMessageId,
           inputType: "text",
-          content: draft.text || "我上传了一张截图，请帮我定位问题。",
+          content: draft.text,
+          attachmentIds: uploadedAttachment.attachmentIds,
           stream: true,
           clientContext: {
             pagePath: ROUTES.learn,
@@ -1017,16 +1111,24 @@ export function LearnChat({
 
   const removePreview = () => {
     if (!previewAttachment) return
-    URL.revokeObjectURL(previewAttachment.url)
+    URL.revokeObjectURL(previewAttachment.localUrl)
     setPreviewAttachment(null)
   }
 
   const handleSelectAttachment = (file: File) => {
     if (previewAttachment) {
-      URL.revokeObjectURL(previewAttachment.url)
+      URL.revokeObjectURL(previewAttachment.localUrl)
     }
 
-    setPreviewAttachment(createAttachmentFromFile(file))
+    setPreviewAttachment(createImageAttachmentFromFile(file))
+  }
+
+  const handleRecordAudio = (file: File, durationMs: number) => {
+    if (previewAttachment) {
+      URL.revokeObjectURL(previewAttachment.localUrl)
+    }
+
+    setPreviewAttachment(createAudioAttachmentFromFile(file, durationMs))
   }
 
   const confirmRestartConversation = async () => {
@@ -1145,6 +1247,7 @@ export function LearnChat({
           previewAttachment={previewAttachment}
           onRemovePreview={removePreview}
           onSelectAttachment={handleSelectAttachment}
+          onRecordAudio={handleRecordAudio}
           fileInputRef={fileInputRef}
           textareaRef={textareaRef}
           input={input}

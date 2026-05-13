@@ -1,8 +1,9 @@
 "use client"
 
 import Image from "next/image"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { RefObject } from "react"
-import { ImagePlus, Lightbulb, RefreshCw, Send, WifiOff, X } from "lucide-react"
+import { ImagePlus, Lightbulb, Mic, RefreshCw, Send, Square, WifiOff, X } from "lucide-react"
 import { StatePanel } from "@/components/ui/state-panel"
 import {
   USER_BUTTON_PRIMARY_CLASS,
@@ -18,6 +19,7 @@ import type {
 import { cn } from "@/lib/utils"
 
 export const TEXTAREA_MAX_HEIGHT = 24 * 4 + 12
+const MAX_AUDIO_RECORDING_MS = 60_000
 
 const QUICK_ACTION_TONE_CLASS: Record<QuickAction["tone"], string> = {
   primary: USER_BUTTON_PRIMARY_CLASS,
@@ -29,7 +31,12 @@ function getInputHint(
   connectionState: ConnectionState,
   isTyping: boolean,
   previewAttachment: MessageAttachment | null,
+  isRecording = false,
 ) {
+  if (isRecording) {
+    return "正在录音，点击停止按钮结束录制；最长 60 秒。"
+  }
+
   if (connectionState === "offline") {
     return "你现在处于离线状态，消息会等待网络恢复后重试。"
   }
@@ -43,10 +50,19 @@ function getInputHint(
   }
 
   if (previewAttachment) {
-    return "截图已附上，适合直接让 AI 帮你定位具体报错。"
+    return previewAttachment.type === "audio"
+      ? "语音已附上，发送后会先识别为文字再交给 AI 教练。"
+      : "截图已附上，适合直接让 AI 帮你定位具体报错。"
   }
 
   return "把教程、代码、链接或你卡住的地方直接发给我。Enter 发送，Shift+Enter 换行。"
+}
+
+function formatRecordingTime(ms: number) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000))
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${String(seconds).padStart(2, "0")}`
 }
 
 type LearnChatComposerProps = {
@@ -67,6 +83,7 @@ type LearnChatComposerProps = {
   previewAttachment: MessageAttachment | null
   onRemovePreview: () => void
   onSelectAttachment: (file: File) => void
+  onRecordAudio: (file: File, durationMs: number) => void
   fileInputRef: RefObject<HTMLInputElement | null>
   textareaRef: RefObject<HTMLTextAreaElement | null>
   input: string
@@ -92,13 +109,100 @@ export function LearnChatComposer({
   previewAttachment,
   onRemovePreview,
   onSelectAttachment,
+  onRecordAudio,
   fileInputRef,
   textareaRef,
   input,
   onInputChange,
   onSend,
 }: LearnChatComposerProps) {
-  const inputHint = getInputHint(connectionState, isTyping, previewAttachment)
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingElapsedMs, setRecordingElapsedMs] = useState(0)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<BlobPart[]>([])
+  const recordingStartedAtRef = useRef<number>(0)
+  const inputHint = getInputHint(connectionState, isTyping, previewAttachment, isRecording)
+  const recordingProgress = Math.min(recordingElapsedMs / MAX_AUDIO_RECORDING_MS, 1)
+  const recordingRemainingMs = Math.max(MAX_AUDIO_RECORDING_MS - recordingElapsedMs, 0)
+  const recordingWaveBars = Array.from({ length: 9 }, (_, index) => {
+    const phase = recordingElapsedMs / 145 + index * 0.72
+    const secondaryPhase = recordingElapsedMs / 260 + index * 1.13
+    return 8 + Math.round((Math.sin(phase) + Math.sin(secondaryPhase) + 2) * 4.5)
+  })
+
+  const stopRecording = useCallback(() => {
+    mediaRecorderRef.current?.stop()
+  }, [])
+
+  useEffect(() => {
+    if (!isRecording) {
+      return undefined
+    }
+
+    const updateElapsed = () => {
+      const elapsed = Date.now() - recordingStartedAtRef.current
+      setRecordingElapsedMs(Math.min(elapsed, MAX_AUDIO_RECORDING_MS))
+
+      if (elapsed >= MAX_AUDIO_RECORDING_MS) {
+        stopRecording()
+      }
+    }
+
+    updateElapsed()
+    const timer = window.setInterval(updateElapsed, 250)
+
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [isRecording, stopRecording])
+
+  const startRecording = async () => {
+    if (isTyping || connectionState !== "online" || previewAttachment) {
+      return
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    const recorder = new MediaRecorder(stream)
+    audioChunksRef.current = []
+    recordingStartedAtRef.current = Date.now()
+    setRecordingElapsedMs(0)
+    mediaRecorderRef.current = recorder
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunksRef.current.push(event.data)
+      }
+    }
+
+    recorder.onstop = () => {
+      const durationMs = Math.min(Date.now() - recordingStartedAtRef.current, MAX_AUDIO_RECORDING_MS)
+      const mimeType = recorder.mimeType || "audio/webm"
+      const blob = new Blob(audioChunksRef.current, { type: mimeType })
+      const extension = mimeType.includes("ogg") ? "ogg" : mimeType.includes("mp4") ? "m4a" : "webm"
+      const file = new File([blob], `learning-voice-${Date.now()}.${extension}`, { type: mimeType })
+
+      stream.getTracks().forEach((track) => track.stop())
+      mediaRecorderRef.current = null
+      setIsRecording(false)
+      setRecordingElapsedMs(0)
+
+      if (file.size > 0) {
+        onRecordAudio(file, durationMs)
+      }
+    }
+
+    recorder.start()
+    setIsRecording(true)
+  }
+
+  const handleRecordClick = () => {
+    if (isRecording) {
+      stopRecording()
+      return
+    }
+
+    void startRecording()
+  }
 
   return (
     <div className="shrink-0 border-t border-border/50 bg-surface-1 px-4 pb-4 pt-3 sm:px-6">
@@ -206,14 +310,27 @@ export function LearnChatComposer({
 
         {previewAttachment ? (
           <div className="relative mb-3 inline-block overflow-hidden rounded-2xl border border-border bg-surface-2">
-            <Image
-              src={previewAttachment.url}
-              alt={previewAttachment.name}
-              width={200}
-              height={120}
-              unoptimized
-              className="h-28 w-auto object-cover"
-            />
+            {previewAttachment.type === "image" && previewAttachment.url ? (
+              <Image
+                src={previewAttachment.url}
+                alt={previewAttachment.name}
+                width={200}
+                height={120}
+                unoptimized
+                className="h-28 w-auto object-cover"
+              />
+            ) : (
+              <div className="flex min-w-64 items-center gap-2 px-3 py-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl bg-brand/75 text-brand-foreground">
+                  <Mic className="h-4 w-4" />
+                </div>
+                <audio
+                  src={previewAttachment.url}
+                  controls
+                  className="overflow-hidden rounded-3xl h-9 max-w-52"
+                />
+              </div>
+            )}
             <div className="flex items-center justify-between gap-3 px-3 py-2 text-xs text-muted-foreground">
               <span className="truncate">{previewAttachment.name}</span>
               <button
@@ -237,16 +354,32 @@ export function LearnChatComposer({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground/60 transition-colors hover:bg-surface-3 hover:text-muted-foreground"
+              disabled={isTyping || isRecording || Boolean(previewAttachment)}
+              className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl text-muted-foreground/60 transition-colors hover:bg-surface-3 hover:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-45"
               title="发送截图"
             >
               <ImagePlus className="h-4 w-4" />
             </button>
 
+            <button
+              type="button"
+              onClick={handleRecordClick}
+              disabled={isTyping || Boolean(previewAttachment)}
+              className={cn(
+                "relative mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl transition-colors disabled:cursor-not-allowed disabled:opacity-45",
+                isRecording
+                  ? "bg-red-500/10 text-red-500 hover:bg-red-500/15"
+                  : "text-muted-foreground/60 hover:bg-surface-3 hover:text-muted-foreground",
+              )}
+              title={isRecording ? "停止录音" : "发送语音"}
+            >
+              {isRecording ? <Square className="h-3.5 w-3.5" /> : <Mic className="h-4 w-4" />}
+            </button>
+
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg,image/webp"
               className="hidden"
               onChange={(event) => {
                 const file = event.target.files?.[0]
@@ -257,31 +390,60 @@ export function LearnChatComposer({
               }}
             />
 
-            <textarea
-              ref={textareaRef}
-              rows={1}
-              placeholder="把教程链接、代码片段或你卡住的问题发给我"
-              aria-label="消息输入框"
-              aria-describedby="input-hint"
-              className="scrollbar-none flex-1 resize-none bg-transparent py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground/50"
-              style={{ maxHeight: `${TEXTAREA_MAX_HEIGHT}px`, overflowY: "auto" }}
-              value={input}
-              onChange={(event) => onInputChange(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault()
-                  onSend()
-                }
-              }}
-            />
+            {isRecording ? (
+              <div className="flex min-h-8 flex-1 items-center gap-3 rounded-2xl bg-brand/6 px-4 py-1.5 text-brand">
+                <div className="flex h-5 w-10 shrink-0 items-center justify-center gap-0.5" aria-hidden="true">
+                  {recordingWaveBars.map((height, index) => (
+                    <span
+                      key={index}
+                      className="w-1.5 rounded-full bg-brand/80 transition-[height,opacity] duration-200 ease-out"
+                      style={{
+                        height: `${height}px`,
+                        opacity: 0.52 + (height / 26) * 0.42,
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-3 text-xs font-medium">
+                    <span>录音中</span>
+                    <span className="tabular-nums">{formatRecordingTime(recordingRemainingMs)}</span>
+                  </div>
+                  <div className="mt-1 h-1 overflow-hidden rounded-full bg-brand/15">
+                    <div
+                      className="h-full rounded-full bg-brand transition-[width] duration-300 ease-linear"
+                      style={{ width: `${recordingProgress * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                placeholder="把教程链接、代码片段或你卡住的问题发给我"
+                aria-label="消息输入框"
+                aria-describedby="input-hint"
+                className="scrollbar-none flex-1 resize-none bg-transparent py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground/50"
+                style={{ maxHeight: `${TEXTAREA_MAX_HEIGHT}px`, overflowY: "auto" }}
+                value={input}
+                onChange={(event) => onInputChange(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault()
+                    onSend()
+                  }
+                }}
+              />
+            )}
 
             <button
               type="button"
               onClick={onSend}
-              disabled={(!input.trim() && !previewAttachment) || isTyping}
+              disabled={(!input.trim() && !previewAttachment) || isTyping || isRecording}
               className={cn(
                 "ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl",
-                (input.trim() || previewAttachment) && !isTyping
+                (input.trim() || previewAttachment) && !isTyping && !isRecording
                   ? USER_ICON_BUTTON_CLASS
                   : "cursor-not-allowed border-transparent bg-[oklch(0.72_0.01_240)] text-white/70 shadow-none dark:bg-[oklch(0.30_0.01_240)]",
               )}

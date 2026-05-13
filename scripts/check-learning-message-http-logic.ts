@@ -42,6 +42,29 @@ test("executeLearningMessageRequest returns json success payload when stream is 
   assert.deepEqual(result.body.data, sampleResponse)
 })
 
+test("executeLearningMessageRequest accepts attachment-only learning messages", async () => {
+  const result = await executeLearningMessageRequest({
+    userId: "user-1",
+    acceptHeader: "application/json",
+    body: {
+      inputType: "text",
+      content: "",
+      attachmentIds: ["11111111-1111-4111-8111-111111111111"],
+    },
+    sendMessage: async (_userId, request) => {
+      assert.deepEqual(request.attachmentIds, ["11111111-1111-4111-8111-111111111111"])
+      return sampleResponse
+    },
+    streamMessage: async () => {
+      throw new Error("should not call stream handler")
+    },
+  })
+
+  assert.equal(result.kind, "json")
+  assert.equal(result.status, 200)
+  assert.equal(result.body.code, "OK")
+})
+
 test("executeLearningMessageRequest returns sse transport when client explicitly requests stream", async () => {
   const stream = new ReadableStream<Uint8Array>()
   const result = await executeLearningMessageRequest({

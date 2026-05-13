@@ -18,6 +18,13 @@
 - Current seeded primary tutor models are text-first and should not be assumed to understand images directly.
 - The self-directed material pipeline already has separate multimodal extraction concepts; this plan brings the same separation to live chat.
 
+## 2026-05-13 Model Switch Note
+
+- Learning chat image preprocessing now sends private Supabase Storage images to the vision model as `data:<mime>;base64,...` URLs, avoiding provider-side failures when the model cannot fetch signed private URLs.
+- The media model seed switches image recognition to Aliyun Bailian `Qwen3.6-Flash` (`model_name = qwen3.6-flash`, `code = qwen3-6-flash`) and voice recognition to Aliyun Bailian `Qwen3-ASR-Flash` (`model_name = qwen3-asr-flash`, `code = qwen3-asr-flash`).
+- `Qwen3-ASR-Flash` uses Bailian OpenAI-compatible `/chat/completions` with `input_audio`, not the legacy `/audio/transcriptions` multipart endpoint.
+- The remote seed has been applied successfully, and runtime resolution now returns `aliyuncs/qwen3-6-flash` for `vision` and `aliyuncs/qwen3-asr-flash` for `asr`; the old `qwen2-5-vl-72b` and `sensevoice-small` media models are inactive.
+
 ## Phase 1: Persistence and Contracts
 
 **Files:**

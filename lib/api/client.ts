@@ -7,9 +7,11 @@ const API_BASE_PATH = "/api"
 export async function buildRequestHeaders(initHeaders?: HeadersInit) {
   const headers = new Headers(initHeaders)
 
-  if (!headers.has("Content-Type")) {
+  if (!headers.has("Content-Type") && headers.get("X-Use-FormData") !== "true") {
     headers.set("Content-Type", "application/json")
   }
+
+  headers.delete("X-Use-FormData")
 
   if (typeof window !== "undefined") {
     const supabase = createSupabaseBrowserClient()
@@ -30,6 +32,12 @@ export async function apiFetch(
   init?: RequestInit,
 ) {
   const headers = await buildRequestHeaders(init?.headers)
+  const isFormData =
+    typeof FormData !== "undefined" && init?.body instanceof FormData
+
+  if (isFormData) {
+    headers.delete("Content-Type")
+  }
 
   return fetch(`${API_BASE_PATH}${path}`, {
     ...init,

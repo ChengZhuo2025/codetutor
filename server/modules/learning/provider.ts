@@ -45,6 +45,13 @@ export type AIChatContentPart =
         url: string
       }
     }
+  | {
+      type: "input_audio"
+      input_audio: {
+        data: string
+        format: string
+      }
+    }
 
 export type AIChatMessage = {
   role: "system" | "user" | "assistant"
