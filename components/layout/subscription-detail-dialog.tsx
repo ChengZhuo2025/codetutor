@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, type ReactNode, type SVGProps } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
 import QRCode from "qrcode"
 import { CalendarClock, Check, Crown, FileText, Loader2, Lock, MessageCircle } from "lucide-react"
@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils"
 import type { SubscriptionSnapshot } from "@/types/profile"
 import { requestData } from "@/lib/api/client"
 import {
-  PAYMENT_CHANNEL_OPTIONS,
   buildPaymentDialogTitle,
   getPaymentOrderErrorMessage,
   getPlanActionState,
@@ -45,56 +44,6 @@ type SubscriptionDetailDialogProps = {
 
 const TERMINAL_PAYMENT_STATUSES = new Set<PaymentOrderStatus>(["paid", "closed", "expired", "failed"])
 
-function AlipayBrandIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-      <text
-        x="20"
-        y="27"
-        fill="currentColor"
-        fontFamily="MiSans, PingFang SC, Microsoft YaHei, sans-serif"
-        fontSize="25"
-        fontWeight="800"
-        textAnchor="middle"
-      >
-        支
-      </text>
-    </svg>
-  )
-}
-
-function WechatPayBrandIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-      <path
-        d="M17.3 11.25c-5.12 0-9.28 3.48-9.28 7.78 0 2.49 1.4 4.71 3.57 6.14l-.8 2.42 2.95-1.4c1.1.4 2.3.62 3.56.62.36 0 .72-.02 1.07-.06a7.62 7.62 0 0 1-.5-2.72c0-4.35 3.8-7.9 8.62-8.2-1.35-2.7-4.86-4.58-9.19-4.58Z"
-        fill="currentColor"
-      />
-      <path
-        d="M27 17.2c-4.3 0-7.8 2.94-7.8 6.57s3.5 6.57 7.8 6.57c.98 0 1.92-.15 2.78-.43l2.48 1.17-.65-2.02c1.9-1.2 3.16-3.1 3.16-5.29 0-3.63-3.48-6.57-7.77-6.57Z"
-        fill="currentColor"
-      />
-      <path d="M14.44 17.64a1.04 1.04 0 1 1-2.08 0 1.04 1.04 0 0 1 2.08 0ZM22.2 17.64a1.04 1.04 0 1 1-2.08 0 1.04 1.04 0 0 1 2.08 0ZM25.02 23.12a.85.85 0 1 1-1.7 0 .85.85 0 0 1 1.7 0ZM31.47 23.12a.85.85 0 1 1-1.7 0 .85.85 0 0 1 1.7 0Z" fill="#07C160" />
-    </svg>
-  )
-}
-
-function PaymentChannelIcon({ channel }: { channel: PaymentChannel }) {
-  if (channel === "alipay") {
-    return (
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1677ff] text-white shadow-sm">
-        <AlipayBrandIcon className="h-7 w-7" aria-hidden="true" />
-      </span>
-    )
-  }
-
-  return (
-    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#07c160] text-white shadow-sm">
-      <WechatPayBrandIcon className="h-7 w-7" aria-hidden="true" />
-    </span>
-  )
-}
-
 function getPaymentStatusLabel(status: PaymentOrderStatus) {
   if (status === "paid") return "已支付"
   if (status === "closed") return "已关闭"
@@ -112,7 +61,7 @@ export function SubscriptionDetailDialog({
   const [activeOrder, setActiveOrder] = useState<PaymentOrderResponseData | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [loadingPlanCode, setLoadingPlanCode] = useState<PaymentPlanCode | null>(null)
-  const [selectedPaymentChannel, setSelectedPaymentChannel] = useState<PaymentChannel>("alipay")
+  const [selectedPaymentChannel] = useState<PaymentChannel>("wechat")
   const [paymentMessage, setPaymentMessage] = useState<string | null>(null)
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
   const currentPlanName = subscriptionData?.current.planName ?? subscription.planName
@@ -254,46 +203,54 @@ export function SubscriptionDetailDialog({
               </div>
             ) : null}
             {!activeOrder || !paymentDialogOpen ? (
-              <div className="rounded-xl border border-border/70 bg-surface-1/95 p-4">
-                <p className="mb-3 text-sm font-medium text-foreground">选择支付方式</p>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {PAYMENT_CHANNEL_OPTIONS.map((option) => {
-                    const selected = selectedPaymentChannel === option.channel
+              <>
+                {/*
+                  暂时隐藏“选择支付方式”卡片。
+                  原逻辑保留在注释中，后续支付宝网页应用资质通过后可恢复。
+                */}
+                {/*
+                <div className="rounded-xl border border-border/70 bg-surface-1/95 p-4">
+                  <p className="mb-3 text-sm font-medium text-foreground">选择支付方式</p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {PAYMENT_CHANNEL_OPTIONS.map((option) => {
+                      const selected = selectedPaymentChannel === option.channel
 
-                    return (
-                      <button
-                        key={option.channel}
-                        type="button"
-                        onClick={() => setSelectedPaymentChannel(option.channel)}
-                        aria-pressed={selected}
-                        className={cn(
-                          "group relative flex min-h-[74px] items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors",
-                          selected
-                            ? "border-brand bg-brand-dim/50 text-foreground"
-                            : "border-border bg-surface-2/70 text-muted-foreground hover:border-brand/40 hover:text-foreground",
-                        )}
-                      >
-                        <PaymentChannelIcon channel={option.channel} />
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-semibold">{option.label}</span>
-                          <span className="mt-1 block text-xs">{option.description}</span>
-                        </span>
-                        <span
+                      return (
+                        <button
+                          key={option.channel}
+                          type="button"
+                          onClick={() => setSelectedPaymentChannel(option.channel)}
+                          aria-pressed={selected}
                           className={cn(
-                            "flex h-6 w-6 shrink-0 items-center justify-center transition-colors",
+                            "group relative flex min-h-[74px] items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors",
                             selected
-                              ? "text-brand"
-                              : "rounded-full border border-border bg-surface-1 text-transparent group-hover:border-brand/40",
+                              ? "border-brand bg-brand-dim/50 text-foreground"
+                              : "border-border bg-surface-2/70 text-muted-foreground hover:border-brand/40 hover:text-foreground",
                           )}
-                          aria-hidden="true"
                         >
-                          {selected ? <Check className="h-5 w-5 stroke-[3]" /> : null}
-                        </span>
-                      </button>
-                    )
-                  })}
+                          <PaymentChannelIcon channel={option.channel} />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-semibold">{option.label}</span>
+                            <span className="mt-1 block text-xs">{option.description}</span>
+                          </span>
+                          <span
+                            className={cn(
+                              "flex h-6 w-6 shrink-0 items-center justify-center transition-colors",
+                              selected
+                                ? "text-brand"
+                                : "rounded-full border border-border bg-surface-1 text-transparent group-hover:border-brand/40",
+                            )}
+                            aria-hidden="true"
+                          >
+                            {selected ? <Check className="h-5 w-5 stroke-[3]" /> : null}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
+                */}
+              </>
             ) : null}
             {/* 套餐列表 - 显示全部3个套餐 */}
             {plans.length === 0 ? (
