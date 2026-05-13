@@ -813,6 +813,7 @@ const adminAIMediaAttachmentListExample = {
       messageId: "550e8400-e29b-41d4-a716-446655440310",
       kind: "audio",
       processingStatus: "completed",
+      previewUrl: "https://storage.example.com/signed/voice.webm",
       originalFilename: "voice.webm",
       mimeType: "audio/webm",
       sizeBytes: 32000,

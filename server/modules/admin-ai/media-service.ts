@@ -274,7 +274,10 @@ export function mapAdminAIMediaTranscriptionSettingRow(
   }
 }
 
-export function mapAdminAIMediaAttachmentRow(row: MediaAttachmentRow): AdminAIMediaAttachmentListItem {
+export function mapAdminAIMediaAttachmentRow(
+  row: MediaAttachmentRow,
+  previewUrl: string | null = null,
+): AdminAIMediaAttachmentListItem {
   return {
     attachmentId: row.id,
     userId: row.user_id,
@@ -282,6 +285,7 @@ export function mapAdminAIMediaAttachmentRow(row: MediaAttachmentRow): AdminAIMe
     messageId: row.message_id,
     kind: row.kind,
     processingStatus: row.processing_status,
+    previewUrl,
     originalFilename: row.original_filename,
     mimeType: row.mime_type,
     sizeBytes: row.size_bytes,
@@ -458,8 +462,7 @@ export async function updateAdminAIMediaTranscriptionSetting(
 export async function getAdminAIMediaAttachments(filters: {
   adminAccountId: string
   kind: "all" | "image" | "audio"
-  startDate?: string
-  endDate?: string
+  dateRange: "24h" | "7d" | "30d" | "90d"
   page: number
   limit: number
 }): Promise<AdminAIMediaAttachmentListResponseData> {
@@ -474,21 +477,26 @@ export async function getAdminAIMediaAttachments(filters: {
   if (filters.kind !== "all") {
     query = query.eq("kind", filters.kind)
   }
-  if (filters.startDate) {
-    query = query.gte("created_at", filters.startDate)
-  }
-  if (filters.endDate) {
-    const end = new Date(filters.endDate)
-    if (!Number.isNaN(end.getTime()) && filters.endDate.length <= 10) {
-      end.setUTCDate(end.getUTCDate() + 1)
-      query = query.lt("created_at", end.toISOString().slice(0, 10))
-    } else {
-      query = query.lte("created_at", filters.endDate)
-    }
-  }
+  const rangeMs =
+    filters.dateRange === "24h" ? 24 * 60 * 60 * 1000
+      : filters.dateRange === "7d" ? 7 * 24 * 60 * 60 * 1000
+        : filters.dateRange === "30d" ? 30 * 24 * 60 * 60 * 1000
+          : 90 * 24 * 60 * 60 * 1000
+  query = query.gte("created_at", new Date(Date.now() - rangeMs).toISOString())
 
   const { data, error } = await query
   assertSupabaseSuccess(error, "failed to query learning message attachments")
 
-  return paginate(((data ?? []) as MediaAttachmentRow[]).map(mapAdminAIMediaAttachmentRow), filters.page, filters.limit)
+  const rows = (data ?? []) as MediaAttachmentRow[]
+  const previewUrls = await Promise.all(rows.map(async (row) => {
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from(row.storage_bucket)
+      .createSignedUrl(row.storage_path, 10 * 60)
+    if (signedUrlError) {
+      return null
+    }
+    return signedUrlData?.signedUrl ?? null
+  }))
+
+  return paginate(rows.map((row, index) => mapAdminAIMediaAttachmentRow(row, previewUrls[index] ?? null)), filters.page, filters.limit)
 }

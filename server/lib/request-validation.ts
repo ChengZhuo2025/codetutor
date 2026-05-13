@@ -1217,19 +1217,14 @@ export function parseAdminAIMediaAttachmentListQuery(searchParams: URLSearchPara
     return fail("VALIDATION_FAILED", "kind 参数不合法。")
   }
 
-  const startDate = searchParams.get("startDate")?.trim() || undefined
-  const endDate = searchParams.get("endDate")?.trim() || undefined
-  if (startDate && isNaN(Date.parse(startDate))) {
-    return fail("VALIDATION_FAILED", "startDate 格式不合法。")
-  }
-  if (endDate && isNaN(Date.parse(endDate))) {
-    return fail("VALIDATION_FAILED", "endDate 格式不合法。")
+  const rawDateRange = searchParams.get("dateRange")?.trim() || "7d"
+  if (!ADMIN_AI_INVOCATION_DATE_RANGES.includes(rawDateRange as AdminAIInvocationDateRange)) {
+    return fail("VALIDATION_FAILED", "dateRange 参数不合法。")
   }
 
   return ok({
     kind: rawKind as AdminAIMediaAttachmentKindFilter,
-    startDate,
-    endDate,
+    dateRange: rawDateRange as AdminAIInvocationDateRange,
     ...pagination.data,
   })
 }

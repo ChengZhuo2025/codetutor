@@ -448,8 +448,7 @@ export function createAdminAIMediaAttachmentListGetHandler(dependencies: {
   getAdminAIMediaAttachments: (filters: {
     adminAccountId: string
     kind: "all" | "image" | "audio"
-    startDate?: string
-    endDate?: string
+    dateRange: "24h" | "7d" | "30d" | "90d"
     page: number
     limit: number
   }) => Promise<unknown>
@@ -470,8 +469,7 @@ export function createAdminAIMediaAttachmentListGetHandler(dependencies: {
       const data = await dependencies.getAdminAIMediaAttachments({
         adminAccountId: admin.adminId,
         kind: parsed.data.kind,
-        startDate: parsed.data.startDate,
-        endDate: parsed.data.endDate,
+        dateRange: parsed.data.dateRange,
         page: parsed.data.page,
         limit: parsed.data.limit,
       })

@@ -158,31 +158,35 @@ test("mapAdminAIMediaTranscriptionSettingRow exposes model and provider summary"
 })
 
 test("mapAdminAIMediaAttachmentRow formats attachment list item", () => {
-  const item = mapAdminAIMediaAttachmentRow({
-    id: "attachment-1",
-    user_id: "user-1",
-    session_id: "session-1",
-    message_id: "message-1",
-    kind: "audio",
-    processing_status: "completed",
-    storage_bucket: "learning-chat-attachments",
-    storage_path: "user-1/voice.webm",
-    original_filename: "voice.webm",
-    mime_type: "audio/webm",
-    size_bytes: 32000,
-    duration_ms: 12000,
-    width: null,
-    height: null,
-    extracted_text: null,
-    visual_summary: null,
-    transcript_text: "请解释 worktree 的用法",
-    error_message: null,
-    created_at: "2026-05-13T00:00:00.000Z",
-    updated_at: "2026-05-13T01:00:00.000Z",
-  })
+  const item = mapAdminAIMediaAttachmentRow(
+    {
+      id: "attachment-1",
+      user_id: "user-1",
+      session_id: "session-1",
+      message_id: "message-1",
+      kind: "audio",
+      processing_status: "completed",
+      storage_bucket: "learning-chat-attachments",
+      storage_path: "user-1/voice.webm",
+      original_filename: "voice.webm",
+      mime_type: "audio/webm",
+      size_bytes: 32000,
+      duration_ms: 12000,
+      width: null,
+      height: null,
+      extracted_text: null,
+      visual_summary: null,
+      transcript_text: "请解释 worktree 的用法",
+      error_message: null,
+      created_at: "2026-05-13T00:00:00.000Z",
+      updated_at: "2026-05-13T01:00:00.000Z",
+    },
+    "https://storage.example.test/signed/voice.webm",
+  )
 
   assert.equal(item.attachmentId, "attachment-1")
   assert.equal(item.kind, "audio")
   assert.equal(item.processingStatus, "completed")
   assert.equal(item.transcriptText, "请解释 worktree 的用法")
+  assert.equal(item.previewUrl, "https://storage.example.test/signed/voice.webm")
 })

@@ -364,6 +364,7 @@ export type AdminAIMediaAttachmentListItem = {
   messageId: string | null
   kind: "image" | "audio"
   processingStatus: "pending" | "processing" | "completed" | "failed"
+  previewUrl: string | null
   originalFilename: string | null
   mimeType: string
   sizeBytes: number

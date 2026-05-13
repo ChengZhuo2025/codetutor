@@ -107,15 +107,14 @@ test("media transcription setting patch validates body and delegates update", as
   assert.equal(payload.data.setting.version, 4)
 })
 
-test("media attachments route parses kind and date filters", async () => {
+test("media attachments route parses kind and date range filter", async () => {
   const handler = createAdminAIMediaAttachmentListGetHandler({
     getRequestAdmin: async () => okAdmin,
     getAdminAIMediaAttachments: async (filters) => {
       assert.deepEqual(filters, {
         adminAccountId: "admin-1",
         kind: "audio",
-        startDate: "2026-05-01",
-        endDate: "2026-05-13",
+        dateRange: "30d",
         page: 2,
         limit: 10,
       })
@@ -129,7 +128,7 @@ test("media attachments route parses kind and date filters", async () => {
   })
 
   const response = await handler(
-    new Request("http://localhost/api/admin/ai/media/attachments?kind=audio&startDate=2026-05-01&endDate=2026-05-13&page=2&limit=10") as never,
+    new Request("http://localhost/api/admin/ai/media/attachments?kind=audio&dateRange=30d&page=2&limit=10") as never,
   )
   const payload = await response.json()
 

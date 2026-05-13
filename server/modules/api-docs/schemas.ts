@@ -2538,8 +2538,7 @@ export const adminAIInvocationListQuerySchema = z
 export const adminAIMediaAttachmentListQuerySchema = z
   .object({
     kind: adminAIMediaAttachmentKindFilterSchema.optional(),
-    startDate: z.string().optional(),
-    endDate: z.string().optional(),
+    dateRange: adminAIInvocationDateRangeSchema.optional(),
     page: paginationPositiveIntSchema.optional(),
     limit: paginationPositiveIntSchema.optional(),
   })
@@ -2851,6 +2850,7 @@ export const adminAIMediaAttachmentListItemSchema = z
     messageId: z.string().uuid().nullable(),
     kind: z.enum(["image", "audio"]),
     processingStatus: z.enum(["pending", "processing", "completed", "failed"]),
+    previewUrl: z.string().url().nullable(),
     originalFilename: z.string().nullable(),
     mimeType: z.string(),
     sizeBytes: z.number().int().positive(),

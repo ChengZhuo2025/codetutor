@@ -1,10 +1,19 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
-import { RefreshCw, Search } from "lucide-react"
-import type { AdminAIMediaAttachmentListResponseData } from "@/lib/api/contracts/admin-ai"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { RefreshCw } from "lucide-react"
+import type {
+  AdminAIMediaAttachmentListItem,
+  AdminAIMediaAttachmentListResponseData,
+} from "@/lib/api/contracts/admin-ai"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { StatePanel } from "@/components/ui/state-panel"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
@@ -45,10 +54,8 @@ function statusLabel(status: string) {
 export function MediaAttachments() {
   const [data, setData] = useState<AdminAIMediaAttachmentListResponseData | null>(null)
   const [kind, setKind] = useState("all")
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
-  const [appliedStartDate, setAppliedStartDate] = useState("")
-  const [appliedEndDate, setAppliedEndDate] = useState("")
+  const [dateRange, setDateRange] = useState("7d")
+  const [previewItem, setPreviewItem] = useState<AdminAIMediaAttachmentListItem | null>(null)
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState("20")
   const [isLoading, setIsLoading] = useState(true)
@@ -65,14 +72,9 @@ export function MediaAttachments() {
     try {
       const params = new URLSearchParams()
       params.set("kind", kind)
+      params.set("dateRange", dateRange)
       params.set("page", String(page))
       params.set("limit", limit)
-      if (appliedStartDate) {
-        params.set("startDate", appliedStartDate)
-      }
-      if (appliedEndDate) {
-        params.set("endDate", appliedEndDate)
-      }
       const result = await adminRequestData<AdminAIMediaAttachmentListResponseData>(
         `/admin/ai/media/attachments?${params.toString()}`,
         { method: "GET" },
@@ -85,19 +87,24 @@ export function MediaAttachments() {
     } finally {
       setIsLoading(false)
     }
-  }, [appliedEndDate, appliedStartDate, kind, limit, page])
+  }, [dateRange, kind, limit, page])
 
   useEffect(() => {
     void fetchList()
   }, [fetchList])
 
-  const applyDateFilter = () => {
-    setPage(1)
-    setAppliedStartDate(startDate)
-    setAppliedEndDate(endDate)
-  }
+  const dateRangeOptions = useMemo(
+    () => [
+      { value: "24h", label: "24h" },
+      { value: "7d", label: "7d" },
+      { value: "30d", label: "30d" },
+      { value: "90d", label: "90d" },
+    ],
+    [],
+  )
 
   return (
+    <>
     <div className="space-y-6">
       <ListPageHeader
         title="附件管理"
@@ -129,28 +136,14 @@ export function MediaAttachments() {
                   { value: "audio", label: "语音" },
                 ]}
               />
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    type="date"
-                    value={startDate}
-                    onChange={(event) => setStartDate(event.target.value)}
-                    className="h-9 w-40 pl-8"
-                    aria-label="开始时间段"
-                  />
-                </div>
-                <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(event) => setEndDate(event.target.value)}
-                  className="h-9 w-40"
-                  aria-label="结束时间段"
-                />
-                <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applyDateFilter}>
-                  筛选时间段
-                </Button>
-              </div>
+              <AdminSelect
+                value={dateRange}
+                onValueChange={(value) => {
+                  setPage(1)
+                  setDateRange(value)
+                }}
+                options={dateRangeOptions}
+              />
             </div>
           </ListFilterCard>
 
@@ -163,16 +156,17 @@ export function MediaAttachments() {
               </div>
             ) : data?.items.length ? (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1180px] table-fixed">
+                <table className="w-full min-w-[1320px] table-fixed">
                   <thead className="bg-muted/40">
                     <tr className="border-b border-border">
-                      <th className="w-[14%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">附件</th>
-                      <th className="w-[15%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">用户 / 会话</th>
-                      <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">类型 / 文件</th>
-                      <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">大小</th>
-                      <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">处理状态</th>
-                      <th className="w-[24%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">转译结果</th>
-                      <th className="w-[13%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">创建时间</th>
+                      <th className="w-[13%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">附件</th>
+                      <th className="w-[14%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">用户 / 会话</th>
+                      <th className="w-[9%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">类型 / 文件</th>
+                      <th className="w-[12%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">预览</th>
+                      <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">大小</th>
+                      <th className="w-[8%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">处理状态</th>
+                      <th className="w-[18%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">转译结果</th>
+                      <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground">创建时间</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -189,6 +183,29 @@ export function MediaAttachments() {
                         <td className="px-4 py-4 align-top">
                           <p className="text-sm text-foreground">{item.kind === "image" ? "图片" : "语音"}</p>
                           <p className="mt-1 truncate text-xs text-muted-foreground">{item.originalFilename ?? item.mimeType}</p>
+                        </td>
+                        <td className="px-4 py-4 align-top">
+                          {item.previewUrl && item.kind === "image" ? (
+                            <button
+                              type="button"
+                              className="group h-16 w-32 overflow-hidden rounded-md border border-border bg-muted text-left transition-colors hover:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                              onClick={() => setPreviewItem(item)}
+                              aria-label="放大预览图片"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element -- Signed storage preview URLs are environment-specific and should not require Next image remotePatterns. */}
+                              <img
+                                src={item.previewUrl}
+                                alt={item.originalFilename ?? "图片附件预览"}
+                                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                              />
+                            </button>
+                          ) : item.previewUrl && item.kind === "audio" ? (
+                            <audio src={item.previewUrl} controls className="overflow-hidden rounded-3xl h-9 w-32" preload="none">
+                              你的浏览器不支持音频播放。
+                            </audio>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">无预览</span>
+                          )}
                         </td>
                         <td className="px-4 py-4 align-top">
                           <p className="text-sm text-foreground">{formatBytes(item.sizeBytes)}</p>
@@ -242,6 +259,31 @@ export function MediaAttachments() {
         </>
       )}
     </div>
+      <Dialog open={Boolean(previewItem)} onOpenChange={(open) => {
+        if (!open) {
+          setPreviewItem(null)
+        }
+      }}>
+        <DialogContent className="max-w-[min(92vw,880px)]">
+          <DialogHeader>
+            <DialogTitle>图片预览</DialogTitle>
+            <DialogDescription>
+              {previewItem?.originalFilename ?? previewItem?.mimeType ?? "用户上传图片"}
+            </DialogDescription>
+          </DialogHeader>
+          {previewItem?.previewUrl ? (
+            <div className="max-h-[72vh] overflow-auto rounded-lg border border-border bg-muted/30">
+              {/* eslint-disable-next-line @next/next/no-img-element -- Signed storage preview URLs are environment-specific and should not require Next image remotePatterns. */}
+              <img
+                src={previewItem.previewUrl}
+                alt={previewItem.originalFilename ?? "图片附件预览"}
+                className="mx-auto max-h-[72vh] w-auto max-w-full object-contain"
+              />
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
