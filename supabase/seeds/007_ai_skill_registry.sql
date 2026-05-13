@@ -68,7 +68,9 @@ FROM (
     ('c1000000-0000-0000-0000-000000000029'::uuid, 'review-checklist-skill', '结果复盘检查清单', 'shared', 'review'),
     ('c1000000-0000-0000-0000-000000000030'::uuid, 'next-step-guidance-skill', '下一步引导', 'shared', 'guidance'),
     ('c1000000-0000-0000-0000-000000000031'::uuid, 'completion-summary-skill', '完成总结', 'shared', 'completion'),
-    ('c1000000-0000-0000-0000-000000000032'::uuid, 'rank-progress-feedback-skill', '段位成长反馈', 'shared', 'completion')
+    ('c1000000-0000-0000-0000-000000000032'::uuid, 'rank-progress-feedback-skill', '段位成长反馈', 'shared', 'completion'),
+    ('c1000000-0000-0000-0000-000000000033'::uuid, 'learning-image-understanding-skill', '学习截图理解', 'shared', 'media'),
+    ('c1000000-0000-0000-0000-000000000034'::uuid, 'learning-audio-transcription-skill', '学习语音转写', 'shared', 'media')
 ) AS seed(id, code, name, tool_family, category)
 ON CONFLICT (code) DO UPDATE
 SET
@@ -112,7 +114,10 @@ WHERE agent_code IN (
   'ide-task-reviewer',
   'cli-task-reviewer',
   'web-builder-task-reviewer',
-  'learning-completion-coach'
+  'learning-completion-coach',
+  'learning-concept-qa-coach',
+  'learning-vision-translator',
+  'learning-audio-transcriber'
 );
 
 INSERT INTO public.agent_skill_bindings (
@@ -234,7 +239,11 @@ FROM (
 
     ('learning-concept-qa-coach', 'general-learning-reflection-skill', 10, 700, 'phase1_default'),
     ('learning-concept-qa-coach', 'next-step-guidance-skill', 20, 700, 'phase1_default'),
-    ('learning-concept-qa-coach', 'completion-summary-skill', 30, 700, 'phase1_default')
+    ('learning-concept-qa-coach', 'completion-summary-skill', 30, 700, 'phase1_default'),
+
+    ('learning-vision-translator', 'learning-image-understanding-skill', 10, 900, 'phase1_media'),
+    ('learning-vision-translator', 'error-context-format-skill', 20, 700, 'phase1_media'),
+    ('learning-audio-transcriber', 'learning-audio-transcription-skill', 10, 900, 'phase1_media')
 ) AS seed(agent_code, skill_code, priority, context_budget_tokens, binding_kind)
 ON CONFLICT (agent_code, skill_code) DO UPDATE
 SET

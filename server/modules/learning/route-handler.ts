@@ -1,8 +1,10 @@
 import type {
+  LearningAttachmentCreateResponseData,
   LearningMessageRequest,
   LearningMessageResponseData,
   LearningMessagesResponseData,
   LearningCurrentSessionResponseData,
+  LearningMessageAttachmentKind,
 } from "../../../lib/api/contracts/learning.ts"
 import { jsonInternalErrorFromError } from "../../lib/route-error.ts"
 import {
@@ -11,7 +13,13 @@ import {
   jsonSuccess,
 } from "../../lib/route-response.ts"
 import { withNoStoreHeaders } from "../../lib/response-cache.ts"
-import { parseLearningMessagesQuery } from "../../lib/request-validation.ts"
+import {
+  parseLearningAttachmentFile,
+  parseLearningAttachmentKind,
+  parseLearningMessagesQuery,
+  parseOptionalNonnegativeInteger,
+  parseOptionalPositiveInteger,
+} from "../../lib/request-validation.ts"
 import { executeLearningMessageRequest } from "./http-logic.ts"
 
 type RequestLike = {
@@ -21,6 +29,10 @@ type RequestLike = {
 
 type GetRequestLike = {
   url: string
+}
+
+type FormRequestLike = {
+  formData: () => Promise<FormData>
 }
 
 type SendLearningMessage = (
@@ -39,6 +51,74 @@ export type LearningMessagePostRouteDependencies = {
   executeLearningMessageRequest: typeof executeLearningMessageRequest
   sendLearningMessage: SendLearningMessage
   streamLearningMessage: StreamLearningMessage
+}
+
+export function createLearningAttachmentPostHandler(dependencies: {
+  getRequestAuth: (request: unknown) => Promise<{ userId: string } | null>
+  getRequestAuthHelpText: () => string
+  createLearningMessageAttachment: (
+    userId: string,
+    input: {
+      kind: LearningMessageAttachmentKind
+      file: File
+      sessionId?: string | null
+      durationMs?: number | null
+      width?: number | null
+      height?: number | null
+    },
+  ) => Promise<LearningAttachmentCreateResponseData>
+}) {
+  return async function POST(request: FormRequestLike) {
+    try {
+      const auth = await dependencies.getRequestAuth(request)
+
+      if (!auth) {
+        return jsonAuthRequired(dependencies.getRequestAuthHelpText())
+      }
+
+      const formData = await request.formData()
+      const kind = parseLearningAttachmentKind(formData.get("kind"))
+
+      if (!kind.ok) {
+        return jsonError(kind.code, kind.message, 422)
+      }
+
+      const durationMs = parseOptionalNonnegativeInteger(formData.get("durationMs"), "durationMs")
+      if (!durationMs.ok) {
+        return jsonError(durationMs.code, durationMs.message, 422)
+      }
+
+      const width = parseOptionalPositiveInteger(formData.get("width"), "width")
+      if (!width.ok) {
+        return jsonError(width.code, width.message, 422)
+      }
+
+      const height = parseOptionalPositiveInteger(formData.get("height"), "height")
+      if (!height.ok) {
+        return jsonError(height.code, height.message, 422)
+      }
+
+      const file = parseLearningAttachmentFile(formData.get("file"), kind.data, durationMs.data)
+
+      if (!file.ok) {
+        return jsonError(file.code, file.message, file.code === "BAD_REQUEST" ? 400 : 422)
+      }
+
+      const sessionId = formData.get("sessionId")
+      const data = await dependencies.createLearningMessageAttachment(auth.userId, {
+        kind: kind.data,
+        file: file.data,
+        sessionId: typeof sessionId === "string" && sessionId.trim().length > 0 ? sessionId.trim() : null,
+        durationMs: durationMs.data,
+        width: width.data,
+        height: height.data,
+      })
+
+      return jsonSuccess(data, "attachment uploaded")
+    } catch (error) {
+      return jsonInternalErrorFromError(error, "附件上传失败")
+    }
+  }
 }
 
 export function createLearningMessagePostHandler(

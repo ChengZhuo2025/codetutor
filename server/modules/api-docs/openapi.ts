@@ -126,6 +126,7 @@ import {
   learningMessagesResponseDataSchema,
   learningHistoryDetailResponseDataSchema,
   learningHistoryResponseDataSchema,
+  learningAttachmentCreateResponseDataSchema,
   notificationInAppListResponseDataSchema,
   notificationMutationResponseDataSchema,
   notificationSettingsDataSchema,
@@ -1301,6 +1302,24 @@ const successExamples = {
     taskState: "in_progress",
     taskPatch: null,
   },
+  learningAttachmentCreate: {
+    attachment: {
+      id: "44444444-4444-4444-8444-444444444444",
+      kind: "image" as const,
+      processingStatus: "pending" as const,
+      originalFilename: "cursor-error.png",
+      mimeType: "image/png",
+      sizeBytes: 524288,
+      durationMs: null,
+      width: 1440,
+      height: 900,
+      extractedText: null,
+      visualSummary: null,
+      transcriptText: null,
+      errorMessage: null,
+      createdAt: EXAMPLE_NOW,
+    },
+  },
   learningMessages: {
     conversationId: "conversation-1",
     messages: [messageExample],
@@ -2372,6 +2391,60 @@ registry.registerPath({
         example: {
           code: "RATE_LIMITED",
           message: "操作过于频繁，请稍后再试。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/learning/attachments",
+  operationId: "postLearningAttachment",
+  tags: ["learning"],
+  summary: "上传学习对话图片或语音附件",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "multipart/form-data": {
+          schema: z.object({
+            file: z.any(),
+            kind: z.enum(["image", "audio"]),
+            sessionId: z.string().optional(),
+            durationMs: z.number().int().nonnegative().optional(),
+            width: z.number().int().positive().optional(),
+            height: z.number().int().positive().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    "200": {
+      description: "附件上传成功，返回后续发送消息可使用的 attachmentId。",
+      content: {
+        "application/json": {
+          schema: createApiSuccessResponseSchema(
+            learningAttachmentCreateResponseDataSchema,
+            "LearningAttachmentCreateResponse",
+          ),
+          example: {
+            code: "OK",
+            message: "success",
+            data: successExamples.learningAttachmentCreate,
+          },
+        },
+      },
+    },
+    ...commonErrorResponses(["401", "422", "500"], {
+      "422": {
+        description: "文件类型、大小、时长或请求字段不合法。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "附件格式不支持。",
           data: null,
         },
       },

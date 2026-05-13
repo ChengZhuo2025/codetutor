@@ -150,6 +150,38 @@ JOIN (
       'reasoning_lab',
       '复杂推理与人工调试验证模型',
       '{"phase":"phase1","routePolicy":"manual_test_only"}'
+    ),
+    (
+      'a1000000-0000-0000-0000-000000000104'::uuid,
+      'qwen2-5-vl-72b',
+      'Qwen2.5-VL 72B',
+      'Qwen/Qwen2.5-VL-72B-Instruct',
+      32000,
+      2048,
+      0.10::numeric,
+      'vision',
+      ARRAY['vision']::text[],
+      'chat',
+      false,
+      'media_vision',
+      '学习对话图片理解与截图转译模型',
+      '{"phase":"phase1","routePolicy":"media_preprocess","capability":"vision"}'
+    ),
+    (
+      'a1000000-0000-0000-0000-000000000105'::uuid,
+      'sensevoice-small',
+      'SenseVoice Small',
+      'FunAudioLLM/SenseVoiceSmall',
+      8000,
+      1200,
+      0.00::numeric,
+      'asr',
+      ARRAY['asr']::text[],
+      'audio_transcription',
+      false,
+      'media_asr',
+      '学习对话语音转写模型',
+      '{"phase":"phase1","routePolicy":"media_preprocess","capability":"asr"}'
     )
 ) AS seed(
   id,

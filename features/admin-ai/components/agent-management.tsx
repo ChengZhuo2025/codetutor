@@ -145,6 +145,9 @@ export function AgentManagement() {
                     { value: "task_review", label: getAdminAIAgentScenarioTypeLabel("task_review") },
                     { value: "completion_feedback", label: getAdminAIAgentScenarioTypeLabel("completion_feedback") },
                     { value: "path_guidance", label: getAdminAIAgentScenarioTypeLabel("path_guidance") },
+                    { value: "concept_qa", label: getAdminAIAgentScenarioTypeLabel("concept_qa") },
+                    { value: "media_vision_extract", label: getAdminAIAgentScenarioTypeLabel("media_vision_extract") },
+                    { value: "media_audio_transcribe", label: getAdminAIAgentScenarioTypeLabel("media_audio_transcribe") },
                   ]}
                 />
                 <AdminSelect

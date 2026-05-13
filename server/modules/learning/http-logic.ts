@@ -58,11 +58,20 @@ export function isValidLearningMessageRequestBody(
   }
 
   const record = value as Record<string, unknown>
+  const hasContent =
+    typeof record.content === "string" && record.content.trim().length > 0
+  const hasAttachments =
+    Array.isArray(record.attachmentIds) &&
+    record.attachmentIds.length > 0 &&
+    record.attachmentIds.every((attachmentId) => (
+      typeof attachmentId === "string" && attachmentId.trim().length > 0
+    ))
+
   return (
     typeof record.inputType === "string" &&
     ["text", "link", "code"].includes(record.inputType) &&
     typeof record.content === "string" &&
-    record.content.trim().length > 0
+    (hasContent || hasAttachments)
   )
 }
 
@@ -75,7 +84,7 @@ export async function executeLearningMessageRequest(
       status: 422,
       body: {
         code: "VALIDATION_FAILED",
-        message: "inputType 或 content 不合法。",
+        message: "inputType、content 或 attachmentIds 不合法。",
         data: null,
       },
     }

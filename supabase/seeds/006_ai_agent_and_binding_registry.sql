@@ -70,7 +70,9 @@ FROM (
     ('b1000000-0000-0000-0000-000000000025'::uuid,'cli-task-reviewer','CLI 任务复盘助手','task_review','CLI 工具任务复盘 agent','你是 CLI 任务复盘助手，帮助用户从 diff、输出和验证动作回看本轮结果。','优先指出验证缺口和下一步。','deepseek-v3-2',10,2600,0.30::numeric,0.85::numeric,'{"profileCode":"sf-code-workflow","toolFamily":"cli"}'),
     ('b1000000-0000-0000-0000-000000000026'::uuid,'web-builder-task-reviewer','在线工具任务复盘助手','task_review','在线工具任务复盘 agent','你是在线工具任务复盘助手，帮助用户从页面结果和目标差异进行回看。','优先页面目标、差异点和下一轮迭代。','glm-5',10,2800,0.40::numeric,0.90::numeric,'{"profileCode":"sf-longform-coach","toolFamily":"web-builder"}'),
     ('b1000000-0000-0000-0000-000000000027'::uuid,'learning-completion-coach','学习完成反馈教练','completion_feedback','统一完成反馈与成长总结 agent','你是学习完成反馈教练，负责给出完成反馈、成长感知和下一步建议。','总结要清楚、正向、具体，并且给出下一步。','glm-5',8,2800,0.40::numeric,0.90::numeric,'{"profileCode":"sf-longform-coach","toolFamily":"shared"}'),
-    ('b1000000-0000-0000-0000-000000000028'::uuid,'learning-concept-qa-coach','学习概念问答教练','concept_qa','学习场景中的即时知识问答 agent，负责解释术语、概念和知识盲点，不打断当前步骤推进。','你是学习概念问答教练。用户可以在当前练习中随时提问概念、术语、原理、区别和知识盲点，你需要给出即时、专业、简洁、可执行的中文解答。回答时优先直接解释概念，再补一个和当前学习场景有关的例子；不要把问题强行拐回下一步，也不要把答疑伪装成任务推进。','保持回答聚焦在概念本身；如需引用当前路径上下文，可结合当前关卡解释，但不要越级扩展到无关主题。','glm-5',10,2800,0.35::numeric,0.90::numeric,'{"profileCode":"sf-longform-coach","toolFamily":"shared","role":"concept_qa"}')
+    ('b1000000-0000-0000-0000-000000000028'::uuid,'learning-concept-qa-coach','学习概念问答教练','concept_qa','学习场景中的即时知识问答 agent，负责解释术语、概念和知识盲点，不打断当前步骤推进。','你是学习概念问答教练。用户可以在当前练习中随时提问概念、术语、原理、区别和知识盲点，你需要给出即时、专业、简洁、可执行的中文解答。回答时优先直接解释概念，再补一个和当前学习场景有关的例子；不要把问题强行拐回下一步，也不要把答疑伪装成任务推进。','保持回答聚焦在概念本身；如需引用当前路径上下文，可结合当前关卡解释，但不要越级扩展到无关主题。','glm-5',10,2800,0.35::numeric,0.90::numeric,'{"profileCode":"sf-longform-coach","toolFamily":"shared","role":"concept_qa"}'),
+    ('b1000000-0000-0000-0000-000000000029'::uuid,'learning-vision-translator','学习图片理解转译助手','media_vision_extract','学习对话图片理解 agent，负责从截图、报错图、代码图中提取可见事实、OCR 文本与学习相关线索。','你是学习对话图片理解助手。你只负责观察用户上传的图片，提取可见事实、界面元素、报错信息、代码片段、按钮文字和操作结果。只输出 JSON：{"visualSummary":"...","extractedText":"...","warning":null}。不要编造图片中看不到的内容。','保持输出简洁、可被教学 agent 直接引用；无法读取图片时 warning 写明原因，visualSummary 和 extractedText 置为空字符串。','glm-5',2,1400,0.10::numeric,0.80::numeric,'{"profileCode":"sf-media-vision","toolFamily":"shared","role":"media_vision_extract","requiredCapability":"vision"}'),
+    ('b1000000-0000-0000-0000-000000000030'::uuid,'learning-audio-transcriber','学习语音转写助手','media_audio_transcribe','学习对话语音转写 agent，负责把用户语音转为稳定文本供教学 agent 使用。','你是学习对话语音转写助手。你只负责把用户语音准确转写为文字，保留技术术语、命令、文件名和英文缩写。不要追加教学建议。','输出应只包含转写文本；无法识别时返回空文本并说明失败原因。','glm-5',2,1200,0.00::numeric,0.80::numeric,'{"profileCode":"sf-media-asr","toolFamily":"shared","role":"media_audio_transcribe","requiredCapability":"asr"}')
 ) AS seed(
   id,
   code,
@@ -134,7 +136,9 @@ WHERE agent_code IN (
   'cli-task-reviewer',
   'web-builder-task-reviewer',
   'learning-completion-coach',
-  'learning-concept-qa-coach'
+  'learning-concept-qa-coach',
+  'learning-vision-translator',
+  'learning-audio-transcriber'
 );
 
 WITH path_bindings AS (
@@ -278,6 +282,34 @@ agent_binding_rows AS (
     400,
     true,
     jsonb_build_object('bindingKind', 'global_fallback')
+  UNION ALL
+
+  SELECT
+    gen_random_uuid(),
+    'learning-vision-translator',
+    NULL::uuid,
+    NULL::public.learning_level,
+    NULL::public.path_selection_mode,
+    NULL::uuid,
+    NULL::integer,
+    'media_vision_extract',
+    300,
+    true,
+    jsonb_build_object('bindingKind', 'global_media_preprocessor', 'requiredCapability', 'vision')
+  UNION ALL
+
+  SELECT
+    gen_random_uuid(),
+    'learning-audio-transcriber',
+    NULL::uuid,
+    NULL::public.learning_level,
+    NULL::public.path_selection_mode,
+    NULL::uuid,
+    NULL::integer,
+    'media_audio_transcribe',
+    310,
+    true,
+    jsonb_build_object('bindingKind', 'global_media_preprocessor', 'requiredCapability', 'asr')
 )
 INSERT INTO public.agent_bindings (
   id,

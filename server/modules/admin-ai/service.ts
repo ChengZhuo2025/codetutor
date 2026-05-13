@@ -4,6 +4,7 @@ import type {
   AdminAIAgentDetailResponseData,
   AdminAIAgentListItem,
   AdminAIAgentListResponseData,
+  AdminAIAgentScenarioType,
   AdminAIAgentSkillBindingListItem,
   AdminAIAgentSkillBindingListResponseData,
   AdminAIAgentSkillBindingUpsertRequest,
@@ -121,7 +122,7 @@ type AgentRow = {
   id: string
   code: string
   name: string
-  scenario_type: "teaching" | "blocked_help" | "task_review" | "completion_feedback" | "path_guidance" | "concept_qa"
+  scenario_type: AdminAIAgentScenarioType
   description: string | null
   system_prompt_template: string
   developer_prompt_template: string | null
@@ -2154,7 +2155,7 @@ export async function updateAdminAIModel(
 export async function getAdminAIAgentList(filters: {
   adminAccountId: string
   keyword?: string
-  scenarioType?: "teaching" | "blocked_help" | "task_review" | "completion_feedback" | "path_guidance" | "concept_qa"
+  scenarioType?: AdminAIAgentScenarioType
   status: "all" | "active" | "inactive"
   page: number
   limit: number

@@ -1,6 +1,7 @@
 import { jsonError, jsonSuccess } from "@/server/lib/route-response"
 import type {
   AdminAIAgentBindingUpsertRequest,
+  AdminAIAgentScenarioType,
   AdminAIAgentSkillBindingUpsertRequest,
   AdminAIAgentUpsertRequest,
   AdminAIModelTestConnectionRequest,
@@ -488,7 +489,7 @@ export function createAdminAIAgentListHandler(dependencies: {
   getAdminAIAgentList: (filters: {
     adminAccountId: string
     keyword?: string
-    scenarioType?: "teaching" | "blocked_help" | "task_review" | "completion_feedback" | "path_guidance"
+    scenarioType?: AdminAIAgentScenarioType
     status: "all" | "active" | "inactive"
     page: number
     limit: number

@@ -7,6 +7,8 @@ import {
 } from "@/lib/learning/structured-message"
 import type {
   LearningInputType,
+  LearningMessageAttachment,
+  LearningMessageAttachmentKind,
   LearningMessageRequest,
   LearningMessageResponseData,
   LearningTaskPatch,
@@ -20,6 +22,11 @@ import {
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import { normalizeUuid } from "@/server/lib/identifiers"
 import { touchLearningPathActivity } from "@/server/modules/learning-paths/service"
+import {
+  invokeMaterialAudioTranscription,
+  invokeMaterialPipelineModel,
+  resolveMaterialPipelineModels,
+} from "@/server/modules/learning-materials/providers"
 import { LearningAIProviderError, LearningValidationError } from "./errors.ts"
 import { buildLearningOutputFormatGuide } from "./output-format.ts"
 import {
@@ -37,6 +44,7 @@ import {
   invokeAIProvider,
   streamAIProvider,
   type AIChatMessage,
+  type AIChatContentPart,
   type AIProviderResult,
 } from "./provider.ts"
 import { loadAgentSkillContexts } from "./skills.ts"
@@ -126,6 +134,7 @@ type ProviderRow = {
 type ModelRow = {
   code: string
   model_name: string
+  runtime_capabilities?: string[] | null
   is_active: boolean
 }
 
@@ -141,6 +150,32 @@ type ConversationHistoryRow = {
   content_text: string | null
 }
 
+type LearningMessageAttachmentRow = {
+  id: string
+  user_id: string
+  session_id: string | null
+  message_id: string | null
+  kind: LearningMessageAttachmentKind
+  processing_status: LearningMessageAttachment["processingStatus"]
+  storage_bucket: string
+  storage_path: string
+  original_filename: string | null
+  mime_type: string
+  size_bytes: number
+  duration_ms: number | null
+  width: number | null
+  height: number | null
+  extracted_text: string | null
+  visual_summary: string | null
+  transcript_text: string | null
+  error_message: string | null
+  created_at: string
+}
+
+type NormalizedLearningAttachment = LearningMessageAttachmentRow & {
+  signedUrl: string | null
+}
+
 type PreparedLearningInvocation = {
   supabase: ReturnType<typeof createSupabaseAdminClient>
   tool: ToolRow
@@ -154,6 +189,8 @@ type PreparedLearningInvocation = {
   session: ConversationSessionRow
   clientMessageId: string | null
   skills: Array<{ code: string; name: string; content: string }>
+  attachments: NormalizedLearningAttachment[]
+  normalizedUserContent: string
   providerMessages: AIChatMessage[]
 }
 
@@ -616,6 +653,359 @@ function historyToProviderMessages(history: ConversationHistoryRow[]): AIChatMes
     }))
 }
 
+function normalizeAttachmentIds(value: string[] | undefined) {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .map((item) => normalizeUuid(item))
+        .filter((item): item is string => Boolean(item)),
+    ),
+  )
+}
+
+function attachmentToContract(
+  attachment: LearningMessageAttachmentRow,
+): LearningMessageAttachment {
+  return {
+    id: attachment.id,
+    kind: attachment.kind,
+    processingStatus: attachment.processing_status,
+    originalFilename: attachment.original_filename,
+    mimeType: attachment.mime_type,
+    sizeBytes: attachment.size_bytes,
+    durationMs: attachment.duration_ms,
+    width: attachment.width,
+    height: attachment.height,
+    extractedText: attachment.extracted_text,
+    visualSummary: attachment.visual_summary,
+    transcriptText: attachment.transcript_text,
+    errorMessage: attachment.error_message,
+    createdAt: attachment.created_at,
+  }
+}
+
+function buildAttachmentContextText(attachments: NormalizedLearningAttachment[]) {
+  if (attachments.length === 0) {
+    return ""
+  }
+
+  const lines = attachments.map((attachment, index) => {
+    const label = attachment.kind === "image" ? "图片" : "语音"
+    const name = attachment.original_filename ? `，文件名：${attachment.original_filename}` : ""
+    const status = `，识别状态：${attachment.processing_status}`
+    const extracted = attachment.extracted_text ? `\nOCR 文本：${attachment.extracted_text}` : ""
+    const visual = attachment.visual_summary ? `\n图片摘要：${attachment.visual_summary}` : ""
+    const transcript = attachment.transcript_text ? `\n语音转写：${attachment.transcript_text}` : ""
+    const error = attachment.error_message ? `\n识别错误：${attachment.error_message}` : ""
+
+    return `附件 ${index + 1}（${label}${name}${status}）${extracted}${visual}${transcript}${error}`
+  })
+
+  return [
+    "用户随消息附带了以下多媒体附件。请结合这些信息回答；如果附件尚未完成识别或识别失败，请明确说明你暂时无法读取附件内容，并引导用户补充文字描述。",
+    ...lines,
+  ].join("\n")
+}
+
+function parseVisionSummaryContent(content: string) {
+  try {
+    const parsed = JSON.parse(content.trim()) as {
+      visualSummary?: string
+      extractedText?: string
+      summary?: string
+      text?: string
+    }
+
+    return {
+      visualSummary: (parsed.visualSummary ?? parsed.summary ?? "").trim(),
+      extractedText: (parsed.extractedText ?? parsed.text ?? "").trim(),
+    }
+  } catch {
+    return {
+      visualSummary: content.trim(),
+      extractedText: "",
+    }
+  }
+}
+
+async function preprocessLearningMessageAttachments(input: {
+  supabase: ReturnType<typeof createSupabaseAdminClient>
+  attachments: NormalizedLearningAttachment[]
+  userText: string
+}) {
+  if (input.attachments.length === 0) {
+    return [] as NormalizedLearningAttachment[]
+  }
+
+  const pipelineModels = await resolveMaterialPipelineModels()
+  const processed: NormalizedLearningAttachment[] = []
+
+  for (const attachment of input.attachments) {
+    if (attachment.processing_status === "completed" || attachment.processing_status === "failed") {
+      processed.push(attachment)
+      continue
+    }
+
+    if (!attachment.signedUrl) {
+      processed.push({
+        ...attachment,
+        processing_status: "failed",
+        error_message: "附件临时访问地址生成失败。",
+      })
+      continue
+    }
+
+    const { error: processingError } = await input.supabase
+      .from("learning_message_attachments")
+      .update({
+        processing_status: "processing",
+      })
+      .eq("id", attachment.id)
+
+    assertSupabaseSuccess(processingError, "failed to mark attachment processing")
+
+    try {
+      if (attachment.kind === "audio") {
+        if (!pipelineModels.asr) {
+          throw new LearningValidationError("当前未配置 ASR 模型，暂时无法识别语音消息。")
+        }
+
+        const result = await invokeMaterialAudioTranscription({
+          runtime: pipelineModels.asr,
+          mediaUrl: attachment.signedUrl,
+          prompt: "这是一段学习对话语音，请转写为中文或原语言文本，保留技术术语。",
+        })
+        const transcriptText = result.text.trim()
+
+        if (!transcriptText) {
+          throw new LearningValidationError("语音识别未返回有效文本，请重试或补充文字说明。")
+        }
+
+        const updated = {
+          ...attachment,
+          processing_status: "completed" as const,
+          transcript_text: transcriptText,
+          error_message: null,
+        }
+
+        const { error } = await input.supabase
+          .from("learning_message_attachments")
+          .update({
+            processing_status: "completed",
+            transcript_text: transcriptText,
+            error_message: null,
+          })
+          .eq("id", attachment.id)
+
+        assertSupabaseSuccess(error, "failed to persist audio transcript")
+        processed.push(updated)
+        continue
+      }
+
+      if (!pipelineModels.vision) {
+        processed.push(attachment)
+        continue
+      }
+
+      const result = await invokeMaterialPipelineModel({
+        runtime: pipelineModels.vision,
+        systemPrompt: "你是学习对话截图理解助手。只输出 JSON：{\"visualSummary\":\"...\",\"extractedText\":\"...\"}。只描述图片中可见内容，不要编造。",
+        userContent: [
+          {
+            type: "text",
+            text: [
+              `用户文字：${input.userText || "未提供"}`,
+              `文件名：${attachment.original_filename ?? "未提供"}`,
+              "请识别截图、报错、代码、界面元素和可见文字，帮助 AI 教练回答用户问题。",
+            ].join("\n"),
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: attachment.signedUrl,
+            },
+          },
+        ],
+        temperature: 0,
+        maxOutputTokens: 1200,
+      })
+      const parsed = parseVisionSummaryContent(result.content)
+      const updated = {
+        ...attachment,
+        processing_status: "completed" as const,
+        visual_summary: parsed.visualSummary || null,
+        extracted_text: parsed.extractedText || null,
+        error_message: null,
+      }
+
+      const { error } = await input.supabase
+        .from("learning_message_attachments")
+        .update({
+          processing_status: "completed",
+          visual_summary: updated.visual_summary,
+          extracted_text: updated.extracted_text,
+          error_message: null,
+        })
+        .eq("id", attachment.id)
+
+      assertSupabaseSuccess(error, "failed to persist image understanding")
+      processed.push(updated)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "附件识别失败。"
+      const { error: updateError } = await input.supabase
+        .from("learning_message_attachments")
+        .update({
+          processing_status: "failed",
+          error_message: errorMessage,
+        })
+        .eq("id", attachment.id)
+
+      assertSupabaseSuccess(updateError, "failed to persist attachment processing failure")
+
+      processed.push({
+        ...attachment,
+        processing_status: "failed",
+        error_message: errorMessage,
+      })
+    }
+  }
+
+  const audioFailures = processed.filter((attachment) => (
+    attachment.kind === "audio" && attachment.processing_status === "failed"
+  ))
+  if (audioFailures.length > 0 && !input.userText.trim()) {
+    throw new LearningValidationError(audioFailures[0]?.error_message ?? "语音识别失败，请重试或补充文字说明。")
+  }
+
+  return processed
+}
+
+function buildNormalizedUserContent(
+  request: LearningMessageRequest,
+  attachments: NormalizedLearningAttachment[],
+) {
+  const content = request.content.trim()
+  const attachmentContext = buildAttachmentContextText(attachments)
+
+  if (!attachmentContext) {
+    return content
+  }
+
+  return [content || "用户发送了一条仅包含附件的消息。", attachmentContext]
+    .filter(Boolean)
+    .join("\n\n")
+}
+
+function modelSupportsCapability(model: ModelRow, capability: string) {
+  return Array.isArray(model.runtime_capabilities)
+    && model.runtime_capabilities.includes(capability)
+}
+
+async function loadLearningMessageAttachments(input: {
+  supabase: ReturnType<typeof createSupabaseAdminClient>
+  userId: string
+  sessionId: string
+  attachmentIds?: string[]
+}): Promise<NormalizedLearningAttachment[]> {
+  const attachmentIds = normalizeAttachmentIds(input.attachmentIds)
+
+  if (attachmentIds.length === 0) {
+    return []
+  }
+
+  if (attachmentIds.length > 3) {
+    throw new LearningValidationError("单条消息最多只能包含 3 个附件。")
+  }
+
+  const { data, error } = await input.supabase
+    .from("learning_message_attachments")
+    .select(
+      "id, user_id, session_id, message_id, kind, processing_status, storage_bucket, storage_path, original_filename, mime_type, size_bytes, duration_ms, width, height, extracted_text, visual_summary, transcript_text, error_message, created_at",
+    )
+    .eq("user_id", input.userId)
+    .in("id", attachmentIds)
+
+  assertSupabaseSuccess(error, "failed to load learning message attachments")
+
+  const rows = (data ?? []) as LearningMessageAttachmentRow[]
+  if (rows.length !== attachmentIds.length) {
+    throw new LearningValidationError("存在不可用的学习附件。")
+  }
+
+  const imageCount = rows.filter((row) => row.kind === "image").length
+  const audioCount = rows.filter((row) => row.kind === "audio").length
+
+  if (imageCount > 3) {
+    throw new LearningValidationError("单条消息最多只能包含 3 张图片。")
+  }
+
+  if (audioCount > 1) {
+    throw new LearningValidationError("单条消息最多只能包含 1 条语音。")
+  }
+
+  if (imageCount > 0 && audioCount > 0) {
+    throw new LearningValidationError("第一版暂不支持图片和语音混合发送。")
+  }
+
+  for (const row of rows) {
+    if (row.message_id) {
+      throw new LearningValidationError("附件已被其他消息使用，请重新上传。")
+    }
+
+    if (row.session_id && row.session_id !== input.sessionId) {
+      throw new LearningValidationError("附件不属于当前学习会话。")
+    }
+  }
+
+  return Promise.all(
+    rows.map(async (row) => {
+      const { data: signedUrlData, error: signedUrlError } = await input.supabase.storage
+        .from(row.storage_bucket)
+        .createSignedUrl(row.storage_path, 600)
+
+      assertSupabaseSuccess(signedUrlError, "failed to create learning attachment signed url")
+
+      return {
+        ...row,
+        signedUrl: signedUrlData?.signedUrl ?? null,
+      }
+    }),
+  )
+}
+
+function buildProviderUserMessageContent(input: {
+  normalizedUserContent: string
+  attachments: NormalizedLearningAttachment[]
+  model: ModelRow
+}): string | AIChatContentPart[] {
+  const visionImages = input.attachments.filter((attachment) => (
+    attachment.kind === "image" &&
+    attachment.signedUrl &&
+    modelSupportsCapability(input.model, "vision")
+  ))
+
+  if (visionImages.length === 0) {
+    return input.normalizedUserContent
+  }
+
+  return [
+    {
+      type: "text",
+      text: input.normalizedUserContent,
+    },
+    ...visionImages.map((attachment) => ({
+      type: "image_url" as const,
+      image_url: {
+        url: attachment.signedUrl as string,
+      },
+    })),
+  ]
+}
+
 async function tryGetIdempotentResponse(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
   sessionId: string,
@@ -834,6 +1224,18 @@ async function prepareLearningInvocation(
     Math.max(2, agent.context_message_limit),
   )
   const skills = await loadAgentSkillContexts(supabase, agent.code)
+  const loadedAttachments = await loadLearningMessageAttachments({
+    supabase,
+    userId,
+    sessionId: session.id,
+    attachmentIds: request.attachmentIds,
+  })
+  const attachments = await preprocessLearningMessageAttachments({
+    supabase,
+    attachments: loadedAttachments,
+    userText: request.content,
+  })
+  const normalizedUserContent = buildNormalizedUserContent(request, attachments)
   const systemPrompt = buildSystemPrompt({
     agent,
     tool,
@@ -851,7 +1253,11 @@ async function prepareLearningInvocation(
     ...historyToProviderMessages(history),
     {
       role: "user",
-      content: request.content.trim(),
+      content: buildProviderUserMessageContent({
+        normalizedUserContent,
+        attachments,
+        model,
+      }),
     },
   ]
 
@@ -868,6 +1274,8 @@ async function prepareLearningInvocation(
     session,
     clientMessageId,
     skills,
+    attachments,
+    normalizedUserContent,
     providerMessages,
   }
 }
@@ -891,12 +1299,16 @@ async function insertUserMessage(
       message_type: "plain_text",
       sequence_no: userSequenceNo,
       client_message_id: input.clientMessageId,
-      content_text: input.request.content.trim(),
-      content_json: {},
+      content_text: input.normalizedUserContent,
+      content_json: {
+        attachments: input.attachments.map(attachmentToContract),
+      },
       metadata: {
         inputType: input.request.inputType,
         interactionType: input.interactionType,
         clientContext: input.request.clientContext ?? null,
+        originalContent: input.request.content.trim(),
+        attachmentIds: input.attachments.map((attachment) => attachment.id),
       },
       created_at: input.now,
     })
@@ -906,6 +1318,23 @@ async function insertUserMessage(
   assertSupabaseSuccess(userMessageError, "failed to insert conversation user message")
   if (!userMessageData) {
     throw new LearningValidationError("用户消息写入后未返回主键。")
+  }
+
+  if (input.attachments.length > 0) {
+    const { error: attachmentUpdateError } = await input.supabase
+      .from("learning_message_attachments")
+      .update({
+        session_id: input.session.id,
+        message_id: userMessageData.id,
+        updated_at: input.now,
+      })
+      .in("id", input.attachments.map((attachment) => attachment.id))
+      .eq("user_id", input.userId)
+
+    assertSupabaseSuccess(
+      attachmentUpdateError,
+      "failed to link learning attachments to user message",
+    )
   }
 
   const { error: sessionUserUpdateError } = await input.supabase

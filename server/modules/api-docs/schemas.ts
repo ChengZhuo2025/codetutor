@@ -373,9 +373,18 @@ export const messageTaskPatchSchema = z
 
 export const messageAttachmentSchema = z
   .object({
-    type: z.literal("image"),
-    url: z.string(),
+    id: z.string().optional(),
+    type: z.enum(["image", "audio"]),
+    url: z.string().optional(),
     name: z.string(),
+    mimeType: z.string().optional(),
+    sizeBytes: z.number().int().positive().optional(),
+    durationMs: z.number().int().nonnegative().nullable().optional(),
+    processingStatus: z.enum(["pending", "processing", "completed", "failed"]).optional(),
+    extractedText: z.string().nullable().optional(),
+    visualSummary: z.string().nullable().optional(),
+    transcriptText: z.string().nullable().optional(),
+    errorMessage: z.string().nullable().optional(),
   })
   .openapi("MessageAttachment")
 
@@ -391,8 +400,42 @@ export const messageSchema = z
     xp: z.number().optional(),
     nextStep: z.string().optional(),
     attachment: messageAttachmentSchema.optional(),
+    attachments: z.array(messageAttachmentSchema).optional(),
   })
   .openapi("Message")
+
+export const learningMessageAttachmentKindSchema = z
+  .enum(["image", "audio"])
+  .openapi("LearningMessageAttachmentKind")
+
+export const learningMessageAttachmentProcessingStatusSchema = z
+  .enum(["pending", "processing", "completed", "failed"])
+  .openapi("LearningMessageAttachmentProcessingStatus")
+
+export const learningMessageAttachmentSchema = z
+  .object({
+    id: z.string(),
+    kind: learningMessageAttachmentKindSchema,
+    processingStatus: learningMessageAttachmentProcessingStatusSchema,
+    originalFilename: z.string().nullable(),
+    mimeType: z.string(),
+    sizeBytes: z.number().int().positive(),
+    durationMs: z.number().int().nonnegative().nullable(),
+    width: z.number().int().positive().nullable(),
+    height: z.number().int().positive().nullable(),
+    extractedText: z.string().nullable().optional(),
+    visualSummary: z.string().nullable().optional(),
+    transcriptText: z.string().nullable().optional(),
+    errorMessage: z.string().nullable().optional(),
+    createdAt: z.string(),
+  })
+  .openapi("LearningMessageAttachment")
+
+export const learningAttachmentCreateResponseDataSchema = z
+  .object({
+    attachment: learningMessageAttachmentSchema,
+  })
+  .openapi("LearningAttachmentCreateResponseData")
 
 export const learningMessageRequestSchema = z
   .object({
@@ -402,6 +445,7 @@ export const learningMessageRequestSchema = z
     interactionType: learningInteractionTypeSchema.optional(),
     inputType: learningInputTypeSchema,
     content: z.string(),
+    attachmentIds: z.array(z.string()).optional(),
     stream: z.boolean().optional(),
     clientContext: z
       .object({

@@ -16,6 +16,7 @@ import type { AuthLoginType } from "@/lib/api/contracts/auth"
 import type { AnalyticsTrackEventRequest } from "@/lib/api/contracts/analytics"
 import type { UpdateLearningHistoryStatusRequest } from "@/lib/api/contracts/history"
 import type { CompleteOnboardingRequest } from "@/lib/api/contracts/onboarding"
+import type { LearningMessageAttachmentKind } from "@/lib/api/contracts/learning"
 import type { UpdateNotificationSettingsRequest } from "@/lib/api/contracts/notifications"
 import type { CompleteTaskRequest, UpdateTaskStatusRequest } from "@/lib/api/contracts/task"
 import type { AdminUpdateUserRequest } from "@/lib/api/contracts/admin-users"
@@ -68,6 +69,13 @@ import { isUuid, normalizeUuid } from "@/server/lib/identifiers"
 import type { HistoryFilter } from "@/features/history/types"
 import type { Level } from "@/features/onboarding/types"
 import { PROFILE_AVATAR_ALLOWED_TYPES, PROFILE_AVATAR_MAX_BYTES } from "@/lib/supabase/storage"
+import {
+  LEARNING_CHAT_AUDIO_ALLOWED_TYPES,
+  LEARNING_CHAT_AUDIO_MAX_BYTES,
+  LEARNING_CHAT_AUDIO_MAX_DURATION_MS,
+  LEARNING_CHAT_IMAGE_ALLOWED_TYPES,
+  LEARNING_CHAT_IMAGE_MAX_BYTES,
+} from "@/lib/supabase/storage"
 import { APP_EVENTS } from "@/constants/events"
 
 type ValidationSuccess<T> = {
@@ -2698,6 +2706,90 @@ export function parseProfileAvatarFile(file: unknown): ValidationResult<File> {
 
   if (file.size > PROFILE_AVATAR_MAX_BYTES) {
     return fail("VALIDATION_FAILED", "头像图片不能超过 2MB。")
+  }
+
+  return ok(file)
+}
+
+export function parseLearningAttachmentKind(value: unknown): ValidationResult<LearningMessageAttachmentKind> {
+  if (value !== "image" && value !== "audio") {
+    return fail("VALIDATION_FAILED", "附件类型不合法。")
+  }
+
+  return ok(value)
+}
+
+export function parseOptionalNonnegativeInteger(value: unknown, fieldName: string): ValidationResult<number | null> {
+  if (value === null || value === undefined || value === "") {
+    return ok(null)
+  }
+
+  const numericValue = typeof value === "string" ? Number(value) : value
+
+  if (
+    typeof numericValue !== "number" ||
+    !Number.isInteger(numericValue) ||
+    numericValue < 0
+  ) {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是非负整数。`)
+  }
+
+  return ok(numericValue)
+}
+
+export function parseOptionalPositiveInteger(value: unknown, fieldName: string): ValidationResult<number | null> {
+  if (value === null || value === undefined || value === "") {
+    return ok(null)
+  }
+
+  const numericValue = typeof value === "string" ? Number(value) : value
+
+  if (
+    typeof numericValue !== "number" ||
+    !Number.isInteger(numericValue) ||
+    numericValue <= 0
+  ) {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是正整数。`)
+  }
+
+  return ok(numericValue)
+}
+
+export function parseLearningAttachmentFile(
+  file: unknown,
+  kind: LearningMessageAttachmentKind,
+  durationMs?: number | null,
+): ValidationResult<File> {
+  if (!(file instanceof File)) {
+    return fail("BAD_REQUEST", "请先选择要上传的附件。")
+  }
+
+  if (file.size <= 0) {
+    return fail("VALIDATION_FAILED", "附件文件为空，请重新选择。")
+  }
+
+  if (kind === "image") {
+    if (!LEARNING_CHAT_IMAGE_ALLOWED_TYPES.includes(file.type as (typeof LEARNING_CHAT_IMAGE_ALLOWED_TYPES)[number])) {
+      return fail("VALIDATION_FAILED", "图片仅支持 JPG、PNG、WebP 格式。")
+    }
+
+    if (file.size > LEARNING_CHAT_IMAGE_MAX_BYTES) {
+      return fail("VALIDATION_FAILED", "单张图片不能超过 5MB。")
+    }
+
+    return ok(file)
+  }
+
+  if (!LEARNING_CHAT_AUDIO_ALLOWED_TYPES.includes(file.type as (typeof LEARNING_CHAT_AUDIO_ALLOWED_TYPES)[number])) {
+    return fail("VALIDATION_FAILED", "语音仅支持 WebM、OGG、MP3、M4A 格式。")
+  }
+
+  if (file.size > LEARNING_CHAT_AUDIO_MAX_BYTES) {
+    return fail("VALIDATION_FAILED", "单条语音文件不能超过 15MB。")
+  }
+
+  if (typeof durationMs === "number" && durationMs > LEARNING_CHAT_AUDIO_MAX_DURATION_MS) {
+    return fail("VALIDATION_FAILED", "单条语音不能超过 60 秒。")
   }
 
   return ok(file)

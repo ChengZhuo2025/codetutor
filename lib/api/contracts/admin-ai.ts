@@ -42,6 +42,8 @@ export const ADMIN_AI_AGENT_SCENARIO_TYPES = [
   "completion_feedback",
   "path_guidance",
   "concept_qa",
+  "media_vision_extract",
+  "media_audio_transcribe",
 ] as const
 
 export const ADMIN_AI_SKILL_SOURCE_TYPES = [

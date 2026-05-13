@@ -117,6 +117,44 @@ type ConversationMessageRow = {
   metadata: JsonRecord
 }
 
+function parseStoredMessageAttachments(value: unknown) {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .filter((item): item is JsonRecord => Boolean(item) && typeof item === "object" && !Array.isArray(item))
+    .map((item) => {
+      const type = item.kind === "audio" ? "audio" : "image"
+      const name =
+        typeof item.originalFilename === "string" && item.originalFilename.trim().length > 0
+          ? item.originalFilename
+          : type === "audio"
+            ? "语音消息"
+            : "图片附件"
+
+      return {
+        id: typeof item.id === "string" ? item.id : undefined,
+        type,
+        name,
+        mimeType: typeof item.mimeType === "string" ? item.mimeType : undefined,
+        sizeBytes: typeof item.sizeBytes === "number" ? item.sizeBytes : undefined,
+        durationMs: typeof item.durationMs === "number" ? item.durationMs : null,
+        processingStatus:
+          item.processingStatus === "pending" ||
+          item.processingStatus === "processing" ||
+          item.processingStatus === "completed" ||
+          item.processingStatus === "failed"
+            ? item.processingStatus
+            : undefined,
+        extractedText: typeof item.extractedText === "string" ? item.extractedText : null,
+        visualSummary: typeof item.visualSummary === "string" ? item.visualSummary : null,
+        transcriptText: typeof item.transcriptText === "string" ? item.transcriptText : null,
+        errorMessage: typeof item.errorMessage === "string" ? item.errorMessage : null,
+      }
+    })
+}
+
 const KNOWLEDGE_TAG_COLORS = [
   "text-brand bg-brand-dim border-brand/20",
   "text-chart-3 bg-chart-3/10 border-chart-3/20",
@@ -667,6 +705,8 @@ async function loadPersistedMessages(
             : "coach"
           : "user_input"
 
+      const attachments = parseStoredMessageAttachments(row.content_json?.attachments)
+
       return {
         id: buildPersistedLearningMessageId(row.sequenceNo),
         role: row.role === "assistant" ? "ai" : "user",
@@ -686,6 +726,8 @@ async function loadPersistedMessages(
                 metadata,
               })
             : null,
+        attachment: attachments[0],
+        attachments,
       } satisfies Message
     }),
     pagination: {

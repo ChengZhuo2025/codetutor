@@ -30,6 +30,34 @@ export type LearningTaskPatch = {
   suggestedNextAction: string
 }
 
+export type LearningMessageAttachmentKind = "image" | "audio"
+export type LearningMessageAttachmentProcessingStatus =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed"
+
+export type LearningMessageAttachment = {
+  id: string
+  kind: LearningMessageAttachmentKind
+  processingStatus: LearningMessageAttachmentProcessingStatus
+  originalFilename: string | null
+  mimeType: string
+  sizeBytes: number
+  durationMs: number | null
+  width: number | null
+  height: number | null
+  extractedText?: string | null
+  visualSummary?: string | null
+  transcriptText?: string | null
+  errorMessage?: string | null
+  createdAt: string
+}
+
+export type LearningAttachmentCreateResponseData = {
+  attachment: LearningMessageAttachment
+}
+
 export type LearningHistoryPagination = {
   hasMore: boolean
   nextBeforeSequenceNo: number | null
@@ -42,6 +70,7 @@ export type LearningMessageRequest = {
   interactionType?: LearningInteractionType
   inputType: LearningInputType
   content: string
+  attachmentIds?: string[]
   stream?: boolean
   clientContext?: {
     pagePath: string

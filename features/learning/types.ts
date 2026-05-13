@@ -10,9 +10,18 @@ export type MessageKind =
   | "task_feedback"
 
 export type MessageAttachment = {
-  type: "image"
-  url: string
+  id?: string
+  type: "image" | "audio"
+  url?: string
   name: string
+  mimeType?: string
+  sizeBytes?: number
+  durationMs?: number | null
+  processingStatus?: "pending" | "processing" | "completed" | "failed"
+  extractedText?: string | null
+  visualSummary?: string | null
+  transcriptText?: string | null
+  errorMessage?: string | null
 }
 
 export type MessageTaskPatchStatus = "in_progress" | "blocked" | "completed"
@@ -34,6 +43,7 @@ export type Message = {
   xp?: number
   nextStep?: string
   attachment?: MessageAttachment
+  attachments?: MessageAttachment[]
 }
 
 export type QuickActionCategory = "progress" | "help" | "hint"

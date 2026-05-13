@@ -89,6 +89,10 @@ export function getAdminAIInteractionTypeLabel(interactionType: string) {
       return "路径引导"
     case "concept_qa":
       return "概念问答"
+    case "media_vision_extract":
+      return "图片理解"
+    case "media_audio_transcribe":
+      return "语音转写"
     default:
       return interactionType
   }
