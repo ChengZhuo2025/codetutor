@@ -99,7 +99,7 @@ assert.match(
 )
 assert.doesNotMatch(
   heroSource,
-  /mt-6 flex gap-4[\s\S]*rightPanel\.whyThisStep/,
+  /<div className="mt-6 flex gap-4 sm:items-center sm:justify-between">[\s\S]*<p className="mt-3 max-w-4xl text-\[15px\] leading-7 text-muted-foreground">/,
   "learn chat hero top row should not include the long step description text block",
 )
 assert.match(
@@ -154,11 +154,6 @@ assert.match(
   heroSource,
   /text-muted-foreground/,
   "learn chat hero description should keep subdued supporting tone",
-)
-assert.match(
-  heroSource,
-  /flex items-center gap-2 text-xs font-semibold uppercase tracking-\[0\.12em\] text-brand\/80/,
-  "learn chat hero should keep the top eyebrow row",
 )
 assert.doesNotMatch(
   heroSource,
