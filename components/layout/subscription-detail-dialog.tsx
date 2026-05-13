@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
 import QRCode from "qrcode"
-import { CalendarClock, Check, Crown, FileText, Loader2, Lock, MessageCircle } from "lucide-react"
+import { CalendarClock, Check, CheckCircle2, Crown, FileText, Loader2, Lock, MessageCircle, XCircle } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -50,6 +50,57 @@ function getPaymentStatusLabel(status: PaymentOrderStatus) {
   if (status === "expired") return "已过期"
   if (status === "failed") return "支付失败"
   return "等待支付"
+}
+
+function getPaymentResultCopy(status: PaymentOrderStatus | undefined) {
+  if (status === "paid") {
+    return {
+      title: "支付成功",
+      description: "订阅权益已开通，学习进度将持续保留。",
+      toneClass: "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+      icon: CheckCircle2,
+      iconWrapClass: "border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-300",
+      showPendingHint: false,
+    }
+  }
+  if (status === "expired") {
+    return {
+      title: "支付已过期",
+      description: "二维码已过有效期，请返回套餐页重新发起支付。",
+      toneClass: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+      icon: XCircle,
+      iconWrapClass: "border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-300",
+      showPendingHint: false,
+    }
+  }
+  if (status === "closed") {
+    return {
+      title: "支付已关闭",
+      description: "订单已关闭，请返回套餐页重新发起支付。",
+      toneClass: "border-slate-500/25 bg-slate-500/10 text-slate-700 dark:text-slate-300",
+      icon: XCircle,
+      iconWrapClass: "border-slate-500/30 bg-slate-500/15 text-slate-600 dark:text-slate-300",
+      showPendingHint: false,
+    }
+  }
+  if (status === "failed") {
+    return {
+      title: "支付失败",
+      description: "支付未完成，请返回套餐页重新发起支付。",
+      toneClass: "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+      icon: XCircle,
+      iconWrapClass: "border-rose-500/30 bg-rose-500/15 text-rose-600 dark:text-rose-300",
+      showPendingHint: false,
+    }
+  }
+  return {
+    title: "微信扫码支付",
+    description: "请使用微信扫码完成支付，系统会自动同步支付状态。",
+    toneClass: "border-brand/30 bg-brand-dim/35 text-foreground",
+    icon: MessageCircle,
+    iconWrapClass: "border-brand/30 bg-brand/15 text-brand",
+    showPendingHint: true,
+  }
 }
 
 export function SubscriptionDetailDialog({
@@ -162,21 +213,16 @@ export function SubscriptionDetailDialog({
     setPaymentDialogOpen(nextOpen)
   }
 
-  function syncActiveOrder() {
-    if (!activeOrder) return
-    void requestData<PaymentOrderResponseData>(`/payment/orders/${activeOrder.orderNo}/sync`, { method: "POST" })
-      .then((order) => {
-        setActiveOrder(order)
-        if (order.status === "paid") {
-          setPaymentMessage("支付成功，订阅权益已开通。")
-          void requestData<SubscriptionMeResponseData>("/subscription/me").then(setSubscriptionData)
-        }
-        if (order.status === "expired") setPaymentMessage("支付二维码已过期，请重新创建订单。")
-        if (order.status === "closed") setPaymentMessage("支付订单已关闭，请重新创建订单。")
-        if (order.status === "failed") setPaymentMessage("支付失败，请重新创建订单。")
-      })
-      .catch(() => setPaymentMessage("支付状态同步失败，请稍后重试。"))
+  function handleViewOrders() {
+    window.location.assign("/orders")
   }
+
+  const paymentView = activeOrder?.status === "paid"
+    ? "success"
+    : activeOrder && TERMINAL_PAYMENT_STATUSES.has(activeOrder.status)
+      ? "failed"
+      : "pending"
+  const paymentResultCopy = getPaymentResultCopy(activeOrder?.status)
 
   return (
     <>
@@ -191,17 +237,39 @@ export function SubscriptionDetailDialog({
                 套餐订阅与续费
               </DialogTitle>
               <DialogDescription className="max-w-3xl text-sm text-muted-foreground">
-                当前使用 {currentPlanName}，可直接扫码完成套餐升级或续费。
+                您已订阅 <span className="text-primary font-bold">{currentPlanName}</span>，可直接扫码完成套餐升级或续费。
               </DialogDescription>
             </DialogHeader>
           </div>
 
           <div className="space-y-4 px-5 py-4">
-            {paymentMessage ? (
-              <div className="rounded-xl border border-brand/20 bg-brand-dim/35 px-4 py-3 text-sm text-foreground">
-                {paymentMessage}
+            {/* 当前套餐有效期信息 - 独立通栏卡片 */}
+            <div className="rounded-xl border border-brand/25 bg-brand-dim/30 p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand/20 bg-brand/15 text-brand">
+                    <CalendarClock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">当前订阅有效期</p>
+                    <p className="text-base font-semibold text-foreground">
+                      至 <span className="text-brand">{currentExpiresAt}</span>
+                      <span className="ml-2 text-sm font-normal text-muted-foreground">
+                        （剩余 <span className="text-brand font-medium">{currentRemainingDays}</span> 天）
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/orders"
+                  className={cn("flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+                >
+                  <FileText className="h-4 w-4" />
+                  订阅记录
+                </Link>
               </div>
-            ) : null}
+            </div>
+
             {!activeOrder || !paymentDialogOpen ? (
               <>
                 {/*
@@ -252,13 +320,14 @@ export function SubscriptionDetailDialog({
                 */}
               </>
             ) : null}
+            
             {/* 套餐列表 - 显示全部3个套餐 */}
             {plans.length === 0 ? (
               <div className="rounded-xl border border-border/70 bg-surface-1/95 px-4 py-6 text-sm text-muted-foreground">
                 正在读取订阅套餐…
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-3 py-3">
                 {plans.map((plan) => {
                 const isCurrent = plan.name === currentPlanName
                 const isDowngrade = plan.tierRank < currentPlanTierRank
@@ -276,10 +345,10 @@ export function SubscriptionDetailDialog({
                     className={cn(
                       "relative flex flex-col rounded-xl border p-4 transition-all",
                       isCurrent
-                        ? "border-brand/50 bg-brand-dim/50 ring-2 ring-brand/25"
+                        ? "border-brand/50 bg-brand-dim/50 ring-4 ring-brand/10"
                         : isDowngrade
                           ? "border-border/60 bg-surface-2/70 opacity-55 dark:border-border/70 dark:bg-surface-2/80"
-                          : "border-border/70 bg-surface-1/95 shadow-sm dark:border-border/70 dark:bg-surface-2/90",
+                          : "border-border/70 bg-surface-1/95 dark:border-border/70 dark:bg-surface-2/90",
                     )}
                   >
                     {/* 当前套餐标签 */}
@@ -378,35 +447,14 @@ export function SubscriptionDetailDialog({
               </div>
             )}
 
-            {/* 当前套餐有效期信息 - 独立通栏卡片 */}
-            <div className="rounded-xl border border-brand/25 bg-brand-dim/30 p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand/20 bg-brand/15 text-brand">
-                    <CalendarClock className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">当前订阅有效期</p>
-                    <p className="text-base font-semibold text-foreground">
-                      至 <span className="text-brand">{currentExpiresAt}</span>
-                      <span className="ml-2 text-sm font-normal text-muted-foreground">
-                        （剩余 <span className="text-brand font-medium">{currentRemainingDays}</span> 天）
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href="/orders"
-                  className={cn("flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium", USER_PANEL_OUTLINE_BUTTON_CLASS)}
-                >
-                  <FileText className="h-4 w-4" />
-                  订阅记录
-                </Link>
+            {paymentMessage ? (
+              <div className="rounded-3xl border border-gold/15 bg-gold-dim/35 px-4 py-3 text-sm text-foreground">
+                {paymentMessage}
               </div>
-            </div>
+            ) : null}
 
             {/* 底部提示 - flex 布局 */}
-            <div className="flex items-start justify-center gap-8 pt-1">
+            <div className="flex items-start justify-center gap-8 py-3 px-0">
               {[
                 "学习记录、会话历史和阶段进度保持连续",
                 "升级后可立即解锁更多陪练频次",
@@ -425,70 +473,114 @@ export function SubscriptionDetailDialog({
       </DialogContent>
     </Dialog>
     <Dialog open={paymentDialogOpen} onOpenChange={handlePaymentDialogOpenChange}>
-      <DialogContent className={cn(DIALOG_GRADIENT_PANEL_CLASS, "max-w-[calc(100%-2rem)] overflow-hidden p-0 sm:max-w-[520px]")}>
+      <DialogContent className={cn(DIALOG_GRADIENT_PANEL_CLASS, "max-w-[calc(100%-2rem)] overflow-hidden p-0 sm:max-w-[480px]")}>
         <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
-              <MessageCircle className="h-5 w-5 text-brand" />
-              {buildPaymentDialogTitle(activeOrder?.paymentChannel ?? selectedPaymentChannel)}
+              {paymentView === "pending" ? (
+                <>
+                  <MessageCircle className="h-5 w-5 text-brand" />
+                  {buildPaymentDialogTitle(activeOrder?.paymentChannel ?? selectedPaymentChannel)}
+                </>
+              ) : (
+                <>
+                  <paymentResultCopy.icon className={cn("h-5 w-5", paymentView === "success" ? "text-emerald-500" : "text-rose-500")} />
+                  {paymentResultCopy.title}
+                </>
+              )}
             </DialogTitle>
             <DialogDescription>
-              {activeOrder ? `订单 ${activeOrder.orderNo} 正在等待支付。` : "正在准备支付二维码。"}
+              {paymentView === "pending"
+                ? (activeOrder ? `订单 ${activeOrder.orderNo} 正在等待支付。` : "正在准备支付二维码。")
+                : paymentResultCopy.description}
             </DialogDescription>
           </DialogHeader>
         </div>
         <div className="px-5 pb-5 pt-4">
-          <div className="grid gap-4 sm:grid-cols-[220px_1fr] sm:items-center">
-            <div className="mx-auto flex h-[220px] w-[220px] items-center justify-center rounded-2xl border border-border/60 bg-white p-3 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.55)]">
-              {qrDataUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={qrDataUrl} alt="微信支付二维码" className="h-full w-full" />
-              ) : (
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              )}
-            </div>
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm text-muted-foreground">套餐</p>
-                <p className="mt-1 text-lg font-semibold text-foreground">{activeOrder?.planName ?? "读取中"}</p>
+          {paymentView === "pending" ? (
+            <div className="space-y-4">
+              <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface-1/95 p-5">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top,oklch(0.82_0.09_160/0.28),transparent_70%)]" />
+                <div className="relative space-y-4">
+                  <div className="mx-auto flex h-[248px] w-[248px] items-center justify-center rounded-2xl border border-border/60 bg-white p-3 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.72)]">
+                    {qrDataUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={qrDataUrl} alt="微信支付二维码" className="h-full w-full" />
+                    ) : (
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                  <p className="text-center text-sm leading-6 text-muted-foreground">
+                    请使用微信扫码完成支付，支付成功后会自动切换到结果状态。
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">金额</p>
-                <p className="mt-1 text-3xl font-bold text-foreground">
-                  ¥{activeOrder ? (activeOrder.amountCents / 100).toFixed(activeOrder.amountCents % 100 === 0 ? 0 : 2) : "--"}
-                </p>
+              <div className="rounded-2xl border border-border/70 bg-surface-2/70 p-4">
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-muted-foreground">套餐</span>
+                    <span className="text-right font-semibold text-foreground">{activeOrder?.planName ?? "读取中"}</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-muted-foreground">金额</span>
+                    <span className="text-right text-2xl font-bold text-foreground">
+                      ¥{activeOrder ? (activeOrder.amountCents / 100).toFixed(activeOrder.amountCents % 100 === 0 ? 0 : 2) : "--"}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-muted-foreground">订单号</span>
+                    <span className="max-w-[68%] break-all text-right text-foreground/85">{activeOrder?.orderNo ?? "--"}</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-muted-foreground">状态</span>
+                    <span className="text-right text-foreground/85">{activeOrder ? getPaymentStatusLabel(activeOrder.status) : "等待支付"}</span>
+                  </div>
+                </div>
               </div>
-              <p className="break-all text-sm text-muted-foreground">
-                订单号：{activeOrder?.orderNo ?? "--"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                状态：{activeOrder ? getPaymentStatusLabel(activeOrder.status) : "等待支付"}
-              </p>
-              <p className="text-sm leading-5 text-muted-foreground">
-                请使用微信扫码完成支付，支付后页面会自动同步状态。
-              </p>
             </div>
-          </div>
-          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              className={USER_PANEL_OUTLINE_BUTTON_CLASS}
-              onClick={() => handlePaymentDialogOpenChange(false)}
-            >
-              返回套餐
-            </Button>
-            {activeOrder ? (
-              <Button
-                type="button"
-                className={USER_BUTTON_PRIMARY_CLASS}
-                disabled={TERMINAL_PAYMENT_STATUSES.has(activeOrder.status)}
-                onClick={syncActiveOrder}
-              >
-                刷新支付状态
+          ) : (
+            <div className="space-y-4">
+              <div className={cn("rounded-2xl border p-5", paymentResultCopy.toneClass)}>
+                <div className="flex flex-col items-center text-center">
+                  <div className={cn("mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border", paymentResultCopy.iconWrapClass)}>
+                    <paymentResultCopy.icon className="h-8 w-8" />
+                  </div>
+                  <p className="text-2xl font-semibold">{paymentResultCopy.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{paymentResultCopy.description}</p>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border/70 bg-surface-2/70 p-4">
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-muted-foreground">套餐</span>
+                    <span className="text-right font-semibold text-foreground">{activeOrder?.planName ?? "读取中"}</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-muted-foreground">金额</span>
+                    <span className="text-right text-xl font-bold text-foreground">
+                      ¥{activeOrder ? (activeOrder.amountCents / 100).toFixed(activeOrder.amountCents % 100 === 0 ? 0 : 2) : "--"}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-muted-foreground">订单号</span>
+                    <span className="max-w-[68%] break-all text-right text-foreground/85">{activeOrder?.orderNo ?? "--"}</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-muted-foreground">状态</span>
+                    <span className="text-right text-foreground/85">{activeOrder ? getPaymentStatusLabel(activeOrder.status) : "--"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {paymentView === "success" ? (
+            <div className="mt-5">
+              <Button type="button" className={cn("w-full", USER_BUTTON_PRIMARY_CLASS)} onClick={handleViewOrders}>
+                <FileText className="h-4 w-4" />
+                查看订阅记录
               </Button>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>
