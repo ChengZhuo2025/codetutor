@@ -41,6 +41,7 @@ export const ADMIN_AI_AGENT_SCENARIO_TYPES = [
   "task_review",
   "completion_feedback",
   "path_guidance",
+  "concept_qa",
 ] as const
 
 export const ADMIN_AI_SKILL_SOURCE_TYPES = [

@@ -87,6 +87,8 @@ export function getAdminAIInteractionTypeLabel(interactionType: string) {
       return "完成反馈"
     case "path_guidance":
       return "路径引导"
+    case "concept_qa":
+      return "概念问答"
     default:
       return interactionType
   }

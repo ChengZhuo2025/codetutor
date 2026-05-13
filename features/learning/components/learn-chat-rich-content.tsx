@@ -39,6 +39,11 @@ type MessageInlineToken =
   | { type: "strong"; value: string }
   | { type: "code"; value: string }
 
+type ParsedMarkdownTable = {
+  headers: string[]
+  rows: string[][]
+}
+
 const CHAT_TONE_CLASS = {
   info: {
     panel: "border-brand/5 bg-brand-dim/45",
@@ -251,6 +256,56 @@ function tokenizeInlineText(text: string): MessageInlineToken[] {
   return tokens.filter((token) => token.value.length > 0)
 }
 
+function isMarkdownTableSeparator(line: string) {
+  return /^\|?[\s:-]+(\|[\s:-]+)+\|?$/.test(line.trim())
+}
+
+function parseMarkdownTable(text: string): ParsedMarkdownTable | null {
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+
+  if (lines.length < 2) {
+    return null
+  }
+
+  const headerLine = lines[0] ?? ""
+  const separatorLine = lines[1] ?? ""
+
+  if (!headerLine.includes("|") || !isMarkdownTableSeparator(separatorLine)) {
+    return null
+  }
+
+  const parseRow = (line: string) =>
+    line
+      .replace(/^\|/, "")
+      .replace(/\|$/, "")
+      .split("|")
+      .map((cell) => cell.trim())
+
+  const headers = parseRow(headerLine)
+  if (headers.length < 2) {
+    return null
+  }
+
+  const rows: string[][] = []
+  for (const line of lines.slice(2)) {
+    if (!line.includes("|")) {
+      return null
+    }
+
+    const cells = parseRow(line)
+    if (cells.length !== headers.length) {
+      return null
+    }
+
+    rows.push(cells)
+  }
+
+  return rows.length > 0 ? { headers, rows } : null
+}
+
 type PlainTextTone = "default" | "inverted"
 
 function renderInlineText(
@@ -302,6 +357,99 @@ export function renderPlainContent(text: string, tone: PlainTextTone = "default"
         {renderInlineText(line, `plain-${index}`, tone)}
       </p>
     ),
+  )
+}
+
+function renderMarkdownParagraph(
+  text: string,
+  keyPrefix: string,
+  className: string,
+) {
+  if (/^(-{3,}|\*{3,}|_{3,})$/.test(text.trim())) {
+    return null
+  }
+
+  const headingMatch = text.trim().match(/^(#{2,3})\s+(.+)$/)
+  if (headingMatch) {
+    return renderMarkdownHeading(text, keyPrefix)
+  }
+
+  const table = parseMarkdownTable(text)
+  if (!table) {
+    return (
+      <p key={keyPrefix} className={className}>
+        {renderInlineText(text, keyPrefix)}
+      </p>
+    )
+  }
+
+  return (
+    <div
+      key={keyPrefix}
+      className="overflow-x-auto rounded-2xl border border-border/60 bg-background/55"
+    >
+      <table className="min-w-full border-collapse text-sm">
+        <thead className="bg-muted/40">
+          <tr>
+            {table.headers.map((header, headerIndex) => (
+              <th
+                key={`${keyPrefix}-header-${headerIndex}`}
+                className="border-b border-border/60 px-3.5 py-2.5 text-left font-semibold text-foreground"
+              >
+                {renderInlineText(header, `${keyPrefix}-header-${headerIndex}`)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, rowIndex) => (
+            <tr key={`${keyPrefix}-row-${rowIndex}`} className="odd:bg-background/40">
+              {row.map((cell, cellIndex) => (
+                <td
+                  key={`${keyPrefix}-cell-${rowIndex}-${cellIndex}`}
+                  className="border-b border-border/40 px-3.5 py-2.5 align-top leading-6 text-foreground/90"
+                >
+                  {renderInlineText(cell, `${keyPrefix}-cell-${rowIndex}-${cellIndex}`)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function renderMarkdownHeading(text: string, keyPrefix: string) {
+  const trimmed = text.trim()
+  const level3Match = trimmed.match(/^###\s+(.+)$/)
+  if (level3Match?.[1]) {
+    return (
+      <p
+        key={keyPrefix}
+        className="text-[15px] font-semibold leading-7 text-foreground/90"
+      >
+        {renderInlineText(level3Match[1], keyPrefix)}
+      </p>
+    )
+  }
+
+  const level2Match = trimmed.match(/^##\s+(.+)$/)
+  if (level2Match?.[1]) {
+    return (
+      <p
+        key={keyPrefix}
+        className="text-[16px] font-semibold leading-7 text-foreground"
+      >
+        {renderInlineText(level2Match[1], keyPrefix)}
+      </p>
+    )
+  }
+
+  return (
+    <p key={keyPrefix} className="text-[15px] font-semibold leading-7 text-foreground">
+      {renderInlineText(trimmed, keyPrefix)}
+    </p>
   )
 }
 
@@ -538,29 +686,20 @@ export function renderStructuredContent(
                 {section.blocks.map((block, blockIndex) => {
                   if (block.type === "heading") {
                     return (
-                      <div
-                        key={`heading-${sectionIndex}-${blockIndex}`}
-                        className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80"
-                      >
-                        {renderInlineText(
-                          block.text,
-                          `heading-${sectionIndex}-${blockIndex}`,
-                        )}
-                      </div>
+                      renderMarkdownHeading(
+                        block.text,
+                        `heading-${sectionIndex}-${blockIndex}`,
+                      )
                     )
                   }
 
                   if (block.type === "paragraph") {
                     return (
-                      <p
-                        key={`paragraph-${sectionIndex}-${blockIndex}`}
-                        className="whitespace-pre-wrap text-sm leading-6 text-foreground/90"
-                      >
-                        {renderInlineText(
-                          block.text,
-                          `paragraph-${sectionIndex}-${blockIndex}`,
-                        )}
-                      </p>
+                      renderMarkdownParagraph(
+                        block.text,
+                        `paragraph-${sectionIndex}-${blockIndex}`,
+                        "whitespace-pre-wrap text-sm leading-6 text-foreground/90",
+                      )
                     )
                   }
 

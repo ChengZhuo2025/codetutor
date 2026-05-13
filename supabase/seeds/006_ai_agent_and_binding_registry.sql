@@ -69,7 +69,8 @@ FROM (
     ('b1000000-0000-0000-0000-000000000024'::uuid,'ide-task-reviewer','IDE 任务复盘助手','task_review','图形化 IDE 任务复盘 agent','你是 IDE 任务复盘助手，帮助用户回看结果并指出下一轮修正重点。','复盘时先肯定完成，再指出一个最关键缺口。','glm-5',10,2800,0.40::numeric,0.90::numeric,'{"profileCode":"sf-longform-coach","toolFamily":"ide"}'),
     ('b1000000-0000-0000-0000-000000000025'::uuid,'cli-task-reviewer','CLI 任务复盘助手','task_review','CLI 工具任务复盘 agent','你是 CLI 任务复盘助手，帮助用户从 diff、输出和验证动作回看本轮结果。','优先指出验证缺口和下一步。','deepseek-v3-2',10,2600,0.30::numeric,0.85::numeric,'{"profileCode":"sf-code-workflow","toolFamily":"cli"}'),
     ('b1000000-0000-0000-0000-000000000026'::uuid,'web-builder-task-reviewer','在线工具任务复盘助手','task_review','在线工具任务复盘 agent','你是在线工具任务复盘助手，帮助用户从页面结果和目标差异进行回看。','优先页面目标、差异点和下一轮迭代。','glm-5',10,2800,0.40::numeric,0.90::numeric,'{"profileCode":"sf-longform-coach","toolFamily":"web-builder"}'),
-    ('b1000000-0000-0000-0000-000000000027'::uuid,'learning-completion-coach','学习完成反馈教练','completion_feedback','统一完成反馈与成长总结 agent','你是学习完成反馈教练，负责给出完成反馈、成长感知和下一步建议。','总结要清楚、正向、具体，并且给出下一步。','glm-5',8,2800,0.40::numeric,0.90::numeric,'{"profileCode":"sf-longform-coach","toolFamily":"shared"}')
+    ('b1000000-0000-0000-0000-000000000027'::uuid,'learning-completion-coach','学习完成反馈教练','completion_feedback','统一完成反馈与成长总结 agent','你是学习完成反馈教练，负责给出完成反馈、成长感知和下一步建议。','总结要清楚、正向、具体，并且给出下一步。','glm-5',8,2800,0.40::numeric,0.90::numeric,'{"profileCode":"sf-longform-coach","toolFamily":"shared"}'),
+    ('b1000000-0000-0000-0000-000000000028'::uuid,'learning-concept-qa-coach','学习概念问答教练','concept_qa','学习场景中的即时知识问答 agent，负责解释术语、概念和知识盲点，不打断当前步骤推进。','你是学习概念问答教练。用户可以在当前练习中随时提问概念、术语、原理、区别和知识盲点，你需要给出即时、专业、简洁、可执行的中文解答。回答时优先直接解释概念，再补一个和当前学习场景有关的例子；不要把问题强行拐回下一步，也不要把答疑伪装成任务推进。','保持回答聚焦在概念本身；如需引用当前路径上下文，可结合当前关卡解释，但不要越级扩展到无关主题。','glm-5',10,2800,0.35::numeric,0.90::numeric,'{"profileCode":"sf-longform-coach","toolFamily":"shared","role":"concept_qa"}')
 ) AS seed(
   id,
   code,
@@ -132,7 +133,8 @@ WHERE agent_code IN (
   'ide-task-reviewer',
   'cli-task-reviewer',
   'web-builder-task-reviewer',
-  'learning-completion-coach'
+  'learning-completion-coach',
+  'learning-concept-qa-coach'
 );
 
 WITH path_bindings AS (
@@ -260,6 +262,20 @@ agent_binding_rows AS (
     NULL::integer,
     'completion_feedback',
     500,
+    true,
+    jsonb_build_object('bindingKind', 'global_fallback')
+  UNION ALL
+
+  SELECT
+    gen_random_uuid(),
+    'learning-concept-qa-coach',
+    NULL::uuid,
+    NULL::public.learning_level,
+    NULL::public.path_selection_mode,
+    NULL::uuid,
+    NULL::integer,
+    'concept_qa',
+    400,
     true,
     jsonb_build_object('bindingKind', 'global_fallback')
 )

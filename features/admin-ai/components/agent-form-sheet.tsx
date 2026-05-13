@@ -58,6 +58,7 @@ const AGENT_SCENARIO_TYPE_OPTIONS = [
   "task_review",
   "completion_feedback",
   "path_guidance",
+  "concept_qa",
 ] as const
 
 function mapDetailToForm(detail: AdminAIAgentDetailResponseData["agent"]): AgentFormState {

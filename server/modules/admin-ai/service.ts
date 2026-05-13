@@ -121,7 +121,7 @@ type AgentRow = {
   id: string
   code: string
   name: string
-  scenario_type: "teaching" | "blocked_help" | "task_review" | "completion_feedback" | "path_guidance"
+  scenario_type: "teaching" | "blocked_help" | "task_review" | "completion_feedback" | "path_guidance" | "concept_qa"
   description: string | null
   system_prompt_template: string
   developer_prompt_template: string | null
@@ -2154,7 +2154,7 @@ export async function updateAdminAIModel(
 export async function getAdminAIAgentList(filters: {
   adminAccountId: string
   keyword?: string
-  scenarioType?: "teaching" | "blocked_help" | "task_review" | "completion_feedback" | "path_guidance"
+  scenarioType?: "teaching" | "blocked_help" | "task_review" | "completion_feedback" | "path_guidance" | "concept_qa"
   status: "all" | "active" | "inactive"
   page: number
   limit: number

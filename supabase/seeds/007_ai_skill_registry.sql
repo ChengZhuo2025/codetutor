@@ -230,7 +230,11 @@ FROM (
 
     ('learning-completion-coach', 'completion-summary-skill', 10, 800, 'phase1_default'),
     ('learning-completion-coach', 'rank-progress-feedback-skill', 20, 800, 'phase1_default'),
-    ('learning-completion-coach', 'next-step-guidance-skill', 30, 700, 'phase1_default')
+    ('learning-completion-coach', 'next-step-guidance-skill', 30, 700, 'phase1_default'),
+
+    ('learning-concept-qa-coach', 'general-learning-reflection-skill', 10, 700, 'phase1_default'),
+    ('learning-concept-qa-coach', 'next-step-guidance-skill', 20, 700, 'phase1_default'),
+    ('learning-concept-qa-coach', 'completion-summary-skill', 30, 700, 'phase1_default')
 ) AS seed(agent_code, skill_code, priority, context_budget_tokens, binding_kind)
 ON CONFLICT (agent_code, skill_code) DO UPDATE
 SET

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { CirclePlus, RotateCcw, Sparkles } from "lucide-react"
+import { CirclePlus, RotateCcw, Sparkles, X } from "lucide-react"
 import { ROUTES } from "@/constants/routes"
 import { WORKSPACE_ASIDE_WIDTH_CLASS } from "@/constants/workspace-layout"
 import { AppShell } from "@/components/layout/app-shell"
@@ -383,12 +383,27 @@ export function HistoryPage() {
           <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none">
             <div className="space-y-5 px-4 py-6 sm:px-6 sm:py-8">
               {feedbackState ? (
-                <StatePanel
-                  status={feedbackState.status}
-                  title={feedbackState.status === "success" ? "操作已完成" : "操作未成功"}
-                  description={feedbackState.message}
-                  compact
-                />
+                <div className="relative">
+                  <StatePanel
+                    status={feedbackState.status}
+                    title={feedbackState.status === "success" ? "操作已完成" : "操作未成功"}
+                    description={feedbackState.message}
+                    compact
+                    className="pr-12"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="关闭提示信息"
+                    onClick={() => setFeedbackState(null)}
+                    className={cn(
+                      "absolute top-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-brand/15 bg-surface-1/88 text-muted-foreground shadow-[0_12px_28px_-24px_rgba(15,23,42,0.24)] backdrop-blur-sm transition-all duration-200 hover:border-brand/20 hover:bg-surface-1 hover:text-foreground focus-visible:ring-brand/25 dark:border-white/10 dark:bg-white/8 dark:text-white/72 dark:hover:bg-white/12 dark:hover:text-white",
+                    )}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               ) : null}
 
               {pageSummary && recoverableCount > 0 && pageSummary.activeCount === 0 ? (
