@@ -8,6 +8,8 @@ import {
   LearningValidationError,
 } from "../server/modules/learning/errors.ts"
 
+const ASSISTANT_MESSAGE_ID = "11111111-1111-4111-8111-111111111111"
+
 function createJsonRequest(body: unknown) {
   return new Request("http://localhost:3000/api/learning/message-speech", {
     method: "POST",
@@ -27,7 +29,7 @@ test("learning message speech route returns 401 when unauthenticated", async () 
     },
   })
 
-  const response = await handler(createJsonRequest({ messageId: 1001 }))
+  const response = await handler(createJsonRequest({ messageId: ASSISTANT_MESSAGE_ID }))
 
   assert.equal(response.status, 401)
   assert.deepEqual(await response.json(), {
@@ -44,7 +46,7 @@ test("learning message speech route returns audio when synthesis succeeds", asyn
     getRequestAuthHelpText: () => "ignored",
     synthesizeLearningMessageSpeech: async (userId, input) => {
       assert.equal(userId, "user-1")
-      assert.equal(input.messageId, "1001")
+      assert.equal(input.messageId, ASSISTANT_MESSAGE_ID)
       assert.equal(input.text, "请先完成最小验证。")
       return {
         audio,
@@ -54,7 +56,7 @@ test("learning message speech route returns audio when synthesis succeeds", asyn
   })
 
   const response = await handler(createJsonRequest({
-    messageId: 1001,
+    messageId: ASSISTANT_MESSAGE_ID,
     text: "请先完成最小验证。",
   }))
 
@@ -73,7 +75,7 @@ test("learning message speech route maps missing tts config to 503", async () =>
     },
   })
 
-  const response = await handler(createJsonRequest({ messageId: 1001 }))
+  const response = await handler(createJsonRequest({ messageId: ASSISTANT_MESSAGE_ID }))
 
   assert.equal(response.status, 503)
   assert.deepEqual(await response.json(), {
@@ -92,7 +94,7 @@ test("learning message speech route maps validation and provider errors", async 
     },
   })
 
-  const validationResponse = await validationHandler(createJsonRequest({ messageId: 1001 }))
+  const validationResponse = await validationHandler(createJsonRequest({ messageId: ASSISTANT_MESSAGE_ID }))
   assert.equal(validationResponse.status, 422)
 
   const providerHandler = createLearningMessageSpeechPostHandler({
@@ -103,6 +105,28 @@ test("learning message speech route maps validation and provider errors", async 
     },
   })
 
-  const providerResponse = await providerHandler(createJsonRequest({ messageId: 1001 }))
+  const providerResponse = await providerHandler(createJsonRequest({ messageId: ASSISTANT_MESSAGE_ID }))
   assert.equal(providerResponse.status, 502)
+})
+
+test("learning message speech route rejects display-only numeric message id before synthesis", async () => {
+  const handler = createLearningMessageSpeechPostHandler({
+    getRequestAuth: async () => ({ userId: "user-1" }),
+    getRequestAuthHelpText: () => "ignored",
+    synthesizeLearningMessageSpeech: async () => {
+      throw new Error("should not synthesize with a non-uuid display id")
+    },
+  })
+
+  const response = await handler(createJsonRequest({
+    messageId: "2",
+    text: "已从你的材料生成学习任务。",
+  }))
+
+  assert.equal(response.status, 422)
+  assert.deepEqual(await response.json(), {
+    code: "VALIDATION_FAILED",
+    message: "messageId 必须是 AI 回复消息的持久化 ID。",
+    data: null,
+  })
 })

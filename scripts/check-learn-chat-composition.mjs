@@ -193,8 +193,28 @@ assert.match(
 )
 assert.match(
   learnChatSource,
-  /speechMessageId \?\? String\(message\.id\)/,
-  "LearnChat should prefer persisted assistant message id for speech synthesis",
+  /splitSpeechTextIntoSegments\(message\.content\)/,
+  "LearnChat should split assistant speech into shorter playback segments",
+)
+assert.match(
+  learnChatSource,
+  /playSpeechSegments/,
+  "LearnChat should play generated speech segments sequentially",
+)
+assert.match(
+  learnChatSource,
+  /messageId: message\.speechMessageId/,
+  "LearnChat should only send the persisted assistant message id for speech synthesis",
+)
+assert.match(
+  learnChatSource,
+  /typeof payload\.messageId === "string"/,
+  "LearnChat should store the persisted assistant message id from SSE completion payload",
+)
+assert.match(
+  messageItemSource,
+  /Boolean\(message\.speechMessageId\)/,
+  "assistant message item should only show read-aloud when a persisted assistant message id is available",
 )
 assert.match(
   composerSource,

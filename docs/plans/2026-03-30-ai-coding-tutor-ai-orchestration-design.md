@@ -1591,7 +1591,7 @@ ai/skills/
 4. 多模态附件不直接塞入 `content_text`。图片和语音先落 `learning_message_attachments`，再通过 `attachmentIds` 进入主消息编排。
 5. 图片附件预处理使用 `data:<mime>;base64,...` 传给 vision 模型，避免私有 Storage signed URL 被 provider 侧网络阻断。
 6. `Qwen3-ASR-Flash` 使用 OpenAI-compatible `/chat/completions` 的 `input_audio` 格式，不走传统 `/audio/transcriptions` multipart 表单；是否选用该模型由后台语音转文本设置决定。管理端 ASR 连接测试只验证 Provider `/models` 鉴权连通性，不发起真实转写请求。
-7. `qwen3-tts-flash-realtime` 属于阿里云 DashScope WebSocket 实时 TTS；用户端 AI 回复播读通过 `POST /api/learning/message-speech` 运行时调用该类模型，管理端模型连接测试可通过 `connection_test_mode=tts` 做最小实时合成探测。
+7. `qwen3-tts-flash-realtime` 属于阿里云 DashScope WebSocket 实时 TTS；用户端 AI 回复播读通过 `POST /api/learning/message-speech` 运行时调用该类模型，实时会话使用 `response_format=wav`、`sample_rate=24000`，音色默认 `Cherry` 且可由所选 Model metadata 的 `ttsVoice` / `voice` / `defaultVoice` 覆盖；客户端事件使用 `session.update`、`input_text_buffer.append`、`input_text_buffer.commit`、`session.finish`，不发送 OpenAI Realtime 的 `response.create`；前端会清理 Markdown 标记并拆成短段队列，首段生成完成即播放、后续段预取；管理端模型连接测试可通过 `connection_test_mode=tts` 做最小实时合成探测。
 
 ### 12.2.1 请求头
 

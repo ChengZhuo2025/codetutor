@@ -21,6 +21,7 @@ import {
   parseOptionalNonnegativeInteger,
   parseOptionalPositiveInteger,
 } from "../../lib/request-validation.ts"
+import { normalizeUuid } from "../../lib/identifiers.ts"
 import { executeLearningMessageRequest } from "./http-logic.ts"
 import {
   LearningAIProviderError,
@@ -87,8 +88,13 @@ function parseLearningMessageSpeechBody(body: unknown): LearningMessageSpeechReq
     return null
   }
 
+  const normalizedMessageId = normalizeUuid(String(messageId).trim())
+  if (!normalizedMessageId) {
+    return null
+  }
+
   return {
-    messageId: String(messageId).trim(),
+    messageId: normalizedMessageId,
     text: typeof record.text === "string" ? record.text : undefined,
   }
 }
@@ -224,7 +230,7 @@ export function createLearningMessageSpeechPostHandler(dependencies: {
 
     const input = parseLearningMessageSpeechBody(body)
     if (!input) {
-      return jsonError("VALIDATION_FAILED", "messageId 或 text 不合法。", 422)
+      return jsonError("VALIDATION_FAILED", "messageId 必须是 AI 回复消息的持久化 ID。", 422)
     }
 
     try {

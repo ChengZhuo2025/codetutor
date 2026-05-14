@@ -1,10 +1,12 @@
 import "server-only"
 
 import { Buffer } from "node:buffer"
+import { randomUUID } from "node:crypto"
 import WebSocket from "ws"
 
 import { resolveProviderSecret } from "@/server/lib/secrets/provider-secret"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
+import { normalizeSpeechTextForTts } from "@/lib/learning/speech-text"
 import { resolveLearningMediaTranscriptionModels } from "@/server/modules/admin-ai/media-service"
 import type { MaterialPipelineRuntime } from "@/server/modules/learning-materials/providers"
 import {
@@ -17,6 +19,7 @@ const MAX_SPEECH_TEXT_LENGTH = 2000
 const DEFAULT_TTS_VOICE = "Cherry"
 const DEFAULT_TTS_SAMPLE_RATE = 24000
 const DASH_SCOPE_REALTIME_PATH = "/api-ws/v1/realtime"
+const DASH_SCOPE_TTS_RESPONSE_FORMAT = "wav"
 
 type ConversationMessageSpeechRow = {
   id: string
@@ -40,7 +43,7 @@ export type LearningMessageSpeechResult = {
 }
 
 export function normalizeLearningMessageSpeechText(text: string | null | undefined) {
-  const normalized = (text ?? "").replace(/\s+/g, " ").trim()
+  const normalized = normalizeSpeechTextForTts(text)
   if (!normalized) {
     throw new LearningValidationError("没有可播读的 AI 回复内容。")
   }
@@ -134,6 +137,59 @@ function parseDashScopeAudioDelta(event: unknown): Buffer | null {
   }
 }
 
+function normalizeTtsVoice(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
+}
+
+function createDashScopeEventId() {
+  return `event_${randomUUID()}`
+}
+
+export function resolveLearningTtsVoice(runtime: LearningSpeechRuntime) {
+  const metadata = runtime.model.metadata ?? {}
+  return normalizeTtsVoice(metadata.ttsVoice)
+    ?? normalizeTtsVoice(metadata.voice)
+    ?? normalizeTtsVoice(metadata.defaultVoice)
+    ?? DEFAULT_TTS_VOICE
+}
+
+export function buildDashScopeTtsSessionUpdate(
+  runtime: LearningSpeechRuntime,
+  createEventId: () => string = createDashScopeEventId,
+) {
+  return {
+    event_id: createEventId(),
+    type: "session.update",
+    session: {
+      voice: resolveLearningTtsVoice(runtime),
+      response_format: DASH_SCOPE_TTS_RESPONSE_FORMAT,
+      sample_rate: DEFAULT_TTS_SAMPLE_RATE,
+      mode: "commit",
+    },
+  }
+}
+
+export function buildDashScopeTtsTextEvents(
+  text: string,
+  createEventId: () => string = createDashScopeEventId,
+) {
+  return [
+    {
+      event_id: createEventId(),
+      type: "input_text_buffer.append",
+      text,
+    },
+    {
+      event_id: createEventId(),
+      type: "input_text_buffer.commit",
+    },
+    {
+      event_id: createEventId(),
+      type: "session.finish",
+    },
+  ]
+}
+
 export async function invokeDashScopeRealtimeTts(input: {
   runtime: LearningSpeechRuntime
   text: string
@@ -171,40 +227,23 @@ export async function invokeDashScopeRealtimeTts(input: {
         return
       }
 
-      const pcm = Buffer.concat(audioChunks)
-      if (pcm.length === 0) {
+      const audio = Buffer.concat(audioChunks)
+      if (audio.length === 0) {
         reject(new LearningAIProviderError("TTS provider returned empty audio"))
         return
       }
 
       resolve({
-        audio: buildPcmWavBuffer(pcm, {
-          sampleRate: DEFAULT_TTS_SAMPLE_RATE,
-          channels: 1,
-          bitsPerSample: 16,
-        }),
+        audio,
         contentType: "audio/wav",
       })
     }
 
     socket.on("open", () => {
-      socket.send(JSON.stringify({
-        type: "session.update",
-        session: {
-          voice: DEFAULT_TTS_VOICE,
-          response_format: "pcm_24000hz_mono_16bit",
-        },
-      }))
-      socket.send(JSON.stringify({
-        type: "input_text.append",
-        text: input.text,
-      }))
-      socket.send(JSON.stringify({
-        type: "input_text.commit",
-      }))
-      socket.send(JSON.stringify({
-        type: "response.create",
-      }))
+      socket.send(JSON.stringify(buildDashScopeTtsSessionUpdate(input.runtime)))
+      for (const event of buildDashScopeTtsTextEvents(input.text)) {
+        socket.send(JSON.stringify(event))
+      }
     })
 
     socket.on("message", (data) => {

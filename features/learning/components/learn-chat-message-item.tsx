@@ -160,6 +160,7 @@ export function LearnChatMessageItem({
       : []
   const canReadAloud =
     message.role === "ai" &&
+    Boolean(message.speechMessageId) &&
     message.content !== STREAMING_PLACEHOLDER &&
     message.content.trim().length > 0
   const SpeechIcon =

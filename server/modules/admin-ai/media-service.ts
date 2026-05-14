@@ -196,6 +196,7 @@ function toRuntime(
       modelName: model.model_name,
       defaultMaxOutputTokens: model.default_max_output_tokens,
       recommendedTemperature: model.recommended_temperature,
+      metadata: model.metadata ?? null,
     },
   } satisfies MaterialPipelineRuntime
 }

@@ -43,6 +43,7 @@ import type {
 } from "@/lib/api/contracts/task"
 import { apiFetch, requestData } from "@/lib/api/client"
 import { buildStructuredLearningMessageContent } from "@/lib/learning/structured-message"
+import { splitSpeechTextIntoSegments } from "@/lib/learning/speech-text"
 import { useAppEventTracker } from "@/providers/app-providers"
 import { DIALOG_PANEL_CLASS } from "@/components/ui/surface-styles"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
@@ -237,7 +238,7 @@ export function LearnChat({
     previousScrollTop: number
   } | null>(null)
   const speechAudioRef = useRef<HTMLAudioElement | null>(null)
-  const speechObjectUrlRef = useRef<string | null>(null)
+  const speechObjectUrlsRef = useRef<string[]>([])
   const speechRequestTokenRef = useRef(0)
 
   const { mission, planSummary, resume, rightPanel, supportOptions } =
@@ -368,10 +369,10 @@ export function LearnChat({
         speechAudioRef.current.pause()
         speechAudioRef.current = null
       }
-      if (speechObjectUrlRef.current) {
-        URL.revokeObjectURL(speechObjectUrlRef.current)
-        speechObjectUrlRef.current = null
+      for (const objectUrl of speechObjectUrlsRef.current) {
+        URL.revokeObjectURL(objectUrl)
       }
+      speechObjectUrlsRef.current = []
     }
   }, [])
 
@@ -387,16 +388,92 @@ export function LearnChat({
       speechAudioRef.current.pause()
       speechAudioRef.current = null
     }
-    if (speechObjectUrlRef.current) {
-      URL.revokeObjectURL(speechObjectUrlRef.current)
-      speechObjectUrlRef.current = null
+    for (const objectUrl of speechObjectUrlsRef.current) {
+      URL.revokeObjectURL(objectUrl)
     }
+    speechObjectUrlsRef.current = []
     setActiveSpeechMessageId(null)
     setSpeechStatus("idle")
   }
 
+  const requestSpeechBlob = async (message: Message, text: string) => {
+    const response = await apiFetch("/learning/message-speech", {
+      method: "POST",
+      body: JSON.stringify({
+        messageId: message.speechMessageId,
+        text,
+      }),
+    })
+
+    if (!response.ok) {
+      let errorMessage = "生成语音播读失败，请稍后再试。"
+      try {
+        const payload = (await response.json()) as { message?: string }
+        errorMessage = payload.message ?? errorMessage
+      } catch {
+        // ignore non-json error body
+      }
+      throw new Error(errorMessage)
+    }
+
+    return response.blob()
+  }
+
+  const playSpeechBlob = async (blob: Blob, requestToken: number) => {
+    if (speechRequestTokenRef.current !== requestToken) {
+      return
+    }
+
+    const objectUrl = URL.createObjectURL(blob)
+    speechObjectUrlsRef.current.push(objectUrl)
+    const audio = new Audio(objectUrl)
+    speechAudioRef.current = audio
+
+    await new Promise<void>((resolve, reject) => {
+      audio.addEventListener("ended", () => resolve(), { once: true })
+      audio.addEventListener("error", () => reject(new Error("浏览器暂时无法播放这段语音。")), { once: true })
+      audio.play()
+        .then(() => {
+          if (speechRequestTokenRef.current === requestToken) {
+            setSpeechStatus("playing")
+          }
+        })
+        .catch(reject)
+    })
+  }
+
+  const playSpeechSegments = async (
+    message: Message,
+    segments: string[],
+    requestToken: number,
+  ) => {
+    let nextBlobPromise: Promise<Blob> | null = requestSpeechBlob(message, segments[0])
+
+    for (let index = 0; index < segments.length; index += 1) {
+      if (speechRequestTokenRef.current !== requestToken || !nextBlobPromise) {
+        return
+      }
+
+      const currentBlob = await nextBlobPromise
+      nextBlobPromise = index + 1 < segments.length
+        ? requestSpeechBlob(message, segments[index + 1])
+        : null
+
+      await playSpeechBlob(currentBlob, requestToken)
+    }
+
+    if (speechRequestTokenRef.current === requestToken) {
+      resetSpeechPlayback()
+    }
+  }
+
   const handleToggleSpeech = async (message: Message) => {
     if (message.role !== "ai" || !message.content.trim()) {
+      return
+    }
+
+    if (!message.speechMessageId) {
+      toast.error("语音播读不可用", "这条 AI 回复还没有可播读的消息 ID，请刷新后再试。")
       return
     }
 
@@ -419,49 +496,19 @@ export function LearnChat({
     }
 
     resetSpeechPlayback()
+    const speechSegments = splitSpeechTextIntoSegments(message.content)
+    if (speechSegments.length === 0) {
+      toast.error("语音播读不可用", "这条 AI 回复没有可播读的正文内容。")
+      return
+    }
+
     const requestToken = speechRequestTokenRef.current + 1
     speechRequestTokenRef.current = requestToken
     setActiveSpeechMessageId(message.id)
     setSpeechStatus("loading")
 
     try {
-      const response = await apiFetch("/learning/message-speech", {
-        method: "POST",
-        body: JSON.stringify({
-          messageId: message.speechMessageId ?? String(message.id),
-          text: message.content,
-        }),
-      })
-
-      if (!response.ok) {
-        let errorMessage = "生成语音播读失败，请稍后再试。"
-        try {
-          const payload = (await response.json()) as { message?: string }
-          errorMessage = payload.message ?? errorMessage
-        } catch {
-          // ignore non-json error body
-        }
-        throw new Error(errorMessage)
-      }
-
-      const blob = await response.blob()
-      if (speechRequestTokenRef.current !== requestToken) {
-        return
-      }
-
-      const objectUrl = URL.createObjectURL(blob)
-      speechObjectUrlRef.current = objectUrl
-      const audio = new Audio(objectUrl)
-      speechAudioRef.current = audio
-      audio.addEventListener("ended", () => {
-        if (speechAudioRef.current === audio) {
-          resetSpeechPlayback()
-        }
-      })
-      await audio.play()
-      if (speechRequestTokenRef.current === requestToken) {
-        setSpeechStatus("playing")
-      }
+      await playSpeechSegments(message, speechSegments, requestToken)
     } catch (error) {
       if (speechRequestTokenRef.current === requestToken) {
         resetSpeechPlayback()
@@ -905,12 +952,15 @@ export function LearnChat({
               typeof payload.title === "string" ? payload.title : "AI 教练引导"
             const kind =
               payload.kind === "task_feedback" ? "task_feedback" : "coach"
+            const speechMessageId =
+              typeof payload.messageId === "string" ? payload.messageId : undefined
 
             setMessages((prev) =>
               prev.map((message) =>
                 message.id === assistantMessageId
                   ? {
                       ...message,
+                      speechMessageId,
                       title,
                       kind,
                       structuredContent,
