@@ -2773,6 +2773,12 @@ export const adminAIModelTestConnectionRequestSchema = z
   .object({
     providerCode: z.string().min(1).max(64),
     modelName: z.string().min(1).max(256),
+    modelFamily: adminAIModelFamilySchema.optional(),
+    runtimeCapabilities: z.array(adminAIModelRuntimeCapabilitySchema).optional(),
+    connectionTestMode: z.union([
+      adminAIModelConnectionTestModeSchema,
+      z.literal("audio_transcription"),
+    ]).optional(),
     maxOutputTokens: z.number().int().min(1).max(512).optional(),
     timeoutMs: z.number().int().min(1000).max(300_000).optional(),
   })

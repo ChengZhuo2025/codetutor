@@ -415,9 +415,9 @@ Agents 管理必须覆盖两类场景：
 | `max_context_tokens` | integer | 是 | 必须大于 `default_max_output_tokens` |
 | `default_max_output_tokens` | integer | 是 | 默认输出上限 |
 | `recommended_temperature` | number | 否 | 范围建议 `0-2` |
-| `model_family` | enum | 是 | 结构化模型类别：`chat` / `reasoning` / `asr` / `vision` / `other` |
-| `runtime_capabilities` | multi-select | 是 | 结构化运行时用途：`asr` / `vision` / `quality_check`；供 material intake / quality gate 回退选型 |
-| `connection_test_mode` | enum | 是 | 后台连接测试策略：`chat` / `audio_transcription` / `models_list` |
+| `model_family` | enum | 是 | 结构化模型类别：`chat` / `reasoning` / `asr` / `tts` / `vision` / `other` |
+| `runtime_capabilities` | multi-select | 是 | 结构化运行时用途：`asr` / `tts` / `vision` / `quality_check`；供 material intake、媒体设置与 quality gate 回退选型 |
+| `connection_test_mode` | enum | 是 | 后台连接测试策略：`chat` / `asr` / `tts` / `models_list`；历史 `audio_transcription` 读取时兼容为 `asr` |
 | `reasoning_enabled` | boolean | 是 | 是否按推理模型处理；默认影响连接测试退化策略 |
 | `profile_group` | string | 否 | 结构化运营分组，如 `balanced_default` / `reasoning_lab` |
 | `notes` | string | 否 | 管理员可读备注 |

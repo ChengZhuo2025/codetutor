@@ -1436,6 +1436,9 @@ const adminAIModelTestConnectionShapeSchema = z
   .object({
     providerCode: z.unknown(),
     modelName: z.unknown(),
+    modelFamily: z.unknown().optional(),
+    runtimeCapabilities: z.unknown().optional(),
+    connectionTestMode: z.unknown().optional(),
     maxOutputTokens: z.unknown().optional(),
     timeoutMs: z.unknown().optional(),
   })
@@ -1451,12 +1454,29 @@ export function parseAdminAIModelTestConnectionBody(
 
   const providerCode = parseTrimmedRequiredString(shape.data.providerCode, "providerCode", 1, 64)
   const modelName = parseTrimmedRequiredString(shape.data.modelName, "modelName", 1, 256)
+  const modelFamily = shape.data.modelFamily === undefined || shape.data.modelFamily === null
+    ? ok(undefined)
+    : parseEnumField<AdminAIModelFamily>(shape.data.modelFamily, "modelFamily", ADMIN_AI_MODEL_FAMILIES)
+  const runtimeCapabilities = shape.data.runtimeCapabilities === undefined || shape.data.runtimeCapabilities === null
+    ? ok(undefined)
+    : parseEnumStringArray<AdminAIModelRuntimeCapability>(
+      shape.data.runtimeCapabilities,
+      "runtimeCapabilities",
+      ADMIN_AI_MODEL_RUNTIME_CAPABILITIES,
+    )
+  const connectionTestMode = shape.data.connectionTestMode === undefined || shape.data.connectionTestMode === null
+    ? ok(undefined)
+    : parseEnumField<AdminAIModelConnectionTestMode | "audio_transcription">(
+      shape.data.connectionTestMode,
+      "connectionTestMode",
+      [...ADMIN_AI_MODEL_CONNECTION_TEST_MODES, "audio_transcription"] as const,
+    )
   const maxOutputTokens =
     shape.data.maxOutputTokens === undefined || shape.data.maxOutputTokens === null
       ? ok(16)
       : parsePositiveInteger(shape.data.maxOutputTokens, "maxOutputTokens", 1, 512)
 
-  const checks = [providerCode, modelName, maxOutputTokens]
+  const checks = [providerCode, modelName, modelFamily, runtimeCapabilities, connectionTestMode, maxOutputTokens]
   const first = checks.find((item) => !item.ok)
   if (first && !first.ok) {
     return first
@@ -1474,6 +1494,15 @@ export function parseAdminAIModelTestConnectionBody(
   return ok({
     providerCode: (providerCode as ValidationSuccess<string>).data,
     modelName: (modelName as ValidationSuccess<string>).data,
+    ...((modelFamily as ValidationSuccess<AdminAIModelFamily | undefined>).data !== undefined
+      ? { modelFamily: (modelFamily as ValidationSuccess<AdminAIModelFamily>).data }
+      : {}),
+    ...((runtimeCapabilities as ValidationSuccess<AdminAIModelRuntimeCapability[] | undefined>).data !== undefined
+      ? { runtimeCapabilities: (runtimeCapabilities as ValidationSuccess<AdminAIModelRuntimeCapability[]>).data }
+      : {}),
+    ...((connectionTestMode as ValidationSuccess<AdminAIModelConnectionTestMode | "audio_transcription" | undefined>).data !== undefined
+      ? { connectionTestMode: (connectionTestMode as ValidationSuccess<AdminAIModelConnectionTestMode | "audio_transcription">).data }
+      : {}),
     maxOutputTokens: (maxOutputTokens as ValidationSuccess<number>).data,
     ...(timeoutMs !== undefined ? { timeoutMs } : {}),
   })

@@ -55,10 +55,22 @@ const asrModel = {
   runtime_capabilities: ["asr"],
 }
 
+const ttsModel = {
+  id: "model-tts",
+  provider_id: "provider-aliyun",
+  code: "qwen3-tts-flash-realtime",
+  display_name: "Qwen3 TTS Flash Realtime",
+  model_name: "qwen3-tts-flash-realtime",
+  default_max_output_tokens: 24000,
+  recommended_temperature: 0.2,
+  is_active: true,
+  runtime_capabilities: ["tts"],
+}
+
 test("resolveLearningMediaTranscriptionModelsFromSnapshots uses enabled admin settings", () => {
   const resolved = resolveLearningMediaTranscriptionModelsFromSnapshots({
     providers: [activeProvider],
-    models: [visionModel, asrModel],
+    models: [visionModel, asrModel, ttsModel],
     settings: [
       {
         id: "setting-image",
@@ -75,8 +87,8 @@ test("resolveLearningMediaTranscriptionModelsFromSnapshots uses enabled admin se
       {
         id: "setting-tts",
         media_type: "text_to_speech",
-        model_id: null,
-        is_enabled: false,
+        model_id: "model-tts",
+        is_enabled: true,
       },
     ],
   })
@@ -85,7 +97,7 @@ test("resolveLearningMediaTranscriptionModelsFromSnapshots uses enabled admin se
   assert.equal(resolved.vision?.model.code, "qwen3-6-flash")
   assert.equal(resolved.asr?.provider.code, "aliyuncs")
   assert.equal(resolved.asr?.model.code, "qwen3-asr-flash")
-  assert.equal(resolved.textToSpeech, null)
+  assert.equal(resolved.textToSpeech?.model.code, "qwen3-tts-flash-realtime")
 })
 
 test("resolveLearningMediaTranscriptionModelsFromSnapshots ignores disabled settings and inactive providers", () => {
@@ -121,6 +133,7 @@ test("resolveLearningMediaTranscriptionModelsFromSnapshots ignores disabled sett
 test("validateMediaTranscriptionModelForType enforces required runtime capability", () => {
   assert.equal(validateMediaTranscriptionModelForType("image_translation", visionModel), null)
   assert.equal(validateMediaTranscriptionModelForType("speech_to_text", asrModel), null)
+  assert.equal(validateMediaTranscriptionModelForType("text_to_speech", ttsModel), null)
   assert.equal(validateMediaTranscriptionModelForType("text_to_speech", null), null)
 
   assert.equal(
@@ -130,6 +143,10 @@ test("validateMediaTranscriptionModelForType enforces required runtime capabilit
   assert.equal(
     validateMediaTranscriptionModelForType("speech_to_text", visionModel),
     "语音转文本需要选择具备 asr 运行时用途的启用模型。",
+  )
+  assert.equal(
+    validateMediaTranscriptionModelForType("text_to_speech", visionModel),
+    "文本转语音需要选择具备 tts 运行时用途的启用模型。",
   )
 })
 

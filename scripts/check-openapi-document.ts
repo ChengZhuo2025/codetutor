@@ -186,9 +186,9 @@ test("openapi document covers all registered api operations and special transpor
       | { example?: { data?: { items?: Array<Record<string, unknown>> } } }
       | undefined
   )?.example?.data?.items?.[0]
-  assert.equal(adminModelListExample?.modelFamily, "chat")
-  assert.deepEqual(adminModelListExample?.runtimeCapabilities, [])
-  assert.equal(adminModelListExample?.connectionTestMode, "chat")
+  assert.equal(adminModelListExample?.modelFamily, "tts")
+  assert.deepEqual(adminModelListExample?.runtimeCapabilities, ["tts"])
+  assert.equal(adminModelListExample?.connectionTestMode, "tts")
 
   const draftDetailExample = (
     paths["/api/learning/plan-drafts/{id}"]?.get?.responses?.["200"]?.content?.["application/json"] as

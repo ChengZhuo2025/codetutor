@@ -720,7 +720,7 @@ const adminAIModelTestConnectionResponseExample = {
   success: true,
   message: "连接成功",
   httpStatus: 200,
-  testedPath: "/chat/completions",
+  testedPath: "/api-ws/v1/realtime",
 }
 
 const adminAIModelListExample = {
@@ -739,9 +739,9 @@ const adminAIModelListExample = {
       maxContextTokens: 200000,
       defaultMaxOutputTokens: 8192,
       recommendedTemperature: 0.2,
-      modelFamily: "chat",
-      runtimeCapabilities: [],
-      connectionTestMode: "chat",
+      modelFamily: "tts",
+      runtimeCapabilities: ["tts"],
+      connectionTestMode: "tts",
       reasoningEnabled: false,
       profileGroup: "balanced_default",
       notes: "默认稳定聊天模型",
@@ -5173,7 +5173,7 @@ registry.registerPath({
   tags: ["admin-ai"],
   summary: "测试 Model 连接（Provider 密钥 + 真实模型名）",
   description:
-    "使用库内所选 Provider 的 Base URL 与已配置密钥，对表单中的「真实模型名」发起轻量探测。默认使用结构化字段 `connectionTestMode`；若未显式配置，则按 `runtimeCapabilities`、`reasoningEnabled`、`profileGroup` 与历史 metadata 兼容规则推断。仅支持 OpenAI 兼容与 SiliconFlow Provider。",
+    "使用库内所选 Provider 的 Base URL 与已配置密钥，对表单中的「真实模型名」发起轻量探测。默认使用结构化字段 `connectionTestMode`；若未显式配置，则按 `runtimeCapabilities`、`reasoningEnabled`、`profileGroup` 与历史 metadata 兼容规则推断。Chat 使用 `/chat/completions`，Qwen3 ASR 使用 `/chat/completions` + `input_audio`，传统 ASR 使用 `/audio/transcriptions`，阿里云实时 TTS 使用 DashScope WebSocket。",
   security: [],
   request: {
     params: adminAIModelIdParamsSchema,

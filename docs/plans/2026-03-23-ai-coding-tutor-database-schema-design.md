@@ -192,7 +192,7 @@
 
 补充说明：
 
-- `public.ai_models` 已在 `028_add_ai_model_profile_fields.sql` 中补齐结构化画像字段：`model_family`、`runtime_capabilities`、`connection_test_mode`、`reasoning_enabled`、`profile_group`、`notes`；运行时先读这些主字段，再兼容历史 `metadata` 中的同义 key。
+- `public.ai_models` 已在 `028_add_ai_model_profile_fields.sql` 中补齐结构化画像字段：`model_family`、`runtime_capabilities`、`connection_test_mode`、`reasoning_enabled`、`profile_group`、`notes`；运行时先读这些主字段，再兼容历史 `metadata` 中的同义 key。当前结构化画像支持 `tts` 模型类别 / 运行时用途 / 连接测试模式，历史 `audio_transcription` 连接测试值读取时兼容为 `asr`。
 
 ---
 

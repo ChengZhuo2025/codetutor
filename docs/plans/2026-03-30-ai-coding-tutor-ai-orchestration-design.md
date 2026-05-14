@@ -1162,9 +1162,9 @@ ai/skills/
 | `max_context_tokens` | `integer` | not null | 最大上下文 |
 | `default_max_output_tokens` | `integer` | not null | 默认最大输出 token |
 | `recommended_temperature` | `numeric(4,2)` | nullable | 推荐温度 |
-| `model_family` | `varchar(32)` | nullable | 管理后台主字段：模型类别，如 `chat` / `reasoning` / `asr` / `vision` |
-| `runtime_capabilities` | `text[]` | not null default `{}` | 管理后台主字段：运行时用途，如 `asr` / `vision` / `quality_check` |
-| `connection_test_mode` | `varchar(32)` | nullable | 管理后台主字段：连接测试模式，`chat` / `audio_transcription` / `models_list` |
+| `model_family` | `varchar(32)` | nullable | 管理后台主字段：模型类别，如 `chat` / `reasoning` / `asr` / `tts` / `vision` |
+| `runtime_capabilities` | `text[]` | not null default `{}` | 管理后台主字段：运行时用途，如 `asr` / `tts` / `vision` / `quality_check` |
+| `connection_test_mode` | `varchar(32)` | nullable | 管理后台主字段：连接测试模式，`chat` / `asr` / `tts` / `models_list`；历史 `audio_transcription` 读取时兼容为 `asr` |
 | `reasoning_enabled` | `boolean` | not null default false | 是否按推理类模型对待；后台连接测试默认退化为 `/models` 连通性验证 |
 | `profile_group` | `varchar(128)` | nullable | 管理后台可读分组，如 `balanced_default` / `reasoning_lab` |
 | `notes` | `text` | nullable | 写给管理员的备注说明 |
@@ -1590,7 +1590,8 @@ ai/skills/
 3. 第一阶段不另外新增 `POST /api/learning/message/stream`，避免前后端维护两套路由。
 4. 多模态附件不直接塞入 `content_text`。图片和语音先落 `learning_message_attachments`，再通过 `attachmentIds` 进入主消息编排。
 5. 图片附件预处理使用 `data:<mime>;base64,...` 传给 vision 模型，避免私有 Storage signed URL 被 provider 侧网络阻断。
-6. `Qwen3-ASR-Flash` 使用 OpenAI-compatible `/chat/completions` 的 `input_audio` 格式，不走传统 `/audio/transcriptions` multipart 表单；是否选用该模型由后台语音转文本设置决定。
+6. `Qwen3-ASR-Flash` 使用 OpenAI-compatible `/chat/completions` 的 `input_audio` 格式，不走传统 `/audio/transcriptions` multipart 表单；是否选用该模型由后台语音转文本设置决定。管理端连接测试同样按该格式发起最小音频探测。
+7. `qwen3-tts-flash-realtime` 属于阿里云 DashScope WebSocket 实时 TTS；当前用户端运行时仍未接入 TTS 播报，但管理端模型连接测试可通过 `connection_test_mode=tts` 做最小实时合成探测。
 
 ### 12.2.1 请求头
 

@@ -19,6 +19,7 @@ export const ADMIN_AI_MODEL_FAMILIES = [
   "chat",
   "reasoning",
   "asr",
+  "tts",
   "vision",
   "other",
 ] as const
@@ -44,7 +45,8 @@ export const ADMIN_AI_MEDIA_ATTACHMENT_KINDS = [
 
 export const ADMIN_AI_MODEL_CONNECTION_TEST_MODES = [
   "chat",
-  "audio_transcription",
+  "asr",
+  "tts",
   "models_list",
 ] as const
 
@@ -236,6 +238,9 @@ export type AdminAIProviderTestConnectionResponseData = {
 export type AdminAIModelTestConnectionRequest = {
   providerCode: string
   modelName: string
+  modelFamily?: AdminAIModelFamily
+  runtimeCapabilities?: AdminAIModelRuntimeCapability[]
+  connectionTestMode?: AdminAIModelConnectionTestMode | "audio_transcription"
   /** 探测用 max_tokens，默认 16，范围 1–512 */
   maxOutputTokens?: number
   /** 覆盖超时；未传时使用 Provider 库内 timeout_ms（并做上下限裁剪） */

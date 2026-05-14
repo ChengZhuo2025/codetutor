@@ -264,6 +264,9 @@ export function ModelFormSheet({
           body: JSON.stringify({
             providerCode,
             modelName,
+            modelFamily: form.modelFamily,
+            runtimeCapabilities: form.runtimeCapabilities,
+            connectionTestMode: form.connectionTestMode,
             maxOutputTokens,
           }),
         },

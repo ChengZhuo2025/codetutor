@@ -20,6 +20,9 @@ function normalizeCapabilityName(raw: string): AdminAIModelRuntimeCapability | n
   if (normalized === "asr" || normalized === "speech_to_text") {
     return "asr"
   }
+  if (normalized === "tts" || normalized === "text_to_speech") {
+    return "tts"
+  }
   if (normalized === "vision") {
     return "vision"
   }
@@ -51,7 +54,10 @@ export function normalizeModelConnectionTestMode(raw: unknown): AdminAIModelConn
     return "chat"
   }
   if (normalized === "audio_transcription" || normalized === "asr" || normalized === "speech_to_text") {
-    return "audio_transcription"
+    return "asr"
+  }
+  if (normalized === "tts" || normalized === "text_to_speech" || normalized === "audio_speech") {
+    return "tts"
   }
   if (normalized === "models_list") {
     return "models_list"
@@ -65,7 +71,7 @@ export function normalizeModelFamily(raw: unknown): AdminAIModelFamily | null {
   }
 
   const normalized = raw.trim().toLowerCase().replace(/-/g, "_")
-  if (normalized === "chat" || normalized === "reasoning" || normalized === "asr" || normalized === "vision" || normalized === "other") {
+  if (normalized === "chat" || normalized === "reasoning" || normalized === "asr" || normalized === "tts" || normalized === "vision" || normalized === "other") {
     return normalized
   }
   return null
@@ -127,8 +133,10 @@ export function resolveStoredModelProfile(input: {
   const connectionTestMode =
     normalizeModelConnectionTestMode(input.connectionTestMode)
     ?? readLegacyConnectionTestMode(metadata)
-    ?? (runtimeCapabilities.includes("asr")
-      ? "audio_transcription"
+    ?? (runtimeCapabilities.includes("tts")
+      ? "tts"
+      : runtimeCapabilities.includes("asr")
+        ? "asr"
       : runtimeCapabilities.includes("quality_check") || reasoningEnabled
         ? "models_list"
         : "chat")
@@ -138,11 +146,13 @@ export function resolveStoredModelProfile(input: {
     ?? normalizeModelFamily(metadata.modelFamily)
     ?? (reasoningEnabled
       ? "reasoning"
-      : runtimeCapabilities.includes("asr")
-        ? "asr"
-        : runtimeCapabilities.includes("vision")
-          ? "vision"
-          : "chat")
+      : runtimeCapabilities.includes("tts")
+        ? "tts"
+        : runtimeCapabilities.includes("asr")
+          ? "asr"
+          : runtimeCapabilities.includes("vision")
+            ? "vision"
+            : "chat")
 
   const notes =
     normalizeModelNotes(input.notes)

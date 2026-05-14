@@ -1292,11 +1292,20 @@ function modelNameLooksLikeSpeechAsr(modelName: string): boolean {
   )
 }
 
+function modelNameLooksLikeQwen3Asr(modelName: string): boolean {
+  return modelName.trim().toLowerCase() === "qwen3-asr-flash"
+}
+
+function modelNameLooksLikeTts(modelName: string): boolean {
+  const m = modelName.toLowerCase()
+  return m.includes("tts") || m.includes("text-to-speech") || m.includes("text_to_speech")
+}
+
 /** 管理端模型连接测试：根据 metadata / 模型名推断探测方式 */
 function inferAdminModelConnectionTestKind(
   row: Pick<ModelRow, "model_name" | "metadata" | "connection_test_mode" | "runtime_capabilities" | "reasoning_enabled" | "profile_group">,
   requestModelName: string,
-): "chat" | "audio_transcription" {
+): "chat" | "asr" | "tts" {
   const profile = resolveStoredModelProfile({
     connectionTestMode: row.connection_test_mode,
     runtimeCapabilities: row.runtime_capabilities,
@@ -1306,19 +1315,30 @@ function inferAdminModelConnectionTestKind(
   })
 
   const mode = normalizeModelConnectionTestMode(profile.connectionTestMode)
-  if (mode === "audio_transcription") {
-    return "audio_transcription"
+  if (mode === "asr") {
+    return "asr"
+  }
+  if (mode === "tts") {
+    return "tts"
   }
   if (mode === "chat") {
     return "chat"
   }
 
+  if (profile.runtimeCapabilities.includes("tts")) {
+    return "tts"
+  }
+
   if (profile.runtimeCapabilities.includes("asr")) {
-    return "audio_transcription"
+    return "asr"
   }
 
   if (modelNameLooksLikeSpeechAsr(requestModelName) || modelNameLooksLikeSpeechAsr(row.model_name)) {
-    return "audio_transcription"
+    return "asr"
+  }
+
+  if (modelNameLooksLikeTts(requestModelName) || modelNameLooksLikeTts(row.model_name)) {
+    return "tts"
   }
 
   return "chat"
@@ -1358,7 +1378,7 @@ function inferReasoningChatModel(
 export function inferAdminModelConnectionProbeStrategy(
   row: Pick<ModelRow, "model_name" | "metadata" | "connection_test_mode" | "runtime_capabilities" | "reasoning_enabled" | "profile_group">,
   requestModelName: string,
-): "chat" | "audio_transcription" | "models_list" {
+): "chat" | "asr_chat_completions" | "asr_audio_transcription" | "tts_realtime" | "models_list" {
   const profile = resolveStoredModelProfile({
     connectionTestMode: row.connection_test_mode,
     runtimeCapabilities: row.runtime_capabilities,
@@ -1371,8 +1391,14 @@ export function inferAdminModelConnectionProbeStrategy(
   }
 
   const testKind = inferAdminModelConnectionTestKind(row, requestModelName)
-  if (testKind === "audio_transcription") {
-    return "audio_transcription"
+  if (testKind === "tts") {
+    return "tts_realtime"
+  }
+
+  if (testKind === "asr") {
+    return modelNameLooksLikeQwen3Asr(requestModelName) || modelNameLooksLikeQwen3Asr(row.model_name)
+      ? "asr_chat_completions"
+      : "asr_audio_transcription"
   }
 
   // 对质量闸门与 thinking 类模型，仅验证鉴权与 Provider 连通性，避免为了后台配置测试触发慢推理。
@@ -1390,6 +1416,23 @@ function providerSupportsSiliconFlowStyleAudioTranscription(provider: ProviderRo
   const host = provider.base_url.toLowerCase()
   return host.includes("siliconflow.cn") || host.includes("siliconflow.com")
 }
+
+function providerSupportsDashScopeRealtimeTts(provider: ProviderRow): boolean {
+  const host = provider.base_url.toLowerCase()
+  return host.includes("dashscope.aliyuncs.com") || host.includes("bailian.aliyuncs.com")
+}
+
+function buildDashScopeRealtimeUrl(modelName: string): string {
+  const url = new URL("wss://dashscope.aliyuncs.com/api-ws/v1/realtime")
+  url.searchParams.set("model", modelName)
+  return url.toString()
+}
+
+type NodeWebSocketConstructor = new (
+  url: string,
+  protocols: string[],
+  options: { headers: Record<string, string> },
+) => WebSocket
 
 /** 极短静音 PCM WAV，用于 ASR 连通性探测（multipart `file`） */
 function buildMinimalSilenceWavPcm(): Buffer {
@@ -1593,6 +1636,205 @@ async function probeSiliconFlowCompatibleAudioTranscription(input: {
   } finally {
     clearTimeout(timer)
   }
+}
+
+async function probeQwen3AsrChatCompletions(input: {
+  baseUrl: string
+  authMode: "bearer" | "api_key_header"
+  secret: string
+  modelName: string
+  timeoutMs: number
+}): Promise<AdminAIModelTestConnectionResponseData> {
+  const cappedMs = Math.min(30_000, Math.max(3_000, input.timeoutMs))
+  const url = `${normalizeProviderBaseUrl(input.baseUrl)}/chat/completions`
+  const controller = new AbortController()
+  const timer = setTimeout(() => {
+    controller.abort()
+  }, cappedMs)
+
+  try {
+    const headers = new Headers({
+      "Content-Type": "application/json",
+    })
+    if (input.authMode === "bearer") {
+      headers.set("Authorization", `Bearer ${input.secret}`)
+    } else {
+      headers.set("x-api-key", input.secret)
+    }
+
+    const wav = buildMinimalSilenceWavPcm()
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model: input.modelName,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_audio",
+                input_audio: {
+                  data: `data:audio/wav;base64,${wav.toString("base64")}`,
+                  format: "wav",
+                },
+              },
+            ],
+          },
+        ],
+        stream: false,
+        asr_options: {
+          enable_itn: false,
+        },
+      }),
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: "连接失败",
+        httpStatus: response.status,
+        testedPath: "/chat/completions",
+      }
+    }
+
+    return {
+      success: true,
+      message: "连接成功",
+      httpStatus: response.status,
+      testedPath: "/chat/completions",
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return {
+        success: false,
+        message: "连接超时",
+        testedPath: "/chat/completions",
+      }
+    }
+
+    return {
+      success: false,
+      message: "连接失败",
+      testedPath: "/chat/completions",
+    }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+async function probeDashScopeRealtimeTts(input: {
+  secret: string
+  modelName: string
+  timeoutMs: number
+}): Promise<AdminAIModelTestConnectionResponseData> {
+  const cappedMs = Math.min(30_000, Math.max(3_000, input.timeoutMs))
+  const testedPath = "/api-ws/v1/realtime"
+  const wsUrl = buildDashScopeRealtimeUrl(input.modelName)
+
+  return new Promise((resolve) => {
+    let settled = false
+    let opened = false
+    const NodeWebSocket = WebSocket as unknown as NodeWebSocketConstructor
+    const socket = new NodeWebSocket(wsUrl, [], {
+      headers: {
+        Authorization: `Bearer ${input.secret}`,
+      },
+    })
+
+    const finish = (result: AdminAIModelTestConnectionResponseData) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      clearTimeout(timer)
+      try {
+        socket.close()
+      } catch {
+        // Ignore close errors after a completed probe.
+      }
+      resolve(result)
+    }
+
+    const timer = setTimeout(() => {
+      finish({
+        success: false,
+        message: opened ? "连接超时" : "连接失败",
+        testedPath,
+      })
+    }, cappedMs)
+
+    socket.onopen = () => {
+      opened = true
+      socket.send(JSON.stringify({
+        type: "session.update",
+        session: {
+          modalities: ["audio"],
+          voice: "Cherry",
+          output_audio_format: "pcm16",
+        },
+      }))
+      socket.send(JSON.stringify({
+        type: "input_text_buffer.append",
+        text: "ping",
+      }))
+      socket.send(JSON.stringify({
+        type: "input_text_buffer.commit",
+      }))
+    }
+
+    socket.onmessage = (event) => {
+      const data = typeof event.data === "string" ? event.data : ""
+      if (!data) {
+        return
+      }
+
+      try {
+        const payload = JSON.parse(data) as { type?: string; error?: { message?: string } }
+        if (payload.error) {
+          finish({
+            success: false,
+            message: payload.error.message?.trim() || "连接失败",
+            testedPath,
+          })
+          return
+        }
+        if (
+          payload.type === "response.audio.delta"
+          || payload.type === "response.audio.done"
+          || payload.type === "response.done"
+          || payload.type === "input_text_buffer.committed"
+        ) {
+          finish({
+            success: true,
+            message: "连接成功",
+            testedPath,
+          })
+        }
+      } catch {
+        // Non-JSON frames are not expected here; wait for a terminal event.
+      }
+    }
+
+    socket.onerror = () => {
+      finish({
+        success: false,
+        message: "连接失败",
+        testedPath,
+      })
+    }
+
+    socket.onclose = () => {
+      if (!settled) {
+        finish({
+          success: false,
+          message: opened ? "连接中断" : "连接失败",
+          testedPath,
+        })
+      }
+    }
+  })
 }
 
 async function probeProviderModelsEndpoint(input: {
@@ -1856,9 +2098,25 @@ export async function testAdminAIModelConnection(
 
   const maxTokens = input.maxOutputTokens ?? 16
   const effectiveTimeout = input.timeoutMs ?? provider.timeout_ms
+  const testProfileRow = {
+    ...modelRow,
+    model_family: input.modelFamily ?? modelRow.model_family,
+    runtime_capabilities: input.runtimeCapabilities ?? modelRow.runtime_capabilities,
+    connection_test_mode: input.connectionTestMode ?? modelRow.connection_test_mode,
+  }
 
-  const probeStrategy = inferAdminModelConnectionProbeStrategy(modelRow, modelNameTrim)
-  if (probeStrategy === "audio_transcription") {
+  const probeStrategy = inferAdminModelConnectionProbeStrategy(testProfileRow, modelNameTrim)
+  if (probeStrategy === "asr_chat_completions") {
+    return probeQwen3AsrChatCompletions({
+      baseUrl: provider.base_url,
+      authMode: provider.auth_mode,
+      secret: resolved.secret,
+      modelName: modelNameTrim,
+      timeoutMs: effectiveTimeout,
+    })
+  }
+
+  if (probeStrategy === "asr_audio_transcription") {
     if (!providerSupportsSiliconFlowStyleAudioTranscription(provider)) {
       throwNamedError(
         "VALIDATION_FAILED",
@@ -1868,6 +2126,20 @@ export async function testAdminAIModelConnection(
     return probeSiliconFlowCompatibleAudioTranscription({
       baseUrl: provider.base_url,
       authMode: provider.auth_mode,
+      secret: resolved.secret,
+      modelName: modelNameTrim,
+      timeoutMs: effectiveTimeout,
+    })
+  }
+
+  if (probeStrategy === "tts_realtime") {
+    if (!providerSupportsDashScopeRealtimeTts(provider)) {
+      throwNamedError(
+        "VALIDATION_FAILED",
+        "TTS 实时模型需在阿里云百炼 DashScope Provider 上测试连接。",
+      )
+    }
+    return probeDashScopeRealtimeTts({
       secret: resolved.secret,
       modelName: modelNameTrim,
       timeoutMs: effectiveTimeout,

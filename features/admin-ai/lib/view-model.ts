@@ -126,6 +126,8 @@ export function getAdminAIModelFamilyLabel(modelFamily: string | null | undefine
       return "推理"
     case "asr":
       return "ASR"
+    case "tts":
+      return "TTS"
     case "vision":
       return "视觉"
     case "other":
@@ -143,6 +145,8 @@ export function getAdminAIModelRuntimeCapabilityLabel(capability: string) {
       return "视觉 / OCR"
     case "quality_check":
       return "质量校验"
+    case "tts":
+      return "TTS"
     default:
       return capability
   }
@@ -152,8 +156,11 @@ export function getAdminAIModelConnectionTestModeLabel(mode: string | null | und
   switch (mode) {
     case "chat":
       return "Chat 探测"
+    case "asr":
     case "audio_transcription":
-      return "音频转写探测"
+      return "ASR 探测"
+    case "tts":
+      return "TTS 探测"
     case "models_list":
       return "/models 连通性"
     default:

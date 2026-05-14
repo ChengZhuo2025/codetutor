@@ -250,6 +250,38 @@ test("parseAdminAIModelBody accepts structured model profile fields", () => {
   }
 })
 
+test("parseAdminAIModelBody accepts tts model profile fields", () => {
+  const r = parseAdminAIModelBody({
+    providerCode: " aliyuncs ",
+    code: " qwen3-tts-flash-realtime ",
+    displayName: " Qwen3 TTS Flash Realtime ",
+    modelName: " qwen3-tts-flash-realtime ",
+    supportsStream: true,
+    supportsJsonMode: false,
+    supportsToolCalling: false,
+    maxContextTokens: 128000,
+    defaultMaxOutputTokens: 24000,
+    recommendedTemperature: 0.2,
+    modelFamily: "tts",
+    runtimeCapabilities: ["tts"],
+    connectionTestMode: "tts",
+    reasoningEnabled: false,
+    profileGroup: "balanced_default",
+    notes: "语音合成",
+    pricingMetadata: {},
+    isActive: true,
+    metadata: {},
+    changeReason: "新增 TTS 模型",
+  })
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.equal(r.data.modelFamily, "tts")
+    assert.deepEqual(r.data.runtimeCapabilities, ["tts"])
+    assert.equal(r.data.connectionTestMode, "tts")
+  }
+})
+
 test("parseAdminAIAgentBindingBody accepts nullable targeting filters", () => {
   const r = parseAdminAIAgentBindingBody({
     agentCode: "codex-cli-coach",

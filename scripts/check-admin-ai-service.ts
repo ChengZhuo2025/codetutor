@@ -2,12 +2,28 @@ import test from "node:test"
 import assert from "node:assert/strict"
 
 import { inferAdminModelConnectionProbeStrategy } from "../server/modules/admin-ai/service.ts"
+import { resolveStoredModelProfile } from "../server/modules/ai/model-profile.ts"
+
+test("resolveStoredModelProfile keeps tts runtime capability and infers tts fields", () => {
+  const profile = resolveStoredModelProfile({
+    modelFamily: null,
+    runtimeCapabilities: ["tts"],
+    connectionTestMode: null,
+    reasoningEnabled: false,
+    profileGroup: null,
+    metadata: {},
+  })
+
+  assert.equal(profile.modelFamily, "tts")
+  assert.deepEqual(profile.runtimeCapabilities, ["tts"])
+  assert.equal(profile.connectionTestMode, "tts")
+})
 
 test("inferAdminModelConnectionProbeStrategy prefers structured connectionTestMode", () => {
   const strategy = inferAdminModelConnectionProbeStrategy(
     {
       model_name: "Qwen/Qwen3-8B",
-      connection_test_mode: "audio_transcription",
+      connection_test_mode: "asr",
       runtime_capabilities: [],
       reasoning_enabled: false,
       profile_group: null,
@@ -18,7 +34,7 @@ test("inferAdminModelConnectionProbeStrategy prefers structured connectionTestMo
     "Qwen/Qwen3-8B",
   )
 
-  assert.equal(strategy, "audio_transcription")
+  assert.equal(strategy, "asr_audio_transcription")
 })
 
 test("inferAdminModelConnectionProbeStrategy uses models list probe for quality_check models", () => {
@@ -75,7 +91,25 @@ test("inferAdminModelConnectionProbeStrategy keeps chat probe for regular chat m
   assert.equal(strategy, "chat")
 })
 
-test("inferAdminModelConnectionProbeStrategy keeps audio transcription probe for ASR models", () => {
+test("inferAdminModelConnectionProbeStrategy uses chat-completions probe for qwen3 ASR models", () => {
+  const strategy = inferAdminModelConnectionProbeStrategy(
+    {
+      model_name: "qwen3-asr-flash",
+      connection_test_mode: null,
+      runtime_capabilities: ["asr"],
+      reasoning_enabled: false,
+      profile_group: null,
+      metadata: {
+        capabilities: ["asr"],
+      },
+    },
+    "qwen3-asr-flash",
+  )
+
+  assert.equal(strategy, "asr_chat_completions")
+})
+
+test("inferAdminModelConnectionProbeStrategy keeps audio transcription probe for legacy ASR models", () => {
   const strategy = inferAdminModelConnectionProbeStrategy(
     {
       model_name: "FunAudioLLM/SenseVoiceSmall",
@@ -90,5 +124,23 @@ test("inferAdminModelConnectionProbeStrategy keeps audio transcription probe for
     "FunAudioLLM/SenseVoiceSmall",
   )
 
-  assert.equal(strategy, "audio_transcription")
+  assert.equal(strategy, "asr_audio_transcription")
+})
+
+test("inferAdminModelConnectionProbeStrategy uses realtime probe for tts models", () => {
+  const strategy = inferAdminModelConnectionProbeStrategy(
+    {
+      model_name: "qwen3-tts-flash-realtime",
+      connection_test_mode: null,
+      runtime_capabilities: ["tts"],
+      reasoning_enabled: false,
+      profile_group: null,
+      metadata: {
+        capabilities: ["text_to_speech"],
+      },
+    },
+    "qwen3-tts-flash-realtime",
+  )
+
+  assert.equal(strategy, "tts_realtime")
 })
