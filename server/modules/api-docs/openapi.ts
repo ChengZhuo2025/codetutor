@@ -128,6 +128,7 @@ import {
   learningPlanFromMaterialResponseDataSchema,
   learningMessageRequestSchema,
   learningMessageResponseDataSchema,
+  learningMessageSpeechRequestSchema,
   learningMessagesQuerySchema,
   learningMessagesResponseDataSchema,
   learningHistoryDetailResponseDataSchema,
@@ -2568,6 +2569,61 @@ registry.registerPath({
         example: {
           code: "VALIDATION_FAILED",
           message: "请求体不是合法 JSON。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/learning/message-speech",
+  operationId: "postLearningMessageSpeech",
+  tags: ["learning"],
+  summary: "生成 AI 回复消息播读音频",
+  description: "按需调用后台多媒体转译设置中的 text_to_speech 模型，为当前用户自己的 AI 回复消息生成临时音频；首版不持久化音频。",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: learningMessageSpeechRequestSchema,
+          example: {
+            messageId: "11111111-1111-4111-8111-111111111111",
+            text: "先完成最小验证，再把结果贴回来。",
+          },
+        },
+      },
+    },
+  },
+  responses: {
+    "200": {
+      description: "音频生成成功，返回可直接播放的 WAV 音频。",
+      content: {
+        "audio/wav": {
+          schema: {
+            type: "string",
+            format: "binary",
+          },
+        },
+      },
+    },
+    ...commonErrorResponses(["401", "404", "422", "500", "502", "503"], {
+      "404": {
+        description: "消息不存在、不是 AI 回复，或不属于当前用户。",
+        example: {
+          code: "NOT_FOUND",
+          message: "没有找到可播读的 AI 回复消息。",
+          data: null,
+        },
+      },
+      "503": {
+        description: "后台未启用或未配置可用文本转语音模型。",
+        example: {
+          code: "SERVICE_UNAVAILABLE",
+          message: "当前未配置文本转语音模型。",
           data: null,
         },
       },
@@ -5204,7 +5260,7 @@ registry.registerPath({
   operationId: "getAdminAIMediaTranscriptionSettings",
   tags: ["admin-ai"],
   summary: "多媒体转译设置列表",
-  description: "读取图片转译、语音转文本、文本转语音三类配置及可选 Model 列表。文本转语音当前仅配置预留。",
+  description: "读取图片转译、语音转文本、文本转语音三类配置及可选 Model 列表。文本转语音用于用户端 AI 回复播读。",
   security: [],
   responses: {
     "200": successResponse(

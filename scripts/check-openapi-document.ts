@@ -16,13 +16,14 @@ test("openapi document covers all registered api operations and special transpor
     ),
   )
 
-  assert.equal(operations.length, 129)
+  assert.equal(operations.length, 130)
 
   assert.ok(paths["/api/auth/login"]?.post)
   assert.ok(paths["/api/profile/me"]?.get)
   assert.ok(paths["/api/profile/me"]?.patch)
   assert.ok(paths["/api/profile/avatar"]?.post)
   assert.ok(paths["/api/learning/message"]?.post)
+  assert.ok(paths["/api/learning/message-speech"]?.post)
   assert.ok(paths["/api/learning/plan-from-material"]?.post)
   assert.ok(paths["/api/learning/material-intakes/{id}"]?.get)
   assert.ok(paths["/api/learning/plan-drafts/{id}"]?.get)
@@ -153,6 +154,17 @@ test("openapi document covers all registered api operations and special transpor
   assert.ok(
     (learningMessageResponses?.["200"]?.content?.["application/json"] as { example?: unknown })?.example,
   )
+
+  const learningMessageSpeechPost = paths["/api/learning/message-speech"]?.post as
+    | {
+        requestBody?: {
+          content?: Record<string, unknown>
+        }
+        responses?: Record<string, { content?: Record<string, unknown> }>
+      }
+    | undefined
+  assert.ok(learningMessageSpeechPost?.requestBody?.content?.["application/json"])
+  assert.ok(learningMessageSpeechPost?.responses?.["200"]?.content?.["audio/wav"])
 
   const securitySchemes = document.components?.securitySchemes ?? {}
   assert.ok(securitySchemes.bearerAuth)

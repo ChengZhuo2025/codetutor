@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { CheckCircle2, Lightbulb, Mic, RefreshCw, Zap } from "lucide-react"
+import { CheckCircle2, Lightbulb, Mic, Pause, Play, RefreshCw, Volume2, Zap } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   normalizeAssistantActions,
@@ -117,6 +117,8 @@ type LearnChatMessageItemProps = {
     },
   ) => void
   onNextStepClick: (message: Message) => void
+  onToggleSpeech: (message: Message) => void
+  speechState?: "idle" | "loading" | "playing" | "paused"
 }
 
 export function LearnChatMessageItem({
@@ -125,6 +127,8 @@ export function LearnChatMessageItem({
   pendingAssistantMessageId,
   onAssistantAction,
   onNextStepClick,
+  onToggleSpeech,
+  speechState = "idle",
 }: LearnChatMessageItemProps) {
   const meta = MESSAGE_KIND_META[message.kind]
   const isUser = message.role === "user"
@@ -154,6 +158,26 @@ export function LearnChatMessageItem({
     message.role === "ai" && message.structuredContent?.actions?.length
       ? normalizeAssistantActions(message.structuredContent.actions)
       : []
+  const canReadAloud =
+    message.role === "ai" &&
+    message.content !== STREAMING_PLACEHOLDER &&
+    message.content.trim().length > 0
+  const SpeechIcon =
+    speechState === "loading"
+      ? RefreshCw
+      : speechState === "playing"
+        ? Pause
+        : speechState === "paused"
+          ? Play
+          : Volume2
+  const speechLabel =
+    speechState === "loading"
+      ? "正在生成语音"
+      : speechState === "playing"
+        ? "暂停播读"
+        : speechState === "paused"
+          ? "继续播读"
+          : "播读 AI 回复"
 
   return (
     <div
@@ -281,22 +305,40 @@ export function LearnChatMessageItem({
           </div>
         ) : null}
 
-        {assistantActions.length ? (
-          <div className="flex flex-wrap gap-2">
-            {assistantActions.map((action, actionIndex) => (
+        {assistantActions.length || canReadAloud ? (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+              {assistantActions.map((action, actionIndex) => (
+                <button
+                  key={`message-action-${message.id}-${actionIndex}`}
+                  type="button"
+                  disabled={isTyping}
+                  onClick={() => onAssistantAction(message, action)}
+                  className={cn(
+                    "px-3 py-2 text-sm font-medium",
+                    MESSAGE_ACTION_TONE_CLASS[action.tone],
+                  )}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+            {canReadAloud ? (
               <button
-                key={`message-action-${message.id}-${actionIndex}`}
                 type="button"
-                disabled={isTyping}
-                onClick={() => onAssistantAction(message, action)}
+                disabled={isTyping || speechState === "loading"}
+                onClick={() => onToggleSpeech(message)}
+                aria-label={speechLabel}
+                title={speechLabel}
                 className={cn(
-                  "px-3 py-2 text-sm font-medium",
-                  MESSAGE_ACTION_TONE_CLASS[action.tone],
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/60 bg-surface-2 text-muted-foreground transition hover:border-brand/40 hover:text-brand",
+                  (isTyping || speechState === "loading") && "pointer-events-none opacity-60",
+                  speechState === "playing" && "border-brand/40 bg-brand-dim text-brand",
                 )}
               >
-                {action.label}
+                <SpeechIcon className={cn("h-4 w-4", speechState === "loading" && "animate-spin")} />
               </button>
-            ))}
+            ) : null}
           </div>
         ) : null}
 

@@ -1127,6 +1127,7 @@ async function tryGetIdempotentResponse(
     assistantTitle: title,
     assistantKind: kind,
     assistantContent: assistant.content_text ?? "",
+    speechMessageId: assistant.id,
     structuredContent: parseStoredStructuredLearningMessageContent(
       assistant.content_json?.structuredContent ?? null,
     ),
@@ -1659,6 +1660,7 @@ export async function orchestrateLearningMessage(
       presentation,
       structuredContent,
       taskPatch: finalTaskPatch,
+      assistantMessageId,
     } = await persistAssistantResult({
       ...prepared,
       userId,
@@ -1677,6 +1679,7 @@ export async function orchestrateLearningMessage(
       assistantTitle: presentation.title,
       assistantKind: presentation.kind,
       assistantContent: presentation.content,
+      speechMessageId: assistantMessageId,
       structuredContent,
       taskPatch: finalTaskPatch,
     })

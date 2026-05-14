@@ -79,7 +79,7 @@
 - 当前学习消息链路已覆盖 logic / HTTP / output-format 测试，以及真实 provider / database 参与的 live JSON、live SSE 集成测试
 - 当前 provider 密钥主路径已改为“管理后台录入 -> 服务端加密 -> 数据库存储 -> 运行时解密”；若数据库密钥缺失，则仍可通过 `envSecretRef` 回退读取环境变量；若两者都不存在会返回 `AI_PROVIDER_ERROR`
 - 当前仓库已经具备适合承载该能力的基础设施：`app/api`、`server/modules`、Supabase Auth、Database、Storage、远程迁移执行脚本
-- **学习对话多模态附件**：`/learn` 已支持图片和语音附件。前端先调用 `POST /api/learning/attachments` 上传到私有 Storage，再在 `POST /api/learning/message` 传 `attachmentIds`；服务端验证归属后做 deterministic media preprocessing，图片转译和语音转文本模型由后台 `media_transcription_settings` 配置决定，处理结果写回 `learning_message_attachments` 并注入教学上下文。当前后台已预留 `text_to_speech` 配置，但尚未接入用户端 TTS 运行时调用。
+- **学习对话多模态附件与播读**：`/learn` 已支持图片和语音附件。前端先调用 `POST /api/learning/attachments` 上传到私有 Storage，再在 `POST /api/learning/message` 传 `attachmentIds`；服务端验证归属后做 deterministic media preprocessing，图片转译和语音转文本模型由后台 `media_transcription_settings` 配置决定，处理结果写回 `learning_message_attachments` 并注入教学上下文。AI 回复消息底部支持按需播读，`POST /api/learning/message-speech` 调用后台 `text_to_speech` 配置并返回临时音频，首版不持久化音频。
 - **教程链接生成学习计划（Phase A/B）**：已落地专用接口 `POST /api/learning/plan-from-material`（及草稿 `confirm` / `regenerate`），计划生成使用 `agent_templates.code = self-study-material-planner` 与 `invokeAIProvider` 非流式 JSON，不经过 `POST /api/learning/message` 主消息编排；intake worker 现已按 `raw text -> subtitle -> ASR -> OCR/vision` 顺序做多模态证据摄取，并通过独立 quality gate 做规则校验；仅在弱证据、长计划、缺少时长估算或时长压力较高时才触发轻量化模型自检，自检超时只记入 `selfCheck.reason`，不再污染用户可见 warning
 - 当前仍未引入 Redis / 消息队列；上述缓存、限流与观测增强均为单实例进程内实现，属于第一阶段运行时加固而非分布式基础设施
 
@@ -1184,7 +1184,7 @@ ai/skills/
 用途：
 
 - 管理学习对话多媒体预处理使用的模型配置。
-- 当前三类配置为 `image_translation`、`speech_to_text`、`text_to_speech`；前两类已接入学习对话附件预处理，文本转语音仅保留配置入口。
+- 当前三类配置为 `image_translation`、`speech_to_text`、`text_to_speech`；前两类已接入学习对话附件预处理，文本转语音已接入 AI 回复消息按需播读。
 - 该表只影响 `/learn` 对话附件预处理，不改变自学材料 intake 的 ASR / vision / quality 模型解析。
 
 字段：
@@ -1591,7 +1591,7 @@ ai/skills/
 4. 多模态附件不直接塞入 `content_text`。图片和语音先落 `learning_message_attachments`，再通过 `attachmentIds` 进入主消息编排。
 5. 图片附件预处理使用 `data:<mime>;base64,...` 传给 vision 模型，避免私有 Storage signed URL 被 provider 侧网络阻断。
 6. `Qwen3-ASR-Flash` 使用 OpenAI-compatible `/chat/completions` 的 `input_audio` 格式，不走传统 `/audio/transcriptions` multipart 表单；是否选用该模型由后台语音转文本设置决定。管理端 ASR 连接测试只验证 Provider `/models` 鉴权连通性，不发起真实转写请求。
-7. `qwen3-tts-flash-realtime` 属于阿里云 DashScope WebSocket 实时 TTS；当前用户端运行时仍未接入 TTS 播报，但管理端模型连接测试可通过 `connection_test_mode=tts` 做最小实时合成探测。
+7. `qwen3-tts-flash-realtime` 属于阿里云 DashScope WebSocket 实时 TTS；用户端 AI 回复播读通过 `POST /api/learning/message-speech` 运行时调用该类模型，管理端模型连接测试可通过 `connection_test_mode=tts` 做最小实时合成探测。
 
 ### 12.2.1 请求头
 

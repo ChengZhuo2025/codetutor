@@ -393,6 +393,7 @@ export const messageAttachmentSchema = z
 export const messageSchema = z
   .object({
     id: z.number().int(),
+    speechMessageId: z.string().uuid().optional(),
     role: z.enum(["system", "ai", "user"]),
     kind: z.enum(["system_goal", "coach", "user_input", "task_feedback"]),
     title: z.string().optional(),
@@ -461,6 +462,13 @@ export const learningMessageRequestSchema = z
       .optional(),
   })
   .openapi("LearningMessageRequest")
+
+export const learningMessageSpeechRequestSchema = z
+  .object({
+    messageId: z.union([z.string(), z.number().int()]),
+    text: z.string().optional(),
+  })
+  .openapi("LearningMessageSpeechRequest")
 
 export const learningMessageResponseDataSchema = z
   .object({

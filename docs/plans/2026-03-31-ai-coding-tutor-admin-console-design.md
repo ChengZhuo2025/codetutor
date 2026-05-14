@@ -280,7 +280,7 @@ LLM 管理不是只看调用日志，而是要能管理当前 AI registry。
 - `ai_models`
   管理具体 LLM 配置，如 `code`、`display_name`、`model_name`、所属 provider、stream/json/tool calling 能力、上下文长度、默认输出上限、推荐 temperature、定价元信息、启停状态。
 - `media_transcription_settings`
-  管理学习对话多媒体转译设置，包括图片转译、语音转文本和预留文本转语音的模型选择与启停。
+  管理学习对话多媒体转译设置，包括图片转译、语音转文本和用户端 AI 回复播读所用文本转语音的模型选择与启停。
 
 后台需要提供的典型能力：
 

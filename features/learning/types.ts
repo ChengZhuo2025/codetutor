@@ -34,6 +34,7 @@ export type MessageTaskPatch = {
 
 export type Message = {
   id: number
+  speechMessageId?: string
   role: MessageRole
   kind: MessageKind
   title?: string

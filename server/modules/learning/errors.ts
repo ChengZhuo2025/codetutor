@@ -11,3 +11,10 @@ export class LearningValidationError extends Error {
     this.name = "LearningValidationError"
   }
 }
+
+export class LearningConfigurationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "LearningConfigurationError"
+  }
+}

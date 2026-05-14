@@ -39,6 +39,9 @@ type LearnChatMessageListProps = {
     },
   ) => void
   onNextStepClick: (message: Message) => void
+  onToggleSpeech: (message: Message) => void
+  activeSpeechMessageId: number | null
+  speechStatus: "idle" | "loading" | "playing" | "paused"
 }
 
 export function LearnChatMessageList({
@@ -61,6 +64,9 @@ export function LearnChatMessageList({
   pendingAssistantMessageId,
   onAssistantAction,
   onNextStepClick,
+  onToggleSpeech,
+  activeSpeechMessageId,
+  speechStatus,
 }: LearnChatMessageListProps) {
   return (
     <div
@@ -116,6 +122,8 @@ export function LearnChatMessageList({
               pendingAssistantMessageId={pendingAssistantMessageId}
               onAssistantAction={onAssistantAction}
               onNextStepClick={onNextStepClick}
+              onToggleSpeech={onToggleSpeech}
+              speechState={activeSpeechMessageId === message.id ? speechStatus : "idle"}
             />
           ))
         )}

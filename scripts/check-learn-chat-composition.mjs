@@ -10,6 +10,7 @@ const learnChatSource = read("features/learning/components/chat.tsx")
 const headerSource = read("features/learning/components/learn-chat-header.tsx")
 const heroSource = read("features/learning/components/learn-chat-hero.tsx")
 const messageListSource = read("features/learning/components/learn-chat-message-list.tsx")
+const messageItemSource = read("features/learning/components/learn-chat-message-item.tsx")
 const resumeSource = read("features/learning/components/learn-chat-resume-card.tsx")
 const composerSource = read("features/learning/components/learn-chat-composer.tsx")
 const richContentSource = read("features/learning/components/learn-chat-rich-content.tsx")
@@ -169,6 +170,31 @@ assert.match(
   messageListSource,
   /加载更早消息/,
   "learn chat message list should keep the history pagination entry",
+)
+assert.match(
+  messageListSource,
+  /onToggleSpeech=\{onToggleSpeech\}/,
+  "learn chat message list should pass speech playback controls into message items",
+)
+assert.match(
+  messageItemSource,
+  /aria-label=\{speechLabel\}/,
+  "assistant message speech button should expose an accessible label",
+)
+assert.match(
+  messageItemSource,
+  /播读 AI 回复/,
+  "assistant message item should include the default read-aloud affordance",
+)
+assert.match(
+  learnChatSource,
+  /\/learning\/message-speech/,
+  "LearnChat should call the learning message speech endpoint",
+)
+assert.match(
+  learnChatSource,
+  /speechMessageId \?\? String\(message\.id\)/,
+  "LearnChat should prefer persisted assistant message id for speech synthesis",
 )
 assert.match(
   composerSource,

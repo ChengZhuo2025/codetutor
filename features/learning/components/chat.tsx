@@ -45,6 +45,7 @@ import { apiFetch, requestData } from "@/lib/api/client"
 import { buildStructuredLearningMessageContent } from "@/lib/learning/structured-message"
 import { useAppEventTracker } from "@/providers/app-providers"
 import { DIALOG_PANEL_CLASS } from "@/components/ui/surface-styles"
+import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 
 const STREAMING_BATCH_SIZE = 16
 const STREAMING_BATCH_DELAY_MS = 70
@@ -53,6 +54,8 @@ type PendingDraft = {
   text: string
   attachment: DraftAttachment | null
 }
+
+type SpeechStatus = "idle" | "loading" | "playing" | "paused"
 
 type SSEEventHandler = (event: string, data: Record<string, unknown>) => void
 
@@ -188,6 +191,7 @@ export function LearnChat({
   onOpenMaterialPlanDialog,
 }: LearnChatProps) {
   const { trackEvent } = useAppEventTracker()
+  const toast = useAppToast()
   const [messages, setMessages] = useState<Message[]>(learningData.messages)
   const [conversationId, setConversationId] = useState<string | null>(
     learningData.conversationId,
@@ -215,6 +219,8 @@ export function LearnChat({
   const [linkChoiceLinks, setLinkChoiceLinks] = useState<string[]>([])
   const [restartDialogOpen, setRestartDialogOpen] = useState(false)
   const [restartSubmitting, setRestartSubmitting] = useState(false)
+  const [activeSpeechMessageId, setActiveSpeechMessageId] = useState<number | null>(null)
+  const [speechStatus, setSpeechStatus] = useState<SpeechStatus>("idle")
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -230,6 +236,9 @@ export function LearnChat({
     previousScrollHeight: number
     previousScrollTop: number
   } | null>(null)
+  const speechAudioRef = useRef<HTMLAudioElement | null>(null)
+  const speechObjectUrlRef = useRef<string | null>(null)
+  const speechRequestTokenRef = useRef(0)
 
   const { mission, planSummary, resume, rightPanel, supportOptions } =
     learningData
@@ -352,10 +361,113 @@ export function LearnChat({
     }
   }, [previewAttachment])
 
+  useEffect(() => {
+    return () => {
+      speechRequestTokenRef.current += 1
+      if (speechAudioRef.current) {
+        speechAudioRef.current.pause()
+        speechAudioRef.current = null
+      }
+      if (speechObjectUrlRef.current) {
+        URL.revokeObjectURL(speechObjectUrlRef.current)
+        speechObjectUrlRef.current = null
+      }
+    }
+  }, [])
+
   const allocateMessageId = () => {
     const id = nextMessageId.current
     nextMessageId.current += 1
     return id
+  }
+
+  const resetSpeechPlayback = () => {
+    speechRequestTokenRef.current += 1
+    if (speechAudioRef.current) {
+      speechAudioRef.current.pause()
+      speechAudioRef.current = null
+    }
+    if (speechObjectUrlRef.current) {
+      URL.revokeObjectURL(speechObjectUrlRef.current)
+      speechObjectUrlRef.current = null
+    }
+    setActiveSpeechMessageId(null)
+    setSpeechStatus("idle")
+  }
+
+  const handleToggleSpeech = async (message: Message) => {
+    if (message.role !== "ai" || !message.content.trim()) {
+      return
+    }
+
+    if (activeSpeechMessageId === message.id && speechAudioRef.current) {
+      if (speechStatus === "playing") {
+        speechAudioRef.current.pause()
+        setSpeechStatus("paused")
+        return
+      }
+
+      if (speechStatus === "paused") {
+        try {
+          await speechAudioRef.current.play()
+          setSpeechStatus("playing")
+        } catch {
+          toast.error("播放失败", "浏览器暂时无法播放这段语音。")
+        }
+        return
+      }
+    }
+
+    resetSpeechPlayback()
+    const requestToken = speechRequestTokenRef.current + 1
+    speechRequestTokenRef.current = requestToken
+    setActiveSpeechMessageId(message.id)
+    setSpeechStatus("loading")
+
+    try {
+      const response = await apiFetch("/learning/message-speech", {
+        method: "POST",
+        body: JSON.stringify({
+          messageId: message.speechMessageId ?? String(message.id),
+          text: message.content,
+        }),
+      })
+
+      if (!response.ok) {
+        let errorMessage = "生成语音播读失败，请稍后再试。"
+        try {
+          const payload = (await response.json()) as { message?: string }
+          errorMessage = payload.message ?? errorMessage
+        } catch {
+          // ignore non-json error body
+        }
+        throw new Error(errorMessage)
+      }
+
+      const blob = await response.blob()
+      if (speechRequestTokenRef.current !== requestToken) {
+        return
+      }
+
+      const objectUrl = URL.createObjectURL(blob)
+      speechObjectUrlRef.current = objectUrl
+      const audio = new Audio(objectUrl)
+      speechAudioRef.current = audio
+      audio.addEventListener("ended", () => {
+        if (speechAudioRef.current === audio) {
+          resetSpeechPlayback()
+        }
+      })
+      await audio.play()
+      if (speechRequestTokenRef.current === requestToken) {
+        setSpeechStatus("playing")
+      }
+    } catch (error) {
+      if (speechRequestTokenRef.current === requestToken) {
+        resetSpeechPlayback()
+        toast.error("语音播读不可用", error instanceof Error ? error.message : "请稍后再试。")
+      }
+    }
   }
 
   const createClientMessageId = () =>
@@ -1228,6 +1340,9 @@ export function LearnChat({
           pendingAssistantMessageId={pendingAssistantMessageId}
           onAssistantAction={handleAssistantAction}
           onNextStepClick={handleNextStepClick}
+          onToggleSpeech={handleToggleSpeech}
+          activeSpeechMessageId={activeSpeechMessageId}
+          speechStatus={speechStatus}
         />
 
         <LearnChatComposer

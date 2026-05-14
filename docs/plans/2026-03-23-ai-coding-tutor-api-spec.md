@@ -638,7 +638,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 当前消息返回与持久化都已显式包含 `structuredContent`，其中至少包含 `interactionType`、`variant`、`summary`、`blocks`、`sections`、`actions`；`blocks` / `sections.blocks` 当前支持 `heading`、`paragraph`、`code_block`、`unordered_list`、`ordered_list`
 - 当前支持学习对话附件：前端先通过 `POST /api/learning/attachments` 上传图片或语音，再在本接口请求体传 `attachmentIds`；服务端会验证附件归属、执行图片理解或语音转写，并把附件处理结果写入用户消息的 `content_json.attachments`
 - 当前图片预处理模型由管理后台 `Ai 管理 / 多媒体管理 / 转译设置` 中的 `image_translation` 配置决定；服务端会把私有 Storage 图片读取为 `data:<mime>;base64,...` 后传给模型，避免 provider 无法访问 signed URL
-- 当前语音预处理模型由 `speech_to_text` 配置决定；阿里云百炼 `Qwen3-ASR-Flash` 仍通过 OpenAI-compatible `/chat/completions` 的 `input_audio` 调用。管理端 Model 连接测试支持 `chat` / `asr` / `tts` / `models_list` 四类模式，其中 ASR 只验证 `/models` 鉴权连通性，`qwen3-tts-flash-realtime` 通过 DashScope WebSocket 握手做最小探测。
+- 当前语音预处理模型由 `speech_to_text` 配置决定；阿里云百炼 `Qwen3-ASR-Flash` 仍通过 OpenAI-compatible `/chat/completions` 的 `input_audio` 调用。AI 回复播读通过 `POST /api/learning/message-speech` 按需调用 `text_to_speech` 配置，首版返回临时 WAV 音频，不持久化音频文件。管理端 Model 连接测试支持 `chat` / `asr` / `tts` / `models_list` 四类模式，其中 ASR 只验证 `/models` 鉴权连通性，`qwen3-tts-flash-realtime` 通过 DashScope WebSocket 握手做最小探测。
 
 请求体：
 
@@ -683,6 +683,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
     "taskId": "uuid",
     "message": {
       "id": 101,
+      "speechMessageId": "11111111-1111-4111-8111-111111111111",
       "role": "ai",
       "kind": "coach",
       "title": "排查建议",
@@ -733,7 +734,44 @@ SSE 事件补充：
 - `assistant_done`
 - `error`
 
-## 7.1.1 `POST /api/learning/attachments`
+## 7.1.1 `POST /api/learning/message-speech`
+
+用途：
+
+- 为当前用户自己的 AI 回复消息生成播读音频
+- 模型来源于管理后台 `Ai 管理 / 多媒体管理 / 转译设置` 中启用的 `text_to_speech`
+- 首版按需临时生成，返回 `audio/wav`，不写入数据库或 Storage
+
+请求体：
+
+```json
+{
+  "messageId": "11111111-1111-4111-8111-111111111111",
+  "text": "先完成最小验证，再把结果贴回来。"
+}
+```
+
+字段说明：
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `messageId` | 是 | AI 回复消息真实持久化 ID；前端展示用数字 ID 不作为首选 |
+| `text` | 否 | 前端当前可见的播读文本；为空时服务端读取消息 `content_text` |
+
+成功响应：
+
+- `Content-Type: audio/wav`
+- `Cache-Control: no-store`
+- Body 为可直接播放的 WAV 音频二进制
+
+错误场景：
+
+- 消息不存在、不是 AI 回复，或不属于当前用户：`404`
+- 文本为空或不合法：`422`
+- 后台未启用/未配置可用 `text_to_speech` 模型：`503`
+- TTS provider 调用失败：`502`
+
+## 7.1.2 `POST /api/learning/attachments`
 
 用途：
 

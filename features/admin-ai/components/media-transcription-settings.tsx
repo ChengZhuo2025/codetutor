@@ -135,7 +135,7 @@ export function MediaTranscriptionSettings() {
     <div className="space-y-6">
       <ListPageHeader
         title="转译设置"
-        description="为图片转译、语音转文本、文本转语音配置后台可选模型；文本转语音当前仅预留配置。"
+        description="为图片转译、语音转文本、文本转语音配置后台可选模型；文本转语音用于用户端 AI 回复播读。"
         total={data?.items.length}
         action={(
           <Button type="button" variant="outline" className="gap-1.5" onClick={() => void fetchSettings()}>

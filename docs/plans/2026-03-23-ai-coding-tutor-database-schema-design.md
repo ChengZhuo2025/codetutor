@@ -54,7 +54,7 @@
 - `028_add_ai_model_profile_fields.sql`
 - `029_create_site_contact_settings.sql` (新增企业联系方式配置表，支持管理后台编辑，供营销联系对话框动态加载)
 - `034_create_payment_subscription_tables.sql` (新增微信 Native 支付配置、订阅套餐、支付订单、用户订阅与支付回调事件表；`035_harden_payment_order_completion.sql` 新增支付完成幂等 RPC；`037_add_alipay_scan_payment.sql` 扩展支付宝扫码支付配置与订单渠道字段；`038_extend_payment_order_management.sql` 增加订单取消、用户端软删除与财务查询索引；`039_finance_hardening.sql` 增加财务统计和用户订单汇总 RPC；`040_fix_security_definer_search_path.sql` 修复支付/财务 `SECURITY DEFINER` RPC 的 `search_path` 安全警示；`030`-`033` 为联系方式二维码与 RLS 修正迁移)
-- `045_create_media_transcription_settings.sql` (新增多媒体转译设置表，管理学习对话图片转译、语音转文本与预留文本转语音的模型选择)
+- `045_create_media_transcription_settings.sql` (新增多媒体转译设置表，管理学习对话图片转译、语音转文本与文本转语音的模型选择)
 
 当前数据库中已落地的核心业务表包括：
 
@@ -752,7 +752,7 @@ Storage：
 用途：
 
 - 保存学习对话多媒体转译的后台配置真源
-- 当前包含 `image_translation`、`speech_to_text`、`text_to_speech` 三类；文本转语音仅为配置预留，尚未接入用户端运行时调用
+- 当前包含 `image_translation`、`speech_to_text`、`text_to_speech` 三类；文本转语音已用于用户端 AI 回复消息按需播读，首版音频不落库、不写 Storage
 - 学习对话附件预处理读取该表选择模型，自学材料解析 pipeline 仍沿用独立模型解析策略
 
 字段建议：
@@ -777,7 +777,7 @@ Storage：
 - 每种 `media_type` 只保留一条配置
 - 开启图片转译时应选择具备 `vision` runtime capability 的启用模型
 - 开启语音转文本时应选择具备 `asr` runtime capability 的启用模型
-- 文本转语音预留 `tts` runtime capability，当前可停用且 `model_id` 为空
+- 开启文本转语音时应选择具备 `tts` runtime capability 的启用模型
 
 ## 6.10 `score_ledgers`
 

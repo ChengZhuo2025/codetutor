@@ -5,6 +5,7 @@ import type {
   LearningMessagesResponseData,
   LearningCurrentSessionResponseData,
   LearningMessageAttachmentKind,
+  LearningMessageSpeechRequest,
 } from "../../../lib/api/contracts/learning.ts"
 import { jsonInternalErrorFromError } from "../../lib/route-error.ts"
 import {
@@ -21,6 +22,12 @@ import {
   parseOptionalPositiveInteger,
 } from "../../lib/request-validation.ts"
 import { executeLearningMessageRequest } from "./http-logic.ts"
+import {
+  LearningAIProviderError,
+  LearningConfigurationError,
+  LearningValidationError,
+} from "./errors.ts"
+import type { LearningMessageSpeechResult } from "./speech.ts"
 
 type RequestLike = {
   headers: Pick<Headers, "get">
@@ -45,12 +52,45 @@ type StreamLearningMessage = (
   request: LearningMessageRequest,
 ) => Promise<ReadableStream<Uint8Array> | null>
 
+type SynthesizeLearningMessageSpeech = (
+  userId: string,
+  input: LearningMessageSpeechRequest,
+) => Promise<LearningMessageSpeechResult | null>
+
 export type LearningMessagePostRouteDependencies = {
   getRequestAuth: (request: unknown) => Promise<{ userId: string } | null>
   getRequestAuthHelpText: () => string
   executeLearningMessageRequest: typeof executeLearningMessageRequest
   sendLearningMessage: SendLearningMessage
   streamLearningMessage: StreamLearningMessage
+}
+
+function parseLearningMessageSpeechBody(body: unknown): LearningMessageSpeechRequest | null {
+  if (!body || typeof body !== "object") {
+    return null
+  }
+
+  const record = body as Record<string, unknown>
+  const messageId = record.messageId
+  if (
+    (typeof messageId !== "string" && typeof messageId !== "number")
+    || String(messageId).trim().length === 0
+  ) {
+    return null
+  }
+
+  if (
+    record.text !== undefined
+    && record.text !== null
+    && typeof record.text !== "string"
+  ) {
+    return null
+  }
+
+  return {
+    messageId: String(messageId).trim(),
+    text: typeof record.text === "string" ? record.text : undefined,
+  }
 }
 
 export function createLearningAttachmentPostHandler(dependencies: {
@@ -160,6 +200,61 @@ export function createLearningMessagePostHandler(
     return Response.json(result.body, {
       status: result.status,
     })
+  }
+}
+
+export function createLearningMessageSpeechPostHandler(dependencies: {
+  getRequestAuth: (request: unknown) => Promise<{ userId: string } | null>
+  getRequestAuthHelpText: () => string
+  synthesizeLearningMessageSpeech: SynthesizeLearningMessageSpeech
+}) {
+  return async function POST(request: RequestLike) {
+    const auth = await dependencies.getRequestAuth(request)
+
+    if (!auth) {
+      return jsonAuthRequired(dependencies.getRequestAuthHelpText())
+    }
+
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return jsonError("VALIDATION_FAILED", "请求体不是合法 JSON。", 422)
+    }
+
+    const input = parseLearningMessageSpeechBody(body)
+    if (!input) {
+      return jsonError("VALIDATION_FAILED", "messageId 或 text 不合法。", 422)
+    }
+
+    try {
+      const result = await dependencies.synthesizeLearningMessageSpeech(auth.userId, input)
+      if (!result) {
+        return jsonError("NOT_FOUND", "没有找到可播读的 AI 回复消息。", 404)
+      }
+
+      return new Response(result.audio, {
+        status: 200,
+        headers: {
+          "Content-Type": result.contentType,
+          "Cache-Control": "no-store",
+        },
+      })
+    } catch (error) {
+      if (error instanceof LearningConfigurationError) {
+        return jsonError("SERVICE_UNAVAILABLE", error.message, 503)
+      }
+
+      if (error instanceof LearningValidationError) {
+        return jsonError("VALIDATION_FAILED", error.message, 422)
+      }
+
+      if (error instanceof LearningAIProviderError) {
+        return jsonError("AI_PROVIDER_ERROR", error.message, 502)
+      }
+
+      return jsonInternalErrorFromError(error, "生成语音播读失败")
+    }
   }
 }
 

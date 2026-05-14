@@ -281,12 +281,14 @@ export function buildIdempotentReplayResponse(input: {
   assistantContent: string
   structuredContent?: StructuredLearningMessageContent | null
   taskPatch?: LearningTaskPatch | null
+  speechMessageId?: string
 }): LearningMessageResponseData {
   return {
     conversationId: input.conversationId,
     taskId: input.taskId,
     message: {
       id: Date.now(),
+      speechMessageId: input.speechMessageId,
       role: "ai",
       kind: input.assistantKind,
       title: input.assistantTitle,

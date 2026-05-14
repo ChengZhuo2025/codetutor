@@ -106,6 +106,11 @@ export type LearningMessagesResponseData = {
   pagination: LearningHistoryPagination
 }
 
+export type LearningMessageSpeechRequest = {
+  messageId: string
+  text?: string | null
+}
+
 export type LearningRestartConversationResponseData = {
   restarted: boolean
   closedSessionId: string | null

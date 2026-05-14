@@ -882,6 +882,7 @@ async function loadPersistedMessages(
 
       return {
         id: buildPersistedLearningMessageId(row.sequenceNo),
+        speechMessageId: row.role === "assistant" ? row.id : undefined,
         role: row.role === "assistant" ? "ai" : "user",
         kind,
         title,
