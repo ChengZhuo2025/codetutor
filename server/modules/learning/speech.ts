@@ -37,6 +37,13 @@ type ConversationMessageSpeechRow = {
 }
 
 type LearningSpeechRuntime = MaterialPipelineRuntime
+type DashScopeTtsServerEvent = {
+  type?: string
+  error?: {
+    code?: string
+    message?: string
+  }
+}
 
 export type LearningMessageSpeechInput = {
   messageId: string
@@ -257,6 +264,10 @@ export function buildDashScopeTtsTextEvents(
   ]
 }
 
+export function buildDashScopeTtsAuthorizationHeader(secret: string) {
+  return `Bearer ${secret}`
+}
+
 export function isDashScopeTtsTerminalEvent(type: string | null | undefined) {
   return type === "response.done"
     || type === "response.audio.done"
@@ -283,7 +294,7 @@ export async function invokeDashScopeRealtimeTts(input: {
     const audioChunks: Buffer[] = []
     const socket = new WebSocket(url, {
       headers: {
-        Authorization: `bearer ${secret}`,
+        Authorization: buildDashScopeTtsAuthorizationHeader(secret),
         "X-DashScope-DataInspection": "enable",
       },
     })
@@ -340,16 +351,23 @@ export async function invokeDashScopeRealtimeTts(input: {
       })
     }
 
-    socket.on("open", () => {
+    const sendSessionUpdate = () => {
       logLearningSpeechTtsEvent("open", {
         runtime: input.runtime,
         timeoutMs,
         textLength: input.text.length,
       })
       socket.send(JSON.stringify(buildDashScopeTtsSessionUpdate(input.runtime)))
+    }
+
+    const sendSynthesisEvents = () => {
       for (const event of buildDashScopeTtsTextEvents(input.text)) {
         socket.send(JSON.stringify(event))
       }
+    }
+
+    socket.on("open", () => {
+      // 官方交互流程要求先等待 session.created，再更新会话配置。
     })
 
     socket.on("message", (data) => {
@@ -369,15 +387,25 @@ export async function invokeDashScopeRealtimeTts(input: {
         return
       }
 
-      const record = payload as { type?: string; error?: { message?: string } }
+      const record = payload as DashScopeTtsServerEvent
+      if (record.type === "session.created") {
+        sendSessionUpdate()
+        return
+      }
+
+      if (record.type === "session.updated") {
+        sendSynthesisEvents()
+        return
+      }
+
       if (record.type?.includes("error")) {
         logLearningSpeechTtsEvent("provider_error", {
           runtime: input.runtime,
           timeoutMs,
           textLength: input.text.length,
-          errorMessage: record.error?.message ?? "TTS provider returned an error",
+          errorMessage: record.error?.message ?? record.error?.code ?? "TTS provider returned an error",
         })
-        finish(new LearningAIProviderError(record.error?.message ?? "TTS provider returned an error"))
+        finish(new LearningAIProviderError(record.error?.message ?? record.error?.code ?? "TTS provider returned an error"))
         return
       }
 

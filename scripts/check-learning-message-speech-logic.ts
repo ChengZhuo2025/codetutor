@@ -2,6 +2,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 
 import {
+  buildDashScopeTtsAuthorizationHeader,
   buildDashScopeTtsSessionUpdate,
   buildDashScopeTtsTextEvents,
   buildPcmWavBuffer,
@@ -163,6 +164,10 @@ test("buildDashScopeTtsTextEvents uses realtime text buffer event names", () => 
       type: "session.finish",
     },
   ])
+})
+
+test("buildDashScopeTtsAuthorizationHeader uses the official Bearer scheme casing", () => {
+  assert.equal(buildDashScopeTtsAuthorizationHeader("sk-test"), "Bearer sk-test")
 })
 
 test("resolveLearningTtsVoice supports model metadata override", () => {
