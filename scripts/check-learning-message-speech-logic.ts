@@ -7,6 +7,8 @@ import {
   buildPcmWavBuffer,
   isDashScopeTtsTerminalEvent,
   normalizeLearningMessageSpeechText,
+  resolveDashScopeTtsCloseErrorMessage,
+  resolveLearningMessageSpeechTimeoutMs,
   resolveLearningMessageSpeechSourceText,
   resolveLearningTtsVoice,
 } from "../server/modules/learning/speech.ts"
@@ -92,6 +94,23 @@ test("resolveLearningMessageSpeechSourceText falls back to persisted assistant c
   assert.equal(
     resolveLearningMessageSpeechSourceText("前端当前播读片段。", "数据库里的最终 AI 回复。"),
     "前端当前播读片段。",
+  )
+})
+
+test("resolveLearningMessageSpeechTimeoutMs caps user-facing TTS below gateway timeouts", () => {
+  assert.equal(resolveLearningMessageSpeechTimeoutMs(60_000), 25_000)
+  assert.equal(resolveLearningMessageSpeechTimeoutMs(2_000), 5_000)
+  assert.equal(resolveLearningMessageSpeechTimeoutMs(12_000), 12_000)
+})
+
+test("resolveDashScopeTtsCloseErrorMessage explains empty provider close", () => {
+  assert.equal(
+    resolveDashScopeTtsCloseErrorMessage(1006, ""),
+    "TTS provider closed before returning audio (code 1006)",
+  )
+  assert.equal(
+    resolveDashScopeTtsCloseErrorMessage(1008, "policy rejected"),
+    "TTS provider closed before returning audio (code 1008: policy rejected)",
   )
 })
 

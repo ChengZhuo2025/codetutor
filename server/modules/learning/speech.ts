@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto"
 import WebSocket from "ws"
 
 import { resolveProviderSecret } from "@/server/lib/secrets/provider-secret"
+import { getCurrentRequestId } from "@/server/lib/observability"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { normalizeSpeechTextForTts } from "@/lib/learning/speech-text"
 import { resolveLearningMediaTranscriptionModels } from "@/server/modules/admin-ai/media-service"
@@ -22,6 +23,8 @@ const DEFAULT_TTS_CHANNELS = 1
 const DEFAULT_TTS_BITS_PER_SAMPLE = 16
 const DASH_SCOPE_REALTIME_PATH = "/api-ws/v1/realtime"
 const DASH_SCOPE_TTS_RESPONSE_FORMAT = "pcm"
+const MIN_SPEECH_TIMEOUT_MS = 5_000
+const MAX_USER_FACING_SPEECH_TIMEOUT_MS = 25_000
 
 type ConversationMessageSpeechRow = {
   id: string
@@ -60,6 +63,28 @@ export function resolveLearningMessageSpeechSourceText(
   const normalizedClientText = clientText?.trim()
 
   return normalizedClientText ? clientText : persistedText
+}
+
+export function resolveLearningMessageSpeechTimeoutMs(providerTimeoutMs: number) {
+  return Math.min(
+    MAX_USER_FACING_SPEECH_TIMEOUT_MS,
+    Math.max(MIN_SPEECH_TIMEOUT_MS, providerTimeoutMs),
+  )
+}
+
+export function resolveDashScopeTtsCloseErrorMessage(
+  code: number,
+  reason: unknown,
+) {
+  const reasonText = Buffer.isBuffer(reason)
+    ? reason.toString("utf8").trim()
+    : typeof reason === "string"
+      ? reason.trim()
+      : ""
+
+  return reasonText
+    ? `TTS provider closed before returning audio (code ${code}: ${reasonText})`
+    : `TTS provider closed before returning audio (code ${code})`
 }
 
 export function buildPcmWavBuffer(
@@ -156,6 +181,40 @@ function createDashScopeEventId() {
   return `event_${randomUUID()}`
 }
 
+function logLearningSpeechTtsEvent(
+  phase: string,
+  input: {
+    runtime: LearningSpeechRuntime
+    timeoutMs?: number
+    textLength?: number
+    audioBytes?: number
+    closeCode?: number
+    closeReason?: unknown
+    errorMessage?: string
+  },
+) {
+  const closeReason = Buffer.isBuffer(input.closeReason)
+    ? input.closeReason.toString("utf8").slice(0, 160)
+    : typeof input.closeReason === "string"
+      ? input.closeReason.slice(0, 160)
+      : undefined
+
+  console.info(JSON.stringify({
+    type: "learning_message_speech_tts",
+    requestId: getCurrentRequestId(),
+    phase,
+    providerCode: input.runtime.provider.code,
+    modelCode: input.runtime.model.code,
+    modelName: input.runtime.model.modelName,
+    timeoutMs: input.timeoutMs,
+    textLength: input.textLength,
+    audioBytes: input.audioBytes,
+    closeCode: input.closeCode,
+    closeReason,
+    errorMessage: input.errorMessage,
+  }))
+}
+
 export function resolveLearningTtsVoice(runtime: LearningSpeechRuntime) {
   const metadata = runtime.model.metadata ?? {}
   return normalizeTtsVoice(metadata.ttsVoice)
@@ -212,11 +271,18 @@ export async function invokeDashScopeRealtimeTts(input: {
   text: string
 }): Promise<LearningMessageSpeechResult> {
   const secret = getLearningSpeechSecret(input.runtime)
-  const timeoutMs = Math.min(60_000, Math.max(5_000, input.runtime.provider.timeoutMs))
+  const timeoutMs = resolveLearningMessageSpeechTimeoutMs(input.runtime.provider.timeoutMs)
   const url = buildDashScopeRealtimeUrl(input.runtime.model.modelName)
+
+  logLearningSpeechTtsEvent("start", {
+    runtime: input.runtime,
+    timeoutMs,
+    textLength: input.text.length,
+  })
 
   return new Promise((resolve, reject) => {
     let settled = false
+    let sawAudio = false
     const audioChunks: Buffer[] = []
     const socket = new WebSocket(url, {
       headers: {
@@ -225,6 +291,12 @@ export async function invokeDashScopeRealtimeTts(input: {
       },
     })
     const timer = setTimeout(() => {
+      logLearningSpeechTtsEvent("timeout", {
+        runtime: input.runtime,
+        timeoutMs,
+        textLength: input.text.length,
+        audioBytes: audioChunks.reduce((sum, chunk) => sum + chunk.length, 0),
+      })
       finish(new LearningAIProviderError("TTS request timed out"))
     }, timeoutMs)
 
@@ -246,10 +318,21 @@ export async function invokeDashScopeRealtimeTts(input: {
 
       const pcm = Buffer.concat(audioChunks)
       if (pcm.length === 0) {
+        logLearningSpeechTtsEvent("empty_audio", {
+          runtime: input.runtime,
+          timeoutMs,
+          textLength: input.text.length,
+        })
         reject(new LearningAIProviderError("TTS provider returned empty audio"))
         return
       }
 
+      logLearningSpeechTtsEvent("success", {
+        runtime: input.runtime,
+        timeoutMs,
+        textLength: input.text.length,
+        audioBytes: pcm.length,
+      })
       resolve({
         audio: buildPcmWavBuffer(pcm, {
           sampleRate: DEFAULT_TTS_SAMPLE_RATE,
@@ -261,6 +344,11 @@ export async function invokeDashScopeRealtimeTts(input: {
     }
 
     socket.on("open", () => {
+      logLearningSpeechTtsEvent("open", {
+        runtime: input.runtime,
+        timeoutMs,
+        textLength: input.text.length,
+      })
       socket.send(JSON.stringify(buildDashScopeTtsSessionUpdate(input.runtime)))
       for (const event of buildDashScopeTtsTextEvents(input.text)) {
         socket.send(JSON.stringify(event))
@@ -286,12 +374,27 @@ export async function invokeDashScopeRealtimeTts(input: {
 
       const record = payload as { type?: string; error?: { message?: string } }
       if (record.type?.includes("error")) {
+        logLearningSpeechTtsEvent("provider_error", {
+          runtime: input.runtime,
+          timeoutMs,
+          textLength: input.text.length,
+          errorMessage: record.error?.message ?? "TTS provider returned an error",
+        })
         finish(new LearningAIProviderError(record.error?.message ?? "TTS provider returned an error"))
         return
       }
 
       const audio = parseDashScopeAudioDelta(payload)
       if (audio?.length) {
+        if (!sawAudio) {
+          sawAudio = true
+          logLearningSpeechTtsEvent("first_audio", {
+            runtime: input.runtime,
+            timeoutMs,
+            textLength: input.text.length,
+            audioBytes: audio.length,
+          })
+        }
         audioChunks.push(audio)
       }
 
@@ -300,13 +403,33 @@ export async function invokeDashScopeRealtimeTts(input: {
       }
     })
 
-    socket.on("error", () => {
+    socket.on("error", (error) => {
+      logLearningSpeechTtsEvent("connection_error", {
+        runtime: input.runtime,
+        timeoutMs,
+        textLength: input.text.length,
+        errorMessage: error instanceof Error ? error.message : "TTS provider connection failed",
+      })
       finish(new LearningAIProviderError("TTS provider connection failed"))
     })
 
-    socket.on("close", () => {
+    socket.on("close", (code, reason) => {
       if (!settled && audioChunks.length > 0) {
         finish()
+        return
+      }
+
+      if (!settled) {
+        const message = resolveDashScopeTtsCloseErrorMessage(code, reason)
+        logLearningSpeechTtsEvent("close_without_audio", {
+          runtime: input.runtime,
+          timeoutMs,
+          textLength: input.text.length,
+          closeCode: code,
+          closeReason: reason,
+          errorMessage: message,
+        })
+        finish(new LearningAIProviderError(message))
       }
     })
   })

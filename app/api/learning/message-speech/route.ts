@@ -6,6 +6,8 @@ import { withNoStoreHeaders } from "@/server/lib/response-cache"
 import { createLearningMessageSpeechPostHandler } from "@/server/modules/learning/route-handler"
 import { synthesizeLearningMessageSpeech } from "@/server/modules/learning/speech"
 
+export const runtime = "nodejs"
+
 const postHandler = createLearningMessageSpeechPostHandler({
   getRequestAuth: (request) => getRequestAuth(request as NextRequest),
   getRequestAuthHelpText,
