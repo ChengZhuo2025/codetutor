@@ -28,6 +28,7 @@ import {
   mergeAssistantActionIntoInput,
   shouldCompleteCurrentTaskFromAssistantAction,
   shouldRenderLearningResumeCard,
+  type StableAssistantAction,
 } from "@/features/learning/lib/chat-behavior"
 import type {
   LearningCurrentSessionResponseData,
@@ -45,6 +46,7 @@ import { apiFetch, requestData } from "@/lib/api/client"
 import { buildStructuredLearningMessageContent } from "@/lib/learning/structured-message"
 import { splitSpeechTextIntoSegments } from "@/lib/learning/speech-text"
 import { useAppEventTracker } from "@/providers/app-providers"
+import { useWorkspaceSidebarData } from "@/providers/workspace-sidebar-provider"
 import { DIALOG_PANEL_CLASS } from "@/components/ui/surface-styles"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 
@@ -192,6 +194,7 @@ export function LearnChat({
   onOpenMaterialPlanDialog,
 }: LearnChatProps) {
   const { trackEvent } = useAppEventTracker()
+  const { refresh: refreshWorkspaceSidebar } = useWorkspaceSidebarData()
   const toast = useAppToast()
   const [messages, setMessages] = useState<Message[]>(learningData.messages)
   const [conversationId, setConversationId] = useState<string | null>(
@@ -243,6 +246,8 @@ export function LearnChat({
 
   const { mission, planSummary, resume, rightPanel, supportOptions } =
     learningData
+  const isFinalTask = mission?.nextPreviewIsFinal ?? false
+  const nextTaskTitle = isFinalTask ? null : mission?.nextUnlockTitle ?? null
   const hasResume = Boolean(resume)
   const showResumeCard = shouldRenderLearningResumeCard({
     hasResume,
@@ -277,7 +282,11 @@ export function LearnChat({
 
   const requestSessionRefresh = () => {
     onRequestRefresh()
+    void refreshWorkspaceSidebar()
     window.setTimeout(() => onRequestRefresh(), 180)
+    window.setTimeout(() => {
+      void refreshWorkspaceSidebar()
+    }, 180)
   }
 
   useEffect(() => {
@@ -1168,11 +1177,13 @@ export function LearnChat({
 
   const handleAssistantAction = (
     message: Message,
-    action: {
-      label: string
-      prompt: string
-    },
+    action: StableAssistantAction,
   ) => {
+    if (action.kind === "advance_next_task") {
+      void handleAdvanceToNextTask(action.prompt || action.label)
+      return
+    }
+
     if (
       shouldCompleteCurrentTaskFromAssistantAction({
         messageKind: message.kind,
@@ -1391,6 +1402,10 @@ export function LearnChat({
           onAssistantAction={handleAssistantAction}
           onNextStepClick={handleNextStepClick}
           onToggleSpeech={handleToggleSpeech}
+          taskState={taskState}
+          canTriggerCompleteQuickAction={canTriggerCompleteQuickAction}
+          isFinalTask={isFinalTask}
+          nextTaskTitle={nextTaskTitle}
           activeSpeechMessageId={activeSpeechMessageId}
           speechStatus={speechStatus}
         />

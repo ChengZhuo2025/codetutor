@@ -4,11 +4,14 @@ import Image from "next/image"
 import { CheckCircle2, Lightbulb, Mic, Pause, Play, RefreshCw, Volume2, Zap } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
+  buildStableAssistantActions,
   normalizeAssistantActions,
   shouldRenderMessageTaskPatch,
   shouldStabilizePendingAssistantTone,
+  type StableAssistantAction,
 } from "@/features/learning/lib/chat-behavior"
 import type { Message } from "@/features/learning/types"
+import type { LearningTaskState } from "@/lib/api/contracts/learning"
 import {
   renderPlainContent,
   renderStructuredContent,
@@ -111,13 +114,14 @@ type LearnChatMessageItemProps = {
   pendingAssistantMessageId: number | null
   onAssistantAction: (
     message: Message,
-    action: {
-      label: string
-      prompt: string
-    },
+    action: StableAssistantAction,
   ) => void
   onNextStepClick: (message: Message) => void
   onToggleSpeech: (message: Message) => void
+  taskState: LearningTaskState
+  canTriggerCompleteQuickAction: boolean
+  isFinalTask: boolean
+  nextTaskTitle?: string | null
   speechState?: "idle" | "loading" | "playing" | "paused"
 }
 
@@ -128,6 +132,10 @@ export function LearnChatMessageItem({
   onAssistantAction,
   onNextStepClick,
   onToggleSpeech,
+  taskState,
+  canTriggerCompleteQuickAction,
+  isFinalTask,
+  nextTaskTitle,
   speechState = "idle",
 }: LearnChatMessageItemProps) {
   const meta = MESSAGE_KIND_META[message.kind]
@@ -156,7 +164,21 @@ export function LearnChatMessageItem({
       : []
   const assistantActions =
     message.role === "ai" && message.structuredContent?.actions?.length
-      ? normalizeAssistantActions(message.structuredContent.actions)
+      ? buildStableAssistantActions({
+          actions: normalizeAssistantActions(message.structuredContent.actions),
+          taskState,
+          canAdvanceToNextTask:
+            (
+              canTriggerCompleteQuickAction
+              || taskState === "completed"
+            ) && (
+                message.kind === "task_feedback"
+                || message.taskPatch?.status === "completed"
+                || message.structuredContent?.interactionType === "completion_feedback"
+              ),
+          isFinalTask,
+          nextTaskTitle,
+        })
       : []
   const canReadAloud =
     message.role === "ai" &&

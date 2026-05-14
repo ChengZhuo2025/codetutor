@@ -9,7 +9,8 @@ import { LearnChatMessageItem } from "@/features/learning/components/learn-chat-
 import { LearnChatResumeCard } from "@/features/learning/components/learn-chat-resume-card"
 import type { ConnectionState } from "@/features/learning/components/learn-chat-types"
 import type { Message } from "@/features/learning/types"
-import type { LearningCurrentSessionResponseData } from "@/lib/api/contracts/learning"
+import type { LearningCurrentSessionResponseData, LearningTaskState } from "@/lib/api/contracts/learning"
+import type { StableAssistantAction } from "@/features/learning/lib/chat-behavior"
 import { cn } from "@/lib/utils"
 import { USER_BUTTON_SECONDARY_CLASS } from "@/components/ui/surface-styles"
 
@@ -33,13 +34,14 @@ type LearnChatMessageListProps = {
   pendingAssistantMessageId: number | null
   onAssistantAction: (
     message: Message,
-    action: {
-      label: string
-      prompt: string
-    },
+    action: StableAssistantAction,
   ) => void
   onNextStepClick: (message: Message) => void
   onToggleSpeech: (message: Message) => void
+  taskState: LearningTaskState
+  canTriggerCompleteQuickAction: boolean
+  isFinalTask: boolean
+  nextTaskTitle?: string | null
   activeSpeechMessageId: number | null
   speechStatus: "idle" | "loading" | "playing" | "paused"
 }
@@ -65,6 +67,10 @@ export function LearnChatMessageList({
   onAssistantAction,
   onNextStepClick,
   onToggleSpeech,
+  taskState,
+  canTriggerCompleteQuickAction,
+  isFinalTask,
+  nextTaskTitle,
   activeSpeechMessageId,
   speechStatus,
 }: LearnChatMessageListProps) {
@@ -123,6 +129,10 @@ export function LearnChatMessageList({
               onAssistantAction={onAssistantAction}
               onNextStepClick={onNextStepClick}
               onToggleSpeech={onToggleSpeech}
+              taskState={taskState}
+              canTriggerCompleteQuickAction={canTriggerCompleteQuickAction}
+              isFinalTask={isFinalTask}
+              nextTaskTitle={nextTaskTitle}
               speechState={activeSpeechMessageId === message.id ? speechStatus : "idle"}
             />
           ))

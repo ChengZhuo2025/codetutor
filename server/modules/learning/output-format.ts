@@ -31,7 +31,7 @@ const OUTPUT_FORMAT_TEMPLATES: Record<LearningInteractionType, OutputFormatTempl
       },
     ],
     requiredActionExample:
-      "进入下一步｜请继续当前关卡中的下一项练习，并告诉我先做什么。",
+      "我应该先做哪一步？｜我应该先做哪一步？请结合当前关卡给我一个最小可执行动作。",
   },
   blocked_help: {
     summaryInstruction: "第一段先对用户的挫败感表示理解，然后判断卡在哪里，并指出先排查什么。",
@@ -50,7 +50,7 @@ const OUTPUT_FORMAT_TEMPLATES: Record<LearningInteractionType, OutputFormatTempl
       },
     ],
     requiredActionExample:
-      "补充报错信息｜请先补充完整报错文本、触发步骤和最近一次修改内容。",
+      "我卡在这里了，帮我定位｜我卡在这里了，现象是：请帮我定位最可能的问题。",
   },
   task_review: {
     summaryInstruction: "第一段先给复盘结论，明确做对了什么或还差什么。",
@@ -94,7 +94,7 @@ const OUTPUT_FORMAT_TEMPLATES: Record<LearningInteractionType, OutputFormatTempl
       },
     ],
     requiredActionExample:
-      "进入下一关｜我已完成当前关卡，请带我进入下一关并告诉我开头第一步该做什么。",
+      "这是我的结果，请帮我判断｜这是我的结果，请帮我判断是否达到当前关卡的完成标准：",
   },
   path_guidance: {
     summaryInstruction: "第一段直接回答当前下一步是什么，以及为什么先做它；如果仍在当前关卡内推进，只能写“下一步/下一项练习”，不能写“下一关”。",
@@ -113,7 +113,7 @@ const OUTPUT_FORMAT_TEMPLATES: Record<LearningInteractionType, OutputFormatTempl
       },
     ],
     requiredActionExample:
-      "进入下一步｜请继续当前关卡中的下一项练习，并告诉我先做什么。",
+      "我应该先做哪一步？｜我应该先做哪一步？请结合当前关卡给我一个最小可执行动作。",
   },
 }
 
@@ -145,9 +145,9 @@ export function buildLearningOutputFormatGuide(
       `## ${section.title}`,
       section.instruction,
     ]),
-    "## 建议动作",
-    "提供 1-2 条可点击动作，并使用 `- 动作文案｜用户点击后应发送的话` 的格式。",
+    "## 建议问题",
+    "提供 1-2 条用户视角的建议问题或回复模板，并使用 `- 动作文案｜用户点击后应填入输入框的话` 的格式。",
     `可参考动作：${template.requiredActionExample}`,
-    "教学模板中的某部分如果确实没有内容，可以省略对应二级标题；概念问答场景可以完全省略“建议动作”。",
+    "不要在这里输出“继续下一关”“进入下一关”“我完成了”等进度动作；进度推进由系统按钮控制。教学模板中的某部分如果确实没有内容，可以省略对应二级标题；概念问答场景可以完全省略“建议问题”。",
   ]
 }

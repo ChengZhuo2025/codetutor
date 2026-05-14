@@ -4,6 +4,7 @@ import assert from "node:assert/strict"
 import {
   buildComposerDraftFromAssistantAction,
   canUseCompletionQuickAction,
+  buildStableAssistantActions,
   isExplicitTaskCompletionInput,
   mergeAssistantActionIntoInput,
   normalizeAssistantAction,
@@ -13,6 +14,148 @@ import {
   shouldRenderStructuredMessageSection,
   shouldStabilizePendingAssistantTone,
 } from "../features/learning/lib/chat-behavior.ts"
+
+test("buildStableAssistantActions always returns two user prompts plus one current-step action", () => {
+  assert.deepEqual(
+    buildStableAssistantActions({
+      actions: [
+        {
+          label: "请按这个操作",
+          prompt: "打开设置面板并点击保存。",
+          tone: "secondary",
+        },
+      ],
+      taskState: "in_progress",
+      canAdvanceToNextTask: false,
+      isFinalTask: false,
+      nextTaskTitle: "变量和状态",
+    }),
+    [
+      {
+        label: "我应该先做哪一步？",
+        prompt: "我应该先做哪一步？请结合当前关卡给我一个最小可执行动作。",
+        tone: "secondary",
+        kind: "prefill",
+      },
+      {
+        label: "这是我的结果，请帮我判断",
+        prompt: "这是我的结果，请帮我判断是否达到当前关卡的完成标准：\n",
+        tone: "secondary",
+        kind: "prefill",
+      },
+      {
+        label: "继续下一步",
+        prompt: "请继续当前关卡中的下一项练习，并告诉我先做什么。",
+        tone: "primary",
+        kind: "prefill",
+      },
+    ],
+  )
+})
+
+test("buildStableAssistantActions keeps contextual assistant prompts before the stable progress action", () => {
+  assert.deepEqual(
+    buildStableAssistantActions({
+      actions: [
+        {
+          label: "我可以这样回答吗？",
+          prompt: "我准备这样回答：____。请帮我判断这个回答是否清楚。",
+          tone: "secondary",
+        },
+        {
+          label: "帮我把答案串起来",
+          prompt: "请帮我把上面三个问题连成一段顺畅的总结。",
+          tone: "secondary",
+        },
+        {
+          label: "继续当前练习",
+          prompt: "请告诉我下一步做什么。",
+          tone: "primary",
+        },
+      ],
+      taskState: "in_progress",
+      canAdvanceToNextTask: false,
+      isFinalTask: false,
+      nextTaskTitle: "变量和状态",
+    }),
+    [
+      {
+        label: "我可以这样回答吗？",
+        prompt: "我准备这样回答：____。请帮我判断这个回答是否清楚。",
+        tone: "secondary",
+        kind: "prefill",
+      },
+      {
+        label: "帮我把答案串起来",
+        prompt: "请帮我把上面三个问题连成一段顺畅的总结。",
+        tone: "secondary",
+        kind: "prefill",
+      },
+      {
+        label: "继续下一步",
+        prompt: "请继续当前关卡中的下一项练习，并告诉我先做什么。",
+        tone: "primary",
+        kind: "prefill",
+      },
+    ],
+  )
+})
+
+test("buildStableAssistantActions exposes next-stage progress only after completion is available", () => {
+  assert.deepEqual(
+    buildStableAssistantActions({
+      actions: [
+        {
+          label: "进入下一关",
+          prompt: "我已完成当前关卡，请带我进入下一关。",
+          tone: "success",
+        },
+      ],
+      taskState: "in_progress",
+      canAdvanceToNextTask: true,
+      isFinalTask: false,
+      nextTaskTitle: "变量和状态",
+    }).at(-1),
+    {
+      label: "继续下一关",
+      prompt: "进入下一关：变量和状态",
+      tone: "success",
+      kind: "advance_next_task",
+    },
+  )
+
+  assert.deepEqual(
+    buildStableAssistantActions({
+      actions: [],
+      taskState: "in_progress",
+      canAdvanceToNextTask: true,
+      isFinalTask: true,
+      nextTaskTitle: null,
+    }).at(-1),
+    {
+      label: "完成学习计划",
+      prompt: "我已完成当前关卡，请完成本轮学习计划。",
+      tone: "success",
+      kind: "advance_next_task",
+    },
+  )
+
+  assert.deepEqual(
+    buildStableAssistantActions({
+      actions: [],
+      taskState: "completed",
+      canAdvanceToNextTask: true,
+      isFinalTask: false,
+      nextTaskTitle: "变量和状态",
+    }).at(-1),
+    {
+      label: "继续下一关",
+      prompt: "进入下一关：变量和状态",
+      tone: "success",
+      kind: "advance_next_task",
+    },
+  )
+})
 
 test("shouldRenderMessageTaskPatch hides task patch while the assistant message is still streaming", () => {
   assert.equal(

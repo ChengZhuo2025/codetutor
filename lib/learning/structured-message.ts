@@ -292,7 +292,7 @@ function isActionSectionTitle(title: string | null) {
     return false
   }
 
-  return /(建议动作|可继续动作|下一步动作)/.test(title)
+  return /(建议动作|建议问题|可继续动作|下一步动作)/.test(title)
 }
 
 function parseStructuredActionItem(
