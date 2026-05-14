@@ -158,6 +158,7 @@ export function buildIdempotentReplaySSEEvents(input: {
   providerCode: string
   messageTitle: string
   messageKind: MessageKind
+  messageId?: string
   messageContent: string
   structuredContent?: StructuredLearningMessageContent | null
   taskPatch?: LearningTaskPatch | null
@@ -192,8 +193,10 @@ export function buildIdempotentReplaySSEEvents(input: {
     {
       event: "assistant_done",
       data: {
+        messageId: input.messageId,
         title: input.messageTitle,
         kind: input.messageKind,
+        content: input.messageContent,
         structuredContent: input.structuredContent ?? null,
         finishReason: "idempotent_replay",
         usage: null,

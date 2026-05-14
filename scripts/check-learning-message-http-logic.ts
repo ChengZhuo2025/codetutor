@@ -121,6 +121,7 @@ test("buildIdempotentReplaySSEEvents returns a deterministic replay event sequen
       providerCode: "siliconflow",
       messageTitle: "排查建议",
       messageKind: "coach",
+      messageId: "11111111-1111-4111-8111-111111111111",
       messageContent: "先贴出完整报错。",
       structuredContent: {
         interactionType: "blocked_help",
@@ -170,8 +171,10 @@ test("buildIdempotentReplaySSEEvents returns a deterministic replay event sequen
       {
         event: "assistant_done",
         data: {
+          messageId: "11111111-1111-4111-8111-111111111111",
           title: "排查建议",
           kind: "coach",
+          content: "先贴出完整报错。",
           structuredContent: {
             interactionType: "blocked_help",
             variant: "blocked_help",

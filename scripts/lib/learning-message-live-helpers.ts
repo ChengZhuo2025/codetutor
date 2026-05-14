@@ -357,7 +357,13 @@ export async function runSseLiveAssertions() {
     `did not expect provider stream error, got events: ${eventNames.join(", ")}`,
   )
   assert.ok(assistantDone, "expected sse stream to emit assistant_done payload")
+  assert.equal(typeof assistantDone?.data.messageId, "string")
   assert.equal(typeof assistantDone?.data.title, "string")
+  assert.ok(
+    typeof assistantDone?.data.content === "string" &&
+      assistantDone.data.content.trim().length > 0,
+    "expected assistant_done to include final assistant content for speech playback",
+  )
   assert.ok(
     assistantDone?.data.kind === "coach" || assistantDone?.data.kind === "task_feedback",
     "expected assistant_done to include message kind",

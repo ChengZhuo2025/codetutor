@@ -734,6 +734,8 @@ SSE 事件补充：
 - `assistant_done`
 - `error`
 
+`assistant_done` 会携带最终持久化 AI 回复消息的 `messageId`、`title`、`kind`、`content`、`structuredContent`、`finishReason` 与 `usage`；前端以其中的 `content` 作为流式显示完成后的最终正文和语音播读文本来源。
+
 ## 7.1.1 `POST /api/learning/message-speech`
 
 用途：

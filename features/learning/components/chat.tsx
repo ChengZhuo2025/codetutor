@@ -963,12 +963,17 @@ export function LearnChat({
               payload.kind === "task_feedback" ? "task_feedback" : "coach"
             const speechMessageId =
               typeof payload.messageId === "string" ? payload.messageId : undefined
+            const finalContent =
+              typeof payload.content === "string" && payload.content.trim().length > 0
+                ? payload.content
+                : null
 
             setMessages((prev) =>
               prev.map((message) =>
                 message.id === assistantMessageId
                   ? {
                       ...message,
+                      content: finalContent ?? message.content,
                       speechMessageId,
                       title,
                       kind,

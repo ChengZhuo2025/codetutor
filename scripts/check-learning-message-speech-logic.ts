@@ -7,6 +7,7 @@ import {
   buildPcmWavBuffer,
   isDashScopeTtsTerminalEvent,
   normalizeLearningMessageSpeechText,
+  resolveLearningMessageSpeechSourceText,
   resolveLearningTtsVoice,
 } from "../server/modules/learning/speech.ts"
 import {
@@ -80,6 +81,17 @@ test("normalizeLearningMessageSpeechText rejects empty text", () => {
   assert.throws(
     () => normalizeLearningMessageSpeechText("   \n\t  "),
     /没有可播读的 AI 回复内容/,
+  )
+})
+
+test("resolveLearningMessageSpeechSourceText falls back to persisted assistant content when client text is blank", () => {
+  assert.equal(
+    resolveLearningMessageSpeechSourceText("   ", "数据库里的最终 AI 回复。"),
+    "数据库里的最终 AI 回复。",
+  )
+  assert.equal(
+    resolveLearningMessageSpeechSourceText("前端当前播读片段。", "数据库里的最终 AI 回复。"),
+    "前端当前播读片段。",
   )
 })
 

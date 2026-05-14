@@ -53,6 +53,15 @@ export function normalizeLearningMessageSpeechText(text: string | null | undefin
   return normalized.slice(0, MAX_SPEECH_TEXT_LENGTH).trim()
 }
 
+export function resolveLearningMessageSpeechSourceText(
+  clientText: string | null | undefined,
+  persistedText: string | null | undefined,
+) {
+  const normalizedClientText = clientText?.trim()
+
+  return normalizedClientText ? clientText : persistedText
+}
+
 export function buildPcmWavBuffer(
   pcm: Buffer,
   input: {
@@ -336,7 +345,9 @@ export async function synthesizeLearningMessageSpeech(
     return null
   }
 
-  const text = normalizeLearningMessageSpeechText(input.text ?? message.content_text)
+  const text = normalizeLearningMessageSpeechText(
+    resolveLearningMessageSpeechSourceText(input.text, message.content_text),
+  )
   const models = await resolveLearningMediaTranscriptionModels()
   const runtime = models.textToSpeech
   if (!runtime) {

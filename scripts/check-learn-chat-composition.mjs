@@ -222,6 +222,11 @@ assert.match(
   "LearnChat should store the persisted assistant message id from SSE completion payload",
 )
 assert.match(
+  learnChatSource,
+  /typeof payload\.content === "string"/,
+  "LearnChat should replace streamed assistant text with the final persisted content from SSE completion payload",
+)
+assert.match(
   messageItemSource,
   /Boolean\(message\.speechMessageId\)/,
   "assistant message item should only show read-aloud when a persisted assistant message id is available",
