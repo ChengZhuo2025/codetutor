@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
+import { useCallback, useEffect, useState, useTransition } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { APP_EVENTS } from "@/constants/events"
 import { ROUTES } from "@/constants/routes"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
@@ -32,6 +32,7 @@ function withAuthorization(accessToken: string | null | undefined) {
 const WECHAT_PROVIDER = "wechat" as never
 const DOUYIN_PROVIDER = "douyin" as never
 const LEGAL_ACCEPTANCE_STORAGE_KEY = "codetutor-legal-acceptance-v1"
+const SUBSCRIBE_INTENT_PARAM = "intent=subscribe"
 
 type LegalAcceptanceRecord = {
   acceptedAt: string
@@ -58,6 +59,7 @@ async function clearBrowserAuthSession() {
 
 export function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const toast = useAppToast()
   const { trackEvent } = useAppEventTracker()
   const [mode, setMode] = useState<AuthMode>("login")
@@ -71,6 +73,14 @@ export function LoginPage() {
   const [oauthDialog, setOauthDialog] = useState<OAuthDialogState>(null)
   const [agreedToLegal, setAgreedToLegal] = useState(false)
   const [legalAcceptedAt, setLegalAcceptedAt] = useState<string | null>(null)
+
+  const getLoginRedirectTo = useCallback((defaultRedirectTo: string) => {
+    if (searchParams.get("intent") === "subscribe") {
+      return `${ROUTES.home}?${SUBSCRIBE_INTENT_PARAM}`
+    }
+
+    return defaultRedirectTo
+  }, [searchParams])
 
   useEffect(() => {
     try {
@@ -119,12 +129,12 @@ export function LoginPage() {
         legalAcceptedAt,
       })
 
-      router.replace(event.data.redirectTo)
+      router.replace(getLoginRedirectTo(event.data.redirectTo))
     }
 
     window.addEventListener("message", handleOAuthMessage)
     return () => window.removeEventListener("message", handleOAuthMessage)
-  }, [legalAcceptedAt, mode, oauthDialog?.provider, router, trackEvent])
+  }, [getLoginRedirectTo, legalAcceptedAt, mode, oauthDialog?.provider, router, trackEvent])
 
   const handleOAuthSubmit = async (provider: AuthOAuthProvider) => {
     if (!agreedToLegal) {
@@ -137,7 +147,11 @@ export function LoginPage() {
 
     try {
       const supabase = createSupabaseBrowserClient()
-      const redirectTo = `${window.location.origin}${ROUTES.authCallback}?provider=${provider}`
+      const callbackParams = new URLSearchParams({ provider })
+      if (searchParams.get("intent") === "subscribe") {
+        callbackParams.set("intent", "subscribe")
+      }
+      const redirectTo = `${window.location.origin}${ROUTES.authCallback}?${callbackParams.toString()}`
       const oauthProvider = provider === "wechat" ? WECHAT_PROVIDER : DOUYIN_PROVIDER
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: oauthProvider,
@@ -205,7 +219,7 @@ export function LoginPage() {
         })
 
         if (!cancelled) {
-          router.replace(data.redirectTo)
+          router.replace(getLoginRedirectTo(data.redirectTo))
         }
       } catch {
         if (!cancelled) {
@@ -219,7 +233,7 @@ export function LoginPage() {
     return () => {
       cancelled = true
     }
-  }, [router])
+  }, [getLoginRedirectTo, router])
 
   const sendCode = async () => {
     if (countdown > 0 || isSendingCode) return
@@ -320,7 +334,7 @@ export function LoginPage() {
             legalAcceptedAt,
           })
 
-          router.push(data.redirectTo)
+          router.push(getLoginRedirectTo(data.redirectTo))
         } catch (error) {
           setErrorMessage(toFriendlyAuthError(error, "verify"))
         }

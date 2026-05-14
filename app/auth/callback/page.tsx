@@ -10,6 +10,9 @@ import {
 import type { AuthLoginResponseData } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import { ROUTES } from "@/constants/routes"
+
+const SUBSCRIBE_INTENT_PARAM = "intent=subscribe"
 
 function withAuthorization(accessToken: string | null | undefined) {
   if (!accessToken) {
@@ -40,7 +43,7 @@ function getHashSessionTokens() {
   }
 }
 
-function notifyParentAuthCompleted(data: AuthLoginResponseData, provider: string) {
+function notifyParentAuthCompleted(data: AuthLoginResponseData, provider: string, redirectTo: string) {
   if (typeof window === "undefined") {
     return false
   }
@@ -48,7 +51,7 @@ function notifyParentAuthCompleted(data: AuthLoginResponseData, provider: string
   const payload = {
     type: "codetutor.oauth.completed",
     provider,
-    redirectTo: data.redirectTo,
+    redirectTo,
     onboardingCompleted: data.onboardingCompleted,
   }
 
@@ -96,6 +99,9 @@ function AuthCallbackContent() {
 
       const provider = providerParam
       const providerMeta = getOAuthProviderMeta(provider)
+      const loginRedirectTo = searchParams.get("intent") === "subscribe"
+        ? `${ROUTES.home}?${SUBSCRIBE_INTENT_PARAM}`
+        : null
 
       try {
         const supabase = createSupabaseBrowserClient()
@@ -147,13 +153,15 @@ function AuthCallbackContent() {
           }),
         })
 
-        if (!cancelled && notifyParentAuthCompleted(data, provider)) {
+        const redirectTo = loginRedirectTo ?? data.redirectTo
+
+        if (!cancelled && notifyParentAuthCompleted(data, provider, redirectTo)) {
           setMessage("登录成功，正在返回主页面。")
           return
         }
 
         if (!cancelled) {
-          router.replace(data.redirectTo)
+          router.replace(redirectTo)
         }
       } catch (error) {
         if (cancelled) {

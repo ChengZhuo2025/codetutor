@@ -38,7 +38,9 @@ import type {
 
 type SubscriptionDetailDialogProps = {
   subscription: SubscriptionSnapshot
-  children: ReactNode
+  children?: ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 const TERMINAL_PAYMENT_STATUSES = new Set<PaymentOrderStatus>(["paid", "closed", "expired", "failed"])
@@ -105,8 +107,12 @@ function getPaymentResultCopy(status: PaymentOrderStatus | undefined) {
 export function SubscriptionDetailDialog({
   subscription,
   children,
+  open: controlledOpen,
+  onOpenChange,
 }: SubscriptionDetailDialogProps) {
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const dialogOpen = controlledOpen ?? internalOpen
+  const setDialogOpen = onOpenChange ?? setInternalOpen
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionMeResponseData | null>(null)
   const [activeOrder, setActiveOrder] = useState<PaymentOrderResponseData | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
@@ -124,11 +130,11 @@ export function SubscriptionDetailDialog({
   const currentRemainingDays = subscriptionData?.current.remainingDays ?? subscription.remainingDays
 
   useEffect(() => {
-    if (!open) return
+    if (!dialogOpen) return
     void requestData<SubscriptionMeResponseData>("/subscription/me")
       .then(setSubscriptionData)
       .catch(() => setPaymentMessage("订阅信息读取失败，请稍后重试。"))
-  }, [open])
+  }, [dialogOpen])
 
   useEffect(() => {
     if (!activeOrder?.codeUrl) {
@@ -216,7 +222,7 @@ export function SubscriptionDetailDialog({
     setPaymentDialogOpen(false)
     setActiveOrder(null)
     setQrDataUrl(null)
-    setOpen(false)
+    setDialogOpen(false)
     if (window.location.pathname !== "/orders") {
       window.location.assign("/orders")
     }
@@ -231,8 +237,8 @@ export function SubscriptionDetailDialog({
 
   return (
     <>
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className={cn(DIALOG_GRADIENT_PANEL_CLASS, "max-h-[90vh] max-w-4xl overflow-y-auto rounded-2xl scrollbar-none sm:max-w-[860px]")}>
         <div className="overflow-hidden rounded-2xl">
           {/* 头部 */}

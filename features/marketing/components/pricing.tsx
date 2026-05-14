@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { SubscriptionDetailDialog } from "@/components/layout/subscription-detail-dialog"
 import { APP_EVENTS } from "@/constants/events"
+import { ROUTES } from "@/constants/routes"
 import {
   USER_BUTTON_PRIMARY_CLASS,
   USER_BUTTON_SECONDARY_CLASS,
@@ -16,6 +19,21 @@ import { requestData } from "@/lib/api/client"
 import type { SubscriptionPlansResponseData } from "@/lib/api/contracts/payment"
 import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
+import type { SubscriptionSnapshot } from "@/types/profile"
+
+const SUBSCRIBE_INTENT_PARAM = "intent=subscribe"
+
+const EMPTY_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {
+  planName: "免费版",
+  planPriceLabel: "¥0.00",
+  billingCycleLabel: "按需升级",
+  expiresAt: "无期限",
+  remainingDays: 0,
+  quotaLabel: "选择套餐后立即开通订阅权益",
+  renewalHint: "你可以选择适合当前学习节奏的套餐。",
+  primaryActionLabel: "订阅套餐",
+  secondaryActionLabel: "查看套餐",
+}
 
 function formatPlanPrice(priceCents: number) {
   return `¥${(priceCents / 100).toFixed(2)}`
@@ -32,14 +50,18 @@ function mapSubscriptionPlanToMarketingPlan(
     highlight: plan.highlight,
     features: plan.features,
     cta: plan.ctaLabel || (plan.purchasable ? "立即订阅" : "免费开始"),
-    href: "/login",
+    href: ROUTES.login,
+    purchasable: plan.purchasable,
   }
 }
 
 export function LandingPricing() {
   const { authState, ctaHref, ctaLabel } = useLandingAuthState()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { trackEvent } = useAppEventTracker()
   const [plans, setPlans] = useState<MarketingPlan[]>(marketingPlans)
+  const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -56,6 +78,32 @@ export function LandingPricing() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (authState.status !== "authenticated" || searchParams.get("intent") !== "subscribe") {
+      return
+    }
+
+    const timer = window.setTimeout(() => setSubscriptionDialogOpen(true), 0)
+    router.replace(ROUTES.home, { scroll: false })
+    return () => window.clearTimeout(timer)
+  }, [authState.status, router, searchParams])
+
+  function handleSubscribeClick(plan: MarketingPlan) {
+    const target = authState.status === "authenticated" ? "subscription-dialog" : `${ROUTES.login}?${SUBSCRIBE_INTENT_PARAM}`
+
+    trackEvent(APP_EVENTS.landingCtaClick, {
+      source: `marketing_pricing_${plan.name}`,
+      target,
+    })
+
+    if (authState.status === "authenticated") {
+      setSubscriptionDialogOpen(true)
+      return
+    }
+
+    router.push(`${ROUTES.login}?${SUBSCRIBE_INTENT_PARAM}`)
+  }
 
   return (
     <section id="pricing" className="relative bg-surface-1 px-6 py-24">
@@ -116,38 +164,46 @@ export function LandingPricing() {
                 ))}
               </ul>
 
-              <Link
-                href={
-                  authState.status === "authenticated" && plan.name === "免费版"
-                    ? ctaHref
-                    : plan.href
-                }
-              >
+              {plan.purchasable ? (
                 <Button
+                  type="button"
                   size="lg"
                   className={cn(
                     "w-full h-11 px-8 text-base font-semibold",
                     plan.highlight ? USER_BUTTON_PRIMARY_CLASS : USER_BUTTON_SECONDARY_CLASS,
                   )}
-                  onClick={() =>
-                    trackEvent(APP_EVENTS.landingCtaClick, {
-                      source: `marketing_pricing_${plan.name}`,
-                      target:
-                        authState.status === "authenticated" && plan.name === "免费版"
-                          ? ctaHref
-                          : plan.href,
-                    })
-                  }
+                  onClick={() => handleSubscribeClick(plan)}
                 >
-                  {authState.status === "authenticated" && plan.name === "免费版"
-                    ? ctaLabel
-                    : plan.cta}
+                  {plan.cta}
                 </Button>
-              </Link>
+              ) : (
+                <Link href={authState.status === "authenticated" ? ctaHref : plan.href}>
+                  <Button
+                    size="lg"
+                    className={cn(
+                      "w-full h-11 px-8 text-base font-semibold",
+                      plan.highlight ? USER_BUTTON_PRIMARY_CLASS : USER_BUTTON_SECONDARY_CLASS,
+                    )}
+                    onClick={() =>
+                      trackEvent(APP_EVENTS.landingCtaClick, {
+                        source: `marketing_pricing_${plan.name}`,
+                        target: authState.status === "authenticated" ? ctaHref : plan.href,
+                      })
+                    }
+                  >
+                    {authState.status === "authenticated" ? ctaLabel : plan.cta}
+                  </Button>
+                </Link>
+              )}
             </div>
           ))}
         </div>
       </div>
+      <SubscriptionDetailDialog
+        subscription={EMPTY_SUBSCRIPTION_SNAPSHOT}
+        open={subscriptionDialogOpen}
+        onOpenChange={setSubscriptionDialogOpen}
+      />
     </section>
   )
 }

@@ -232,6 +232,7 @@ export const marketingPlans: MarketingPlan[] = [
     ],
     cta: "免费开始",
     href: "/login",
+    purchasable: false,
   },
   {
     name: "个人版",
@@ -248,6 +249,7 @@ export const marketingPlans: MarketingPlan[] = [
     ],
     cta: "立即订阅",
     href: "/login",
+    purchasable: true,
   },
   {
     name: "专业版",
@@ -264,6 +266,7 @@ export const marketingPlans: MarketingPlan[] = [
     ],
     cta: "立即订阅",
     href: "/login",
+    purchasable: true,
   },
 ]
 

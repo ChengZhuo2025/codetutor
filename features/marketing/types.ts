@@ -56,4 +56,5 @@ export type MarketingPlan = {
   features: string[]
   cta: string
   href: string
+  purchasable?: boolean
 }
