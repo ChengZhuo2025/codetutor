@@ -5,6 +5,7 @@ import {
   buildDashScopeTtsSessionUpdate,
   buildDashScopeTtsTextEvents,
   buildPcmWavBuffer,
+  isDashScopeTtsTerminalEvent,
   normalizeLearningMessageSpeechText,
   resolveLearningTtsVoice,
 } from "../server/modules/learning/speech.ts"
@@ -104,11 +105,18 @@ test("buildDashScopeTtsSessionUpdate uses supported response format and sample r
     type: "session.update",
     session: {
       voice: "Cherry",
-      response_format: "wav",
+      response_format: "pcm",
       sample_rate: 24000,
       mode: "commit",
     },
   })
+})
+
+test("isDashScopeTtsTerminalEvent treats all DashScope completion events as terminal", () => {
+  assert.equal(isDashScopeTtsTerminalEvent("response.audio.done"), true)
+  assert.equal(isDashScopeTtsTerminalEvent("response.done"), true)
+  assert.equal(isDashScopeTtsTerminalEvent("session.finished"), true)
+  assert.equal(isDashScopeTtsTerminalEvent("response.audio.delta"), false)
 })
 
 test("buildDashScopeTtsTextEvents uses realtime text buffer event names", () => {

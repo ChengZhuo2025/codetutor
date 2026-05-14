@@ -18,8 +18,10 @@ import {
 const MAX_SPEECH_TEXT_LENGTH = 2000
 const DEFAULT_TTS_VOICE = "Cherry"
 const DEFAULT_TTS_SAMPLE_RATE = 24000
+const DEFAULT_TTS_CHANNELS = 1
+const DEFAULT_TTS_BITS_PER_SAMPLE = 16
 const DASH_SCOPE_REALTIME_PATH = "/api-ws/v1/realtime"
-const DASH_SCOPE_TTS_RESPONSE_FORMAT = "wav"
+const DASH_SCOPE_TTS_RESPONSE_FORMAT = "pcm"
 
 type ConversationMessageSpeechRow = {
   id: string
@@ -190,6 +192,12 @@ export function buildDashScopeTtsTextEvents(
   ]
 }
 
+export function isDashScopeTtsTerminalEvent(type: string | null | undefined) {
+  return type === "response.done"
+    || type === "response.audio.done"
+    || type === "session.finished"
+}
+
 export async function invokeDashScopeRealtimeTts(input: {
   runtime: LearningSpeechRuntime
   text: string
@@ -227,14 +235,18 @@ export async function invokeDashScopeRealtimeTts(input: {
         return
       }
 
-      const audio = Buffer.concat(audioChunks)
-      if (audio.length === 0) {
+      const pcm = Buffer.concat(audioChunks)
+      if (pcm.length === 0) {
         reject(new LearningAIProviderError("TTS provider returned empty audio"))
         return
       }
 
       resolve({
-        audio,
+        audio: buildPcmWavBuffer(pcm, {
+          sampleRate: DEFAULT_TTS_SAMPLE_RATE,
+          channels: DEFAULT_TTS_CHANNELS,
+          bitsPerSample: DEFAULT_TTS_BITS_PER_SAMPLE,
+        }),
         contentType: "audio/wav",
       })
     }
@@ -274,7 +286,7 @@ export async function invokeDashScopeRealtimeTts(input: {
         audioChunks.push(audio)
       }
 
-      if (record.type === "response.done" || record.type === "response.audio.done") {
+      if (isDashScopeTtsTerminalEvent(record.type)) {
         finish()
       }
     })
