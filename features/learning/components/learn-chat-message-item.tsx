@@ -179,6 +179,7 @@ export function LearnChatMessageItem({
         : speechState === "paused"
           ? "继续播读"
           : "播读 AI 回复"
+  const isSpeechPlaying = speechState === "playing"
 
   return (
     <div
@@ -325,20 +326,36 @@ export function LearnChatMessageItem({
               ))}
             </div>
             {canReadAloud ? (
-              <button
-                type="button"
-                disabled={isTyping || speechState === "loading"}
-                onClick={() => onToggleSpeech(message)}
-                aria-label={speechLabel}
-                title={speechLabel}
-                className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/60 bg-surface-2 text-muted-foreground transition hover:border-brand/40 hover:text-brand",
-                  (isTyping || speechState === "loading") && "pointer-events-none opacity-60",
-                  speechState === "playing" && "border-brand/40 bg-brand-dim text-brand",
-                )}
-              >
-                <SpeechIcon className={cn("h-4 w-4", speechState === "loading" && "animate-spin")} />
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                {isSpeechPlaying ? (
+                  <div
+                    aria-hidden="true"
+                    className="learn-speech-wave flex h-9 w-16 items-center justify-center gap-1 px-3 text-brand"
+                  >
+                    {[0, 1, 2, 3, 4].map((bar) => (
+                      <span
+                        key={bar}
+                        className="learn-speech-wave-bar block w-1 rounded-full bg-current"
+                        style={{ animationDelay: `${bar * 95}ms` }}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={isTyping || speechState === "loading"}
+                  onClick={() => onToggleSpeech(message)}
+                  aria-label={speechLabel}
+                  title={speechLabel}
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/60 bg-surface-2 text-muted-foreground transition hover:border-brand/40 hover:text-brand",
+                    (isTyping || speechState === "loading") && "pointer-events-none opacity-60",
+                    isSpeechPlaying && "border-brand/40 bg-brand-dim text-brand",
+                  )}
+                >
+                  <SpeechIcon className={cn("h-4 w-4", speechState === "loading" && "animate-spin")} />
+                </button>
+              </div>
             ) : null}
           </div>
         ) : null}

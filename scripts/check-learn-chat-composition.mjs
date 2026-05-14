@@ -187,6 +187,16 @@ assert.match(
   "assistant message item should include the default read-aloud affordance",
 )
 assert.match(
+  messageItemSource,
+  /aria-hidden="true"[\s\S]*learn-speech-wave/,
+  "assistant message item should render a decorative speech waveform while audio is playing",
+)
+assert.match(
+  messageItemSource,
+  /speechState === "playing"[\s\S]*learn-speech-wave-bar/,
+  "assistant message speech waveform should only animate during active playback",
+)
+assert.match(
   learnChatSource,
   /\/learning\/message-speech/,
   "LearnChat should call the learning message speech endpoint",

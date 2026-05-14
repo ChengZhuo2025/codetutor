@@ -345,6 +345,54 @@
   }
 }
 
+@keyframes learn-speech-wave {
+  0%,
+  100% {
+    height: 0.35rem;
+    opacity: 0.45;
+  }
+
+  42% {
+    height: 1.35rem;
+    opacity: 1;
+  }
+}
+
+.learn-speech-wave-bar {
+  height: 0.55rem;
+  animation: learn-speech-wave 880ms ease-in-out infinite;
+}
+
+.learn-speech-wave-bar:nth-child(2) {
+  animation-duration: 760ms;
+}
+
+.learn-speech-wave-bar:nth-child(3) {
+  animation-duration: 980ms;
+}
+
+.learn-speech-wave-bar:nth-child(4) {
+  animation-duration: 820ms;
+}
+
+.learn-speech-wave-bar:nth-child(5) {
+  animation-duration: 1080ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learn-speech-wave-bar {
+    animation: none;
+  }
+
+  .learn-speech-wave-bar:nth-child(odd) {
+    height: 0.9rem;
+  }
+
+  .learn-speech-wave-bar:nth-child(even) {
+    height: 1.25rem;
+  }
+}
+
 .animate-fadeUp {
   animation: fadeUp 0.8s ease-out forwards;
   opacity: 0;

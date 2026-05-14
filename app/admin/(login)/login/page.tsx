@@ -1,5 +1,10 @@
+import { Suspense } from "react"
 import { AdminLoginForm } from "@/features/admin-shell/components/admin-login-form"
 
 export default function AdminLoginPage() {
-  return <AdminLoginForm />
+  return (
+    <Suspense fallback={null}>
+      <AdminLoginForm />
+    </Suspense>
+  )
 }
