@@ -23,6 +23,7 @@ const DEFAULT_TTS_CHANNELS = 1
 const DEFAULT_TTS_BITS_PER_SAMPLE = 16
 const DASH_SCOPE_REALTIME_PATH = "/api-ws/v1/realtime"
 const DASH_SCOPE_TTS_RESPONSE_FORMAT = "pcm"
+const DASH_SCOPE_TTS_MODE = "server_commit"
 const MIN_SPEECH_TIMEOUT_MS = 5_000
 const MAX_USER_FACING_SPEECH_TIMEOUT_MS = 25_000
 
@@ -234,7 +235,7 @@ export function buildDashScopeTtsSessionUpdate(
       voice: resolveLearningTtsVoice(runtime),
       response_format: DASH_SCOPE_TTS_RESPONSE_FORMAT,
       sample_rate: DEFAULT_TTS_SAMPLE_RATE,
-      mode: "commit",
+      mode: DASH_SCOPE_TTS_MODE,
     },
   }
 }
@@ -248,10 +249,6 @@ export function buildDashScopeTtsTextEvents(
       event_id: createEventId(),
       type: "input_text_buffer.append",
       text,
-    },
-    {
-      event_id: createEventId(),
-      type: "input_text_buffer.commit",
     },
     {
       event_id: createEventId(),

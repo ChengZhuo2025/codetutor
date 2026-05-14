@@ -743,7 +743,7 @@ SSE 事件补充：
 - 为当前用户自己的 AI 回复消息生成播读音频
 - 模型来源于管理后台 `Ai 管理 / 多媒体管理 / 转译设置` 中启用的 `text_to_speech`
 - 首版按需临时生成，返回 `audio/wav`，不写入数据库或 Storage
-- 阿里云 DashScope Realtime TTS 调用使用 `response_format=pcm`、`sample_rate=24000`；服务端收集 PCM 音频分片后封装为临时 WAV 返回给浏览器，并兼容 `response.done` / `response.audio.done` / `session.finished` 完成事件。音色默认 `Cherry`，可通过所选 Model 的 `metadata.ttsVoice` / `metadata.voice` / `metadata.defaultVoice` 覆盖。
+- 阿里云 DashScope Realtime TTS 调用使用 `response_format=pcm`、`sample_rate=24000` 和官方 `server_commit` 模式；服务端发送 `session.update`、`input_text_buffer.append`、`session.finish`，收集 PCM 音频分片后封装为临时 WAV 返回给浏览器，并兼容 `response.done` / `response.audio.done` / `session.finished` 完成事件。音色默认 `Cherry`，可通过所选 Model 的 `metadata.ttsVoice` / `metadata.voice` / `metadata.defaultVoice` 覆盖。
 - 前端会先清理 Markdown 样式标记，再把正文拆成短段逐段请求播读；首段音频生成完成即可播放，后续段边播边生成。
 
 请求体：

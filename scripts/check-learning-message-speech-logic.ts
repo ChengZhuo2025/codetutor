@@ -138,7 +138,7 @@ test("buildDashScopeTtsSessionUpdate uses supported response format and sample r
       voice: "Cherry",
       response_format: "pcm",
       sample_rate: 24000,
-      mode: "commit",
+      mode: "server_commit",
     },
   })
 })
@@ -151,16 +151,12 @@ test("isDashScopeTtsTerminalEvent treats all DashScope completion events as term
 })
 
 test("buildDashScopeTtsTextEvents uses realtime text buffer event names", () => {
-  const eventIds = ["event-append", "event-commit", "event-finish"]
+  const eventIds = ["event-append", "event-finish"]
   assert.deepEqual(buildDashScopeTtsTextEvents("你好", () => eventIds.shift() ?? "event-extra"), [
     {
       event_id: "event-append",
       type: "input_text_buffer.append",
       text: "你好",
-    },
-    {
-      event_id: "event-commit",
-      type: "input_text_buffer.commit",
     },
     {
       event_id: "event-finish",
