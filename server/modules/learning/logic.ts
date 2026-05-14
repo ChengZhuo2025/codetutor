@@ -27,7 +27,7 @@ export type LearningRouteErrorResult = {
 
 type JsonRecord = Record<string, unknown>
 
-function isDraftConfirmedSelfDirectedPath(path: {
+function isGeneratedSelfDirectedPath(path: {
   selection_mode: "self_directed" | "preset_training"
   metadata?: JsonRecord | null
 }) {
@@ -38,7 +38,11 @@ function isDraftConfirmedSelfDirectedPath(path: {
         ? path.metadata.seed_source
         : null
 
-  return path.selection_mode === "self_directed" && seedSource === "plan_draft_confirmed"
+  return path.selection_mode === "self_directed"
+    && (
+      seedSource === "plan_draft_confirmed"
+      || seedSource === "api_onboarding_complete"
+    )
 }
 
 export function doesAgentBindingMatchLearningScene(
@@ -75,7 +79,7 @@ export function doesAgentBindingMatchLearningScene(
   }
 
   if (binding.path_id && binding.path_id !== input.path.template_path_id) {
-    if (!isDraftConfirmedSelfDirectedPath(input.path)) {
+    if (!isGeneratedSelfDirectedPath(input.path)) {
       return false
     }
   }
@@ -157,7 +161,7 @@ export function resolveLearningUserInteractionType(input: {
   }
 
   if (
-    /(什么是|怎么理解|如何理解|解释一下|概念是|是什么意思|有什么作用|是做什么的|有什么区别|区别是什么|和.*的区别|对比.*和|干什么用的|干嘛的|有什么用|如何安装|怎么安装|怎样安装|安装|配置|初始化|环境|mac\s*os|macos|本机.*装|本机.*配)/i.test(input.content)
+    /(什么是|怎么理解|如何理解|解释一下|概念是|是什么意思|有什么作用|是做什么的|有什么区别|区别是什么|和.*的区别|对比.*和|干什么用的|干嘛的|有什么用)/i.test(input.content)
   ) {
     return "concept_qa"
   }

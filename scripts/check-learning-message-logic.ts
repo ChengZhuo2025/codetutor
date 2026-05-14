@@ -32,14 +32,14 @@ test("resolveLearningResponseMode falls back to json and upgrades to sse when re
   assert.equal(resolveLearningResponseMode("text/event-stream", false), "sse")
 })
 
-test("resolveLearningUserInteractionType routes setup and installation questions to concept QA", () => {
+test("resolveLearningUserInteractionType keeps task setup and installation requests in teaching", () => {
   assert.equal(
     resolveLearningUserInteractionType({
       requestedInteractionType: null,
       content: "请问要如何安装 claude code？我是 mac os 系统",
       taskStatus: "in_progress",
     }),
-    "concept_qa",
+    "teaching",
   )
 
   assert.equal(
@@ -47,6 +47,17 @@ test("resolveLearningUserInteractionType routes setup and installation questions
       requestedInteractionType: null,
       content: "我的本机环境还没配置好，怎么先完成 Claude Code 的初始化？",
       taskStatus: "not_started",
+    }),
+    "teaching",
+  )
+})
+
+test("resolveLearningUserInteractionType still routes explicit concept questions to concept QA", () => {
+  assert.equal(
+    resolveLearningUserInteractionType({
+      requestedInteractionType: null,
+      content: "什么是字段映射？它和普通变量有什么区别？",
+      taskStatus: "in_progress",
     }),
     "concept_qa",
   )
@@ -77,7 +88,7 @@ test("resolveAgentBindingInteractionFallbacks keeps the requested teaching bindi
   assert.equal(sorted[0].interaction_type, "teaching")
 })
 
-test("doesAgentBindingMatchLearningScene allows custom material-plan self-directed paths to reuse generic self-study coach", () => {
+test("doesAgentBindingMatchLearningScene allows generated self-directed paths to reuse generic self-study coach", () => {
   assert.equal(
     doesAgentBindingMatchLearningScene(
       {
@@ -95,6 +106,33 @@ test("doesAgentBindingMatchLearningScene allows custom material-plan self-direct
           template_path_id: "material-plan-template",
           metadata: {
             seedSource: "plan_draft_confirmed",
+          },
+        },
+        step: {
+          step_no: 1,
+        },
+      },
+    ),
+    true,
+  )
+
+  assert.equal(
+    doesAgentBindingMatchLearningScene(
+      {
+        tool_id: "tool-claude",
+        learning_level: null,
+        selection_mode: "self_directed",
+        path_id: "default-self-study-template",
+        step_no: null,
+      },
+      {
+        tool: { id: "tool-claude" },
+        path: {
+          learning_level: "beginner",
+          selection_mode: "self_directed",
+          template_path_id: "onboarding-generated-template",
+          metadata: {
+            seedSource: "api_onboarding_complete",
           },
         },
         step: {

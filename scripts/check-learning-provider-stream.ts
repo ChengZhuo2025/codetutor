@@ -68,6 +68,8 @@ test("streamAIProvider returns as soon as OpenAI-compatible stream emits DONE", 
     assert.equal(result.content, "你好，继续练习。")
     assert.equal(result.finishReason, "stop")
     assert.equal(result.streamChunkCount, 2)
+    assert.equal(result.requestPayloadRedacted.estimatedContentChars, 2)
+    assert.equal(typeof result.responsePayloadRedacted.firstChunkLatencyMs, "number")
   } finally {
     globalThis.fetch = originalFetch
     if (originalSecret === undefined) {

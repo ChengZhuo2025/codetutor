@@ -153,6 +153,22 @@ function toDeltaText(
     .join("")
 }
 
+function estimateMessageContentLength(messages: AIChatMessage[]) {
+  return messages.reduce((total, message) => {
+    if (typeof message.content === "string") {
+      return total + message.content.length
+    }
+
+    return total + message.content.reduce((contentTotal, part) => {
+      if (part.type === "text") {
+        return contentTotal + part.text.length
+      }
+
+      return contentTotal
+    }, 0)
+  }, 0)
+}
+
 async function callOpenAICompatible(
   input: InvokeAIProviderInput,
 ): Promise<AIProviderResult> {
@@ -303,6 +319,7 @@ async function callOpenAICompatibleStream(
     let completionTokens = 0
     let totalTokens = 0
     let streamDone = false
+    let firstChunkLatencyMs: number | null = null
 
     while (!streamDone) {
       const { value, done } = await reader.read()
@@ -341,6 +358,7 @@ async function callOpenAICompatibleStream(
         const delta = toDeltaText(choice?.delta?.content)
 
         if (delta) {
+          firstChunkLatencyMs ??= Date.now() - startedAt
           content += delta
           streamChunkCount += 1
           await input.onTextDelta(delta)
@@ -372,6 +390,7 @@ async function callOpenAICompatibleStream(
       requestPayloadRedacted: {
         model: input.model.modelName,
         messageCount: input.messages.length,
+        estimatedContentChars: estimateMessageContentLength(input.messages),
         roles: input.messages.map((message) => message.role),
         temperature: input.temperature,
         maxTokens: input.maxOutputTokens,
@@ -379,6 +398,7 @@ async function callOpenAICompatibleStream(
       },
       responsePayloadRedacted: {
         durationMs: Date.now() - startedAt,
+        firstChunkLatencyMs,
         finishReason,
         contentLength: content.length,
         streamChunkCount,
