@@ -5,6 +5,7 @@ import {
   inferAdminModelConnectionProbeStrategy,
   matchesAdminAIAgentBindingFilters,
 } from "../server/modules/admin-ai/service.ts"
+import type { AdminAIAgentBindingListItem } from "../lib/api/contracts/admin-ai.ts"
 import { resolveStoredModelProfile } from "../server/modules/ai/model-profile.ts"
 
 test("resolveStoredModelProfile keeps tts runtime capability and infers tts fields", () => {
@@ -149,7 +150,7 @@ test("inferAdminModelConnectionProbeStrategy uses realtime probe for tts models"
 })
 
 test("matchesAdminAIAgentBindingFilters matches by agent name, tool name, interaction type and selection mode", () => {
-  const row = {
+  const row: AdminAIAgentBindingListItem = {
     bindingId: "binding-1",
     agentCode: "codex-cli-coach",
     agentName: "Codex CLI 工作流教练",
