@@ -8,6 +8,7 @@ import {
   isExplicitTaskCompletionInput,
   mergeAssistantActionIntoInput,
   normalizeAssistantAction,
+  resolveAssistantActionIntent,
   shouldCompleteCurrentTaskFromAssistantAction,
   shouldRenderLearningResumeCard,
   shouldRenderMessageTaskPatch,
@@ -276,6 +277,30 @@ test("shouldCompleteCurrentTaskFromAssistantAction only promotes real completion
       nextStep: "进入下一关：交互控制与智能辅助",
     }),
     false,
+  )
+})
+
+test("resolveAssistantActionIntent keeps suggestion buttons as composer prefill only", () => {
+  assert.equal(
+    resolveAssistantActionIntent({
+      actionKind: "prefill",
+      messageKind: "task_feedback",
+      taskPatchStatus: "completed",
+      actionLabel: "继续下一步",
+      nextStep: "进入下一关：交互控制与智能辅助",
+    }),
+    "prefill",
+  )
+
+  assert.equal(
+    resolveAssistantActionIntent({
+      actionKind: "advance_next_task",
+      messageKind: "coach",
+      taskPatchStatus: "completed",
+      actionLabel: "继续下一关",
+      nextStep: null,
+    }),
+    "advance_next_task",
   )
 })
 

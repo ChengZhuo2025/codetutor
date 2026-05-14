@@ -9,7 +9,9 @@ import {
   finalizeAssistantTaskPatch,
   hasLearningResumeHistory,
   parseStoredTaskPatchMetadata,
+  resolveAgentBindingInteractionFallbacks,
   resolveAssistantInteractionType,
+  resolveLearningUserInteractionType,
   resolveLearningResponseMode,
   shouldPersistTaskPatch,
   shouldTreatAssistantResponseAsCompletion,
@@ -28,6 +30,51 @@ test("resolveLearningResponseMode falls back to json and upgrades to sse when re
   assert.equal(resolveLearningResponseMode(null, false), "json")
   assert.equal(resolveLearningResponseMode("application/json", true), "sse")
   assert.equal(resolveLearningResponseMode("text/event-stream", false), "sse")
+})
+
+test("resolveLearningUserInteractionType routes setup and installation questions to concept QA", () => {
+  assert.equal(
+    resolveLearningUserInteractionType({
+      requestedInteractionType: null,
+      content: "请问要如何安装 claude code？我是 mac os 系统",
+      taskStatus: "in_progress",
+    }),
+    "concept_qa",
+  )
+
+  assert.equal(
+    resolveLearningUserInteractionType({
+      requestedInteractionType: null,
+      content: "我的本机环境还没配置好，怎么先完成 Claude Code 的初始化？",
+      taskStatus: "not_started",
+    }),
+    "concept_qa",
+  )
+})
+
+test("resolveAgentBindingInteractionFallbacks falls back from unmatched teaching to global concept QA", () => {
+  assert.deepEqual(resolveAgentBindingInteractionFallbacks("concept_qa"), ["concept_qa"])
+  assert.deepEqual(resolveAgentBindingInteractionFallbacks("teaching"), ["teaching", "concept_qa"])
+  assert.deepEqual(resolveAgentBindingInteractionFallbacks("path_guidance"), ["path_guidance", "concept_qa"])
+  assert.deepEqual(resolveAgentBindingInteractionFallbacks("blocked_help"), ["blocked_help"])
+})
+
+test("resolveAgentBindingInteractionFallbacks keeps the requested teaching binding ahead of concept QA fallback", () => {
+  const interactionTypes = resolveAgentBindingInteractionFallbacks("teaching")
+  const sorted = [
+    { interaction_type: "concept_qa", priority: 1 },
+    { interaction_type: "teaching", priority: 999 },
+  ].sort((left, right) => {
+    const leftRank = interactionTypes.indexOf(left.interaction_type as (typeof interactionTypes)[number])
+    const rightRank = interactionTypes.indexOf(right.interaction_type as (typeof interactionTypes)[number])
+    if (leftRank !== rightRank) {
+      return leftRank - rightRank
+    }
+
+    return left.priority - right.priority
+  })
+
+  assert.equal(sorted[0].interaction_type, "teaching")
 })
 
 test("doesAgentBindingMatchLearningScene allows custom material-plan self-directed paths to reuse generic self-study coach", () => {

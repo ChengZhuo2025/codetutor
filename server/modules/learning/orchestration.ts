@@ -37,7 +37,9 @@ import {
   deriveTaskPatch,
   finalizeAssistantTaskPatch,
   parseStoredTaskPatchMetadata,
+  resolveAgentBindingInteractionFallbacks,
   resolveAssistantInteractionType,
+  resolveLearningUserInteractionType,
   shouldPersistTaskPatch,
   taskPatchStatusToPersistentStatus,
 } from "./logic.ts"
@@ -207,44 +209,6 @@ export type LearningInteractionType =
   | "concept_qa"
 
 const textEncoder = new TextEncoder()
-
-function resolveInteractionType(
-  requested: string | null | undefined,
-  content: string,
-  taskStatus: TaskRow["status"],
-): LearningInteractionType {
-  if (
-    requested === "teaching"
-    || requested === "blocked_help"
-    || requested === "task_review"
-    || requested === "completion_feedback"
-    || requested === "path_guidance"
-  ) {
-    return requested
-  }
-
-  if (taskStatus === "blocked") {
-    return "blocked_help"
-  }
-
-  if (/(卡住|报错|错误|error|failed|失败)/i.test(content)) {
-    return "blocked_help"
-  }
-
-  if (/(复盘|回顾|review|总结)/i.test(content)) {
-    return "task_review"
-  }
-
-  if (/(下一步|接下来|继续学|继续做)/i.test(content)) {
-    return "path_guidance"
-  }
-
-  if (/(什么是|怎么理解|如何理解|解释一下|概念是|是什么意思|有什么作用|是做什么的|有什么区别|区别是什么|和.*的区别|对比.*和|干什么用的|干嘛的|有什么用)/i.test(content)) {
-    return "concept_qa"
-  }
-
-  return "teaching"
-}
 
 function buildAssistantPresentation(
   interactionType: LearningInteractionType,
@@ -490,8 +454,9 @@ async function resolveAgentTemplate(
 ) {
   void input.supabase
 
+  const interactionTypes = resolveAgentBindingInteractionFallbacks(input.interactionType)
   const candidates = (await loadAIAgentBindingsSnapshot<AgentBindingRow>())
-    .filter((binding) => binding.interaction_type === input.interactionType)
+    .filter((binding) => interactionTypes.includes(binding.interaction_type))
     .filter((binding) => binding.is_active)
     .filter((binding) =>
       doesAgentBindingMatchLearningScene(binding, {
@@ -501,6 +466,12 @@ async function resolveAgentTemplate(
       }),
     )
     .sort((left, right) => {
+      const leftInteractionRank = interactionTypes.indexOf(left.interaction_type)
+      const rightInteractionRank = interactionTypes.indexOf(right.interaction_type)
+      if (leftInteractionRank !== rightInteractionRank) {
+        return leftInteractionRank - rightInteractionRank
+      }
+
       if (left.priority !== right.priority) {
         return left.priority - right.priority
       }
@@ -520,7 +491,10 @@ async function resolveAgentTemplate(
     throw new LearningValidationError("命中的教学 agent 不存在或已停用。")
   }
 
-  return agent
+  return {
+    agent,
+    interactionType: binding.interaction_type,
+  }
 }
 
 async function loadProviderRuntime(
@@ -1248,18 +1222,19 @@ async function prepareLearningInvocation(
   }
 
   const { supabase, tool, path, task, step } = runtime
-  const interactionType = resolveInteractionType(
-    request.interactionType,
-    request.content,
-    task.status,
-  )
-  const agent = await resolveAgentTemplate({
+  const requestedInteractionType = resolveLearningUserInteractionType({
+    requestedInteractionType: request.interactionType,
+    content: request.content,
+    taskStatus: task.status,
+  })
+  const agentSelection = await resolveAgentTemplate({
     supabase,
     tool,
     path,
     step,
-    interactionType,
+    interactionType: requestedInteractionType,
   })
+  const { agent, interactionType } = agentSelection
   const { provider, model } = await loadProviderRuntime(supabase, agent)
   const session = await resolveConversationSession({
     supabase,

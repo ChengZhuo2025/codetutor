@@ -31,6 +31,11 @@ const agentSource = readFileSync(
   "utf8",
 )
 
+const bindingFormSource = readFileSync(
+  new URL("../features/admin-ai/components/binding-form-sheet.tsx", import.meta.url),
+  "utf8",
+)
+
 const testSource = readFileSync(
   new URL("../features/admin-ai/components/ai-test-console.tsx", import.meta.url),
   "utf8",
@@ -64,6 +69,7 @@ assert.match(modelManagementSource, /Model 管理|模型类型|运行时用途|�
 assert.match(modelFormSource, /模型类别|运行时用途|连接测试模式|高级扩展配置/, "The model form should expose structured fields and relegate metadata to advanced config")
 assert.match(`${modelFormSource}\n${adminAIViewModelSource}`, /TTS|tts|ASR 探测|TTS 探测/, "The model form should expose ASR/TTS model profile and connection test options")
 assert.match(agentSource, /Agent 管理|System Prompt|Developer Prompt/, "The Agent page should expose real agent template fields")
+assert.match(bindingFormSource, /concept_qa/, "The binding form should allow creating global concept QA fallback rules")
 assert.match(testSource, /命中预览|真实 AI 测试|llm_invocations/, "The test page should expose preview and real test flows")
 assert.match(mediaSettingsSource, /转译设置|图片转译|语音转文本|文本转语音/, "The media settings page should expose all transcription setting types")
 assert.match(mediaSettingsSource, /详情|编辑|modelOptions/, "The media settings page should expose detail and edit affordances")

@@ -300,6 +300,27 @@ export function shouldCompleteCurrentTaskFromAssistantAction(input: {
   return false
 }
 
+export function resolveAssistantActionIntent(input: {
+  actionKind: StableAssistantAction["kind"]
+  messageKind: "system_goal" | "coach" | "user_input" | "task_feedback"
+  taskPatchStatus?: "in_progress" | "blocked" | "completed" | null
+  actionLabel: string
+  nextStep?: string | null
+}) {
+  if (input.actionKind === "prefill") {
+    return "prefill" as const
+  }
+
+  return shouldCompleteCurrentTaskFromAssistantAction({
+    messageKind: input.messageKind,
+    taskPatchStatus: input.taskPatchStatus,
+    actionLabel: input.actionLabel,
+    nextStep: input.nextStep,
+  })
+    ? "advance_next_task" as const
+    : "prefill" as const
+}
+
 export function shouldStabilizePendingAssistantTone(input: {
   messageId: number
   pendingAssistantMessageId: number | null

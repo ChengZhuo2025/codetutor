@@ -120,6 +120,65 @@ export function resolveLearningResponseMode(
   return "json" as const
 }
 
+function isRequestedLearningInteractionType(
+  requested: string | null | undefined,
+): requested is LearningInteractionType {
+  return requested === "teaching"
+    || requested === "blocked_help"
+    || requested === "task_review"
+    || requested === "completion_feedback"
+    || requested === "path_guidance"
+    || requested === "concept_qa"
+}
+
+export function resolveLearningUserInteractionType(input: {
+  requestedInteractionType: string | null | undefined
+  content: string
+  taskStatus: LearningTaskPersistentStatus
+}): LearningInteractionType {
+  if (isRequestedLearningInteractionType(input.requestedInteractionType)) {
+    return input.requestedInteractionType
+  }
+
+  if (input.taskStatus === "blocked") {
+    return "blocked_help"
+  }
+
+  if (/(卡住|报错|错误|error|failed|失败)/i.test(input.content)) {
+    return "blocked_help"
+  }
+
+  if (/(复盘|回顾|review|总结)/i.test(input.content)) {
+    return "task_review"
+  }
+
+  if (/(下一步|接下来|继续学|继续做)/i.test(input.content)) {
+    return "path_guidance"
+  }
+
+  if (
+    /(什么是|怎么理解|如何理解|解释一下|概念是|是什么意思|有什么作用|是做什么的|有什么区别|区别是什么|和.*的区别|对比.*和|干什么用的|干嘛的|有什么用|如何安装|怎么安装|怎样安装|安装|配置|初始化|环境|mac\s*os|macos|本机.*装|本机.*配)/i.test(input.content)
+  ) {
+    return "concept_qa"
+  }
+
+  return "teaching"
+}
+
+export function resolveAgentBindingInteractionFallbacks(
+  interactionType: LearningInteractionType,
+): LearningInteractionType[] {
+  if (
+    interactionType === "teaching"
+    || interactionType === "path_guidance"
+    || interactionType === "task_review"
+  ) {
+    return [interactionType, "concept_qa"]
+  }
+
+  return [interactionType]
+}
+
 export function hasLearningResumeHistory(input: {
   completedSteps: number
   currentTaskLastConversationId: string | null

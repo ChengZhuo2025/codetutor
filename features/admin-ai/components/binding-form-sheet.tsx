@@ -53,6 +53,7 @@ const INTERACTION_TYPE_OPTIONS = [
   "task_review",
   "completion_feedback",
   "path_guidance",
+  "concept_qa",
 ] as const
 
 const LEARNING_LEVEL_OPTIONS = [

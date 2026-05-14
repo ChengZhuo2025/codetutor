@@ -26,7 +26,7 @@ import {
   canUseCompletionQuickAction,
   isExplicitTaskCompletionInput,
   mergeAssistantActionIntoInput,
-  shouldCompleteCurrentTaskFromAssistantAction,
+  resolveAssistantActionIntent,
   shouldRenderLearningResumeCard,
   type StableAssistantAction,
 } from "@/features/learning/lib/chat-behavior"
@@ -1096,26 +1096,17 @@ export function LearnChat({
         category: action.category,
         taskId: learningData.task.taskId,
       })
-
-      void (async () => {
-        try {
-          await syncTaskStatus("blocked", action.label)
-          await dispatchDraft(
-            { text: action.label, attachment: null },
-            { preserveBlockedStatus: true },
-          )
-        } catch (error) {
-          setSendError(
-            error instanceof Error
-              ? error.message
-              : "更新任务状态失败，请稍后重试。",
-          )
-        }
-      })()
+      handleAssistantActionPrefill({
+        label: action.label,
+        prompt: action.label,
+      })
       return
     }
 
-    void dispatchDraft({ text: action.label, attachment: null })
+    handleAssistantActionPrefill({
+      label: action.label,
+      prompt: action.label,
+    })
   }
 
   const handleSupportOption = (option: LearningSupportOption) => {
@@ -1179,19 +1170,15 @@ export function LearnChat({
     message: Message,
     action: StableAssistantAction,
   ) => {
-    if (action.kind === "advance_next_task") {
-      void handleAdvanceToNextTask(action.prompt || action.label)
-      return
-    }
+    const intent = resolveAssistantActionIntent({
+      actionKind: action.kind,
+      messageKind: message.kind,
+      taskPatchStatus: message.taskPatch?.status ?? null,
+      actionLabel: action.label,
+      nextStep: message.nextStep ?? null,
+    })
 
-    if (
-      shouldCompleteCurrentTaskFromAssistantAction({
-        messageKind: message.kind,
-        taskPatchStatus: message.taskPatch?.status ?? null,
-        actionLabel: action.label,
-        nextStep: message.nextStep ?? null,
-      })
-    ) {
+    if (intent === "advance_next_task") {
       void handleAdvanceToNextTask(action.prompt || action.label)
       return
     }

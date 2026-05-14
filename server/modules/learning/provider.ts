@@ -302,8 +302,9 @@ async function callOpenAICompatibleStream(
     let promptTokens = 0
     let completionTokens = 0
     let totalTokens = 0
+    let streamDone = false
 
-    while (true) {
+    while (!streamDone) {
       const { value, done } = await reader.read()
       if (done) {
         break
@@ -331,6 +332,7 @@ async function callOpenAICompatibleStream(
 
         const payloadText = dataLines.join("")
         if (payloadText === "[DONE]") {
+          streamDone = true
           break
         }
 
