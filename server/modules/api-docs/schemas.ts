@@ -2504,6 +2504,9 @@ export const adminAIOverviewResponseDataSchema = z
 export const adminAIQuerySchema = z
   .object({
     keyword: z.string().optional(),
+    interactionType: z.string().optional(),
+    toolId: z.string().optional(),
+    selectionMode: z.enum(["self_directed", "preset_training"]).optional(),
     page: paginationPositiveIntSchema.optional(),
     limit: paginationPositiveIntSchema.optional(),
   })

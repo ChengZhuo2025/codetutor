@@ -36,6 +36,11 @@ const bindingFormSource = readFileSync(
   "utf8",
 )
 
+const bindingManagementSource = readFileSync(
+  new URL("../features/admin-ai/components/binding-management.tsx", import.meta.url),
+  "utf8",
+)
+
 const testSource = readFileSync(
   new URL("../features/admin-ai/components/ai-test-console.tsx", import.meta.url),
   "utf8",
@@ -70,6 +75,7 @@ assert.match(modelFormSource, /模型类别|运行时用途|连接测试模式|�
 assert.match(`${modelFormSource}\n${adminAIViewModelSource}`, /TTS|tts|ASR 探测|TTS 探测/, "The model form should expose ASR/TTS model profile and connection test options")
 assert.match(agentSource, /Agent 管理|System Prompt|Developer Prompt/, "The Agent page should expose real agent template fields")
 assert.match(bindingFormSource, /concept_qa/, "The binding form should allow creating global concept QA fallback rules")
+assert.match(bindingManagementSource, /params\.set\("interactionType"|params\.set\("toolId"|params\.set\("selectionMode"/, "The binding page should send structured filter query params")
 assert.match(testSource, /命中预览|真实 AI 测试|llm_invocations/, "The test page should expose preview and real test flows")
 assert.match(mediaSettingsSource, /转译设置|图片转译|语音转文本|文本转语音/, "The media settings page should expose all transcription setting types")
 assert.match(mediaSettingsSource, /详情|编辑|modelOptions/, "The media settings page should expose detail and edit affordances")
@@ -78,7 +84,10 @@ assert.match(mediaAttachmentsSource, /预览|previewUrl|<audio|DialogContent/, "
 assert.match(menuSource, /label: "Ai 管理".*active: true/s, "The admin menu should enable the AI operations entry")
 assert.match(menuSource, /label: "Ai 管理"[\s\S]*?\]\s*,\s*\},\s*\{\s*label: "多媒体管理"/, "Multimedia management should be a top-level menu directly after AI management")
 assert.match(menuSource, /label: "多媒体管理"[\s\S]*children: \[/, "The multimedia management menu should expose its submenu")
-assert.match(sidebarSource, /useState<Record<string, boolean>>\(\{\}\)/, "Admin sidebar submenu state should start empty")
-assert.match(sidebarSource, /expandedItems\[item\.href\] \?\? isActive/, "Admin sidebar submenus should default to collapsed and expand only for active routes")
+assert.match(sidebarSource, /useState<string \| null \| undefined>\(undefined\)/, "Admin sidebar submenu state should start with route-driven expansion")
+assert.match(sidebarSource, /getRenderedExpandedAdminMenuHref\(manualExpandedItemHref, activeExpandableHref\)/, "Admin sidebar should render only one expanded submenu at a time")
+assert.match(sidebarSource, /getNextExpandedAdminMenuHref\(renderedCurrent, item\.href\)/, "Admin sidebar should replace the expanded submenu when another parent is clicked")
+assert.match(bindingManagementSource, /AdminSelect/, "The binding page should use the shared AdminSelect component")
+assert.match(bindingManagementSource, /params\.set\("interactionType"|params\.set\("toolId"|params\.set\("selectionMode"/, "The binding page should send structured filter query params")
 
 console.log("Admin AI pages expose the expected information architecture and menu wiring.")

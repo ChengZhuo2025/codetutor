@@ -724,6 +724,9 @@ export function createAdminAIAgentBindingListHandler(dependencies: {
   getAdminAIAgentBindingList: (filters: {
     adminAccountId: string
     keyword?: string
+    interactionType?: string
+    toolId?: string
+    selectionMode?: "self_directed" | "preset_training"
     page: number
     limit: number
   }) => Promise<unknown>
@@ -741,7 +744,11 @@ export function createAdminAIAgentBindingListHandler(dependencies: {
         }
 
         const url = new URL((request as Request).url)
-        const parsed = parseAdminAIAgentListQuery(url.searchParams, { allowScenario: false, allowStatus: false })
+        const parsed = parseAdminAIAgentListQuery(url.searchParams, {
+          allowScenario: false,
+          allowStatus: false,
+          allowBindingFilters: true,
+        })
         if (!parsed.ok) {
           return jsonError(parsed.code, parsed.message, 400)
         }

@@ -80,6 +80,7 @@ import {
   LEARNING_CHAT_IMAGE_MAX_BYTES,
 } from "@/lib/supabase/storage"
 import { APP_EVENTS } from "@/constants/events"
+import { VALID_SELECTION_MODES } from "@/constants/learning-taxonomy"
 
 type ValidationSuccess<T> = {
   ok: true
@@ -1121,6 +1122,7 @@ export function parseAdminAIAgentListQuery(
   options?: {
     allowScenario?: boolean
     allowStatus?: boolean
+    allowBindingFilters?: boolean
   },
 ) {
   const pagination = parseSharedListPagination(searchParams)
@@ -1130,6 +1132,7 @@ export function parseAdminAIAgentListQuery(
 
   const allowScenario = options?.allowScenario ?? true
   const allowStatus = options?.allowStatus ?? true
+  const allowBindingFilters = options?.allowBindingFilters ?? false
   const rawScenarioType = searchParams.get("scenarioType")
   const rawStatus = searchParams.get("status")
 
@@ -1149,10 +1152,38 @@ export function parseAdminAIAgentListQuery(
     status = rawStatus as "all" | "active" | "inactive"
   }
 
+  let interactionType: string | undefined
+  let toolId: string | undefined
+  let selectionMode: "self_directed" | "preset_training" | undefined
+  if (allowBindingFilters) {
+    const rawInteractionType = searchParams.get("interactionType")?.trim()
+    if (rawInteractionType) {
+      interactionType = rawInteractionType
+    }
+
+    const rawToolId = searchParams.get("toolId")?.trim()
+    if (rawToolId) {
+      const normalizedToolId = normalizeUuid(rawToolId)
+      if (!normalizedToolId) {
+        return fail("VALIDATION_FAILED", "toolId 参数不合法。")
+      }
+      toolId = normalizedToolId
+    }
+
+    const rawSelectionMode = searchParams.get("selectionMode")?.trim()
+    if (rawSelectionMode) {
+      if (!VALID_SELECTION_MODES.has(rawSelectionMode)) {
+        return fail("VALIDATION_FAILED", "selectionMode 参数不合法。")
+      }
+      selectionMode = rawSelectionMode as "self_directed" | "preset_training"
+    }
+  }
+
   return ok({
     keyword: searchParams.get("keyword")?.trim() || undefined,
     ...(allowScenario ? { scenarioType } : {}),
     ...(allowStatus ? { status } : {}),
+    ...(allowBindingFilters ? { interactionType, toolId, selectionMode } : {}),
     ...pagination.data,
   })
 }

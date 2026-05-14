@@ -12,6 +12,11 @@ import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useAdminSession } from "./admin-shell-client"
 import { canAccessAdminAI } from "@/features/admin-ai/lib/access"
+import {
+  getNextExpandedAdminMenuHref,
+  getRenderedExpandedAdminMenuHref,
+  isAdminMenuItemActive,
+} from "../lib/sidebar-menu"
 
 const BrandIcon = brandIcon
 
@@ -41,24 +46,17 @@ function withCollapsedTooltip(collapsed: boolean, label: string, node: ReactElem
 export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps) {
   const pathname = usePathname()
   const { session } = useAdminSession()
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
+  const [manualExpandedItemHref, setManualExpandedItemHref] = useState<string | null | undefined>(undefined)
   const aiAccessible = canAccessAdminAI(session.roles)
 
-  function isItemActive(item: MenuItem) {
-    if (item.href === ADMIN_ROUTES.home) {
-      return pathname === ADMIN_ROUTES.home
-    }
+  function renderMenuItems(items: MenuItem[], level = 0, siblings = items) {
+    const activeExpandableHref = items.find((item) => (
+      Boolean(item.children?.length) && isAdminMenuItemActive(item, pathname, siblings)
+    ))?.href ?? null
+    const expandedItemHref = getRenderedExpandedAdminMenuHref(manualExpandedItemHref, activeExpandableHref)
 
-    if (item.children?.length) {
-      return pathname === item.href || pathname.startsWith(`${item.href}/`)
-    }
-
-    return pathname === item.href
-  }
-
-  function renderMenuItems(items: MenuItem[], level = 0) {
     return items.map((item) => {
-      const isActive = isItemActive(item)
+      const isActive = isAdminMenuItemActive(item, pathname, siblings)
       const Icon = item.icon
 
       if (!item.active && item.href !== ADMIN_ROUTES.home) {
@@ -70,11 +68,17 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
       }
 
       if (item.children?.length) {
-        const expanded = expandedItems[item.href] ?? isActive
+        const expanded = expandedItemHref === item.href
         const parentLink = (
           <button
             type="button"
-            onClick={() => setExpandedItems((prev) => ({ ...prev, [item.href]: !expanded }))}
+            onClick={() => {
+              setManualExpandedItemHref((current) => {
+                const renderedCurrent = getRenderedExpandedAdminMenuHref(current, activeExpandableHref)
+
+                return getNextExpandedAdminMenuHref(renderedCurrent, item.href)
+              })
+            }}
             className={cn(
               navItemBase,
               "w-full text-sidebar-foreground",
@@ -108,7 +112,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
                   collapsed ? "border-l-0 pl-0" : "ml-2.5 border-l-2 border-l-primary/15 pl-3",
                 )}
               >
-                {renderMenuItems(item.children, level + 1)}
+                {renderMenuItems(item.children, level + 1, item.children)}
               </ul>
             ) : null}
           </li>

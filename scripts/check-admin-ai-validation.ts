@@ -75,6 +75,33 @@ test("parseAdminAIAgentListQuery accepts scenario and status filters", () => {
   }
 })
 
+test("parseAdminAIAgentListQuery accepts binding specific filters when enabled", () => {
+  const r = parseAdminAIAgentListQuery(new URLSearchParams([
+    ["keyword", "codex"],
+    ["interactionType", "blocked_help"],
+    ["toolId", "550e8400-e29b-41d4-a716-446655440201"],
+    ["selectionMode", "preset_training"],
+    ["page", "2"],
+    ["limit", "10"],
+  ]), {
+    allowScenario: false,
+    allowStatus: false,
+    allowBindingFilters: true,
+  })
+
+  assert.equal(r.ok, true)
+  if (r.ok) {
+    assert.deepEqual(r.data, {
+      keyword: "codex",
+      interactionType: "blocked_help",
+      toolId: "550e8400-e29b-41d4-a716-446655440201",
+      selectionMode: "preset_training",
+      page: 2,
+      limit: 10,
+    })
+  }
+})
+
 test("parseAdminAIProviderBody trims strings and preserves booleans", () => {
   const r = parseAdminAIProviderBody({
     code: " custom-openai ",

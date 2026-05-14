@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatePanel } from "@/components/ui/state-panel"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
+import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
   adminRequestData,
@@ -21,6 +22,7 @@ import {
   getAdminAILearningLevelLabel,
   getAdminAISelectionModeLabel,
 } from "@/features/admin-ai/lib/view-model"
+import { SELECTION_MODE_DEFINITIONS } from "@/constants/learning-taxonomy"
 import { BindingFormSheet } from "./binding-form-sheet"
 import { ActiveStateBadge, ListFilterCard, ListPageHeader } from "./shared"
 
@@ -28,10 +30,28 @@ function renderBindingScopeValue(value: string | null | undefined, fallbackLabel
   return value ?? fallbackLabel
 }
 
+const INTERACTION_TYPE_OPTIONS = [
+  { value: "", label: "全部交互类型" },
+  { value: "teaching", label: "教学对话" },
+  { value: "blocked_help", label: "卡关求助" },
+  { value: "task_review", label: "任务点评" },
+  { value: "completion_feedback", label: "完成反馈" },
+  { value: "path_guidance", label: "路径引导" },
+  { value: "concept_qa", label: "概念问答" },
+  { value: "media_vision_extract", label: "图片理解" },
+  { value: "media_audio_transcribe", label: "语音转写" },
+]
+
 export function BindingManagement() {
   const [data, setData] = useState<AdminAIAgentBindingListResponseData | null>(null)
   const [keyword, setKeyword] = useState("")
   const [keywordApplied, setKeywordApplied] = useState("")
+  const [interactionType, setInteractionType] = useState("")
+  const [interactionTypeApplied, setInteractionTypeApplied] = useState("")
+  const [toolId, setToolId] = useState("")
+  const [toolIdApplied, setToolIdApplied] = useState("")
+  const [selectionMode, setSelectionMode] = useState("")
+  const [selectionModeApplied, setSelectionModeApplied] = useState("")
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState("20")
   const [editingItem, setEditingItem] = useState<AdminAIAgentBindingListItem | null>(null)
@@ -54,6 +74,15 @@ export function BindingManagement() {
       if (keywordApplied) {
         params.set("keyword", keywordApplied)
       }
+      if (interactionTypeApplied) {
+        params.set("interactionType", interactionTypeApplied)
+      }
+      if (toolIdApplied) {
+        params.set("toolId", toolIdApplied)
+      }
+      if (selectionModeApplied) {
+        params.set("selectionMode", selectionModeApplied)
+      }
       const result = await adminRequestData<AdminAIAgentBindingListResponseData>(
         `/admin/ai/agent-bindings?${params.toString()}`,
         { method: "GET" },
@@ -66,7 +95,7 @@ export function BindingManagement() {
     } finally {
       setIsLoading(false)
     }
-  }, [keywordApplied, limit, page])
+  }, [interactionTypeApplied, keywordApplied, limit, page, selectionModeApplied, toolIdApplied])
 
   useEffect(() => {
     void fetchList()
@@ -86,6 +115,9 @@ export function BindingManagement() {
   const applySearch = () => {
     setPage(1)
     setKeywordApplied(keyword.trim())
+    setInteractionTypeApplied(interactionType.trim())
+    setToolIdApplied(toolId.trim())
+    setSelectionModeApplied(selectionMode.trim())
   }
 
   return (
@@ -121,8 +153,8 @@ export function BindingManagement() {
         ) : (
           <>
             <ListFilterCard>
-              <div className="flex flex-col gap-3 md:flex-row">
-                <div className="relative flex-1 min-w-32 max-w-md">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,0.9fr))_auto]">
+                <div className="relative min-w-32">
                   <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={keyword}
@@ -136,9 +168,41 @@ export function BindingManagement() {
                     className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
-                <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applySearch}>
-                  搜索
-                </Button>
+                <AdminSelect
+                  value={interactionType}
+                  onValueChange={setInteractionType}
+                  options={INTERACTION_TYPE_OPTIONS}
+                  triggerClassName="w-full min-w-0"
+                />
+                <AdminSelect
+                  value={toolId}
+                  onValueChange={setToolId}
+                  options={[
+                    { value: "", label: "全部编程工具" },
+                    ...(data?.toolOptions?.map((item) => ({
+                      value: item.id,
+                      label: `${item.name} (${item.code})`,
+                    })) ?? []),
+                  ]}
+                  triggerClassName="w-full min-w-0"
+                />
+                <AdminSelect
+                  value={selectionMode}
+                  onValueChange={setSelectionMode}
+                  options={[
+                    { value: "", label: "全部学习模式" },
+                    ...SELECTION_MODE_DEFINITIONS.map((item) => ({
+                      value: item.code,
+                      label: item.shortLabel,
+                    })),
+                  ]}
+                  triggerClassName="w-full min-w-0"
+                />
+                <div className="flex gap-2 lg:justify-end">
+                  <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applySearch}>
+                    搜索
+                  </Button>
+                </div>
               </div>
             </ListFilterCard>
 

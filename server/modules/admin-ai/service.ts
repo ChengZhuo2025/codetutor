@@ -394,16 +394,12 @@ async function loadAgents(filters?: { isActive?: boolean; scenarioType?: string 
   return (data ?? []) as AgentRow[]
 }
 
-async function loadAgentBindings(filters?: { agentCodeKeyword?: string }) {
+async function loadAgentBindings() {
   const supabase = createSupabaseAdminClient()
-  let query = supabase
+  const query = supabase
     .from("agent_bindings")
     .select("*")
     .order("priority", { ascending: true })
-
-  if (filters?.agentCodeKeyword) {
-    query = query.ilike("agent_code", `%${filters.agentCodeKeyword}%`)
-  }
 
   const { data, error } = await query
   assertSupabaseSuccess(error, "failed to query agent_bindings")
@@ -669,6 +665,36 @@ function mapAgentBindingItem(
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
+}
+
+export function matchesAdminAIAgentBindingFilters(
+  row: AdminAIAgentBindingListItem,
+  filters: {
+    keyword?: string
+    interactionType?: string
+    toolId?: string
+    selectionMode?: "self_directed" | "preset_training"
+  },
+) {
+  if (filters.interactionType && row.interactionType !== filters.interactionType) {
+    return false
+  }
+  if (filters.toolId && row.toolId !== filters.toolId) {
+    return false
+  }
+  if (filters.selectionMode && row.selectionMode !== filters.selectionMode) {
+    return false
+  }
+
+  return filterByKeyword(filters.keyword, [
+    row.agentCode,
+    row.agentName,
+    row.toolCode,
+    row.toolName,
+    row.pathCode,
+    row.pathName,
+    row.interactionType,
+  ])
 }
 
 function mapAgentSkillBindingItem(
@@ -2479,13 +2505,16 @@ export async function updateAdminAIAgent(
 export async function getAdminAIAgentBindingList(filters: {
   adminAccountId: string
   keyword?: string
+  interactionType?: string
+  toolId?: string
+  selectionMode?: "self_directed" | "preset_training"
   page: number
   limit: number
 }): Promise<AdminAIAgentBindingListResponseData> {
   await assertCanAccessAI(filters.adminAccountId)
   const [agents, bindings, tools, paths] = await Promise.all([
     loadAgents(),
-    loadAgentBindings({ agentCodeKeyword: filters.keyword }),
+    loadAgentBindings(),
     loadTools(),
     loadPaths(),
   ])
@@ -2496,17 +2525,7 @@ export async function getAdminAIAgentBindingList(filters: {
 
   const mapped = bindings
     .map((row) => mapAgentBindingItem(row, agentByCode, toolById, pathById))
-    .filter((row) =>
-      filterByKeyword(filters.keyword, [
-        row.agentCode,
-        row.agentName,
-        row.toolCode,
-        row.toolName,
-        row.pathCode,
-        row.pathName,
-        row.interactionType,
-      ]),
-    )
+    .filter((row) => matchesAdminAIAgentBindingFilters(row, filters))
 
   const pageData = paginate(mapped, filters.page, filters.limit)
   return {

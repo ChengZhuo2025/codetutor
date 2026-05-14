@@ -1,7 +1,10 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 
-import { inferAdminModelConnectionProbeStrategy } from "../server/modules/admin-ai/service.ts"
+import {
+  inferAdminModelConnectionProbeStrategy,
+  matchesAdminAIAgentBindingFilters,
+} from "../server/modules/admin-ai/service.ts"
 import { resolveStoredModelProfile } from "../server/modules/ai/model-profile.ts"
 
 test("resolveStoredModelProfile keeps tts runtime capability and infers tts fields", () => {
@@ -143,4 +146,50 @@ test("inferAdminModelConnectionProbeStrategy uses realtime probe for tts models"
   )
 
   assert.equal(strategy, "tts_realtime")
+})
+
+test("matchesAdminAIAgentBindingFilters matches by agent name, tool name, interaction type and selection mode", () => {
+  const row = {
+    bindingId: "binding-1",
+    agentCode: "codex-cli-coach",
+    agentName: "Codex CLI 工作流教练",
+    toolId: "550e8400-e29b-41d4-a716-446655440201",
+    toolCode: "cursor",
+    toolName: "Cursor",
+    learningLevel: "intermediate",
+    selectionMode: "preset_training",
+    pathId: "550e8400-e29b-41d4-a716-446655440202",
+    pathCode: "cursor-workflow",
+    pathName: "Cursor 工作流",
+    stepNo: null,
+    interactionType: "blocked_help",
+    priority: 10,
+    isActive: true,
+    metadata: {},
+    createdAt: "2026-04-05T10:00:00.000Z",
+    updatedAt: "2026-04-05T10:00:00.000Z",
+  }
+
+  assert.equal(
+    matchesAdminAIAgentBindingFilters(row, {
+      keyword: "cursor",
+      interactionType: "blocked_help",
+      toolId: "550e8400-e29b-41d4-a716-446655440201",
+      selectionMode: "preset_training",
+    }),
+    true,
+  )
+  assert.equal(
+    matchesAdminAIAgentBindingFilters(row, {
+      keyword: "工作流教练",
+      interactionType: "blocked_help",
+    }),
+    true,
+  )
+  assert.equal(
+    matchesAdminAIAgentBindingFilters(row, {
+      keyword: "not-match",
+    }),
+    false,
+  )
 })

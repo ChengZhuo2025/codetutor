@@ -621,14 +621,18 @@ test("admin ai agent detail patch returns 200", async () => {
 })
 
 test("admin ai agent binding list returns 200", async () => {
+  let receivedFilters: unknown = null
   const handler = createAdminAIAgentBindingListHandler({
     getRequestAdmin: async () => okAdmin,
-    getAdminAIAgentBindingList: async () => ({
+    getAdminAIAgentBindingList: async (filters) => {
+      receivedFilters = filters
+      return {
       items: [],
       total: 0,
       page: 1,
       limit: 20,
-    }),
+      }
+    },
     createAdminAIAgentBinding: async () => ({
       bindingId: "550e8400-e29b-41d4-a716-446655440114",
       agentCode: "codex-cli-coach",
@@ -651,8 +655,19 @@ test("admin ai agent binding list returns 200", async () => {
     }),
   })
 
-  const res = await handler.GET(new Request("http://localhost/api/admin/ai/agent-bindings"))
+  const res = await handler.GET(new Request(
+    "http://localhost/api/admin/ai/agent-bindings?keyword=codex&interactionType=blocked_help&toolId=550e8400-e29b-41d4-a716-446655440201&selectionMode=preset_training",
+  ))
   assert.equal(res.status, 200)
+  assert.deepEqual(receivedFilters, {
+    adminAccountId: okAdmin.adminId,
+    keyword: "codex",
+    interactionType: "blocked_help",
+    toolId: "550e8400-e29b-41d4-a716-446655440201",
+    selectionMode: "preset_training",
+    page: 1,
+    limit: 20,
+  })
 })
 
 test("admin ai agent binding detail patch returns 200", async () => {

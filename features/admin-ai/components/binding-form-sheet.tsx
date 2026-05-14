@@ -18,6 +18,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
+import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import {
   adminRequestData,
   getAdminApiErrorMessage,
@@ -175,63 +176,96 @@ export function BindingFormSheet({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
                 <AdminFieldLabel htmlFor="binding-agentCode" label="Agent" required />
-                <select id="binding-agentCode" value={form.agentCode} onChange={(event) => setForm((prev) => ({ ...prev, agentCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
-                  <option value="">请选择 Agent</option>
-                  {options?.agentOptions?.map((item) => (
-                    <option key={item.code} value={item.code}>{item.name}</option>
-                  ))}
-                </select>
+                <AdminSelect
+                  id="binding-agentCode"
+                  value={form.agentCode}
+                  onValueChange={(next) => setForm((prev) => ({ ...prev, agentCode: next }))}
+                  options={[
+                    { value: "", label: "请选择 Agent" },
+                    ...(options?.agentOptions?.map((item) => ({
+                      value: item.code,
+                      label: item.name,
+                    })) ?? []),
+                  ]}
+                  triggerClassName="h-10 w-full min-w-0"
+                />
               </div>
               <div className="space-y-1.5">
                 <AdminFieldLabel htmlFor="binding-interactionType" label="交互类型" required />
-                <select
+                <AdminSelect
                   id="binding-interactionType"
                   value={form.interactionType}
-                  onChange={(event) => setForm((prev) => ({ ...prev, interactionType: event.target.value }))}
-                  className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none"
-                >
-                  {interactionTypeOptions.map((item) => (
-                    <option key={item} value={item}>
-                      {getAdminAIInteractionTypeLabel(item)}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(next) => setForm((prev) => ({ ...prev, interactionType: next }))}
+                  options={interactionTypeOptions.map((item) => ({
+                    value: item,
+                    label: getAdminAIInteractionTypeLabel(item),
+                  }))}
+                  triggerClassName="h-10 w-full min-w-0"
+                />
               </div>
               <div className="space-y-1.5">
                 <AdminFieldLabel htmlFor="binding-toolId" label="Tool" />
-                <select id="binding-toolId" value={form.toolId} onChange={(event) => setForm((prev) => ({ ...prev, toolId: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
-                  <option value="">全部 Tool</option>
-                  {options?.toolOptions?.map((item) => (
-                    <option key={item.id} value={item.id}>{item.name} ({item.code})</option>
-                  ))}
-                </select>
+                <AdminSelect
+                  id="binding-toolId"
+                  value={form.toolId}
+                  onValueChange={(next) => setForm((prev) => ({ ...prev, toolId: next }))}
+                  options={[
+                    { value: "", label: "全部 Tool" },
+                    ...(options?.toolOptions?.map((item) => ({
+                      value: item.id,
+                      label: `${item.name} (${item.code})`,
+                    })) ?? []),
+                  ]}
+                  triggerClassName="h-10 w-full min-w-0"
+                />
               </div>
               <div className="space-y-1.5">
                 <AdminFieldLabel htmlFor="binding-pathId" label="Path" />
-                <select id="binding-pathId" value={form.pathId} onChange={(event) => setForm((prev) => ({ ...prev, pathId: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
-                  <option value="">全部 Path</option>
-                  {options?.pathOptions?.map((item) => (
-                    <option key={item.id} value={item.id}>{item.name} ({item.code})</option>
-                  ))}
-                </select>
+                <AdminSelect
+                  id="binding-pathId"
+                  value={form.pathId}
+                  onValueChange={(next) => setForm((prev) => ({ ...prev, pathId: next }))}
+                  options={[
+                    { value: "", label: "全部 Path" },
+                    ...(options?.pathOptions?.map((item) => ({
+                      value: item.id,
+                      label: `${item.name} (${item.code})`,
+                    })) ?? []),
+                  ]}
+                  triggerClassName="h-10 w-full min-w-0"
+                />
               </div>
               <div className="space-y-1.5">
                 <AdminFieldLabel htmlFor="binding-learningLevel" label="学习等级" />
-                <select id="binding-learningLevel" value={form.learningLevel} onChange={(event) => setForm((prev) => ({ ...prev, learningLevel: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
-                  <option value="">全部等级</option>
-                  {LEARNING_LEVEL_OPTIONS.map((item) => (
-                    <option key={item} value={item}>{getLearningLevelLabel(item, "short")}</option>
-                  ))}
-                </select>
+                <AdminSelect
+                  id="binding-learningLevel"
+                  value={form.learningLevel}
+                  onValueChange={(next) => setForm((prev) => ({ ...prev, learningLevel: next }))}
+                  options={[
+                    { value: "", label: "全部等级" },
+                    ...LEARNING_LEVEL_OPTIONS.map((item) => ({
+                      value: item,
+                      label: getLearningLevelLabel(item, "short"),
+                    })),
+                  ]}
+                  triggerClassName="h-10 w-full min-w-0"
+                />
               </div>
               <div className="space-y-1.5">
                 <AdminFieldLabel htmlFor="binding-selectionMode" label="学习模式" />
-                <select id="binding-selectionMode" value={form.selectionMode} onChange={(event) => setForm((prev) => ({ ...prev, selectionMode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
-                  <option value="">全部模式</option>
-                  {SELECTION_MODE_OPTIONS.map((item) => (
-                    <option key={item} value={item}>{getSelectionModeLabel(item, "short")}</option>
-                  ))}
-                </select>
+                <AdminSelect
+                  id="binding-selectionMode"
+                  value={form.selectionMode}
+                  onValueChange={(next) => setForm((prev) => ({ ...prev, selectionMode: next }))}
+                  options={[
+                    { value: "", label: "全部模式" },
+                    ...SELECTION_MODE_OPTIONS.map((item) => ({
+                      value: item,
+                      label: getSelectionModeLabel(item, "short"),
+                    })),
+                  ]}
+                  triggerClassName="h-10 w-full min-w-0"
+                />
               </div>
               <div className="space-y-1.5">
                 <AdminFieldLabel htmlFor="binding-stepNo" label="Step No" />
