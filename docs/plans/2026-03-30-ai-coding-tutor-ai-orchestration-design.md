@@ -1590,7 +1590,7 @@ ai/skills/
 3. 第一阶段不另外新增 `POST /api/learning/message/stream`，避免前后端维护两套路由。
 4. 多模态附件不直接塞入 `content_text`。图片和语音先落 `learning_message_attachments`，再通过 `attachmentIds` 进入主消息编排。
 5. 图片附件预处理使用 `data:<mime>;base64,...` 传给 vision 模型，避免私有 Storage signed URL 被 provider 侧网络阻断。
-6. `Qwen3-ASR-Flash` 使用 OpenAI-compatible `/chat/completions` 的 `input_audio` 格式，不走传统 `/audio/transcriptions` multipart 表单；是否选用该模型由后台语音转文本设置决定。管理端连接测试同样按该格式发起最小音频探测。
+6. `Qwen3-ASR-Flash` 使用 OpenAI-compatible `/chat/completions` 的 `input_audio` 格式，不走传统 `/audio/transcriptions` multipart 表单；是否选用该模型由后台语音转文本设置决定。管理端 ASR 连接测试只验证 Provider `/models` 鉴权连通性，不发起真实转写请求。
 7. `qwen3-tts-flash-realtime` 属于阿里云 DashScope WebSocket 实时 TTS；当前用户端运行时仍未接入 TTS 播报，但管理端模型连接测试可通过 `connection_test_mode=tts` 做最小实时合成探测。
 
 ### 12.2.1 请求头

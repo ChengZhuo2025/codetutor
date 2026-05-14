@@ -5173,7 +5173,7 @@ registry.registerPath({
   tags: ["admin-ai"],
   summary: "测试 Model 连接（Provider 密钥 + 真实模型名）",
   description:
-    "使用库内所选 Provider 的 Base URL 与已配置密钥，对表单中的「真实模型名」发起轻量探测。默认使用结构化字段 `connectionTestMode`；若未显式配置，则按 `runtimeCapabilities`、`reasoningEnabled`、`profileGroup` 与历史 metadata 兼容规则推断。Chat 使用 `/chat/completions`，Qwen3 ASR 使用 `/chat/completions` + `input_audio`，传统 ASR 使用 `/audio/transcriptions`，阿里云实时 TTS 使用 DashScope WebSocket。",
+    "使用库内所选 Provider 的 Base URL 与已配置密钥，对表单中的「真实模型名」发起轻量探测。默认使用结构化字段 `connectionTestMode`；若未显式配置，则按 `runtimeCapabilities`、`reasoningEnabled`、`profileGroup` 与历史 metadata 兼容规则推断。Chat 使用 `/chat/completions`，ASR 管理端测试仅验证 `/models` 鉴权连通性，阿里云实时 TTS 使用 DashScope WebSocket 握手。",
   security: [],
   request: {
     params: adminAIModelIdParamsSchema,

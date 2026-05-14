@@ -1,3 +1,7 @@
+import crypto from "node:crypto"
+import http from "node:http"
+import https from "node:https"
+
 import type {
   AdminAIAgentBindingListItem,
   AdminAIAgentBindingListResponseData,
@@ -1292,10 +1296,6 @@ function modelNameLooksLikeSpeechAsr(modelName: string): boolean {
   )
 }
 
-function modelNameLooksLikeQwen3Asr(modelName: string): boolean {
-  return modelName.trim().toLowerCase() === "qwen3-asr-flash"
-}
-
 function modelNameLooksLikeTts(modelName: string): boolean {
   const m = modelName.toLowerCase()
   return m.includes("tts") || m.includes("text-to-speech") || m.includes("text_to_speech")
@@ -1378,7 +1378,7 @@ function inferReasoningChatModel(
 export function inferAdminModelConnectionProbeStrategy(
   row: Pick<ModelRow, "model_name" | "metadata" | "connection_test_mode" | "runtime_capabilities" | "reasoning_enabled" | "profile_group">,
   requestModelName: string,
-): "chat" | "asr_chat_completions" | "asr_audio_transcription" | "tts_realtime" | "models_list" {
+): "chat" | "tts_realtime" | "models_list" {
   const profile = resolveStoredModelProfile({
     connectionTestMode: row.connection_test_mode,
     runtimeCapabilities: row.runtime_capabilities,
@@ -1396,9 +1396,7 @@ export function inferAdminModelConnectionProbeStrategy(
   }
 
   if (testKind === "asr") {
-    return modelNameLooksLikeQwen3Asr(requestModelName) || modelNameLooksLikeQwen3Asr(row.model_name)
-      ? "asr_chat_completions"
-      : "asr_audio_transcription"
+    return "models_list"
   }
 
   // 对质量闸门与 thinking 类模型，仅验证鉴权与 Provider 连通性，避免为了后台配置测试触发慢推理。
@@ -1407,14 +1405,6 @@ export function inferAdminModelConnectionProbeStrategy(
   }
 
   return "chat"
-}
-
-function providerSupportsSiliconFlowStyleAudioTranscription(provider: ProviderRow): boolean {
-  if (provider.provider_type === "siliconflow") {
-    return true
-  }
-  const host = provider.base_url.toLowerCase()
-  return host.includes("siliconflow.cn") || host.includes("siliconflow.com")
 }
 
 function providerSupportsDashScopeRealtimeTts(provider: ProviderRow): boolean {
@@ -1428,38 +1418,110 @@ function buildDashScopeRealtimeUrl(modelName: string): string {
   return url.toString()
 }
 
-type NodeWebSocketConstructor = new (
-  url: string,
-  protocols: string[],
-  options: { headers: Record<string, string> },
-) => WebSocket
+async function probeWebSocketHandshake(input: {
+  url: string
+  headers: Record<string, string>
+  timeoutMs: number
+  testedPath: string
+}): Promise<AdminAIModelTestConnectionResponseData> {
+  const url = new URL(input.url)
+  const key = crypto.randomBytes(16).toString("base64")
+  const transport = url.protocol === "wss:" ? https : http
+  const protocol = url.protocol === "wss:" ? "https:" : "http:"
+  const port = url.port || (url.protocol === "wss:" ? 443 : 80)
 
-/** 极短静音 PCM WAV，用于 ASR 连通性探测（multipart `file`） */
-function buildMinimalSilenceWavPcm(): Buffer {
-  const sampleRate = 16_000
-  const seconds = 0.06
-  const numChannels = 1
-  const bitsPerSample = 16
-  const blockAlign = (numChannels * bitsPerSample) / 8
-  const byteRate = sampleRate * blockAlign
-  const numSamples = Math.max(1, Math.floor(sampleRate * seconds))
-  const dataSize = numSamples * blockAlign
-  const headerSize = 44
-  const buffer = Buffer.alloc(headerSize + dataSize)
-  buffer.write("RIFF", 0)
-  buffer.writeUInt32LE(36 + dataSize, 4)
-  buffer.write("WAVE", 8)
-  buffer.write("fmt ", 12)
-  buffer.writeUInt32LE(16, 16)
-  buffer.writeUInt16LE(1, 20)
-  buffer.writeUInt16LE(numChannels, 22)
-  buffer.writeUInt32LE(sampleRate, 24)
-  buffer.writeUInt32LE(byteRate, 28)
-  buffer.writeUInt16LE(blockAlign, 32)
-  buffer.writeUInt16LE(bitsPerSample, 34)
-  buffer.write("data", 36)
-  buffer.writeUInt32LE(dataSize, 40)
-  return buffer
+  return new Promise((resolve) => {
+    let settled = false
+    let request: http.ClientRequest | null = null
+    const timer = setTimeout(() => {
+      finish({
+        success: false,
+        message: "连接超时",
+        testedPath: input.testedPath,
+      })
+    }, input.timeoutMs)
+    const finish = (result: AdminAIModelTestConnectionResponseData) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      clearTimeout(timer)
+      request?.destroy()
+      resolve(result)
+    }
+
+    try {
+      request = transport.request({
+        protocol,
+        hostname: url.hostname,
+        port,
+        path: `${url.pathname}${url.search}`,
+        method: "GET",
+        headers: {
+          ...input.headers,
+          Host: url.host,
+          Connection: "Upgrade",
+          Upgrade: "websocket",
+          "Sec-WebSocket-Key": key,
+          "Sec-WebSocket-Version": "13",
+        },
+        timeout: input.timeoutMs,
+      })
+    } catch (error) {
+      finish({
+        success: false,
+        message: `连接失败：${error instanceof Error ? error.message : "无法创建 WebSocket 握手请求"}`,
+        testedPath: input.testedPath,
+      })
+      return
+    }
+
+    request.on("upgrade", (_response, socket) => {
+      socket.destroy()
+      finish({
+        success: true,
+        message: "连接成功",
+        httpStatus: 101,
+        testedPath: input.testedPath,
+      })
+    })
+
+    request.on("response", (response) => {
+      const chunks: Buffer[] = []
+      response.on("data", (chunk) => {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+      })
+      response.on("end", () => {
+        const bodyText = Buffer.concat(chunks).toString("utf8").slice(0, 180).trim()
+        finish({
+          success: false,
+          message: bodyText
+            ? `连接失败：HTTP ${response.statusCode ?? "unknown"} ${bodyText}`
+            : `连接失败：HTTP ${response.statusCode ?? "unknown"}`,
+          httpStatus: response.statusCode,
+          testedPath: input.testedPath,
+        })
+      })
+    })
+
+    request.on("timeout", () => {
+      finish({
+        success: false,
+        message: "连接超时",
+        testedPath: input.testedPath,
+      })
+    })
+
+    request.on("error", (error) => {
+      finish({
+        success: false,
+        message: `连接失败：${error.message}`,
+        testedPath: input.testedPath,
+      })
+    })
+
+    request.end()
+  })
 }
 
 function dedupeJsonBodies(bodies: Record<string, unknown>[]): Record<string, unknown>[] {
@@ -1569,161 +1631,6 @@ function buildChatCompletionProbeBodies(input: {
   return dedupeJsonBodies(list)
 }
 
-async function probeSiliconFlowCompatibleAudioTranscription(input: {
-  baseUrl: string
-  authMode: "bearer" | "api_key_header"
-  secret: string
-  modelName: string
-  timeoutMs: number
-}): Promise<AdminAIModelTestConnectionResponseData> {
-  const cappedMs = Math.min(30_000, Math.max(3_000, input.timeoutMs))
-  const url = `${normalizeProviderBaseUrl(input.baseUrl)}/audio/transcriptions`
-  const controller = new AbortController()
-  const timer = setTimeout(() => {
-    controller.abort()
-  }, cappedMs)
-
-  try {
-    const headers = new Headers()
-    if (input.authMode === "bearer") {
-      headers.set("Authorization", `Bearer ${input.secret}`)
-    } else {
-      headers.set("x-api-key", input.secret)
-    }
-
-    const wav = buildMinimalSilenceWavPcm()
-    const blob = new Blob([wav], { type: "audio/wav" })
-    const form = new FormData()
-    form.set("model", input.modelName)
-    form.set("file", blob, "codetutor-connection-ping.wav")
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers,
-      body: form,
-      signal: controller.signal,
-    })
-
-    if (!response.ok) {
-      return {
-        success: false,
-        message: "连接失败",
-        httpStatus: response.status,
-        testedPath: "/audio/transcriptions",
-      }
-    }
-
-    return {
-      success: true,
-      message: "连接成功",
-      httpStatus: response.status,
-      testedPath: "/audio/transcriptions",
-    }
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      return {
-        success: false,
-        message: "连接超时",
-        testedPath: "/audio/transcriptions",
-      }
-    }
-
-    return {
-      success: false,
-      message: "连接失败",
-      testedPath: "/audio/transcriptions",
-    }
-  } finally {
-    clearTimeout(timer)
-  }
-}
-
-async function probeQwen3AsrChatCompletions(input: {
-  baseUrl: string
-  authMode: "bearer" | "api_key_header"
-  secret: string
-  modelName: string
-  timeoutMs: number
-}): Promise<AdminAIModelTestConnectionResponseData> {
-  const cappedMs = Math.min(30_000, Math.max(3_000, input.timeoutMs))
-  const url = `${normalizeProviderBaseUrl(input.baseUrl)}/chat/completions`
-  const controller = new AbortController()
-  const timer = setTimeout(() => {
-    controller.abort()
-  }, cappedMs)
-
-  try {
-    const headers = new Headers({
-      "Content-Type": "application/json",
-    })
-    if (input.authMode === "bearer") {
-      headers.set("Authorization", `Bearer ${input.secret}`)
-    } else {
-      headers.set("x-api-key", input.secret)
-    }
-
-    const wav = buildMinimalSilenceWavPcm()
-    const response = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        model: input.modelName,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "input_audio",
-                input_audio: {
-                  data: `data:audio/wav;base64,${wav.toString("base64")}`,
-                  format: "wav",
-                },
-              },
-            ],
-          },
-        ],
-        stream: false,
-        asr_options: {
-          enable_itn: false,
-        },
-      }),
-      signal: controller.signal,
-    })
-
-    if (!response.ok) {
-      return {
-        success: false,
-        message: "连接失败",
-        httpStatus: response.status,
-        testedPath: "/chat/completions",
-      }
-    }
-
-    return {
-      success: true,
-      message: "连接成功",
-      httpStatus: response.status,
-      testedPath: "/chat/completions",
-    }
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      return {
-        success: false,
-        message: "连接超时",
-        testedPath: "/chat/completions",
-      }
-    }
-
-    return {
-      success: false,
-      message: "连接失败",
-      testedPath: "/chat/completions",
-    }
-  } finally {
-    clearTimeout(timer)
-  }
-}
-
 async function probeDashScopeRealtimeTts(input: {
   secret: string
   modelName: string
@@ -1733,107 +1640,14 @@ async function probeDashScopeRealtimeTts(input: {
   const testedPath = "/api-ws/v1/realtime"
   const wsUrl = buildDashScopeRealtimeUrl(input.modelName)
 
-  return new Promise((resolve) => {
-    let settled = false
-    let opened = false
-    const NodeWebSocket = WebSocket as unknown as NodeWebSocketConstructor
-    const socket = new NodeWebSocket(wsUrl, [], {
-      headers: {
-        Authorization: `Bearer ${input.secret}`,
-      },
-    })
-
-    const finish = (result: AdminAIModelTestConnectionResponseData) => {
-      if (settled) {
-        return
-      }
-      settled = true
-      clearTimeout(timer)
-      try {
-        socket.close()
-      } catch {
-        // Ignore close errors after a completed probe.
-      }
-      resolve(result)
-    }
-
-    const timer = setTimeout(() => {
-      finish({
-        success: false,
-        message: opened ? "连接超时" : "连接失败",
-        testedPath,
-      })
-    }, cappedMs)
-
-    socket.onopen = () => {
-      opened = true
-      socket.send(JSON.stringify({
-        type: "session.update",
-        session: {
-          modalities: ["audio"],
-          voice: "Cherry",
-          output_audio_format: "pcm16",
-        },
-      }))
-      socket.send(JSON.stringify({
-        type: "input_text_buffer.append",
-        text: "ping",
-      }))
-      socket.send(JSON.stringify({
-        type: "input_text_buffer.commit",
-      }))
-    }
-
-    socket.onmessage = (event) => {
-      const data = typeof event.data === "string" ? event.data : ""
-      if (!data) {
-        return
-      }
-
-      try {
-        const payload = JSON.parse(data) as { type?: string; error?: { message?: string } }
-        if (payload.error) {
-          finish({
-            success: false,
-            message: payload.error.message?.trim() || "连接失败",
-            testedPath,
-          })
-          return
-        }
-        if (
-          payload.type === "response.audio.delta"
-          || payload.type === "response.audio.done"
-          || payload.type === "response.done"
-          || payload.type === "input_text_buffer.committed"
-        ) {
-          finish({
-            success: true,
-            message: "连接成功",
-            testedPath,
-          })
-        }
-      } catch {
-        // Non-JSON frames are not expected here; wait for a terminal event.
-      }
-    }
-
-    socket.onerror = () => {
-      finish({
-        success: false,
-        message: "连接失败",
-        testedPath,
-      })
-    }
-
-    socket.onclose = () => {
-      if (!settled) {
-        finish({
-          success: false,
-          message: opened ? "连接中断" : "连接失败",
-          testedPath,
-        })
-      }
-    }
+  return probeWebSocketHandshake({
+    url: wsUrl,
+    timeoutMs: cappedMs,
+    testedPath,
+    headers: {
+      Authorization: `bearer ${input.secret}`,
+      "X-DashScope-DataInspection": "enable",
+    },
   })
 }
 
@@ -2106,32 +1920,6 @@ export async function testAdminAIModelConnection(
   }
 
   const probeStrategy = inferAdminModelConnectionProbeStrategy(testProfileRow, modelNameTrim)
-  if (probeStrategy === "asr_chat_completions") {
-    return probeQwen3AsrChatCompletions({
-      baseUrl: provider.base_url,
-      authMode: provider.auth_mode,
-      secret: resolved.secret,
-      modelName: modelNameTrim,
-      timeoutMs: effectiveTimeout,
-    })
-  }
-
-  if (probeStrategy === "asr_audio_transcription") {
-    if (!providerSupportsSiliconFlowStyleAudioTranscription(provider)) {
-      throwNamedError(
-        "VALIDATION_FAILED",
-        "语音转写类模型需在 SiliconFlow 或兼容其音频接口的 Provider 上测试连接。",
-      )
-    }
-    return probeSiliconFlowCompatibleAudioTranscription({
-      baseUrl: provider.base_url,
-      authMode: provider.auth_mode,
-      secret: resolved.secret,
-      modelName: modelNameTrim,
-      timeoutMs: effectiveTimeout,
-    })
-  }
-
   if (probeStrategy === "tts_realtime") {
     if (!providerSupportsDashScopeRealtimeTts(provider)) {
       throwNamedError(

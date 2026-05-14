@@ -35,26 +35,25 @@ const MESSAGE_ACTION_TONE_CLASS = {
 const MESSAGE_KIND_META = {
   system_goal: {
     badge: "学习提示",
-    bubbleClass: "border-border/70 bg-surface-3/70 text-foreground",
+    bubbleClass: "text-foreground",
     avatarClass: "bg-surface-4 text-muted-foreground",
     avatarLabel: "目",
   },
   coach: {
     badge: "AI 教练",
-    bubbleClass: "border-brand/20 bg-brand-dim/60 text-foreground",
+    bubbleClass: "text-foreground",
     avatarClass: "bg-brand text-brand-foreground",
     avatarLabel: "AI",
   },
   user_input: {
     badge: "我的反馈",
-    bubbleClass:
-      "border-brand/80 bg-brand font-medium text-white dark:text-black",
+    bubbleClass: "border-brand/80 bg-brand font-medium text-white dark:text-black",
     avatarClass: "bg-surface-4 text-muted-foreground",
     avatarLabel: "我",
   },
   task_feedback: {
     badge: "任务反馈",
-    bubbleClass: "border-emerald-500/20 bg-emerald-500/10 text-foreground",
+    bubbleClass: "text-foreground",
     avatarClass: "bg-emerald-500 text-white",
     avatarLabel: "成",
   },
@@ -62,19 +61,18 @@ const MESSAGE_KIND_META = {
 
 const CHAT_TONE_CLASS = {
   info: {
-    panel: "border-brand/5 bg-brand-dim/45",
+    panel: "border-border/65 bg-surface-2",
     badge: "border-brand/20 bg-brand-dim/60 text-brand",
     icon: "text-brand",
   },
   warning: {
-    panel: "border-brand/5 bg-brand-dim/45",
+    panel: "border-gold/20 bg-gold-dim/30",
     badge: "border-gold/25 bg-gold-dim text-gold",
     icon: "text-gold",
   },
   success: {
-    panel: "border-border/10 bg-surface-3/75",
-    badge:
-      "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    panel: "border-teal-200 bg-teal-100",
+    badge: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
     icon: "text-emerald-600 dark:text-emerald-300",
     text: "text-emerald-700 dark:text-emerald-300",
   },
@@ -179,8 +177,8 @@ export function LearnChatMessageItem({
 
         <div
           className={cn(
-            "rounded-3xl px-4 py-3.5 text-sm leading-relaxed",
-            isUser ? "rounded-tr-md" : "rounded-tl-md",
+            "text-sm leading-relaxed",
+            isUser ? "rounded-3xl px-4 py-3.5 rounded-tr-sm" : "pb-1",
             meta.bubbleClass,
           )}
         >

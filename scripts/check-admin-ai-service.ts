@@ -34,7 +34,7 @@ test("inferAdminModelConnectionProbeStrategy prefers structured connectionTestMo
     "Qwen/Qwen3-8B",
   )
 
-  assert.equal(strategy, "asr_audio_transcription")
+  assert.equal(strategy, "models_list")
 })
 
 test("inferAdminModelConnectionProbeStrategy uses models list probe for quality_check models", () => {
@@ -91,7 +91,7 @@ test("inferAdminModelConnectionProbeStrategy keeps chat probe for regular chat m
   assert.equal(strategy, "chat")
 })
 
-test("inferAdminModelConnectionProbeStrategy uses chat-completions probe for qwen3 ASR models", () => {
+test("inferAdminModelConnectionProbeStrategy uses models list probe for qwen3 ASR models", () => {
   const strategy = inferAdminModelConnectionProbeStrategy(
     {
       model_name: "qwen3-asr-flash",
@@ -106,10 +106,10 @@ test("inferAdminModelConnectionProbeStrategy uses chat-completions probe for qwe
     "qwen3-asr-flash",
   )
 
-  assert.equal(strategy, "asr_chat_completions")
+  assert.equal(strategy, "models_list")
 })
 
-test("inferAdminModelConnectionProbeStrategy keeps audio transcription probe for legacy ASR models", () => {
+test("inferAdminModelConnectionProbeStrategy uses models list probe for legacy ASR models", () => {
   const strategy = inferAdminModelConnectionProbeStrategy(
     {
       model_name: "FunAudioLLM/SenseVoiceSmall",
@@ -124,7 +124,7 @@ test("inferAdminModelConnectionProbeStrategy keeps audio transcription probe for
     "FunAudioLLM/SenseVoiceSmall",
   )
 
-  assert.equal(strategy, "asr_audio_transcription")
+  assert.equal(strategy, "models_list")
 })
 
 test("inferAdminModelConnectionProbeStrategy uses realtime probe for tts models", () => {

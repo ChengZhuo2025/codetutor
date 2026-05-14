@@ -47,19 +47,18 @@ type ParsedMarkdownTable = {
 
 const CHAT_TONE_CLASS = {
   info: {
-    panel: "border-brand/5 bg-brand-dim/45",
+    panel: "border-brand/15 bg-brand/10",
     badge: "border-brand/20 bg-brand-dim/60 text-brand",
     icon: "text-brand",
   },
   warning: {
-    panel: "border-brand/5 bg-brand-dim/45",
+    panel: "border-brand/15 bg-brand/10",
     badge: "border-gold/25 bg-gold-dim text-gold",
     icon: "text-gold",
   },
   success: {
     panel: "border-border/10 bg-surface-3/75",
-    badge:
-      "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    badge: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
     icon: "text-emerald-600 dark:text-emerald-300",
     text: "text-emerald-700 dark:text-emerald-300",
   },
@@ -79,7 +78,7 @@ const ASSISTANT_MESSAGE_VARIANT_META: Record<
   default: {
     label: "学习引导",
     hint: "这里是你这关的练习重点，按步骤做一小步就好。",
-    panelClass: "border-brand/20 bg-background/50",
+    panelClass: "border-brand/20 bg-surface-2",
     iconClass: "text-brand",
     chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
     summaryClass: "text-foreground",
@@ -87,7 +86,7 @@ const ASSISTANT_MESSAGE_VARIANT_META: Record<
   hint: {
     label: "轻量提示",
     hint: "先给方向，不直接展开完整答案。",
-    panelClass: "border-gold/20 bg-background/50",
+    panelClass: "border-gold/20 bg-surface-2",
     iconClass: "text-gold",
     chipClass: "border-gold/20 bg-gold-dim text-gold",
     summaryClass: "text-foreground",
@@ -95,7 +94,7 @@ const ASSISTANT_MESSAGE_VARIANT_META: Record<
   example: {
     label: "最小示例",
     hint: "先跑通最小结果，再决定是否扩展。",
-    panelClass: "border-chart-3/20 bg-background/50",
+    panelClass: "border-chart-3/20 bg-surface-2",
     iconClass: "text-chart-3",
     chipClass: "border-chart-3/20 bg-chart-3/10 text-chart-3",
     summaryClass: "text-foreground",
@@ -103,7 +102,7 @@ const ASSISTANT_MESSAGE_VARIANT_META: Record<
   breakdown: {
     label: "拆解步骤",
     hint: "把当前任务压缩成更容易验证的小动作。",
-    panelClass: "border-brand/20 bg-background/50",
+    panelClass: "border-brand/20 bg-surface-2",
     iconClass: "text-brand",
     chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
     summaryClass: "text-foreground",
@@ -111,7 +110,7 @@ const ASSISTANT_MESSAGE_VARIANT_META: Record<
   blocked_help: {
     label: "排查建议",
     hint: "先定位卡点，再决定下一步修改动作。",
-    panelClass: "border-gold/20 bg-background/50",
+    panelClass: "border-gold/20 bg-surface-2",
     iconClass: "text-gold",
     chipClass: "border-gold/20 bg-gold-dim text-gold",
     summaryClass: "text-foreground",
@@ -119,7 +118,7 @@ const ASSISTANT_MESSAGE_VARIANT_META: Record<
   path_guidance: {
     label: "下一步建议",
     hint: "优先把眼前这一步做成，而不是一次铺得太大。",
-    panelClass: "border-brand/20 bg-background/50",
+    panelClass: "border-brand/20 bg-surface-2",
     iconClass: "text-brand",
     chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
     summaryClass: "text-foreground",
@@ -127,7 +126,7 @@ const ASSISTANT_MESSAGE_VARIANT_META: Record<
   review: {
     label: "复盘建议",
     hint: "回看结果，确认做对了什么、还差什么。",
-    panelClass: "border-chart-5/20 bg-background/50",
+    panelClass: "border-chart-5/20 bg-surface-2",
     iconClass: "text-chart-5",
     chipClass: "border-chart-5/20 bg-chart-5/10 text-chart-5",
     summaryClass: "text-foreground",
@@ -135,7 +134,7 @@ const ASSISTANT_MESSAGE_VARIANT_META: Record<
   completion: {
     label: "完成反馈",
     hint: "总结这一步收获，并准备进入下一关。",
-    panelClass: "border-emerald-500/20 bg-background/50",
+    panelClass: "border-emerald-500/20 bg-surface-2",
     iconClass: "text-emerald-600 dark:text-emerald-300",
     chipClass:
       "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
@@ -150,7 +149,7 @@ const ASSISTANT_MESSAGE_INTERACTION_META: Record<
   teaching: {
     label: "学习引导",
     hint: "先看下面这段说明，从最容易验证的一小步开始。",
-    panelClass: "border-brand/20 bg-background/50",
+    panelClass: "border-brand/20 bg-surface-2",
     iconClass: "text-brand",
     chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
     summaryClass: "text-foreground",
@@ -161,7 +160,7 @@ const ASSISTANT_MESSAGE_INTERACTION_META: Record<
   blocked_help: {
     label: "排查建议",
     hint: "先收敛问题来源，再决定要改哪里。",
-    panelClass: "border-gold/20 bg-background/50",
+    panelClass: "border-gold/20 bg-gold-dim/30",
     iconClass: "text-gold",
     chipClass: "border-gold/20 bg-gold-dim text-gold",
     summaryClass: "text-foreground",
@@ -172,7 +171,7 @@ const ASSISTANT_MESSAGE_INTERACTION_META: Record<
   task_review: {
     label: "复盘建议",
     hint: "回看当前结果，确认做对了什么、还差什么。",
-    panelClass: "border-chart-5/20 bg-background/50",
+    panelClass: "border-chart-5/20 bg-surface-2",
     iconClass: "text-chart-5",
     chipClass: "border-chart-5/20 bg-chart-5/10 text-chart-5",
     summaryClass: "text-foreground",
@@ -183,7 +182,7 @@ const ASSISTANT_MESSAGE_INTERACTION_META: Record<
   completion_feedback: {
     label: "完成反馈",
     hint: "确认这一步已经完成，并把收获转成下一步动作。",
-    panelClass: "border-emerald-500/20 bg-background/50",
+    panelClass: "border-emerald-500/20 bg-surface-2",
     iconClass: CHAT_TONE_CLASS.success.icon,
     chipClass: CHAT_TONE_CLASS.success.badge,
     summaryClass: CHAT_TONE_CLASS.success.text,
@@ -195,7 +194,7 @@ const ASSISTANT_MESSAGE_INTERACTION_META: Record<
   path_guidance: {
     label: "下一步建议",
     hint: "优先把当前这一步做实，再判断是否进入后续扩展。",
-    panelClass: "border-brand/20 bg-background/50",
+    panelClass: "border-brand/20 bg-surface-2",
     iconClass: "text-brand",
     chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
     summaryClass: "text-foreground",
@@ -206,7 +205,7 @@ const ASSISTANT_MESSAGE_INTERACTION_META: Record<
   concept_qa: {
     label: "概念解答",
     hint: "直接回答技术概念问题，不受关卡范围限制。",
-    panelClass: "border-sky-500/20 bg-background/50",
+    panelClass: "border-sky-500/20 bg-surface-2",
     iconClass: "text-sky-500",
     chipClass: "border-sky-500/20 bg-sky-500/10 text-sky-500",
     summaryClass: "text-foreground",
@@ -706,7 +705,7 @@ export function renderStructuredContent(
       {renderAssistantMessageLead(interactionType, variant)}
 
       {summaryText ? (
-        <div className="rounded-2xl bg-background/50 px-3.5 py-3">
+        <div className="rounded-2xl bg-background/70 dark:bg-background/50 px-3.5 py-3 ">
           <p
             className={cn(
               "whitespace-pre-wrap text-sm font-medium leading-6",
@@ -732,7 +731,7 @@ export function renderStructuredContent(
                 ? CHAT_TONE_CLASS.warning.panel
                 : section.tone === "info"
                   ? interactionMeta.sectionClass
-                  : "border-brand/5 bg-brand-dim/45"
+                  : "border-brand/15 bg-brand/10"
 
           return (
             <div
@@ -780,7 +779,7 @@ export function renderStructuredContent(
                     return (
                       <div
                         key={`unordered-${sectionIndex}-${blockIndex}`}
-                        className="space-y-2 rounded-2xl bg-background/50 px-3.5 py-3"
+                        className="space-y-2 rounded-2xl bg-background/70 dark:bg-background/50 px-3.5 py-3 "
                       >
                         {block.items.map((item, itemIndex) => (
                           <div
@@ -811,7 +810,7 @@ export function renderStructuredContent(
                   return (
                     <div
                       key={`ordered-${sectionIndex}-${blockIndex}`}
-                      className="space-y-2 rounded-2xl bg-background/50 px-3.5 py-3"
+                      className="space-y-2 rounded-2xl bg-background/70 dark:bg-background/50 px-3.5 py-3 "
                     >
                       {block.items.map((item, itemIndex) => (
                         <div
