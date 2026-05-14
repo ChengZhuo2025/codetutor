@@ -27,7 +27,6 @@ type LearnRightPanelProps = {
 
 export function LearnRightPanel({ className, learningData }: LearnRightPanelProps) {
   const {
-    knowledgeTags: learningKnowledgeTags,
     tasks: learningTasks,
     mission,
     rightPanel,
@@ -100,7 +99,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
 
           <PageSection
             eyebrow="先理解方法"
-            title="AI 已把教程改写成这关教案"
+            title="请先仔细阅读本关教案"
             description={rightPanel.lessonBrief}
           >
             <div className="space-y-2">
@@ -170,21 +169,8 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
           <PageSection
             eyebrow="本关要掌握"
             title="这一步真正要学会什么"
-            description="先看知识标签定方向，再按编号要点逐项对齐掌握标准。"
+            description="按编号要点逐项对齐掌握标准。"
           >
-            <div className="flex flex-wrap gap-2">
-              {learningKnowledgeTags.map((tag) => (
-                <span
-                  key={tag.label}
-                  className={cn(
-                    "rounded-full border px-2.5 py-1 text-xs font-medium",
-                    tag.color,
-                  )}
-                >
-                  {tag.label}
-                </span>
-              ))}
-            </div>
             <div className="space-y-2">
               {rightPanel.masteryPoints.map((point, index) => (
                 <div key={point} className={cn(WORKSPACE_ASIDE_INSET_CARD_CLASS, "flex gap-2")}>
