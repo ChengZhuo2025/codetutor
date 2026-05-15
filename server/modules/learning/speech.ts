@@ -21,11 +21,14 @@ const DEFAULT_TTS_VOICE = "Cherry"
 const DEFAULT_TTS_SAMPLE_RATE = 24000
 const DEFAULT_TTS_CHANNELS = 1
 const DEFAULT_TTS_BITS_PER_SAMPLE = 16
+const DASH_SCOPE_DEFAULT_BASE_URL = "wss://dashscope.aliyuncs.com"
 const DASH_SCOPE_REALTIME_PATH = "/api-ws/v1/realtime"
 const DASH_SCOPE_TTS_RESPONSE_FORMAT = "pcm"
 const DASH_SCOPE_TTS_MODE = "server_commit"
 const MIN_SPEECH_TIMEOUT_MS = 5_000
 const MAX_USER_FACING_SPEECH_TIMEOUT_MS = 25_000
+// WebSocket 握手超时：若连接无法建立则快速失败，不等到整体超时
+const DASH_SCOPE_HANDSHAKE_TIMEOUT_MS = 10_000
 
 type ConversationMessageSpeechRow = {
   id: string
@@ -129,8 +132,15 @@ function providerSupportsDashScopeRealtimeTts(runtime: LearningSpeechRuntime) {
   return host.includes("dashscope.aliyuncs.com") || host.includes("bailian.aliyuncs.com")
 }
 
-function buildDashScopeRealtimeUrl(modelName: string) {
-  const url = new URL(`wss://dashscope.aliyuncs.com${DASH_SCOPE_REALTIME_PATH}`)
+// 支持通过模型 metadata.ttsWebSocketBaseUrl 覆盖默认地址（如配置 VPC 内网端点）
+export function resolveDashScopeRealtimeBaseUrl(runtime: LearningSpeechRuntime) {
+  const metadata = runtime.model.metadata ?? {}
+  const custom = typeof metadata.ttsWebSocketBaseUrl === "string" && metadata.ttsWebSocketBaseUrl.trim()
+  return custom || DASH_SCOPE_DEFAULT_BASE_URL
+}
+
+function buildDashScopeRealtimeUrl(modelName: string, baseUrl: string = DASH_SCOPE_DEFAULT_BASE_URL) {
+  const url = new URL(`${baseUrl}${DASH_SCOPE_REALTIME_PATH}`)
   url.searchParams.set("model", modelName)
   return url.toString()
 }
@@ -280,7 +290,8 @@ export async function invokeDashScopeRealtimeTts(input: {
 }): Promise<LearningMessageSpeechResult> {
   const secret = getLearningSpeechSecret(input.runtime)
   const timeoutMs = resolveLearningMessageSpeechTimeoutMs(input.runtime.provider.timeoutMs)
-  const url = buildDashScopeRealtimeUrl(input.runtime.model.modelName)
+  const baseUrl = resolveDashScopeRealtimeBaseUrl(input.runtime)
+  const url = buildDashScopeRealtimeUrl(input.runtime.model.modelName, baseUrl)
 
   logLearningSpeechTtsEvent("start", {
     runtime: input.runtime,
@@ -297,6 +308,8 @@ export async function invokeDashScopeRealtimeTts(input: {
         Authorization: buildDashScopeTtsAuthorizationHeader(secret),
         "X-DashScope-DataInspection": "enable",
       },
+      // 握手超时：若 TCP/TLS 握手挂起则快速失败，不等到整体超时
+      handshakeTimeout: DASH_SCOPE_HANDSHAKE_TIMEOUT_MS,
     })
     const timer = setTimeout(() => {
       logLearningSpeechTtsEvent("timeout", {
@@ -352,7 +365,7 @@ export async function invokeDashScopeRealtimeTts(input: {
     }
 
     const sendSessionUpdate = () => {
-      logLearningSpeechTtsEvent("open", {
+      logLearningSpeechTtsEvent("session_update", {
         runtime: input.runtime,
         timeoutMs,
         textLength: input.text.length,
@@ -367,6 +380,11 @@ export async function invokeDashScopeRealtimeTts(input: {
     }
 
     socket.on("open", () => {
+      logLearningSpeechTtsEvent("connected", {
+        runtime: input.runtime,
+        timeoutMs,
+        textLength: input.text.length,
+      })
       // 官方交互流程要求先等待 session.created，再更新会话配置。
     })
 
@@ -389,6 +407,11 @@ export async function invokeDashScopeRealtimeTts(input: {
 
       const record = payload as DashScopeTtsServerEvent
       if (record.type === "session.created") {
+        logLearningSpeechTtsEvent("session_created", {
+          runtime: input.runtime,
+          timeoutMs,
+          textLength: input.text.length,
+        })
         sendSessionUpdate()
         return
       }
