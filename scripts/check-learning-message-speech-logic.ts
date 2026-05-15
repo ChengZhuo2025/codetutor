@@ -140,6 +140,7 @@ test("buildDashScopeTtsSessionUpdate uses supported response format and sample r
       response_format: "pcm",
       sample_rate: 24000,
       mode: "server_commit",
+      language_type: "Auto",
     },
   })
 })

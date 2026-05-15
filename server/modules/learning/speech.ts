@@ -25,10 +25,12 @@ const DASH_SCOPE_DEFAULT_BASE_URL = "wss://dashscope.aliyuncs.com"
 const DASH_SCOPE_REALTIME_PATH = "/api-ws/v1/realtime"
 const DASH_SCOPE_TTS_RESPONSE_FORMAT = "pcm"
 const DASH_SCOPE_TTS_MODE = "server_commit"
+const DASH_SCOPE_TTS_LANGUAGE_TYPE = "Auto"
 const MIN_SPEECH_TIMEOUT_MS = 5_000
 const MAX_USER_FACING_SPEECH_TIMEOUT_MS = 25_000
 // WebSocket 握手超时：若连接无法建立则快速失败，不等到整体超时
 const DASH_SCOPE_HANDSHAKE_TIMEOUT_MS = 10_000
+const DASH_SCOPE_TEXT_SEND_FALLBACK_DELAY_MS = 300
 
 type ConversationMessageSpeechRow = {
   id: string
@@ -253,6 +255,7 @@ export function buildDashScopeTtsSessionUpdate(
       response_format: DASH_SCOPE_TTS_RESPONSE_FORMAT,
       sample_rate: DEFAULT_TTS_SAMPLE_RATE,
       mode: DASH_SCOPE_TTS_MODE,
+      language_type: DASH_SCOPE_TTS_LANGUAGE_TYPE,
     },
   }
 }
@@ -302,6 +305,8 @@ export async function invokeDashScopeRealtimeTts(input: {
   return new Promise((resolve, reject) => {
     let settled = false
     let sawAudio = false
+    let synthesisEventsSent = false
+    let fallbackTextSendTimer: ReturnType<typeof setTimeout> | null = null
     const audioChunks: Buffer[] = []
     const socket = new WebSocket(url, {
       headers: {
@@ -327,6 +332,10 @@ export async function invokeDashScopeRealtimeTts(input: {
       }
       settled = true
       clearTimeout(timer)
+      if (fallbackTextSendTimer) {
+        clearTimeout(fallbackTextSendTimer)
+        fallbackTextSendTimer = null
+      }
       try {
         socket.close()
       } catch {
@@ -374,6 +383,14 @@ export async function invokeDashScopeRealtimeTts(input: {
     }
 
     const sendSynthesisEvents = () => {
+      if (synthesisEventsSent || settled) {
+        return
+      }
+      synthesisEventsSent = true
+      if (fallbackTextSendTimer) {
+        clearTimeout(fallbackTextSendTimer)
+        fallbackTextSendTimer = null
+      }
       for (const event of buildDashScopeTtsTextEvents(input.text)) {
         socket.send(JSON.stringify(event))
       }
@@ -385,7 +402,8 @@ export async function invokeDashScopeRealtimeTts(input: {
         timeoutMs,
         textLength: input.text.length,
       })
-      // 官方交互流程要求先等待 session.created，再更新会话配置。
+      sendSessionUpdate()
+      fallbackTextSendTimer = setTimeout(sendSynthesisEvents, DASH_SCOPE_TEXT_SEND_FALLBACK_DELAY_MS)
     })
 
     socket.on("message", (data) => {
@@ -412,7 +430,6 @@ export async function invokeDashScopeRealtimeTts(input: {
           timeoutMs,
           textLength: input.text.length,
         })
-        sendSessionUpdate()
         return
       }
 
