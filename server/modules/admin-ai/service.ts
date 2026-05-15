@@ -1,7 +1,3 @@
-import crypto from "node:crypto"
-import http from "node:http"
-import https from "node:https"
-
 import type {
   AdminAIAgentBindingListItem,
   AdminAIAgentBindingListResponseData,
@@ -59,6 +55,8 @@ import {
   resolveStoredModelProfile,
 } from "@/server/modules/ai/model-profile.ts"
 import { invokeAIProvider, streamAIProvider } from "@/server/modules/learning/provider.ts"
+import { synthesizeTextToSpeech } from "@/server/modules/learning/tts/registry.ts"
+import type { MaterialPipelineRuntime } from "@/server/modules/learning-materials/providers.ts"
 
 type AdminActorRow = {
   id: string
@@ -1404,7 +1402,7 @@ function inferReasoningChatModel(
 export function inferAdminModelConnectionProbeStrategy(
   row: Pick<ModelRow, "model_name" | "metadata" | "connection_test_mode" | "runtime_capabilities" | "reasoning_enabled" | "profile_group">,
   requestModelName: string,
-): "chat" | "tts_realtime" | "models_list" {
+): "chat" | "tts" | "models_list" {
   const profile = resolveStoredModelProfile({
     connectionTestMode: row.connection_test_mode,
     runtimeCapabilities: row.runtime_capabilities,
@@ -1418,7 +1416,7 @@ export function inferAdminModelConnectionProbeStrategy(
 
   const testKind = inferAdminModelConnectionTestKind(row, requestModelName)
   if (testKind === "tts") {
-    return "tts_realtime"
+    return "tts"
   }
 
   if (testKind === "asr") {
@@ -1431,123 +1429,6 @@ export function inferAdminModelConnectionProbeStrategy(
   }
 
   return "chat"
-}
-
-function providerSupportsDashScopeRealtimeTts(provider: ProviderRow): boolean {
-  const host = provider.base_url.toLowerCase()
-  return host.includes("dashscope.aliyuncs.com") || host.includes("bailian.aliyuncs.com")
-}
-
-function buildDashScopeRealtimeUrl(modelName: string): string {
-  const url = new URL("wss://dashscope.aliyuncs.com/api-ws/v1/realtime")
-  url.searchParams.set("model", modelName)
-  return url.toString()
-}
-
-async function probeWebSocketHandshake(input: {
-  url: string
-  headers: Record<string, string>
-  timeoutMs: number
-  testedPath: string
-}): Promise<AdminAIModelTestConnectionResponseData> {
-  const url = new URL(input.url)
-  const key = crypto.randomBytes(16).toString("base64")
-  const transport = url.protocol === "wss:" ? https : http
-  const protocol = url.protocol === "wss:" ? "https:" : "http:"
-  const port = url.port || (url.protocol === "wss:" ? 443 : 80)
-
-  return new Promise((resolve) => {
-    let settled = false
-    let request: http.ClientRequest | null = null
-    const timer = setTimeout(() => {
-      finish({
-        success: false,
-        message: "连接超时",
-        testedPath: input.testedPath,
-      })
-    }, input.timeoutMs)
-    const finish = (result: AdminAIModelTestConnectionResponseData) => {
-      if (settled) {
-        return
-      }
-      settled = true
-      clearTimeout(timer)
-      request?.destroy()
-      resolve(result)
-    }
-
-    try {
-      request = transport.request({
-        protocol,
-        hostname: url.hostname,
-        port,
-        path: `${url.pathname}${url.search}`,
-        method: "GET",
-        headers: {
-          ...input.headers,
-          Host: url.host,
-          Connection: "Upgrade",
-          Upgrade: "websocket",
-          "Sec-WebSocket-Key": key,
-          "Sec-WebSocket-Version": "13",
-        },
-        timeout: input.timeoutMs,
-      })
-    } catch (error) {
-      finish({
-        success: false,
-        message: `连接失败：${error instanceof Error ? error.message : "无法创建 WebSocket 握手请求"}`,
-        testedPath: input.testedPath,
-      })
-      return
-    }
-
-    request.on("upgrade", (_response, socket) => {
-      socket.destroy()
-      finish({
-        success: true,
-        message: "连接成功",
-        httpStatus: 101,
-        testedPath: input.testedPath,
-      })
-    })
-
-    request.on("response", (response) => {
-      const chunks: Buffer[] = []
-      response.on("data", (chunk) => {
-        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
-      })
-      response.on("end", () => {
-        const bodyText = Buffer.concat(chunks).toString("utf8").slice(0, 180).trim()
-        finish({
-          success: false,
-          message: bodyText
-            ? `连接失败：HTTP ${response.statusCode ?? "unknown"} ${bodyText}`
-            : `连接失败：HTTP ${response.statusCode ?? "unknown"}`,
-          httpStatus: response.statusCode,
-          testedPath: input.testedPath,
-        })
-      })
-    })
-
-    request.on("timeout", () => {
-      finish({
-        success: false,
-        message: "连接超时",
-        testedPath: input.testedPath,
-      })
-    })
-
-    request.on("error", (error) => {
-      finish({
-        success: false,
-        message: `连接失败：${error.message}`,
-        testedPath: input.testedPath,
-      })
-    })
-
-    request.end()
-  })
 }
 
 function dedupeJsonBodies(bodies: Record<string, unknown>[]): Record<string, unknown>[] {
@@ -1657,24 +1538,84 @@ function buildChatCompletionProbeBodies(input: {
   return dedupeJsonBodies(list)
 }
 
-async function probeDashScopeRealtimeTts(input: {
-  secret: string
+function toMaterialPipelineRuntimeForModelTest(input: {
+  provider: ProviderRow
+  model: ModelRow
   modelName: string
+  runtimeCapabilities: string[] | null
+  connectionTestMode: string | null
   timeoutMs: number
-}): Promise<AdminAIModelTestConnectionResponseData> {
-  const cappedMs = Math.min(30_000, Math.max(3_000, input.timeoutMs))
-  const testedPath = "/api-ws/v1/realtime"
-  const wsUrl = buildDashScopeRealtimeUrl(input.modelName)
-
-  return probeWebSocketHandshake({
-    url: wsUrl,
-    timeoutMs: cappedMs,
-    testedPath,
-    headers: {
-      Authorization: `bearer ${input.secret}`,
-      "X-DashScope-DataInspection": "enable",
+}): MaterialPipelineRuntime {
+  return {
+    provider: {
+      code: input.provider.code,
+      providerType: input.provider.provider_type,
+      baseUrl: input.provider.base_url,
+      authMode: input.provider.auth_mode,
+      envSecretRef: input.provider.secret_ref,
+      secretCiphertext: input.provider.secret_ciphertext,
+      secretIv: input.provider.secret_iv,
+      secretAuthTag: input.provider.secret_auth_tag,
+      secretKeyVersion: input.provider.secret_key_version,
+      timeoutMs: input.timeoutMs,
+      retryCount: input.provider.retry_count,
     },
-  })
+    model: {
+      code: input.model.code,
+      modelName: input.modelName,
+      defaultMaxOutputTokens: input.model.default_max_output_tokens,
+      recommendedTemperature: input.model.recommended_temperature,
+      metadata: {
+        ...(input.model.metadata ?? {}),
+        runtimeCapabilities: input.runtimeCapabilities,
+        connectionTestMode: input.connectionTestMode,
+      },
+    },
+  }
+}
+
+function inferTtsProbeTestedPath(runtime: MaterialPipelineRuntime) {
+  const protocol = typeof runtime.model.metadata?.ttsProtocol === "string"
+    ? runtime.model.metadata.ttsProtocol
+    : null
+  const providerCode = runtime.provider.code.toLowerCase()
+  const baseUrl = runtime.provider.baseUrl.toLowerCase()
+  const modelName = runtime.model.modelName.toLowerCase()
+
+  if (protocol === "minimax_t2a_v2" || providerCode.includes("minimax") || baseUrl.includes("minimax") || modelName.startsWith("speech-")) {
+    return "/v1/t2a_v2"
+  }
+  if (protocol === "openai_audio_speech" || providerCode.includes("siliconflow") || baseUrl.includes("siliconflow") || runtime.provider.providerType === "siliconflow") {
+    return "/audio/speech"
+  }
+  if (protocol === "dashscope_realtime") {
+    return "/api-ws/v1/realtime"
+  }
+  return "/services/aigc/multimodal-generation/generation"
+}
+
+async function probeTtsSynthesis(input: {
+  runtime: MaterialPipelineRuntime
+}): Promise<AdminAIModelTestConnectionResponseData> {
+  const testedPath = inferTtsProbeTestedPath(input.runtime)
+  try {
+    const result = await synthesizeTextToSpeech({
+      runtime: input.runtime,
+      text: "你好，我是 CodeTutor AI 教练。",
+    })
+
+    return {
+      success: result.audio.length > 0,
+      message: result.audio.length > 0 ? "连接成功" : "连接失败：TTS 返回空音频",
+      testedPath,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? `连接失败：${error.message}` : "连接失败",
+      testedPath,
+    }
+  }
 }
 
 async function probeProviderModelsEndpoint(input: {
@@ -1946,17 +1887,16 @@ export async function testAdminAIModelConnection(
   }
 
   const probeStrategy = inferAdminModelConnectionProbeStrategy(testProfileRow, modelNameTrim)
-  if (probeStrategy === "tts_realtime") {
-    if (!providerSupportsDashScopeRealtimeTts(provider)) {
-      throwNamedError(
-        "VALIDATION_FAILED",
-        "TTS 实时模型需在阿里云百炼 DashScope Provider 上测试连接。",
-      )
-    }
-    return probeDashScopeRealtimeTts({
-      secret: resolved.secret,
-      modelName: modelNameTrim,
-      timeoutMs: effectiveTimeout,
+  if (probeStrategy === "tts") {
+    return probeTtsSynthesis({
+      runtime: toMaterialPipelineRuntimeForModelTest({
+        provider,
+        model: modelRow,
+        modelName: modelNameTrim,
+        runtimeCapabilities: testProfileRow.runtime_capabilities,
+        connectionTestMode: testProfileRow.connection_test_mode,
+        timeoutMs: effectiveTimeout,
+      }),
     })
   }
 

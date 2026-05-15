@@ -131,7 +131,7 @@ test("inferAdminModelConnectionProbeStrategy uses models list probe for legacy A
   assert.equal(strategy, "models_list")
 })
 
-test("inferAdminModelConnectionProbeStrategy uses realtime probe for tts models", () => {
+test("inferAdminModelConnectionProbeStrategy uses unified tts probe for tts models", () => {
   const strategy = inferAdminModelConnectionProbeStrategy(
     {
       model_name: "qwen3-tts-flash-realtime",
@@ -146,7 +146,7 @@ test("inferAdminModelConnectionProbeStrategy uses realtime probe for tts models"
     "qwen3-tts-flash-realtime",
   )
 
-  assert.equal(strategy, "tts_realtime")
+  assert.equal(strategy, "tts")
 })
 
 test("matchesAdminAIAgentBindingFilters matches by agent name, tool name, interaction type and selection mode", () => {

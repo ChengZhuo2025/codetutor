@@ -10,6 +10,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { normalizeSpeechTextForTts } from "@/lib/learning/speech-text"
 import { resolveLearningMediaTranscriptionModels } from "@/server/modules/admin-ai/media-service"
 import type { MaterialPipelineRuntime } from "@/server/modules/learning-materials/providers"
+import { synthesizeTextToSpeech } from "@/server/modules/learning/tts/registry.ts"
 import {
   LearningAIProviderError,
   LearningConfigurationError,
@@ -137,11 +138,6 @@ export function buildPcmWavBuffer(
   header.writeUInt32LE(pcm.length, 40)
 
   return Buffer.concat([header, pcm])
-}
-
-function providerSupportsDashScopeRealtimeTts(runtime: LearningSpeechRuntime) {
-  const host = runtime.provider.baseUrl.toLowerCase()
-  return host.includes("dashscope.aliyuncs.com") || host.includes("bailian.aliyuncs.com")
 }
 
 // 支持通过模型 metadata.ttsWebSocketBaseUrl 覆盖默认地址（如配置 VPC 内网端点）
@@ -707,11 +703,7 @@ export async function synthesizeLearningMessageSpeech(
     throw new LearningConfigurationError("当前未配置文本转语音模型。")
   }
 
-  if (!providerSupportsDashScopeRealtimeTts(runtime)) {
-    throw new LearningConfigurationError("当前文本转语音模型暂不支持用户端播读。")
-  }
-
-  return invokeDashScopeRealtimeTts({
+  return synthesizeTextToSpeech({
     runtime,
     text,
   })

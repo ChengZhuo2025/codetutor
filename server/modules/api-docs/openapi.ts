@@ -2582,7 +2582,7 @@ registry.registerPath({
   operationId: "postLearningMessageSpeech",
   tags: ["learning"],
   summary: "生成 AI 回复消息播读音频",
-  description: "按需调用后台多媒体转译设置中的 text_to_speech 模型，为当前用户自己的 AI 回复消息生成临时音频；首版不持久化音频。",
+  description: "按需调用后台多媒体转译设置中的 text_to_speech 模型，为当前用户自己的 AI 回复消息生成临时音频；服务端通过统一 TTS Provider Gateway 适配阿里云百炼 Qwen HTTP、MiniMax、硅基流动/OpenAI-compatible Speech 等模型，首版不持久化音频。",
   security: [{ bearerAuth: [] }],
   request: {
     body: {
@@ -2600,9 +2600,15 @@ registry.registerPath({
   },
   responses: {
     "200": {
-      description: "音频生成成功，返回可直接播放的 WAV 音频。",
+      description: "音频生成成功，返回可直接播放的音频二进制。",
       content: {
         "audio/wav": {
+          schema: {
+            type: "string",
+            format: "binary",
+          },
+        },
+        "audio/mpeg": {
           schema: {
             type: "string",
             format: "binary",
@@ -5229,7 +5235,7 @@ registry.registerPath({
   tags: ["admin-ai"],
   summary: "测试 Model 连接（Provider 密钥 + 真实模型名）",
   description:
-    "使用库内所选 Provider 的 Base URL 与已配置密钥，对表单中的「真实模型名」发起轻量探测。默认使用结构化字段 `connectionTestMode`；若未显式配置，则按 `runtimeCapabilities`、`reasoningEnabled`、`profileGroup` 与历史 metadata 兼容规则推断。Chat 使用 `/chat/completions`，ASR 管理端测试仅验证 `/models` 鉴权连通性，阿里云实时 TTS 使用 DashScope WebSocket 握手。",
+    "使用库内所选 Provider 的 Base URL 与已配置密钥，对表单中的「真实模型名」发起轻量探测。默认使用结构化字段 `connectionTestMode`；若未显式配置，则按 `runtimeCapabilities`、`reasoningEnabled`、`profileGroup` 与历史 metadata 兼容规则推断。Chat 使用 `/chat/completions`，ASR 管理端测试仅验证 `/models` 鉴权连通性，TTS 使用统一 TTS Provider Gateway 做短文本真实合成。",
   security: [],
   request: {
     params: adminAIModelIdParamsSchema,
