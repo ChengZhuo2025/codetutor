@@ -158,9 +158,10 @@ test("buildDashScopeTtsSessionUpdate includes default instructions for instruct 
   }
 
   const event = buildDashScopeTtsSessionUpdate(instructRuntime, () => "event-session")
+  const instructions = event.session.instructions
 
-  assert.equal(typeof event.session.instructions, "string")
-  assert.ok(event.session.instructions.length > 0)
+  assert.ok(typeof instructions === "string")
+  assert.ok(instructions.length > 0)
   assert.equal(event.session.optimize_instructions, false)
 })
 
