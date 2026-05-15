@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 
 import {
   buildDashScopeTtsAuthorizationHeader,
+  buildDashScopeTtsFinishEvent,
   buildDashScopeTtsSessionUpdate,
   buildDashScopeTtsTextEvents,
   buildPcmWavBuffer,
@@ -152,19 +153,22 @@ test("isDashScopeTtsTerminalEvent treats all DashScope completion events as term
   assert.equal(isDashScopeTtsTerminalEvent("response.audio.delta"), false)
 })
 
-test("buildDashScopeTtsTextEvents uses realtime text buffer event names", () => {
-  const eventIds = ["event-append", "event-finish"]
+test("buildDashScopeTtsTextEvents appends text without immediately finishing the session", () => {
+  const eventIds = ["event-append"]
   assert.deepEqual(buildDashScopeTtsTextEvents("你好", () => eventIds.shift() ?? "event-extra"), [
     {
       event_id: "event-append",
       type: "input_text_buffer.append",
       text: "你好",
     },
-    {
-      event_id: "event-finish",
-      type: "session.finish",
-    },
   ])
+})
+
+test("buildDashScopeTtsFinishEvent creates a separate delayed finish event", () => {
+  assert.deepEqual(buildDashScopeTtsFinishEvent(() => "event-finish"), {
+    event_id: "event-finish",
+    type: "session.finish",
+  })
 })
 
 test("buildDashScopeTtsAuthorizationHeader uses the official Bearer scheme casing", () => {

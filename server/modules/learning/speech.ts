@@ -31,6 +31,7 @@ const MAX_USER_FACING_SPEECH_TIMEOUT_MS = 25_000
 // WebSocket 握手超时：若连接无法建立则快速失败，不等到整体超时
 const DASH_SCOPE_HANDSHAKE_TIMEOUT_MS = 10_000
 const DASH_SCOPE_TEXT_SEND_FALLBACK_DELAY_MS = 300
+const DASH_SCOPE_FINISH_DELAY_MS = 1_000
 
 type ConversationMessageSpeechRow = {
   id: string
@@ -270,11 +271,16 @@ export function buildDashScopeTtsTextEvents(
       type: "input_text_buffer.append",
       text,
     },
-    {
-      event_id: createEventId(),
-      type: "session.finish",
-    },
   ]
+}
+
+export function buildDashScopeTtsFinishEvent(
+  createEventId: () => string = createDashScopeEventId,
+) {
+  return {
+    event_id: createEventId(),
+    type: "session.finish",
+  }
 }
 
 export function buildDashScopeTtsAuthorizationHeader(secret: string) {
@@ -307,6 +313,7 @@ export async function invokeDashScopeRealtimeTts(input: {
     let sawAudio = false
     let synthesisEventsSent = false
     let fallbackTextSendTimer: ReturnType<typeof setTimeout> | null = null
+    let finishEventTimer: ReturnType<typeof setTimeout> | null = null
     const audioChunks: Buffer[] = []
     const socket = new WebSocket(url, {
       headers: {
@@ -335,6 +342,10 @@ export async function invokeDashScopeRealtimeTts(input: {
       if (fallbackTextSendTimer) {
         clearTimeout(fallbackTextSendTimer)
         fallbackTextSendTimer = null
+      }
+      if (finishEventTimer) {
+        clearTimeout(finishEventTimer)
+        finishEventTimer = null
       }
       try {
         socket.close()
@@ -392,8 +403,24 @@ export async function invokeDashScopeRealtimeTts(input: {
         fallbackTextSendTimer = null
       }
       for (const event of buildDashScopeTtsTextEvents(input.text)) {
+        logLearningSpeechTtsEvent("text_append", {
+          runtime: input.runtime,
+          timeoutMs,
+          textLength: input.text.length,
+        })
         socket.send(JSON.stringify(event))
       }
+      finishEventTimer = setTimeout(() => {
+        if (settled) {
+          return
+        }
+        logLearningSpeechTtsEvent("session_finish", {
+          runtime: input.runtime,
+          timeoutMs,
+          textLength: input.text.length,
+        })
+        socket.send(JSON.stringify(buildDashScopeTtsFinishEvent()))
+      }, DASH_SCOPE_FINISH_DELAY_MS)
     }
 
     socket.on("open", () => {
