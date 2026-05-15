@@ -120,6 +120,9 @@ export type LearningRestartConversationResponseData = {
 export type LearningCurrentSessionResponseData = {
   conversationId: string | null
   historyPagination: LearningHistoryPagination
+  activeMaterialPlanIntake: MaterialIntakeStatusResponseData & {
+    updatedAt: string
+  } | null
   pendingMaterialPlanDraft: {
     draftId: string
     intakeId: string

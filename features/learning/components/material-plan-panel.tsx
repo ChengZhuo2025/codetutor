@@ -24,6 +24,7 @@ type MaterialPlanPanelProps = {
   className?: string
   defaultLinksText?: string
   defaultDraftId?: string | null
+  defaultIntakeStatus?: MaterialIntakeStatusResponseData | null
   onDone?: () => void
   onGeneratingChange?: (isGenerating: boolean) => void
 }
@@ -174,6 +175,7 @@ export function MaterialPlanPanel({
   className,
   defaultLinksText,
   defaultDraftId,
+  defaultIntakeStatus,
   onDone,
   onGeneratingChange,
 }: MaterialPlanPanelProps) {
@@ -181,7 +183,9 @@ export function MaterialPlanPanel({
   const [userGoal, setUserGoal] = useState("")
   const [weeklyHours, setWeeklyHours] = useState("")
   const [currentConstraints, setCurrentConstraints] = useState("")
-  const [intakeStatus, setIntakeStatus] = useState<MaterialIntakeStatusResponseData | null>(null)
+  const [intakeStatus, setIntakeStatus] = useState<MaterialIntakeStatusResponseData | null>(
+    defaultIntakeStatus ?? null,
+  )
   const [draftDetail, setDraftDetail] = useState<LearningPlanDraftDetailResponseData | null>(null)
   const [busyAction, setBusyAction] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -263,6 +267,22 @@ export function MaterialPlanPanel({
       window.clearTimeout(timer)
     }
   }, [defaultDraftId, draftDetail])
+
+  useEffect(() => {
+    if (!defaultIntakeStatus || draftDetail) {
+      return
+    }
+
+    if (defaultIntakeStatus.status === "ready" && defaultIntakeStatus.draftId) {
+      const timer = window.setTimeout(() => {
+        void loadDraftDetail(defaultIntakeStatus.draftId as string)
+      }, 0)
+
+      return () => {
+        window.clearTimeout(timer)
+      }
+    }
+  }, [defaultIntakeStatus, draftDetail])
 
   useEffect(() => {
     onGeneratingChange?.(isGeneratingPlan)
@@ -467,6 +487,12 @@ export function MaterialPlanPanel({
     setError(null)
     setBusyAction("regenerate")
     const links = parseLinks()
+    if (links.length > 1) {
+      setError("一次仅支持使用 1 条教程链接生成学习计划。")
+      setBusyAction(null)
+      return
+    }
+
     const body: PlanDraftRegenerateRequestContract = {
       userGoal: userGoal.trim() || undefined,
       currentConstraints: currentConstraints.trim() || undefined,
@@ -477,9 +503,12 @@ export function MaterialPlanPanel({
     const wh = weeklyHours.trim()
     if (wh) {
       const parsed = Number(wh)
-      if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 40) {
-        body.weeklyHours = parsed
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 40) {
+        setError("每周学时需为 1–40 的整数，或留空。")
+        setBusyAction(null)
+        return
       }
+      body.weeklyHours = parsed
     }
 
     const res = await apiClient.post<PlanFromMaterialResponseData>(
@@ -570,7 +599,7 @@ export function MaterialPlanPanel({
               </div>
             </div>
             <p className="mt-3 text-xs leading-5 text-muted-foreground">
-              生成过程中请保持弹框打开，完成后会自动进入草稿预览。
+              生成会在后台继续处理。你可以先关闭弹框，回到学习工作台后会自动恢复进度。
             </p>
           </div>
         </div>

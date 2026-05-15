@@ -35,7 +35,7 @@ export async function getMaterialIntakeStatusFromClient(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
   userId: string,
   intakeId: string,
-  resumePendingRuns: (limit?: number) => Promise<unknown>,
+  resumePendingRuns: (limit?: number, preferredRunId?: string | null) => Promise<unknown>,
 ): Promise<MaterialIntakeStatusResult> {
   const { data: intakeData, error: intakeError } = await supabase
     .from("learning_material_intakes")
@@ -64,7 +64,7 @@ export async function getMaterialIntakeStatusFromClient(
   }
 
   if ((MATERIAL_PLAN_ACTIVE_STATUSES as readonly string[]).includes(intake.status)) {
-    await resumePendingRuns(1)
+    await resumePendingRuns(1, intake.latest_run_id)
   }
 
   let runId = intake.latest_run_id

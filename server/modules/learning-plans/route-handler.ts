@@ -1,6 +1,7 @@
 import "server-only"
 
 import type { NextRequest } from "next/server"
+import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { jsonInternalErrorFromError } from "@/server/lib/route-error.ts"
 import {
   jsonAuthRequired,
@@ -15,6 +16,7 @@ import {
   parsePlanDraftTaskIdParam,
   parsePlanFromMaterialBody,
 } from "@/server/lib/request-validation.ts"
+import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import { MaterialPlanError } from "@/server/modules/learning-materials/errors.ts"
 import {
   getMaterialIntakeStatus,
@@ -65,9 +67,33 @@ type DraftTaskRouteContext = {
   }>
 }
 
+async function assertCanUseMaterialPlan(userId: string) {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("user_learning_paths")
+    .select("id, selection_mode, status")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  assertSupabaseSuccess(error, "failed to load active learning path for material plan eligibility")
+
+  const activePath = data as { selection_mode: "self_directed" | "preset_training" } | null
+  if (!activePath || activePath.selection_mode !== "self_directed") {
+    throw new LearningPlanServiceError(
+      "SELF_DIRECTED_PLAN_REQUIRED",
+      "仅自学模式支持用教程链接生成学习计划。",
+      409,
+    )
+  }
+}
+
 export function createPlanFromMaterialPostHandler(dependencies: {
   getRequestAuth: (request: unknown) => Promise<{ userId: string } | null>
   getRequestAuthHelpText: () => string
+  assertCanUseMaterialPlan?: (userId: string) => Promise<void>
   createPlanFromMaterial?: (
     userId: string,
     input: PlanFromMaterialInput,
@@ -75,6 +101,7 @@ export function createPlanFromMaterialPostHandler(dependencies: {
 }) {
   const runCreate =
     dependencies.createPlanFromMaterial ?? createPlanFromMaterial
+  const ensureEligible = dependencies.assertCanUseMaterialPlan ?? assertCanUseMaterialPlan
 
   return async function POST(request: RequestLike) {
     try {
@@ -98,6 +125,8 @@ export function createPlanFromMaterialPostHandler(dependencies: {
           parsed.code.startsWith("MATERIAL_") ? 422 : 400,
         )
       }
+
+      await ensureEligible(auth.userId)
 
       const result = await runCreate(auth.userId, {
         links: parsed.data.links,
@@ -279,6 +308,7 @@ export function createPlanDraftDetailHandler(dependencies: {
 export function createPlanDraftRegeneratePostHandler(dependencies: {
   getRequestAuth: (request: unknown) => Promise<{ userId: string } | null>
   getRequestAuthHelpText: () => string
+  assertCanUseMaterialPlan?: (userId: string) => Promise<void>
   regeneratePlanDraft?: (
     userId: string,
     draftId: string,
@@ -286,6 +316,7 @@ export function createPlanDraftRegeneratePostHandler(dependencies: {
   ) => Promise<PlanFromMaterialResult>
 }) {
   const runRegenerate = dependencies.regeneratePlanDraft ?? regeneratePlanDraft
+  const ensureEligible = dependencies.assertCanUseMaterialPlan ?? assertCanUseMaterialPlan
 
   return async function POST(
     request: RequestLike,
@@ -315,6 +346,8 @@ export function createPlanDraftRegeneratePostHandler(dependencies: {
       if (!bodyParsed.ok) {
         return jsonError(bodyParsed.code, bodyParsed.message, 400)
       }
+
+      await ensureEligible(auth.userId)
 
       const result = await runRegenerate(auth.userId, idParsed.data, {
         links: bodyParsed.data.links,

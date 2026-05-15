@@ -191,6 +191,7 @@ test("openapi document covers all registered api operations and special transpor
   )?.example?.data
   assert.ok(currentSessionExample)
   assert.ok("pendingMaterialPlanDraft" in (currentSessionExample ?? {}))
+  assert.ok("activeMaterialPlanIntake" in (currentSessionExample ?? {}))
   assert.ok(!("tips" in (currentSessionExample ?? {})))
 
   const adminModelListExample = (

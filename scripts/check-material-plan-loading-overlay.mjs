@@ -10,20 +10,20 @@ const panelSource = read("features/learning/components/material-plan-panel.tsx")
 
 assert.match(
   dialogSource,
-  /isGeneratingPlan/,
-  "material plan dialog should track whether async plan generation is active",
+  /onGeneratingChange=\{setIsGeneratingPlan\}/,
+  "material plan dialog should still receive async generation state from the panel",
 )
 
 assert.match(
   dialogSource,
-  /showCloseButton=\{!isGeneratingPlan\}/,
-  "material plan dialog should hide the close button while generation is active",
+  /showCloseButton/,
+  "material plan dialog should keep the close button available while generation is recoverable",
 )
 
-assert.match(
+assert.doesNotMatch(
   dialogSource,
   /if \(!next && isGeneratingPlan\)/,
-  "material plan dialog should block close requests while generation is active",
+  "material plan dialog should not block close requests while generation can be restored",
 )
 
 assert.match(
@@ -46,8 +46,8 @@ assert.match(
 
 assert.match(
   panelSource,
-  /正在生成学习计划/,
-  "material plan panel should render the foreground loading overlay copy",
+  /回到学习工作台后会自动恢复进度/,
+  "material plan panel should explain that async generation can be restored after closing",
 )
 
 assert.match(

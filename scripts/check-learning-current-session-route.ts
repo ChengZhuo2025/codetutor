@@ -44,6 +44,7 @@ test("learning current-session route forwards sessionId and taskId query params"
           hasMore: false,
           nextBeforeSequenceNo: null,
         },
+        activeMaterialPlanIntake: null,
         pendingMaterialPlanDraft: null,
         path: {
           id: "path-1",

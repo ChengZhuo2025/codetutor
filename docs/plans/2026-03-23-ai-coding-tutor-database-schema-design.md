@@ -55,6 +55,7 @@
 - `029_create_site_contact_settings.sql` (新增企业联系方式配置表，支持管理后台编辑，供营销联系对话框动态加载)
 - `034_create_payment_subscription_tables.sql` (新增微信 Native 支付配置、订阅套餐、支付订单、用户订阅与支付回调事件表；`035_harden_payment_order_completion.sql` 新增支付完成幂等 RPC；`037_add_alipay_scan_payment.sql` 扩展支付宝扫码支付配置与订单渠道字段；`038_extend_payment_order_management.sql` 增加订单取消、用户端软删除与财务查询索引；`039_finance_hardening.sql` 增加财务统计和用户订单汇总 RPC；`040_fix_security_definer_search_path.sql` 修复支付/财务 `SECURITY DEFINER` RPC 的 `search_path` 安全警示；`030`-`033` 为联系方式二维码与 RLS 修正迁移)
 - `045_create_media_transcription_settings.sql` (新增多媒体转译设置表，管理学习对话图片转译、语音转文本与文本转语音的模型选择)
+- `046_harden_material_plan_generation.sql` (为材料计划生成 run 增加 claim / heartbeat 字段与 `claim_material_plan_generation_run`，并新增事务化 `confirm_learning_plan_draft` RPC)
 
 当前数据库中已落地的核心业务表包括：
 
@@ -1245,6 +1246,9 @@ Storage：
 | `error_message` | `text` | nullable | 附加人类可读错误 |
 | `started_at` | `timestamptz` | nullable | 运行开始时间 |
 | `finished_at` | `timestamptz` | nullable | 运行结束时间 |
+| `claim_token` | `uuid` | nullable | worker 领取 token，避免多实例重复执行 |
+| `claimed_at` | `timestamptz` | nullable | 最近一次领取时间 |
+| `heartbeat_at` | `timestamptz` | nullable | worker 心跳时间，用于超时恢复 |
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
 
@@ -1253,6 +1257,7 @@ Storage：
 - `idx_learning_plan_generation_runs_user_id`：`user_id`
 - `idx_learning_plan_generation_runs_intake_id`：`intake_id`
 - `idx_learning_plan_generation_runs_status`：`status`
+- `idx_learning_plan_generation_runs_claim_heartbeat`：`status`, `heartbeat_at`，仅覆盖 `finished_at is null` 的运行中任务
 
 ## 6.24 `learning_plan_draft_revisions`
 
@@ -1326,7 +1331,7 @@ Storage：
 ## 7.7 自学材料摄取与计划草稿
 
 - **摄取与草稿分离**：一次 `plan-from-material` 至少产生一行 `learning_material_intakes`、多行 `learning_material_sources`（按 URL）、一行 `learning_plan_drafts` 与多行 `learning_plan_draft_tasks`；全部成功前不应写入正式 `user_learning_paths`
-- **确认幂等**：同一 `learning_plan_drafts.id` 在 `status = confirmed` 后重复确认应返回相同的 `confirmed_user_learning_path_id`，不得产生第二条并发的 `active` 自学路径（业务层须与「先归档用户全部 `active` ULP 再插入」同事务或使用等价约束）
+- **确认幂等**：同一 `learning_plan_drafts.id` 在 `status = confirmed` 后重复确认应返回相同的 `confirmed_user_learning_path_id`，不得产生第二条并发的 `active` 自学路径；当前由 `confirm_learning_plan_draft` RPC 在数据库事务内锁定草稿、归档旧 active ULP、创建新路径与任务并回写 draft 确认字段。
 - **确认输入**：确认时除写入 `path_steps.metadata.source_refs`、`goal_alignment_refs`、`recommended_for_week_1` 与 `draft_revision_no` 外，还必须把草稿任务 `mastery_points` / `cautions` 分别转写到 `path_steps.key_points` / `pitfalls`，以便用户端直接展示每关“本关要掌握 / 注意事项”。
 - **再生稿**：仅允许对 `status = draft` 的归属草稿调用 regenerate；旧草稿置 `superseded` 并写 `superseded_by_draft_id`，新草稿独立 `intake_id` 策略以代码为准（可新 intake 复用链接列表）
 - **外键语义**：`confirmed_template_path_id` / `confirmed_user_learning_path_id` 在确认成功后写入；若用户路径或模板被清理，可 `on delete set null`，不反向级联删除草稿历史

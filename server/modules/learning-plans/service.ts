@@ -5,7 +5,11 @@ import { getLearningLevelLabel } from "@/constants/learning-taxonomy"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import { LearningAIProviderError } from "@/server/modules/learning/errors.ts"
-import { kickMaterialPlanRun, registerMaterialPlanRunExecutor } from "@/server/modules/learning-materials/queue.ts"
+import {
+  claimMaterialPlanRun,
+  kickMaterialPlanRun,
+  registerMaterialPlanRunExecutor,
+} from "@/server/modules/learning-materials/queue.ts"
 import {
   runMaterialIntake,
   submitMaterialPlanGeneration,
@@ -998,16 +1002,8 @@ export async function regeneratePlanDraft(
     throw aiResponseInvalid("缺少有效教程链接。")
   }
 
-  const result = await createPlanFromMaterial(userId, {
-    links,
-    userGoal,
-    weeklyHours,
-    currentConstraints,
-    sourceDraftId: draftId,
-  })
-
   const now = new Date().toISOString()
-  const { error: supersedeError } = await supabase
+  const { data: supersededRows, error: supersedeError } = await supabase
     .from("learning_plan_drafts")
     .update({
       status: "superseded",
@@ -1017,10 +1013,40 @@ export async function regeneratePlanDraft(
     .eq("id", draftId)
     .eq("user_id", userId)
     .eq("status", "draft")
+    .select("id")
 
   assertSupabaseSuccess(supersedeError, "failed to mark old draft as superseded")
+  if (!supersededRows?.length) {
+    throw planDraftAlreadyConfirmed("仅草稿状态可以重新生成。")
+  }
 
-  return result
+  try {
+    const result = await submitMaterialPlanGeneration(supabase, userId, {
+      links,
+      userGoal,
+      weeklyHours,
+      currentConstraints,
+      sourceDraftId: draftId,
+    })
+
+    kickMaterialPlanRun(result.runId)
+    return result
+  } catch (error) {
+    const restoreAt = new Date().toISOString()
+    const { error: restoreError } = await supabase
+      .from("learning_plan_drafts")
+      .update({
+        status: "draft",
+        superseded_by_draft_id: null,
+        updated_at: restoreAt,
+      })
+      .eq("id", draftId)
+      .eq("user_id", userId)
+      .eq("status", "superseded")
+
+    assertSupabaseSuccess(restoreError, "failed to restore old draft after regenerate submit failure")
+    throw error
+  }
 }
 
 export async function confirmPlanDraftForUser(
@@ -1347,6 +1373,7 @@ async function updateRunAndIntakeProgress(
     .update({
       status: input.status,
       updated_at: now,
+      heartbeat_at: now,
       ...input.extraRunFields,
     })
     .eq("id", runId)
@@ -1370,6 +1397,11 @@ async function updateRunAndIntakeProgress(
 
 export async function executeMaterialPlanGenerationRun(runId: string) {
   const supabase = createSupabaseAdminClient()
+  const claimed = await claimMaterialPlanRun(supabase, runId)
+  if (!claimed) {
+    return
+  }
+
   const { data: runData, error: runError } = await supabase
     .from("learning_plan_generation_runs")
     .select("id, user_id, intake_id, draft_id, status, planner_input")

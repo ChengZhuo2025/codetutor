@@ -25,6 +25,7 @@ export function LearnPage() {
     open: false,
     initialLinks: [] as string[],
     initialDraftId: null as string | null,
+    initialIntakeStatus: null as LearningCurrentSessionResponseData["activeMaterialPlanIntake"],
   })
   const [sessionState, setSessionState] =
     useState<ApiRequestState<LearningCurrentSessionResponseData>>({
@@ -119,6 +120,7 @@ export function LearnPage() {
         open: true,
         initialLinks: [],
         initialDraftId: draftId,
+        initialIntakeStatus: null,
       }), 0)
     } catch (error) {
       console.warn("Failed to access sessionStorage:", error)
@@ -126,6 +128,38 @@ export function LearnPage() {
         open: true,
         initialLinks: [],
         initialDraftId: draftId,
+        initialIntakeStatus: null,
+      }), 0)
+    }
+  }, [sessionState])
+
+  useEffect(() => {
+    if (sessionState.status !== "success") return
+    if (sessionState.data.planSummary.selectionMode !== "self_directed") return
+    if (sessionState.data.pendingMaterialPlanDraft) return
+    if (!sessionState.data.activeMaterialPlanIntake) return
+    if (typeof window === "undefined") return
+
+    const userId = sessionState.data.profile.userId
+    const intakeId = sessionState.data.activeMaterialPlanIntake.intakeId
+    const key = `learn:self_directed_active_intake_prompted:${userId}:${intakeId}`
+
+    try {
+      if (window.sessionStorage?.getItem(key) === "1") return
+      window.sessionStorage?.setItem(key, "1")
+      window.setTimeout(() => setMaterialDialog({
+        open: true,
+        initialLinks: [],
+        initialDraftId: null,
+        initialIntakeStatus: sessionState.data.activeMaterialPlanIntake,
+      }), 0)
+    } catch (error) {
+      console.warn("Failed to access sessionStorage:", error)
+      window.setTimeout(() => setMaterialDialog({
+        open: true,
+        initialLinks: [],
+        initialDraftId: null,
+        initialIntakeStatus: sessionState.data.activeMaterialPlanIntake,
       }), 0)
     }
   }, [sessionState])
@@ -135,6 +169,7 @@ export function LearnPage() {
     if (sessionState.data.planSummary.selectionMode !== "self_directed") return
     if (sessionState.data.planSummary.hasMaterialPlan) return
     if (sessionState.data.pendingMaterialPlanDraft) return
+    if (sessionState.data.activeMaterialPlanIntake) return
     if (typeof window === "undefined") return
 
     const userId = sessionState.data.profile.userId
@@ -183,6 +218,7 @@ export function LearnPage() {
       open: true,
       initialLinks: links ?? [],
       initialDraftId: null,
+      initialIntakeStatus: null,
     })
   }, [])
 
@@ -221,6 +257,7 @@ export function LearnPage() {
               onSessionRefresh={handleSessionRefresh}
               initialLinks={materialDialog.initialLinks}
               initialDraftId={materialDialog.initialDraftId}
+              initialIntakeStatus={materialDialog.initialIntakeStatus}
             />
           ) : null}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">

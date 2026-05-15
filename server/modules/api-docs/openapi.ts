@@ -1254,6 +1254,7 @@ const successExamples = {
       hasMore: false,
       nextBeforeSequenceNo: null,
     },
+    activeMaterialPlanIntake: null,
     pendingMaterialPlanDraft: null,
     path: {
       id: "path-runtime-1",

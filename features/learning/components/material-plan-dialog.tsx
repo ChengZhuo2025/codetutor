@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DIALOG_PANEL_CLASS, USER_PANEL_DIVIDER_CLASS } from "@/components/ui/surface-styles"
 import { MaterialPlanPanel } from "@/features/learning/components/material-plan-panel"
+import type { LearningCurrentSessionResponseData } from "@/lib/api/contracts/learning"
 import { cn } from "@/lib/utils"
 
 type MaterialPlanDialogProps = {
@@ -12,6 +13,7 @@ type MaterialPlanDialogProps = {
   onSessionRefresh: () => void
   initialLinks?: string[]
   initialDraftId?: string | null
+  initialIntakeStatus?: LearningCurrentSessionResponseData["activeMaterialPlanIntake"]
   /** 在 Radix 完成打开/关闭状态切换后调用，便于在界面已展示后再写 sessionStorage 等 */
   onDialogOpenChange?: (open: boolean) => void
 }
@@ -22,28 +24,26 @@ export function MaterialPlanDialog({
   onSessionRefresh,
   initialLinks,
   initialDraftId,
+  initialIntakeStatus,
   onDialogOpenChange,
 }: MaterialPlanDialogProps) {
-  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false)
+  const [, setIsGeneratingPlan] = useState(false)
   const initialLinksText = useMemo(
     () => (initialLinks && initialLinks.length > 0 ? initialLinks.join("\n") : ""),
     [initialLinks],
   )
-  const panelKey = `${open ? "open" : "closed"}:${initialLinksText}:${initialDraftId ?? "new"}`
+  const panelKey = `${open ? "open" : "closed"}:${initialLinksText}:${initialDraftId ?? "new"}:${initialIntakeStatus?.intakeId ?? "no-intake"}`
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next && isGeneratingPlan) {
-          return
-        }
         onDialogOpenChange?.(next)
         onOpenChange(next)
       }}
     >
       <DialogContent
-        showCloseButton={!isGeneratingPlan}
+        showCloseButton
         className={cn(
           DIALOG_PANEL_CLASS,
           "max-h-[85vh] min-w-0 overflow-x-hidden overflow-y-auto rounded-2xl p-0 sm:max-w-[760px]",
@@ -64,6 +64,7 @@ export function MaterialPlanDialog({
             onSessionRefresh={onSessionRefresh}
             defaultLinksText={initialLinksText}
             defaultDraftId={initialDraftId}
+            defaultIntakeStatus={initialIntakeStatus}
             onDone={() => onOpenChange(false)}
             onGeneratingChange={setIsGeneratingPlan}
           />

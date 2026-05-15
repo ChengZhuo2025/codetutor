@@ -2,6 +2,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 
 import { MaterialPlanError } from "../server/modules/learning-materials/errors.ts"
+import { LearningPlanServiceError } from "../server/modules/learning-plans/errors.ts"
 import {
   createPlanDraftDetailHandler,
   createPlanDraftConfirmPostHandler,
@@ -55,6 +56,7 @@ test("plan-from-material returns 200 with injected service", async () => {
   const handler = createPlanFromMaterialPostHandler({
     getRequestAuth: async () => ({ userId: "u1" }),
     getRequestAuthHelpText: () => "",
+    assertCanUseMaterialPlan: async () => {},
     createPlanFromMaterial: async () => ({
       processingMode: "async" as const,
       intakeId: "22222222-2222-4222-8222-222222222222",
@@ -105,10 +107,50 @@ test("plan-from-material returns structured code when multiple links are provide
   assert.equal(json.code, "MATERIAL_SINGLE_LINK_ONLY")
 })
 
+test("plan-from-material checks self-directed eligibility before creating a run", async () => {
+  let createCalled = false
+  const handler = createPlanFromMaterialPostHandler({
+    getRequestAuth: async () => ({ userId: "u1" }),
+    getRequestAuthHelpText: () => "",
+    assertCanUseMaterialPlan: async () => {
+      throw new LearningPlanServiceError(
+        "SELF_DIRECTED_PLAN_REQUIRED",
+        "仅自学模式支持用教程链接生成学习计划。",
+        409,
+      )
+    },
+    createPlanFromMaterial: async () => {
+      createCalled = true
+      return {
+        processingMode: "async" as const,
+        intakeId: "22222222-2222-4222-8222-222222222222",
+        runId: "33333333-3333-4333-8333-333333333333",
+        draftId: null,
+        status: "queued" as const,
+      }
+    },
+  })
+
+  const response = await handler(
+    createJsonRequest(
+      "http://localhost/api/learning/plan-from-material",
+      JSON.stringify({
+        links: ["https://web.dev/learn/"],
+      }),
+    ),
+  )
+
+  assert.equal(response.status, 409)
+  assert.equal(createCalled, false)
+  const json = (await response.json()) as { code: string }
+  assert.equal(json.code, "SELF_DIRECTED_PLAN_REQUIRED")
+})
+
 test("plan-from-material preserves friendly material fetch guidance", async () => {
   const handler = createPlanFromMaterialPostHandler({
     getRequestAuth: async () => ({ userId: "u1" }),
     getRequestAuthHelpText: () => "",
+    assertCanUseMaterialPlan: async () => {},
     createPlanFromMaterial: async () => {
       throw new MaterialPlanError(
         "MATERIAL_FETCH_FAILED",
@@ -247,6 +289,7 @@ test("plan-draft regenerate forwards currentConstraints", async () => {
   const handler = createPlanDraftRegeneratePostHandler({
     getRequestAuth: async () => ({ userId: "u1" }),
     getRequestAuthHelpText: () => "",
+    assertCanUseMaterialPlan: async () => {},
     regeneratePlanDraft: async (_userId, _draftId, input) => {
       received = input
       return {

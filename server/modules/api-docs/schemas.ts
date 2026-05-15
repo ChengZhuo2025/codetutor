@@ -778,6 +778,18 @@ export const learningCurrentSessionResponseDataSchema = z
   .object({
     conversationId: z.string().nullable(),
     historyPagination: learningHistoryPaginationSchema,
+    activeMaterialPlanIntake: z.object({
+      intakeId: z.string().uuid(),
+      status: materialPlanAsyncStatusSchema,
+      processingStage: z.string().nullable(),
+      progressPercent: z.number().nullable(),
+      progressMessage: z.string().nullable(),
+      draftId: z.string().uuid().nullable(),
+      runId: z.string().uuid().nullable(),
+      errorCode: z.string().nullable(),
+      errorMessage: z.string().nullable(),
+      updatedAt: z.string(),
+    }).nullable(),
     pendingMaterialPlanDraft: z.object({
       draftId: z.string().uuid(),
       intakeId: z.string().uuid(),

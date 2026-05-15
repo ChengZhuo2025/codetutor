@@ -72,6 +72,18 @@ type PendingMaterialPlanDraftRow = {
   updated_at: string
 }
 
+type ActiveMaterialPlanIntakeRow = {
+  id: string
+  status: "queued" | "extracting" | "planning" | "quality_checking" | "ready" | "failed"
+  processing_stage: string | null
+  progress_percent: number | null
+  progress_message: string | null
+  latest_run_id: string | null
+  latest_draft_id: string | null
+  error_code: string | null
+  updated_at: string
+}
+
 type TaskRow = {
   id: string
   path_step_id: string
@@ -585,6 +597,23 @@ async function loadLearningState(userId: string) {
 
   assertSupabaseSuccess(pendingDraftError, "failed to load pending material plan draft")
 
+  const { data: activeMaterialPlanIntake, error: activeMaterialPlanIntakeError } =
+    activePath.selection_mode !== "self_directed"
+      ? { data: null, error: null }
+      : await supabase
+          .from("learning_material_intakes")
+          .select("id, status, processing_stage, progress_percent, progress_message, latest_run_id, latest_draft_id, error_code, updated_at")
+          .eq("user_id", userId)
+          .in("status", ["queued", "extracting", "planning", "quality_checking", "failed"])
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+  assertSupabaseSuccess(
+    activeMaterialPlanIntakeError,
+    "failed to load active material plan intake",
+  )
+
   if (!tool) {
     return null
   }
@@ -596,6 +625,7 @@ async function loadLearningState(userId: string) {
     tasks: (tasks ?? []) as TaskRow[],
     steps: (steps ?? []) as StepRow[],
     pendingMaterialPlanDraft: pendingDraft as PendingMaterialPlanDraftRow | null,
+    activeMaterialPlanIntake: activeMaterialPlanIntake as ActiveMaterialPlanIntakeRow | null,
   }
 }
 
@@ -1275,6 +1305,24 @@ export async function getLearningCurrentSessionData(
       hasMore: false,
       nextBeforeSequenceNo: null,
     },
+    activeMaterialPlanIntake:
+      state.activeMaterialPlanIntake && !state.pendingMaterialPlanDraft
+        ? {
+            intakeId: state.activeMaterialPlanIntake.id,
+            status: state.activeMaterialPlanIntake.status,
+            processingStage: state.activeMaterialPlanIntake.processing_stage,
+            progressPercent: state.activeMaterialPlanIntake.progress_percent,
+            progressMessage: state.activeMaterialPlanIntake.progress_message,
+            draftId: state.activeMaterialPlanIntake.latest_draft_id,
+            runId: state.activeMaterialPlanIntake.latest_run_id,
+            errorCode: state.activeMaterialPlanIntake.error_code,
+            errorMessage:
+              state.activeMaterialPlanIntake.status === "failed"
+                ? state.activeMaterialPlanIntake.progress_message
+                : null,
+            updatedAt: state.activeMaterialPlanIntake.updated_at,
+          }
+        : null,
     pendingMaterialPlanDraft:
       state.pendingMaterialPlanDraft
         ? {

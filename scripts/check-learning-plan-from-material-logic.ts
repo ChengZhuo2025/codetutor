@@ -8,6 +8,7 @@ import {
   extractMaterialEvidenceForSource,
   runMaterialIntake,
 } from "../server/modules/learning-materials/service.ts"
+import { isMaterialPlanRunClaimable } from "../server/modules/learning-materials/queue.ts"
 import { bilibiliMaterialSourceAdapter } from "../server/modules/learning-materials/adapters/bilibili.ts"
 import { douyinMaterialSourceAdapter } from "../server/modules/learning-materials/adapters/douyin.ts"
 import { resolveMaterialPipelineModelsFromSnapshots } from "../server/modules/learning-materials/providers.ts"
@@ -1244,4 +1245,29 @@ test("assertDraftQualityReadyForConfirm rejects pending quality status", () => {
 
   assert.doesNotThrow(() => assertDraftQualityReadyForConfirm("passed"))
   assert.doesNotThrow(() => assertDraftQualityReadyForConfirm("pilot_fallback"))
+})
+
+test("material plan run claim helper only reclaims stale active runs", () => {
+  const now = new Date("2026-04-10T10:00:00.000Z")
+
+  assert.equal(isMaterialPlanRunClaimable({
+    status: "queued",
+    heartbeatAt: null,
+    now,
+  }), true)
+  assert.equal(isMaterialPlanRunClaimable({
+    status: "planning",
+    heartbeatAt: "2026-04-10T09:59:00.000Z",
+    now,
+  }), false)
+  assert.equal(isMaterialPlanRunClaimable({
+    status: "planning",
+    heartbeatAt: "2026-04-10T09:40:00.000Z",
+    now,
+  }), true)
+  assert.equal(isMaterialPlanRunClaimable({
+    status: "ready",
+    heartbeatAt: null,
+    now,
+  }), false)
 })
