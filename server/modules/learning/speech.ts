@@ -31,8 +31,9 @@ const MIN_SPEECH_TIMEOUT_MS = 5_000
 const MAX_USER_FACING_SPEECH_TIMEOUT_MS = 25_000
 // WebSocket 握手超时：若连接无法建立则快速失败，不等到整体超时
 const DASH_SCOPE_HANDSHAKE_TIMEOUT_MS = 10_000
-const DASH_SCOPE_TEXT_SEND_FALLBACK_DELAY_MS = 300
+const DASH_SCOPE_SESSION_UPDATE_ACK_TIMEOUT_MS = 3_000
 const DASH_SCOPE_FINISH_DELAY_MS = 1_000
+const DASH_SCOPE_MAX_SESSION_UPDATE_ATTEMPTS = 2
 
 type ConversationMessageSpeechRow = {
   id: string
@@ -363,6 +364,42 @@ export function summarizeDashScopeTtsServerEvent(event: unknown) {
   }
 }
 
+export function createDashScopeTtsSessionUpdateTracker() {
+  let updateAttempts = 0
+  let sessionUpdated = false
+  let updateTimedOut = false
+  let fallbackUsed = false
+
+  return {
+    markSessionUpdateSent() {
+      updateAttempts += 1
+      updateTimedOut = false
+    },
+    markSessionUpdated() {
+      sessionUpdated = true
+      updateTimedOut = false
+    },
+    markSessionUpdateTimedOut() {
+      if (!sessionUpdated) {
+        updateTimedOut = true
+      }
+    },
+    shouldRetryAfterSessionCreated() {
+      return !sessionUpdated && updateAttempts < DASH_SCOPE_MAX_SESSION_UPDATE_ATTEMPTS
+    },
+    shouldSendSynthesisEvents() {
+      return sessionUpdated
+    },
+    shouldFallbackSynthesis() {
+      if (sessionUpdated || !updateTimedOut || fallbackUsed) {
+        return false
+      }
+      fallbackUsed = true
+      return true
+    },
+  }
+}
+
 export async function invokeDashScopeRealtimeTts(input: {
   runtime: LearningSpeechRuntime
   text: string
@@ -382,7 +419,8 @@ export async function invokeDashScopeRealtimeTts(input: {
     let settled = false
     let sawAudio = false
     let synthesisEventsSent = false
-    let fallbackTextSendTimer: ReturnType<typeof setTimeout> | null = null
+    const sessionUpdateTracker = createDashScopeTtsSessionUpdateTracker()
+    let sessionUpdateAckTimer: ReturnType<typeof setTimeout> | null = null
     let finishEventTimer: ReturnType<typeof setTimeout> | null = null
     const audioChunks: Buffer[] = []
     const socket = new WebSocket(url, {
@@ -409,9 +447,9 @@ export async function invokeDashScopeRealtimeTts(input: {
       }
       settled = true
       clearTimeout(timer)
-      if (fallbackTextSendTimer) {
-        clearTimeout(fallbackTextSendTimer)
-        fallbackTextSendTimer = null
+      if (sessionUpdateAckTimer) {
+        clearTimeout(sessionUpdateAckTimer)
+        sessionUpdateAckTimer = null
       }
       if (finishEventTimer) {
         clearTimeout(finishEventTimer)
@@ -455,12 +493,28 @@ export async function invokeDashScopeRealtimeTts(input: {
     }
 
     const sendSessionUpdate = () => {
+      if (sessionUpdateAckTimer) {
+        clearTimeout(sessionUpdateAckTimer)
+        sessionUpdateAckTimer = null
+      }
+      sessionUpdateTracker.markSessionUpdateSent()
       logLearningSpeechTtsEvent("session_update", {
         runtime: input.runtime,
         timeoutMs,
         textLength: input.text.length,
       })
       socket.send(JSON.stringify(buildDashScopeTtsSessionUpdate(input.runtime)))
+      sessionUpdateAckTimer = setTimeout(() => {
+        sessionUpdateTracker.markSessionUpdateTimedOut()
+        if (sessionUpdateTracker.shouldFallbackSynthesis()) {
+          logLearningSpeechTtsEvent("session_update_ack_timeout", {
+            runtime: input.runtime,
+            timeoutMs,
+            textLength: input.text.length,
+          })
+          sendSynthesisEvents()
+        }
+      }, DASH_SCOPE_SESSION_UPDATE_ACK_TIMEOUT_MS)
     }
 
     const sendSynthesisEvents = () => {
@@ -468,9 +522,9 @@ export async function invokeDashScopeRealtimeTts(input: {
         return
       }
       synthesisEventsSent = true
-      if (fallbackTextSendTimer) {
-        clearTimeout(fallbackTextSendTimer)
-        fallbackTextSendTimer = null
+      if (sessionUpdateAckTimer) {
+        clearTimeout(sessionUpdateAckTimer)
+        sessionUpdateAckTimer = null
       }
       for (const event of buildDashScopeTtsTextEvents(input.text)) {
         logLearningSpeechTtsEvent("text_append", {
@@ -500,7 +554,6 @@ export async function invokeDashScopeRealtimeTts(input: {
         textLength: input.text.length,
       })
       sendSessionUpdate()
-      fallbackTextSendTimer = setTimeout(sendSynthesisEvents, DASH_SCOPE_TEXT_SEND_FALLBACK_DELAY_MS)
     })
 
     socket.on("message", (data) => {
@@ -529,10 +582,20 @@ export async function invokeDashScopeRealtimeTts(input: {
           textLength: input.text.length,
           ...eventSummary,
         })
+        if (sessionUpdateTracker.shouldRetryAfterSessionCreated()) {
+          logLearningSpeechTtsEvent("session_update_retry", {
+            runtime: input.runtime,
+            timeoutMs,
+            textLength: input.text.length,
+            ...eventSummary,
+          })
+          sendSessionUpdate()
+        }
         return
       }
 
       if (record.type === "session.updated") {
+        sessionUpdateTracker.markSessionUpdated()
         logLearningSpeechTtsEvent("session_updated", {
           runtime: input.runtime,
           timeoutMs,

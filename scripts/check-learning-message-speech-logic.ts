@@ -7,6 +7,7 @@ import {
   buildDashScopeTtsSessionUpdate,
   buildDashScopeTtsTextEvents,
   buildPcmWavBuffer,
+  createDashScopeTtsSessionUpdateTracker,
   isDashScopeTtsTerminalEvent,
   normalizeLearningMessageSpeechText,
   resolveDashScopeTtsCloseErrorMessage,
@@ -206,6 +207,30 @@ test("buildDashScopeTtsFinishEvent creates a separate delayed finish event", () 
     event_id: "event-finish",
     type: "session.finish",
   })
+})
+
+test("createDashScopeTtsSessionUpdateTracker retries after session.created but waits for session.updated before text", () => {
+  const tracker = createDashScopeTtsSessionUpdateTracker()
+
+  assert.equal(tracker.shouldSendSynthesisEvents(), false)
+  assert.equal(tracker.shouldRetryAfterSessionCreated(), true)
+  tracker.markSessionUpdateSent()
+  assert.equal(tracker.shouldRetryAfterSessionCreated(), true)
+  tracker.markSessionUpdateSent()
+  assert.equal(tracker.shouldRetryAfterSessionCreated(), false)
+  assert.equal(tracker.shouldSendSynthesisEvents(), false)
+  assert.equal(tracker.shouldFallbackSynthesis(), false)
+  tracker.markSessionUpdated()
+  assert.equal(tracker.shouldSendSynthesisEvents(), true)
+})
+
+test("createDashScopeTtsSessionUpdateTracker allows one fallback when session.updated never arrives", () => {
+  const tracker = createDashScopeTtsSessionUpdateTracker()
+  tracker.markSessionUpdateSent()
+  assert.equal(tracker.shouldFallbackSynthesis(), false)
+  tracker.markSessionUpdateTimedOut()
+  assert.equal(tracker.shouldFallbackSynthesis(), true)
+  assert.equal(tracker.shouldFallbackSynthesis(), false)
 })
 
 test("buildDashScopeTtsAuthorizationHeader uses the official Bearer scheme casing", () => {
