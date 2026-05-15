@@ -33,7 +33,6 @@ const MAX_USER_FACING_SPEECH_TIMEOUT_MS = 25_000
 const DASH_SCOPE_HANDSHAKE_TIMEOUT_MS = 10_000
 const DASH_SCOPE_SESSION_UPDATE_ACK_TIMEOUT_MS = 3_000
 const DASH_SCOPE_FINISH_DELAY_MS = 1_000
-const DASH_SCOPE_MAX_SESSION_UPDATE_ATTEMPTS = 2
 
 type ConversationMessageSpeechRow = {
   id: string
@@ -365,14 +364,12 @@ export function summarizeDashScopeTtsServerEvent(event: unknown) {
 }
 
 export function createDashScopeTtsSessionUpdateTracker() {
-  let updateAttempts = 0
   let sessionUpdated = false
   let updateTimedOut = false
   let fallbackUsed = false
 
   return {
     markSessionUpdateSent() {
-      updateAttempts += 1
       updateTimedOut = false
     },
     markSessionUpdated() {
@@ -383,9 +380,6 @@ export function createDashScopeTtsSessionUpdateTracker() {
       if (!sessionUpdated) {
         updateTimedOut = true
       }
-    },
-    shouldRetryAfterSessionCreated() {
-      return !sessionUpdated && updateAttempts < DASH_SCOPE_MAX_SESSION_UPDATE_ATTEMPTS
     },
     shouldSendSynthesisEvents() {
       return sessionUpdated
@@ -582,15 +576,6 @@ export async function invokeDashScopeRealtimeTts(input: {
           textLength: input.text.length,
           ...eventSummary,
         })
-        if (sessionUpdateTracker.shouldRetryAfterSessionCreated()) {
-          logLearningSpeechTtsEvent("session_update_retry", {
-            runtime: input.runtime,
-            timeoutMs,
-            textLength: input.text.length,
-            ...eventSummary,
-          })
-          sendSessionUpdate()
-        }
         return
       }
 

@@ -209,15 +209,11 @@ test("buildDashScopeTtsFinishEvent creates a separate delayed finish event", () 
   })
 })
 
-test("createDashScopeTtsSessionUpdateTracker retries after session.created but waits for session.updated before text", () => {
+test("createDashScopeTtsSessionUpdateTracker waits for session.updated before text", () => {
   const tracker = createDashScopeTtsSessionUpdateTracker()
 
   assert.equal(tracker.shouldSendSynthesisEvents(), false)
-  assert.equal(tracker.shouldRetryAfterSessionCreated(), true)
   tracker.markSessionUpdateSent()
-  assert.equal(tracker.shouldRetryAfterSessionCreated(), true)
-  tracker.markSessionUpdateSent()
-  assert.equal(tracker.shouldRetryAfterSessionCreated(), false)
   assert.equal(tracker.shouldSendSynthesisEvents(), false)
   assert.equal(tracker.shouldFallbackSynthesis(), false)
   tracker.markSessionUpdated()
