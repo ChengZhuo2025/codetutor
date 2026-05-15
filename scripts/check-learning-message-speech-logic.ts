@@ -12,7 +12,9 @@ import {
   resolveDashScopeTtsCloseErrorMessage,
   resolveLearningMessageSpeechTimeoutMs,
   resolveLearningMessageSpeechSourceText,
+  resolveLearningTtsInstructions,
   resolveLearningTtsVoice,
+  summarizeDashScopeTtsServerEvent,
 } from "../server/modules/learning/speech.ts"
 import {
   normalizeSpeechTextForTts,
@@ -146,6 +148,40 @@ test("buildDashScopeTtsSessionUpdate uses supported response format and sample r
   })
 })
 
+test("buildDashScopeTtsSessionUpdate includes default instructions for instruct realtime models", () => {
+  const instructRuntime = {
+    ...runtime,
+    model: {
+      ...runtime.model,
+      modelName: "qwen3-tts-instruct-flash-realtime",
+    },
+  }
+
+  const event = buildDashScopeTtsSessionUpdate(instructRuntime, () => "event-session")
+
+  assert.equal(typeof event.session.instructions, "string")
+  assert.ok(event.session.instructions.length > 0)
+  assert.equal(event.session.optimize_instructions, false)
+})
+
+test("resolveLearningTtsInstructions supports metadata override", () => {
+  assert.equal(resolveLearningTtsInstructions(runtime), null)
+  assert.equal(
+    resolveLearningTtsInstructions({
+      ...runtime,
+      model: {
+        ...runtime.model,
+        modelName: "qwen3-tts-instruct-flash-realtime",
+        metadata: {
+          ttsInstructions: "语速稍快，语气耐心。",
+          optimizeInstructions: true,
+        },
+      },
+    }),
+    "语速稍快，语气耐心。",
+  )
+})
+
 test("isDashScopeTtsTerminalEvent treats all DashScope completion events as terminal", () => {
   assert.equal(isDashScopeTtsTerminalEvent("response.audio.done"), true)
   assert.equal(isDashScopeTtsTerminalEvent("response.done"), true)
@@ -173,6 +209,26 @@ test("buildDashScopeTtsFinishEvent creates a separate delayed finish event", () 
 
 test("buildDashScopeTtsAuthorizationHeader uses the official Bearer scheme casing", () => {
   assert.equal(buildDashScopeTtsAuthorizationHeader("sk-test"), "Bearer sk-test")
+})
+
+test("summarizeDashScopeTtsServerEvent captures safe server event diagnostics", () => {
+  assert.deepEqual(
+    summarizeDashScopeTtsServerEvent({
+      type: "response.created",
+      event_id: "event-1",
+      response: { id: "resp-1" },
+    }),
+    {
+      serverEventType: "response.created",
+      serverEventId: "event-1",
+      serverResponseId: "resp-1",
+      serverSessionId: undefined,
+      serverItemId: undefined,
+      serverErrorCode: undefined,
+      serverErrorMessage: undefined,
+      serverEventKeys: ["event_id", "response", "type"],
+    },
+  )
 })
 
 test("resolveLearningTtsVoice supports model metadata override", () => {

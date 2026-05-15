@@ -26,6 +26,7 @@ const DASH_SCOPE_REALTIME_PATH = "/api-ws/v1/realtime"
 const DASH_SCOPE_TTS_RESPONSE_FORMAT = "pcm"
 const DASH_SCOPE_TTS_MODE = "server_commit"
 const DASH_SCOPE_TTS_LANGUAGE_TYPE = "Auto"
+const DEFAULT_TTS_INSTRUCTIONS = "用自然、清晰、耐心的中文教学口吻朗读。"
 const MIN_SPEECH_TIMEOUT_MS = 5_000
 const MAX_USER_FACING_SPEECH_TIMEOUT_MS = 25_000
 // WebSocket 握手超时：若连接无法建立则快速失败，不等到整体超时
@@ -45,6 +46,14 @@ type ConversationMessageSpeechRow = {
 type LearningSpeechRuntime = MaterialPipelineRuntime
 type DashScopeTtsServerEvent = {
   type?: string
+  event_id?: string
+  session?: {
+    id?: string
+  }
+  response?: {
+    id?: string
+  }
+  item_id?: string
   error?: {
     code?: string
     message?: string
@@ -212,6 +221,14 @@ function logLearningSpeechTtsEvent(
     closeCode?: number
     closeReason?: unknown
     errorMessage?: string
+    serverEventType?: string
+    serverEventId?: string
+    serverSessionId?: string
+    serverResponseId?: string
+    serverItemId?: string
+    serverErrorCode?: string
+    serverErrorMessage?: string
+    serverEventKeys?: string[]
   },
 ) {
   const closeReason = Buffer.isBuffer(input.closeReason)
@@ -233,6 +250,14 @@ function logLearningSpeechTtsEvent(
     closeCode: input.closeCode,
     closeReason,
     errorMessage: input.errorMessage,
+    serverEventType: input.serverEventType,
+    serverEventId: input.serverEventId,
+    serverSessionId: input.serverSessionId,
+    serverResponseId: input.serverResponseId,
+    serverItemId: input.serverItemId,
+    serverErrorCode: input.serverErrorCode,
+    serverErrorMessage: input.serverErrorMessage,
+    serverEventKeys: input.serverEventKeys,
   }))
 }
 
@@ -244,10 +269,30 @@ export function resolveLearningTtsVoice(runtime: LearningSpeechRuntime) {
     ?? DEFAULT_TTS_VOICE
 }
 
+export function resolveLearningTtsInstructions(runtime: LearningSpeechRuntime) {
+  const metadata = runtime.model.metadata ?? {}
+  const configured = typeof metadata.ttsInstructions === "string" && metadata.ttsInstructions.trim()
+  if (configured) {
+    return configured
+  }
+
+  return runtime.model.modelName.includes("instruct")
+    ? DEFAULT_TTS_INSTRUCTIONS
+    : null
+}
+
+function resolveLearningTtsOptimizeInstructions(runtime: LearningSpeechRuntime) {
+  const metadata = runtime.model.metadata ?? {}
+  return typeof metadata.optimizeInstructions === "boolean"
+    ? metadata.optimizeInstructions
+    : false
+}
+
 export function buildDashScopeTtsSessionUpdate(
   runtime: LearningSpeechRuntime,
   createEventId: () => string = createDashScopeEventId,
 ) {
+  const instructions = resolveLearningTtsInstructions(runtime)
   return {
     event_id: createEventId(),
     type: "session.update",
@@ -257,6 +302,12 @@ export function buildDashScopeTtsSessionUpdate(
       sample_rate: DEFAULT_TTS_SAMPLE_RATE,
       mode: DASH_SCOPE_TTS_MODE,
       language_type: DASH_SCOPE_TTS_LANGUAGE_TYPE,
+      ...(instructions
+        ? {
+            instructions,
+            optimize_instructions: resolveLearningTtsOptimizeInstructions(runtime),
+          }
+        : {}),
     },
   }
 }
@@ -291,6 +342,25 @@ export function isDashScopeTtsTerminalEvent(type: string | null | undefined) {
   return type === "response.done"
     || type === "response.audio.done"
     || type === "session.finished"
+}
+
+export function summarizeDashScopeTtsServerEvent(event: unknown) {
+  if (!event || typeof event !== "object") {
+    return null
+  }
+
+  const record = event as DashScopeTtsServerEvent
+  const eventKeys = Object.keys(record).sort().slice(0, 16)
+  return {
+    serverEventType: typeof record.type === "string" ? record.type : undefined,
+    serverEventId: typeof record.event_id === "string" ? record.event_id : undefined,
+    serverResponseId: typeof record.response?.id === "string" ? record.response.id : undefined,
+    serverSessionId: typeof record.session?.id === "string" ? record.session.id : undefined,
+    serverItemId: typeof record.item_id === "string" ? record.item_id : undefined,
+    serverErrorCode: typeof record.error?.code === "string" ? record.error.code : undefined,
+    serverErrorMessage: typeof record.error?.message === "string" ? record.error.message.slice(0, 240) : undefined,
+    serverEventKeys: eventKeys,
+  }
 }
 
 export async function invokeDashScopeRealtimeTts(input: {
@@ -451,16 +521,24 @@ export async function invokeDashScopeRealtimeTts(input: {
       }
 
       const record = payload as DashScopeTtsServerEvent
+      const eventSummary = summarizeDashScopeTtsServerEvent(payload)
       if (record.type === "session.created") {
         logLearningSpeechTtsEvent("session_created", {
           runtime: input.runtime,
           timeoutMs,
           textLength: input.text.length,
+          ...eventSummary,
         })
         return
       }
 
       if (record.type === "session.updated") {
+        logLearningSpeechTtsEvent("session_updated", {
+          runtime: input.runtime,
+          timeoutMs,
+          textLength: input.text.length,
+          ...eventSummary,
+        })
         sendSynthesisEvents()
         return
       }
@@ -471,6 +549,7 @@ export async function invokeDashScopeRealtimeTts(input: {
           timeoutMs,
           textLength: input.text.length,
           errorMessage: record.error?.message ?? record.error?.code ?? "TTS provider returned an error",
+          ...eventSummary,
         })
         finish(new LearningAIProviderError(record.error?.message ?? record.error?.code ?? "TTS provider returned an error"))
         return
@@ -492,6 +571,17 @@ export async function invokeDashScopeRealtimeTts(input: {
 
       if (isDashScopeTtsTerminalEvent(record.type)) {
         finish()
+        return
+      }
+
+      logLearningSpeechTtsEvent("server_event", {
+        runtime: input.runtime,
+        timeoutMs,
+        textLength: input.text.length,
+        ...eventSummary,
+      })
+      if (eventSummary?.serverEventType?.toLowerCase().includes("error")) {
+        finish(new LearningAIProviderError(eventSummary.serverErrorMessage ?? eventSummary.serverErrorCode ?? "TTS provider returned an error"))
       }
     })
 
