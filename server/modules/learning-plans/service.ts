@@ -3,7 +3,7 @@ import "server-only"
 import { z } from "zod"
 import { getLearningLevelLabel } from "@/constants/learning-taxonomy"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
-import { assertSupabaseSuccess } from "@/server/lib/supabase"
+import { assertSupabaseSuccess, runSupabaseQueryWithRetry } from "@/server/lib/supabase"
 import { LearningAIProviderError } from "@/server/modules/learning/errors.ts"
 import {
   claimMaterialPlanRun,
@@ -514,13 +514,19 @@ async function loadDraftRowForUser(
   userId: string,
   draftId: string,
 ) {
-  const { data: draftData, error: draftError } = await supabase
-    .from("learning_plan_drafts")
-    .select(
-      "id, user_id, intake_id, title, goal, status, revision_no, quality_status, quality_report, alignment_json, week_1_task_ids, updated_at",
-    )
-    .eq("id", draftId)
-    .maybeSingle()
+  const { data: draftData, error: draftError } = await runSupabaseQueryWithRetry(
+    () =>
+      supabase
+        .from("learning_plan_drafts")
+        .select(
+          "id, user_id, intake_id, title, goal, status, revision_no, quality_status, quality_report, alignment_json, week_1_task_ids, updated_at",
+        )
+        .eq("id", draftId)
+        .maybeSingle(),
+    {
+      context: "failed to load plan draft detail",
+    },
+  )
 
   assertSupabaseSuccess(draftError, "failed to load plan draft detail")
 
@@ -550,13 +556,19 @@ async function loadDraftTasks(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
   draftId: string,
 ) {
-  const { data: taskRows, error: taskError } = await supabase
-    .from("learning_plan_draft_tasks")
-    .select(
-      "id, task_no, position, title, objective, practice_steps, acceptance_criteria, estimated_minutes, source_refs, goal_alignment_refs, mastery_points, cautions, recommended_for_week_1, is_user_edited, metadata",
-    )
-    .eq("draft_id", draftId)
-    .order("task_no", { ascending: true })
+  const { data: taskRows, error: taskError } = await runSupabaseQueryWithRetry(
+    () =>
+      supabase
+        .from("learning_plan_draft_tasks")
+        .select(
+          "id, task_no, position, title, objective, practice_steps, acceptance_criteria, estimated_minutes, source_refs, goal_alignment_refs, mastery_points, cautions, recommended_for_week_1, is_user_edited, metadata",
+        )
+        .eq("draft_id", draftId)
+        .order("task_no", { ascending: true }),
+    {
+      context: "failed to load draft tasks",
+    },
+  )
 
   assertSupabaseSuccess(taskError, "failed to load draft tasks")
 
@@ -583,11 +595,17 @@ async function loadDraftInputContext(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
   intakeId: string,
 ): Promise<DraftInputContext> {
-  const { data: intakeData, error: intakeError } = await supabase
-    .from("learning_material_intakes")
-    .select("input_links, current_constraints, metadata")
-    .eq("id", intakeId)
-    .maybeSingle()
+  const { data: intakeData, error: intakeError } = await runSupabaseQueryWithRetry(
+    () =>
+      supabase
+        .from("learning_material_intakes")
+        .select("input_links, current_constraints, metadata")
+        .eq("id", intakeId)
+        .maybeSingle(),
+    {
+      context: "failed to load draft input context",
+    },
+  )
 
   assertSupabaseSuccess(intakeError, "failed to load draft input context")
 
@@ -1395,13 +1413,59 @@ async function updateRunAndIntakeProgress(
   assertSupabaseSuccess(intakeError, "failed to update material intake progress")
 }
 
-export async function executeMaterialPlanGenerationRun(runId: string) {
-  const supabase = createSupabaseAdminClient()
-  const claimed = await claimMaterialPlanRun(supabase, runId)
-  if (!claimed) {
-    return
+export async function finalizeMaterialPlanGenerationFailure(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  run: Pick<GenerationRunRow, "id" | "user_id" | "intake_id" | "draft_id">,
+  error: unknown,
+  finishedAt = new Date().toISOString(),
+) {
+  const failure = getFailureInfo(error)
+
+  if (run.draft_id) {
+    const { error: restoreDraftError } = await supabase
+      .from("learning_plan_drafts")
+      .update({
+        status: "draft",
+        superseded_by_draft_id: null,
+        updated_at: finishedAt,
+      })
+      .eq("id", run.draft_id)
+      .eq("user_id", run.user_id)
+      .eq("status", "superseded")
+
+    assertSupabaseSuccess(restoreDraftError, "failed to restore superseded draft after regenerate failure")
   }
 
+  const { error: finalizeRunError } = await supabase
+    .from("learning_plan_generation_runs")
+    .update({
+      status: "failed",
+      error_code: failure.code,
+      error_message: failure.message,
+      finished_at: finishedAt,
+      updated_at: finishedAt,
+    })
+    .eq("id", run.id)
+
+  assertSupabaseSuccess(finalizeRunError, "failed to mark generation run failed")
+
+  const { error: finalizeIntakeError } = await supabase
+    .from("learning_material_intakes")
+    .update({
+      status: "failed",
+      processing_stage: "failed",
+      progress_percent: 100,
+      progress_message: failure.message,
+      error_code: failure.code,
+      updated_at: finishedAt,
+    })
+    .eq("id", run.intake_id)
+
+  assertSupabaseSuccess(finalizeIntakeError, "failed to mark intake failed")
+}
+
+export async function executeMaterialPlanGenerationRun(runId: string) {
+  const supabase = createSupabaseAdminClient()
   const { data: runData, error: runError } = await supabase
     .from("learning_plan_generation_runs")
     .select("id, user_id, intake_id, draft_id, status, planner_input")
@@ -1419,23 +1483,28 @@ export async function executeMaterialPlanGenerationRun(runId: string) {
     return
   }
 
-  const { data: intakeData, error: intakeError } = await supabase
-    .from("learning_material_intakes")
-    .select("id, input_links")
-    .eq("id", run.intake_id)
-    .maybeSingle()
-
-  assertSupabaseSuccess(intakeError, "failed to load intake for material generation run")
-  const intake = intakeData as { id: string; input_links: unknown } | null
-  if (!intake) {
-    throw materialIntakeNotFound()
-  }
-
-  const links = readStringArrayJson(intake.input_links)
-  const plannerInput = run.planner_input ?? null
-  const startedAt = new Date().toISOString()
-
   try {
+    const claimed = await claimMaterialPlanRun(supabase, runId)
+    if (!claimed) {
+      return
+    }
+
+    const { data: intakeData, error: intakeError } = await supabase
+      .from("learning_material_intakes")
+      .select("id, input_links")
+      .eq("id", run.intake_id)
+      .maybeSingle()
+
+    assertSupabaseSuccess(intakeError, "failed to load intake for material generation run")
+    const intake = intakeData as { id: string; input_links: unknown } | null
+    if (!intake) {
+      throw materialIntakeNotFound()
+    }
+
+    const links = readStringArrayJson(intake.input_links)
+    const plannerInput = run.planner_input ?? null
+    const startedAt = new Date().toISOString()
+
     await updateRunAndIntakeProgress(supabase, run.id, run.intake_id, {
       status: "extracting",
       processingStage: "extracting",
@@ -1602,50 +1671,7 @@ export async function executeMaterialPlanGenerationRun(runId: string) {
       },
     })
   } catch (error) {
-    const failure = getFailureInfo(error)
-    const finishedAt = new Date().toISOString()
-
-    if (run.draft_id) {
-      const { error: restoreDraftError } = await supabase
-        .from("learning_plan_drafts")
-        .update({
-          status: "draft",
-          superseded_by_draft_id: null,
-          updated_at: finishedAt,
-        })
-        .eq("id", run.draft_id)
-        .eq("user_id", run.user_id)
-        .eq("status", "superseded")
-
-      assertSupabaseSuccess(restoreDraftError, "failed to restore superseded draft after regenerate failure")
-    }
-
-    const { error: finalizeRunError } = await supabase
-      .from("learning_plan_generation_runs")
-      .update({
-        status: "failed",
-        error_code: failure.code,
-        error_message: failure.message,
-        finished_at: finishedAt,
-        updated_at: finishedAt,
-      })
-      .eq("id", run.id)
-
-    assertSupabaseSuccess(finalizeRunError, "failed to mark generation run failed")
-
-    const { error: finalizeIntakeError } = await supabase
-      .from("learning_material_intakes")
-      .update({
-        status: "failed",
-        processing_stage: "failed",
-        progress_percent: 100,
-        progress_message: failure.message,
-        error_code: failure.code,
-        updated_at: finishedAt,
-      })
-      .eq("id", run.intake_id)
-
-    assertSupabaseSuccess(finalizeIntakeError, "failed to mark intake failed")
+    await finalizeMaterialPlanGenerationFailure(supabase, run, error)
   }
 }
 

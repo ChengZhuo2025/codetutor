@@ -9,6 +9,7 @@ import { invokeAIProvider } from "@/server/modules/learning/provider.ts"
 import type { AIChatMessage } from "@/server/modules/learning/provider.ts"
 
 export const MATERIAL_PLAN_AGENT_CODE = "self-study-material-planner"
+const MATERIAL_PLANNER_MIN_TIMEOUT_MS = 120_000
 
 type AgentTemplateRow = {
   code: string
@@ -41,6 +42,17 @@ type ModelRow = {
   code: string
   model_name: string
   is_active: boolean
+}
+
+export function resolvePlannerProviderTimeoutConfig(input: {
+  timeoutMs: number
+  retryCount: number
+}) {
+  const timeoutMs = Math.max(input.timeoutMs, MATERIAL_PLANNER_MIN_TIMEOUT_MS)
+  return {
+    timeoutMs,
+    retryCount: input.timeoutMs < MATERIAL_PLANNER_MIN_TIMEOUT_MS ? 0 : input.retryCount,
+  }
 }
 
 export async function loadPlannerAgentAndProvider() {
@@ -89,6 +101,11 @@ export async function invokePlannerModel(userContent: string) {
     },
   ]
 
+  const timeoutConfig = resolvePlannerProviderTimeoutConfig({
+    timeoutMs: provider.timeout_ms,
+    retryCount: provider.retry_count,
+  })
+
   return invokeAIProvider({
     provider: {
       code: provider.code,
@@ -100,8 +117,8 @@ export async function invokePlannerModel(userContent: string) {
       secretIv: provider.secret_iv,
       secretAuthTag: provider.secret_auth_tag,
       secretKeyVersion: provider.secret_key_version,
-      timeoutMs: provider.timeout_ms,
-      retryCount: provider.retry_count,
+      timeoutMs: timeoutConfig.timeoutMs,
+      retryCount: timeoutConfig.retryCount,
     },
     model: {
       code: model.code,

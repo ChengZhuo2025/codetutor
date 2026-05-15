@@ -116,3 +116,38 @@ test("active material intake status resumes its own latest run first", async () 
 
   assert.equal(getResumePreferredRunId(), "22222222-2222-4222-8222-222222222222")
 })
+
+test("active material intake status ignores transient resume failures", async () => {
+  const { client } = createSupabaseMock({
+    intake: {
+      id: "11111111-1111-4111-8111-111111111111",
+      user_id: "user-1",
+      status: "planning",
+      processing_stage: "planning",
+      progress_percent: 55,
+      progress_message: "正在生成学习计划草稿",
+      latest_run_id: "22222222-2222-4222-8222-222222222222",
+      latest_draft_id: null,
+      error_code: null,
+    },
+  })
+  const originalWarn = console.warn
+  console.warn = () => {}
+
+  try {
+    const result = await getMaterialIntakeStatusFromClient(
+      client as never,
+      "user-1",
+      "11111111-1111-4111-8111-111111111111",
+      async () => {
+        throw new TypeError("fetch failed")
+      },
+    )
+
+    assert.equal(result.status, "planning")
+    assert.equal(result.progressPercent, 55)
+    assert.equal(result.runId, "22222222-2222-4222-8222-222222222222")
+  } finally {
+    console.warn = originalWarn
+  }
+})

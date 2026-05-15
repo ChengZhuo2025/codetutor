@@ -64,7 +64,15 @@ export async function getMaterialIntakeStatusFromClient(
   }
 
   if ((MATERIAL_PLAN_ACTIVE_STATUSES as readonly string[]).includes(intake.status)) {
-    await resumePendingRuns(1, intake.latest_run_id)
+    try {
+      await resumePendingRuns(1, intake.latest_run_id)
+    } catch (error) {
+      console.warn("[material-plan-status] failed to resume pending material plan run", {
+        intakeId: intake.id,
+        runId: intake.latest_run_id,
+        error,
+      })
+    }
   }
 
   let runId = intake.latest_run_id

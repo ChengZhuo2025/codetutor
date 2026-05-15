@@ -18,6 +18,11 @@ import type {
   PlanFromMaterialResponseData,
 } from "@/lib/api/contracts/learning"
 import { cn } from "@/lib/utils"
+import {
+  isTransientMaterialPlanDraftLoadError,
+  resolveMaterialPlanDraftLoadErrorMessage,
+  resolveMaterialPlanStatusDisplay,
+} from "@/features/learning/lib/material-plan-messages"
 
 type MaterialPlanPanelProps = {
   onSessionRefresh: () => void
@@ -205,8 +210,14 @@ export function MaterialPlanPanel({
     : sourceProgressPercent
   const loadingProgressMessage =
     intakeStatus?.progressMessage ?? "AI 正在整理教程内容和学习步骤"
+  const statusDisplay = resolveMaterialPlanStatusDisplay({
+    status: intakeStatus?.status,
+    progressMessage: intakeStatus?.progressMessage,
+    errorCode: intakeStatus?.errorCode,
+    errorMessage: intakeStatus?.errorMessage,
+  })
   const shouldShowIntakeError =
-    Boolean(intakeStatus?.errorMessage) && !draftDetail && intakeStatus?.status === "failed"
+    !draftDetail && intakeStatus?.status === "failed"
 
   const resolveMaterialPlanErrorMessage = (
     code: string | undefined,
@@ -234,12 +245,27 @@ export function MaterialPlanPanel({
   )
 
   async function loadDraftDetail(draftId: string) {
-    const res = await apiClient.get<LearningPlanDraftDetailResponseData>(
+    const retryDelays = [800, 1600, 2400]
+    let res = await apiClient.get<LearningPlanDraftDetailResponseData>(
       `/learning/plan-drafts/${draftId}`,
     )
 
+    for (const delay of retryDelays) {
+      if (res.code === "OK" || !isTransientMaterialPlanDraftLoadError(res.code, res.message)) {
+        break
+      }
+
+      setError(resolveMaterialPlanDraftLoadErrorMessage(res.code, res.message))
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, delay)
+      })
+      res = await apiClient.get<LearningPlanDraftDetailResponseData>(
+        `/learning/plan-drafts/${draftId}`,
+      )
+    }
+
     if (res.code !== "OK" || !res.data) {
-      setError(res.message ?? "读取学习计划草稿失败。")
+      setError(resolveMaterialPlanDraftLoadErrorMessage(res.code, res.message))
       return
     }
 
@@ -251,6 +277,7 @@ export function MaterialPlanPanel({
         : "",
     )
     setCurrentConstraints(res.data.inputContext.currentConstraints ?? "")
+    setError(null)
     setDraftDetail(res.data)
   }
 
@@ -727,7 +754,7 @@ export function MaterialPlanPanel({
                 异步进度
               </p>
               <p className="mt-1 text-sm font-medium text-foreground">
-                {intakeStatus.progressMessage ?? "处理中"}
+                {statusDisplay.progressMessage}
               </p>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -741,7 +768,7 @@ export function MaterialPlanPanel({
             />
           </div>
           {shouldShowIntakeError ? (
-            <p className="mt-3 text-sm text-destructive">{intakeStatus.errorMessage}</p>
+            <p className="mt-3 text-sm text-destructive">{statusDisplay.errorMessage}</p>
           ) : null}
         </div>
       ) : null}

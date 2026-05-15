@@ -1,6 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 
+import { runSupabaseQueryWithRetry } from "../server/lib/supabase.ts"
 import { assertHostnameAllowed } from "../server/modules/learning-materials/whitelist.ts"
 import { MaterialPlanError } from "../server/modules/learning-materials/errors.ts"
 import {
@@ -8,22 +9,35 @@ import {
   extractMaterialEvidenceForSource,
   runMaterialIntake,
 } from "../server/modules/learning-materials/service.ts"
-import { isMaterialPlanRunClaimable } from "../server/modules/learning-materials/queue.ts"
+import {
+  claimMaterialPlanRun,
+  isMaterialPlanRunClaimable,
+  MaterialPlanQueueMigrationError,
+} from "../server/modules/learning-materials/queue.ts"
 import { bilibiliMaterialSourceAdapter } from "../server/modules/learning-materials/adapters/bilibili.ts"
 import { douyinMaterialSourceAdapter } from "../server/modules/learning-materials/adapters/douyin.ts"
 import { resolveMaterialPipelineModelsFromSnapshots } from "../server/modules/learning-materials/providers.ts"
 import { resolveMaterialSourceAdapter } from "../server/modules/learning-materials/source-resolver.ts"
 import { extractJsonObjectString } from "../server/modules/learning-plans/json-parse.ts"
-import { parsePlannerOutputContent } from "../server/modules/learning-plans/service.ts"
+import {
+  finalizeMaterialPlanGenerationFailure,
+  parsePlannerOutputContent,
+} from "../server/modules/learning-plans/service.ts"
 import { assertDraftQualityReadyForConfirm } from "../server/modules/learning-plans/activation.ts"
 import { analyzePlannerSourceStructure } from "../server/modules/learning-plans/source-structure.ts"
 import { runPlanQualityGate } from "../server/modules/learning-plans/quality-gate.ts"
 import { readDraftQualitySignalsFromRunSourceSnapshot } from "../server/modules/learning-plans/service.ts"
+import { resolvePlannerProviderTimeoutConfig } from "../server/modules/learning-plans/planner-runtime.ts"
 import {
   plannerOutputSchema,
   validatePlannerBusinessRules,
 } from "../server/modules/learning-plans/schema.ts"
 import { parsePlanDraftPatchBody } from "../server/lib/request-validation.ts"
+import {
+  isTransientMaterialPlanDraftLoadError,
+  resolveMaterialPlanDraftLoadErrorMessage,
+  resolveMaterialPlanStatusDisplay,
+} from "../features/learning/lib/material-plan-messages.ts"
 
 test("assertHostnameAllowed accepts frozen whitelist hosts", () => {
   assert.doesNotThrow(() =>
@@ -1270,4 +1284,179 @@ test("material plan run claim helper only reclaims stale active runs", () => {
     heartbeatAt: null,
     now,
   }), false)
+})
+
+test("claimMaterialPlanRun reports missing migration with actionable code", async () => {
+  const supabase = {
+    rpc() {
+      return Promise.resolve({
+        data: null,
+        error: {
+          message:
+            "Could not find the function public.claim_material_plan_generation_run(p_claim_token, p_run_id, p_timeout_seconds) in the schema cache",
+        },
+      })
+    },
+  }
+
+  await assert.rejects(
+    () => claimMaterialPlanRun(supabase as never, "578fbbd0-ac8f-4b64-9393-177fb2211ca5"),
+    (error: unknown) => {
+      assert.ok(error instanceof MaterialPlanQueueMigrationError)
+      assert.equal(error.code, "MATERIAL_PLAN_MIGRATION_REQUIRED")
+      assert.match(error.message, /046_harden_material_plan_generation\.sql/)
+      return true
+    },
+  )
+})
+
+test("material plan failure finalizer persists missing migration as terminal failed state", async () => {
+  const updates: Array<{
+    table: string
+    payload: Record<string, unknown>
+    filters: Array<[string, unknown]>
+  }> = []
+
+  const supabase = {
+    from(table: string) {
+      return {
+        update(payload: Record<string, unknown>) {
+          const entry = {
+            table,
+            payload,
+            filters: [] as Array<[string, unknown]>,
+          }
+          updates.push(entry)
+
+          return {
+            eq(column: string, value: unknown) {
+              entry.filters.push([column, value])
+              return Promise.resolve({ error: null })
+            },
+          }
+        },
+      }
+    },
+  }
+
+  await finalizeMaterialPlanGenerationFailure(
+    supabase as never,
+    {
+      id: "578fbbd0-ac8f-4b64-9393-177fb2211ca5",
+      user_id: "11111111-1111-4111-8111-111111111111",
+      intake_id: "5969f82d-df09-4c7e-8903-451f0c07e7e6",
+      draft_id: null,
+    },
+    new MaterialPlanQueueMigrationError(
+      "材料计划生成队列迁移未应用，请先执行 supabase/migrations/046_harden_material_plan_generation.sql。",
+    ),
+    "2026-05-15T00:00:00.000Z",
+  )
+
+  const runUpdate = updates.find((entry) => entry.table === "learning_plan_generation_runs")
+  const intakeUpdate = updates.find((entry) => entry.table === "learning_material_intakes")
+
+  assert.deepEqual(runUpdate?.payload, {
+    status: "failed",
+    error_code: "MATERIAL_PLAN_MIGRATION_REQUIRED",
+    error_message: "材料计划生成队列迁移未应用，请先执行 supabase/migrations/046_harden_material_plan_generation.sql。",
+    finished_at: "2026-05-15T00:00:00.000Z",
+    updated_at: "2026-05-15T00:00:00.000Z",
+  })
+  assert.deepEqual(runUpdate?.filters, [["id", "578fbbd0-ac8f-4b64-9393-177fb2211ca5"]])
+  assert.deepEqual(intakeUpdate?.payload, {
+    status: "failed",
+    processing_stage: "failed",
+    progress_percent: 100,
+    progress_message: "材料计划生成队列迁移未应用，请先执行 supabase/migrations/046_harden_material_plan_generation.sql。",
+    error_code: "MATERIAL_PLAN_MIGRATION_REQUIRED",
+    updated_at: "2026-05-15T00:00:00.000Z",
+  })
+  assert.deepEqual(intakeUpdate?.filters, [["id", "5969f82d-df09-4c7e-8903-451f0c07e7e6"]])
+})
+
+test("material plan status display hides raw AI provider timeout copy", () => {
+  const result = resolveMaterialPlanStatusDisplay({
+    status: "failed",
+    progressMessage: "AI provider request timed out",
+    errorCode: "AI_PROVIDER_ERROR",
+    errorMessage: "AI provider request timed out",
+  })
+
+  assert.match(result.progressMessage, /AI 服务响应超时/)
+  assert.match(result.errorMessage ?? "", /AI 服务响应超时/)
+  assert.equal(result.progressMessage.includes("AI provider request timed out"), false)
+  assert.equal(result.errorMessage?.includes("AI provider request timed out"), false)
+})
+
+test("planner provider runtime uses one longer async planning timeout instead of short retries", () => {
+  assert.deepEqual(
+    resolvePlannerProviderTimeoutConfig({
+      timeoutMs: 60_000,
+      retryCount: 1,
+    }),
+    {
+      timeoutMs: 120_000,
+      retryCount: 0,
+    },
+  )
+
+  assert.deepEqual(
+    resolvePlannerProviderTimeoutConfig({
+      timeoutMs: 180_000,
+      retryCount: 1,
+    }),
+    {
+      timeoutMs: 180_000,
+      retryCount: 1,
+    },
+  )
+})
+
+test("runSupabaseQueryWithRetry retries transient fetch failures", async () => {
+  let attempts = 0
+
+  const result = await runSupabaseQueryWithRetry(
+    async () => {
+      attempts += 1
+      if (attempts < 3) {
+        return {
+          data: null,
+          error: {
+            message: "TypeError: fetch failed",
+            details: "Caused by: Error: getaddrinfo ENOTFOUND example.supabase.test",
+          },
+        }
+      }
+
+      return {
+        data: { ok: true },
+        error: null,
+      }
+    },
+    {
+      context: "failed to load plan draft detail",
+      delaysMs: [0, 0],
+    },
+  )
+
+  assert.equal(attempts, 3)
+  assert.deepEqual(result.data, { ok: true })
+})
+
+test("material plan draft load messages classify transient fetch failures", () => {
+  assert.equal(
+    isTransientMaterialPlanDraftLoadError(
+      "INTERNAL_ERROR",
+      "failed to load draft tasks: TypeError: fetch failed",
+    ),
+    true,
+  )
+  assert.equal(
+    resolveMaterialPlanDraftLoadErrorMessage(
+      "INTERNAL_ERROR",
+      "failed to load draft tasks: TypeError: fetch failed",
+    ),
+    "草稿已生成，但读取详情时网络临时异常。系统会自动重试，请稍等；如果仍失败，可以关闭后重新打开生成弹框。",
+  )
 })

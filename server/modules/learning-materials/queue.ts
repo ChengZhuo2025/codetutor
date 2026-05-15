@@ -11,6 +11,15 @@ const activeRunIds = new Set<string>()
 let runExecutor: MaterialPlanRunExecutor | null = null
 const MATERIAL_PLAN_RUN_CLAIM_TIMEOUT_MS = 10 * 60 * 1000
 
+export class MaterialPlanQueueMigrationError extends Error {
+  readonly code = "MATERIAL_PLAN_MIGRATION_REQUIRED"
+
+  constructor(message: string) {
+    super(message)
+    this.name = "MaterialPlanQueueMigrationError"
+  }
+}
+
 export function isMaterialPlanRunClaimable(input: {
   status: string
   heartbeatAt: string | null
@@ -48,7 +57,16 @@ export async function claimMaterialPlanRun(
     p_timeout_seconds: Math.floor(MATERIAL_PLAN_RUN_CLAIM_TIMEOUT_MS / 1000),
   })
 
-  assertSupabaseSuccess(error, "failed to claim material plan generation run")
+  if (error) {
+    if (error.message.includes("claim_material_plan_generation_run")) {
+      throw new MaterialPlanQueueMigrationError(
+        "材料计划生成队列迁移未应用，请先执行 supabase/migrations/046_harden_material_plan_generation.sql。",
+      )
+    }
+
+    assertSupabaseSuccess(error, "failed to claim material plan generation run")
+  }
+
   return data === true
 }
 
