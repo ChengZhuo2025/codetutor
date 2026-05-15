@@ -465,7 +465,7 @@ export const learningMessageRequestSchema = z
 
 export const learningMessageSpeechRequestSchema = z
   .object({
-    messageId: z.union([z.string(), z.number().int()]),
+    messageId: z.string().uuid(),
     text: z.string().optional(),
   })
   .openapi("LearningMessageSpeechRequest")

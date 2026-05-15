@@ -123,7 +123,7 @@ synthesizeTextToSpeech({
 `synthesizeLearningMessageSpeech()` 保持职责简单：
 
 1. 验证当前用户只能播读自己的 assistant message。
-2. 取前端传入片段文本或数据库持久化文本。
+2. 读取数据库持久化文本；如果前端传入片段文本，必须能匹配该持久化文本经同一 Markdown 清理与分段规则得到的片段。
 3. 清理 Markdown / 空白 / 长度限制。
 4. 读取 `resolveLearningMediaTranscriptionModels().textToSpeech`。
 5. 调用 `synthesizeTextToSpeech()`。
@@ -216,6 +216,7 @@ type TtsProtocol =
 - 请求体使用 OpenAI-compatible speech 格式
 - 响应直接是音频二进制
 - content type 可按 `responseFormat` 映射
+- `FunAudioLLM/*CosyVoice*` 模型未配置 Metadata voice 时，运行时默认推断为 `${modelName}:alex`；管理员仍可通过 `voice` / `ttsVoice` / `defaultVoice` 覆盖。
 
 ## 8. 管理后台行为
 
@@ -270,6 +271,8 @@ type TtsProtocol =
 - 所选模型不具备 `tts`
 - Provider 未配置 API Key
 - 无法推断 adapter
+
+新环境迁移默认将 `text_to_speech` 保持停用，管理员需要在 `Ai 管理 / 多媒体管理 / 转译设置` 中选择具备 `tts` 运行时用途的模型并开启后，用户端播读才会可用。
 
 ### 10.2 供应商调用错误
 

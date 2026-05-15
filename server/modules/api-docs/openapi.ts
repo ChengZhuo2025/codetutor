@@ -2582,7 +2582,7 @@ registry.registerPath({
   operationId: "postLearningMessageSpeech",
   tags: ["learning"],
   summary: "生成 AI 回复消息播读音频",
-  description: "按需调用后台多媒体转译设置中的 text_to_speech 模型，为当前用户自己的 AI 回复消息生成临时音频；服务端通过统一 TTS Provider Gateway 适配阿里云百炼 Qwen HTTP、MiniMax、硅基流动/OpenAI-compatible Speech 等模型，首版不持久化音频。",
+  description: "按需调用后台多媒体转译设置中的 text_to_speech 模型，为当前用户自己的 AI 回复消息生成临时音频；可选 text 只能是该持久化 AI 回复经服务端同一规则校验通过的播读片段。服务端通过统一 TTS Provider Gateway 适配阿里云百炼 Qwen HTTP、MiniMax、硅基流动/OpenAI-compatible Speech 等模型，首版不持久化音频。新环境默认需要管理员先启用 text_to_speech 设置。",
   security: [{ bearerAuth: [] }],
   request: {
     body: {

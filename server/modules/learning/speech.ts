@@ -7,7 +7,7 @@ import WebSocket from "ws"
 import { resolveProviderSecret } from "@/server/lib/secrets/provider-secret"
 import { getCurrentRequestId } from "@/server/lib/observability"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
-import { normalizeSpeechTextForTts } from "@/lib/learning/speech-text"
+import { normalizeSpeechTextForTts, splitSpeechTextIntoSegments } from "@/lib/learning/speech-text"
 import { resolveLearningMediaTranscriptionModels } from "@/server/modules/admin-ai/media-service"
 import type { MaterialPipelineRuntime } from "@/server/modules/learning-materials/providers"
 import { synthesizeTextToSpeech } from "@/server/modules/learning/tts/registry.ts"
@@ -84,9 +84,26 @@ export function resolveLearningMessageSpeechSourceText(
   clientText: string | null | undefined,
   persistedText: string | null | undefined,
 ) {
-  const normalizedClientText = clientText?.trim()
+  const normalizedClientText = normalizeSpeechTextForTts(clientText)
+  if (!normalizedClientText) {
+    return persistedText
+  }
 
-  return normalizedClientText ? clientText : persistedText
+  const normalizedPersistedText = normalizeSpeechTextForTts(persistedText)
+  if (!normalizedPersistedText) {
+    return persistedText
+  }
+
+  if (normalizedClientText === normalizedPersistedText) {
+    return normalizedClientText
+  }
+
+  const allowedSegments = splitSpeechTextIntoSegments(persistedText)
+  if (allowedSegments.includes(normalizedClientText)) {
+    return normalizedClientText
+  }
+
+  throw new LearningValidationError("请求播读文本必须来自该 AI 回复内容。")
 }
 
 export function resolveLearningMessageSpeechTimeoutMs(providerTimeoutMs: number) {

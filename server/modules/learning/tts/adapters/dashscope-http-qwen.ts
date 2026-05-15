@@ -1,13 +1,14 @@
-import { Buffer } from "node:buffer"
-
 import { LearningAIProviderError } from "@/server/modules/learning/errors.ts"
 import type { TtsAdapterInput, TtsSynthesisResult } from "../types.ts"
 import {
   contentTypeForAudioFormat,
+  assertSafeTtsAudioUrl,
+  createTtsProviderStatusError,
   ensureAudioBuffer,
   fetchWithTimeout,
   getTtsProviderSecret,
   normalizeBaseUrl,
+  readAudioResponseBuffer,
   readMetadataNumber,
   readMetadataString,
   readProviderError,
@@ -67,11 +68,7 @@ export async function synthesizeDashScopeHttpQwen(
 
   if (!response.ok) {
     const body = await readProviderError(response)
-    throw new LearningAIProviderError(
-      body
-        ? `TTS provider request failed with status ${response.status}: ${body}`
-        : `TTS provider request failed with status ${response.status}`,
-    )
+    throw createTtsProviderStatusError("TTS provider request failed", response, body)
   }
 
   const payload = await response.json().catch(() => null) as {
@@ -86,22 +83,19 @@ export async function synthesizeDashScopeHttpQwen(
     throw new LearningAIProviderError("TTS provider response missing audio URL")
   }
 
+  const safeAudioUrl = assertSafeTtsAudioUrl(audioUrl.trim())
   const audioResponse = await fetchWithTimeout({
     fetchImpl: input.fetchImpl,
-    url: audioUrl.trim(),
+    url: safeAudioUrl,
     timeoutMs,
   })
 
   if (!audioResponse.ok) {
     const body = await readProviderError(audioResponse)
-    throw new LearningAIProviderError(
-      body
-        ? `TTS audio download failed with status ${audioResponse.status}: ${body}`
-        : `TTS audio download failed with status ${audioResponse.status}`,
-    )
+    throw createTtsProviderStatusError("TTS audio download failed", audioResponse, body)
   }
 
-  const audio = Buffer.from(await audioResponse.arrayBuffer())
+  const audio = await readAudioResponseBuffer(audioResponse)
   const contentType = audioResponse.headers.get("content-type") ?? contentTypeForAudioFormat(format)
 
   return {

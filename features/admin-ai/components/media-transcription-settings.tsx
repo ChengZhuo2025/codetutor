@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Eye, Pencil, RefreshCw, Save } from "lucide-react"
 import type {
   AdminAIMediaModelOption,
@@ -83,11 +83,17 @@ export function MediaTranscriptionSettings() {
     void fetchSettings()
   }, [fetchSettings])
 
-  const modelOptions = useMemo(() => {
+  const modelOptionsForSetting = useCallback((setting: AdminAIMediaTranscriptionSettingItem) => {
     const base = [{ value: "", label: "不选择模型" }]
+    const models = data?.modelOptions ?? []
+    const requiredCapability = setting.requiredCapability
+    const filteredModels = requiredCapability
+      ? models.filter((model) => model.runtimeCapabilities.includes(requiredCapability))
+      : models
+
     return [
       ...base,
-      ...(data?.modelOptions ?? []).map((model) => ({
+      ...filteredModels.map((model) => ({
         value: model.modelId,
         label: modelLabel(model),
       })),
@@ -257,7 +263,7 @@ export function MediaTranscriptionSettings() {
                 <AdminSelect
                   value={editState.modelId}
                   onValueChange={(value) => setEditState((prev) => prev ? { ...prev, modelId: value } : prev)}
-                  options={modelOptions}
+                  options={modelOptionsForSetting(editState.setting)}
                   triggerClassName="w-full"
                 />
               </label>

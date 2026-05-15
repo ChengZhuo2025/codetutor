@@ -1,7 +1,10 @@
 export class LearningAIProviderError extends Error {
-  constructor(message: string) {
+  readonly retryable: boolean
+
+  constructor(message: string, options?: { retryable?: boolean }) {
     super(message)
     this.name = "LearningAIProviderError"
+    this.retryable = options?.retryable ?? false
   }
 }
 

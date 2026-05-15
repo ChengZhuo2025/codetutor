@@ -4,6 +4,7 @@ import type { MaterialPipelineRuntime } from "@/server/modules/learning-material
 
 export type TtsProtocol =
   | "dashscope_http_qwen"
+  | "dashscope_http_minimax"
   | "minimax_t2a_v2"
   | "openai_audio_speech"
   | "dashscope_realtime"

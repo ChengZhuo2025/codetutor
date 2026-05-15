@@ -96,9 +96,19 @@ test("resolveLearningMessageSpeechSourceText falls back to persisted assistant c
     resolveLearningMessageSpeechSourceText("   ", "数据库里的最终 AI 回复。"),
     "数据库里的最终 AI 回复。",
   )
+})
+
+test("resolveLearningMessageSpeechSourceText only accepts text segments from persisted assistant content", () => {
+  const persisted = "第一句先播放。第二句也很短。第三句包含更多内容，用来模拟比较长的 AI 回复，前端应该可以先播放前面的片段，再继续生成后面的片段。第四句继续补充更多建议，确保较长内容会被拆成多个可播放片段。"
+  const segment = splitSpeechTextIntoSegments(persisted)[0]
+
   assert.equal(
-    resolveLearningMessageSpeechSourceText("前端当前播读片段。", "数据库里的最终 AI 回复。"),
-    "前端当前播读片段。",
+    resolveLearningMessageSpeechSourceText(segment, persisted),
+    segment,
+  )
+  assert.throws(
+    () => resolveLearningMessageSpeechSourceText("这是一段不属于该消息的任意文本。", persisted),
+    /请求播读文本必须来自该 AI 回复内容/,
   )
 })
 

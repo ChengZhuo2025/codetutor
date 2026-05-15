@@ -1,14 +1,16 @@
-import { LearningConfigurationError } from "@/server/modules/learning/errors.ts"
+import { LearningAIProviderError, LearningConfigurationError } from "@/server/modules/learning/errors.ts"
 import { invokeDashScopeRealtimeTts } from "@/server/modules/learning/speech.ts"
 import { getCurrentRequestId } from "@/server/lib/observability"
 import type { MaterialPipelineRuntime } from "@/server/modules/learning-materials/providers.ts"
 import { synthesizeDashScopeHttpQwen } from "./adapters/dashscope-http-qwen.ts"
+import { synthesizeDashScopeHttpMiniMax } from "./adapters/dashscope-http-minimax.ts"
 import { synthesizeMiniMaxT2aV2 } from "./adapters/minimax-t2a-v2.ts"
 import { synthesizeOpenAIAudioSpeech } from "./adapters/openai-audio-speech.ts"
 import type { TtsProtocol, TtsSynthesisInput, TtsSynthesisResult } from "./types.ts"
 
 const TTS_PROTOCOLS = new Set<TtsProtocol>([
   "dashscope_http_qwen",
+  "dashscope_http_minimax",
   "minimax_t2a_v2",
   "openai_audio_speech",
   "dashscope_realtime",
@@ -74,6 +76,13 @@ export function resolveTtsProtocol(runtime: MaterialPipelineRuntime): TtsProtoco
   }
 
   if (
+    (providerCode.includes("aliyun") || providerCode.includes("bailian") || baseUrl.includes("dashscope.aliyuncs.com") || baseUrl.includes("bailian.aliyuncs.com"))
+    && (modelBlob.includes("speech-2.8") || modelBlob.includes("minimax"))
+  ) {
+    return "dashscope_http_minimax"
+  }
+
+  if (
     providerCode.includes("minimax")
     || baseUrl.includes("minimax")
     || modelBlob.includes("minimax")
@@ -98,6 +107,7 @@ export async function synthesizeTextToSpeech(
 ): Promise<TtsSynthesisResult> {
   const fetchImpl = input.fetchImpl ?? fetch
   const protocol = resolveTtsProtocol(input.runtime)
+  const maxAttempts = Math.max(1, Math.min(3, (input.runtime.provider.retryCount ?? 0) + 1))
 
   logTtsGatewayEvent("start", {
     runtime: input.runtime,
@@ -105,38 +115,51 @@ export async function synthesizeTextToSpeech(
     textLength: input.text.length,
   })
 
-  try {
-    let result: TtsSynthesisResult
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      let result: TtsSynthesisResult
 
-    if (protocol === "dashscope_http_qwen") {
-      result = await synthesizeDashScopeHttpQwen({ ...input, fetchImpl })
-    } else if (protocol === "minimax_t2a_v2") {
-      result = await synthesizeMiniMaxT2aV2({ ...input, fetchImpl })
-    } else if (protocol === "openai_audio_speech") {
-      result = await synthesizeOpenAIAudioSpeech({ ...input, fetchImpl })
-    } else {
-      result = await invokeDashScopeRealtimeTts({
+      if (protocol === "dashscope_http_qwen") {
+        result = await synthesizeDashScopeHttpQwen({ ...input, fetchImpl })
+      } else if (protocol === "dashscope_http_minimax") {
+        result = await synthesizeDashScopeHttpMiniMax({ ...input, fetchImpl })
+      } else if (protocol === "minimax_t2a_v2") {
+        result = await synthesizeMiniMaxT2aV2({ ...input, fetchImpl })
+      } else if (protocol === "openai_audio_speech") {
+        result = await synthesizeOpenAIAudioSpeech({ ...input, fetchImpl })
+      } else {
+        result = await invokeDashScopeRealtimeTts({
+          runtime: input.runtime,
+          text: input.text,
+        })
+      }
+
+      logTtsGatewayEvent("success", {
         runtime: input.runtime,
-        text: input.text,
+        ttsProtocol: protocol,
+        textLength: input.text.length,
+        audioBytes: result.audio.length,
+        contentType: result.contentType,
       })
+
+      return result
+    } catch (error) {
+      logTtsGatewayEvent("provider_error", {
+        runtime: input.runtime,
+        ttsProtocol: protocol,
+        textLength: input.text.length,
+        errorMessage: error instanceof Error ? error.message : "TTS provider request failed",
+      })
+      if (
+        attempt < maxAttempts
+        && error instanceof LearningAIProviderError
+        && error.retryable
+      ) {
+        continue
+      }
+      throw error
     }
-
-    logTtsGatewayEvent("success", {
-      runtime: input.runtime,
-      ttsProtocol: protocol,
-      textLength: input.text.length,
-      audioBytes: result.audio.length,
-      contentType: result.contentType,
-    })
-
-    return result
-  } catch (error) {
-    logTtsGatewayEvent("provider_error", {
-      runtime: input.runtime,
-      ttsProtocol: protocol,
-      textLength: input.text.length,
-      errorMessage: error instanceof Error ? error.message : "TTS provider request failed",
-    })
-    throw error
   }
+
+  throw new LearningAIProviderError("TTS provider request failed")
 }

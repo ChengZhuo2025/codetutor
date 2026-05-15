@@ -173,6 +173,148 @@ test("synthesizeTextToSpeech calls DashScope HTTP Qwen and downloads audio URL",
   assert.equal(calls[1].url, "https://dashscope-result.example/audio.wav")
 })
 
+test("synthesizeTextToSpeech rejects unsafe DashScope audio URLs before download", async () => {
+  process.env.TEST_TTS_API_KEY = "sk-test"
+  const calls: string[] = []
+  const fetchImpl = async (url: string | URL | Request) => {
+    calls.push(String(url))
+    if (String(url).includes("/services/aigc/multimodal-generation/generation")) {
+      return jsonResponse({
+        output: {
+          audio: {
+            url: "http://127.0.0.1/internal.wav",
+          },
+        },
+      })
+    }
+    throw new Error("unsafe audio URL should not be downloaded")
+  }
+
+  await assert.rejects(
+    synthesizeTextToSpeech({
+      runtime: baseRuntime,
+      text: "请朗读这句话。",
+      fetchImpl,
+    }),
+    LearningAIProviderError,
+  )
+  assert.equal(calls.length, 1)
+})
+
+test("synthesizeTextToSpeech allows DashScope HTTP audio URLs on trusted Aliyun hosts", async () => {
+  process.env.TEST_TTS_API_KEY = "sk-test"
+  const calls: string[] = []
+  const fetchImpl = async (url: string | URL | Request) => {
+    const urlText = String(url)
+    calls.push(urlText)
+    if (urlText.includes("/services/aigc/multimodal-generation/generation")) {
+      return jsonResponse({
+        output: {
+          audio: {
+            url: "http://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/audio.wav",
+          },
+        },
+      })
+    }
+
+    return new Response(Buffer.from("RIFF....WAVE", "ascii"), {
+      status: 200,
+      headers: {
+        "Content-Type": "audio/wav",
+      },
+    })
+  }
+
+  const result = await synthesizeTextToSpeech({
+    runtime: baseRuntime,
+    text: "请朗读这句话。",
+    fetchImpl,
+  })
+
+  assert.equal(result.contentType, "audio/wav")
+  assert.equal(calls[1], "http://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/audio.wav")
+})
+
+test("resolveTtsProtocol routes Aliyun MiniMax speech-2.8 turbo through DashScope HTTP", () => {
+  assert.equal(
+    resolveTtsProtocol(withRuntime({
+      provider: {
+        code: "aliyuncs",
+        providerType: "openai_compatible",
+        baseUrl: "https://dashscope.aliyuncs.com/api/v1",
+      },
+      model: {
+        code: "minimax-speech-2-8-turbo",
+        modelName: "MiniMax/speech-2.8-turbo",
+      },
+    })),
+    "dashscope_http_minimax",
+  )
+})
+
+test("synthesizeTextToSpeech uses DashScope generation endpoint for Aliyun MiniMax turbo", async () => {
+  process.env.TEST_TTS_API_KEY = "sk-test"
+  const calls: Array<{ url: string; body?: unknown; authorization?: string | null }> = []
+  const fetchImpl = async (url: string | URL | Request, init?: RequestInit) => {
+    const urlText = String(url)
+    calls.push({
+      url: urlText,
+      body: init?.body ? JSON.parse(String(init.body)) : undefined,
+      authorization: init?.headers instanceof Headers
+        ? init.headers.get("authorization")
+        : new Headers(init?.headers).get("authorization"),
+    })
+
+    if (urlText.includes("/services/aigc/multimodal-generation/generation")) {
+      return jsonResponse({
+        output: {
+          audio: {
+            url: "http://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/audio.wav",
+          },
+        },
+      })
+    }
+
+    return new Response(Buffer.from("RIFF....WAVE", "ascii"), {
+      status: 200,
+      headers: {
+        "Content-Type": "audio/wav",
+      },
+    })
+  }
+
+  const result = await synthesizeTextToSpeech({
+    runtime: withRuntime({
+      provider: {
+        code: "aliyuncs",
+        providerType: "openai_compatible",
+        baseUrl: "https://dashscope.aliyuncs.com/api/v1",
+      },
+      model: {
+        code: "minimax-speech-2-8-turbo",
+        modelName: "MiniMax/speech-2.8-turbo",
+        metadata: {},
+      },
+    }),
+    text: "请朗读这句话。",
+    fetchImpl,
+  })
+
+  assert.equal(result.contentType, "audio/wav")
+  assert.equal(calls[0].url, "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation")
+  assert.deepEqual(calls[0].body, {
+    model: "MiniMax/speech-2.8-turbo",
+    input: {
+      text: "请朗读这句话。",
+      voice: "male-qn-qingse",
+      language: "zh",
+    },
+    parameters: {
+      rate: 0,
+    },
+  })
+})
+
 test("synthesizeTextToSpeech decodes MiniMax hex audio", async () => {
   process.env.TEST_TTS_API_KEY = "sk-test"
   const calls: Array<{ url: string; body?: unknown }> = []
@@ -274,6 +416,114 @@ test("synthesizeTextToSpeech handles OpenAI-compatible binary speech response", 
   })
 
   assert.equal(result.contentType, "audio/mpeg")
+  assert.deepEqual([...result.audio], [1, 2, 3, 4])
+})
+
+test("synthesizeTextToSpeech defaults SiliconFlow CosyVoice voice to model-prefixed alex", async () => {
+  process.env.TEST_TTS_API_KEY = "sk-test"
+  const fetchImpl = async (url: string | URL | Request, init?: RequestInit) => {
+    assert.equal(String(url), "https://api.siliconflow.cn/v1/audio/speech")
+    assert.deepEqual(JSON.parse(String(init?.body)), {
+      model: "FunAudioLLM/CosyVoice2-0.5B",
+      input: "请朗读这句话。",
+      voice: "FunAudioLLM/CosyVoice2-0.5B:alex",
+      response_format: "mp3",
+    })
+    return new Response(Buffer.from([1, 2, 3, 4]), {
+      status: 200,
+      headers: {
+        "Content-Type": "audio/mpeg",
+      },
+    })
+  }
+
+  const result = await synthesizeTextToSpeech({
+    runtime: withRuntime({
+      provider: {
+        code: "siliconflow",
+        providerType: "siliconflow",
+        baseUrl: "https://api.siliconflow.cn/v1",
+      },
+      model: {
+        code: "cosyvoice2",
+        modelName: "FunAudioLLM/CosyVoice2-0.5B",
+        metadata: {},
+      },
+    }),
+    text: "请朗读这句话。",
+    fetchImpl,
+  })
+
+  assert.equal(result.contentType, "audio/mpeg")
+  assert.deepEqual([...result.audio], [1, 2, 3, 4])
+})
+
+test("synthesizeTextToSpeech rejects oversized binary speech responses before buffering", async () => {
+  process.env.TEST_TTS_API_KEY = "sk-test"
+  await assert.rejects(
+    synthesizeTextToSpeech({
+      runtime: withRuntime({
+        provider: {
+          code: "siliconflow",
+          providerType: "siliconflow",
+          baseUrl: "https://api.siliconflow.cn/v1",
+        },
+        model: {
+          code: "cosyvoice2",
+          modelName: "FunAudioLLM/CosyVoice2-0.5B",
+          metadata: {
+            ttsProtocol: "openai_audio_speech",
+          },
+        },
+      }),
+      text: "请朗读这句话。",
+      fetchImpl: async () => new Response(Buffer.from([1, 2, 3, 4]), {
+        status: 200,
+        headers: {
+          "Content-Type": "audio/mpeg",
+          "Content-Length": String(20 * 1024 * 1024),
+        },
+      }),
+    }),
+    LearningAIProviderError,
+  )
+})
+
+test("synthesizeTextToSpeech retries retryable provider failures", async () => {
+  process.env.TEST_TTS_API_KEY = "sk-test"
+  let attempts = 0
+  const result = await synthesizeTextToSpeech({
+    runtime: withRuntime({
+      provider: {
+        code: "siliconflow",
+        providerType: "siliconflow",
+        baseUrl: "https://api.siliconflow.cn/v1",
+        retryCount: 1,
+      },
+      model: {
+        code: "cosyvoice2",
+        modelName: "FunAudioLLM/CosyVoice2-0.5B",
+        metadata: {
+          ttsProtocol: "openai_audio_speech",
+        },
+      },
+    }),
+    text: "请朗读这句话。",
+    fetchImpl: async () => {
+      attempts += 1
+      if (attempts === 1) {
+        return jsonResponse({ error: "temporary" }, { status: 502 })
+      }
+      return new Response(Buffer.from([1, 2, 3, 4]), {
+        status: 200,
+        headers: {
+          "Content-Type": "audio/mpeg",
+        },
+      })
+    },
+  })
+
+  assert.equal(attempts, 2)
   assert.deepEqual([...result.audio], [1, 2, 3, 4])
 })
 

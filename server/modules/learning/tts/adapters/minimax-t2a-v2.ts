@@ -1,6 +1,7 @@
 import type { TtsAdapterInput, TtsSynthesisResult } from "../types.ts"
 import {
   contentTypeForAudioFormat,
+  createTtsProviderStatusError,
   decodeHexAudio,
   ensureAudioBuffer,
   fetchWithTimeout,
@@ -51,11 +52,7 @@ export async function synthesizeMiniMaxT2aV2(
 
   if (!response.ok) {
     const body = await readProviderError(response)
-    throw new LearningAIProviderError(
-      body
-        ? `TTS provider request failed with status ${response.status}: ${body}`
-        : `TTS provider request failed with status ${response.status}`,
-    )
+    throw createTtsProviderStatusError("TTS provider request failed", response, body)
   }
 
   const payload = await response.json().catch(() => null) as {

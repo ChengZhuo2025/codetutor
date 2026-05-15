@@ -742,8 +742,9 @@ SSE 事件补充：
 
 - 为当前用户自己的 AI 回复消息生成播读音频
 - 模型来源于管理后台 `Ai 管理 / 多媒体管理 / 转译设置` 中启用的 `text_to_speech`
+- 新环境迁移默认不启用 `text_to_speech`，需要管理员选择具备 `tts` 运行时用途的模型并开启后，用户端播读才会可用。
 - 首版按需临时生成，返回 `audio/wav`、`audio/mpeg` 等可播放音频，不写入数据库或 Storage
-- 服务端默认使用统一 HTTP TTS Provider Gateway：阿里云百炼 `qwen3-tts-flash` / `qwen3-tts-instruct-flash` 走 DashScope HTTP 多模态生成接口并下载 `output.audio.url`；MiniMax 走 `/v1/t2a_v2` 并解析 hex 音频；硅基流动/OpenAI-compatible 模型走 `/audio/speech` 并直接返回二进制音频。Adapter 选择优先读取 Model `metadata.ttsProtocol`，否则按 provider / modelName 推断。DashScope realtime WebSocket 仅作为显式 `metadata.ttsProtocol="dashscope_realtime"` 的实验能力保留，不再作为用户端播读默认路径。
+- 服务端默认使用统一 HTTP TTS Provider Gateway：阿里云百炼 `qwen3-tts-flash` / `qwen3-tts-instruct-flash` 走 DashScope HTTP 多模态生成接口并下载通过安全校验的 `output.audio.url`；MiniMax 走 `/v1/t2a_v2` 并解析 hex 音频；硅基流动/OpenAI-compatible 模型走 `/audio/speech` 并直接返回二进制音频。Adapter 选择优先读取 Model `metadata.ttsProtocol`，否则按 provider / modelName 推断。DashScope realtime WebSocket 仅作为显式 `metadata.ttsProtocol="dashscope_realtime"` 的实验能力保留，不再作为用户端播读默认路径。
 - 前端会先清理 Markdown 样式标记，再把正文拆成短段逐段请求播读；首段音频生成完成即可播放，后续段边播边生成。
 
 请求体：
@@ -760,7 +761,7 @@ SSE 事件补充：
 | 字段 | 必填 | 说明 |
 |------|------|------|
 | `messageId` | 是 | AI 回复消息真实持久化 ID；前端展示用数字 ID 不作为首选 |
-| `text` | 否 | 前端当前可见的播读文本；为空时服务端读取消息 `content_text` |
+| `text` | 否 | 前端当前播读片段；必须来自该 AI 回复 `content_text` 经同一 Markdown 清理与分段规则得到的文本。为空时服务端读取完整 `content_text` |
 
 成功响应：
 
@@ -771,7 +772,7 @@ SSE 事件补充：
 错误场景：
 
 - 消息不存在、不是 AI 回复，或不属于当前用户：`404`
-- 文本为空或不合法：`422`
+- 文本为空、不合法，或 `text` 不是该 AI 回复的可验证播读片段：`422`
 - 后台未启用/未配置可用 `text_to_speech` 模型：`503`
 - TTS provider 调用失败：`502`
 

@@ -1,13 +1,13 @@
-import { Buffer } from "node:buffer"
-
 import { LearningAIProviderError } from "@/server/modules/learning/errors.ts"
 import type { TtsAdapterInput, TtsSynthesisResult } from "../types.ts"
 import {
   contentTypeForAudioFormat,
+  createTtsProviderStatusError,
   ensureAudioBuffer,
   fetchWithTimeout,
   getTtsProviderSecret,
   normalizeBaseUrl,
+  readAudioResponseBuffer,
   readMetadataString,
   readProviderError,
   resolveTtsTimeoutMs,
@@ -18,6 +18,26 @@ function resolveAudioSpeechPath(baseUrl: string) {
   return normalized.endsWith("/v1")
     ? `${normalized}/audio/speech`
     : `${normalized}/audio/speech`
+}
+
+function resolveOpenAIAudioSpeechDefaultVoice(input: TtsAdapterInput) {
+  const providerCode = input.runtime.provider.code.toLowerCase()
+  const providerType = input.runtime.provider.providerType.toLowerCase()
+  const baseUrl = input.runtime.provider.baseUrl.toLowerCase()
+  const modelName = input.runtime.model.modelName
+  const normalizedModelName = modelName.toLowerCase()
+
+  if (
+    providerType === "siliconflow"
+    || providerCode.includes("siliconflow")
+    || baseUrl.includes("siliconflow")
+  ) {
+    if (normalizedModelName.includes("cosyvoice")) {
+      return `${modelName}:alex`
+    }
+  }
+
+  return "alloy"
 }
 
 export async function synthesizeOpenAIAudioSpeech(
@@ -40,7 +60,7 @@ export async function synthesizeOpenAIAudioSpeech(
       body: JSON.stringify({
         model: input.runtime.model.modelName,
         input: input.text,
-        voice: readMetadataString(metadata, ["ttsVoice", "voice", "defaultVoice"], "alloy"),
+        voice: readMetadataString(metadata, ["ttsVoice", "voice", "defaultVoice"], resolveOpenAIAudioSpeechDefaultVoice(input)),
         response_format: responseFormat,
       }),
     },
@@ -48,11 +68,7 @@ export async function synthesizeOpenAIAudioSpeech(
 
   if (!response.ok) {
     const body = await readProviderError(response)
-    throw new LearningAIProviderError(
-      body
-        ? `TTS provider request failed with status ${response.status}: ${body}`
-        : `TTS provider request failed with status ${response.status}`,
-    )
+    throw createTtsProviderStatusError("TTS provider request failed", response, body)
   }
 
   const contentType = response.headers.get("content-type")
@@ -63,7 +79,7 @@ export async function synthesizeOpenAIAudioSpeech(
     )
   }
 
-  const audio = Buffer.from(await response.arrayBuffer())
+  const audio = await readAudioResponseBuffer(response)
   return {
     audio: ensureAudioBuffer(audio, "TTS provider returned empty audio"),
     contentType: contentType ?? contentTypeForAudioFormat(responseFormat),
