@@ -73,6 +73,13 @@ const SOURCE_LABEL: Record<(typeof FEEDBACK_SOURCES)[number], string> = {
   history_sidebar: "历史侧栏",
 }
 
+const feedbackStatusPillClassNames: Record<FeedbackStatus, string> = {
+  submitted: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  in_review: "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+  replied: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  closed: "border-border bg-muted/60 text-muted-foreground",
+}
+
 export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
   const confirm = useAppConfirm()
   const router = useRouter()
@@ -310,7 +317,12 @@ export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-chart-2/20 px-2.5 py-0.5 text-sm font-medium text-chart-2">
+                  <span
+                    className={cn(
+                      "rounded-full border px-2.5 py-0.5 text-sm font-medium",
+                      feedbackStatusPillClassNames[data.status],
+                    )}
+                  >
                     {data.statusLabel}
                   </span>
                   <span
@@ -512,13 +524,14 @@ export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-semibold text-foreground">用户快照</h2>
-              <span
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground"
-                title="用户运营详情页即将开放"
+              <Link
+                href={`${ADMIN_ROUTES.users}/${data.userId}`}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+                title="查看用户详情"
               >
                 <ExternalLink className="h-3 w-3" />
                 查看详情
-              </span>
+              </Link>
             </div>
             <div className="mt-3 flex gap-3">
               {snap.avatarUrl ? (
