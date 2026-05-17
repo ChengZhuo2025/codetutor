@@ -49,6 +49,7 @@ export function CheckinCalendar({
 
   return (
     <PageSection
+      id="checkin-records"
       eyebrow="打卡记录"
       title="近四月打卡日历"
       action={

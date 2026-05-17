@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { APP_EVENTS } from "@/constants/events"
 import { ROUTES } from "@/constants/routes"
 import { WORKSPACE_ASIDE_WIDTH_CLASS } from "@/constants/workspace-layout"
@@ -28,6 +28,7 @@ import { useAppEventTracker } from "@/providers/app-providers"
 
 export function AchievementsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { trackEvent } = useAppEventTracker()
   const [emptyAction, setEmptyAction] = useState<{
     href: string
@@ -117,6 +118,26 @@ export function AchievementsPage() {
       cancelled = true
     }
   }, [router])
+
+  useEffect(() => {
+    if (achievementState.status !== "success") return
+
+    const shouldFocusCheckin =
+      searchParams.get("focus") === "checkin-records" ||
+      window.location.hash === "#checkin-records"
+
+    if (!shouldFocusCheckin) return
+
+    const timeoutId = window.setTimeout(() => {
+      const target = document.getElementById("checkin-records")
+      if (!target) return
+      target.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 80)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [achievementState.status, searchParams])
 
   const reloadAchievementSummary = async () => {
     const response = await apiClient.get<AchievementSummaryResponseData>("/achievement/summary")

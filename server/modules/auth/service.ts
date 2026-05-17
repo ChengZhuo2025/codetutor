@@ -46,6 +46,7 @@ type UserProfileRow = {
   current_score: number
   streak_days: number
   last_learning_at: string | null
+  created_at?: string
   primary_tool_id?: string | null
   deleted_at?: string | null
 }
@@ -553,7 +554,7 @@ async function getProfileMeByAccess(
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
     .select(
-      "user_id, nickname, avatar_url, wechat, contact_email, bio, signup_provider, last_login_provider, last_login_at, primary_tool_id, learning_level, current_rank_code, current_score, streak_days, last_learning_at, deleted_at",
+      "user_id, nickname, avatar_url, wechat, contact_email, bio, signup_provider, last_login_provider, last_login_at, primary_tool_id, learning_level, current_rank_code, current_score, streak_days, last_learning_at, created_at, deleted_at",
     )
     .eq("user_id", userId)
     .maybeSingle()
@@ -615,6 +616,7 @@ async function getProfileMeByAccess(
     streakDays: typedProfile.streak_days,
     completedTaskCount: completedTaskCount ?? 0,
     lastLearningAt: toIsoDate(typedProfile.last_learning_at),
+    createdAt: toIsoDate(typedProfile.created_at),
   }
 }
 

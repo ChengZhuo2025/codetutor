@@ -191,6 +191,11 @@ type UserSubscriptionRow = {
   expires_at: string
 }
 
+type UserProfileSubscriptionAnchorRow = {
+  user_id: string
+  created_at: string
+}
+
 function getSecretEncryptionKey() {
   const raw = process.env.AI_PROVIDER_SECRET_ENCRYPTION_KEY
   if (!raw) {
@@ -1857,26 +1862,43 @@ export async function handleWechatPaymentNotify(input: {
 
 export async function getSubscriptionForUser(userId: string): Promise<SubscriptionMeResponseData> {
   const supabase = createSupabaseAdminClient()
-  const [{ data: plans, error: plansError }, { data: subscription, error: subscriptionError }] =
+  const [
+    { data: plans, error: plansError },
+    { data: subscription, error: subscriptionError },
+    { data: profile, error: profileError },
+  ] =
     await Promise.all([
       supabase.from("subscription_plans").select("*").eq("active", true).is("archived_at", null).order("display_order", { ascending: true }).order("tier_rank", { ascending: true }),
       supabase.from("user_subscriptions").select("*").eq("user_id", userId).maybeSingle(),
+      supabase.from("user_profiles").select("user_id, created_at").eq("user_id", userId).maybeSingle(),
     ])
   assertSupabaseSuccess(plansError, "failed to load subscription plans")
   assertSupabaseSuccess(subscriptionError, "failed to load user subscription")
+  assertSupabaseSuccess(profileError, "failed to load user profile for subscription")
   const rows = (plans ?? []) as SubscriptionPlanRow[]
   const sub = subscription as UserSubscriptionRow | null
+  const profileRow = profile as UserProfileSubscriptionAnchorRow | null
   const now = Date.now()
   const active = sub && new Date(sub.expires_at).getTime() > now
-  const plan = active ? rows.find((item) => item.code === sub.plan_code) : null
-  const expiresAt = active ? sub.expires_at : null
+  const freePlan = rows.find((item) => item.code === "free") ?? null
+  const activeSubscription = active ? sub : null
+  const paidPlan = activeSubscription
+    ? rows.find((item) => item.code === activeSubscription.plan_code)
+    : null
+  const plan = paidPlan ?? freePlan
+  const freeStartsAt = profileRow?.created_at ?? null
+  const freeExpiresAt =
+    !paidPlan && freePlan && freeStartsAt
+      ? new Date(new Date(freeStartsAt).getTime() + freePlan.duration_days * 86_400_000).toISOString()
+      : null
+  const expiresAt = paidPlan && activeSubscription ? activeSubscription.expires_at : freeExpiresAt
 
   return {
     current: {
       planCode: plan?.code ?? "free",
       planName: plan?.name ?? "免费版",
-      status: plan ? "active" : sub ? "expired" : "free",
-      startsAt: active ? sub.starts_at : null,
+      status: paidPlan ? "active" : sub ? "expired" : "free",
+      startsAt: paidPlan && activeSubscription ? activeSubscription.starts_at : freeStartsAt,
       expiresAt,
       remainingDays: expiresAt ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - now) / 86_400_000)) : 0,
     },

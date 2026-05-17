@@ -293,7 +293,7 @@ export async function ensureDueInAppNotifications(userId: string): Promise<void>
       source: "daily_checkin",
       dedupeByDay: true,
       dayKey: getShanghaiDateKey(now),
-      actionHref: ROUTES.achievements,
+      actionHref: `${ROUTES.achievements}#checkin-records`,
       actionLabel: "立即打卡",
     },
   })

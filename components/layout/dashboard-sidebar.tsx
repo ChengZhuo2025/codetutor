@@ -62,13 +62,13 @@ type SidebarRailActionProps = {
 };
 
 const SUBSCRIPTION_PLACEHOLDER: SubscriptionSnapshot = {
-  planName: "个人版",
-  planPriceLabel: "¥39/月",
-  billingCycleLabel: "按月订阅",
-  expiresAt: "无期限",
+  planName: "免费版",
+  planPriceLabel: "¥0.00",
+  billingCycleLabel: "限时体验",
+  expiresAt: "加载中",
   remainingDays: 0,
-  quotaLabel: "支付与订阅接口待接入",
-  renewalHint: "当前为产品原型阶段，订阅信息仍使用静态占位。",
+  quotaLabel: "免费体验期内可使用基础学习能力",
+  renewalHint: "正在读取订阅有效期。",
   primaryActionLabel: "升级套餐",
   secondaryActionLabel: "立即续费",
 };
@@ -125,10 +125,29 @@ function getRecentLearningPlanHref(status: LearningHistory["status"]) {
   }
 }
 
-function formatSubscriptionExpiresAt(expiresAt: string | null | undefined) {
-  if (!expiresAt) return "无期限";
-  const date = new Date(expiresAt);
-  if (Number.isNaN(date.getTime())) return "无期限";
+function formatSubscriptionExpiresAt(
+  expiresAt: string | null | undefined,
+  planCode?: string | null,
+  plans?: Array<{ code: string; durationDays: number }>,
+  startsAt?: string | null,
+) {
+  const resolvedExpiresAt =
+    expiresAt ??
+    (planCode === "free" && startsAt
+      ? (() => {
+          const freePlan = plans?.find((plan) => plan.code === "free");
+          if (!freePlan) return null;
+          const startDate = new Date(startsAt);
+          if (Number.isNaN(startDate.getTime())) return null;
+          return new Date(
+            startDate.getTime() + freePlan.durationDays * 86_400_000,
+          ).toISOString();
+        })()
+      : null);
+
+  if (!resolvedExpiresAt) return "读取中";
+  const date = new Date(resolvedExpiresAt);
+  if (Number.isNaN(date.getTime())) return "读取中";
   return new Intl.DateTimeFormat("zh-CN", {
     year: "numeric",
     month: "2-digit",
@@ -242,13 +261,19 @@ export function DashboardSidebar({
     streakDays: 0,
     completedTaskCount: 0,
     lastLearningAt: new Date(0).toISOString(),
+    createdAt: null,
   };
 
   const resolvedProfile = displayProfile ?? fallbackProfile;
   const subscription = {
     ...SUBSCRIPTION_PLACEHOLDER,
     planName: subscriptionData?.current.planName ?? SUBSCRIPTION_PLACEHOLDER.planName,
-    expiresAt: formatSubscriptionExpiresAt(subscriptionData?.current.expiresAt),
+    expiresAt: formatSubscriptionExpiresAt(
+      subscriptionData?.current.expiresAt,
+      subscriptionData?.current.planCode,
+      subscriptionData?.plans,
+      subscriptionData?.current.startsAt ?? resolvedProfile.createdAt,
+    ),
     remainingDays: subscriptionData?.current.remainingDays ?? SUBSCRIPTION_PLACEHOLDER.remainingDays,
     renewalHint: subscriptionData?.current.expiresAt
       ? `当前套餐剩余 ${subscriptionData.current.remainingDays} 天。`
@@ -317,7 +342,6 @@ export function DashboardSidebar({
         }
         notification={notifPanel.selectedNotification}
         onMarkRead={markNotificationRead}
-        onDismiss={dismissNotification}
       />
     </>
   );

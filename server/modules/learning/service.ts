@@ -43,6 +43,7 @@ type ProfileRow = {
   current_rank_code: string
   streak_days: number
   last_learning_at: string | null
+  created_at?: string | null
 }
 
 type ToolRow = {
@@ -536,7 +537,7 @@ async function loadLearningState(userId: string) {
 
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
-    .select("user_id, nickname, avatar_url, learning_level, current_score, current_rank_code, streak_days, last_learning_at")
+    .select("user_id, nickname, avatar_url, learning_level, current_score, current_rank_code, streak_days, last_learning_at, created_at")
     .eq("user_id", userId)
     .maybeSingle()
 
@@ -652,6 +653,7 @@ function toProfileData(
     streakDays: profile.streak_days,
     completedTaskCount,
     lastLearningAt: toIsoDate(profile.last_learning_at),
+    createdAt: toIsoDate(profile.created_at),
   }
 }
 

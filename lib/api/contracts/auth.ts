@@ -59,6 +59,7 @@ export type ProfileMeResponseData = {
   streakDays: number
   completedTaskCount: number
   lastLearningAt: string
+  createdAt?: string
 }
 
 export type UpdateProfileMeRequest = {

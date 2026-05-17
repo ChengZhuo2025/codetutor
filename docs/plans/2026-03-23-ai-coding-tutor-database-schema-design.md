@@ -1575,6 +1575,7 @@ MVP 阶段建议谨慎使用软删除：
 
 - `payment_settings`：单行支付配置表，保存微信 `appid`、`mchid`、回调地址、商户证书序列号、微信支付公钥 ID，以及支付宝 `appId`、异步通知地址、RSA2 普通公钥模式字段；微信商户私钥、APIv3 密钥、微信支付公钥、支付宝应用私钥、支付宝公钥均用 AES-256-GCM 密文列保存，主密钥复用服务端 `AI_PROVIDER_SECRET_ENCRYPTION_KEY`。
 - `subscription_plans`：订阅套餐权威表，已扩展展示排序、周期文案、CTA、推荐标记、可购买标记、上下架与软归档字段；初始化 `free`、`personal_monthly`、`pro_monthly` 三档，其中免费版仅展示不可购买，付费套餐由该表动态驱动下单校验。
+- `048_set_free_subscription_duration_to_7_days.sql` 将免费版 `duration_days` 校准为 7 天，`GET /api/subscription/me` 在没有有效付费订阅时会基于用户资料创建时间返回免费版 `startsAt`、`expiresAt` 与 `remainingDays`，用户侧有效期展示不再使用“无期限”占位。
 - `payment_orders`：用户支付订单，状态为 `created`、`prepay_created`、`paid`、`closed`、`expired`、`failed`；通过 `payment_channel` 区分 `wechat` / `alipay`，记录二维码 `code_url`、微信/支付宝交易号、渠道状态、回调 payload、支付时间、过期时间、用户取消信息和用户端软删除时间。
 - `user_subscriptions`：用户当前订阅权益，支付成功后 upsert；同套餐续费从当前有效期顺延，升级到更高套餐从支付成功时间开始。
 - `payment_webhook_events`：保存微信/支付宝回调原始头、原始 payload、解密/标准化 payload 和事件 ID，用于审计与幂等排查。

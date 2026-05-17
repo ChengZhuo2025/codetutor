@@ -75,6 +75,7 @@
     "test:global-feedback-ui": "node scripts/check-global-feedback-ui.mjs",
     "test:analytics-notifications-logic": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-analytics-notifications-logic.ts",
     "test:analytics-notifications-ui": "node scripts/check-analytics-notifications-ui.mjs",
+    "test:user-reminders-subscription-ui": "node scripts/check-user-reminders-subscription-ui.mjs",
     "test:user-theme-surfaces": "node scripts/check-user-theme-surfaces.mjs",
     "test:history-page": "node scripts/check-history-page.mjs",
     "test:map-page": "node scripts/check-map-page.mjs",

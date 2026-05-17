@@ -2058,7 +2058,7 @@ SSE 事件补充：
 当前支持 Web 端微信 Native 扫码支付与支付宝扫码支付，不支持 JSAPI/H5/退款/自动续费。
 
 - `GET /api/subscription/plans` 返回用户端首页可展示套餐，数据来自 `subscription_plans`，只包含未归档且上架套餐。
-- `GET /api/subscription/me` 返回当前订阅与可展示套餐。默认免费版；支付成功后返回对应付费套餐、有效期与剩余天数。
+- `GET /api/subscription/me` 返回当前订阅与可展示套餐。默认免费版；免费版有效期为 7 天，服务端基于用户资料创建时间返回 `startsAt`、`expiresAt` 与 `remainingDays`；支付成功后返回对应付费套餐、有效期与剩余天数。
 - `POST /api/payment/wechat/native-orders` 请求体为 `{ "planCode": string }`，服务端动态校验套餐必须存在、未归档、上架且 `purchasable=true`；成功返回订单号、金额、状态、`codeUrl` 和过期时间；服务端向微信下单时同步传入 `time_expire`。
 - `POST /api/payment/alipay/precreate-orders` 请求体为 `{ "planCode": string }`，服务端动态校验套餐后调用支付宝 `alipay.trade.precreate`，成功返回订单号、金额、状态、`paymentChannel=alipay`、`codeUrl` 和过期时间。
 - `GET /api/payment/orders` 返回当前用户未软删除订单，按 `created_at desc` 分页，并返回 `summary` 供 `/orders` 状态筛选展示。
