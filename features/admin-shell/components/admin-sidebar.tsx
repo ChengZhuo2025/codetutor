@@ -175,7 +175,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
         {!collapsed ? (
           <div className="min-w-0 flex-1">
             <p className="truncate text-md font-semibold tracking-tight text-sidebar-foreground">CodeTutor</p>
-            <p className="truncate text-[10px] leading-tight text-muted-foreground">系统管理后台 v1.0.0</p>
+            <p className="truncate text-[10px] leading-tight text-muted-foreground">系统管理后台 v0.1.97 Beta</p>
           </div>
         ) : null}
       </div>

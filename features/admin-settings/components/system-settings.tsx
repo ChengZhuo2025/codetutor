@@ -1,18 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import {
   Activity,
   BadgeCheck,
+  Building2,
+  Code2,
   Database,
-  KeyRound,
   Lock,
+  Mail,
+  MessageCircle,
+  Phone,
   Search,
   Server,
   Shield,
+  Sparkles,
   UserCog,
-  UserPen,
+  UserRound,
   Users,
 } from "lucide-react";
 import type { AdminRoleCode } from "@/lib/api/contracts/admin";
@@ -59,32 +64,55 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client";
-import { AdminChangePasswordDialog } from "@/features/admin-shell/components/admin-change-password-dialog";
-import { AdminProfileEditDialog } from "@/features/admin-shell/components/admin-profile-edit-dialog";
 import { cn } from "@/lib/utils";
 
 type SettingsTab =
-  | "profile"
-  | "security"
   | "accounts"
   | "roles"
-  | "audit"
-  | "system"
-  | "contact"
   | "plans"
-  | "payment";
+  | "payment"
+  | "contact"
+  | "audit"
+  | "system";
 
 const TABS: Array<{ id: SettingsTab; label: string }> = [
-  { id: "profile", label: "我的资料" },
-  { id: "security", label: "安全设置" },
   { id: "accounts", label: "管理员账号" },
   { id: "roles", label: "角色权限" },
-  { id: "audit", label: "操作审计" },
-  { id: "system", label: "系统信息" },
-  { id: "contact", label: "联系方式" },
   { id: "plans", label: "订阅套餐" },
   { id: "payment", label: "支付配置" },
+  { id: "contact", label: "联系方式" },
+  { id: "audit", label: "操作审计" },
+  { id: "system", label: "系统信息" },
 ];
+
+const SYSTEM_PROJECT_INFO = {
+  productName: "CodeTutor AI",
+  productCategory: "AI 编程学习教练",
+  productionDomain: "www.codetutor.cn",
+  companyName: "上海智酷数能科技有限公司",
+  copyright: "© 2026 CodeTutor. All rights reserved.",
+  icpRecord: "沪ICP备2026015857号-2",
+};
+
+const SYSTEM_TEAM_MEMBERS = [
+  {
+    role: "产品负责人 / 项目 Owner",
+    name: "大包子",
+    description: "负责产品方向、业务验收、运营配置与发布决策。",
+  },
+  {
+    role: "AI 编程协作者",
+    name: "Codex (GPT-5.5)",
+    description: "参与需求拆解、代码实现、测试验证、文档同步与工程质量检查。",
+  },
+];
+
+const SYSTEM_MAINTAINER = {
+  name: "大包子",
+  phone: "18600165902",
+  email: "baoyouhua@zhicool.cn",
+  wechat: "baoyouhua",
+};
 
 const EMPTY_PLAN_FORM: AdminUpsertSubscriptionPlanRequest = {
   code: "",
@@ -270,6 +298,30 @@ function EmptyHint({ text }: { text: string }) {
   return <StatePanel status="empty" title="暂无数据" description={text} />;
 }
 
+function InfoRow({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd
+        className={cn(
+          "text-right text-foreground",
+          mono ? "font-mono text-xs" : "",
+        )}
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
+
 export function SystemSettings() {
   const confirm = useAppConfirm();
   const toast = useAppToast();
@@ -278,8 +330,6 @@ export function SystemSettings() {
     useState<AdminSettingsOverviewResponseData | null>(null);
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [overviewError, setOverviewError] = useState<string | null>(null);
-  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
-  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [authExpired, setAuthExpired] = useState(false);
 
   const [accountKeyword, setAccountKeyword] = useState("");
@@ -585,11 +635,6 @@ export function SystemSettings() {
     ) || 1,
   );
 
-  const currentAdminInitial = useMemo(
-    () => overview?.currentAdmin.displayName?.slice(0, 1) || "管",
-    [overview?.currentAdmin.displayName],
-  );
-
   const handleToggleAccountStatus = async (
     item: AdminSettingsAdminAccountListItem,
   ) => {
@@ -647,128 +692,6 @@ export function SystemSettings() {
       setActingAdminAccountId(null);
     }
   };
-
-  const renderProfileTab = () => {
-    if (overviewLoading) {
-      return (
-        <div className="rounded-xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
-          加载中…
-        </div>
-      );
-    }
-
-    if (overviewError || !overview) {
-      return (
-        <StatePanel
-          status="error"
-          title="获取系统设置失败"
-          description={overviewError ?? "请稍后再试。"}
-        />
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
-                {overview.currentAdmin.avatarUrl ? (
-                  <Image
-                    src={overview.currentAdmin.avatarUrl}
-                    alt=""
-                    width={64}
-                    height={64}
-                    className="h-full w-full object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <span className="text-lg font-semibold text-primary">
-                    {currentAdminInitial}
-                  </span>
-                )}
-              </div>
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-lg font-semibold text-foreground">
-                    {overview.currentAdmin.displayName}
-                  </h2>
-                  <AdminListTag
-                    className={getStatusBadgeClass(
-                      overview.currentAdmin.status,
-                    )}
-                  >
-                    {getStatusLabel(overview.currentAdmin.status)}
-                  </AdminListTag>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {overview.currentAdmin.loginEmail ?? overview.currentAdmin.email ?? "暂无登录邮箱"}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {overview.currentAdmin.roles.map((role) => (
-                    <RoleBadge key={role} role={role} />
-                  ))}
-                </div>
-              </div>
-            </div>
-            <Button type="button" onClick={() => setProfileDialogOpen(true)}>
-              <UserPen className="h-4 w-4" />
-              资料编辑
-            </Button>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="flex items-start gap-3">
-            <BadgeCheck className="mt-1 h-4 w-4 text-primary" />
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-foreground">资料说明</h3>
-              <p className="text-sm leading-6 text-muted-foreground">
-                这里维护登录邮箱与管理后台展示资料。登录邮箱用于后台登录，联系邮箱仅用于资料展示。
-              </p>
-              <p className="text-sm text-muted-foreground">
-                最近登录：{formatDateTime(overview.currentAdmin.lastLoginAt)}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderSecurityTab = () => (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-border bg-card p-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-primary" />
-              <h2 className="text-lg font-semibold text-foreground">
-                登录安全
-              </h2>
-            </div>
-            <p className="text-sm leading-6 text-muted-foreground">
-              管理员登录通过 Supabase Auth 与 `admin_accounts`
-              双重校验。修改密码后需要重新登录管理后台。
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setPasswordDialogOpen(true)}
-          >
-            <KeyRound className="h-4 w-4" />
-            修改密码
-          </Button>
-        </div>
-      </div>
-      <div className="rounded-2xl border border-border bg-card p-5 text-sm leading-6 text-muted-foreground">
-        <p>
-          当前后台写操作会记录操作审计，敏感账号治理能力仅对具备足够角色权限的管理员开放。
-        </p>
-      </div>
-    </div>
-  );
 
   const renderAccountsTab = () => {
     const stats = accountData?.stats ?? overview?.stats;
@@ -1236,6 +1159,90 @@ export function SystemSettings() {
             icon={Shield}
           />
         </div>
+        <div className="grid gap-4 xl:grid-cols-3">
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-medium text-foreground">项目身份</h2>
+            </div>
+            <dl className="space-y-3.5 text-sm">
+              <InfoRow label="产品名称" value={SYSTEM_PROJECT_INFO.productName} />
+              <InfoRow label="产品定位" value={SYSTEM_PROJECT_INFO.productCategory} />
+              <InfoRow label="站点域名" value={SYSTEM_PROJECT_INFO.productionDomain} mono />
+              <InfoRow label="运营主体" value={SYSTEM_PROJECT_INFO.companyName} />
+            </dl>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <Code2 className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-medium text-foreground">开发团队</h2>
+            </div>
+            <div className="space-y-4">
+              {SYSTEM_TEAM_MEMBERS.map((member) => (
+                <div key={member.role} className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-foreground">
+                      {member.name}
+                    </span>
+                    <AdminListTag className="border-primary/20 bg-primary/10 text-primary">
+                      {member.role}
+                    </AdminListTag>
+                  </div>
+                  <p className="text-sm leading-6 text-muted-foreground line-clamp-1">
+                    {member.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <BadgeCheck className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-medium text-foreground">维护联系人</h2>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between gap-4">
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <UserRound className="h-3.5 w-3.5" />
+                  昵称
+                </span>
+                <span className="font-medium text-foreground">
+                  {SYSTEM_MAINTAINER.name}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4 rounded-md px-0 py-1">
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  微信号
+                </span>
+                <span className="font-mono text-xs">{SYSTEM_MAINTAINER.wechat}</span>
+              </div>
+              <a
+                href={`tel:${SYSTEM_MAINTAINER.phone}`}
+                className="flex items-center justify-between gap-4 rounded-md px-0 py-1 text-foreground hover:text-primary"
+              >
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <Phone className="h-3.5 w-3.5" />
+                  手机号
+                </span>
+                <span className="font-mono text-xs">{SYSTEM_MAINTAINER.phone}</span>
+              </a>
+              <a
+                href={`mailto:${SYSTEM_MAINTAINER.email}`}
+                className="flex items-center justify-between gap-4 rounded-md px-0 py-1 text-foreground hover:text-primary"
+              >
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <Mail className="h-3.5 w-3.5" />
+                  邮箱
+                </span>
+                <span className="font-mono text-xs">{SYSTEM_MAINTAINER.email}</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-border bg-card p-5">
             <div className="mb-4 flex items-center gap-2">
@@ -1243,36 +1250,10 @@ export function SystemSettings() {
               <h2 className="text-sm font-medium text-foreground">应用信息</h2>
             </div>
             <dl className="space-y-3 text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-muted-foreground">应用名称</dt>
-                <dd className="text-foreground">
-                  {overview.systemInfo.appName}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-muted-foreground">版本</dt>
-                <dd className="font-mono text-foreground">
-                  {overview.systemInfo.appVersion}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-muted-foreground">运行环境</dt>
-                <dd className="font-mono text-foreground">
-                  {overview.systemInfo.environment}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-muted-foreground">Next.js</dt>
-                <dd className="font-mono text-foreground">
-                  {overview.systemInfo.nextVersion ?? "未知"}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-muted-foreground">React</dt>
-                <dd className="font-mono text-foreground">
-                  {overview.systemInfo.reactVersion ?? "未知"}
-                </dd>
-              </div>
+              <InfoRow label="应用名称" value={overview.systemInfo.appName} />
+              <InfoRow label="版本" value={overview.systemInfo.appVersion} mono />
+              <InfoRow label="Next.js" value={overview.systemInfo.nextVersion ?? "未知"} mono />
+              <InfoRow label="React" value={overview.systemInfo.reactVersion ?? "未知"} mono />
             </dl>
           </div>
 
@@ -1282,31 +1263,41 @@ export function SystemSettings() {
               <h2 className="text-sm font-medium text-foreground">基础设施</h2>
             </div>
             <dl className="space-y-3 text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-muted-foreground">管理员认证</dt>
-                <dd className="text-right text-foreground">
-                  {overview.systemInfo.adminAuthMode}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-muted-foreground">数据库</dt>
-                <dd className="text-right text-foreground">
-                  {overview.systemInfo.database}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-muted-foreground">对象存储</dt>
-                <dd className="text-right text-foreground">
-                  {overview.systemInfo.storage}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-muted-foreground">用户认证</dt>
-                <dd className="text-right text-foreground">
-                  {overview.systemInfo.auth}
-                </dd>
-              </div>
+              <InfoRow label="管理员认证" value={overview.systemInfo.adminAuthMode} />
+              <InfoRow label="数据库" value={overview.systemInfo.database} />
+              <InfoRow label="对象存储" value={overview.systemInfo.storage} />
+              <InfoRow label="用户认证" value={overview.systemInfo.auth} />
             </dl>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-medium text-foreground">合规与版权</h2>
+          </div>
+          <div className="grid gap-4 text-sm md:grid-cols-3">
+            <div className="space-y-1">
+              <p className="text-muted-foreground">版权声明</p>
+              <p className="text-foreground">{SYSTEM_PROJECT_INFO.copyright}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-muted-foreground">ICP备案号</p>
+              <a
+                href="https://beian.miit.gov.cn"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground underline-offset-4 hover:text-primary hover:underline"
+              >
+                {SYSTEM_PROJECT_INFO.icpRecord}
+              </a>
+            </div>
+            <div className="space-y-1">
+              <p className="text-muted-foreground">内部说明</p>
+              <p className="text-foreground">
+                本页仅后台展示，用于运维交接、合规核验和发布前检查。
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -2385,7 +2376,7 @@ export function SystemSettings() {
             系统设置
           </h1>
           <p className="text-sm text-muted-foreground">
-            管理员治理设置，包括我的资料、安全设置、管理员账号、角色权限、操作审计、系统信息、联系方式、订阅套餐和支付配置。
+            管理员治理设置，包括管理员账号、角色权限、订阅套餐、支付配置、联系方式、操作审计和系统信息。
           </p>
         </div>
 
@@ -2406,26 +2397,14 @@ export function SystemSettings() {
           ))}
         </div>
 
-        {activeTab === "profile" ? renderProfileTab() : null}
-        {activeTab === "security" ? renderSecurityTab() : null}
         {activeTab === "accounts" ? renderAccountsTab() : null}
         {activeTab === "roles" ? renderRolesTab() : null}
-        {activeTab === "audit" ? renderAuditTab() : null}
-        {activeTab === "system" ? renderSystemTab() : null}
-        {activeTab === "contact" ? renderContactTab() : null}
         {activeTab === "plans" ? renderPlansTab() : null}
         {activeTab === "payment" ? renderPaymentTab() : null}
+        {activeTab === "contact" ? renderContactTab() : null}
+        {activeTab === "audit" ? renderAuditTab() : null}
+        {activeTab === "system" ? renderSystemTab() : null}
       </div>
-
-      <AdminProfileEditDialog
-        open={profileDialogOpen}
-        onOpenChange={setProfileDialogOpen}
-        onSaved={() => void refreshOverview()}
-      />
-      <AdminChangePasswordDialog
-        open={passwordDialogOpen}
-        onOpenChange={setPasswordDialogOpen}
-      />
     </>
   );
 }

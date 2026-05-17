@@ -1,5 +1,5 @@
 export const APP_NAME = "CodeTutor"
-export const APP_VERSION = "0.1.0-beta"
+export const APP_VERSION = "0.1.97"
 export const APP_LANG = "zh-CN"
 export const APP_TITLE = `${APP_NAME} — AI 编程学习教练`
 export const APP_DESCRIPTION =

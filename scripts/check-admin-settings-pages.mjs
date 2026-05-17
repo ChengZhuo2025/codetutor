@@ -11,6 +11,16 @@ const profileDialogSource = readFileSync(
   "utf8",
 )
 
+const packageSource = readFileSync(
+  new URL("../package.json", import.meta.url),
+  "utf8",
+)
+
+const appConstantsSource = readFileSync(
+  new URL("../constants/app.ts", import.meta.url),
+  "utf8",
+)
+
 const menuSource = readFileSync(
   new URL("../features/admin-shell/data/menu-config.ts", import.meta.url),
   "utf8",
@@ -24,14 +34,26 @@ assert.match(
 
 assert.match(
   settingsSource,
-  /我的资料|安全设置|管理员账号|角色权限|操作审计|系统信息/,
-  "The admin settings page should expose all governance settings sections",
+  /管理员账号|角色权限|订阅套餐|支付配置|联系方式|操作审计|系统信息/,
+  "The admin settings page should expose governance, payment, contact, audit and system sections",
+)
+
+assert.doesNotMatch(
+  settingsSource,
+  /label: "我的资料"|label: "安全设置"|activeTab === "profile"|activeTab === "security"/,
+  "The admin settings page should not duplicate profile or security tabs",
 )
 
 assert.match(
-  `${settingsSource}\n${profileDialogSource}`,
+  settingsSource,
+  /const TABS[\s\S]*accounts[\s\S]*roles[\s\S]*plans[\s\S]*payment[\s\S]*contact[\s\S]*audit[\s\S]*system/,
+  "The admin settings tabs should order contact after payment, with audit and system last",
+)
+
+assert.match(
+  profileDialogSource,
   /资料编辑|修改密码|登录邮箱|联系邮箱/,
-  "The admin settings page should expose profile, login email and password actions",
+  "The admin account menu profile dialog should expose profile, login email and password actions",
 )
 
 assert.match(
@@ -50,6 +72,24 @@ assert.match(
   settingsSource,
   /操作审计|目标类型|操作人|原因/,
   "The admin settings page should expose an audit log section",
+)
+
+assert.match(
+  settingsSource,
+  /项目身份|开发团队|维护联系人|合规与版权/,
+  "The system information tab should expose project identity, team, maintainer and compliance sections",
+)
+
+assert.match(
+  settingsSource,
+  /大包子|18600165902|baoyouhua@zhicool\.cn|微信号[\s\S]*baoyouhua|Codex \(GPT-5\.5\)|沪ICP备2026015857号-2/,
+  "The system information tab should include the configured maintainer, WeChat, AI collaborator and ICP record",
+)
+
+assert.match(
+  `${packageSource}\n${appConstantsSource}`,
+  /0\.1\.97/,
+  "The system information tab should align with the current app version",
 )
 
 assert.match(

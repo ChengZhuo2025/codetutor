@@ -52,7 +52,7 @@ const sampleOverview: AdminSettingsOverviewResponseData = {
   ],
   systemInfo: {
     appName: "AI编程学习教练管理后台",
-    appVersion: "0.1.0",
+    appVersion: "0.1.97",
     environment: "test",
     nextVersion: "16.2.0",
     reactVersion: "19.2.4",
