@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   Inbox,
   LoaderCircle,
+  TriangleAlert,
 } from "lucide-react"
 import type { ReactNode } from "react"
 import type { ViewStateStatus } from "@/types/api"
@@ -47,6 +48,14 @@ const statePanelMeta = {
     iconWrapClassName:
       "border-current/10 bg-background/45",
     panelClassName: "border-destructive/20 bg-destructive/10",
+  },
+  warning: {
+    icon: TriangleAlert,
+    iconClassName: "text-amber-600 dark:text-amber-300",
+    iconWrapClassName:
+      "border-amber-500/15 bg-background/45",
+    panelClassName:
+      "border-amber-500/30 bg-amber-500/12 dark:border-amber-400/25 dark:bg-amber-400/10",
   },
   success: {
     icon: CheckCircle2,

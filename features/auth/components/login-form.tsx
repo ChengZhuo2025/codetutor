@@ -103,6 +103,7 @@ export function LoginForm({
   onAgreementChange,
 }: LoginFormProps) {
   const isOAuthBinding = step === "oauth-binding";
+  const feedbackStatus = isOAuthBinding ? "warning" : "error";
   const isValidPhone = isValidChinaMainlandPhone(phone);
   const isValidCode = /^\d{6}$/.test(code);
   const canSubmit = isValidPhone && isValidCode && agreedToLegal;
@@ -267,8 +268,8 @@ export function LoginForm({
 
           {errorMessage ? (
             <StatePanel
-              status="error"
-              title="操作失败"
+              status={feedbackStatus}
+              title={feedbackStatus === "warning" ? "需要绑定手机号" : "操作失败"}
               description={errorMessage}
               compact
             />

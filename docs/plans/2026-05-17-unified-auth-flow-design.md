@@ -55,9 +55,9 @@ finalizeAuthLogin
 ```
 扫码 → callback 检测无手机 → codetutor.oauth.binding_required
     ↓
-step 切换为 "oauth-binding"，显示绑定提示
+清理临时 OAuth session，step 切换为 "oauth-binding"，显示绑定提示
     ↓
-输入手机 → 验证码 → verifyOtp → startOAuthLink → linkIdentity
+输入手机 → 再次确认清理临时 OAuth session → 验证码 → verifyOtp → startOAuthLink → linkIdentity
     ↓
 codetutor.oauth.linked → 跳转
 ```
@@ -66,7 +66,7 @@ codetutor.oauth.linked → 跳转
 ```
 扫码 → Supabase 创建临时 OAuth 用户 → binding_required
     ↓
-输入已有手机号 → 验证码 → 登录为手机用户
+清理临时 OAuth session → 输入已有手机号 → 验证码 → 登录为手机用户
     ↓
 linkIdentity 把 OAuth identity 挂到手机用户
     ↓
@@ -103,6 +103,7 @@ auth.users (user_id)
 - API client 的 `unwrapResponse` 会抛出带 `code` 的 `ApiError`，OAuth callback 使用结构化错误码判断手机号绑定流程，不再只依赖中文错误文案。
 - `/api/auth/phone-status` 保留接口，前端不再调用。
 - Supabase session 创建成功但应用登录 finalize 失败时，前端会清理本地 Supabase session 和业务 session cookie。
+- OAuth 未绑定手机号时，父登录页收到 `codetutor.oauth.binding_required` 后会立即清理临时 OAuth session；绑定态发送手机号验证码前也会再次清理，确保短信 OTP 走普通手机号登录/注册链路，而不是夹带上一次扫码登录留下的本地状态。
 
 ### 预计净变化
 

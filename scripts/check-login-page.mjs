@@ -25,6 +25,27 @@ const globalsSource = readFileSync(
   new URL("../app/globals.css", import.meta.url),
   "utf8",
 )
+const bindingRequiredBranchStart = loginPageSource.indexOf(
+  'event.data.type === "codetutor.oauth.binding_required"',
+)
+const bindingRequiredBranchEnd = loginPageSource.indexOf(
+  'if (event.data.type === "codetutor.oauth.linked")',
+  bindingRequiredBranchStart,
+)
+assert.notEqual(
+  bindingRequiredBranchStart,
+  -1,
+  "Login page should handle the OAuth phone-binding-required message.",
+)
+assert.notEqual(
+  bindingRequiredBranchEnd,
+  -1,
+  "Login page should keep the OAuth linked branch after the binding-required branch.",
+)
+const bindingRequiredBranchSource = loginPageSource.slice(
+  bindingRequiredBranchStart,
+  bindingRequiredBranchEnd,
+)
 
 assert.doesNotMatch(
   loginFormSource,
@@ -47,6 +68,16 @@ assert.match(
   loginFormSource,
   /isOAuthBinding\s*=\s*step === "oauth-binding"/,
   "Login form should track the OAuth phone-binding step explicitly.",
+)
+assert.match(
+  loginFormSource,
+  /feedbackStatus\s*=\s*[^;]*isOAuthBinding[\s\S]*\?\s*"warning"[\s\S]*:\s*"error"/,
+  "OAuth phone binding should render its guidance as a warning instead of an error.",
+)
+assert.match(
+  loginFormSource,
+  /title=\{feedbackStatus === "warning" \? "需要绑定手机号" : "操作失败"\}/,
+  "OAuth phone binding should not label the expected binding step as an operation failure.",
 )
 assert.match(
   loginFormSource,
@@ -191,6 +222,21 @@ assert.match(
   /pendingBindProvider/,
   "Login page should keep track of an OAuth provider waiting for phone binding.",
 )
+assert.match(
+  loginPageSource,
+  /验证码请求已提交至/,
+  "Login page should not imply Supabase OTP 200 means the SMS has definitely been delivered.",
+)
+assert.match(
+  bindingRequiredBranchSource,
+  /clearBrowserAuthSession\(\)/,
+  "OAuth phone binding should clear the transient OAuth session in the parent login page before phone OTP starts.",
+)
+assert.match(
+  loginPageSource,
+  /if \(pendingBindProvider\)[\s\S]*clearBrowserAuthSession\(\)[\s\S]*signInWithOtp/,
+  "OAuth phone binding should send the phone OTP only after clearing any stale OAuth session state.",
+)
 assert.doesNotMatch(
   loginPageSource,
   /\/auth\/phone-status\?phone=|当前手机号未注册，请先注册|setMode\("register"\)/,
@@ -210,6 +256,11 @@ assert.match(
   callbackSource,
   /isApiError\(error\).*OAUTH_PHONE_BINDING_REQUIRED/s,
   "Auth callback should branch on structured API error codes for phone binding.",
+)
+assert.match(
+  callbackSource,
+  /requestData\("\/auth\/oauth-temp-user\/discard"[\s\S]*\.catch\(\(\) => undefined\)[\s\S]*supabase\.auth\.signOut\(\{ scope: "local" \}\)/,
+  "Auth callback should always clear the popup's local OAuth session before notifying the login page to bind a phone.",
 )
 assert.match(
   callbackSource,

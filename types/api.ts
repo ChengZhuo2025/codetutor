@@ -1,4 +1,4 @@
-export type ViewStateStatus = "loading" | "empty" | "error" | "success"
+export type ViewStateStatus = "loading" | "empty" | "error" | "success" | "warning"
 
 export type ApiRequestState<T> =
   | {

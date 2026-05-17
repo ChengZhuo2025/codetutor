@@ -173,7 +173,7 @@ export function LoginPage() {
   }, [])
 
   useEffect(() => {
-    function handleOAuthMessage(event: MessageEvent<OAuthMessage>) {
+    async function handleOAuthMessage(event: MessageEvent<OAuthMessage>) {
       if (event.origin !== window.location.origin) {
         return
       }
@@ -187,6 +187,7 @@ export function LoginPage() {
         setOauthPendingProvider(null)
 
         if (provider) {
+          await clearBrowserAuthSession()
           setPendingBindProvider(provider)
           setStep("oauth-binding")
           setCode("")
@@ -360,6 +361,9 @@ export function LoginPage() {
 
     try {
       const supabase = createSupabaseBrowserClient()
+      if (pendingBindProvider) {
+        await clearBrowserAuthSession()
+      }
       const { error } = await supabase.auth.signInWithOtp({
         phone: normalizedPhone,
         options: {
@@ -383,7 +387,7 @@ export function LoginPage() {
   const statusMessage = isSendingCode
     ? "验证码发送中，通常 1 秒内送达。"
     : countdown > 0
-      ? `验证码已发送至 ${lastSentPhone || phone}，${countdown}s 后可重新获取。`
+      ? `验证码请求已提交至 ${lastSentPhone || phone}，${countdown}s 后可重新获取。`
       : "输入手机号，获取验证码登录或注册。"
 
   const handlePhoneSubmit = () => {
