@@ -12,11 +12,8 @@ import {
   normalizePhoneInput,
   toFriendlyAuthError,
 } from "@/features/auth/lib/phone-auth"
-import type { AuthMode, AuthOAuthProvider } from "@/features/auth/types"
-import type {
-  AuthLoginResponseData,
-  AuthPhoneStatusResponseData,
-} from "@/lib/api/contracts/auth"
+import type { AuthStep, AuthOAuthProvider } from "@/features/auth/types"
+import type { AuthLoginResponseData } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
@@ -80,13 +77,12 @@ export function LoginPage() {
   const searchParams = useSearchParams()
   const toast = useAppToast()
   const { trackEvent } = useAppEventTracker()
-  const [mode, setMode] = useState<AuthMode>("login")
+  const [step, setStep] = useState<AuthStep>("idle")
   const [phone, setPhone] = useState("")
   const [code, setCode] = useState("")
   const [countdown, setCountdown] = useState(0)
   const [lastSentPhone, setLastSentPhone] = useState("")
   const [isSendingCode, setIsSendingCode] = useState(false)
-  const [phoneRegistrationCache, setPhoneRegistrationCache] = useState<Record<string, boolean>>({})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [oauthPendingProvider, setOauthPendingProvider] = useState<AuthOAuthProvider | null>(null)
   const [oauthDialog, setOauthDialog] = useState<OAuthDialogState>(null)
@@ -130,39 +126,12 @@ export function LoginPage() {
     }
   }
 
-  const checkPhoneRegistered = useCallback(async (normalizedPhone: string) => {
-    const cached = phoneRegistrationCache[normalizedPhone]
-
-    if (typeof cached === "boolean") {
-      return cached
-    }
-
-    const data = await requestData<AuthPhoneStatusResponseData>(
-      `/auth/phone-status?phone=${encodeURIComponent(normalizedPhone)}`,
-      {
-        method: "GET",
-      },
-    )
-
-    setPhoneRegistrationCache((prev) => ({
-      ...prev,
-      [normalizedPhone]: data.registered,
-    }))
-
-    return data.registered
-  }, [phoneRegistrationCache])
-
-  const switchToRegisterForUnregisteredPhone = useCallback(() => {
-    setCode("")
-    setCountdown(0)
-    setLastSentPhone("")
-    setMode("register")
-    setErrorMessage("当前手机号未注册，请先注册")
-  }, [])
-
   const startOAuthLink = useCallback(async (provider: AuthOAuthProvider, redirectTo?: string) => {
     const supabase = createSupabaseBrowserClient()
     const callbackParams = new URLSearchParams({ provider, flow: "link" })
+    if (redirectTo) {
+      callbackParams.set("redirectTo", redirectTo)
+    }
     const callbackUrl = `${window.location.origin}${ROUTES.authCallback}?${callbackParams.toString()}`
     const oauthProvider = provider === "wechat" ? WECHAT_PROVIDER : DOUYIN_PROVIDER
     const { data, error } = await supabase.auth.linkIdentity({
@@ -209,9 +178,9 @@ export function LoginPage() {
 
         if (provider) {
           setPendingBindProvider(provider)
-          setMode("login")
+          setStep("oauth-binding")
           setCode("")
-          setErrorMessage("该扫码账号还未绑定手机号。请先完成手机号验证，随后再次扫码完成绑定。")
+          setErrorMessage("该扫码账号还未绑定手机号，请完成手机号验证后继续。")
         }
         return
       }
@@ -222,6 +191,7 @@ export function LoginPage() {
         const redirectTo = pendingBindRedirectTo ?? ROUTES.learn
         setPendingBindProvider(null)
         setPendingBindRedirectTo(null)
+        setStep("idle")
         router.replace(getLoginRedirectTo(redirectTo))
         return
       }
@@ -234,7 +204,7 @@ export function LoginPage() {
       setOauthPendingProvider(null)
 
       trackEvent(APP_EVENTS.loginSubmit, {
-        mode,
+        step,
         loginType: event.data.provider ?? oauthDialog?.provider ?? "douyin",
         onboardingCompleted: Boolean(event.data.onboardingCompleted),
         legalAcceptedAt,
@@ -248,7 +218,7 @@ export function LoginPage() {
   }, [
     getLoginRedirectTo,
     legalAcceptedAt,
-    mode,
+    step,
     oauthDialog?.provider,
     pendingBindRedirectTo,
     router,
@@ -312,68 +282,6 @@ export function LoginPage() {
   }, [countdown])
 
   useEffect(() => {
-    if (mode !== "login" || pendingBindProvider) {
-      return
-    }
-
-    const normalizedPhone = normalizePhoneInput(phone)
-
-    if (normalizedPhone !== phone) {
-      return
-    }
-
-    if (!isValidChinaMainlandPhone(normalizedPhone)) {
-      return
-    }
-
-    if (phoneRegistrationCache[normalizedPhone] === true) {
-      return
-    }
-
-    if (phoneRegistrationCache[normalizedPhone] === false) {
-      switchToRegisterForUnregisteredPhone()
-      return
-    }
-
-    let cancelled = false
-    const timer = window.setTimeout(() => {
-      void (async () => {
-        try {
-          const registered = await checkPhoneRegistered(normalizedPhone)
-
-          if (cancelled) {
-            return
-          }
-
-          if (!registered) {
-            switchToRegisterForUnregisteredPhone()
-          }
-        } catch {
-          if (!cancelled) {
-            setPhoneRegistrationCache((prev) => {
-              const next = { ...prev }
-              delete next[normalizedPhone]
-              return next
-            })
-          }
-        }
-      })()
-    }, 250)
-
-    return () => {
-      cancelled = true
-      window.clearTimeout(timer)
-    }
-  }, [
-    checkPhoneRegistered,
-    mode,
-    pendingBindProvider,
-    phone,
-    phoneRegistrationCache,
-    switchToRegisterForUnregisteredPhone,
-  ])
-
-  useEffect(() => {
     let cancelled = false
 
     async function restoreExistingSession() {
@@ -433,20 +341,6 @@ export function LoginPage() {
       return
     }
 
-    if (mode === "login" && !pendingBindProvider) {
-      try {
-        const registered = await checkPhoneRegistered(normalizedPhone)
-
-        if (!registered) {
-          switchToRegisterForUnregisteredPhone()
-          return
-        }
-      } catch {
-        setErrorMessage("手机号注册状态检查失败，请稍后重试。")
-        return
-      }
-    }
-
     setErrorMessage(null)
     setIsSendingCode(true)
 
@@ -476,9 +370,7 @@ export function LoginPage() {
     ? "验证码发送中，通常 1 秒内送达。"
     : countdown > 0
       ? `验证码已发送至 ${lastSentPhone || phone}，${countdown}s 后可重新获取。`
-      : mode === "login"
-        ? "输入手机号并获取验证码，继续回到当前学习进度。"
-        : "完成手机号注册后，系统会继续引导你初始化学习路径。"
+      : "输入手机号，获取验证码登录或注册。"
 
   const handlePhoneSubmit = () => {
     const normalizedPhone = normalizePhoneInput(phone)
@@ -503,6 +395,8 @@ export function LoginPage() {
 
     startSubmitting(() => {
       void (async () => {
+        let appLoginFinalized = false
+
         try {
           const supabase = createSupabaseBrowserClient()
           const { data: otpData, error } = await supabase.auth.verifyOtp({
@@ -522,9 +416,10 @@ export function LoginPage() {
               loginType: "phone",
             }),
           })
+          appLoginFinalized = true
 
           trackEvent(APP_EVENTS.loginSubmit, {
-            mode,
+            step,
             loginType: "phone",
             onboardingCompleted: data.onboardingCompleted,
             legalAcceptedAt,
@@ -539,6 +434,9 @@ export function LoginPage() {
 
           router.push(redirectTo)
         } catch (error) {
+          if (!appLoginFinalized) {
+            await clearBrowserAuthSession()
+          }
           setErrorMessage(toFriendlyAuthError(error, "verify"))
         }
       })()
@@ -550,9 +448,9 @@ export function LoginPage() {
       <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
         <ThemeToggle />
       </div>
-      <LoginBrandPanel mode={mode} />
+      <LoginBrandPanel />
       <LoginForm
-        mode={mode}
+        step={step}
         phone={phone}
         code={code}
         countdown={countdown}
@@ -563,13 +461,16 @@ export function LoginPage() {
         activeOAuthProvider={oauthPendingProvider}
         oauthDialog={oauthDialog}
         agreedToLegal={agreedToLegal}
-        onModeToggle={() => {
-          setErrorMessage(null)
-          setOauthDialog(null)
-          setOauthPendingProvider(null)
+        onCancelOAuthBinding={() => {
+          setStep("idle")
           setPendingBindProvider(null)
+          const bindRedirectTo = pendingBindRedirectTo ?? null
           setPendingBindRedirectTo(null)
-          setMode((prev) => (prev === "login" ? "register" : "login"))
+          setCode("")
+          setErrorMessage(null)
+          if (bindRedirectTo) {
+            router.replace(bindRedirectTo)
+          }
         }}
         onPhoneChange={(value) => {
           setErrorMessage(null)

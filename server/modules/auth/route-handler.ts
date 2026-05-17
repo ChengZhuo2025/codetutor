@@ -18,6 +18,7 @@ import { isUserAccountDisabledError } from "../../lib/user-account-disabled.ts"
 import {
   isOAuthPhoneBindingRequiredError,
   isOAuthTempUserNotDiscardableError,
+  OAuthPhoneBindingRequiredError,
 } from "../../lib/oauth-auth-flow-errors.ts"
 import {
   jsonAuthRequired,
@@ -40,6 +41,39 @@ function appendUserSessionCookie(response: Response, userId: string) {
 function appendUserLogoutCookie(response: Response) {
   response.headers.append("Set-Cookie", buildSessionCookieHeader(USER_SESSION_COOKIE, "", 0))
   return response
+}
+
+function getUserIdentityProviders(user: User) {
+  return new Set(
+    (user.identities ?? [])
+      .map((identity) => identity.provider)
+      .filter((provider): provider is string => typeof provider === "string" && provider.length > 0),
+  )
+}
+
+function hasPhoneIdentity(user: User) {
+  return Boolean(user.phone) || getUserIdentityProviders(user).has("phone")
+}
+
+function hasOAuthIdentityForLoginType(user: User, loginType: AuthLoginType) {
+  if (loginType === "phone") {
+    return false
+  }
+
+  return getUserIdentityProviders(user).has(loginType)
+}
+
+function assertLoginTypeMatchesUserIdentity(user: User, loginType: AuthLoginType) {
+  if (loginType === "phone") {
+    if (!hasPhoneIdentity(user) && getUserIdentityProviders(user).size > 0) {
+      throw new OAuthPhoneBindingRequiredError()
+    }
+    return
+  }
+
+  if (!hasPhoneIdentity(user) && hasOAuthIdentityForLoginType(user, loginType)) {
+    throw new OAuthPhoneBindingRequiredError()
+  }
 }
 
 type RequestLike = {
@@ -75,6 +109,8 @@ export function createAuthLoginPostHandler(dependencies: {
       if (!input.ok) {
         return jsonError(input.code, input.message, 400)
       }
+
+      assertLoginTypeMatchesUserIdentity(auth.user, input.data.loginType)
 
       const data = await dependencies.finalizeAuthLogin(auth.user, input.data.loginType)
 

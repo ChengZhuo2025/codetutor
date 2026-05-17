@@ -328,7 +328,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 页面 | 路由 | 主要接口 | 说明 |
 |------|------|------|------|
 | 营销首页 | `/` | `GET /api/auth/session` | 首页导航、Hero、套餐区、页脚与最终 CTA 会根据登录态切换为“继续学习”，并跳转到 `/learn`、`/history` 或 `/onboarding` |
-| 登录页 | `/login` | `GET /api/auth/phone-status`、`POST /api/auth/login`、`GET/PATCH /api/profile/me`、`POST /api/profile/avatar` | 当前已打通手机号验证码登录、登录手机号注册状态预检、微信/抖音绑定后扫码登录、用户档案读取与资料编辑 |
+| 登录页 | `/login` | `POST /api/auth/login`、`GET /api/auth/phone-status`、`GET/PATCH /api/profile/me`、`POST /api/profile/avatar` | 当前已打通手机号验证码登录即注册、微信/抖音绑定后扫码登录、OAuth 未绑定手机号拦截与绑定、用户档案读取与资料编辑；`phone-status` 接口保留兼容，当前统一登录页不再做注册状态预检 |
 | 新手引导 | `/onboarding` | `GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete` | 产出主工具、学习等级、学习模式、初始学习路径实例 |
 | 学习页 | `/learn` | `GET /api/learning/current-session`、`POST /api/learning/restart-conversation`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`、`POST /api/learning/plan-from-material`、`GET /api/learning/material-intakes/{id}`、`GET/PATCH /api/learning/plan-drafts/{id}`、`POST /api/learning/plan-drafts/{id}/confirm`、`POST /api/learning/plan-drafts/{id}/regenerate`、`POST /api/learning/plan-drafts/{id}/tasks/{taskId}/regenerate` | 已打通学习主界面 read model、历史消息分页、真实 AI provider 消息编排、SSE 与任务状态写入；支持归档当前关卡活跃对话并清空任务会话指针后重头开始；自学模式（`selection_mode=self_directed`）已支持异步教程链接 intake、草稿详情编辑与确认后替换当前 active 路径 |
 | 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
@@ -408,7 +408,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 - 手机号登录若用户尚无业务资料，会创建 `user_profiles`、`user_learning_preferences` 与段位快照。
 - 已绑定微信/抖音扫码登录会落到同一个 `auth.users.id`，并只刷新最近登录来源与时间。
-- 未绑定微信/抖音扫码产生的 OAuth-only Auth 用户不会创建业务资料；前端会清理临时用户，再引导手机号验证码登录/注册，随后用 Supabase `linkIdentity` 发起二次扫码绑定。
+- 未绑定微信/抖音扫码产生的 OAuth-only Auth 用户不会创建业务资料；服务端不会信任客户端把这类 session 声明为 `phone` 登录，仍会返回 `OAUTH_PHONE_BINDING_REQUIRED`；前端会清理临时用户，再引导手机号验证码登录/注册，随后用 Supabase `linkIdentity` 发起二次扫码绑定。
 
 ## 5.1.1 `POST /api/auth/oauth-temp-user/discard`
 
@@ -448,8 +448,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 用途：
 
-- 登录 tab 中，手机号输入完整后预检该手机号是否已有用户端业务账号
-- 未注册时前端提示“当前手机号未注册，请先注册”，保留手机号并自动切换到注册 tab
+- 兼容保留的手机号业务账号状态查询接口。
+- 当前统一登录页采用“登录即注册”，不再调用该接口做注册状态预检，也不再自动切换注册 tab。
 
 查询参数：
 

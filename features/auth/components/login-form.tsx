@@ -21,7 +21,7 @@ import {
   getOAuthProviderMeta,
 } from "@/features/auth/lib/oauth-providers";
 import { isValidChinaMainlandPhone } from "@/features/auth/lib/phone-auth";
-import type { AuthMode, AuthOAuthProvider } from "@/features/auth/types";
+import type { AuthStep, AuthOAuthProvider } from "@/features/auth/types";
 import {
   PRIVACY_POLICY_CONTENT,
   USER_AGREEMENT_CONTENT,
@@ -30,7 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 
 type LoginFormProps = {
-  mode: AuthMode;
+  step: AuthStep;
   phone: string;
   code: string;
   countdown: number;
@@ -44,7 +44,7 @@ type LoginFormProps = {
     url: string;
   } | null;
   agreedToLegal: boolean;
-  onModeToggle: () => void;
+  onCancelOAuthBinding: () => void;
   onPhoneChange: (value: string) => void;
   onCodeChange: (value: string) => void;
   onSendCode: () => void;
@@ -199,7 +199,7 @@ function OAuthScanDialog({ dialog, onOpenChange }: OAuthScanDialogProps) {
 }
 
 export function LoginForm({
-  mode,
+  step,
   phone,
   code,
   countdown,
@@ -210,7 +210,7 @@ export function LoginForm({
   activeOAuthProvider,
   oauthDialog,
   agreedToLegal,
-  onModeToggle,
+  onCancelOAuthBinding,
   onPhoneChange,
   onCodeChange,
   onSendCode,
@@ -219,11 +219,11 @@ export function LoginForm({
   onOAuthDialogOpenChange,
   onAgreementChange,
 }: LoginFormProps) {
+  const isOAuthBinding = step === "oauth-binding";
   const isValidPhone = isValidChinaMainlandPhone(phone);
   const isValidCode = /^\d{6}$/.test(code);
   const canSubmit = isValidPhone && isValidCode && agreedToLegal;
   const hasPhoneInput = phone.length > 0;
-  const shouldShowOAuthLoginMethods = mode === "login";
   const showPhoneLengthHint = hasPhoneInput && phone.length < 11;
   const showPhoneFormatError = phone.length === 11 && !isValidPhone;
   const phoneValidationMessage = showPhoneLengthHint
@@ -237,43 +237,14 @@ export function LoginForm({
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,oklch(0.52_0.12_180/0.06),transparent_28%)] dark:bg-[radial-gradient(circle_at_top,oklch(0.78_0.15_180/0.08),transparent_28%)]" />
 
       <div className="relative z-10 w-full max-w-sm">
-        {/* 登录/注册切换 - 文字链接样式，与下方 tab 区分 */}
-        <div className="mb-8 flex items-center justify-center gap-6">
-          <button
-            type="button"
-            onClick={() => mode !== "login" && onModeToggle()}
-            className={cn(
-              "text-base font-medium transition-colors",
-              mode === "login"
-                ? "text-brand font-bold"
-                : "text-muted-foreground hover:text-brand",
-            )}
-          >
-            登录
-          </button>
-          <div className="h-4 w-px bg-border" />
-          <button
-            type="button"
-            onClick={() => mode !== "register" && onModeToggle()}
-            className={cn(
-              "text-base font-medium transition-colors",
-              mode === "register"
-                ? "text-brand font-bold"
-                : "text-muted-foreground hover:text-brand",
-            )}
-          >
-            注册
-          </button>
-        </div>
-
-        <div className="mt-6 mb-6">
+        <div className="mb-8">
           <h1 className="text-[2rem] font-bold tracking-tight">
-            {mode === "login" ? "欢迎回来" : "创建账号"}
+            {isOAuthBinding ? "绑定手机号" : "登录 / 注册"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {mode === "login"
-              ? "请输入手机号验证码"
-              : "使用手机号快速创建账号"}
+            {isOAuthBinding
+              ? "请输入手机号完成绑定，已有账号会自动关联。"
+              : "输入手机号，验证码登录或注册。"}
           </p>
         </div>
 
@@ -407,18 +378,14 @@ export function LoginForm({
             disabled={!canSubmit || isSubmitting}
             className={cn("mt-1 h-12 w-full text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
           >
-            {isSubmitting
-              ? "进入学习流程中..."
-              : mode === "login"
-                ? "继续学习"
-                : "注册并开始学习"}
+            {isSubmitting ? "处理中..." : "继续"}
             <ArrowRight className="h-4 w-4" />
           </Button>
 
           {errorMessage ? (
             <StatePanel
               status="error"
-              title={mode === "login" ? "登录失败" : "注册失败"}
+              title="操作失败"
               description={errorMessage}
               compact
             />
@@ -448,7 +415,7 @@ export function LoginForm({
           </label>
         </form>
 
-        {shouldShowOAuthLoginMethods ? (
+        {!isOAuthBinding ? (
           <>
             <div className="relative mt-5">
               <div className="absolute inset-0 flex items-center">
@@ -501,25 +468,22 @@ export function LoginForm({
               })}
             </div>
           </>
-        ) : null}
+        ) : (
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={onCancelOAuthBinding}
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              取消绑定，返回登录
+            </button>
+          </div>
+        )}
 
-        {shouldShowOAuthLoginMethods ? (
-          <OAuthScanDialog dialog={oauthDialog} onOpenChange={onOAuthDialogOpenChange} />
-        ) : null}
+        <OAuthScanDialog dialog={oauthDialog} onOpenChange={onOAuthDialogOpenChange} />
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          {mode === "login" ? "还没有账号？" : "已有账号？"}
-          <button
-            type="button"
-            onClick={onModeToggle}
-            className="ml-1 font-medium text-brand transition-colors hover:text-brand/80"
-          >
-            {mode === "login" ? "免费注册" : "去登录"}
-          </button>
-        </p>
-
-        <p className="mt-2 text-center text-xs leading-5 text-muted-foreground/60">
-          未勾选协议前不可发送验证码或提交登录。
+        <p className="mt-6 text-center text-xs leading-5 text-muted-foreground/60">
+          未勾选协议前不可发送验证码或提交。
         </p>
 
         <div className="mt-3 pt-2 border-t border-border/50 text-center">

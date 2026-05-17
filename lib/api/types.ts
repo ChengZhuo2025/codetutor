@@ -40,9 +40,25 @@ export type ApiErrorResponse = {
 
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse
 
+export class ApiError extends Error {
+  readonly code: ApiErrorResponse["code"]
+  readonly data: null
+
+  constructor(response: ApiErrorResponse) {
+    super(response.message)
+    this.name = "ApiError"
+    this.code = response.code
+    this.data = response.data
+  }
+}
+
+export function isApiError(error: unknown): error is ApiError {
+  return error instanceof ApiError
+}
+
 export function unwrapResponse<T>(response: ApiResponse<T>): T {
   if (response.code !== "OK") {
-    throw new Error(response.message)
+    throw new ApiError(response)
   }
 
   return response.data

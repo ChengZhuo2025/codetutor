@@ -3,13 +3,7 @@ import { APP_NAME } from "@/constants/app"
 import { AUTH_PREVIEW_TOOL_CODES, getToolName } from "@/constants/tools"
 import { marketingConversationMessages } from "@/features/marketing/data/marketing-content"
 import { cn } from "@/lib/utils"
-import type { AuthMode } from "@/features/auth/types"
-
-type LoginBrandPanelProps = {
-  mode: AuthMode
-}
-
-export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
+export function LoginBrandPanel() {
   const previewTools = AUTH_PREVIEW_TOOL_CODES.map((code) => getToolName(code))
 
   return (
@@ -50,7 +44,7 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
           </div>
         </div>
         <div className="rounded-full border border-brand/20 bg-brand-dim px-3 py-1 text-xs font-medium text-brand">
-          {mode === "login" ? "回到学习流程" : "开始学习之旅"}
+          开始学习之旅
         </div>
       </div>
 
@@ -67,27 +61,13 @@ export function LoginBrandPanel({ mode }: LoginBrandPanelProps) {
           ))}
         </div>
 
-        {mode === "login" ? (
-          <>
-            <h2 className="text-3xl font-bold leading-tight tracking-tight text-balance">
-              不只是登录 
-              <span className="text-brand"> 是直接回到今天要完成的第一步</span>
-            </h2>
-            <p className="mt-1 text-sm leading-7 text-muted-foreground">
-              登录后立刻看到当前关卡、AI 教练提示和下一步待办，不需要重新回忆自己上次学到哪里。
-            </p>
-          </>
-        ) : (
-          <>
-            <h2 className="text-3xl font-bold leading-tight tracking-tight text-balance">
-              从零开始也没关系
-              <span className="text-brand"> AI 教练会陪你走完每一步</span>
-            </h2>
-            <p className="mt-1 text-sm leading-7 text-muted-foreground">
-              注册后会根据你选择的工具和水平，自动生成一条适合你的学习路径，从第一步开始陪你练。
-            </p>
-          </>
-        )}
+        <h2 className="text-3xl font-bold leading-tight tracking-tight text-balance">
+            登录即注册
+            <span className="text-brand"> AI 教练会陪你走完每一步</span>
+          </h2>
+          <p className="mt-1 text-sm leading-7 text-muted-foreground">
+            手机号验证码、微信或抖音扫码均可直接登录。首次登录会自动创建账号，并根据你的选择生成专属学习路径。
+          </p>
       </div>
 
       {/* AI 导师对话 - 复用首页滚动对话 */}

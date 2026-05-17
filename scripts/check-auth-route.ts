@@ -7,6 +7,7 @@ import {
   createAuthLogoutPostHandler,
   createOAuthTempUserDiscardPostHandler,
 } from "../server/modules/auth/route-handler.ts"
+import { ApiError, unwrapResponse } from "../lib/api/types.ts"
 
 function createJsonRequest(url: string, body: string, headers?: HeadersInit) {
   return new Request(url, {
@@ -122,6 +123,62 @@ test("auth login route requires phone binding for oauth-only users", async () =>
     message: "请先绑定手机号后再继续。",
     data: null,
   })
+})
+
+test("auth login route refuses to treat oauth-only users as phone login", async () => {
+  const handler = createAuthLoginPostHandler({
+    getRequestAuth: async () => ({
+      user: {
+        id: "oauth-user-1",
+        phone: null,
+        identities: [
+          {
+            provider: "wechat",
+          },
+        ],
+      } as never,
+    }),
+    getRequestAuthHelpText: () => "auth required",
+    finalizeAuthLogin: async () => ({
+      userId: "oauth-user-1",
+      isNewUser: true,
+      onboardingCompleted: false,
+      profileCompleted: false,
+      redirectTo: "/onboarding",
+    }),
+  })
+
+  const response = await handler(
+    createJsonRequest(
+      "http://localhost:3000/api/auth/login",
+      JSON.stringify({ loginType: "phone" }),
+      { Authorization: "Bearer oauth-token" },
+    ),
+  )
+
+  assert.equal(response.status, 409)
+  assert.deepEqual(await response.json(), {
+    code: "OAUTH_PHONE_BINDING_REQUIRED",
+    message: "请先绑定手机号后再继续。",
+    data: null,
+  })
+})
+
+test("api response unwrap preserves error code for callers", () => {
+  assert.throws(
+    () =>
+      unwrapResponse({
+        code: "OAUTH_PHONE_BINDING_REQUIRED",
+        message: "请先绑定手机号后再继续。",
+        data: null,
+      }),
+    (error) => {
+      assert.ok(error instanceof ApiError)
+      assert.equal(error.code, "OAUTH_PHONE_BINDING_REQUIRED")
+      assert.equal(error.message, "请先绑定手机号后再继续。")
+      return true
+    },
+  )
 })
 
 test("oauth temp user discard route deletes discardable oauth-only user", async () => {

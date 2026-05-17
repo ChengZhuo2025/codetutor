@@ -9,6 +9,7 @@ import {
 } from "@/features/auth/lib/oauth-providers"
 import type { AuthLoginResponseData } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
+import { isApiError } from "@/lib/api/types"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { ROUTES } from "@/constants/routes"
 
@@ -125,6 +126,18 @@ function getCallbackFlow(value: string | null): OAuthCallbackFlow {
   return value === "link" ? "link" : "login"
 }
 
+function getSafeInternalRedirectTo(value: string | null) {
+  if (!value?.startsWith("/")) {
+    return null
+  }
+
+  if (value.startsWith("//")) {
+    return null
+  }
+
+  return value
+}
+
 function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -208,7 +221,7 @@ function AuthCallbackContent() {
           }
 
           if (!cancelled) {
-            router.replace(ROUTES.learn)
+            router.replace(getSafeInternalRedirectTo(searchParams.get("redirectTo")) ?? ROUTES.learn)
           }
           return
         }
@@ -238,7 +251,13 @@ function AuthCallbackContent() {
 
         const message = error instanceof Error ? error.message : `${providerMeta.label}回调处理失败`
 
-        if (flow === "login" && message.includes("绑定手机号")) {
+        if (
+          flow === "login"
+          && (
+            (isApiError(error) && error.code === "OAUTH_PHONE_BINDING_REQUIRED")
+            || message.includes("绑定手机号")
+          )
+        ) {
           try {
             const supabase = createSupabaseBrowserClient()
             const {
@@ -260,6 +279,11 @@ function AuthCallbackContent() {
           }
         }
 
+        if (flow === "login") {
+          const supabase = createSupabaseBrowserClient()
+          await supabase.auth.signOut({ scope: "local" }).catch(() => undefined)
+          await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined)
+        }
         setStatus("error")
         setMessage(message)
       }

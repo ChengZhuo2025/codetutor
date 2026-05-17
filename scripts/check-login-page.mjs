@@ -45,13 +45,13 @@ assert.match(
 )
 assert.match(
   loginFormSource,
-  /shouldShowOAuthLoginMethods\s*=\s*mode === "login"/,
-  "Login form should only render OAuth scan entries in login mode.",
+  /isOAuthBinding\s*=\s*step === "oauth-binding"/,
+  "Login form should track the OAuth phone-binding step explicitly.",
 )
 assert.match(
   loginFormSource,
-  /shouldShowOAuthLoginMethods \? \(/,
-  "Login form should hide the other-login-methods section when the register tab is active.",
+  /!isOAuthBinding \? \(/,
+  "Login form should hide the other-login-methods section while an OAuth account is binding a phone.",
 )
 assert.match(
   loginFormSource,
@@ -124,7 +124,7 @@ assert.match(
 assert.match(
   loginPageSource,
   /signOut\(\{ scope: "local" \}\)/,
-  "Login page should clear the local Supabase session when restoring a stale browser session fails.",
+  "Login page should clear the local Supabase session when restoring a stale browser session or finalizing app login fails.",
 )
 assert.match(
   loginFormSource,
@@ -181,20 +181,10 @@ assert.match(
   /pendingBindProvider/,
   "Login page should keep track of an OAuth provider waiting for phone binding.",
 )
-assert.match(
+assert.doesNotMatch(
   loginPageSource,
-  /\/auth\/phone-status\?phone=/,
-  "Login page should check whether a completed login phone has already registered.",
-)
-assert.match(
-  loginPageSource,
-  /当前手机号未注册，请先注册/,
-  "Login page should explain when a completed login phone is not registered.",
-)
-assert.match(
-  loginPageSource,
-  /setMode\("register"\)/,
-  "Login page should switch to the register tab when the login phone is not registered.",
+  /\/auth\/phone-status\?phone=|当前手机号未注册，请先注册|setMode\("register"\)/,
+  "Login page should no longer branch into a separate register tab now that phone login creates users when needed.",
 )
 assert.match(
   loginPageSource,
@@ -205,6 +195,16 @@ assert.match(
   loginPageSource,
   /flow", "link"|flow: "link"|flow=link/,
   "Login page should use a dedicated link callback flow for manual identity linking.",
+)
+assert.match(
+  callbackSource,
+  /isApiError\(error\).*OAUTH_PHONE_BINDING_REQUIRED/s,
+  "Auth callback should branch on structured API error codes for phone binding.",
+)
+assert.match(
+  callbackSource,
+  /getSafeInternalRedirectTo\(searchParams\.get\("redirectTo"\)\)/,
+  "Auth callback should preserve a safe intended redirect after standalone identity-link callbacks.",
 )
 
 console.log("Login page keeps a stable phone-first layout with OAuth scan entries.")

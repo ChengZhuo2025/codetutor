@@ -1,4 +1,4 @@
-export type AuthMode = "login" | "register"
+export type AuthStep = "idle" | "oauth-binding"
 export type AuthOAuthProvider = "wechat" | "douyin"
 
 export type AuthPreviewStep = {
