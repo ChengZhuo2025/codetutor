@@ -25,7 +25,7 @@ import {
   OAUTH_PROVIDERS,
   getOAuthProviderMeta,
 } from "@/features/auth/lib/oauth-providers"
-import type { AuthOAuthProvider } from "@/features/auth/types"
+import type { AuthOAuthProvider, OAuthProviderProfile } from "@/features/auth/types"
 import {
   PROFILE_AVATAR_ALLOWED_TYPES,
   PROFILE_AVATAR_BUCKET,
@@ -60,6 +60,7 @@ type ProfileFormState = {
 type OAuthLinkedMessage = {
   type: "codetutor.oauth.linked"
   provider?: AuthOAuthProvider
+  providerProfile?: OAuthProviderProfile | null
 }
 
 const OAUTH_POPUP_FEATURES = "width=820,height=720,scrollbars=yes,resizable=yes"
@@ -145,6 +146,12 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const avatarFileInputRef = useRef<HTMLInputElement>(null)
 
+  const loadProfileData = useCallback(async () => {
+    const data = await requestData<ProfileMeResponseData>("/profile/me")
+    setProfile(toFormState(data))
+    return data
+  }, [])
+
   useEffect(() => {
     if (!open) {
       setErrorMessage(null)
@@ -161,13 +168,12 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
       setSuccessMessage(null)
 
       try {
-        const data = await requestData<ProfileMeResponseData>("/profile/me")
+        await loadProfileData()
 
         if (cancelled) {
           return
         }
 
-        setProfile(toFormState(data))
       } catch (error) {
         if (cancelled) {
           return
@@ -186,7 +192,7 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
     return () => {
       cancelled = true
     }
-  }, [open])
+  }, [loadProfileData, open])
 
   const loadIdentities = useCallback(async () => {
     const supabase = createSupabaseBrowserClient()
@@ -242,12 +248,21 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
 
       setActiveLinkProvider(null)
       void loadIdentities()
-      setSuccessMessage("登录方式已绑定。")
+      void (async () => {
+        const data = await loadProfileData()
+        dispatchProfileUpdated(data)
+        onSaved?.(data)
+      })()
+      setSuccessMessage(
+        event.data.providerProfile?.nickname || event.data.providerProfile?.avatarUrl
+          ? "账号已绑定，第三方昵称或头像已按你的选择处理。"
+          : "账号已绑定。",
+      )
     }
 
     window.addEventListener("message", handleOAuthLinked)
     return () => window.removeEventListener("message", handleOAuthLinked)
-  }, [loadIdentities])
+  }, [loadIdentities, loadProfileData, onSaved])
 
   const handleLinkProvider = async (provider: AuthOAuthProvider) => {
     setActiveLinkProvider(provider)

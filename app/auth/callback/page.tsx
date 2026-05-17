@@ -1,20 +1,35 @@
 "use client"
 
+import Image from "next/image"
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { StatePanel } from "@/components/ui/state-panel"
+import { Button } from "@/components/ui/button"
 import {
   getOAuthProviderMeta,
   isOAuthProvider,
 } from "@/features/auth/lib/oauth-providers"
-import type { AuthLoginResponseData } from "@/lib/api/contracts/auth"
+import type { AuthLoginResponseData, ProfileMeResponseData } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
 import { isApiError } from "@/lib/api/types"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { ROUTES } from "@/constants/routes"
+import type { OAuthProviderProfile } from "@/features/auth/types"
+import { USER_BUTTON_PRIMARY_CLASS, USER_BUTTON_SECONDARY_CLASS } from "@/components/ui/surface-styles"
+import { cn } from "@/lib/utils"
 
 const SUBSCRIBE_INTENT_PARAM = "intent=subscribe"
 type OAuthCallbackFlow = "login" | "link"
+
+type OAuthCallbackSuccessContext = {
+  flow: OAuthCallbackFlow
+  provider: string
+  redirectTo: string
+  loginData?: AuthLoginResponseData
+  onboardingCompleted?: boolean
+  providerProfile: OAuthProviderProfile | null
+  canNotifyParent: boolean
+}
 
 function withAuthorization(accessToken: string | null | undefined) {
   if (!accessToken) {
@@ -45,7 +60,12 @@ function getHashSessionTokens() {
   }
 }
 
-function notifyParentAuthCompleted(data: AuthLoginResponseData, provider: string, redirectTo: string) {
+function notifyParentAuthCompleted(
+  data: AuthLoginResponseData,
+  provider: string,
+  redirectTo: string,
+  providerProfile: OAuthProviderProfile | null,
+) {
   if (typeof window === "undefined") {
     return false
   }
@@ -55,6 +75,7 @@ function notifyParentAuthCompleted(data: AuthLoginResponseData, provider: string
     provider,
     redirectTo,
     onboardingCompleted: data.onboardingCompleted,
+    providerProfile,
   }
 
   let notified = false
@@ -97,7 +118,7 @@ function notifyParentOAuthBindingRequired(provider: string) {
   return notified
 }
 
-function notifyParentOAuthLinked(provider: string) {
+function notifyParentOAuthLinked(provider: string, providerProfile: OAuthProviderProfile | null) {
   if (typeof window === "undefined") {
     return false
   }
@@ -105,6 +126,7 @@ function notifyParentOAuthLinked(provider: string) {
   const payload = {
     type: "codetutor.oauth.linked",
     provider,
+    providerProfile,
   }
 
   let notified = false
@@ -132,6 +154,79 @@ function closeOpenedOAuthWindow() {
   }, 350)
 }
 
+function readMetadataString(metadata: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = metadata[key]
+
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim()
+    }
+  }
+
+  return null
+}
+
+function extractOAuthProviderProfile(user: unknown): OAuthProviderProfile | null {
+  if (!user || typeof user !== "object") {
+    return null
+  }
+
+  const metadata = ((user as { user_metadata?: unknown }).user_metadata ?? {}) as Record<string, unknown>
+  const identityMetadata = ((user as { identities?: Array<{ identity_data?: unknown }> }).identities ?? [])
+    .map((identity) => identity.identity_data)
+    .find((value): value is Record<string, unknown> => Boolean(value) && typeof value === "object")
+    ?? {}
+  const merged = {
+    ...identityMetadata,
+    ...metadata,
+  }
+
+  const nickname = readMetadataString(merged, [
+    "nickname",
+    "name",
+    "full_name",
+    "user_name",
+    "preferred_username",
+    "screen_name",
+  ])
+  const avatarUrl = readMetadataString(merged, [
+    "avatar_url",
+    "picture",
+    "headimgurl",
+    "avatar",
+    "profile_image_url",
+  ])
+
+  if (!nickname && !avatarUrl) {
+    return null
+  }
+
+  return {
+    nickname,
+    avatarUrl,
+  }
+}
+
+function hasProviderProfile(profile: OAuthProviderProfile | null) {
+  return Boolean(profile?.nickname || profile?.avatarUrl)
+}
+
+async function applyOAuthProfileToCurrentUser(providerProfile: OAuthProviderProfile) {
+  const current = await requestData<ProfileMeResponseData>("/profile/me")
+  const next = await requestData<ProfileMeResponseData>("/profile/me", {
+    method: "PATCH",
+    body: JSON.stringify({
+      nickname: providerProfile.nickname ?? current.nickname,
+      avatarUrl: providerProfile.avatarUrl ?? current.avatarUrl,
+      contactEmail: current.contactEmail,
+      wechat: current.wechat,
+      bio: current.bio,
+    }),
+  })
+
+  return next
+}
+
 function getCallbackFlow(value: string | null): OAuthCallbackFlow {
   return value === "link" ? "link" : "login"
 }
@@ -153,6 +248,53 @@ function AuthCallbackContent() {
   const searchParams = useSearchParams()
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
   const [message, setMessage] = useState("正在完成登录状态同步。")
+  const [successContext, setSuccessContext] = useState<OAuthCallbackSuccessContext | null>(null)
+  const [isApplyingProfile, setIsApplyingProfile] = useState(false)
+
+  const finishOAuthSuccess = (context = successContext) => {
+    if (!context) {
+      window.close()
+      return
+    }
+
+    if (context.flow === "link") {
+      if (context.canNotifyParent) {
+        notifyParentOAuthLinked(context.provider, context.providerProfile)
+        closeOpenedOAuthWindow()
+        return
+      }
+
+      router.replace(context.redirectTo)
+      return
+    }
+
+    if (context.canNotifyParent && context.loginData) {
+      notifyParentAuthCompleted(context.loginData, context.provider, context.redirectTo, context.providerProfile)
+      closeOpenedOAuthWindow()
+      return
+    }
+
+    router.replace(context.redirectTo)
+  }
+
+  const handleApplyProviderProfile = async () => {
+    if (!successContext?.providerProfile || !hasProviderProfile(successContext.providerProfile)) {
+      finishOAuthSuccess()
+      return
+    }
+
+    setIsApplyingProfile(true)
+
+    try {
+      await applyOAuthProfileToCurrentUser(successContext.providerProfile)
+      finishOAuthSuccess()
+    } catch (error) {
+      setStatus("error")
+      setMessage(error instanceof Error ? error.message : "同步昵称或头像失败，请稍后重试。")
+    } finally {
+      setIsApplyingProfile(false)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -224,10 +366,29 @@ function AuthCallbackContent() {
           }
         }
 
+        const {
+          data: { user },
+        } = await supabase.auth.getUser(accessToken)
+        const providerProfile = extractOAuthProviderProfile(user)
+
         if (flow === "link") {
-          if (!cancelled && notifyParentOAuthLinked(provider)) {
+          const canNotifyParent = typeof window !== "undefined" && Boolean(window.opener && !window.opener.closed || window.parent !== window)
+          if (!cancelled && hasProviderProfile(providerProfile)) {
             setStatus("success")
-            setMessage("账号绑定成功，正在返回主页面。")
+            setMessage(`${providerMeta.label.replace("扫码登录", "")}账号已绑定。你可以继续使用当前资料，也可以把第三方昵称或头像同步到 CodeTutor。`)
+            setSuccessContext({
+              flow,
+              provider,
+              redirectTo: getSafeInternalRedirectTo(searchParams.get("redirectTo")) ?? ROUTES.learn,
+              providerProfile,
+              canNotifyParent,
+            })
+            return
+          }
+
+          if (!cancelled && notifyParentOAuthLinked(provider, providerProfile)) {
+            setStatus("success")
+            setMessage(`${providerMeta.label.replace("扫码登录", "")}账号已完成绑定，正在返回个人资料。`)
             closeOpenedOAuthWindow()
             return
           }
@@ -248,9 +409,25 @@ function AuthCallbackContent() {
 
         const redirectTo = loginRedirectTo ?? data.redirectTo
 
-        if (!cancelled && notifyParentAuthCompleted(data, provider, redirectTo)) {
+        const canNotifyParent = typeof window !== "undefined" && Boolean(window.opener && !window.opener.closed || window.parent !== window)
+        if (!cancelled && hasProviderProfile(providerProfile)) {
           setStatus("success")
-          setMessage("登录成功，正在返回主页面。")
+          setMessage(`欢迎回来，正在进入 CodeTutor。你也可以先使用 ${providerMeta.label.replace("扫码登录", "")} 的昵称或头像更新资料。`)
+          setSuccessContext({
+            flow,
+            provider,
+            redirectTo,
+            loginData: data,
+            onboardingCompleted: data.onboardingCompleted,
+            providerProfile,
+            canNotifyParent,
+          })
+          return
+        }
+
+        if (!cancelled && notifyParentAuthCompleted(data, provider, redirectTo, providerProfile)) {
+          setStatus("success")
+          setMessage("欢迎回来，正在进入 CodeTutor。")
           closeOpenedOAuthWindow()
           return
         }
@@ -319,8 +496,55 @@ function AuthCallbackContent() {
           status={status}
           title={status === "loading" ? "正在完成登录" : status === "success" ? "处理完成" : "登录失败"}
           description={message}
-          actionLabel={status === "success" ? "关闭窗口" : undefined}
-          onAction={status === "success" ? () => window.close() : undefined}
+          extra={status === "success" && hasProviderProfile(successContext?.providerProfile ?? null) ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/55 p-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-dim text-sm font-bold text-brand">
+                  {successContext?.providerProfile?.avatarUrl ? (
+                    <Image
+                      src={successContext.providerProfile.avatarUrl}
+                      alt={successContext.providerProfile.nickname ?? "第三方头像"}
+                      width={48}
+                      height={48}
+                      unoptimized
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    successContext?.providerProfile?.nickname?.slice(0, 1) ?? "你"
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {successContext?.providerProfile?.nickname ?? "第三方头像"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {getOAuthProviderMeta((successContext?.provider ?? "wechat") as never).label.replace("扫码登录", "")}资料
+                  </p>
+                </div>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  onClick={handleApplyProviderProfile}
+                  disabled={isApplyingProfile}
+                  className={cn("h-10", USER_BUTTON_PRIMARY_CLASS)}
+                >
+                  {isApplyingProfile ? "同步中..." : "使用昵称或头像"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => finishOAuthSuccess()}
+                  disabled={isApplyingProfile}
+                  className={cn("h-10", USER_BUTTON_SECONDARY_CLASS)}
+                >
+                  暂不使用，继续
+                </Button>
+              </div>
+            </div>
+          ) : undefined}
+          actionLabel={status === "success" && !hasProviderProfile(successContext?.providerProfile ?? null) ? "关闭窗口" : undefined}
+          onAction={status === "success" && !hasProviderProfile(successContext?.providerProfile ?? null) ? () => window.close() : undefined}
         />
       </div>
     </div>

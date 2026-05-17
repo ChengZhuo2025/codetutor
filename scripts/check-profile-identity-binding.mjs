@@ -32,6 +32,24 @@ assert.match(
 
 assert.match(
   source,
+  /providerProfile/,
+  "Profile dialog should receive the OAuth provider nickname/avatar after a successful link.",
+)
+
+assert.match(
+  source,
+  /setProfile\(toFormState\(data\)\)/,
+  "Profile dialog should refresh local form state after the callback applies a provider nickname or avatar.",
+)
+
+assert.match(
+  source,
+  /账号已绑定/,
+  "Profile dialog should use binding-specific success copy after OAuth linking.",
+)
+
+assert.match(
+  source,
   /openOAuthLinkPopup/,
   "Profile dialog should open hosted OAuth linking in a real popup window.",
 )

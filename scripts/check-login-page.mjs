@@ -214,8 +214,33 @@ assert.match(
 )
 assert.match(
   callbackSource,
-  /notifyParentOAuthLinked\(provider\)[\s\S]*setStatus\("success"\)[\s\S]*closeOpenedOAuthWindow\(\)/,
-  "Auth callback should show completion and close the popup after identity linking succeeds.",
+  /extractOAuthProviderProfile/,
+  "Auth callback should extract the OAuth provider nickname and avatar from Supabase user metadata.",
+)
+assert.match(
+  callbackSource,
+  /providerProfile/,
+  "Auth callback should include the provider profile in completion messages and the success UI.",
+)
+assert.match(
+  callbackSource,
+  /欢迎回来|正在进入 CodeTutor/,
+  "OAuth login success should use friendly login-specific copy.",
+)
+assert.match(
+  callbackSource,
+  /账号已绑定|已完成绑定/,
+  "OAuth linking success should use binding-specific copy instead of login copy.",
+)
+assert.match(
+  callbackSource,
+  /使用昵称或头像/,
+  "OAuth success UI should offer applying the provider nickname or avatar to the CodeTutor profile.",
+)
+assert.match(
+  callbackSource,
+  /applyOAuthProfileToCurrentUser/,
+  "Auth callback should let users apply the provider nickname/avatar to their profile before continuing.",
 )
 assert.match(
   loginPageSource,
