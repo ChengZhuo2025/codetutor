@@ -41,6 +41,8 @@ export type AdminSettingsOverviewCurrentAdmin = {
   displayName: string
   avatarUrl: string | null
   email: string | null
+  loginEmail: string | null
+  contactEmail: string | null
   status: AdminAccountStatus
   roles: AdminRoleCode[]
   lastLoginAt: string | null
@@ -87,6 +89,8 @@ export type AdminSettingsAdminAccountListItem = {
   displayName: string
   avatarUrl: string | null
   email: string | null
+  loginEmail: string | null
+  contactEmail: string | null
   roles: AdminRoleCode[]
   status: AdminAccountStatus
   lastLoginAt: string | null

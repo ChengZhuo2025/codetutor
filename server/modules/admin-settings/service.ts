@@ -225,6 +225,8 @@ async function buildAdminAccountItems(status?: "all" | "active" | "inactive" | "
     displayName: row.display_name,
     avatarUrl: avatarMap.get(row.user_id) ?? null,
     email: emailMap.get(row.user_id) ?? null,
+    loginEmail: emailMap.get(row.user_id) ?? null,
+    contactEmail: null,
     roles: normalizeRoles(row),
     status: row.status,
     lastLoginAt: row.last_login_at,

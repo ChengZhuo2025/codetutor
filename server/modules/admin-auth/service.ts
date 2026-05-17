@@ -13,6 +13,7 @@ import { hashSensitiveValue } from "@/server/lib/request-fingerprint"
 import { createRuntimeCache } from "@/server/lib/runtime-cache"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import type { AdminAccountStatus, AdminRoleCode, AdminSessionResponseData } from "@/lib/api/contracts/admin"
+import type { UpdateAdminLoginEmailResponseData } from "@/lib/api/contracts/auth"
 
 export type AdminLoginResult = {
   sessionData: AdminSessionResponseData
@@ -104,7 +105,7 @@ function toAdminSessionData(account: AdminAccountRow): AdminSessionResponseData 
 
 async function writeAdminAuditLog(input: {
   adminAccountId: string
-  action: "login" | "logout" | "password_change"
+  action: "login" | "logout" | "password_change" | "login_email_change"
   requestContext: Record<string, unknown>
 }) {
   const supabase = createSupabaseAdminClient()
@@ -338,6 +339,53 @@ export async function adminChangePassword(input: {
     action: "password_change",
     requestContext: { userId: input.session.userId },
   })
+}
+
+export async function updateAdminLoginEmail(input: {
+  session: AdminSessionResponseData
+  email: string
+}): Promise<UpdateAdminLoginEmailResponseData> {
+  const email = input.email.trim().toLowerCase()
+  const supabaseAdmin = createSupabaseAdminClient()
+  const { data: beforeData, error: beforeError } = await supabaseAdmin.auth.admin.getUserById(
+    input.session.userId,
+  )
+
+  assertSupabaseSuccess(beforeError, "failed to get auth user for login email change")
+
+  const beforeEmail = beforeData.user?.email?.trim().toLowerCase() ?? null
+
+  if (beforeEmail === email) {
+    throw new Error("ADMIN_LOGIN_EMAIL_UNCHANGED")
+  }
+
+  const { data, error } = await supabaseAdmin.auth.admin.updateUserById(input.session.userId, {
+    email,
+    email_confirm: true,
+  })
+
+  assertSupabaseSuccess(error, "failed to update admin login email")
+
+  const updatedEmail = data.user?.email?.trim()
+
+  if (!updatedEmail) {
+    throw new Error("ADMIN_AUTH_EMAIL_MISSING")
+  }
+
+  await writeAdminAuditLog({
+    adminAccountId: input.session.adminAccountId,
+    action: "login_email_change",
+    requestContext: {
+      userId: input.session.userId,
+      beforeEmail,
+      afterEmail: updatedEmail,
+    },
+  })
+
+  return {
+    userId: input.session.userId,
+    email: updatedEmail,
+  }
 }
 
 /**

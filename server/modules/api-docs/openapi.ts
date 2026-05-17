@@ -48,6 +48,8 @@ import {
   adminAITestResponseDataSchema,
   adminDashboardOverviewResponseDataSchema,
   adminChangePasswordRequestSchema,
+  adminLoginEmailUpdateRequestSchema,
+  adminLoginEmailUpdateResponseDataSchema,
   adminLoginRequestSchema,
   adminSessionResponseDataSchema,
   adminSettingsAdminAccountIdParamsSchema,
@@ -170,6 +172,8 @@ const profileMeExample = {
   avatarUrl: "https://cdn.example.com/avatar/user-123.png",
   phone: "13800000000",
   email: "bao@example.com",
+  loginEmail: "bao@example.com",
+  contactEmail: "ops@example.com",
   wechat: "bao_cursor",
   bio: "正在用真实项目学习 Cursor。",
   primaryTool: {
@@ -547,6 +551,8 @@ const adminSettingsOverviewExample = {
     displayName: "超级管理员",
     avatarUrl: "https://cdn.example.com/avatar/admin-1.png",
     email: "admin@example.com",
+    loginEmail: "admin@example.com",
+    contactEmail: "ops@example.com",
     status: "active",
     roles: ["super_admin"],
     lastLoginAt: EXAMPLE_LATEST,
@@ -3627,6 +3633,39 @@ registry.registerPath({
       "密码已更新，请使用新密码重新登录",
     ),
     ...commonErrorResponses(["400", "401", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/profile/login-email",
+  operationId: "patchAdminProfileLoginEmail",
+  tags: ["admin-auth"],
+  summary: "管理员修改登录邮箱",
+  description: "修改当前管理员的 Supabase Auth 登录邮箱。成功后清除会话 Cookie，应使用新邮箱重新登录。",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminLoginEmailUpdateRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminLoginEmailUpdateResponseDataSchema,
+      "AdminLoginEmailUpdateResponse",
+      "登录邮箱已更新，请使用新邮箱重新登录",
+      {
+        userId: "550e8400-e29b-41d4-a716-446655440001",
+        email: "admin@example.com",
+      },
+      "登录邮箱已更新，请使用新邮箱重新登录",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
   },
 })
 

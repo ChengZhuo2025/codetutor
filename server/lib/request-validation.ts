@@ -12,7 +12,7 @@ import {
   type FeedbackStatus,
   type FeedbackType,
 } from "@/lib/api/contracts/feedback"
-import type { AuthLoginType } from "@/lib/api/contracts/auth"
+import type { AuthLoginType, UpdateAdminLoginEmailRequest } from "@/lib/api/contracts/auth"
 import type { AnalyticsTrackEventRequest } from "@/lib/api/contracts/analytics"
 import type { UpdateLearningHistoryStatusRequest } from "@/lib/api/contracts/history"
 import type { CompleteOnboardingRequest } from "@/lib/api/contracts/onboarding"
@@ -203,6 +203,7 @@ const updateProfileBodyShapeSchema = z.object({
   nickname: z.string(),
   avatarUrl: z.unknown().optional(),
   email: z.unknown().optional(),
+  contactEmail: z.unknown().optional(),
   wechat: z.unknown().optional(),
   bio: z.unknown().optional(),
 })
@@ -217,7 +218,8 @@ export function parseUpdateProfileMeBody(input: unknown) {
   const data = {
     nickname: shape.data.nickname,
     avatarUrl: normalizeOptionalString(shape.data.avatarUrl),
-    email: normalizeOptionalString(shape.data.email),
+    email: normalizeOptionalString(shape.data.contactEmail ?? shape.data.email),
+    contactEmail: normalizeOptionalString(shape.data.contactEmail ?? shape.data.email),
     wechat: normalizeOptionalString(shape.data.wechat),
     bio: normalizeOptionalString(shape.data.bio),
   }
@@ -253,6 +255,36 @@ export function parseUpdateProfileMeBody(input: unknown) {
   }
 
   return ok(data)
+}
+
+export function parseAdminLoginEmailUpdateBody(
+  input: unknown,
+): ValidationResult<UpdateAdminLoginEmailRequest> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return fail("BAD_REQUEST", "请求体必须是 JSON 对象。")
+  }
+
+  const body = input as Record<string, unknown>
+
+  if (typeof body.email !== "string") {
+    return fail("VALIDATION_FAILED", "登录邮箱不能为空")
+  }
+
+  const email = body.email.trim().toLowerCase()
+
+  if (email.length === 0) {
+    return fail("VALIDATION_FAILED", "登录邮箱不能为空")
+  }
+
+  if (email.length > 254) {
+    return fail("VALIDATION_FAILED", "登录邮箱不能超过 254 个字符")
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return fail("VALIDATION_FAILED", "登录邮箱格式不正确")
+  }
+
+  return ok({ email })
 }
 
 function parseTimeField(value: unknown, fieldName: string): ValidationResult<string> {

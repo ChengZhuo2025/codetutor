@@ -9,7 +9,7 @@
 ## 30 秒状态速览
 
 - 当前项目已不是纯原型仓库，而是“前端页面 + `app/api` + `server/modules` + Supabase migrations”的同仓 MVP。
-- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息（含 `/learn` 图片与语音附件：图片理解、语音转写、附件回放元数据，模型由后台多媒体转译设置控制）、自学模式异步教程链接生成学习计划草稿、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、用户端订单管理、管理后台 Phase 1、**用户运营**、**学习记录**、**Ai 管理**（含多媒体管理：转译设置与附件管理）、**系统设置**（含联系方式、订阅套餐、微信支付配置与支付宝支付配置）、**财务管理**（订单列表、订单详情、财务统计）以及 **微信 Native / 支付宝扫码支付 + 订阅权益开通**（订阅查询、动态套餐读取、双渠道扫码下单、订单查询/同步/取消/软删除、微信/支付宝回调验签、原子幂等开通订阅权益）。
+- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息（含 `/learn` 图片与语音附件：图片理解、语音转写、附件回放元数据，模型由后台多媒体转译设置控制）、自学模式异步教程链接生成学习计划草稿、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、用户端订单管理、管理后台 Phase 1（含当前管理员资料、头像、改密与 Supabase Auth 登录邮箱修改）、**用户运营**、**学习记录**、**Ai 管理**（含多媒体管理：转译设置与附件管理）、**系统设置**（含联系方式、订阅套餐、微信支付配置与支付宝支付配置）、**财务管理**（订单列表、订单详情、财务统计）以及 **微信 Native / 支付宝扫码支付 + 订阅权益开通**（订阅查询、动态套餐读取、双渠道扫码下单、订单查询/同步/取消/软删除、微信/支付宝回调验签、原子幂等开通订阅权益）。
 - 当前代码技术栈以 `package.json` 为准：`Next.js 16.2.0`、`React 19.2.4`、`TypeScript 5.7.3`、`Tailwind CSS 4.2`、`shadcn/ui`、`Zod + zod-to-openapi + Swagger UI`；当前本地验证环境为 `Node.js 22.18.0`。
 - 已补运行时接口文档：`/api/docs/openapi` 输出 OpenAPI 3.1 JSON，`/api-docs` 提供 Swagger UI 查看与调试；文档 `info.description` 注明用户端主题偏好为前端 localStorage、无 REST 接口。
 - 用户端支持明暗主题切换（默认暗色，`next-themes` + `app/globals.css` 双套令牌），入口：营销顶栏、登录页右上角、工作台左侧栏底部设置行右侧。
@@ -87,7 +87,7 @@
 - 当前真实用户端页面为 8 个：`/`、`/login`、`/onboarding`、`/learn`、`/map`、`/achievements`、`/history`、`/orders`；管理端已落地页面包括：`/admin/login`、`/admin`（总览）、`/admin/users`、`/admin/users/[userId]`、`/admin/learning`、`/admin/learning/[pathId]`、`/admin/ai/*`、`/admin/settings`（「联系方式」「订阅套餐」「支付配置」tab 支持企业联系信息、套餐和支付配置管理）、`/admin/finance/orders`、`/admin/finance/orders/[orderNo]`、`/admin/finance/stats`、`/admin/feedback`、`/admin/feedback/[id]`；另有内部开发用接口文档页 `/api-docs`。新增 `/api/contact` 公共接口供营销对话框动态加载。
 - 当前已落地的真实接口包括：认证登录、认证会话摘要、用户档案、头像上传、onboarding、当前学习会话、学习消息发送、学习对话附件上传、学习历史消息分页、任务完成与任务状态更新、自学模式教程链接计划异步生成、intake 状态轮询、草稿详情/编辑/单任务重生成/确认/重生成、每日打卡、地图/进度、成就汇总、历史学习计划、用户反馈与管理员反馈接口。
 - 当前运行时 API 文档已接入：`GET /api/docs/openapi` 返回 OpenAPI 3.1 文档，`/api-docs` 使用 Swagger UI 按标签展示接口，并补充常见响应示例与调试说明。
-- `/api-docs` 当前纳入管理员路由守卫：未登录会跳转到 `/admin/login?next=/api-docs`，登录后回跳；运行时文档已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning`、`admin-ai`、`admin-settings` 等管理端点分组。
+- `/api-docs` 当前纳入管理员路由守卫：未登录会跳转到 `/admin/login?next=/api-docs`，登录后回跳；运行时文档已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning`、`admin-ai`、`admin-settings` 等管理端点分组；当前管理员资料接口区分 `loginEmail` 与 `contactEmail`，`PATCH /api/admin/profile/login-email` 会更新 Supabase Auth 登录邮箱并清除当前后台会话。
 - 当前接口文档不是“扫描整个 `app/api` 目录零维护生成”；新增或修改后端接口后，仍需同步更新 `server/modules/api-docs/openapi.ts` 与 `server/modules/api-docs/schemas.ts` 中的注册与 schema。
 - 当前 `app/api` 路由文件已不再普遍手写请求解析；请求体/查询参数校验、统一成功/失败响应、常见 `NOT_FOUND` / `BAD_REQUEST` 文案与错误映射，正在集中收敛到 `server/lib/request-validation.ts`、`server/lib/route-response.ts`、`server/lib/route-error.ts`、`server/lib/route-error-presets.ts` 以及各域 `route-handler.ts`。
 - 当前仓库顶层真实目录除了页面和服务端主目录外，还包含 `lib/auth`、`lib/learning`、`lib/mocks`、`server/services`、`server/utils`、`supabase/seeds` 等辅助或预留目录；目录阅读应以当前代码树为准，不再按最早设计稿假定不存在的层级。

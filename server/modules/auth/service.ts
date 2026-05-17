@@ -466,6 +466,8 @@ async function getProfileMeByAccess(
     avatarUrl: typedProfile.avatar_url ?? (authUser ? buildDefaultAvatar(authUser) : null) ?? null,
     phone: authUser?.phone ?? null,
     email: normalizeOptionalString(typedProfile.contact_email) ?? normalizeOptionalString(authUser?.email) ?? null,
+    loginEmail: normalizeOptionalString(authUser?.email),
+    contactEmail: normalizeOptionalString(typedProfile.contact_email),
     wechat: normalizeOptionalString(typedProfile.wechat),
     bio: normalizeOptionalString(typedProfile.bio),
     primaryTool,
@@ -519,7 +521,7 @@ async function updateProfileMeByAccess(
       nickname: input.nickname.trim(),
       avatar_url: normalizeOptionalString(input.avatarUrl),
       wechat: normalizeOptionalString(input.wechat),
-      contact_email: normalizeOptionalString(input.email),
+      contact_email: normalizeOptionalString(input.contactEmail ?? input.email),
       bio: normalizeOptionalString(input.bio),
       updated_at: new Date().toISOString(),
     })

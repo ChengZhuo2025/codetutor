@@ -6,9 +6,11 @@ import {
   ADMIN_REFRESH_TOKEN_COOKIE,
 } from "@/constants/auth-cookies"
 import type { AdminSessionResponseData } from "@/lib/api/contracts/admin"
+import type { UpdateAdminLoginEmailResponseData } from "@/lib/api/contracts/auth"
 import { buildSessionCookieHeader } from "@/server/lib/session-cookie"
 import { jsonError, jsonSuccess } from "@/server/lib/route-response"
 import { adminChangePasswordRequestSchema, adminLoginRequestSchema } from "@/server/modules/api-docs/schemas"
+import { parseAdminLoginEmailUpdateBody } from "@/server/lib/request-validation"
 import type { AdminLoginResult } from "./service.ts"
 
 function appendAdminSessionCookies(response: Response, result: AdminLoginResult) {
@@ -179,6 +181,50 @@ export function createAdminChangePasswordPostHandler(dependencies: {
   }
 }
 
+export function createAdminLoginEmailPatchHandler(dependencies: {
+  getAdminSessionFromRequest: (request: NextRequest) => Promise<AdminSessionResponseData | null>
+  updateAdminLoginEmail: (input: {
+    session: AdminSessionResponseData
+    email: string
+  }) => Promise<UpdateAdminLoginEmailResponseData>
+}) {
+  return async function PATCH(request: NextRequest) {
+    try {
+      const sessionData = await dependencies.getAdminSessionFromRequest(request)
+
+      if (!sessionData) {
+        return jsonError("ADMIN_FORBIDDEN", "未登录或会话已过期", 403)
+      }
+
+      const input = parseAdminLoginEmailUpdateBody(await (request as RequestLike).json())
+
+      if (!input.ok) {
+        return jsonError(input.code, input.message, input.code === "BAD_REQUEST" ? 400 : 400)
+      }
+
+      const data = await dependencies.updateAdminLoginEmail({
+        session: sessionData,
+        email: input.data.email,
+      })
+
+      return appendAdminLogoutCookies(
+        jsonSuccess(data, "登录邮箱已更新，请使用新邮箱重新登录"),
+      )
+    } catch (error) {
+      if (error instanceof Error) {
+        switch (error.message) {
+          case "ADMIN_LOGIN_EMAIL_UNCHANGED":
+            return jsonError("VALIDATION_FAILED", "新登录邮箱不能与当前登录邮箱相同", 400)
+          case "ADMIN_AUTH_EMAIL_MISSING":
+            return jsonError("ADMIN_LOGIN_EMAIL_UNSUPPORTED", "该账号未绑定邮箱，无法在此修改登录邮箱", 400)
+        }
+      }
+
+      return jsonError("INTERNAL_ERROR", "修改登录邮箱失败", 500)
+    }
+  }
+}
+
 /**
  * POST /api/admin/auth/login
  * 管理员登录
@@ -229,6 +275,20 @@ export async function POST_change_password(request: NextRequest) {
   const handler = createAdminChangePasswordPostHandler({
     getAdminSessionFromRequest: service.getAdminSessionFromRequest,
     adminChangePassword: service.adminChangePassword,
+  })
+
+  return handler(request)
+}
+
+/**
+ * PATCH /api/admin/profile/login-email
+ * 修改当前管理员登录邮箱
+ */
+export async function PATCH_login_email(request: NextRequest) {
+  const service = await import("./service.ts")
+  const handler = createAdminLoginEmailPatchHandler({
+    getAdminSessionFromRequest: service.getAdminSessionFromRequest,
+    updateAdminLoginEmail: service.updateAdminLoginEmail,
   })
 
   return handler(request)

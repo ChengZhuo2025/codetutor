@@ -2,6 +2,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 
 import {
+  createAdminLoginEmailPatchHandler,
   createAdminLoginPostHandler,
   createAdminLogoutPostHandler,
   createAdminSessionGetHandler,
@@ -144,6 +145,99 @@ test("admin logout route clears cookies even when the admin session is already m
   assert.equal(response.status, 200)
   assert.match(response.headers.get("set-cookie") ?? "", /admin-access-token=;/)
   assert.match(response.headers.get("set-cookie") ?? "", /Max-Age=0/)
+})
+
+test("admin login email route rejects missing admin session", async () => {
+  const handler = createAdminLoginEmailPatchHandler({
+    getAdminSessionFromRequest: async () => null,
+    updateAdminLoginEmail: async () => {
+      throw new Error("should not update login email without session")
+    },
+  })
+
+  const response = await handler(
+    createJsonRequest(
+      "http://localhost:3000/api/admin/profile/login-email",
+      JSON.stringify({ email: "admin@example.com" }),
+    ),
+  )
+
+  assert.equal(response.status, 403)
+  assert.deepEqual(await response.json(), {
+    code: "ADMIN_FORBIDDEN",
+    message: "未登录或会话已过期",
+    data: null,
+  })
+})
+
+test("admin login email route validates email request body", async () => {
+  const handler = createAdminLoginEmailPatchHandler({
+    getAdminSessionFromRequest: async () => ({
+      adminAccountId: "admin-1",
+      userId: "user-1",
+      displayName: "Admin",
+      avatarUrl: null,
+      roles: ["super_admin"],
+      status: "active",
+    }),
+    updateAdminLoginEmail: async () => {
+      throw new Error("should not update login email with invalid body")
+    },
+  })
+
+  const response = await handler(
+    createJsonRequest(
+      "http://localhost:3000/api/admin/profile/login-email",
+      JSON.stringify({ email: "not-an-email" }),
+    ),
+  )
+
+  assert.equal(response.status, 400)
+  assert.deepEqual(await response.json(), {
+    code: "VALIDATION_FAILED",
+    message: "登录邮箱格式不正确",
+    data: null,
+  })
+})
+
+test("admin login email route updates auth email and clears current admin cookies", async () => {
+  const handler = createAdminLoginEmailPatchHandler({
+    getAdminSessionFromRequest: async () => ({
+      adminAccountId: "admin-1",
+      userId: "user-1",
+      displayName: "Admin",
+      avatarUrl: null,
+      roles: ["super_admin"],
+      status: "active",
+    }),
+    updateAdminLoginEmail: async (input) => {
+      assert.equal(input.session.userId, "user-1")
+      assert.equal(input.email, "new-admin@example.com")
+      return {
+        userId: "user-1",
+        email: "new-admin@example.com",
+      }
+    },
+  })
+
+  const response = await handler(
+    createJsonRequest(
+      "http://localhost:3000/api/admin/profile/login-email",
+      JSON.stringify({ email: " new-admin@example.com " }),
+    ),
+  )
+
+  assert.equal(response.status, 200)
+  assert.match(response.headers.get("set-cookie") ?? "", /admin-access-token=;/)
+  assert.match(response.headers.get("set-cookie") ?? "", /Max-Age=0/)
+  assert.deepEqual(await response.json(), {
+    code: "OK",
+    message: "登录邮箱已更新，请使用新邮箱重新登录",
+    data: {
+      userId: "user-1",
+      email: "new-admin@example.com",
+    },
+  })
 })
 
 test("admin dashboard route rejects unauthorized requests", async () => {

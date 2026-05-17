@@ -104,6 +104,7 @@ export const ADMIN_AUDIT_ACTIONS = [
   "login",
   "logout",
   "password_change",
+  "login_email_change",
   "admin_account_activate",
   "admin_account_deactivate",
   "feedback_reply",

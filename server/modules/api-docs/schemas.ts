@@ -133,6 +133,8 @@ export const profileMeResponseDataSchema = z
     avatarUrl: nullableStringSchema,
     phone: nullableStringSchema,
     email: nullableStringSchema,
+    loginEmail: nullableStringSchema.optional(),
+    contactEmail: nullableStringSchema.optional(),
     wechat: nullableStringSchema,
     bio: nullableStringSchema,
     primaryTool: profileToolSchema,
@@ -150,6 +152,7 @@ export const updateProfileMeRequestSchema = z
     nickname: z.string(),
     avatarUrl: z.string().nullable().optional(),
     email: z.string().nullable().optional(),
+    contactEmail: z.string().nullable().optional(),
     wechat: z.string().nullable().optional(),
     bio: z.string().nullable().optional(),
   })
@@ -1487,6 +1490,19 @@ export const adminChangePasswordRequestSchema = z
   })
   .openapi("AdminChangePasswordRequest")
 
+export const adminLoginEmailUpdateRequestSchema = z
+  .object({
+    email: z.string().trim().email(),
+  })
+  .openapi("AdminLoginEmailUpdateRequest")
+
+export const adminLoginEmailUpdateResponseDataSchema = z
+  .object({
+    userId: z.string(),
+    email: z.string().email(),
+  })
+  .openapi("AdminLoginEmailUpdateResponseData")
+
 export const adminSessionResponseDataSchema = z
   .object({
     adminAccountId: z.string().uuid(),
@@ -1517,6 +1533,8 @@ export const adminSettingsCurrentAdminSchema = z
     displayName: nonEmptyStringSchema,
     avatarUrl: z.string().nullable(),
     email: z.string().nullable(),
+    loginEmail: z.string().nullable(),
+    contactEmail: z.string().nullable(),
     status: adminAccountStatusSchema,
     roles: z.array(adminRoleCodeSchema),
     lastLoginAt: z.string().nullable(),

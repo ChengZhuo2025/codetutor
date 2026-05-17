@@ -33,6 +33,8 @@ export type ProfileMeResponseData = {
   avatarUrl: string | null
   phone: string | null
   email: string | null
+  loginEmail?: string | null
+  contactEmail?: string | null
   wechat: string | null
   bio: string | null
   primaryTool: ProfileToolContract
@@ -48,8 +50,18 @@ export type UpdateProfileMeRequest = {
   nickname: string
   avatarUrl?: string | null
   email?: string | null
+  contactEmail?: string | null
   wechat?: string | null
   bio?: string | null
+}
+
+export type UpdateAdminLoginEmailRequest = {
+  email: string
+}
+
+export type UpdateAdminLoginEmailResponseData = {
+  userId: string
+  email: string
 }
 
 export type UploadProfileAvatarResponseData = {

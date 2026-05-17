@@ -40,7 +40,8 @@
 
 - `POST /api/admin/auth/login`、`GET /api/admin/auth/session`、`POST /api/admin/auth/logout`、`POST /api/admin/auth/change-password`
 - `GET /api/admin/dashboard/overview`
-- `GET /api/admin/profile/me`、`PATCH /api/admin/profile/me`、`POST /api/admin/profile/avatar`
+- `GET /api/admin/profile/me`、`PATCH /api/admin/profile/me`、`POST /api/admin/profile/avatar`、`PATCH /api/admin/profile/login-email`
+- 当前管理员资料已区分 Supabase Auth 登录邮箱与展示用联系邮箱；登录邮箱修改成功后会清除后台会话，要求使用新邮箱重新登录。
 
 **系统设置（管理员治理）**
 

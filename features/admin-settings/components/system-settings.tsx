@@ -702,7 +702,7 @@ export function SystemSettings() {
                   </AdminListTag>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {overview.currentAdmin.email ?? "暂无联系邮箱"}
+                  {overview.currentAdmin.loginEmail ?? overview.currentAdmin.email ?? "暂无登录邮箱"}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {overview.currentAdmin.roles.map((role) => (
@@ -724,7 +724,7 @@ export function SystemSettings() {
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-foreground">资料说明</h3>
               <p className="text-sm leading-6 text-muted-foreground">
-                这里维护的是管理后台展示用资料，包括显示名、头像和联系邮箱，不影响终端用户个人资料。
+                这里维护登录邮箱与管理后台展示资料。登录邮箱用于后台登录，联系邮箱仅用于资料展示。
               </p>
               <p className="text-sm text-muted-foreground">
                 最近登录：{formatDateTime(overview.currentAdmin.lastLoginAt)}

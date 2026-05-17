@@ -6,6 +6,11 @@ const settingsSource = readFileSync(
   "utf8",
 )
 
+const profileDialogSource = readFileSync(
+  new URL("../features/admin-shell/components/admin-profile-edit-dialog.tsx", import.meta.url),
+  "utf8",
+)
+
 const menuSource = readFileSync(
   new URL("../features/admin-shell/data/menu-config.ts", import.meta.url),
   "utf8",
@@ -24,9 +29,15 @@ assert.match(
 )
 
 assert.match(
-  settingsSource,
-  /资料编辑|修改密码/,
-  "The admin settings page should expose profile and password actions",
+  `${settingsSource}\n${profileDialogSource}`,
+  /资料编辑|修改密码|登录邮箱|联系邮箱/,
+  "The admin settings page should expose profile, login email and password actions",
+)
+
+assert.match(
+  profileDialogSource,
+  /\/admin\/profile\/login-email/,
+  "The admin profile dialog should call the dedicated login email endpoint",
 )
 
 assert.match(

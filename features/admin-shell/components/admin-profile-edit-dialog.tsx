@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { StatePanel } from "@/components/ui/state-panel"
 import type {
   ProfileMeResponseData,
+  UpdateAdminLoginEmailResponseData,
   UploadProfileAvatarResponseData,
   UpdateProfileMeRequest,
 } from "@/lib/api/contracts/auth"
@@ -40,7 +41,9 @@ type AdminProfileEditDialogProps = {
 export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminProfileEditDialogProps) {
   const router = useRouter()
   const [nickname, setNickname] = useState("")
-  const [email, setEmail] = useState("")
+  const [loginEmail, setLoginEmail] = useState("")
+  const [initialLoginEmail, setInitialLoginEmail] = useState("")
+  const [contactEmail, setContactEmail] = useState("")
   const [avatarUrl, setAvatarUrl] = useState("")
   const [preservedWechat, setPreservedWechat] = useState<string | null>(null)
   const [preservedBio, setPreservedBio] = useState<string | null>(null)
@@ -77,7 +80,9 @@ export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminPro
           return
         }
         setNickname(data.nickname ?? "")
-        setEmail(data.email ?? "")
+        setLoginEmail(data.loginEmail ?? "")
+        setInitialLoginEmail(data.loginEmail ?? "")
+        setContactEmail(data.contactEmail ?? data.email ?? "")
         setAvatarUrl(data.avatarUrl ?? "")
         setPreservedWechat(data.wechat ?? null)
         setPreservedBio(data.bio ?? null)
@@ -155,19 +160,30 @@ export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminPro
       setErrorMessage("显示名最多 24 个字符。")
       return
     }
-    const mail = email.trim()
-    if (mail.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
-      setErrorMessage("邮箱格式不正确。")
+    const authMail = loginEmail.trim()
+    if (authMail.length === 0) {
+      setErrorMessage("登录邮箱不能为空。")
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authMail)) {
+      setErrorMessage("登录邮箱格式不正确。")
+      return
+    }
+    const contactMail = contactEmail.trim()
+    if (contactMail.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactMail)) {
+      setErrorMessage("联系邮箱格式不正确。")
       return
     }
 
     setIsSaving(true)
     setErrorMessage(null)
 
+    const loginEmailChanged = authMail.toLowerCase() !== initialLoginEmail.trim().toLowerCase()
+
     const payload: UpdateProfileMeRequest = {
       nickname: nick,
       avatarUrl: avatarUrl.trim().length > 0 ? avatarUrl.trim() : null,
-      email: mail.length > 0 ? mail : null,
+      contactEmail: contactMail.length > 0 ? contactMail : null,
       wechat: preservedWechat,
       bio: preservedBio,
     }
@@ -181,6 +197,21 @@ export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminPro
         },
         "保存失败",
       )
+
+      if (loginEmailChanged) {
+        await adminRequestData<UpdateAdminLoginEmailResponseData>(
+          "/admin/profile/login-email",
+          {
+            method: "PATCH",
+            body: JSON.stringify({ email: authMail }),
+          },
+          "登录邮箱保存失败",
+        )
+
+        onOpenChange(false)
+        window.location.assign("/admin/login")
+        return
+      }
 
       onOpenChange(false)
       onSaved?.()
@@ -201,7 +232,7 @@ export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminPro
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>资料编辑</DialogTitle>
-          <DialogDescription>更新管理后台展示用显示名、头像与联系邮箱。</DialogDescription>
+          <DialogDescription>更新登录邮箱，以及管理后台展示用显示名、头像与联系邮箱。</DialogDescription>
         </DialogHeader>
 
         {isLoading ? (
@@ -266,12 +297,25 @@ export function AdminProfileEditDialog({ open, onOpenChange, onSaved }: AdminPro
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="admin-profile-email">邮箱</Label>
+              <Label htmlFor="admin-profile-login-email">登录邮箱</Label>
               <Input
-                id="admin-profile-email"
+                id="admin-profile-login-email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                disabled={busy}
+                autoComplete="email"
+              />
+              <p className="text-xs text-muted-foreground">修改后当前会话会退出，请使用新邮箱重新登录。</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="admin-profile-contact-email">联系邮箱</Label>
+              <Input
+                id="admin-profile-contact-email"
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
                 disabled={busy}
                 placeholder="选填"
               />

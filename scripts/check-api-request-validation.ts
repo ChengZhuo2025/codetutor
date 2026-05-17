@@ -119,6 +119,7 @@ test("parseUpdateProfileMeBody trims optional fields and keeps validation semant
     nickname: "小王",
     avatarUrl: "https://example.com/a.png",
     email: "a@example.com",
+    contactEmail: "a@example.com",
     wechat: "wechat-id",
     bio: "hello",
   })
