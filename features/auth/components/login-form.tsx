@@ -223,6 +223,7 @@ export function LoginForm({
   const isValidCode = /^\d{6}$/.test(code);
   const canSubmit = isValidPhone && isValidCode && agreedToLegal;
   const hasPhoneInput = phone.length > 0;
+  const shouldShowOAuthLoginMethods = mode === "login";
   const showPhoneLengthHint = hasPhoneInput && phone.length < 11;
   const showPhoneFormatError = phone.length === 11 && !isValidPhone;
   const phoneValidationMessage = showPhoneLengthHint
@@ -244,8 +245,8 @@ export function LoginForm({
             className={cn(
               "text-base font-medium transition-colors",
               mode === "login"
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground",
+                ? "text-brand font-bold"
+                : "text-muted-foreground hover:text-brand",
             )}
           >
             登录
@@ -257,8 +258,8 @@ export function LoginForm({
             className={cn(
               "text-base font-medium transition-colors",
               mode === "register"
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground",
+                ? "text-brand font-bold"
+                : "text-muted-foreground hover:text-brand",
             )}
           >
             注册
@@ -447,58 +448,64 @@ export function LoginForm({
           </label>
         </form>
 
-        <div className="relative mt-5">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border/50" />
-          </div>
-          <div className="relative flex justify-center">
-            <span className="rounded-full border border-border/50 bg-background px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-              其他登录方式
-            </span>
-          </div>
-        </div>
+        {shouldShowOAuthLoginMethods ? (
+          <>
+            <div className="relative mt-5">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border/50" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="rounded-full border border-border/50 bg-background px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                  其他登录方式
+                </span>
+              </div>
+            </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          {OAUTH_PROVIDERS.map((provider) => {
-            const meta = getOAuthProviderMeta(provider.id);
-            const isActive = activeOAuthProvider === provider.id;
-            const Icon = meta.icon;
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {OAUTH_PROVIDERS.map((provider) => {
+                const meta = getOAuthProviderMeta(provider.id);
+                const isActive = activeOAuthProvider === provider.id;
+                const Icon = meta.icon;
 
-            return (
-              <button
-                key={provider.id}
-                type="button"
-                onClick={() => onOAuthSubmit(provider.id)}
-                disabled={isActive || isSubmitting}
-                className={cn(
-                  "group relative overflow-hidden rounded-2xl border border-border/70 bg-surface-2 transition-all hover:-translate-y-0.5 hover:border-brand/30 hover:bg-surface-1",
-                  (isActive || isSubmitting) && "cursor-not-allowed opacity-65 hover:translate-y-0",
-                )}
-              >
-                <div
-                  className={cn(
-                    "pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100",
-                    `bg-[radial-gradient(circle_at_top_left,var(--tw-gradient-stops))] ${meta.accent}`,
-                  )}
-                />
-                <div className="relative z-10 flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-5">
+                return (
+                  <button
+                    key={provider.id}
+                    type="button"
+                    onClick={() => onOAuthSubmit(provider.id)}
+                    disabled={isActive || isSubmitting}
+                    className={cn(
+                      "group relative overflow-hidden rounded-2xl border border-border/70 bg-surface-2 transition-all hover:-translate-y-0.5 hover:border-brand/30 hover:bg-surface-1",
+                      (isActive || isSubmitting) && "cursor-not-allowed opacity-65 hover:translate-y-0",
+                    )}
+                  >
                     <div
-                      className="flex h-10 w-13 shrink-0 items-center justify-center border-r border-brand/20 bg-background/70 text-foreground"
-                    >
-                      <Icon className="h-5 w-5" />
+                      className={cn(
+                        "pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100",
+                        `bg-[radial-gradient(circle_at_top_left,var(--tw-gradient-stops))] ${meta.accent}`,
+                      )}
+                    />
+                    <div className="relative z-10 flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-5">
+                        <div
+                          className="flex h-10 w-13 shrink-0 items-center justify-center border-r border-brand/20 bg-background/70 text-foreground"
+                        >
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground">{meta.label}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground">{meta.label}</p>
-                    </div>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : null}
 
-        <OAuthScanDialog dialog={oauthDialog} onOpenChange={onOAuthDialogOpenChange} />
+        {shouldShowOAuthLoginMethods ? (
+          <OAuthScanDialog dialog={oauthDialog} onOpenChange={onOAuthDialogOpenChange} />
+        ) : null}
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {mode === "login" ? "还没有账号？" : "已有账号？"}

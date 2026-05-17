@@ -110,6 +110,33 @@ export const authLoginResponseDataSchema = z
   })
   .openapi("AuthLoginResponseData")
 
+export const authOAuthTempDiscardRequestSchema = z
+  .object({
+    provider: z.enum(["wechat", "douyin"]),
+  })
+  .openapi("AuthOAuthTempDiscardRequest")
+
+export const authOAuthTempDiscardResponseDataSchema = z
+  .object({
+    discarded: z.boolean(),
+    userId: z.string(),
+    provider: z.enum(["wechat", "douyin"]),
+  })
+  .openapi("AuthOAuthTempDiscardResponseData")
+
+export const authPhoneStatusQuerySchema = z
+  .object({
+    phone: z.string().regex(/^1[3-9]\d{9}$/),
+  })
+  .openapi("AuthPhoneStatusQuery")
+
+export const authPhoneStatusResponseDataSchema = z
+  .object({
+    phone: z.string(),
+    registered: z.boolean(),
+  })
+  .openapi("AuthPhoneStatusResponseData")
+
 export const authSessionSummaryResponseDataSchema = z
   .object({
     userId: z.string(),

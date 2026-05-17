@@ -9,7 +9,7 @@
 ## 30 秒状态速览
 
 - 当前项目已不是纯原型仓库，而是“前端页面 + `app/api` + `server/modules` + Supabase migrations”的同仓 MVP。
-- 已实现主链路：登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息（含 `/learn` 图片与语音附件：图片理解、语音转写、附件回放元数据，模型由后台多媒体转译设置控制）、自学模式异步教程链接生成学习计划草稿、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、用户端订单管理、管理后台 Phase 1（含当前管理员资料、头像、改密与 Supabase Auth 登录邮箱修改）、**用户运营**、**学习记录**、**Ai 管理**（含多媒体管理：转译设置与附件管理）、**系统设置**（含联系方式、订阅套餐、微信支付配置与支付宝支付配置）、**财务管理**（订单列表、订单详情、财务统计）以及 **微信 Native / 支付宝扫码支付 + 订阅权益开通**（订阅查询、动态套餐读取、双渠道扫码下单、订单查询/同步/取消/软删除、微信/支付宝回调验签、原子幂等开通订阅权益）。
+- 已实现主链路：手机号主账号登录注册、微信/抖音 identity linking 绑定后扫码登录、首页登录态恢复、onboarding、学习会话读取与历史消息分页、真实 AI 学习消息（含 `/learn` 图片与语音附件：图片理解、语音转写、附件回放元数据，模型由后台多媒体转译设置控制）、自学模式异步教程链接生成学习计划草稿、地图、成就、历史学习计划管理、个人资料、头像上传、用户反馈、用户端订单管理、管理后台 Phase 1（含当前管理员资料、头像、改密与 Supabase Auth 登录邮箱修改）、**用户运营**、**学习记录**、**Ai 管理**（含多媒体管理：转译设置与附件管理）、**系统设置**（含联系方式、订阅套餐、微信支付配置与支付宝支付配置）、**财务管理**（订单列表、订单详情、财务统计）以及 **微信 Native / 支付宝扫码支付 + 订阅权益开通**（订阅查询、动态套餐读取、双渠道扫码下单、订单查询/同步/取消/软删除、微信/支付宝回调验签、原子幂等开通订阅权益）。
 - 当前代码技术栈以 `package.json` 为准：`Next.js 16.2.0`、`React 19.2.4`、`TypeScript 5.7.3`、`Tailwind CSS 4.2`、`shadcn/ui`、`Zod + zod-to-openapi + Swagger UI`；当前本地验证环境为 `Node.js 22.18.0`。
 - 已补运行时接口文档：`/api/docs/openapi` 输出 OpenAPI 3.1 JSON，`/api-docs` 提供 Swagger UI 查看与调试；文档 `info.description` 注明用户端主题偏好为前端 localStorage、无 REST 接口。
 - 用户端支持明暗主题切换（默认暗色，`next-themes` + `app/globals.css` 双套令牌），入口：营销顶栏、登录页右上角、工作台左侧栏底部设置行右侧。
@@ -85,7 +85,7 @@
 
 - 当前仓库已经不是“纯前端 demo”，而是一个包含前端页面、`app/api` BFF、`server/modules` 服务层、Supabase 迁移与远程数据库接入脚本的同仓项目。
 - 当前真实用户端页面为 8 个：`/`、`/login`、`/onboarding`、`/learn`、`/map`、`/achievements`、`/history`、`/orders`；管理端已落地页面包括：`/admin/login`、`/admin`（总览）、`/admin/users`、`/admin/users/[userId]`、`/admin/learning`、`/admin/learning/[pathId]`、`/admin/ai/*`、`/admin/settings`（「联系方式」「订阅套餐」「支付配置」tab 支持企业联系信息、套餐和支付配置管理）、`/admin/finance/orders`、`/admin/finance/orders/[orderNo]`、`/admin/finance/stats`、`/admin/feedback`、`/admin/feedback/[id]`；另有内部开发用接口文档页 `/api-docs`。新增 `/api/contact` 公共接口供营销对话框动态加载。
-- 当前已落地的真实接口包括：认证登录、认证会话摘要、用户档案、头像上传、onboarding、当前学习会话、学习消息发送、学习对话附件上传、学习历史消息分页、任务完成与任务状态更新、自学模式教程链接计划异步生成、intake 状态轮询、草稿详情/编辑/单任务重生成/确认/重生成、每日打卡、地图/进度、成就汇总、历史学习计划、用户反馈与管理员反馈接口。
+- 当前已落地的真实接口包括：认证登录、OAuth 未绑定手机号拦截与临时用户清理、认证会话摘要、用户档案、头像上传、onboarding、当前学习会话、学习消息发送、学习对话附件上传、学习历史消息分页、任务完成与任务状态更新、自学模式教程链接计划异步生成、intake 状态轮询、草稿详情/编辑/单任务重生成/确认/重生成、每日打卡、地图/进度、成就汇总、历史学习计划、用户反馈与管理员反馈接口。
 - 当前运行时 API 文档已接入：`GET /api/docs/openapi` 返回 OpenAPI 3.1 文档，`/api-docs` 使用 Swagger UI 按标签展示接口，并补充常见响应示例与调试说明。
 - `/api-docs` 当前纳入管理员路由守卫：未登录会跳转到 `/admin/login?next=/api-docs`，登录后回跳；运行时文档已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning`、`admin-ai`、`admin-settings` 等管理端点分组；当前管理员资料接口区分 `loginEmail` 与 `contactEmail`，`PATCH /api/admin/profile/login-email` 会更新 Supabase Auth 登录邮箱并清除当前后台会话。
 - 当前接口文档不是“扫描整个 `app/api` 目录零维护生成”；新增或修改后端接口后，仍需同步更新 `server/modules/api-docs/openapi.ts` 与 `server/modules/api-docs/schemas.ts` 中的注册与 schema。
@@ -97,7 +97,7 @@
 - 当前已补 Phase 1 运行时加固：用户 Bearer 鉴权与管理员会话查找走进程内短 TTL 缓存，AI provider / model / agent / binding / skill 解析走配置快照缓存，`/api/learning/message`、用户 / 管理员登录与会话、Provider 密钥读取、agent test 等关键接口已接入限流、并发保护、`X-Request-Id` / `X-Auth-Cache` / `X-Config-Cache` / `X-Rate-Limit` / `Server-Timing` 观测头与结构化请求日志；这些能力当前都还是单实例进程内实现。
 - AI Orchestration 当前仅第一阶段主链路已落地；`2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 中的 `15.2 第二阶段` 与 `15.3 第三阶段` 仍属后续开发计划，尚未开始实现。
 - 首页营销层已接入登录态恢复：顶部导航、Hero、套餐区、最终 CTA、页脚 CTA 会在用户已登录时切换为“继续学习”，并按真实用户状态跳转到 `/learn`、`/history` 或 `/onboarding`。
-- 用户端与管理端登录态已完成分流：用户端使用 `app-user-session`，管理端使用 `admin-access-token` / `admin-refresh-token`，并由 `proxy.ts` 统一做入口路由守卫。
+- 用户端与管理端登录态已完成分流：用户端使用 `app-user-session`，管理端使用 `admin-access-token` / `admin-refresh-token`，并由 `proxy.ts` 统一做入口路由守卫。用户端以手机号 Auth user 为主账号；微信/抖音扫码身份必须先绑定到该主账号，未绑定的 OAuth 回调只进入手机号绑定流程，不创建业务用户档案。
 - 工作台左侧栏数据缓存已收敛到 `app/(workspace)/layout.tsx` 的 `WorkspaceSidebarDataProvider`，在 `/learn`、`/map`、`/achievements`、`/history` 间切换时不再重复请求并产生加载跳动。
 - 当前学习计划状态机已区分 `active`、`interrupted`、`completed`、`abandoned`、`archived`；其中 `interrupted` 为连续 7 天无学习行为后的系统自动中断，`abandoned` 为用户主动放弃，但历史页仍支持重新激活。
 - 当前仍未落地的能力主要包括：细粒度权限控制深化、内部备注 / 人工积分调整等更深用户运营能力、支付退款/自动续费/JSAPI/H5 变体，以及 AI 域更深层运营化与可视化配置能力（如 prompt 版本化、灰度/回滚、成本与稳定性面板；**用户运营、学习记录、Ai 管理、系统设置、财务管理首版、analytics 事件写入、通知设置落库/站内提醒、微信 Native / 支付宝扫码支付首版闭环已交付**）。

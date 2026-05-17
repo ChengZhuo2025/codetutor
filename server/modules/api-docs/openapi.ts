@@ -102,6 +102,10 @@ import {
   ApiErrorResponseSchema,
   authLoginRequestSchema,
   authLoginResponseDataSchema,
+  authOAuthTempDiscardRequestSchema,
+  authOAuthTempDiscardResponseDataSchema,
+  authPhoneStatusQuerySchema,
+  authPhoneStatusResponseDataSchema,
   authSessionSummaryResponseDataSchema,
   checkinDailyResponseDataSchema,
   completeOnboardingRequestSchema,
@@ -2194,12 +2198,70 @@ registry.registerPath({
       "登录成功",
       successExamples.authLogin,
     ),
-    ...commonErrorResponses(["400", "401", "500"], {
+    ...commonErrorResponses(["400", "401", "409", "500"], {
       "400": {
         description: "请求体中的 `loginType` 不合法。",
         example: {
           code: "BAD_REQUEST",
           message: "loginType 不合法。",
+          data: null,
+        },
+      },
+      "409": {
+        description: "微信/抖音扫码账号尚未绑定手机号，需要先完成手机号绑定流程。",
+        example: {
+          code: "OAUTH_PHONE_BINDING_REQUIRED",
+          message: "请先绑定手机号后再继续。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/auth/oauth-temp-user/discard",
+  operationId: "postAuthOAuthTempUserDiscard",
+  tags: ["auth"],
+  summary: "清理未绑定手机号的临时扫码账号",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: authOAuthTempDiscardRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      authOAuthTempDiscardResponseDataSchema,
+      "AuthOAuthTempDiscardResponse",
+      "临时扫码账号已清理",
+      {
+        discarded: true,
+        userId: "oauth-user-123",
+        provider: "wechat",
+      },
+      "oauth temp user discarded",
+    ),
+    ...commonErrorResponses(["400", "401", "409", "500"], {
+      "400": {
+        description: "请求体中的 `provider` 不合法。",
+        example: {
+          code: "BAD_REQUEST",
+          message: "provider 不合法。",
+          data: null,
+        },
+      },
+      "409": {
+        description: "当前扫码账号已有业务数据或不是可清理的临时 OAuth-only 用户。",
+        example: {
+          code: "OAUTH_TEMP_USER_NOT_DISCARDABLE",
+          message: "该账号已有业务数据，不能作为临时扫码账号清理。",
           data: null,
         },
       },
@@ -2274,6 +2336,38 @@ registry.registerPath({
         example: {
           code: "VALIDATION_FAILED",
           message: "昵称至少需要 2 个字符。",
+          data: null,
+        },
+      },
+    }),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/auth/phone-status",
+  operationId: "getAuthPhoneStatus",
+  tags: ["auth"],
+  summary: "检查手机号是否已有用户端账号",
+  request: {
+    query: authPhoneStatusQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      authPhoneStatusResponseDataSchema,
+      "AuthPhoneStatusResponse",
+      "手机号状态读取成功",
+      {
+        phone: "13800138000",
+        registered: true,
+      },
+    ),
+    ...commonErrorResponses(["400", "429", "500"], {
+      "400": {
+        description: "手机号格式不合法。",
+        example: {
+          code: "VALIDATION_FAILED",
+          message: "请输入真实的 11 位中国大陆手机号。",
           data: null,
         },
       },

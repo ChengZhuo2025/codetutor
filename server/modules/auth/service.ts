@@ -5,6 +5,8 @@ import type {
   AuthLoginResponseData,
   AuthSessionSummaryResponseData,
   AuthLoginType,
+  AuthOAuthTempDiscardResponseData,
+  AuthPhoneStatusResponseData,
   ProfileMeResponseData,
   UploadProfileAvatarResponseData,
   UpdateProfileMeRequest,
@@ -18,6 +20,10 @@ import { ensureUserRankSnapshot } from "@/server/modules/gamification/service"
 import { getLearningPathStatusSummary } from "@/server/modules/learning-paths/service"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
 import { UserAccountDisabledError } from "@/server/lib/user-account-disabled"
+import {
+  OAuthPhoneBindingRequiredError,
+  OAuthTempUserNotDiscardableError,
+} from "@/server/lib/oauth-auth-flow-errors"
 
 type JsonRecord = Record<string, unknown>
 
@@ -48,6 +54,33 @@ type ToolRow = {
   code: string
   name: string
 }
+
+type PhoneStatusRow = {
+  user_id: string
+  deleted_at: string | null
+}
+
+const OAUTH_TEMP_USER_BUSINESS_TABLES = [
+  "user_profiles",
+  "user_learning_preferences",
+  "user_learning_paths",
+  "user_tasks",
+  "conversation_sessions",
+  "conversation_messages",
+  "learning_message_attachments",
+  "learning_material_intakes",
+  "learning_plan_drafts",
+  "learning_plan_generation_runs",
+  "daily_checkins",
+  "score_ledgers",
+  "user_ranks",
+  "feedback_tickets",
+  "payment_orders",
+  "user_subscriptions",
+  "user_notifications",
+  "user_notification_settings",
+  "admin_accounts",
+] as const
 
 function readUserMetadataString(user: User, keys: string[]) {
   const metadata = (user.user_metadata ?? {}) as JsonRecord
@@ -90,6 +123,27 @@ function buildDefaultNickname(user: User) {
 
 function buildDefaultAvatar(user: User) {
   return readUserMetadataString(user, ["avatar_url", "picture", "headimgurl"])
+}
+
+function getUserIdentityProviders(user: User) {
+  return new Set(
+    (user.identities ?? [])
+      .map((identity) => identity.provider)
+      .filter((provider): provider is string => typeof provider === "string" && provider.length > 0),
+  )
+}
+
+function hasPhoneIdentity(user: User) {
+  return Boolean(user.phone) || getUserIdentityProviders(user).has("phone")
+}
+
+function isOAuthLoginType(loginType: AuthLoginType): loginType is Exclude<AuthLoginType, "phone"> {
+  return loginType === "wechat" || loginType === "douyin"
+}
+
+function isOAuthOnlyUserForProvider(user: User, provider: Exclude<AuthLoginType, "phone">) {
+  const providers = getUserIdentityProviders(user)
+  return providers.has(provider) && !hasPhoneIdentity(user)
 }
 
 function normalizeOptionalString(value: string | null | undefined) {
@@ -291,6 +345,10 @@ export async function finalizeAuthLogin(
     "failed to query learning preferences during auth login",
   )
 
+  if (isOAuthLoginType(loginType) && !profile && !preference && isOAuthOnlyUserForProvider(user, loginType)) {
+    throw new OAuthPhoneBindingRequiredError()
+  }
+
   const isNewUser = !profile && !preference
 
   if (!profile) {
@@ -370,6 +428,86 @@ export async function finalizeAuthLogin(
     onboardingCompleted: gateState.onboardingCompleted,
     profileCompleted: gateState.onboardingCompleted,
     redirectTo: gateState.redirectTo,
+  }
+}
+
+async function assertNoBusinessRowsForUser(userId: string) {
+  const supabase = createSupabaseAdminClient()
+
+  for (const table of OAUTH_TEMP_USER_BUSINESS_TABLES) {
+    const { count, error } = await supabase
+      .from(table)
+      .select("*", {
+        count: "exact",
+        head: true,
+      })
+      .eq("user_id", userId)
+
+    assertSupabaseSuccess(error, `failed to query ${table} before oauth temp user discard`)
+
+    if ((count ?? 0) > 0) {
+      throw new OAuthTempUserNotDiscardableError()
+    }
+  }
+
+  const { count: eventCount, error: eventError } = await supabase
+    .from("event_logs")
+    .select("*", {
+      count: "exact",
+      head: true,
+    })
+    .eq("user_id", userId)
+
+  assertSupabaseSuccess(eventError, "failed to query event logs before oauth temp user discard")
+
+  if ((eventCount ?? 0) > 0) {
+    const { error: updateError } = await supabase
+      .from("event_logs")
+      .update({ user_id: null })
+      .eq("user_id", userId)
+
+    assertSupabaseSuccess(updateError, "failed to detach oauth temp user event logs")
+  }
+}
+
+export async function discardOAuthTempUser(
+  user: User,
+  provider: Exclude<AuthLoginType, "phone">,
+): Promise<AuthOAuthTempDiscardResponseData> {
+  if (!isOAuthOnlyUserForProvider(user, provider)) {
+    throw new OAuthTempUserNotDiscardableError()
+  }
+
+  await assertNoBusinessRowsForUser(user.id)
+
+  const supabase = createSupabaseAdminClient()
+  const { error } = await supabase.auth.admin.deleteUser(user.id)
+
+  assertSupabaseSuccess(error, "failed to delete oauth temp auth user")
+
+  return {
+    discarded: true,
+    userId: user.id,
+    provider,
+  }
+}
+
+export async function getPhoneRegistrationStatus(
+  phone: string,
+): Promise<AuthPhoneStatusResponseData> {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("user_profile_export_view")
+    .select("user_id,deleted_at")
+    .eq("auth_phone", phone)
+    .is("deleted_at", null)
+    .limit(1)
+
+  assertSupabaseSuccess(error, "failed to query phone registration status")
+
+  return {
+    phone,
+    registered: ((data as PhoneStatusRow[] | null) ?? []).length > 0,
   }
 }
 

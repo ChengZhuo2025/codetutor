@@ -7,12 +7,27 @@ export type AuthLoginRequest = {
   authCode?: string
 }
 
+export type AuthOAuthTempDiscardRequest = {
+  provider: Exclude<AuthLoginType, "phone">
+}
+
+export type AuthPhoneStatusResponseData = {
+  phone: string
+  registered: boolean
+}
+
 export type AuthLoginResponseData = {
   userId: string
   isNewUser: boolean
   onboardingCompleted: boolean
   profileCompleted: boolean
   redirectTo: string
+}
+
+export type AuthOAuthTempDiscardResponseData = {
+  discarded: boolean
+  userId: string
+  provider: Exclude<AuthLoginType, "phone">
 }
 
 export type AuthSessionSummaryResponseData = {

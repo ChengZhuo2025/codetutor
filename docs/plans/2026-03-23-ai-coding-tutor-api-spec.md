@@ -121,6 +121,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 当前仓库代码中已经实现的接口有：
 
 - `POST /api/auth/login`
+- `POST /api/auth/oauth-temp-user/discard`
+- `GET /api/auth/phone-status`
 - `GET /api/auth/session`
 - `POST /api/admin/auth/login`
 - `GET /api/admin/auth/session`
@@ -224,6 +226,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 当前已实现：
 
 - `POST /api/auth/login`
+- `POST /api/auth/oauth-temp-user/discard`
+- `GET /api/auth/phone-status`
 - `GET /api/auth/session`
 - `GET /api/profile/me`
 - `PATCH /api/profile/me`
@@ -324,7 +328,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 页面 | 路由 | 主要接口 | 说明 |
 |------|------|------|------|
 | 营销首页 | `/` | `GET /api/auth/session` | 首页导航、Hero、套餐区、页脚与最终 CTA 会根据登录态切换为“继续学习”，并跳转到 `/learn`、`/history` 或 `/onboarding` |
-| 登录页 | `/login` | `POST /api/auth/login`、`GET/PATCH /api/profile/me`、`POST /api/profile/avatar` | 当前已打通手机号验证码登录、微信 OAuth 跳转、用户档案读取与资料编辑 |
+| 登录页 | `/login` | `GET /api/auth/phone-status`、`POST /api/auth/login`、`GET/PATCH /api/profile/me`、`POST /api/profile/avatar` | 当前已打通手机号验证码登录、登录手机号注册状态预检、微信/抖音绑定后扫码登录、用户档案读取与资料编辑 |
 | 新手引导 | `/onboarding` | `GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete` | 产出主工具、学习等级、学习模式、初始学习路径实例 |
 | 学习页 | `/learn` | `GET /api/learning/current-session`、`POST /api/learning/restart-conversation`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`、`POST /api/learning/plan-from-material`、`GET /api/learning/material-intakes/{id}`、`GET/PATCH /api/learning/plan-drafts/{id}`、`POST /api/learning/plan-drafts/{id}/confirm`、`POST /api/learning/plan-drafts/{id}/regenerate`、`POST /api/learning/plan-drafts/{id}/tasks/{taskId}/regenerate` | 已打通学习主界面 read model、历史消息分页、真实 AI provider 消息编排、SSE 与任务状态写入；支持归档当前关卡活跃对话并清空任务会话指针后重头开始；自学模式（`selection_mode=self_directed`）已支持异步教程链接 intake、草稿详情编辑与确认后替换当前 active 路径 |
 | 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
@@ -356,14 +360,14 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 用途：
 
-- 服务端校验登录态并返回用户基础信息
+- 服务端校验 Supabase 登录态，初始化或刷新业务账号资料，并返回跳转摘要
+- 手机号验证码登录是主账号创建入口；微信/抖音扫码只有在已绑定到该手机号账号后才会完成业务登录
 
 请求体：
 
 ```json
 {
-  "loginType": "wechat",
-  "authCode": "xxx"
+  "loginType": "phone"
 }
 ```
 
@@ -371,8 +375,8 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 
 | 字段 | 必填 | 说明 |
 |------|------|------|
-| `loginType` | 是 | `wechat` / `phone` |
-| `authCode` | 是 | 第三方登录授权码或服务端交换码 |
+| `loginType` | 是 | `phone` / `wechat` / `douyin` |
+| `authCode` | 否 | 历史兼容字段；当前真实登录态来自 Supabase Bearer Token |
 
 成功响应：
 
@@ -383,15 +387,94 @@ MVP 默认使用登录态 Session 或 Bearer Token。
   "data": {
     "userId": "uuid",
     "isNewUser": true,
-    "profileCompleted": false
+    "onboardingCompleted": false,
+    "profileCompleted": false,
+    "redirectTo": "/onboarding"
+  }
+}
+```
+
+未绑定扫码错误：
+
+```json
+{
+  "code": "OAUTH_PHONE_BINDING_REQUIRED",
+  "message": "请先绑定手机号后再继续。",
+  "data": null
+}
+```
+
+业务规则：
+
+- 手机号登录若用户尚无业务资料，会创建 `user_profiles`、`user_learning_preferences` 与段位快照。
+- 已绑定微信/抖音扫码登录会落到同一个 `auth.users.id`，并只刷新最近登录来源与时间。
+- 未绑定微信/抖音扫码产生的 OAuth-only Auth 用户不会创建业务资料；前端会清理临时用户，再引导手机号验证码登录/注册，随后用 Supabase `linkIdentity` 发起二次扫码绑定。
+
+## 5.1.1 `POST /api/auth/oauth-temp-user/discard`
+
+用途：
+
+- 清理未绑定手机号时由微信/抖音扫码产生的临时 OAuth-only Auth 用户
+
+请求体：
+
+```json
+{
+  "provider": "wechat"
+}
+```
+
+成功响应：
+
+```json
+{
+  "code": "OK",
+  "message": "oauth temp user discarded",
+  "data": {
+    "discarded": true,
+    "userId": "uuid",
+    "provider": "wechat"
   }
 }
 ```
 
 业务规则：
 
-- 首次登录仅建立最小档案，不强制补全昵称
-- 若阿里云 Supabase 的微信 OAuth 配置在首阶段未完成，可先用手机号作为临时回退入口
+- 必须携带临时 OAuth 用户的 Supabase Bearer Token。
+- 仅允许删除没有业务表数据、没有手机号身份、且 provider 匹配的 OAuth-only 用户。
+- 如果账号已有业务数据，返回 `OAUTH_TEMP_USER_NOT_DISCARDABLE`。
+
+## 5.1.2 `GET /api/auth/phone-status`
+
+用途：
+
+- 登录 tab 中，手机号输入完整后预检该手机号是否已有用户端业务账号
+- 未注册时前端提示“当前手机号未注册，请先注册”，保留手机号并自动切换到注册 tab
+
+查询参数：
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `phone` | 是 | 11 位中国大陆手机号 |
+
+成功响应：
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "phone": "13800138000",
+    "registered": true
+  }
+}
+```
+
+业务规则：
+
+- 该接口不发送验证码，也不创建 Supabase Auth 用户。
+- 仅把已有 `user_profiles` 且未软删除、并能通过导出视图匹配到 `auth_phone` 的记录视为已注册。
+- 该接口用于用户体验预检，不替代 `POST /api/auth/login` 的最终服务端登录校验。
 
 ## 5.2 `GET /api/auth/session`
 

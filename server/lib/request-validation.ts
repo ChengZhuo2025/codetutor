@@ -12,7 +12,11 @@ import {
   type FeedbackStatus,
   type FeedbackType,
 } from "@/lib/api/contracts/feedback"
-import type { AuthLoginType, UpdateAdminLoginEmailRequest } from "@/lib/api/contracts/auth"
+import type {
+  AuthLoginType,
+  AuthOAuthTempDiscardRequest,
+  UpdateAdminLoginEmailRequest,
+} from "@/lib/api/contracts/auth"
 import type { AnalyticsTrackEventRequest } from "@/lib/api/contracts/analytics"
 import type { UpdateLearningHistoryStatusRequest } from "@/lib/api/contracts/history"
 import type { CompleteOnboardingRequest } from "@/lib/api/contracts/onboarding"
@@ -155,6 +159,40 @@ export function parseAuthLoginBody(input: unknown): ValidationResult<{
   return ok({
     loginType: shape.data.loginType as AuthLoginType,
   })
+}
+
+const oauthTempDiscardBodyShapeSchema = z.object({
+  provider: z.string(),
+})
+
+export function parseAuthOAuthTempDiscardBody(
+  input: unknown,
+): ValidationResult<AuthOAuthTempDiscardRequest> {
+  const shape = oauthTempDiscardBodyShapeSchema.safeParse(input)
+
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "provider 不合法。")
+  }
+
+  if (shape.data.provider !== "wechat" && shape.data.provider !== "douyin") {
+    return fail("BAD_REQUEST", "provider 不合法。")
+  }
+
+  return ok({
+    provider: shape.data.provider,
+  })
+}
+
+export function parseAuthPhoneStatusQuery(input: URLSearchParams): ValidationResult<{
+  phone: string
+}> {
+  const phone = input.get("phone")?.trim() ?? ""
+
+  if (!/^1[3-9]\d{9}$/.test(phone)) {
+    return fail("VALIDATION_FAILED", "请输入真实的 11 位中国大陆手机号。")
+  }
+
+  return ok({ phone })
 }
 
 const completeOnboardingBodyShapeSchema = z.object({

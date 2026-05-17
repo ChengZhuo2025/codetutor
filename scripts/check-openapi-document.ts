@@ -16,9 +16,11 @@ test("openapi document covers all registered api operations and special transpor
     ),
   )
 
-  assert.equal(operations.length, 131)
+  assert.equal(operations.length, 133)
 
   assert.ok(paths["/api/auth/login"]?.post)
+  assert.ok(paths["/api/auth/oauth-temp-user/discard"]?.post)
+  assert.ok(paths["/api/auth/phone-status"]?.get)
   assert.ok(paths["/api/profile/me"]?.get)
   assert.ok(paths["/api/profile/me"]?.patch)
   assert.ok(paths["/api/profile/avatar"]?.post)
@@ -223,6 +225,35 @@ test("openapi document covers all registered api operations and special transpor
   assert.equal(authLoginPost?.responses?.["200"]?.description, "登录成功")
   assert.ok(authLoginPost?.responses?.["200"]?.content?.["application/json"]?.example)
   assert.equal(authLoginPost?.responses?.["400"]?.description, "请求体中的 `loginType` 不合法。")
+  assert.equal(authLoginPost?.responses?.["409"]?.description, "微信/抖音扫码账号尚未绑定手机号，需要先完成手机号绑定流程。")
+
+  const authOAuthTempDiscardPost = paths["/api/auth/oauth-temp-user/discard"]?.post as
+    | {
+        responses?: Record<string, { description?: string; content?: Record<string, { example?: unknown }> }>
+      }
+    | undefined
+  assert.equal(authOAuthTempDiscardPost?.responses?.["200"]?.description, "临时扫码账号已清理")
+  assert.deepEqual(authOAuthTempDiscardPost?.responses?.["200"]?.content?.["application/json"]?.example, {
+    code: "OK",
+    message: "oauth temp user discarded",
+    data: {
+      discarded: true,
+      userId: "oauth-user-123",
+      provider: "wechat",
+    },
+  })
+
+  const authPhoneStatusGet = paths["/api/auth/phone-status"]?.get as
+    | {
+        responses?: Record<string, { description?: string; content?: Record<string, { example?: unknown }> }>
+      }
+    | undefined
+  assert.equal(authPhoneStatusGet?.responses?.["200"]?.description, "手机号状态读取成功")
+  assert.deepEqual(authPhoneStatusGet?.responses?.["400"]?.content?.["application/json"]?.example, {
+    code: "VALIDATION_FAILED",
+    message: "请输入真实的 11 位中国大陆手机号。",
+    data: null,
+  })
 
   const avatarPostResponses = paths["/api/profile/avatar"]?.post?.responses as
     | Record<string, { description?: string; content?: Record<string, { example?: unknown }> }>

@@ -4,6 +4,8 @@ import { buildSessionCookieHeader } from "@/server/lib/session-cookie"
 import type {
   AuthLoginResponseData,
   AuthLoginType,
+  AuthOAuthTempDiscardResponseData,
+  AuthPhoneStatusResponseData,
   ProfileMeResponseData,
   UploadProfileAvatarResponseData,
   UpdateProfileMeRequest,
@@ -14,12 +16,18 @@ import {
 } from "../../lib/route-error.ts"
 import { isUserAccountDisabledError } from "../../lib/user-account-disabled.ts"
 import {
+  isOAuthPhoneBindingRequiredError,
+  isOAuthTempUserNotDiscardableError,
+} from "../../lib/oauth-auth-flow-errors.ts"
+import {
   jsonAuthRequired,
   jsonError,
   jsonSuccess,
 } from "../../lib/route-response.ts"
 import {
   parseAuthLoginBody,
+  parseAuthOAuthTempDiscardBody,
+  parseAuthPhoneStatusQuery,
   parseProfileAvatarFile,
   parseUpdateProfileMeBody,
 } from "../../lib/request-validation.ts"
@@ -36,6 +44,10 @@ function appendUserLogoutCookie(response: Response) {
 
 type RequestLike = {
   json: () => Promise<unknown>
+}
+
+type UrlRequestLike = {
+  url: string
 }
 
 type FormRequestLike = {
@@ -68,10 +80,67 @@ export function createAuthLoginPostHandler(dependencies: {
 
       return appendUserSessionCookie(jsonSuccess(data), data.userId)
     } catch (error) {
+      if (isOAuthPhoneBindingRequiredError(error)) {
+        return jsonError("OAUTH_PHONE_BINDING_REQUIRED", error.message, 409)
+      }
       if (isUserAccountDisabledError(error)) {
         return jsonError(error.code, error.message, 403)
       }
       return jsonInternalErrorFromError(error, "登录流程处理失败")
+    }
+  }
+}
+
+export function createOAuthTempUserDiscardPostHandler(dependencies: {
+  getRequestAuth: (request: unknown) => Promise<{ user: User } | null>
+  getRequestAuthHelpText: () => string
+  discardOAuthTempUser: (
+    user: User,
+    provider: Exclude<AuthLoginType, "phone">,
+  ) => Promise<AuthOAuthTempDiscardResponseData>
+}) {
+  return async function POST(request: RequestLike) {
+    try {
+      const auth = await dependencies.getRequestAuth(request)
+
+      if (!auth?.user) {
+        return jsonAuthRequired(dependencies.getRequestAuthHelpText())
+      }
+
+      const input = parseAuthOAuthTempDiscardBody(await request.json())
+
+      if (!input.ok) {
+        return jsonError(input.code, input.message, 400)
+      }
+
+      const data = await dependencies.discardOAuthTempUser(auth.user, input.data.provider)
+
+      return jsonSuccess(data, "oauth temp user discarded")
+    } catch (error) {
+      if (isOAuthTempUserNotDiscardableError(error)) {
+        return jsonError("OAUTH_TEMP_USER_NOT_DISCARDABLE", error.message, 409)
+      }
+      return jsonInternalErrorFromError(error, "清理临时扫码账号失败")
+    }
+  }
+}
+
+export function createAuthPhoneStatusGetHandler(dependencies: {
+  getPhoneRegistrationStatus: (phone: string) => Promise<AuthPhoneStatusResponseData>
+}) {
+  return async function GET(request: UrlRequestLike) {
+    try {
+      const input = parseAuthPhoneStatusQuery(new URL(request.url).searchParams)
+
+      if (!input.ok) {
+        return jsonError(input.code, input.message, 400)
+      }
+
+      const data = await dependencies.getPhoneRegistrationStatus(input.data.phone)
+
+      return jsonSuccess(data)
+    } catch (error) {
+      return jsonInternalErrorFromError(error, "检查手机号注册状态失败")
     }
   }
 }

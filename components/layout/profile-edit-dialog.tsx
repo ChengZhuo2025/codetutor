@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Image from "next/image"
-import { Camera, CheckCircle2, Loader2 } from "lucide-react"
+import { Camera, CheckCircle2, ExternalLink, Loader2, RefreshCw } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,11 @@ import type {
 } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import {
+  OAUTH_PROVIDERS,
+  getOAuthProviderMeta,
+} from "@/features/auth/lib/oauth-providers"
+import type { AuthOAuthProvider } from "@/features/auth/types"
 import {
   PROFILE_AVATAR_ALLOWED_TYPES,
   PROFILE_AVATAR_BUCKET,
@@ -52,6 +57,16 @@ type ProfileFormState = {
   bio: string
 }
 
+type OAuthDialogState = {
+  provider: AuthOAuthProvider
+  url: string
+} | null
+
+type OAuthLinkedMessage = {
+  type: "codetutor.oauth.linked"
+  provider?: AuthOAuthProvider
+}
+
 const INITIAL_FORM: ProfileFormState = {
   avatarUrl: "",
   nickname: "",
@@ -75,6 +90,106 @@ function toFormState(profile: ProfileMeResponseData): ProfileFormState {
     email: profile.email ?? "",
     bio: profile.bio ?? "",
   }
+}
+
+function isLinkedMessage(value: unknown): value is OAuthLinkedMessage {
+  return (
+    Boolean(value)
+    && typeof value === "object"
+    && (value as { type?: unknown }).type === "codetutor.oauth.linked"
+  )
+}
+
+function OAuthLinkDialog({
+  dialog,
+  onOpenChange,
+}: {
+  dialog: OAuthDialogState
+  onOpenChange: (open: boolean) => void
+}) {
+  const [frameKey, setFrameKey] = useState(0)
+  const [loadedFrameId, setLoadedFrameId] = useState("")
+  const meta = dialog ? getOAuthProviderMeta(dialog.provider) : null
+  const Icon = meta?.icon
+  const frameId = dialog ? `${dialog.provider}-${dialog.url}-${frameKey}` : ""
+  const isFrameLoading = Boolean(dialog && loadedFrameId !== frameId)
+
+  return (
+    <Dialog open={Boolean(dialog)} onOpenChange={onOpenChange}>
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[440px]">
+        <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
+          <DialogHeader className="pr-4 text-left">
+            <div className="flex items-center gap-3">
+              {Icon ? (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border/70 bg-background">
+                  <Icon className="h-5 w-5" />
+                </div>
+              ) : null}
+              <div className="min-w-0">
+                <DialogTitle className="text-base">
+                  {meta ? `绑定${meta.label.replace("扫码登录", "")}` : "绑定登录方式"}
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-xs leading-5">
+                  授权成功后会自动返回并刷新绑定状态。
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
+
+        <div className="flex flex-col gap-4 px-5 py-5">
+          <div className="relative flex h-[430px] items-center justify-center overflow-hidden rounded-2xl border border-border/70 bg-white shadow-sm">
+            {dialog ? (
+              <iframe
+                key={frameId}
+                title={`${meta?.label ?? "扫码"}绑定二维码`}
+                src={dialog.url}
+                className="h-[340px] w-full border-0 bg-white"
+                onLoad={() => setLoadedFrameId(frameId)}
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"
+              />
+            ) : null}
+            {dialog && isFrameLoading ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-white">
+                <div className="relative h-14 w-14">
+                  <div className="absolute inset-0 rounded-full border-4 border-brand/15" />
+                  <div className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-brand" />
+                  <div className="absolute inset-3 rounded-full bg-brand/10" />
+                </div>
+                <div className="space-y-1 text-center">
+                  <p className="text-sm font-semibold text-foreground">正在加载二维码</p>
+                  <p className="text-xs text-muted-foreground">请稍等，授权页面马上显示。</p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className={cn("flex items-center justify-center gap-3 border-t px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
+          {dialog ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setFrameKey((current) => current + 1)}
+                className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:border-brand/40 hover:text-brand"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                刷新二维码
+              </button>
+              <button
+                type="button"
+                onClick={() => window.open(dialog.url, "oauth_link_popup", "width=600,height=700,scrollbars=yes,resizable=yes")}
+                className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:border-brand/40 hover:text-brand"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                新窗口打开
+              </button>
+            </>
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 function validateProfileForm(form: ProfileFormState) {
@@ -108,6 +223,9 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [linkedProviders, setLinkedProviders] = useState<Set<string>>(new Set())
+  const [oauthDialog, setOauthDialog] = useState<OAuthDialogState>(null)
+  const [activeLinkProvider, setActiveLinkProvider] = useState<AuthOAuthProvider | null>(null)
   const [uploadedAvatarPreviousUrl, setUploadedAvatarPreviousUrl] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
@@ -155,6 +273,105 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
       cancelled = true
     }
   }, [open])
+
+  const loadIdentities = useCallback(async () => {
+    const supabase = createSupabaseBrowserClient()
+    const { data, error } = await supabase.auth.getUserIdentities()
+
+    if (error) {
+      throw error
+    }
+
+    setLinkedProviders(new Set((data.identities ?? []).map((identity) => identity.provider)))
+  }, [])
+
+  useEffect(() => {
+    if (!open) {
+      setLinkedProviders(new Set())
+      setOauthDialog(null)
+      setActiveLinkProvider(null)
+      return
+    }
+
+    let cancelled = false
+
+    async function loadLinkedProviders() {
+      try {
+        const supabase = createSupabaseBrowserClient()
+        const { data, error } = await supabase.auth.getUserIdentities()
+
+        if (error) {
+          throw error
+        }
+
+        if (!cancelled) {
+          setLinkedProviders(new Set((data.identities ?? []).map((identity) => identity.provider)))
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setErrorMessage(error instanceof Error ? error.message : "加载登录方式失败，请稍后重试。")
+        }
+      }
+    }
+
+    void loadLinkedProviders()
+
+    return () => {
+      cancelled = true
+    }
+  }, [open])
+
+  useEffect(() => {
+    function handleOAuthLinked(event: MessageEvent) {
+      if (event.origin !== window.location.origin || !isLinkedMessage(event.data)) {
+        return
+      }
+
+      setOauthDialog(null)
+      setActiveLinkProvider(null)
+      void loadIdentities()
+      setSuccessMessage("登录方式已绑定。")
+    }
+
+    window.addEventListener("message", handleOAuthLinked)
+    return () => window.removeEventListener("message", handleOAuthLinked)
+  }, [loadIdentities])
+
+  const handleLinkProvider = async (provider: AuthOAuthProvider) => {
+    setActiveLinkProvider(provider)
+    setErrorMessage(null)
+    setSuccessMessage(null)
+
+    try {
+      const supabase = createSupabaseBrowserClient()
+      const callbackParams = new URLSearchParams({ provider, flow: "link" })
+      const redirectTo = `${window.location.origin}/auth/callback?${callbackParams.toString()}`
+      const oauthProvider = provider === "wechat" ? ("wechat" as never) : ("douyin" as never)
+      const { data, error } = await supabase.auth.linkIdentity({
+        provider: oauthProvider,
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+        },
+      })
+
+      if (error) {
+        throw error
+      }
+
+      if (!data.url) {
+        throw new Error(`${provider} link url missing`)
+      }
+
+      setOauthDialog({
+        provider,
+        url: data.url,
+      })
+    } catch (error) {
+      setActiveLinkProvider(null)
+      setErrorMessage(error instanceof Error ? error.message : "绑定登录方式失败，请稍后重试。")
+    }
+  }
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
@@ -309,8 +526,9 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
   const isBusy = isLoading || isSaving || isUploadingAvatar
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn(DIALOG_PANEL_CLASS, "max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-[560px]")}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className={cn(DIALOG_PANEL_CLASS, "max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-[560px]")}>
         <div className="overflow-hidden rounded-2xl">
           <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
             <DialogHeader>
@@ -449,6 +667,72 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
               </div>
             ) : null}
 
+            <div className={cn("space-y-3 rounded-2xl border px-4 py-4", USER_PANEL_SECTION_CLASS)}>
+              <div>
+                <p className="text-sm font-semibold text-foreground">登录方式</p>
+                <p className="mt-1 text-xs text-muted-foreground">手机号为主账号，微信和抖音绑定后可用于扫码登录。</p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between rounded-xl border border-border/70 bg-background/60 px-3 py-2.5">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">手机号</p>
+                    <p className="text-xs text-muted-foreground">{profile.phone || "未绑定手机号"}</p>
+                  </div>
+                  <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                    主账号
+                  </span>
+                </div>
+
+                {OAUTH_PROVIDERS.map((provider) => {
+                  const meta = getOAuthProviderMeta(provider.id)
+                  const Icon = meta.icon
+                  const linked = linkedProviders.has(provider.id)
+                  const isActive = activeLinkProvider === provider.id
+
+                  return (
+                    <div
+                      key={provider.id}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 px-3 py-2.5"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-surface-2">
+                          <Icon className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground">{meta.label.replace("扫码登录", "")}</p>
+                          <p className="text-xs text-muted-foreground">{linked ? "已绑定，可扫码登录" : "未绑定"}</p>
+                        </div>
+                      </div>
+                      {linked ? (
+                        <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                          已绑定
+                        </span>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isBusy || Boolean(activeLinkProvider)}
+                          onClick={() => void handleLinkProvider(provider.id)}
+                          className={cn("h-8 rounded-full px-3 text-xs", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+                        >
+                          {isActive ? (
+                            <>
+                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                              准备中
+                            </>
+                          ) : (
+                            "绑定"
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
             {errorMessage ? (
               <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
                 {errorMessage}
@@ -487,7 +771,19 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      <OAuthLinkDialog
+        dialog={oauthDialog}
+        onOpenChange={(isOpen) => {
+          if (isOpen) {
+            return
+          }
+
+          setOauthDialog(null)
+          setActiveLinkProvider(null)
+        }}
+      />
+    </>
   )
 }

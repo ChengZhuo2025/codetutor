@@ -45,6 +45,16 @@ assert.match(
 )
 assert.match(
   loginFormSource,
+  /shouldShowOAuthLoginMethods\s*=\s*mode === "login"/,
+  "Login form should only render OAuth scan entries in login mode.",
+)
+assert.match(
+  loginFormSource,
+  /shouldShowOAuthLoginMethods \? \(/,
+  "Login form should hide the other-login-methods section when the register tab is active.",
+)
+assert.match(
+  loginFormSource,
   /phoneValidationMessage/,
   "Login form should derive an inline phone validation hint instead of silently disabling send-code.",
 )
@@ -155,6 +165,46 @@ assert.match(
   callbackSource,
   /loginType: provider/,
   "Auth callback should map the OAuth provider to the shared auth login payload.",
+)
+assert.match(
+  callbackSource,
+  /codetutor\.oauth\.binding_required/,
+  "Auth callback should notify the login page when an OAuth identity needs phone binding.",
+)
+assert.match(
+  callbackSource,
+  /codetutor\.oauth\.linked/,
+  "Auth callback should notify the opener after identity linking completes.",
+)
+assert.match(
+  loginPageSource,
+  /pendingBindProvider/,
+  "Login page should keep track of an OAuth provider waiting for phone binding.",
+)
+assert.match(
+  loginPageSource,
+  /\/auth\/phone-status\?phone=/,
+  "Login page should check whether a completed login phone has already registered.",
+)
+assert.match(
+  loginPageSource,
+  /当前手机号未注册，请先注册/,
+  "Login page should explain when a completed login phone is not registered.",
+)
+assert.match(
+  loginPageSource,
+  /setMode\("register"\)/,
+  "Login page should switch to the register tab when the login phone is not registered.",
+)
+assert.match(
+  loginPageSource,
+  /linkIdentity/,
+  "Login page should trigger Supabase manual identity linking after phone verification.",
+)
+assert.match(
+  loginPageSource,
+  /flow", "link"|flow: "link"|flow=link/,
+  "Login page should use a dedicated link callback flow for manual identity linking.",
 )
 
 console.log("Login page keeps a stable phone-first layout with OAuth scan entries.")

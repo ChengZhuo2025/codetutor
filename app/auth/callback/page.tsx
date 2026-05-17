@@ -13,6 +13,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { ROUTES } from "@/constants/routes"
 
 const SUBSCRIBE_INTENT_PARAM = "intent=subscribe"
+type OAuthCallbackFlow = "login" | "link"
 
 function withAuthorization(accessToken: string | null | undefined) {
   if (!accessToken) {
@@ -70,6 +71,60 @@ function notifyParentAuthCompleted(data: AuthLoginResponseData, provider: string
   return notified
 }
 
+function notifyParentOAuthBindingRequired(provider: string) {
+  if (typeof window === "undefined") {
+    return false
+  }
+
+  const payload = {
+    type: "codetutor.oauth.binding_required",
+    provider,
+  }
+
+  let notified = false
+
+  if (window.parent !== window) {
+    window.parent.postMessage(payload, window.location.origin)
+    notified = true
+  }
+
+  if (window.opener && !window.opener.closed) {
+    window.opener.postMessage(payload, window.location.origin)
+    notified = true
+  }
+
+  return notified
+}
+
+function notifyParentOAuthLinked(provider: string) {
+  if (typeof window === "undefined") {
+    return false
+  }
+
+  const payload = {
+    type: "codetutor.oauth.linked",
+    provider,
+  }
+
+  let notified = false
+
+  if (window.parent !== window) {
+    window.parent.postMessage(payload, window.location.origin)
+    notified = true
+  }
+
+  if (window.opener && !window.opener.closed) {
+    window.opener.postMessage(payload, window.location.origin)
+    notified = true
+  }
+
+  return notified
+}
+
+function getCallbackFlow(value: string | null): OAuthCallbackFlow {
+  return value === "link" ? "link" : "login"
+}
+
 function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -98,6 +153,7 @@ function AuthCallbackContent() {
       }
 
       const provider = providerParam
+      const flow = getCallbackFlow(searchParams.get("flow"))
       const providerMeta = getOAuthProviderMeta(provider)
       const loginRedirectTo = searchParams.get("intent") === "subscribe"
         ? `${ROUTES.home}?${SUBSCRIBE_INTENT_PARAM}`
@@ -145,6 +201,18 @@ function AuthCallbackContent() {
           }
         }
 
+        if (flow === "link") {
+          if (!cancelled && notifyParentOAuthLinked(provider)) {
+            setMessage("账号绑定成功，正在返回主页面。")
+            return
+          }
+
+          if (!cancelled) {
+            router.replace(ROUTES.learn)
+          }
+          return
+        }
+
         const data = await requestData<AuthLoginResponseData>("/auth/login", {
           method: "POST",
           headers: withAuthorization(accessToken),
@@ -168,10 +236,32 @@ function AuthCallbackContent() {
           return
         }
 
+        const message = error instanceof Error ? error.message : `${providerMeta.label}回调处理失败`
+
+        if (flow === "login" && message.includes("绑定手机号")) {
+          try {
+            const supabase = createSupabaseBrowserClient()
+            const {
+              data: { session },
+            } = await supabase.auth.getSession()
+
+            await requestData("/auth/oauth-temp-user/discard", {
+              method: "POST",
+              headers: withAuthorization(session?.access_token),
+              body: JSON.stringify({ provider }),
+            }).catch(() => undefined)
+            await supabase.auth.signOut({ scope: "local" }).catch(() => undefined)
+            await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined)
+          } finally {
+            if (!cancelled && notifyParentOAuthBindingRequired(provider)) {
+              setMessage("请返回登录页绑定手机号。")
+              return
+            }
+          }
+        }
+
         setStatus("error")
-        setMessage(
-          error instanceof Error ? error.message : `${providerMeta.label}回调处理失败`,
-        )
+        setMessage(message)
       }
     }
 
