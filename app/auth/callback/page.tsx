@@ -122,6 +122,16 @@ function notifyParentOAuthLinked(provider: string) {
   return notified
 }
 
+function closeOpenedOAuthWindow() {
+  if (typeof window === "undefined" || !window.opener || window.opener.closed) {
+    return
+  }
+
+  window.setTimeout(() => {
+    window.close()
+  }, 350)
+}
+
 function getCallbackFlow(value: string | null): OAuthCallbackFlow {
   return value === "link" ? "link" : "login"
 }
@@ -141,7 +151,7 @@ function getSafeInternalRedirectTo(value: string | null) {
 function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [status, setStatus] = useState<"loading" | "error">("loading")
+  const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
   const [message, setMessage] = useState("正在完成登录状态同步。")
 
   useEffect(() => {
@@ -216,7 +226,9 @@ function AuthCallbackContent() {
 
         if (flow === "link") {
           if (!cancelled && notifyParentOAuthLinked(provider)) {
+            setStatus("success")
             setMessage("账号绑定成功，正在返回主页面。")
+            closeOpenedOAuthWindow()
             return
           }
 
@@ -237,7 +249,9 @@ function AuthCallbackContent() {
         const redirectTo = loginRedirectTo ?? data.redirectTo
 
         if (!cancelled && notifyParentAuthCompleted(data, provider, redirectTo)) {
+          setStatus("success")
           setMessage("登录成功，正在返回主页面。")
+          closeOpenedOAuthWindow()
           return
         }
 
@@ -273,7 +287,9 @@ function AuthCallbackContent() {
             await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined)
           } finally {
             if (!cancelled && notifyParentOAuthBindingRequired(provider)) {
+              setStatus("success")
               setMessage("请返回登录页绑定手机号。")
+              closeOpenedOAuthWindow()
               return
             }
           }
@@ -301,8 +317,10 @@ function AuthCallbackContent() {
       <div className="w-full max-w-lg">
         <StatePanel
           status={status}
-          title={status === "loading" ? "正在完成登录" : "登录失败"}
+          title={status === "loading" ? "正在完成登录" : status === "success" ? "处理完成" : "登录失败"}
           description={message}
+          actionLabel={status === "success" ? "关闭窗口" : undefined}
+          onAction={status === "success" ? () => window.close() : undefined}
         />
       </div>
     </div>

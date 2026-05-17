@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowRight, ExternalLink, Phone, RefreshCw } from "lucide-react";
+import { ArrowRight, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -39,10 +38,6 @@ type LoginFormProps = {
   statusMessage: string;
   errorMessage: string | null;
   activeOAuthProvider: AuthOAuthProvider | null;
-  oauthDialog: {
-    provider: AuthOAuthProvider;
-    url: string;
-  } | null;
   agreedToLegal: boolean;
   onCancelOAuthBinding: () => void;
   onPhoneChange: (value: string) => void;
@@ -50,7 +45,6 @@ type LoginFormProps = {
   onSendCode: () => void;
   onSubmit: () => void;
   onOAuthSubmit: (provider: AuthOAuthProvider) => void;
-  onOAuthDialogOpenChange: (open: boolean) => void;
   onAgreementChange: (checked: boolean) => void;
 };
 
@@ -89,115 +83,6 @@ function AgreementDialogTrigger({
   );
 }
 
-type OAuthScanDialogProps = {
-  dialog: LoginFormProps["oauthDialog"];
-  onOpenChange: (open: boolean) => void;
-};
-
-function OAuthScanDialog({ dialog, onOpenChange }: OAuthScanDialogProps) {
-  const [frameKey, setFrameKey] = useState(0);
-  const [loadedFrameId, setLoadedFrameId] = useState("");
-  const meta = dialog ? getOAuthProviderMeta(dialog.provider) : null;
-  const Icon = meta?.icon;
-  const frameId = dialog ? `${dialog.provider}-${dialog.url}-${frameKey}` : "";
-  const isFrameLoading = Boolean(dialog && loadedFrameId !== frameId);
-  const refreshOAuthFrame = () => {
-    setFrameKey((current) => current + 1);
-  };
-
-  return (
-    <Dialog open={Boolean(dialog)} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[440px]">
-        <div className="border-b border-border/70 bg-surface-2/80 px-5 py-4">
-          <DialogHeader className="pr-4 text-left">
-            <div className="flex items-center gap-3">
-              {Icon ? (
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border/70 bg-background">
-                  <Icon className="h-5 w-5" />
-                </div>
-              ) : null}
-              <div className="min-w-0">
-                <DialogTitle className="text-base">
-                  {meta ? `${meta.label}登录` : "扫码登录"}
-                </DialogTitle>
-                <DialogDescription className="mt-1 text-xs leading-5">
-                  请在下方二维码区域完成授权，成功后会自动返回当前页面。
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-        </div>
-
-        <div className="flex flex-col gap-4 px-5 py-5">
-          <div className="relative flex h-[430px] items-center justify-center overflow-hidden rounded-2xl border border-border/70 bg-white shadow-sm">
-            {dialog ? (
-              <iframe
-                key={frameId}
-                title={`${meta?.label ?? "扫码"}授权二维码`}
-                src={dialog.url}
-                className="h-[340px] w-full border-0 bg-white"
-                onLoad={() => setLoadedFrameId(frameId)}
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                正在准备扫码授权...
-              </div>
-            )}
-            {dialog && isFrameLoading ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-white">
-                <div className="relative h-14 w-14">
-                  <div className="absolute inset-0 rounded-full border-4 border-brand/15" />
-                  <div className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-brand" />
-                  <div className="absolute inset-3 rounded-full bg-brand/10" />
-                </div>
-                <div className="space-y-1 text-center">
-                  <p className="text-sm font-semibold text-foreground">正在加载二维码</p>
-                  <p className="text-xs text-muted-foreground">请稍等，授权页面马上显示。</p>
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="rounded-2xl border border-brand/15 bg-brand-dim px-4 py-3 text-xs leading-5 text-muted-foreground">
-            <p className="font-medium text-foreground">等待扫码确认</p>
-            <p>如果二维码区域无法加载，请使用下方按钮在新窗口完成授权。</p>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-center gap-3 border-t border-border/70 bg-surface-2/70 px-5 py-4">
-          {dialog ? (
-            <>
-              <button
-                type="button"
-                onClick={refreshOAuthFrame}
-                className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:border-brand/40 hover:text-brand"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                刷新二维码
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  window.open(
-                    dialog.url,
-                    "oauth_popup",
-                    "width=600,height=700,scrollbars=yes,resizable=yes",
-                  );
-                }}
-                className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:border-brand/40 hover:text-brand"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                新窗口打开
-              </button>
-            </>
-          ) : null}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export function LoginForm({
   step,
   phone,
@@ -208,7 +93,6 @@ export function LoginForm({
   statusMessage,
   errorMessage,
   activeOAuthProvider,
-  oauthDialog,
   agreedToLegal,
   onCancelOAuthBinding,
   onPhoneChange,
@@ -216,7 +100,6 @@ export function LoginForm({
   onSendCode,
   onSubmit,
   onOAuthSubmit,
-  onOAuthDialogOpenChange,
   onAgreementChange,
 }: LoginFormProps) {
   const isOAuthBinding = step === "oauth-binding";
@@ -479,8 +362,6 @@ export function LoginForm({
             </button>
           </div>
         )}
-
-        <OAuthScanDialog dialog={oauthDialog} onOpenChange={onOAuthDialogOpenChange} />
 
         <p className="mt-6 text-center text-xs leading-5 text-muted-foreground/60">
           未勾选协议前不可发送验证码或提交。

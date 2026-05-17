@@ -39,11 +39,6 @@ type LegalAcceptanceRecord = {
   userAgent: string
 }
 
-type OAuthDialogState = {
-  provider: AuthOAuthProvider
-  url: string
-} | null
-
 type OAuthCompletedMessage = {
   type: "codetutor.oauth.completed"
   provider?: AuthOAuthProvider
@@ -72,6 +67,20 @@ async function clearBrowserAuthSession() {
   await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined)
 }
 
+function openOAuthPopup(url?: string) {
+  const popup = window.open(
+    url ?? "about:blank",
+    "oauth_popup",
+    "width=820,height=720,scrollbars=yes,resizable=yes",
+  )
+
+  if (popup && !popup.closed) {
+    popup.focus()
+  }
+
+  return popup
+}
+
 export function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -85,7 +94,6 @@ export function LoginPage() {
   const [isSendingCode, setIsSendingCode] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [oauthPendingProvider, setOauthPendingProvider] = useState<AuthOAuthProvider | null>(null)
-  const [oauthDialog, setOauthDialog] = useState<OAuthDialogState>(null)
   const [pendingBindProvider, setPendingBindProvider] = useState<AuthOAuthProvider | null>(null)
   const [pendingBindRedirectTo, setPendingBindRedirectTo] = useState<string | null>(null)
   const [agreedToLegal, setAgreedToLegal] = useState(false)
@@ -127,6 +135,7 @@ export function LoginPage() {
   }
 
   const startOAuthLink = useCallback(async (provider: AuthOAuthProvider, redirectTo?: string) => {
+    const popup = openOAuthPopup()
     const supabase = createSupabaseBrowserClient()
     const callbackParams = new URLSearchParams({ provider, flow: "link" })
     if (redirectTo) {
@@ -150,15 +159,17 @@ export function LoginPage() {
       throw new Error(`${provider} link url missing`)
     }
 
+    if (popup && !popup.closed) {
+      popup.location.href = data.url
+    } else {
+      openOAuthPopup(data.url)
+    }
+
     if (redirectTo) {
       setPendingBindRedirectTo(redirectTo)
     }
 
-    setOauthPendingProvider(provider)
-    setOauthDialog({
-      provider,
-      url: data.url,
-    })
+    setOauthPendingProvider(null)
   }, [])
 
   useEffect(() => {
@@ -172,8 +183,7 @@ export function LoginPage() {
       }
 
       if (event.data.type === "codetutor.oauth.binding_required") {
-        const provider = event.data.provider ?? oauthDialog?.provider
-        setOauthDialog(null)
+        const provider = event.data.provider
         setOauthPendingProvider(null)
 
         if (provider) {
@@ -186,7 +196,6 @@ export function LoginPage() {
       }
 
       if (event.data.type === "codetutor.oauth.linked") {
-        setOauthDialog(null)
         setOauthPendingProvider(null)
         const redirectTo = pendingBindRedirectTo ?? ROUTES.learn
         setPendingBindProvider(null)
@@ -200,12 +209,11 @@ export function LoginPage() {
         return
       }
 
-      setOauthDialog(null)
       setOauthPendingProvider(null)
 
       trackEvent(APP_EVENTS.loginSubmit, {
         step,
-        loginType: event.data.provider ?? oauthDialog?.provider ?? "douyin",
+        loginType: event.data.provider ?? "douyin",
         onboardingCompleted: Boolean(event.data.onboardingCompleted),
         legalAcceptedAt,
       })
@@ -219,7 +227,6 @@ export function LoginPage() {
     getLoginRedirectTo,
     legalAcceptedAt,
     step,
-    oauthDialog?.provider,
     pendingBindRedirectTo,
     router,
     trackEvent,
@@ -233,6 +240,7 @@ export function LoginPage() {
 
     setErrorMessage(null)
     setOauthPendingProvider(provider)
+    const popup = openOAuthPopup()
 
     try {
       const supabase = createSupabaseBrowserClient()
@@ -259,11 +267,17 @@ export function LoginPage() {
         throw new Error(`${provider} oauth url missing`)
       }
 
-      setOauthDialog({
-        provider,
-        url: data.url,
-      })
+      if (popup && !popup.closed) {
+        popup.location.href = data.url
+      } else {
+        openOAuthPopup(data.url)
+      }
+
+      setOauthPendingProvider(null)
     } catch (error) {
+      if (popup && !popup.closed) {
+        popup.close()
+      }
       setOauthPendingProvider(null)
       toast.error("扫码登录失败", toFriendlyAuthError(error, "oauth"))
     }
@@ -459,7 +473,6 @@ export function LoginPage() {
         statusMessage={statusMessage}
         errorMessage={errorMessage}
         activeOAuthProvider={oauthPendingProvider}
-        oauthDialog={oauthDialog}
         agreedToLegal={agreedToLegal}
         onCancelOAuthBinding={() => {
           setStep("idle")
@@ -480,14 +493,6 @@ export function LoginPage() {
         onSendCode={sendCode}
         onSubmit={handlePhoneSubmit}
         onOAuthSubmit={handleOAuthSubmit}
-        onOAuthDialogOpenChange={(open) => {
-          if (open) {
-            return
-          }
-
-          setOauthDialog(null)
-          setOauthPendingProvider(null)
-        }}
         onAgreementChange={(checked) => {
           setAgreedToLegal(checked)
           setErrorMessage(null)

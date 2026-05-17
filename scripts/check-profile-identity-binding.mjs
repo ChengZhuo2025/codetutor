@@ -30,6 +30,24 @@ assert.match(
   "Profile dialog should react to OAuth link callback messages.",
 )
 
+assert.match(
+  source,
+  /openOAuthLinkPopup/,
+  "Profile dialog should open hosted OAuth linking in a real popup window.",
+)
+
+assert.doesNotMatch(
+  source,
+  /<iframe/,
+  "Profile dialog should not iframe hosted provider pages because WeChat authorization blocks cross-origin iframe completion.",
+)
+
+assert.doesNotMatch(
+  source,
+  /OAuthLinkDialog|oauthDialog|setOauthDialog|等待授权完成|等待扫码确认|重新打开授权窗口|新窗口打开/,
+  "Profile dialog should not render a custom OAuth waiting dialog now that the official provider popup is the only scan UI.",
+)
+
 assert.doesNotMatch(
   source,
   /unlinkIdentity/,

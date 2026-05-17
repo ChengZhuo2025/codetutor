@@ -95,20 +95,25 @@ assert.match(
   /signInWithOAuth/,
   "Login page should obtain OAuth authorization URLs through Supabase JS instead of hand-written authorize requests.",
 )
-assert.doesNotMatch(
-  loginPageSource,
-  /window\.open\(\s*data\.url/,
-  "Login page should not open OAuth authorization URLs in a separate popup before showing the scan dialog.",
-)
 assert.match(
+  loginPageSource,
+  /openOAuthPopup\(/,
+  "Login page should open hosted OAuth authorization in a real popup window instead of embedding provider pages.",
+)
+assert.doesNotMatch(
   loginFormSource,
   /<iframe/,
-  "OAuth scan dialog should render the provider authorization page inline instead of only pointing to a separate popup.",
+  "OAuth login should not iframe hosted provider pages because WeChat authorization blocks cross-origin iframe completion.",
 )
-assert.match(
+assert.doesNotMatch(
   loginFormSource,
-  /正在加载二维码|isFrameLoading|onLoad=\{\(\) => setLoadedFrameId/,
-  "OAuth scan dialog should show a loading state while the embedded authorization page loads.",
+  /OAuthScanDialog|等待授权完成|等待扫码确认|重新打开授权窗口|新窗口打开/,
+  "Login form should not render a custom OAuth waiting dialog now that the official provider popup is the only scan UI.",
+)
+assert.doesNotMatch(
+  loginPageSource,
+  /oauthDialog|setOauthDialog|onOAuthWindowOpen|onOAuthDialogOpenChange/,
+  "Login page should not maintain custom OAuth dialog state after opening the official provider popup.",
 )
 assert.doesNotMatch(
   loginPageSource,
@@ -175,6 +180,11 @@ assert.match(
   callbackSource,
   /codetutor\.oauth\.linked/,
   "Auth callback should notify the opener after identity linking completes.",
+)
+assert.match(
+  callbackSource,
+  /notifyParentOAuthLinked\(provider\)[\s\S]*setStatus\("success"\)[\s\S]*closeOpenedOAuthWindow\(\)/,
+  "Auth callback should show completion and close the popup after identity linking succeeds.",
 )
 assert.match(
   loginPageSource,
