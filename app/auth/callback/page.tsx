@@ -12,6 +12,7 @@ import {
 import type { AuthLoginResponseData, ProfileMeResponseData } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
 import { isApiError } from "@/lib/api/types"
+import { getOAuthRedirectOrigin } from "@/lib/auth/oauth-redirect"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { ROUTES } from "@/constants/routes"
 import type { OAuthProviderProfile } from "@/features/auth/types"
@@ -58,6 +59,35 @@ function getHashSessionTokens() {
     accessToken,
     refreshToken,
   }
+}
+
+function isLocalhostOAuthTokenLeak() {
+  if (typeof window === "undefined") {
+    return false
+  }
+
+  return (
+    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+    && Boolean(getHashSessionTokens()?.accessToken)
+  )
+}
+
+function repairLocalhostOAuthTokenRedirect() {
+  if (typeof window === "undefined" || !isLocalhostOAuthTokenLeak()) {
+    return false
+  }
+
+  const origin = getOAuthRedirectOrigin()
+  if (!origin || origin === window.location.origin) {
+    return false
+  }
+
+  const repairUrl = new URL(window.location.href)
+  const targetOrigin = new URL(origin)
+  repairUrl.protocol = targetOrigin.protocol
+  repairUrl.host = targetOrigin.host
+  window.location.replace(repairUrl.toString())
+  return true
 }
 
 function notifyParentAuthCompleted(
@@ -300,6 +330,10 @@ function AuthCallbackContent() {
     let cancelled = false
 
     async function completeAuthCallback() {
+      if (repairLocalhostOAuthTokenRedirect()) {
+        return
+      }
+
       const oauthError =
         searchParams.get("error_description") ?? searchParams.get("error")
 

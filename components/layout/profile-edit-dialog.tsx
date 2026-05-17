@@ -20,6 +20,7 @@ import type {
   UpdateProfileMeRequest,
 } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
+import { buildOAuthRedirectTo } from "@/lib/auth/oauth-redirect"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import {
   OAUTH_PROVIDERS,
@@ -272,8 +273,10 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
 
     try {
       const supabase = createSupabaseBrowserClient()
-      const callbackParams = new URLSearchParams({ provider, flow: "link" })
-      const redirectTo = `${window.location.origin}/auth/callback?${callbackParams.toString()}`
+      const redirectTo = buildOAuthRedirectTo({
+        provider,
+        flow: "link",
+      })
       const oauthProvider = provider === "wechat" ? ("wechat" as never) : ("douyin" as never)
       const { data, error } = await supabase.auth.linkIdentity({
         provider: oauthProvider,

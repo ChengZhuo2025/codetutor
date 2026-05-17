@@ -46,6 +46,13 @@ finalizeAuthLogin
 
 ## OAuth 扫码流程
 
+生产域名配置要求：
+
+- 应用环境变量 `NEXT_PUBLIC_APP_URL` 必须指向真实公开域名，例如 `https://www.codetutor.cn`。
+- OAuth 登录和账号绑定的 `redirectTo` 均由 `NEXT_PUBLIC_APP_URL + /auth/callback` 构造，不从当前浏览器窗口 origin 推导，避免代理、预览域名或错误 Site URL 把回调带回 `localhost`。
+- Supabase Auth 控制台必须将 Site URL 设置为 `https://www.codetutor.cn`，并在 Redirect URLs 中允许 `https://www.codetutor.cn/auth/callback`。如果没有配置，Supabase 会回落到 Site URL。
+- 回调页会检测 `localhost` 上的 token fragment 并尝试迁移回 `NEXT_PUBLIC_APP_URL`，但这是兜底保护，不替代 Supabase 控制台配置。
+
 **场景 A：已绑定手机的用户**
 ```
 扫码 → callback → 提取第三方昵称/头像 → finalizeAuthLogin

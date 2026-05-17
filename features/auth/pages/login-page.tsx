@@ -15,6 +15,7 @@ import {
 import type { AuthStep, AuthOAuthProvider } from "@/features/auth/types"
 import type { AuthLoginResponseData } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
+import { buildOAuthRedirectTo } from "@/lib/auth/oauth-redirect"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { useAppEventTracker } from "@/providers/app-providers"
@@ -137,11 +138,11 @@ export function LoginPage() {
   const startOAuthLink = useCallback(async (provider: AuthOAuthProvider, redirectTo?: string) => {
     const popup = openOAuthPopup()
     const supabase = createSupabaseBrowserClient()
-    const callbackParams = new URLSearchParams({ provider, flow: "link" })
-    if (redirectTo) {
-      callbackParams.set("redirectTo", redirectTo)
-    }
-    const callbackUrl = `${window.location.origin}${ROUTES.authCallback}?${callbackParams.toString()}`
+    const callbackUrl = buildOAuthRedirectTo({
+      provider,
+      flow: "link",
+      redirectTo,
+    })
     const oauthProvider = provider === "wechat" ? WECHAT_PROVIDER : DOUYIN_PROVIDER
     const { data, error } = await supabase.auth.linkIdentity({
       provider: oauthProvider,
@@ -245,12 +246,11 @@ export function LoginPage() {
 
     try {
       const supabase = createSupabaseBrowserClient()
-      const callbackParams = new URLSearchParams({ provider })
-      callbackParams.set("flow", "login")
-      if (searchParams.get("intent") === "subscribe") {
-        callbackParams.set("intent", "subscribe")
-      }
-      const redirectTo = `${window.location.origin}${ROUTES.authCallback}?${callbackParams.toString()}`
+      const redirectTo = buildOAuthRedirectTo({
+        provider,
+        flow: "login",
+        intent: searchParams.get("intent"),
+      })
       const oauthProvider = provider === "wechat" ? WECHAT_PROVIDER : DOUYIN_PROVIDER
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: oauthProvider,
