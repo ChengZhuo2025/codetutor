@@ -16,7 +16,7 @@ Repeat the same steps for later migrations, keeping a new sequential file under 
 
 ## Current sequence
 
-As of the current MVP snapshot (after learning chat multimodal agent scenarios), the migration sequence continues through **044**:
+As of the current MVP snapshot (after material plan RPC search_path hardening), the migration sequence continues through **047**:
 
 1. `001_init.sql` — 基础 schema 初始化
 2. `002_fix_update_updated_at_search_path.sql` — 修复 updated_at 触发器
@@ -62,7 +62,10 @@ As of the current MVP snapshot (after learning chat multimodal agent scenarios),
 42. `042_add_learning_concept_qa_agent.sql` — **学习对话概念问答场景**（为 `agent_scenario_type` 增加 `concept_qa`，支持学习过程中随时提问知识盲点）
 43. `043_create_learning_message_attachments.sql` — **学习对话多媒体附件持久化**（创建私有 `learning-chat-attachments` bucket、附件类型/处理状态枚举、`learning_message_attachments` 表与用户级 RLS）
 44. `044_add_learning_media_agent_scenarios.sql` — **学习对话多媒体预处理场景**（为 `agent_scenario_type` 增加 `media_vision_extract` 与 `media_audio_transcribe`）
+45. `045_create_media_transcription_settings.sql` — **多媒体转译设置**（新增学习对话图片转译、语音转文本与文本转语音的后台模型选择配置表）
+46. `046_harden_material_plan_generation.sql` — **材料计划生成硬化**（新增生成 run claim / heartbeat 字段与事务化草稿确认 RPC）
+47. `047_fix_material_plan_rpc_search_path.sql` — **材料计划 RPC search_path 安全修复**（将 `claim_material_plan_generation_run`、`confirm_learning_plan_draft` 固定为 `search_path = ''`，消除 Supabase Security Advisor 警示）
 
-**最新状态**：迁移已达 **044**。`site_contact_settings` + `qr-codes` bucket 实现了企业联系信息与真实二维码图片管理；`payment_settings`、`subscription_plans`、`payment_orders`、`user_subscriptions`、`payment_webhook_events` 支持微信 Native 与支付宝扫码支付闭环；`subscription_plans` 已支持后台自定义展示、上下架、可购买、推荐与软归档；`complete_paid_payment_order` RPC 负责支付完成的原子化与幂等权益开通；支付/财务 `SECURITY DEFINER` RPC 已固定空 `search_path`，支付相关 RLS policy 已按 `auth.uid()` 标量子查询做性能优化；学习对话已补充概念问答场景、多媒体附件持久化骨架与多媒体预处理 agent 场景。**下一次新增迁移请从 `045_*.sql` 开始。**
+**最新状态**：迁移已达 **047**。`site_contact_settings` + `qr-codes` bucket 实现了企业联系信息与真实二维码图片管理；`payment_settings`、`subscription_plans`、`payment_orders`、`user_subscriptions`、`payment_webhook_events` 支持微信 Native 与支付宝扫码支付闭环；`subscription_plans` 已支持后台自定义展示、上下架、可购买、推荐与软归档；`complete_paid_payment_order` RPC 负责支付完成的原子化与幂等权益开通；支付/财务与材料计划 `SECURITY DEFINER` RPC 已固定空 `search_path`，支付相关 RLS policy 已按 `auth.uid()` 标量子查询做性能优化；学习对话已补充概念问答场景、多媒体附件持久化骨架、多媒体预处理 agent 场景与多媒体转译设置。**下一次新增迁移请从 `048_*.sql` 开始。**
 
 **仍需人工确认**：如果目标 Supabase 项目尚未创建 `qr-codes` bucket，请在 Supabase Dashboard → Storage 创建名为 `qr-codes` 的 **PUBLIC** bucket（允许匿名读取），否则企业联系方式二维码上传会失败。

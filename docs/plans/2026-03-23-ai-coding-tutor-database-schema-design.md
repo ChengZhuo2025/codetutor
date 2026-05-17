@@ -56,6 +56,7 @@
 - `034_create_payment_subscription_tables.sql` (新增微信 Native 支付配置、订阅套餐、支付订单、用户订阅与支付回调事件表；`035_harden_payment_order_completion.sql` 新增支付完成幂等 RPC；`037_add_alipay_scan_payment.sql` 扩展支付宝扫码支付配置与订单渠道字段；`038_extend_payment_order_management.sql` 增加订单取消、用户端软删除与财务查询索引；`039_finance_hardening.sql` 增加财务统计和用户订单汇总 RPC；`040_fix_security_definer_search_path.sql` 修复支付/财务 `SECURITY DEFINER` RPC 的 `search_path` 安全警示；`030`-`033` 为联系方式二维码与 RLS 修正迁移)
 - `045_create_media_transcription_settings.sql` (新增多媒体转译设置表，管理学习对话图片转译、语音转文本与文本转语音的模型选择)
 - `046_harden_material_plan_generation.sql` (为材料计划生成 run 增加 claim / heartbeat 字段与 `claim_material_plan_generation_run`，并新增事务化 `confirm_learning_plan_draft` RPC)
+- `047_fix_material_plan_rpc_search_path.sql` (将材料计划生成与草稿确认 RPC 的函数级 `search_path` 固定为空字符串，消除 Supabase Security Advisor 警示)
 
 当前数据库中已落地的核心业务表包括：
 
@@ -1590,7 +1591,7 @@ MVP 阶段建议谨慎使用软删除：
 
 `039_finance_hardening.sql` 增加 `finance_stats_daily(date_from, date_to)` 与 `user_payment_summary(user_id)` RPC，把后台财务统计和用户订单状态汇总下沉到数据库聚合；同时调整 `complete_paid_payment_order`，允许已归档但仍被历史订单引用的套餐完成支付后的权益开通。
 
-`040_fix_security_definer_search_path.sql` 将 `complete_paid_payment_order`、`finance_stats_daily`、`user_payment_summary` 的函数级 `search_path` 固定为空字符串，配合函数体内的 `public.*` schema-qualified 引用，消除 Supabase Security Advisor 的 `Function Search Path Mutable` 警示。
+`040_fix_security_definer_search_path.sql` 将 `complete_paid_payment_order`、`finance_stats_daily`、`user_payment_summary` 的函数级 `search_path` 固定为空字符串，配合函数体内的 `public.*` schema-qualified 引用，消除 Supabase Security Advisor 的 `Function Search Path Mutable` 警示。`047_fix_material_plan_rpc_search_path.sql` 同样将 `claim_material_plan_generation_run` 与 `confirm_learning_plan_draft` 固定为 `search_path = ''`，覆盖 `046` 新增材料计划 RPC 的同类警示。
 
 `036_extend_subscription_plan_management.sql` 扩展 `subscription_plans` 的运营字段：
 
