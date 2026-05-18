@@ -1,5 +1,6 @@
 import { OpenAPIRegistry, OpenApiGeneratorV31 } from "@asteasolutions/zod-to-openapi"
 import { z } from "zod"
+import { APP_PACKAGE_VERSION } from "@/constants/app"
 import { ROUTE_ERROR_MESSAGES } from "@/server/lib/route-error-presets"
 import {
   achievementSummaryResponseDataSchema,
@@ -1872,7 +1873,7 @@ const successExamples = {
     seoKeywords: ["AI 编程", "学习陪练", "CodeTutor"],
     icpNumber: "沪ICP备2026015857号-2",
     copyright: "© 2026 CodeTutor. All rights reserved.",
-    version: "0.1.110",
+    version: APP_PACKAGE_VERSION,
     updatedAt: "2026-05-18T10:00:00Z",
     updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
   },
@@ -1906,7 +1907,7 @@ const successExamples = {
       seoKeywords: ["AI 编程", "学习陪练", "CodeTutor"],
       icpNumber: "沪ICP备2026015857号-2",
       copyright: "© 2026 CodeTutor. All rights reserved.",
-      version: "0.1.110",
+      version: APP_PACKAGE_VERSION,
       updatedAt: "2026-05-18T10:00:00Z",
     },
     articles: {

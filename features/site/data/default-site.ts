@@ -1,4 +1,5 @@
 import type { PublicSiteResponseData } from "@/lib/api/contracts/admin-site"
+import { APP_PACKAGE_VERSION } from "@/constants/app"
 
 export const DEFAULT_USER_AGREEMENT_MARKDOWN = `生效日期：2026-04-17
 
@@ -122,7 +123,7 @@ export const DEFAULT_PUBLIC_SITE: PublicSiteResponseData = {
     seoKeywords: ["AI 编程", "学习陪练", "CodeTutor"],
     icpNumber: "沪ICP备2026015857号-2",
     copyright: "© 2026 CodeTutor. All rights reserved.",
-    version: "0.1.110",
+    version: APP_PACKAGE_VERSION,
     updatedAt: null,
     updatedByAdminId: null,
   },

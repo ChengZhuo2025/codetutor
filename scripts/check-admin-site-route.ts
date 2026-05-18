@@ -1,5 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 
 import {
   createAdminSiteArticleGetHandler,
@@ -15,6 +16,9 @@ import type {
 } from "../lib/api/contracts/admin-site.ts"
 
 const okAdmin = { ok: true as const, adminId: "550e8400-e29b-41d4-a716-446655440011" }
+const packageJson = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+) as { version: string }
 const forbiddenAdmin = {
   ok: false as const,
   reason: "forbidden" as const,
@@ -30,7 +34,7 @@ const sampleInformation: AdminSiteInformationResponseData = {
   seoKeywords: ["AI 编程", "学习陪练"],
   icpNumber: "沪ICP备2026015857号-2",
   copyright: "© 2026 CodeTutor. All rights reserved.",
-  version: "0.1.110",
+  version: packageJson.version,
   updatedAt: "2026-05-18T00:00:00.000Z",
   updatedByAdminId: okAdmin.adminId,
 }

@@ -29,6 +29,18 @@ assert.match(
 )
 
 assert.match(
+  source,
+  /v\{information\.version\} Beta/,
+  "LandingNav should render the marketing version from public site information.",
+)
+
+assert.doesNotMatch(
+  source,
+  /v0\.1\.\d+/,
+  "LandingNav should not hardcode a marketing version string.",
+)
+
+assert.match(
   readFileSync(
     new URL("../features/marketing/providers/landing-auth-provider.tsx", import.meta.url),
     "utf8",

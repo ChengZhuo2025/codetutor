@@ -59,6 +59,7 @@ import { AdminListPaginationFooter } from "@/features/admin-shell/components/adm
 import { AdminListTag } from "@/features/admin-shell/components/admin-list-tag";
 import { AdminSelect } from "@/features/admin-shell/components/admin-select";
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect";
+import { usePublicSite } from "@/features/site/providers/public-site-provider";
 import {
   adminRequestData,
   getAdminApiErrorMessage,
@@ -86,12 +87,8 @@ const TABS: Array<{ id: SettingsTab; label: string }> = [
 ];
 
 const SYSTEM_PROJECT_INFO = {
-  productName: "CodeTutor AI",
-  productCategory: "AI 编程学习教练",
   productionDomain: "www.codetutor.cn",
   companyName: "上海智酷数能科技有限公司",
-  copyright: "© 2026 CodeTutor. All rights reserved.",
-  icpRecord: "沪ICP备2026015857号-2",
 };
 
 const SYSTEM_TEAM_MEMBERS = [
@@ -325,6 +322,8 @@ function InfoRow({
 export function SystemSettings() {
   const confirm = useAppConfirm();
   const toast = useAppToast();
+  const { site } = usePublicSite();
+  const siteInformation = site.information;
   const [activeTab, setActiveTab] = useState<SettingsTab>("accounts");
   const [overview, setOverview] =
     useState<AdminSettingsOverviewResponseData | null>(null);
@@ -589,7 +588,7 @@ export function SystemSettings() {
     if (activeTab === "audit") {
       void refreshAuditLogs();
     }
-    if (activeTab === "contact") {
+    if (activeTab === "contact" || activeTab === "system") {
       void refreshContact();
     }
     if (activeTab === "payment") {
@@ -1163,13 +1162,14 @@ export function SystemSettings() {
           <div className="rounded-2xl border border-border bg-card p-5">
             <div className="mb-4 flex items-center gap-2">
               <Building2 className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-medium text-foreground">项目身份</h2>
+              <h2 className="text-sm font-medium text-foreground">网站信息</h2>
             </div>
             <dl className="space-y-3.5 text-sm">
-              <InfoRow label="产品名称" value={SYSTEM_PROJECT_INFO.productName} />
-              <InfoRow label="产品定位" value={SYSTEM_PROJECT_INFO.productCategory} />
-              <InfoRow label="站点域名" value={SYSTEM_PROJECT_INFO.productionDomain} mono />
-              <InfoRow label="运营主体" value={SYSTEM_PROJECT_INFO.companyName} />
+              <InfoRow label="网站名称" value={siteInformation.siteName} />
+              <InfoRow label="副标题" value={siteInformation.siteSubtitle} />
+              <InfoRow label="版本号" value={siteInformation.version} mono />
+              <InfoRow label="站点域名" value={contactData?.website || SYSTEM_PROJECT_INFO.productionDomain} mono />
+              <InfoRow label="运营主体" value={contactData?.companyName || SYSTEM_PROJECT_INFO.companyName} />
             </dl>
           </div>
 
@@ -1247,22 +1247,25 @@ export function SystemSettings() {
           <div className="rounded-2xl border border-border bg-card p-5">
             <div className="mb-4 flex items-center gap-2">
               <Server className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-medium text-foreground">应用信息</h2>
+              <h2 className="text-sm font-medium text-foreground">网站展示内容</h2>
             </div>
             <dl className="space-y-3 text-sm">
-              <InfoRow label="应用名称" value={overview.systemInfo.appName} />
-              <InfoRow label="版本" value={overview.systemInfo.appVersion} mono />
-              <InfoRow label="Next.js" value={overview.systemInfo.nextVersion ?? "未知"} mono />
-              <InfoRow label="React" value={overview.systemInfo.reactVersion ?? "未知"} mono />
+              <InfoRow label="Slogan" value={siteInformation.siteSlogan} />
+              <InfoRow label="网站简介" value={siteInformation.siteDescription} />
+              <InfoRow label="SEO 关键词" value={siteInformation.seoKeywords.join("、") || "未配置"} />
             </dl>
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-5">
             <div className="mb-4 flex items-center gap-2">
               <Database className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-medium text-foreground">基础设施</h2>
+              <h2 className="text-sm font-medium text-foreground">应用与基础设施</h2>
             </div>
             <dl className="space-y-3 text-sm">
+              <InfoRow label="应用名称" value={overview.systemInfo.appName} />
+              <InfoRow label="应用版本" value={overview.systemInfo.appVersion} mono />
+              <InfoRow label="Next.js" value={overview.systemInfo.nextVersion ?? "未知"} mono />
+              <InfoRow label="React" value={overview.systemInfo.reactVersion ?? "未知"} mono />
               <InfoRow label="管理员认证" value={overview.systemInfo.adminAuthMode} />
               <InfoRow label="数据库" value={overview.systemInfo.database} />
               <InfoRow label="对象存储" value={overview.systemInfo.storage} />
@@ -1279,18 +1282,22 @@ export function SystemSettings() {
           <div className="grid gap-4 text-sm md:grid-cols-3">
             <div className="space-y-1">
               <p className="text-muted-foreground">版权声明</p>
-              <p className="text-foreground">{SYSTEM_PROJECT_INFO.copyright}</p>
+              <p className="text-foreground">{siteInformation.copyright}</p>
             </div>
             <div className="space-y-1">
               <p className="text-muted-foreground">ICP备案号</p>
-              <a
-                href="https://beian.miit.gov.cn"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-foreground underline-offset-4 hover:text-primary hover:underline"
-              >
-                {SYSTEM_PROJECT_INFO.icpRecord}
-              </a>
+              {siteInformation.icpNumber ? (
+                <a
+                  href="https://beian.miit.gov.cn"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground underline-offset-4 hover:text-primary hover:underline"
+                >
+                  {siteInformation.icpNumber}
+                </a>
+              ) : (
+                <p className="text-foreground">未配置</p>
+              )}
             </div>
             <div className="space-y-1">
               <p className="text-muted-foreground">内部说明</p>

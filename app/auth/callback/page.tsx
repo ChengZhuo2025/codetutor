@@ -16,6 +16,7 @@ import { getOAuthRedirectOrigin } from "@/lib/auth/oauth-redirect"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { ROUTES } from "@/constants/routes"
 import type { OAuthProviderProfile } from "@/features/auth/types"
+import { usePublicSite } from "@/features/site/providers/public-site-provider"
 import { USER_BUTTON_PRIMARY_CLASS, USER_BUTTON_SECONDARY_CLASS } from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
 
@@ -276,6 +277,8 @@ function getSafeInternalRedirectTo(value: string | null) {
 function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { site } = usePublicSite()
+  const siteName = site.information.siteName
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
   const [message, setMessage] = useState("正在完成登录状态同步。")
   const [successContext, setSuccessContext] = useState<OAuthCallbackSuccessContext | null>(null)
@@ -409,7 +412,7 @@ function AuthCallbackContent() {
           const canNotifyParent = typeof window !== "undefined" && Boolean(window.opener && !window.opener.closed || window.parent !== window)
           if (!cancelled && hasProviderProfile(providerProfile)) {
             setStatus("success")
-            setMessage(`${providerMeta.label.replace("扫码登录", "")}账号已绑定。你可以继续使用当前资料，也可以把第三方昵称或头像同步到 CodeTutor。`)
+            setMessage(`${providerMeta.label.replace("扫码登录", "")}账号已绑定。你可以继续使用当前资料，也可以把第三方昵称或头像同步到 ${siteName}。`)
             setSuccessContext({
               flow,
               provider,
@@ -446,7 +449,7 @@ function AuthCallbackContent() {
         const canNotifyParent = typeof window !== "undefined" && Boolean(window.opener && !window.opener.closed || window.parent !== window)
         if (!cancelled && hasProviderProfile(providerProfile)) {
           setStatus("success")
-          setMessage(`欢迎回来，正在进入 CodeTutor。你也可以先使用 ${providerMeta.label.replace("扫码登录", "")} 的昵称或头像更新资料。`)
+          setMessage(`欢迎回来，正在进入 ${siteName}。你也可以先使用 ${providerMeta.label.replace("扫码登录", "")} 的昵称或头像更新资料。`)
           setSuccessContext({
             flow,
             provider,
@@ -461,7 +464,7 @@ function AuthCallbackContent() {
 
         if (!cancelled && notifyParentAuthCompleted(data, provider, redirectTo, providerProfile)) {
           setStatus("success")
-          setMessage("欢迎回来，正在进入 CodeTutor。")
+          setMessage(`欢迎回来，正在进入 ${siteName}。`)
           closeOpenedOAuthWindow()
           return
         }
@@ -521,7 +524,7 @@ function AuthCallbackContent() {
     return () => {
       cancelled = true
     }
-  }, [router, searchParams])
+  }, [router, searchParams, siteName])
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6">

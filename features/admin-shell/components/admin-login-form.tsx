@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import {
@@ -90,8 +91,19 @@ export function AdminLoginForm() {
           href={ROUTES.home}
           className="group inline-flex items-center gap-3"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.78_0.15_180/0.72)]">
-            <Code2 className="h-[18px] w-[18px]" />
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.78_0.15_180/0.72)]">
+            {site.information.logoUrl ? (
+              <Image
+                src={site.information.logoUrl}
+                alt={`${site.information.siteName} logo`}
+                width={36}
+                height={36}
+                className="h-full w-full object-contain"
+                unoptimized
+              />
+            ) : (
+              <Code2 className="h-[18px] w-[18px]" />
+            )}
           </div>
           <div className="leading-[1.02]">
             <span className="block text-[1rem] font-semibold tracking-tight text-foreground">
@@ -119,7 +131,7 @@ export function AdminLoginForm() {
                 Admin control center
               </p>
               <h1 className="mt-2 text-[2.6rem] font-bold tracking-tight text-foreground leading-[1.02] lg:text-[2.9rem] xl:text-[3.15rem]">
-                CodeTutor Admin
+                {site.information.siteName} Admin
               </h1>
               <p className="mt-2 text-md leading-6 text-muted-foreground sm:text-[15px]">
                 面向管理员与 IT 运营人员的统一入口，用于处理用户、学习路径、AI 配置与系统治理。

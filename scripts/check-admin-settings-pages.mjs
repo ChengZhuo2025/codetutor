@@ -15,6 +15,7 @@ const packageSource = readFileSync(
   new URL("../package.json", import.meta.url),
   "utf8",
 )
+const packageJson = JSON.parse(packageSource)
 
 const appConstantsSource = readFileSync(
   new URL("../constants/app.ts", import.meta.url),
@@ -76,19 +77,25 @@ assert.match(
 
 assert.match(
   settingsSource,
-  /项目身份|开发团队|维护联系人|合规与版权/,
-  "The system information tab should expose project identity, team, maintainer and compliance sections",
+  /网站信息|网站展示内容|应用与基础设施|开发团队|维护联系人|合规与版权/,
+  "The system information tab should expose managed website information, runtime infrastructure, team, maintainer and compliance sections",
 )
 
 assert.match(
   settingsSource,
-  /大包子|18600165902|baoyouhua@zhicool\.cn|微信号[\s\S]*baoyouhua|Codex \(GPT-5\.5\)|沪ICP备2026015857号-2/,
-  "The system information tab should include the configured maintainer, WeChat, AI collaborator and ICP record",
+  /大包子|18600165902|baoyouhua@zhicool\.cn|微信号[\s\S]*baoyouhua|Codex \(GPT-5\.5\)|siteInformation\.icpNumber/,
+  "The system information tab should include the configured maintainer, WeChat, AI collaborator and backend-backed ICP record",
+)
+
+assert.match(
+  settingsSource,
+  /usePublicSite\(\)[\s\S]*siteInformation\.siteName[\s\S]*siteInformation\.siteSubtitle[\s\S]*siteInformation\.version[\s\S]*siteInformation\.siteSlogan[\s\S]*siteInformation\.siteDescription[\s\S]*siteInformation\.seoKeywords[\s\S]*siteInformation\.copyright/,
+  "The system information tab should read website identity, content, version, copyright and ICP values from public site data",
 )
 
 assert.match(
   `${packageSource}\n${appConstantsSource}`,
-  /0\.1\.97/,
+  new RegExp(packageJson.version.replaceAll(".", "\\.")),
   "The system information tab should align with the current app version",
 )
 

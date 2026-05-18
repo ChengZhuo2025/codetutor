@@ -1,5 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 
 import {
   createAdminSettingsOverviewGetHandler,
@@ -16,6 +17,9 @@ import type {
 } from "../lib/api/contracts/admin-settings.ts"
 
 const okAdmin = { ok: true as const, adminId: "admin-uuid-1" }
+const packageJson = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+) as { version: string }
 const forbiddenAdmin = {
   ok: false as const,
   reason: "forbidden" as const,
@@ -52,7 +56,7 @@ const sampleOverview: AdminSettingsOverviewResponseData = {
   ],
   systemInfo: {
     appName: "AI编程学习教练管理后台",
-    appVersion: "0.1.110",
+    appVersion: packageJson.version,
     environment: "test",
     nextVersion: "16.2.0",
     reactVersion: "19.2.4",

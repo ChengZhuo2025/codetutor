@@ -12,23 +12,18 @@ const loginFormSource = readFileSync(
 
 assert.match(
   footerSource,
-  /PRIVACY_POLICY_CONTENT/,
-  "Landing footer should use the shared privacy policy content.",
+  /usePublicSite\(\)/,
+  "Landing footer should read public site data from the backend-backed provider.",
 )
 assert.match(
   footerSource,
-  /withLegalMeta\(PRIVACY_POLICY_CONTENT\)/,
-  "Landing footer should render the same legal metadata as the login page.",
+  /articles\.privacyPolicy\.contentMarkdown/,
+  "Landing footer should render privacy policy content from public site articles.",
 )
 assert.match(
   footerSource,
-  /USER_AGREEMENT_CONTENT/,
-  "Landing footer should use the shared user agreement content.",
-)
-assert.match(
-  footerSource,
-  /withLegalMeta\(USER_AGREEMENT_CONTENT\)/,
-  "Landing footer should render the same user agreement metadata as the login page.",
+  /articles\.userAgreement\.contentMarkdown/,
+  "Landing footer should render user agreement content from public site articles.",
 )
 assert.doesNotMatch(
   footerSource,
@@ -42,13 +37,23 @@ assert.doesNotMatch(
 )
 assert.doesNotMatch(
   loginFormSource,
-  /const PRIVACY_POLICY_CONTENT = `/,
-  "Login form should import shared privacy policy content instead of defining a private copy.",
+  /PRIVACY_POLICY_CONTENT|USER_AGREEMENT_CONTENT|withLegalMeta/,
+  "Login form should read agreement content from public site articles instead of legacy constants.",
 )
-assert.doesNotMatch(
+assert.match(
   loginFormSource,
-  /const USER_AGREEMENT_CONTENT = `/,
-  "Login form should import shared user agreement content instead of defining a private copy.",
+  /usePublicSite\(\)/,
+  "Login form should read public site data from the backend-backed provider.",
+)
+assert.match(
+  loginFormSource,
+  /privacyPolicy\.contentMarkdown/,
+  "Login form should render privacy policy content from public site articles.",
+)
+assert.match(
+  loginFormSource,
+  /userAgreement\.contentMarkdown/,
+  "Login form should render user agreement content from public site articles.",
 )
 
-console.log("Landing legal dialogs reuse the shared legal content.")
+console.log("Landing legal dialogs read backend-backed public site articles.")

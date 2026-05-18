@@ -17,8 +17,16 @@ const footer = readFileSync(
   new URL("../features/marketing/components/footer.tsx", import.meta.url),
   "utf8",
 )
+const nav = readFileSync(
+  new URL("../features/marketing/components/nav.tsx", import.meta.url),
+  "utf8",
+)
 const loginBrandPanel = readFileSync(
   new URL("../features/auth/components/login-brand-panel.tsx", import.meta.url),
+  "utf8",
+)
+const adminSidebar = readFileSync(
+  new URL("../features/admin-shell/components/admin-sidebar.tsx", import.meta.url),
   "utf8",
 )
 
@@ -38,6 +46,11 @@ assert.match(siteArticlesPage, /Markdown/, "site article page should expose mark
 
 assert.match(footer, /usePublicSite/, "marketing footer should read public site data")
 assert.match(footer, /privacyPolicy/, "marketing footer should render managed privacy policy")
+assert.match(nav, /v\{information\.version\} Beta/, "marketing nav should render managed site version")
 assert.match(loginBrandPanel, /usePublicSite/, "login page brand panel should read public site data")
+assert.match(adminSidebar, /information\.logoUrl/, "admin sidebar brand should render managed site logo")
+assert.match(adminSidebar, /information\.siteName/, "admin sidebar brand should render managed site name")
+assert.match(adminSidebar, /information\.version/, "admin sidebar brand should render managed site version")
+assert.match(adminSidebar, /information\.copyright/, "admin sidebar footer should render managed copyright")
 
 console.log("Admin site pages and public site wiring are present.")

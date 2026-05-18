@@ -1,8 +1,11 @@
+"use client"
+
+import Image from "next/image"
 import Link from "next/link"
 import { Code2 } from "lucide-react"
-import { APP_NAME } from "@/constants/app"
 import { ROUTES } from "@/constants/routes"
 import type { OnboardingStep } from "@/features/onboarding/types"
+import { usePublicSite } from "@/features/site/providers/public-site-provider"
 import { cn } from "@/lib/utils"
 
 type OnboardingHeaderProps = {
@@ -25,18 +28,32 @@ const stepMeta = {
 } as const
 
 export function OnboardingHeader({ step }: OnboardingHeaderProps) {
+  const { site } = usePublicSite()
+  const { information } = site
+
   return (
     <header className="relative z-10 border-b border-border/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(247,249,251,0.82))] px-6 py-5 shadow-[0_14px_38px_-34px_rgba(15,23,42,0.28)] backdrop-blur dark:bg-[linear-gradient(180deg,oklch(0.19_0.012_250/0.92),oklch(0.16_0.01_250/0.82))]">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
         {/* Logo - 与首页样式保持一致 */}
         <Link href={ROUTES.home} className="flex items-center gap-3 text-foreground">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.78_0.15_180/0.72)]">
-            <Code2 className="h-[18px] w-[18px]" />
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.78_0.15_180/0.72)]">
+            {information.logoUrl ? (
+              <Image
+                src={information.logoUrl}
+                alt={`${information.siteName} logo`}
+                width={36}
+                height={36}
+                className="h-full w-full object-contain"
+                unoptimized
+              />
+            ) : (
+              <Code2 className="h-[18px] w-[18px]" />
+            )}
           </div>
           <div className="leading-[1.02]">
-            <span className="block text-[1.06rem] font-extrabold tracking-tight">{APP_NAME}</span>
+            <span className="block text-[1.06rem] font-extrabold tracking-tight">{information.siteName}</span>
             <span className="mt-1 block text-[11px] text-muted-foreground">
-              AI 编程学习教练
+              {information.siteSubtitle}
             </span>
           </div>
         </Link>

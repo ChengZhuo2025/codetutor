@@ -116,7 +116,7 @@ export function LandingNav() {
       <>
         <ThemeToggle />
         <div className="rounded-full border border-brand/20 bg-brand/10 px-3 py-1 text-xs font-medium text-brand">
-          v0.1.110 Beta
+          v{information.version} Beta
         </div>
         <Link href={ROUTES.login}>
           <Button variant="outline" size="sm" className={USER_BUTTON_SECONDARY_CLASS}>

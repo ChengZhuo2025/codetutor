@@ -367,16 +367,18 @@ export function LoginForm({
           未勾选协议前不可发送验证码或提交。
         </p>
 
-        <div className="mt-3 pt-2 border-t border-border/50 text-center">
-          <a
-            href="https://beian.miit.gov.cn"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-muted-foreground/70 hover:text-foreground transition-colors hover:underline"
-          >
-            ICP备案号: 沪ICP备2026015857号-2
-          </a>
-        </div>
+        {site.information.icpNumber ? (
+          <div className="mt-3 pt-2 border-t border-border/50 text-center">
+            <a
+              href="https://beian.miit.gov.cn"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-muted-foreground/70 hover:text-foreground transition-colors hover:underline"
+            >
+              ICP备案号: {site.information.icpNumber}
+            </a>
+          </div>
+        ) : null}
       </div>
     </div>
   );

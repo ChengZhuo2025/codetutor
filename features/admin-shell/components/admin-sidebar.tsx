@@ -1,6 +1,7 @@
 "use client"
 
 import type { ReactElement } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
@@ -48,6 +49,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
   const pathname = usePathname()
   const { session } = useAdminSession()
   const { site } = usePublicSite()
+  const { information } = site
   const [manualExpandedItemHref, setManualExpandedItemHref] = useState<string | null | undefined>(undefined)
   const aiAccessible = canAccessAdminAI(session.roles)
 
@@ -171,13 +173,24 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
           collapsed ? "justify-center px-2" : "gap-2.5 px-3.5",
         )}
       >
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <BrandIcon className="size-4.5" aria-hidden />
+        <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary text-primary-foreground">
+          {information.logoUrl ? (
+            <Image
+              src={information.logoUrl}
+              alt={`${information.siteName} logo`}
+              width={36}
+              height={36}
+              className="h-full w-full object-contain"
+              unoptimized
+            />
+          ) : (
+            <BrandIcon className="size-4.5" aria-hidden />
+          )}
         </div>
         {!collapsed ? (
           <div className="min-w-0 flex-1">
-            <p className="truncate text-md font-semibold tracking-tight text-sidebar-foreground">{site.information.siteName}</p>
-            <p className="truncate text-[10px] leading-tight text-muted-foreground">系统管理后台 v{site.information.version} Beta</p>
+            <p className="truncate text-md font-semibold tracking-tight text-sidebar-foreground">{information.siteName}</p>
+            <p className="truncate text-[10px] leading-tight text-muted-foreground">系统管理后台 v{information.version} Beta</p>
           </div>
         ) : null}
       </div>
@@ -204,7 +217,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
         >
           {!collapsed ? (
             <span className="min-w-0 pl-2 truncate text-xs leading-tight text-muted-foreground">
-              © 智酷数能科技 版权所有
+              {information.copyright}
             </span>
           ) : null}
           <button

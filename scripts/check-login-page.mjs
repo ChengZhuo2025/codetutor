@@ -224,8 +224,8 @@ assert.match(
 )
 assert.match(
   callbackSource,
-  /欢迎回来|正在进入 CodeTutor/,
-  "OAuth login success should use friendly login-specific copy.",
+  /usePublicSite\(\)[\s\S]*site\.information\.siteName[\s\S]*欢迎回来，正在进入 \$\{siteName\}/,
+  "OAuth login success should use friendly login-specific copy with the backend-backed site name.",
 )
 assert.match(
   callbackSource,
@@ -235,7 +235,7 @@ assert.match(
 assert.match(
   callbackSource,
   /使用昵称或头像/,
-  "OAuth success UI should offer applying the provider nickname or avatar to the CodeTutor profile.",
+  "OAuth success UI should offer applying the provider nickname or avatar to the site profile.",
 )
 assert.match(
   callbackSource,

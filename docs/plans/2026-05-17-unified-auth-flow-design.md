@@ -117,7 +117,7 @@ auth.users (user_id)
 - `/api/auth/phone-status` 保留接口，前端不再调用。
 - Supabase session 创建成功但应用登录 finalize 失败时，前端会清理本地 Supabase session 和业务 session cookie。
 - OAuth 未绑定手机号时，父登录页收到 `codetutor.oauth.binding_required` 后会立即清理临时 OAuth session；绑定态发送手机号验证码前也会再次清理，确保短信 OTP 走普通手机号登录/注册链路，而不是夹带上一次扫码登录留下的本地状态。
-- OAuth 登录成功与个人资料页绑定成功会区分状态文案：登录态强调“欢迎回来 / 正在进入 CodeTutor”，绑定态强调“账号已绑定”。若 Supabase user metadata 或 identity metadata 中包含昵称 / 头像，会在成功卡片中展示，并提供“使用昵称或头像”主动同步到 `user_profiles`；不自动覆盖既有资料。
+- OAuth 登录成功与个人资料页绑定成功会区分状态文案：登录态强调“欢迎回来 / 正在进入站点”，站点名称来自公共站点信息；绑定态强调“账号已绑定”。若 Supabase user metadata 或 identity metadata 中包含昵称 / 头像，会在成功卡片中展示，并提供“使用昵称或头像”主动同步到 `user_profiles`；不自动覆盖既有资料。
 
 ### 预计净变化
 
