@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { ADMIN_ROUTES } from "@/constants/routes"
 import { cn } from "@/lib/utils"
+import { getChineseCityName } from "@/lib/utils/city-mapping"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
   adminRequestData,
@@ -739,7 +740,7 @@ export function UserDetail({ userId }: UserDetailProps) {
               <InfoRow label="最近登录方式" value={formatProviderLabel(data.lastLoginProvider)} />
               <InfoRow label="最近登录时间" value={formatDateTime(data.lastLoginAt)} />
               <InfoRow label="最近登录 IP" value={data.lastLoginIp ?? "暂无"} />
-              <InfoRow label="最近登录城市" value={data.lastLoginCity ?? "暂无"} />
+              <InfoRow label="最近登录城市" value={data.lastLoginCity ? getChineseCityName(data.lastLoginCity) : "暂无"} />
               <InfoRow label="注册时间" value={formatDateTime(data.profileCreatedAt)} />
               <InfoRow label="资料更新时间" value={formatDateTime(data.profileUpdatedAt)} />
             </dl>

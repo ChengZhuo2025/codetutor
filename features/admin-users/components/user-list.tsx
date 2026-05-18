@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Download, Flame, FolderKanban, Search, ShieldAlert, Users } from "lucide-react"
+import { Download, Flame, FolderKanban, MapPin, Search, ShieldAlert, Users } from "lucide-react"
 import type {
   AdminUserDetailResponseData,
   AdminUserListItem,
@@ -25,6 +25,7 @@ import {
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
 import { cn } from "@/lib/utils"
+import { getChineseCityName } from "@/lib/utils/city-mapping"
 import { ADMIN_ROUTES } from "@/constants/routes"
 import {
   formatAdminLearningLevelLabel,
@@ -502,15 +503,16 @@ export function UserList() {
                               </p>
                               {item.deletedAt ? <AdminListTag variant="danger">已删除</AdminListTag> : null}
                             </div>
-                            <p className="truncate font-mono text-[11px] text-muted-foreground">
+                            <p className="truncate font-mono text-xs text-muted-foreground">
                               {item.authPhone || "暂无手机号"}
                             </p>
                             <p className="truncate text-xs text-muted-foreground">
                               {item.contactEmail || item.authEmail || item.authPhone || "暂无联系方式"}
                             </p>
                             {item.lastLoginCity ? (
-                              <p className="truncate text-xs text-muted-foreground">
-                                📍 {item.lastLoginCity}
+                              <p className="truncate text-xs text-brand flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {getChineseCityName(item.lastLoginCity)}
                               </p>
                             ) : null}
                           </div>
