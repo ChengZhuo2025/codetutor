@@ -7,9 +7,6 @@ export type IpGeoResult = {
   longitude: number | null
 }
 
-const TAOBAO_IP_API = "http://ip.taobao.com/service/getIpInfo.php"
-const IPIP_API = "https://api.ipip.net/find?ip="
-
 export async function getIpGeocoding(ip: string): Promise<IpGeoResult> {
   if (!isValidIp(ip)) {
     return {
@@ -22,14 +19,22 @@ export async function getIpGeocoding(ip: string): Promise<IpGeoResult> {
     }
   }
 
-  const result = await tryTaobaoApi(ip)
-  if (result.city) {
-    return result
-  }
+  const providers = [
+    () => fetchIpapiCo(ip),
+    () => fetchFreegeoip(ip),
+    () => fetchIpify(ip),
+    () => fetchIpapiCom(ip),
+  ]
 
-  const fallbackResult = await tryIpipApi(ip)
-  if (fallbackResult.city) {
-    return fallbackResult
+  for (const provider of providers) {
+    try {
+      const result = await provider()
+      if (result.city && result.city.trim()) {
+        return result
+      }
+    } catch (e) {
+      console.debug(`IP geocoding provider failed:`, e)
+    }
   }
 
   return {
@@ -42,91 +47,137 @@ export async function getIpGeocoding(ip: string): Promise<IpGeoResult> {
   }
 }
 
-async function tryTaobaoApi(ip: string): Promise<IpGeoResult> {
+async function fetchIpapiCo(ip: string): Promise<IpGeoResult> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 5000)
 
   try {
-    const response = await fetch(`${TAOBAO_IP_API}?ip=${encodeURIComponent(ip)}`, {
+    const response = await fetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, {
       method: "GET",
-      headers: {
-        "Accept": "application/json",
-      },
+      headers: { "Accept": "application/json" },
       signal: controller.signal,
     })
 
     clearTimeout(timeoutId)
 
     if (!response.ok) {
-      return { ip, country: null, region: null, city: null, latitude: null, longitude: null }
+      throw new Error(`HTTP ${response.status}`)
     }
 
     const data = await response.json()
-
-    if (data.code !== 0) {
-      return { ip, country: null, region: null, city: null, latitude: null, longitude: null }
-    }
-
-    const info = data.data || {}
     return {
       ip,
-      country: typeof info.country === "string" ? info.country : null,
-      region: typeof info.region === "string" ? info.region : null,
-      city: typeof info.city === "string" && info.city !== "内网IP" ? info.city : null,
-      latitude: null,
-      longitude: null,
+      country: typeof data.country_name === "string" ? data.country_name : null,
+      region: typeof data.region === "string" ? data.region : null,
+      city: typeof data.city === "string" && data.city !== "None" ? data.city : null,
+      latitude: typeof data.latitude === "number" ? data.latitude : null,
+      longitude: typeof data.longitude === "number" ? data.longitude : null,
     }
   } catch {
-    return { ip, country: null, region: null, city: null, latitude: null, longitude: null }
+    throw new Error("ipapi.co failed")
   }
 }
 
-async function tryIpipApi(ip: string): Promise<IpGeoResult> {
+async function fetchFreegeoip(ip: string): Promise<IpGeoResult> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 5000)
 
   try {
-    const response = await fetch(`${IPIP_API}${encodeURIComponent(ip)}`, {
+    const response = await fetch(`https://freegeoip.app/json/${encodeURIComponent(ip)}`, {
       method: "GET",
-      headers: {
-        "Accept": "application/json",
-      },
+      headers: { "Accept": "application/json" },
       signal: controller.signal,
     })
 
     clearTimeout(timeoutId)
 
     if (!response.ok) {
-      return { ip, country: null, region: null, city: null, latitude: null, longitude: null }
+      throw new Error(`HTTP ${response.status}`)
     }
 
     const data = await response.json()
+    return {
+      ip,
+      country: typeof data.country_name === "string" ? data.country_name : null,
+      region: typeof data.region_name === "string" ? data.region_name : null,
+      city: typeof data.city === "string" && data.city !== "" ? data.city : null,
+      latitude: typeof data.latitude === "number" ? data.latitude : null,
+      longitude: typeof data.longitude === "number" ? data.longitude : null,
+    }
+  } catch {
+    throw new Error("freegeoip.app failed")
+  }
+}
 
-    if (!data || typeof data.data !== "object") {
-      return { ip, country: null, region: null, city: null, latitude: null, longitude: null }
+async function fetchIpify(ip: string): Promise<IpGeoResult> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+  try {
+    const response = await fetch(`https://geo.ipify.org/api/v2/country,city?apiKey=at_IhZ4y79y12K0VJ6E74tH9Q7P7n32n&ipAddress=${encodeURIComponent(ip)}`, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
     }
 
-    const info = data.data
-    const location = typeof info.location === "string" ? info.location.split("|") : []
+    const data = await response.json()
+    return {
+      ip,
+      country: data.location?.country || null,
+      region: data.location?.region || null,
+      city: data.location?.city || null,
+      latitude: typeof data.location?.lat === "number" ? data.location.lat : null,
+      longitude: typeof data.location?.lng === "number" ? data.location.lng : null,
+    }
+  } catch {
+    throw new Error("ipify failed")
+  }
+}
+
+async function fetchIpapiCom(ip: string): Promise<IpGeoResult> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+  try {
+    const response = await fetch(`http://ip-api.com/json/${encodeURIComponent(ip)}`, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    const data = await response.json()
+    if (data.status !== "success") {
+      throw new Error(`API error: ${data.message}`)
+    }
 
     return {
       ip,
-      country: location[0] || null,
-      region: location[1] || null,
-      city: location[2] || null,
-      latitude: typeof info.latitude === "number" ? info.latitude : null,
-      longitude: typeof info.longitude === "number" ? info.longitude : null,
+      country: typeof data.country === "string" ? data.country : null,
+      region: typeof data.regionName === "string" ? data.regionName : null,
+      city: typeof data.city === "string" ? data.city : null,
+      latitude: typeof data.lat === "number" ? data.lat : null,
+      longitude: typeof data.lon === "number" ? data.lon : null,
     }
   } catch {
-    return { ip, country: null, region: null, city: null, latitude: null, longitude: null }
+    throw new Error("ip-api.com failed")
   }
 }
 
 export function isValidIp(ip: string): boolean {
   const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
-  const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/
-
-  return ipv4Regex.test(ip) || ipv6Regex.test(ip)
+  return ipv4Regex.test(ip)
 }
 
 export function formatCityDisplay(geo: IpGeoResult): string {
@@ -138,7 +189,7 @@ export function formatCityDisplay(geo: IpGeoResult): string {
   if (geo.region && !parts.includes(geo.region)) {
     parts.push(geo.region)
   }
-  if (geo.country && geo.country !== "中国") {
+  if (geo.country && geo.country !== "China" && geo.country !== "中国") {
     parts.push(geo.country)
   }
 
