@@ -15,12 +15,13 @@ import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatePanel } from "@/components/ui/state-panel"
-import { APP_NAME } from "@/constants/app"
 import { ADMIN_ROUTES, ROUTES } from "@/constants/routes"
+import { usePublicSite } from "@/features/site/providers/public-site-provider"
 
 export function AdminLoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { site } = usePublicSite()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -94,10 +95,10 @@ export function AdminLoginForm() {
           </div>
           <div className="leading-[1.02]">
             <span className="block text-[1rem] font-semibold tracking-tight text-foreground">
-              {APP_NAME}
+              {site.information.siteName}
             </span>
             <span className="mt-1 block text-[11px] text-muted-foreground">
-              AI 编程学习教练
+              {site.information.siteSubtitle}
             </span>
           </div>
         </Link>

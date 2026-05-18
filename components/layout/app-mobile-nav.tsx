@@ -1,11 +1,11 @@
 "use client"
 
 import { Menu, PanelRightOpen } from "lucide-react"
-import { APP_NAME } from "@/constants/app"
 import {
   USER_BUTTON_SECONDARY_CLASS,
   USER_ICON_BUTTON_CLASS,
 } from "@/components/ui/surface-styles"
+import { usePublicSite } from "@/features/site/providers/public-site-provider"
 import { cn } from "@/lib/utils"
 
 type AppMobileNavProps = {
@@ -23,6 +23,8 @@ export function AppMobileNav({
   onOpenAside,
   asideLabel = "查看详情",
 }: AppMobileNavProps) {
+  const { site } = usePublicSite()
+
   return (
     <div className="sticky top-0 z-30 border-b border-border/50 bg-background/85 px-4 py-3 backdrop-blur-xl lg:hidden">
       <div className="flex items-center justify-between gap-3">
@@ -40,7 +42,7 @@ export function AppMobileNav({
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">
-            {APP_NAME}
+            {site.information.siteName}
           </p>
           <h1 className="truncate text-sm font-semibold text-foreground">{title}</h1>
           {subtitle ? (

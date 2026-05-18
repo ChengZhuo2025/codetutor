@@ -6,6 +6,10 @@ export const QR_CODE_BUCKET = "qr-codes"
 export const QR_CODE_MAX_BYTES = 2 * 1024 * 1024
 export const QR_CODE_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const
 
+export const SITE_ASSET_BUCKET = "site-assets"
+export const SITE_LOGO_MAX_BYTES = 2 * 1024 * 1024
+export const SITE_LOGO_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"] as const
+
 export const LEARNING_CHAT_ATTACHMENT_BUCKET = "learning-chat-attachments"
 export const LEARNING_CHAT_IMAGE_MAX_BYTES = 5 * 1024 * 1024
 export const LEARNING_CHAT_AUDIO_MAX_BYTES = 15 * 1024 * 1024

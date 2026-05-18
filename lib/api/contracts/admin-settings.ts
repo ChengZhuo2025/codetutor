@@ -28,6 +28,8 @@ export const ADMIN_SETTINGS_AUDIT_TARGET_TYPES = [
   "user_profile",
   "user_learning_path",
   "site_contact",
+  "site_information",
+  "site_article",
   "payment_settings",
   "subscription_plan",
 ] as const

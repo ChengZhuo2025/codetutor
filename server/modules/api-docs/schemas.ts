@@ -7,6 +7,7 @@ import {
   ADMIN_SETTINGS_ACCOUNT_STATUS_ACTIONS,
   ADMIN_SETTINGS_AUDIT_TARGET_TYPES,
 } from "@/lib/api/contracts/admin-settings"
+import { SITE_ARTICLE_SLUGS } from "@/lib/api/contracts/admin-site"
 import {
   ADMIN_AI_ACTIVE_STATUS_OPTIONS,
   ADMIN_AI_AGENT_SCENARIO_TYPES,
@@ -1668,7 +1669,16 @@ export const adminSettingsAuditLogListItemSchema = z
   .object({
     id: z.string().uuid(),
     action: adminAuditActionSchema,
-    targetType: z.enum(["admin_account", "user_profile", "user_learning_path", "site_contact"]),
+    targetType: z.enum([
+      "admin_account",
+      "user_profile",
+      "user_learning_path",
+      "site_contact",
+      "site_information",
+      "site_article",
+      "payment_settings",
+      "subscription_plan",
+    ]),
     targetId: z.string().nullable(),
     actorAdminAccountId: z.string(),
     actorDisplayName: z.string(),
@@ -1740,6 +1750,103 @@ export const updateSiteContactRequestSchema = z
     contactChannels: z.array(contactChannelConfigSchema).optional(),
   })
   .openapi("UpdateSiteContactRequest")
+
+// ============================================
+// 站点信息 Schemas
+// ============================================
+
+export const siteInformationSchema = z
+  .object({
+    logoUrl: z.string().url().nullable(),
+    siteName: z.string().min(1),
+    siteSubtitle: z.string().min(1),
+    siteSlogan: z.string().min(1),
+    siteDescription: z.string().min(1),
+    seoKeywords: z.array(z.string()),
+    icpNumber: z.string().nullable(),
+    copyright: z.string().min(1),
+    version: z.string().min(1),
+    updatedAt: z.string().nullable(),
+    updatedByAdminId: z.string().uuid().nullable().optional(),
+  })
+  .openapi("SiteInformation")
+
+export const adminSiteInformationResponseDataSchema = siteInformationSchema.openapi(
+  "AdminSiteInformationResponseData",
+)
+
+export const updateSiteInformationRequestSchema = z
+  .object({
+    logoUrl: z.string().url().nullable().optional(),
+    siteName: z.string().min(1).optional(),
+    siteSubtitle: z.string().min(1).optional(),
+    siteSlogan: z.string().min(1).optional(),
+    siteDescription: z.string().min(1).optional(),
+    seoKeywords: z.array(z.string()).optional(),
+    icpNumber: z.string().nullable().optional(),
+    copyright: z.string().min(1).optional(),
+    version: z.string().min(1).optional(),
+  })
+  .openapi("UpdateSiteInformationRequest")
+
+export const siteLogoUploadResponseDataSchema = z
+  .object({
+    logoUrl: z.string().url(),
+    storagePath: z.string(),
+  })
+  .openapi("SiteLogoUploadResponseData")
+
+export const siteArticleSlugSchema = z.enum(SITE_ARTICLE_SLUGS).openapi("SiteArticleSlug")
+
+export const siteArticleSchema = z
+  .object({
+    slug: siteArticleSlugSchema,
+    title: z.string().min(1),
+    contentMarkdown: z.string().min(1),
+    effectiveDate: z.string().nullable(),
+    updatedAt: z.string().nullable(),
+    updatedByAdminId: z.string().uuid().nullable().optional(),
+  })
+  .openapi("SiteArticle")
+
+export const publicSiteArticleSchema = siteArticleSchema
+  .omit({ updatedByAdminId: true })
+  .openapi("PublicSiteArticle")
+
+export const adminSiteArticleResponseDataSchema = siteArticleSchema.openapi(
+  "AdminSiteArticleResponseData",
+)
+
+export const adminSiteArticleListResponseDataSchema = z
+  .object({
+    items: z.array(siteArticleSchema),
+  })
+  .openapi("AdminSiteArticleListResponseData")
+
+export const updateSiteArticleRequestSchema = z
+  .object({
+    title: z.string().min(1).optional(),
+    contentMarkdown: z.string().min(1).optional(),
+    effectiveDate: z.string().nullable().optional(),
+  })
+  .openapi("UpdateSiteArticleRequest")
+
+export const siteArticleSlugParamsSchema = z
+  .object({
+    slug: siteArticleSlugSchema,
+  })
+  .openapi("SiteArticleSlugParams")
+
+export const publicSiteResponseDataSchema = z
+  .object({
+    information: siteInformationSchema,
+    articles: z.object({
+      aboutUs: publicSiteArticleSchema,
+      userAgreement: publicSiteArticleSchema,
+      privacyPolicy: publicSiteArticleSchema,
+    }),
+  })
+  .openapi("PublicSiteResponseData")
 
 export const uploadQrCodeResponseDataSchema = z
   .object({

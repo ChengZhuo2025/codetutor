@@ -3,8 +3,8 @@
 import { useRouter } from "next/navigation"
 import { useState, useRef, useEffect } from "react"
 import { Settings, User, Bell, LogOut, ChevronRight, X, MessageSquareMore } from "lucide-react"
-import { APP_NAME, APP_VERSION } from "@/constants/app"
 import { ROUTES } from "@/constants/routes"
+import { usePublicSite } from "@/features/site/providers/public-site-provider"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { FeedbackDialog } from "@/components/layout/feedback-dialog"
@@ -68,6 +68,7 @@ export function SettingsPopover({
   const [open, setOpen] = useState(false)
   const [activeDialog, setActiveDialog] = useState<DialogType>(null)
   const ref = useRef<HTMLDivElement>(null)
+  const { site } = usePublicSite()
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -202,7 +203,7 @@ export function SettingsPopover({
 
             <div className={cn("border-t px-4 py-2.5", USER_PANEL_DIVIDER_CLASS)}>
               <p className="text-[11px] text-muted-foreground/85 dark:text-foreground/38">
-                {APP_NAME} v{APP_VERSION}
+                {site.information.siteName} v{site.information.version}
               </p>
             </div>
           </div>

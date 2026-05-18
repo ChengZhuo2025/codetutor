@@ -4,29 +4,46 @@ import {
   APP_LANG,
   APP_TITLE,
 } from '@/constants/app'
+import { DEFAULT_PUBLIC_SITE } from '@/features/site/data/default-site'
+import { loadSiteInformation } from '@/server/modules/admin-site/service'
 import { AppProviders } from '@/providers/app-providers'
 import './globals.css'
 
-export const metadata: Metadata = {
-  title: APP_TITLE,
-  description: APP_DESCRIPTION,
-  icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
-  },
+const DEFAULT_ICONS: Metadata["icons"] = {
+  icon: [
+    {
+      url: '/icon-light-32x32.png',
+      media: '(prefers-color-scheme: light)',
+    },
+    {
+      url: '/icon-dark-32x32.png',
+      media: '(prefers-color-scheme: dark)',
+    },
+    {
+      url: '/icon.svg',
+      type: 'image/svg+xml',
+    },
+  ],
+  apple: '/apple-icon.png',
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const information = await loadSiteInformation()
+    return {
+      title: `${information.siteName} — ${information.siteSubtitle}`,
+      description: information.siteDescription,
+      keywords: information.seoKeywords,
+      icons: DEFAULT_ICONS,
+    }
+  } catch {
+    return {
+      title: APP_TITLE,
+      description: APP_DESCRIPTION,
+      keywords: DEFAULT_PUBLIC_SITE.information.seoKeywords,
+      icons: DEFAULT_ICONS,
+    }
+  }
 }
 
 export default function RootLayout({

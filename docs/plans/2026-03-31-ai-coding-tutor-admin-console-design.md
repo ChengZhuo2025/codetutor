@@ -3,7 +3,7 @@
 > 文档类型：管理后台设计文档
 > 产品名称：AI编程学习教练
 > 版本：v0.4
-> 状态：Phase 1 已完成；**用户运营**、**学习记录**、**Ai 管理** 与 **系统设置**已落地；细粒度权限、AI 深水区能力与更深用户域运营能力仍为后续阶段
+> 状态：Phase 1 已完成；**用户运营**、**学习记录**、**Ai 管理**、**站点信息** 与 **系统设置**已落地；细粒度权限、AI 深水区能力与更深用户域运营能力仍为后续阶段
 > 创建日期：2026-03-31
 > 更新日期：2026-04-15
 > 适用阶段：MVP 后续运营化阶段
@@ -28,6 +28,7 @@
 > - **学习记录**已落地：学习路径实例列表、详情、CSV 导出、最近会话摘要、`reactivate / archive` 状态操作；路由为 `app/(admin-shell)/admin/learning/*`，业务域为 `features/admin-learning`，服务层为 `server/modules/admin-learning`，OpenAPI 分组为 `admin-learning`。
 > - **Ai 管理**已落地：`/admin/ai` 概览、Provider/Model/Agent 列表与独立详情页、命中规则、Skill 绑定、调用日志列表与独立详情页、命中预览与真实 provider 测试，以及多媒体管理（转译设置、附件管理）；路由为 `app/(admin-shell)/admin/ai/*`，业务域为 `features/admin-ai`，服务层为 `server/modules/admin-ai`，OpenAPI 分组为 `admin-ai`。
 > - **系统设置**已落地：资料与安全入口复用、管理员账号列表与启停、角色权限说明、操作审计列表、系统信息、企业联系方式管理与微信支付配置加密托管；路由为 `app/(admin-shell)/admin/settings`，业务域为 `features/admin-settings`，服务层为 `server/modules/admin-settings` / `server/modules/payments`，OpenAPI 分组为 `admin-settings` 与 `payment`。
+> - **站点信息**已落地：`/admin/site/information` 管理网站 Logo、站点名称、副标题、Slogan、简介、SEO、备案、版权和版本号；`/admin/site/articles` 管理关于我们、用户协议、隐私政策 Markdown 内容；服务层为 `server/modules/admin-site`，公共读取接口为 `GET /api/site/public`，OpenAPI 分组为 `admin-site`。
 > - **管理后台消息中心**已落地：右上角铃铛抽屉、独立消息中心页、消息列表与已读/忽略动作，以及反馈、支付回调/订单同步、AI 连接/调用失败、系统配置/审计异常、用户软删/恢复/账号冲突等高价值事件源自动入后台消息池；路由为 `app/(admin-shell)/admin/notifications/*`，业务域为 `features/admin-notifications`，服务层为 `server/modules/admin-notifications`，OpenAPI 分组为 `admin-notifications`。
 > - 管理端鉴权主链路已切换为 `admin-access-token` / `admin-refresh-token` Cookie，会话守卫与 `/api-docs` 访问守卫已接入 `proxy.ts`。
 > - 运行时 API 文档（`/api/docs/openapi`、`/api-docs`）已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning`、`admin-ai`、`admin-settings` 分组。
@@ -107,7 +108,7 @@
 - **AI 深水区能力**：当前已完成 provider/model/agent 后台 CRUD、调用日志只读面板、命中规则与测试调试；但 prompt 版本化、灰度/回滚、成本与稳定性可视化面板等仍待建设。
 - **事件埋点写入链路与 `event_logs` 实际迁移**仍待落地。
 
-因此，管理后台后续迭代应建立在「Phase 1 + 用户运营 + 学习记录 + Ai 管理 + 系统设置 + 反馈」已可用，其余深水区模块按优先级补齐的现实之上。
+因此，管理后台后续迭代应建立在「Phase 1 + 用户运营 + 学习记录 + Ai 管理 + 站点信息 + 系统设置 + 反馈」已可用，其余深水区模块按优先级补齐的现实之上。
 
 ---
 
@@ -571,6 +572,7 @@ Agents 管理页必须补齐的辅助能力：
 - `app/(admin-shell)/admin/feedback/*`
 - `app/(admin-shell)/admin/ai/*`（**已落地**）
 - `app/(admin-shell)/admin/settings/*`（**已落地**）
+- `app/(admin-shell)/admin/site/*`（**已落地**）
 
 建议首期按下列页面职责落目录，而不是只建空壳路由：
 
@@ -596,6 +598,8 @@ Agents 管理页必须补齐的辅助能力：
 | `app/(admin-shell)/admin/ai/invocations/[invocationId]/page.tsx` | 调用日志独立详情页 |
 | `app/(admin-shell)/admin/ai/test/page.tsx` | resolve preview 与 agent test |
 | `app/(admin-shell)/admin/settings/page.tsx` | 系统设置 |
+| `app/(admin-shell)/admin/site/information/page.tsx` | 站点信息 / 网站信息 |
+| `app/(admin-shell)/admin/site/articles/page.tsx` | 站点信息 / 通用文章 |
 
 建议新增后台前端业务域：
 
@@ -616,6 +620,8 @@ Agents 管理页必须补齐的辅助能力：
 - `/admin/learning`：学习记录
 - `/admin/ai`：Ai 管理
 - `/admin/settings`：系统设置
+- `/admin/site/information`：站点信息 / 网站信息
+- `/admin/site/articles`：站点信息 / 通用文章
 - `/admin/feedback`：反馈工单
 - `/admin/notifications`：管理后台消息中心
 
@@ -721,6 +727,7 @@ Agents 管理页必须补齐的辅助能力：
 | AI 测试 | `POST /api/admin/ai/resolve-preview`、`POST /api/admin/ai/agent/test` | **已落地** |
 | 多媒体管理 | `GET /api/admin/ai/media/transcription-settings`、`PATCH /api/admin/ai/media/transcription-settings/{id}`、`GET /api/admin/ai/media/attachments` | **已落地** |
 | 审计 | `GET /api/admin/settings/audit-logs` | **已落地** |
+| 站点信息 | `GET/PATCH /api/admin/site/information`、`POST /api/admin/site/logo-upload`、`GET /api/admin/site/articles`、`GET/PATCH /api/admin/site/articles/{slug}`、`GET /api/site/public` | **已落地** |
 
 ### 7.5 写接口规范
 
@@ -1217,7 +1224,7 @@ AI 核心配置变更既要可追踪，也要尽量少引入额外配置真源�
 
 建议按以下顺序推进：
 
-1. 管理员认证、后台壳层、反馈工单、用户运营、学习记录、Ai 管理与系统设置已在当前仓库交付，可作为后续模块的基础。
+1. 管理员认证、后台壳层、反馈工单、用户运营、学习记录、Ai 管理、站点信息与系统设置已在当前仓库交付，可作为后续模块的基础。
 2. 下一优先级转为细粒度权限深化、角色分配写能力、更多写操作审计覆盖。
 3. 用户列表、详情、导出与资料维护已交付，学习路径级运营也已交付；继续补用户备注与积分人工调整等，形成更深运营闭环。
 4. 最后再补 `event_logs`、Prompt 灰度与回滚、成本与稳定性面板，以及通知/订阅等更重的后台能力。

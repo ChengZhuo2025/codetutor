@@ -22,6 +22,9 @@ const breadcrumbMap: Record<string, string> = {
   "/admin/ai/test": "Ai 管理 / 测试调试",
   "/admin/ai/media/transcription-settings": "Ai 管理 / 多媒体管理 / 转译设置",
   "/admin/ai/media/attachments": "Ai 管理 / 多媒体管理 / 附件管理",
+  "/admin/site": "站点信息",
+  "/admin/site/information": "站点信息 / 网站信息",
+  "/admin/site/articles": "站点信息 / 通用文章",
   "/admin/settings": "系统设置",
 }
 

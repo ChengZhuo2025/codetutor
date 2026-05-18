@@ -1,8 +1,8 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { Code2 } from "lucide-react"
-import { APP_COPYRIGHT_YEAR, APP_NAME } from "@/constants/app"
 import {
   Dialog,
   DialogContent,
@@ -12,13 +12,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { HelpCenterDialog } from "@/components/layout/help-center-dialog"
-import {
-  PRIVACY_POLICY_CONTENT,
-  USER_AGREEMENT_CONTENT,
-  withLegalMeta,
-} from "@/features/legal/data/legal-content"
 import { marketingTools } from "@/features/marketing/data/marketing-content"
 import type { MarketingTool } from "@/features/marketing/types"
+import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
+import { MarkdownContent } from "@/features/site/components/markdown-content"
+import { usePublicSite } from "@/features/site/providers/public-site-provider"
 import { AboutDialog } from "./about-dialog"
 import { ContactDialog } from "./contact-dialog"
 
@@ -50,8 +48,8 @@ function LegalDialog({ triggerLabel, title, content }: LegalDialogProps) {
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription asChild>
-            <div className="max-h-[65vh] overflow-y-auto whitespace-pre-line pr-1 text-sm leading-6 text-muted-foreground">
-              {content}
+            <div className="max-h-[65vh] overflow-y-auto pr-1">
+              <MarkdownContent content={content} />
             </div>
           </DialogDescription>
         </DialogHeader>
@@ -61,6 +59,10 @@ function LegalDialog({ triggerLabel, title, content }: LegalDialogProps) {
 }
 
 export function LandingFooter() {
+  const { site } = usePublicSite()
+  const { authState, ctaHref, ctaLabel } = useLandingAuthState()
+  const { information, articles } = site
+
   return (
     <>
       <footer className="pt-10">
@@ -106,10 +108,14 @@ export function LandingFooter() {
         </div>
         <div className="mt-8 px-26 py-6 border-t border-border/50 bg-surface-2 flex flex-col items-center justify-between gap-6 md:flex-row">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-brand-foreground">
-                <Code2 className="h-3.5 w-3.5" />
+              <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg bg-brand text-brand-foreground">
+                {information.logoUrl ? (
+                  <Image src={information.logoUrl} alt={`${information.siteName} logo`} width={28} height={28} className="h-full w-full object-contain" unoptimized />
+                ) : (
+                  <Code2 className="h-3.5 w-3.5" />
+                )}
               </div>
-              <span className="text-sm font-semibold">{APP_NAME}</span>
+              <span className="text-sm font-semibold">{information.siteName}</span>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
               <AboutDialog
@@ -118,27 +124,32 @@ export function LandingFooter() {
               />
               <LegalDialog
                 triggerLabel="隐私政策"
-                title="隐私政策"
-                content={withLegalMeta(PRIVACY_POLICY_CONTENT)}
+                title={articles.privacyPolicy.title}
+                content={articles.privacyPolicy.contentMarkdown}
               />
               <LegalDialog
                 triggerLabel="用户协议"
-                title="用户协议"
-                content={withLegalMeta(USER_AGREEMENT_CONTENT)}
+                title={articles.userAgreement.title}
+                content={articles.userAgreement.contentMarkdown}
               />
               <ContactDialog triggerClassName="cursor-pointer transition-colors hover:text-foreground" />
               <HelpCenterDialog />
+              <Link href={ctaHref} className="font-medium text-foreground transition-colors hover:text-brand">
+                {authState.status === "authenticated" ? ctaLabel : "免费开始"}
+              </Link>
             </div>
             <div className="text-xs text-muted-foreground text-center md:text-right space-y-0.5">
-              <p>© {APP_COPYRIGHT_YEAR} {APP_NAME}. All rights reserved.</p>
-              <a
-                href="https://beian.miit.gov.cn"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-foreground transition-colors hover:underline"
-              >
-                沪ICP备2026015857号-2
-              </a>
+              <p>{information.copyright}</p>
+              {information.icpNumber ? (
+                <a
+                  href="https://beian.miit.gov.cn"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground transition-colors hover:underline"
+                >
+                  {information.icpNumber}
+                </a>
+              ) : null}
             </div>
           </div>
       </footer>

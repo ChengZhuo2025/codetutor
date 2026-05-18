@@ -29,6 +29,7 @@ export const ADMIN_ROUTES = {
   learning: "/admin/learning",
   ai: "/admin/ai",
   finance: "/admin/finance",
+  site: "/admin/site",
   settings: "/admin/settings",
 } as const
 

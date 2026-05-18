@@ -44,6 +44,12 @@ import {
   type UpdateSiteContactRequest,
 } from "@/lib/api/contracts/admin-settings"
 import {
+  SITE_ARTICLE_SLUGS,
+  type SiteArticleSlug,
+  type UpdateSiteArticleRequest,
+  type UpdateSiteInformationRequest,
+} from "@/lib/api/contracts/admin-site"
+import {
   ADMIN_AI_ACTIVE_STATUS_OPTIONS,
   ADMIN_AI_AGENT_SCENARIO_TYPES,
   ADMIN_AI_AUTH_MODES,
@@ -2326,6 +2332,197 @@ export function parseAdminSettingsContactBody(
       return channels
     }
     data.contactChannels = channels.data
+  }
+
+  if (Object.keys(data).length === 0) {
+    return fail("VALIDATION_FAILED", "请至少提供一个要更新的字段。")
+  }
+
+  return ok(data)
+}
+
+function parseOptionalUrlOrNull(
+  value: unknown,
+  fieldName: string,
+  maxLength = 1000,
+): ValidationResult<string | null> {
+  if (value === null) {
+    return ok(null)
+  }
+
+  const parsed = parseTrimmedRequiredString(value, fieldName, 1, maxLength)
+  if (!parsed.ok) {
+    return parsed
+  }
+
+  if (!isValidUrl(parsed.data)) {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是 http(s) 链接。`)
+  }
+
+  return ok(parsed.data)
+}
+
+function parseOptionalNullableString(
+  value: unknown,
+  fieldName: string,
+  maxLength: number,
+): ValidationResult<string | null> {
+  if (value === null) {
+    return ok(null)
+  }
+
+  if (typeof value !== "string") {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是字符串。`)
+  }
+
+  const normalized = value.trim()
+  if (normalized.length > maxLength) {
+    return fail("VALIDATION_FAILED", `${fieldName} 长度不合法。`)
+  }
+
+  return ok(normalized.length > 0 ? normalized : null)
+}
+
+function parseSeoKeywords(input: unknown): ValidationResult<string[]> {
+  if (!Array.isArray(input)) {
+    return fail("VALIDATION_FAILED", "seoKeywords 必须是字符串数组。")
+  }
+
+  if (input.length > 20) {
+    return fail("VALIDATION_FAILED", "seoKeywords 最多支持 20 个关键词。")
+  }
+
+  const normalized: string[] = []
+  for (const item of input) {
+    if (typeof item !== "string") {
+      return fail("VALIDATION_FAILED", "seoKeywords 必须是字符串数组。")
+    }
+
+    const keyword = item.trim()
+    if (!keyword) {
+      continue
+    }
+    if (keyword.length > 60) {
+      return fail("VALIDATION_FAILED", "seoKeywords 单个关键词不能超过 60 个字符。")
+    }
+    if (!normalized.includes(keyword)) {
+      normalized.push(keyword)
+    }
+  }
+
+  return ok(normalized)
+}
+
+export function parseAdminSiteInformationBody(
+  input: unknown,
+): ValidationResult<UpdateSiteInformationRequest> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return fail("BAD_REQUEST", "站点信息请求体不合法。")
+  }
+
+  const body = input as Record<string, unknown>
+  const data: UpdateSiteInformationRequest = {}
+
+  if (body.logoUrl !== undefined) {
+    const parsed = parseOptionalUrlOrNull(body.logoUrl, "logoUrl")
+    if (!parsed.ok) return parsed
+    data.logoUrl = parsed.data
+  }
+
+  if (body.siteName !== undefined) {
+    const parsed = parseTrimmedRequiredString(body.siteName, "siteName", 1, 120)
+    if (!parsed.ok) return parsed
+    data.siteName = parsed.data
+  }
+
+  if (body.siteSubtitle !== undefined) {
+    const parsed = parseTrimmedRequiredString(body.siteSubtitle, "siteSubtitle", 1, 160)
+    if (!parsed.ok) return parsed
+    data.siteSubtitle = parsed.data
+  }
+
+  if (body.siteSlogan !== undefined) {
+    const parsed = parseTrimmedRequiredString(body.siteSlogan, "siteSlogan", 1, 240)
+    if (!parsed.ok) return parsed
+    data.siteSlogan = parsed.data
+  }
+
+  if (body.siteDescription !== undefined) {
+    const parsed = parseTrimmedRequiredString(body.siteDescription, "siteDescription", 1, 1000)
+    if (!parsed.ok) return parsed
+    data.siteDescription = parsed.data
+  }
+
+  if (body.seoKeywords !== undefined) {
+    const parsed = parseSeoKeywords(body.seoKeywords)
+    if (!parsed.ok) return parsed
+    data.seoKeywords = parsed.data
+  }
+
+  if (body.icpNumber !== undefined) {
+    const parsed = parseOptionalNullableString(body.icpNumber, "icpNumber", 120)
+    if (!parsed.ok) return parsed
+    data.icpNumber = parsed.data
+  }
+
+  if (body.copyright !== undefined) {
+    const parsed = parseTrimmedRequiredString(body.copyright, "copyright", 1, 240)
+    if (!parsed.ok) return parsed
+    data.copyright = parsed.data
+  }
+
+  if (body.version !== undefined) {
+    const parsed = parseTrimmedRequiredString(body.version, "version", 1, 60)
+    if (!parsed.ok) return parsed
+    data.version = parsed.data
+  }
+
+  if (Object.keys(data).length === 0) {
+    return fail("VALIDATION_FAILED", "请至少提供一个要更新的字段。")
+  }
+
+  return ok(data)
+}
+
+export function parseSiteArticleSlug(value: unknown): ValidationResult<SiteArticleSlug> {
+  if (typeof value !== "string" || !SITE_ARTICLE_SLUGS.includes(value as SiteArticleSlug)) {
+    return fail("VALIDATION_FAILED", "文章类型不合法。")
+  }
+
+  return ok(value as SiteArticleSlug)
+}
+
+export function parseAdminSiteArticleBody(
+  input: unknown,
+): ValidationResult<UpdateSiteArticleRequest> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return fail("BAD_REQUEST", "通用文章请求体不合法。")
+  }
+
+  const body = input as Record<string, unknown>
+  const data: UpdateSiteArticleRequest = {}
+
+  if (body.title !== undefined) {
+    const parsed = parseTrimmedRequiredString(body.title, "title", 1, 120)
+    if (!parsed.ok) return parsed
+    data.title = parsed.data
+  }
+
+  if (body.contentMarkdown !== undefined) {
+    const parsed = parseTrimmedRequiredString(body.contentMarkdown, "contentMarkdown", 1, 60000)
+    if (!parsed.ok) return parsed
+    data.contentMarkdown = parsed.data
+  }
+
+  if (body.effectiveDate !== undefined) {
+    const parsed = parseOptionalNullableString(body.effectiveDate, "effectiveDate", 20)
+    if (!parsed.ok) return parsed
+
+    if (parsed.data && !/^\d{4}-\d{2}-\d{2}$/.test(parsed.data)) {
+      return fail("VALIDATION_FAILED", "effectiveDate 必须是 YYYY-MM-DD 格式。")
+    }
+
+    data.effectiveDate = parsed.data
   }
 
   if (Object.keys(data).length === 0) {

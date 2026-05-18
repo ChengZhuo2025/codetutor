@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useAdminSession } from "./admin-shell-client"
 import { canAccessAdminAI } from "@/features/admin-ai/lib/access"
+import { usePublicSite } from "@/features/site/providers/public-site-provider"
 import {
   getNextExpandedAdminMenuHref,
   getRenderedExpandedAdminMenuHref,
@@ -46,6 +47,7 @@ function withCollapsedTooltip(collapsed: boolean, label: string, node: ReactElem
 export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps) {
   const pathname = usePathname()
   const { session } = useAdminSession()
+  const { site } = usePublicSite()
   const [manualExpandedItemHref, setManualExpandedItemHref] = useState<string | null | undefined>(undefined)
   const aiAccessible = canAccessAdminAI(session.roles)
 
@@ -174,8 +176,8 @@ export function AdminSidebar({ collapsed, onToggleCollapsed }: AdminSidebarProps
         </div>
         {!collapsed ? (
           <div className="min-w-0 flex-1">
-            <p className="truncate text-md font-semibold tracking-tight text-sidebar-foreground">CodeTutor</p>
-            <p className="truncate text-[10px] leading-tight text-muted-foreground">系统管理后台 v0.1.110 Beta</p>
+            <p className="truncate text-md font-semibold tracking-tight text-sidebar-foreground">{site.information.siteName}</p>
+            <p className="truncate text-[10px] leading-tight text-muted-foreground">系统管理后台 v{site.information.version} Beta</p>
           </div>
         ) : null}
       </div>

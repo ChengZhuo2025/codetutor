@@ -1,10 +1,13 @@
+import Image from "next/image"
 import { CheckCircle2, Code2 } from "lucide-react"
-import { APP_NAME } from "@/constants/app"
 import { AUTH_PREVIEW_TOOL_CODES, getToolName } from "@/constants/tools"
 import { marketingConversationMessages } from "@/features/marketing/data/marketing-content"
+import { usePublicSite } from "@/features/site/providers/public-site-provider"
 import { cn } from "@/lib/utils"
 export function LoginBrandPanel() {
   const previewTools = AUTH_PREVIEW_TOOL_CODES.map((code) => getToolName(code))
+  const { site } = usePublicSite()
+  const { information } = site
 
   return (
     <div className="relative hidden w-[60%] flex-col overflow-hidden bg-surface-2 px-7 pt-6 pb-20 lg:flex">
@@ -33,13 +36,17 @@ export function LoginBrandPanel() {
       {/* 顶部 Logo + 标签 */}
       <div className="relative z-10 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.78_0.15_180/0.72)]">
-            <Code2 className="h-[18px] w-[18px]" />
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.78_0.15_180/0.72)]">
+            {information.logoUrl ? (
+              <Image src={information.logoUrl} alt={`${information.siteName} logo`} width={36} height={36} className="h-full w-full object-contain" unoptimized />
+            ) : (
+              <Code2 className="h-[18px] w-[18px]" />
+            )}
           </div>
           <div className="leading-[1.02]">
-            <span className="block text-[1rem] font-semibold tracking-tight">{APP_NAME}</span>
+            <span className="block text-[1rem] font-semibold tracking-tight">{information.siteName}</span>
             <span className="mt-1 block text-[11px] text-muted-foreground">
-              AI 编程学习教练
+              {information.siteSubtitle}
             </span>
           </div>
         </div>
@@ -63,10 +70,10 @@ export function LoginBrandPanel() {
 
         <h2 className="text-3xl font-bold leading-tight tracking-tight text-balance">
             登录即注册
-            <span className="text-brand"> AI 教练会陪你走完每一步</span>
+            <span className="text-brand"> {information.siteSlogan}</span>
           </h2>
           <p className="mt-1 text-sm leading-7 text-muted-foreground">
-            手机号验证码、微信或抖音扫码均可直接登录。首次登录会自动创建账号，并根据你的选择生成专属学习路径。
+            {information.siteDescription}
           </p>
       </div>
 

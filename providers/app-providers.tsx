@@ -12,6 +12,7 @@ import { AppToastProvider } from "@/components/app-feedback/app-toast-provider"
 import { PaymentReturnHandler } from "@/components/payment-return-handler"
 import { APP_EVENT_CHANNEL } from "@/constants/events"
 import type { AppEventName } from "@/constants/events"
+import { PublicSiteProvider } from "@/features/site/providers/public-site-provider"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
 type AppProvidersProps = {
@@ -86,11 +87,13 @@ export function AppProviders({ children }: AppProvidersProps) {
       <AppEventContext.Provider value={{ trackEvent }}>
         <AppToastProvider>
           <AppConfirmProvider>
-            <Suspense fallback={null}>
-              <PaymentReturnHandler />
-            </Suspense>
-            {children}
-            <Analytics />
+            <PublicSiteProvider>
+              <Suspense fallback={null}>
+                <PaymentReturnHandler />
+              </Suspense>
+              {children}
+              <Analytics />
+            </PublicSiteProvider>
           </AppConfirmProvider>
         </AppToastProvider>
       </AppEventContext.Provider>

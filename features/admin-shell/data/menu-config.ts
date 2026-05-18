@@ -19,6 +19,8 @@ import {
   Settings,
   ReceiptText,
   BarChart3,
+  Globe2,
+  FileText,
   Zap,
 } from "lucide-react"
 import type { MenuItem } from "../types"
@@ -88,6 +90,16 @@ export const menuItems: MenuItem[] = [
     children: [
       { label: "订单列表", href: "/admin/finance/orders", icon: ReceiptText, active: true },
       { label: "财务统计", href: "/admin/finance/stats", icon: BarChart3, active: true },
+    ],
+  },
+  {
+    label: "站点信息",
+    href: "/admin/site",
+    icon: Globe2,
+    active: true,
+    children: [
+      { label: "网站信息", href: "/admin/site/information", icon: Globe2, active: true },
+      { label: "通用文章", href: "/admin/site/articles", icon: FileText, active: true },
     ],
   },
   {

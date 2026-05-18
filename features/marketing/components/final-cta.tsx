@@ -11,11 +11,13 @@ import {
 import { cn } from "@/lib/utils"
 import { MARKETING_FREE_PLAN_CHAT_QUOTA_COPY } from "@/features/marketing/data/marketing-content"
 import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
+import { usePublicSite } from "@/features/site/providers/public-site-provider"
 import { useAppEventTracker } from "@/providers/app-providers"
 
 export function LandingFinalCta() {
   const { authState, ctaHref, ctaLabel } = useLandingAuthState()
   const { trackEvent } = useAppEventTracker()
+  const { site } = usePublicSite()
 
   return (
     <section id="start" className="relative overflow-hidden px-6 py-24">
@@ -42,7 +44,7 @@ export function LandingFinalCta() {
 
         {/* 描述文案 */}
         <p className="mx-auto mb-10 max-w-4xl text-lg leading-8 text-muted-foreground text-pretty">
-          今天就把第一条学习路径跑起来。不再只是收藏教程，让 CodeTutor 陪你真正学会 AI 编程工具。
+          今天就把第一条学习路径跑起来。不再只是收藏教程，让 {site.information.siteName} 陪你真正学会 AI 编程工具。
           <br className="hidden sm:block" />
           每天只需要15分钟，选择工具、确认水平，然后直接进入第一课。
         </p>

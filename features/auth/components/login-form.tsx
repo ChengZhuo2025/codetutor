@@ -21,11 +21,8 @@ import {
 } from "@/features/auth/lib/oauth-providers";
 import { isValidChinaMainlandPhone } from "@/features/auth/lib/phone-auth";
 import type { AuthStep, AuthOAuthProvider } from "@/features/auth/types";
-import {
-  PRIVACY_POLICY_CONTENT,
-  USER_AGREEMENT_CONTENT,
-  withLegalMeta,
-} from "@/features/legal/data/legal-content";
+import { MarkdownContent } from "@/features/site/components/markdown-content";
+import { usePublicSite } from "@/features/site/providers/public-site-provider";
 import { cn } from "@/lib/utils";
 
 type LoginFormProps = {
@@ -73,8 +70,8 @@ function AgreementDialogTrigger({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription asChild>
-            <div className="max-h-[65vh] overflow-y-auto whitespace-pre-line pr-1 text-sm leading-6 text-muted-foreground">
-              {content}
+            <div className="max-h-[65vh] overflow-y-auto pr-1">
+              <MarkdownContent content={content} />
             </div>
           </DialogDescription>
         </DialogHeader>
@@ -104,6 +101,8 @@ export function LoginForm({
 }: LoginFormProps) {
   const isOAuthBinding = step === "oauth-binding";
   const feedbackStatus = isOAuthBinding ? "warning" : "error";
+  const { site } = usePublicSite();
+  const { userAgreement, privacyPolicy } = site.articles;
   const isValidPhone = isValidChinaMainlandPhone(phone);
   const isValidCode = /^\d{6}$/.test(code);
   const canSubmit = isValidPhone && isValidCode && agreedToLegal;
@@ -286,14 +285,14 @@ export function LoginForm({
               我已阅读并同意{" "}
               <AgreementDialogTrigger
                 triggerLabel="用户协议"
-                title="用户协议"
-                content={withLegalMeta(USER_AGREEMENT_CONTENT)}
+                title={userAgreement.title}
+                content={userAgreement.contentMarkdown}
               />{" "}
               与{" "}
               <AgreementDialogTrigger
                 triggerLabel="隐私政策"
-                title="隐私政策"
-                content={withLegalMeta(PRIVACY_POLICY_CONTENT)}
+                title={privacyPolicy.title}
+                content={privacyPolicy.contentMarkdown}
               />
             </span>
           </label>

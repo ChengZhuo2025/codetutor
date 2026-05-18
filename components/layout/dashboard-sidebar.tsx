@@ -15,7 +15,6 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
-import { APP_NAME } from "@/constants/app";
 import { ROUTES } from "@/constants/routes";
 import { getRankTierProgressForScore } from "@/constants/ranks";
 import { useAppToast } from "@/components/app-feedback/app-toast-provider";
@@ -26,6 +25,7 @@ import { SettingsPopover } from "@/components/layout/settings-popover";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { usePublicSite } from "@/features/site/providers/public-site-provider";
 import type { ProfileMeResponseData } from "@/lib/api/contracts/auth";
 import type { NotificationInAppItem } from "@/lib/api/contracts/notifications";
 import type { LearningHistory } from "@/features/history/types";
@@ -165,6 +165,9 @@ export function DashboardSidebar({
   collapsed = false,
   onToggleCollapsed,
 }: DashboardSidebarProps) {
+  const { site } = usePublicSite();
+  const siteName = site.information.siteName;
+  const logoUrl = site.information.logoUrl;
   const toast = useAppToast();
   const {
     profile,
@@ -356,9 +359,13 @@ export function DashboardSidebar({
             className,
           )}
         >
-          <SidebarRailAction label={APP_NAME} href={ROUTES.learn}>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
-              <Code2 className="h-4 w-4" />
+          <SidebarRailAction label={siteName} href={ROUTES.learn}>
+            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-brand text-brand-foreground">
+              {logoUrl ? (
+                <Image src={logoUrl} alt={`${siteName} logo`} width={32} height={32} className="h-full w-full object-contain" unoptimized />
+              ) : (
+                <Code2 className="h-4 w-4" />
+              )}
             </div>
           </SidebarRailAction>
 
@@ -487,10 +494,14 @@ export function DashboardSidebar({
       >
         <div className="flex h-16 items-center justify-between gap-2.5 border-b border-border/50 px-5">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
-              <Code2 className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-brand text-brand-foreground">
+              {logoUrl ? (
+                <Image src={logoUrl} alt={`${siteName} logo`} width={32} height={32} className="h-full w-full object-contain" unoptimized />
+              ) : (
+                <Code2 className="h-4 w-4" />
+              )}
             </div>
-            <span className="truncate font-semibold">{APP_NAME}</span>
+            <span className="truncate font-semibold">{siteName}</span>
           </div>
 
           {showSettings ? (

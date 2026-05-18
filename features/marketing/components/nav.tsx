@@ -1,10 +1,10 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useEffect, useState } from "react"
 import { Code2, Menu, Sparkles, X } from "lucide-react"
 import { APP_EVENTS } from "@/constants/events"
-import { APP_NAME } from "@/constants/app"
 import { MARKETING_NAV_ITEMS } from "@/constants/navigation"
 import { ROUTES } from "@/constants/routes"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ import {
   USER_BUTTON_SECONDARY_CLASS,
 } from "@/components/ui/surface-styles"
 import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
+import { usePublicSite } from "@/features/site/providers/public-site-provider"
 import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
 
@@ -31,6 +32,8 @@ function scrollToSection(href: string) {
 }
 
 export function LandingNav() {
+  const { site } = usePublicSite()
+  const { information } = site
   const [mobileOpen, setMobileOpen] = useState(false)
   const [activeHref, setActiveHref] = useState(MARKETING_NAV_ITEMS[0]?.href ?? "#home")
   const { authState, maskedPhone } = useLandingAuthState()
@@ -146,13 +149,17 @@ export function LandingNav() {
     <header className="fixed inset-x-0 top-0 z-50 border-b border-border/80 bg-background/80 backdrop-blur-xl dark:border-white/8 dark:bg-[oklch(0.16_0.01_240/0.5)]">
       <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-6">
         <Link href={ROUTES.home} className="flex items-center gap-3 text-foreground">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.78_0.15_180/0.72)]">
-            <Code2 className="h-[18px] w-[18px]" />
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.78_0.15_180/0.72)]">
+            {information.logoUrl ? (
+              <Image src={information.logoUrl} alt={`${information.siteName} logo`} width={36} height={36} className="h-full w-full object-contain" unoptimized />
+            ) : (
+              <Code2 className="h-[18px] w-[18px]" />
+            )}
           </div>
           <div className="leading-[1.02]">
-            <span className="block text-[1rem] font-semibold tracking-tight">{APP_NAME}</span>
+            <span className="block text-[1rem] font-semibold tracking-tight">{information.siteName}</span>
             <span className="mt-1 block text-[11px] text-muted-foreground">
-              AI 编程学习教练
+              {information.siteSubtitle}
             </span>
           </div>
         </Link>

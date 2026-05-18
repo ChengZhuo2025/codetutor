@@ -57,6 +57,8 @@
 - `045_create_media_transcription_settings.sql` (新增多媒体转译设置表，管理学习对话图片转译、语音转文本与文本转语音的模型选择)
 - `046_harden_material_plan_generation.sql` (为材料计划生成 run 增加 claim / heartbeat 字段与 `claim_material_plan_generation_run`，并新增事务化 `confirm_learning_plan_draft` RPC)
 - `047_fix_material_plan_rpc_search_path.sql` (将材料计划生成与草稿确认 RPC 的函数级 `search_path` 固定为空字符串，消除 Supabase Security Advisor 警示)
+- `050_add_user_login_ip_tracking.sql` / `051_update_user_profile_export_view_with_ip.sql` (新增用户登录 IP / 城市追踪并扩展运营导出视图)
+- `052_create_site_information.sql` (新增站点信息、通用文章与 `site-assets` public bucket，支持后台站点内容管理)
 
 当前数据库中已落地的核心业务表包括：
 
@@ -1599,6 +1601,16 @@ MVP 阶段建议谨慎使用软删除：
 - `period_label` / `cta_label` / `highlight` / `display_order` 支持首页和订阅弹窗展示。
 - `purchasable` 控制是否允许创建支付订单，免费版和纯展示套餐必须为 `false`。
 - `archived_at` 实现套餐软删除，避免破坏历史订单与订阅引用。
+
+## 6.31 站点信息与通用文章
+
+`052_create_site_information.sql` 落地后台可维护的站点展示数据：
+
+- `site_information`：单行配置表，保存网站 Logo URL、站点名称、副标题、Slogan、简介、SEO 关键词、备案号、版权信息与版本号；由 `/admin/site/information` 管理，公共接口 `/api/site/public` 读取。
+- `site_articles`：以 `slug` 区分 `about_us`、`user_agreement`、`privacy_policy`，保存文章标题、生效日期、展示顺序和 Markdown 正文；初始化数据来自原前端硬编码文章，后台 `/admin/site/articles` 可直接编辑。
+- `site-assets`：public Storage bucket，当前用于网站 Logo 上传；上传与配置保存分开，数据库仅保存公开 URL。
+
+两张表都允许匿名读取、仅允许 active admin 更新，并通过 `updated_by_admin_id` 与管理员审计日志保留操作追踪。
 
 只要这些对象的建模、流水和约束设计稳定，MVP 的 AI 导师、任务推进、激励系统与首版商业化闭环就能保持一致性，并为后续退款、自动续费、JSAPI/H5 支付、社区、推荐和多模态扩展打下基础。
 

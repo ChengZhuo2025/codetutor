@@ -12,6 +12,7 @@ import { getToolName } from "@/constants/tools";
 import { APP_EVENTS } from "@/constants/events";
 import { marketingConversationMessages } from "@/features/marketing/data/marketing-content";
 import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider";
+import { usePublicSite } from "@/features/site/providers/public-site-provider";
 import { cn } from "@/lib/utils";
 import { useAppEventTracker } from "@/providers/app-providers";
 
@@ -30,7 +31,9 @@ const heroFeaturedTools = [cursorToolName, claudeCodeToolName, "OpenCode"].join(
 
 export function LandingHero() {
   const { authState, ctaHref, ctaLabel } = useLandingAuthState();
+  const { site } = usePublicSite();
   const { trackEvent } = useAppEventTracker();
+  const { information } = site;
 
   return (
     <section
@@ -84,18 +87,18 @@ export function LandingHero() {
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center text-center">
         <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand/10 px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp dark:border-brand/18 dark:bg-[oklch(0.2_0.02_220/0.38)]">
           <Sparkles className="h-3.5 w-3.5" />
-          <span>AI 编程学习陪练平台 · MVP内测中</span>
+          <span>{information.siteSubtitle} · MVP内测中</span>
         </div>
 
         <h1 className="max-w-5xl text-4xl font-semibold leading-[1.15] tracking-tight text-balance md:text-6xl lg:text-7xl animate-fadeUp animate-delay-100">
-          收藏夹里的教程, 不该只是看过
+          {information.siteSlogan}
           <br />让 AI 导师陪你<span className="text-brand">真正做成</span>
         </h1>
 
         <p className="mt-5 max-w-4xl text-lg leading-8 text-muted-foreground text-pretty animate-fadeUp animate-delay-200">
           看到大V的{heroFeaturedTools}...等 AI 教程，收藏了就当学过了？
           <br />
-          CodeTutor AI
+          {information.siteName}
           会把教程内容拆分成一步步可实操练习的任务，并全程陪伴你、辅导你从&ldquo;看过&rdquo;走向&ldquo;学会&rdquo;。
         </p>
 
@@ -136,8 +139,7 @@ export function LandingHero() {
         </div>
 
         <p className="mt-8 text-sm text-muted-foreground animate-fadeUp animate-delay-400">
-          适合刚开始上手 AI
-          编程工具的人，也适合想把&ldquo;看过教程&rdquo;变成&ldquo;做出结果&rdquo;的开发者。
+          {information.siteDescription}
         </p>
 
         <div className="mt-10 grid w-full max-w-3xl gap-3 sm:grid-cols-3 animate-fadeUp animate-delay-500">

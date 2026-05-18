@@ -58,6 +58,9 @@ import {
   adminSettingsAuditLogListQuerySchema,
   adminSettingsAuditLogListResponseDataSchema,
   adminSettingsOverviewResponseDataSchema,
+  adminSiteArticleListResponseDataSchema,
+  adminSiteArticleResponseDataSchema,
+  adminSiteInformationResponseDataSchema,
   adminNotificationQuerySchema,
   adminNotificationListResponseDataSchema,
   adminNotificationMutationResponseDataSchema,
@@ -67,11 +70,16 @@ import {
   adminFinanceStatsResponseDataSchema,
   adminAlipayPaymentSettingsResponseDataSchema,
   adminSiteContactResponseDataSchema,
+  publicSiteResponseDataSchema,
+  siteArticleSlugParamsSchema,
+  siteLogoUploadResponseDataSchema,
   adminUpsertSubscriptionPlanRequestSchema,
   adminUpdateAlipayPaymentSettingsRequestSchema,
   adminUpdateWechatPaymentSettingsRequestSchema,
   adminWechatPaymentSettingsResponseDataSchema,
+  updateSiteArticleRequestSchema,
   updateSiteContactRequestSchema,
+  updateSiteInformationRequestSchema,
   adminFeedbackListQuerySchema,
   adminFeedbackListResponseDataSchema,
   adminFeedbackBatchDeleteRequestSchema,
@@ -1855,6 +1863,76 @@ const successExamples = {
     ],
     updatedAt: "2026-04-25T18:00:00Z",
   },
+  adminSiteInformation: {
+    logoUrl: "https://cdn.example.com/site-assets/logo.png",
+    siteName: "CodeTutor",
+    siteSubtitle: "AI 编程学习教练",
+    siteSlogan: "把教程变成可执行练习",
+    siteDescription: "你负责找到想学的内容，我负责陪你真正学会。",
+    seoKeywords: ["AI 编程", "学习陪练", "CodeTutor"],
+    icpNumber: "沪ICP备2026015857号-2",
+    copyright: "© 2026 CodeTutor. All rights reserved.",
+    version: "0.1.110",
+    updatedAt: "2026-05-18T10:00:00Z",
+    updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
+  },
+  adminSiteArticleList: {
+    items: [
+      {
+        slug: "about_us",
+        title: "关于我们",
+        contentMarkdown: "## 关于 CodeTutor\n\n我们想把教程变成可执行练习。",
+        effectiveDate: "2026-04-17",
+        updatedAt: "2026-05-18T10:00:00Z",
+        updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
+      },
+    ],
+  },
+  adminSiteArticle: {
+    slug: "privacy_policy",
+    title: "隐私政策",
+    contentMarkdown: "## 隐私政策\n\n欢迎使用 CodeTutor。",
+    effectiveDate: "2026-04-17",
+    updatedAt: "2026-05-18T10:00:00Z",
+    updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
+  },
+  publicSite: {
+    information: {
+      logoUrl: "https://cdn.example.com/site-assets/logo.png",
+      siteName: "CodeTutor",
+      siteSubtitle: "AI 编程学习教练",
+      siteSlogan: "把教程变成可执行练习",
+      siteDescription: "你负责找到想学的内容，我负责陪你真正学会。",
+      seoKeywords: ["AI 编程", "学习陪练", "CodeTutor"],
+      icpNumber: "沪ICP备2026015857号-2",
+      copyright: "© 2026 CodeTutor. All rights reserved.",
+      version: "0.1.110",
+      updatedAt: "2026-05-18T10:00:00Z",
+    },
+    articles: {
+      aboutUs: {
+        slug: "about_us",
+        title: "关于我们",
+        contentMarkdown: "## 关于 CodeTutor",
+        effectiveDate: "2026-04-17",
+        updatedAt: "2026-05-18T10:00:00Z",
+      },
+      userAgreement: {
+        slug: "user_agreement",
+        title: "用户协议",
+        contentMarkdown: "## 用户协议",
+        effectiveDate: "2026-04-17",
+        updatedAt: "2026-05-18T10:00:00Z",
+      },
+      privacyPolicy: {
+        slug: "privacy_policy",
+        title: "隐私政策",
+        contentMarkdown: "## 隐私政策",
+        effectiveDate: "2026-04-17",
+        updatedAt: "2026-05-18T10:00:00Z",
+      },
+    },
+  },
   adminWechatPaymentSettings: {
     enabled: true,
     configured: true,
@@ -2041,6 +2119,10 @@ const successExamples = {
   adminSiteContactQrUpload: {
     qrImageUrl: "https://cdn.example.com/qr/wechat-20260425.png",
     storagePath: "qr-1714048000000-550e8400-e29b-41d4-a716-446655440000.png",
+  },
+  adminSiteLogoUpload: {
+    logoUrl: "https://cdn.example.com/site-assets/logos/logo.png",
+    storagePath: "logos/logo-1714048000000-550e8400-e29b-41d4-a716-446655440000.png",
   },
   adminAIOverview: adminAIOverviewExample,
   adminAIProviderList: adminAIProviderListExample,
@@ -4671,6 +4753,173 @@ registry.registerPath({
       "联系方式读取成功",
     ),
     ...commonErrorResponses(["500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/site/public",
+  operationId: "getPublicSite",
+  tags: ["public", "marketing"],
+  summary: "公共站点信息与通用文章",
+  security: [],
+  responses: {
+    "200": successResponse(
+      publicSiteResponseDataSchema,
+      "PublicSiteResponse",
+      "站点公开信息读取成功",
+      successExamples.publicSite,
+      "站点公开信息读取成功",
+    ),
+    ...commonErrorResponses(["500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/site/information",
+  operationId: "getAdminSiteInformation",
+  tags: ["admin-site"],
+  summary: "获取网站信息",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminSiteInformationResponseDataSchema,
+      "AdminSiteInformationResponse",
+      "站点信息读取成功",
+      successExamples.adminSiteInformation,
+      "站点信息读取成功",
+    ),
+    ...commonErrorResponses(["403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/site/information",
+  operationId: "updateAdminSiteInformation",
+  tags: ["admin-site"],
+  summary: "更新网站信息",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: updateSiteInformationRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteInformationResponseDataSchema,
+      "AdminSiteInformationResponse",
+      "站点信息已更新",
+      successExamples.adminSiteInformation,
+      "站点信息已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/site/logo-upload",
+  operationId: "uploadAdminSiteLogo",
+  tags: ["admin-site"],
+  summary: "上传网站 Logo",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "multipart/form-data": {
+          schema: uploadProfileAvatarRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      siteLogoUploadResponseDataSchema,
+      "SiteLogoUploadResponse",
+      "网站 Logo 上传成功",
+      successExamples.adminSiteLogoUpload,
+      "网站 Logo 上传成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/site/articles",
+  operationId: "getAdminSiteArticles",
+  tags: ["admin-site"],
+  summary: "获取通用文章列表",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminSiteArticleListResponseDataSchema,
+      "AdminSiteArticleListResponse",
+      "通用文章列表读取成功",
+      successExamples.adminSiteArticleList,
+      "通用文章列表读取成功",
+    ),
+    ...commonErrorResponses(["403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/site/articles/{slug}",
+  operationId: "getAdminSiteArticle",
+  tags: ["admin-site"],
+  summary: "获取通用文章详情",
+  security: [],
+  request: {
+    params: siteArticleSlugParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteArticleResponseDataSchema,
+      "AdminSiteArticleResponse",
+      "通用文章读取成功",
+      successExamples.adminSiteArticle,
+      "通用文章读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/site/articles/{slug}",
+  operationId: "updateAdminSiteArticle",
+  tags: ["admin-site"],
+  summary: "更新通用文章",
+  security: [],
+  request: {
+    params: siteArticleSlugParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: updateSiteArticleRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteArticleResponseDataSchema,
+      "AdminSiteArticleResponse",
+      "通用文章已更新",
+      successExamples.adminSiteArticle,
+      "通用文章已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
   },
 })
 
