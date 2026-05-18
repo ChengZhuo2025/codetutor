@@ -508,6 +508,11 @@ export function UserList() {
                             <p className="truncate text-xs text-muted-foreground">
                               {item.contactEmail || item.authEmail || item.authPhone || "暂无联系方式"}
                             </p>
+                            {item.lastLoginCity ? (
+                              <p className="truncate text-xs text-muted-foreground">
+                                📍 {item.lastLoginCity}
+                              </p>
+                            ) : null}
                           </div>
                         </div>
                       </td>

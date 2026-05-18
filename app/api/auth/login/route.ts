@@ -7,9 +7,11 @@ import { withNoStoreHeaders } from "@/server/lib/response-cache"
 import { createAuthLoginPostHandler } from "@/server/modules/auth/route-handler"
 import { finalizeAuthLogin } from "@/server/modules/auth/service"
 
+let request: NextRequest
+
 const postHandler = createAuthLoginPostHandler({
-  getRequestAuth: async (request) => {
-    const auth = await getRequestAuth(request as NextRequest)
+  getRequestAuth: async (req) => {
+    const auth = await getRequestAuth(req as NextRequest)
 
     if (!auth?.user) {
       return null
@@ -20,10 +22,13 @@ const postHandler = createAuthLoginPostHandler({
     }
   },
   getRequestAuthHelpText,
-  finalizeAuthLogin,
+  finalizeAuthLogin: async (user, loginType) => {
+    return finalizeAuthLogin(user, loginType, getClientIp(request))
+  },
 })
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
+  request = req
   return withRequestObservability(
     {
       route: "/api/auth/login",

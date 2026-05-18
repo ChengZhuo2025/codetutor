@@ -24,6 +24,7 @@ import {
   OAuthPhoneBindingRequiredError,
   OAuthTempUserNotDiscardableError,
 } from "@/server/lib/oauth-auth-flow-errors"
+import { getIpGeocoding } from "@/server/lib/ip-geocoding"
 
 type JsonRecord = Record<string, unknown>
 
@@ -317,9 +318,12 @@ async function loadUserGateState(userId: string) {
 export async function finalizeAuthLogin(
   user: User,
   loginType: AuthLoginType,
+  clientIp?: string,
 ): Promise<AuthLoginResponseData> {
   const supabase = createSupabaseAdminClient()
   const now = new Date().toISOString()
+
+  const geoPromise = clientIp ? getIpGeocoding(clientIp) : Promise.resolve(null)
 
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
@@ -352,6 +356,8 @@ export async function finalizeAuthLogin(
 
   const isNewUser = !profile && !preference
 
+  const geo = await geoPromise
+
   if (!profile) {
     const { error: insertProfileError } = await supabase.from("user_profiles").insert({
       user_id: user.id,
@@ -360,6 +366,8 @@ export async function finalizeAuthLogin(
       signup_provider: loginType,
       last_login_provider: loginType,
       last_login_at: now,
+      last_login_ip: clientIp || null,
+      last_login_city: geo?.city || null,
       learning_level: "beginner",
       current_rank_code: "rookie",
       current_score: 0,
@@ -375,11 +383,27 @@ export async function finalizeAuthLogin(
       .update({
         last_login_provider: loginType,
         last_login_at: now,
+        last_login_ip: clientIp || null,
+        last_login_city: geo?.city || null,
         updated_at: now,
       })
       .eq("user_id", user.id)
 
     assertSupabaseSuccess(touchProfileError, "failed to update user profile during auth login")
+  }
+
+  if (clientIp) {
+    const { error: logError } = await supabase.from("user_login_logs").insert({
+      user_id: user.id,
+      login_ip: clientIp,
+      login_city: geo?.city || null,
+      login_provider: loginType,
+      login_at: now,
+    })
+
+    if (logError) {
+      console.warn("failed to write login log:", logError.message)
+    }
   }
 
   if (!preference) {

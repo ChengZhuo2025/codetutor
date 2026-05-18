@@ -135,6 +135,8 @@ function mapExportRow(row: ExportViewRow): AdminUserDetailResponseData {
     signupProvider: row.signup_provider == null ? null : String(row.signup_provider),
     lastLoginProvider: row.last_login_provider == null ? null : String(row.last_login_provider),
     lastLoginAt: row.last_login_at == null ? null : String(row.last_login_at),
+    lastLoginIp: row.last_login_ip == null ? null : String(row.last_login_ip),
+    lastLoginCity: row.last_login_city == null ? null : String(row.last_login_city),
     authPhone: row.auth_phone == null ? null : String(row.auth_phone),
     authEmail: row.auth_email == null ? null : String(row.auth_email),
     onboardingCompleted:

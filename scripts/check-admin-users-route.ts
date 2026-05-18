@@ -32,6 +32,8 @@ const sampleUser: AdminUserDetailResponseData = {
   signupProvider: null,
   lastLoginProvider: null,
   lastLoginAt: null,
+  lastLoginIp: null,
+  lastLoginCity: null,
   authPhone: null,
   authEmail: null,
   onboardingCompleted: true,

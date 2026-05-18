@@ -18,6 +18,8 @@ function makeUser(overrides: Partial<AdminUserDetailResponseData> = {}): AdminUs
     signupProvider: null,
     lastLoginProvider: null,
     lastLoginAt: null,
+    lastLoginIp: null,
+    lastLoginCity: null,
     authPhone: "13800138000",
     authEmail: "auth@example.com",
     onboardingCompleted: true,

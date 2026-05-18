@@ -22,6 +22,8 @@ function makeUser(overrides: Partial<AdminUserListItem> = {}): AdminUserListItem
     signupProvider: null,
     lastLoginProvider: null,
     lastLoginAt: null,
+    lastLoginIp: null,
+    lastLoginCity: null,
     authPhone: null,
     authEmail: "auth@example.com",
     onboardingCompleted: true,

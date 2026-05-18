@@ -14,6 +14,8 @@ export type AdminUserExportViewRow = {
   signupProvider: string | null
   lastLoginProvider: string | null
   lastLoginAt: string | null
+  lastLoginIp: string | null
+  lastLoginCity: string | null
   authPhone: string | null
   authEmail: string | null
   onboardingCompleted: boolean | null

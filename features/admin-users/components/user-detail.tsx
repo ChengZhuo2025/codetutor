@@ -738,6 +738,8 @@ export function UserDetail({ userId }: UserDetailProps) {
               <InfoRow label="注册渠道" value={formatProviderLabel(data.signupProvider)} />
               <InfoRow label="最近登录方式" value={formatProviderLabel(data.lastLoginProvider)} />
               <InfoRow label="最近登录时间" value={formatDateTime(data.lastLoginAt)} />
+              <InfoRow label="最近登录 IP" value={data.lastLoginIp ?? "暂无"} />
+              <InfoRow label="最近登录城市" value={data.lastLoginCity ?? "暂无"} />
               <InfoRow label="注册时间" value={formatDateTime(data.profileCreatedAt)} />
               <InfoRow label="资料更新时间" value={formatDateTime(data.profileUpdatedAt)} />
             </dl>
