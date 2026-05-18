@@ -7,7 +7,8 @@ export type IpGeoResult = {
   longitude: number | null
 }
 
-const IP_GEO_SERVICE_URL = "https://ipapi.co/"
+const TAOBAO_IP_API = "http://ip.taobao.com/service/getIpInfo.php"
+const IPIP_API = "https://api.ipip.net/find?ip="
 
 export async function getIpGeocoding(ip: string): Promise<IpGeoResult> {
   if (!isValidIp(ip)) {
@@ -21,11 +22,32 @@ export async function getIpGeocoding(ip: string): Promise<IpGeoResult> {
     }
   }
 
+  const result = await tryTaobaoApi(ip)
+  if (result.city) {
+    return result
+  }
+
+  const fallbackResult = await tryIpipApi(ip)
+  if (fallbackResult.city) {
+    return fallbackResult
+  }
+
+  return {
+    ip,
+    country: null,
+    region: null,
+    city: null,
+    latitude: null,
+    longitude: null,
+  }
+}
+
+async function tryTaobaoApi(ip: string): Promise<IpGeoResult> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 5000)
 
   try {
-    const response = await fetch(`${IP_GEO_SERVICE_URL}${encodeURIComponent(ip)}/json/`, {
+    const response = await fetch(`${TAOBAO_IP_API}?ip=${encodeURIComponent(ip)}`, {
       method: "GET",
       headers: {
         "Accept": "application/json",
@@ -36,35 +58,67 @@ export async function getIpGeocoding(ip: string): Promise<IpGeoResult> {
     clearTimeout(timeoutId)
 
     if (!response.ok) {
-      return {
-        ip,
-        country: null,
-        region: null,
-        city: null,
-        latitude: null,
-        longitude: null,
-      }
+      return { ip, country: null, region: null, city: null, latitude: null, longitude: null }
     }
 
     const data = await response.json()
 
-    return {
-      ip,
-      country: typeof data.country_name === "string" ? data.country_name : null,
-      region: typeof data.region === "string" ? data.region : null,
-      city: typeof data.city === "string" ? data.city : null,
-      latitude: typeof data.latitude === "number" ? data.latitude : null,
-      longitude: typeof data.longitude === "number" ? data.longitude : null,
+    if (data.code !== 0) {
+      return { ip, country: null, region: null, city: null, latitude: null, longitude: null }
     }
-  } catch {
+
+    const info = data.data || {}
     return {
       ip,
-      country: null,
-      region: null,
-      city: null,
+      country: typeof info.country === "string" ? info.country : null,
+      region: typeof info.region === "string" ? info.region : null,
+      city: typeof info.city === "string" && info.city !== "内网IP" ? info.city : null,
       latitude: null,
       longitude: null,
     }
+  } catch {
+    return { ip, country: null, region: null, city: null, latitude: null, longitude: null }
+  }
+}
+
+async function tryIpipApi(ip: string): Promise<IpGeoResult> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+  try {
+    const response = await fetch(`${IPIP_API}${encodeURIComponent(ip)}`, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+      },
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      return { ip, country: null, region: null, city: null, latitude: null, longitude: null }
+    }
+
+    const data = await response.json()
+
+    if (!data || typeof data.data !== "object") {
+      return { ip, country: null, region: null, city: null, latitude: null, longitude: null }
+    }
+
+    const info = data.data
+    const location = typeof info.location === "string" ? info.location.split("|") : []
+
+    return {
+      ip,
+      country: location[0] || null,
+      region: location[1] || null,
+      city: location[2] || null,
+      latitude: typeof info.latitude === "number" ? info.latitude : null,
+      longitude: typeof info.longitude === "number" ? info.longitude : null,
+    }
+  } catch {
+    return { ip, country: null, region: null, city: null, latitude: null, longitude: null }
   }
 }
 
@@ -84,7 +138,7 @@ export function formatCityDisplay(geo: IpGeoResult): string {
   if (geo.region && !parts.includes(geo.region)) {
     parts.push(geo.region)
   }
-  if (geo.country && geo.country !== "China") {
+  if (geo.country && geo.country !== "中国") {
     parts.push(geo.country)
   }
 
