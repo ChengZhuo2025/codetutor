@@ -117,7 +117,7 @@ export function LoginForm({
 
   return (
     <div className="relative flex w-full flex-col items-center justify-center overflow-hidden px-6 py-6 lg:w-[40%]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,oklch(0.52_0.12_180/0.06),transparent_28%)] dark:bg-[radial-gradient(circle_at_top,oklch(0.78_0.15_180/0.08),transparent_28%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,oklch(0.62_0.24_261/0.06),transparent_28%)] dark:bg-[radial-gradient(circle_at_top,oklch(0.73_0.21_261/0.08),transparent_28%)]" />
 
       <div className="relative z-10 w-full max-w-sm">
         <div className="mb-8">
@@ -150,7 +150,7 @@ export function LoginForm({
                 "flex items-center gap-2 rounded-2xl border bg-surface-2 px-4 py-3 transition-all",
                 showPhoneFormatError
                   ? "border-destructive/60 bg-destructive/5 shadow-[0_0_0_4px_oklch(0.64_0.21_25/0.12)] focus-within:border-destructive/70"
-                  : "border-border focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.08)]",
+                  : "border-border focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.73_0.21_261/0.08)]",
               )}
             >
               <Phone
@@ -214,7 +214,7 @@ export function LoginForm({
               验证码
             </label>
             <div className="flex gap-3">
-              <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-surface-2 px-4 py-3 transition-all focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.78_0.15_180/0.08)]">
+              <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-surface-2 px-4 py-3 transition-all focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.73_0.21_261/0.08)]">
                 <input
                   id="code-input"
                   type="text"
@@ -277,7 +277,7 @@ export function LoginForm({
           <label className="mt-1 flex cursor-pointer items-start gap-2 rounded-lg px-1 text-xs leading-5 text-muted-foreground/80">
             <input
               type="checkbox"
-              className="mt-0.5 h-4 w-4 rounded border-border bg-background accent-[oklch(0.7_0.16_180)]"
+              className="mt-0.5 h-4 w-4 rounded border-border bg-background accent-[oklch(0.73_0.21_261)]"
               checked={agreedToLegal}
               onChange={(event) => onAgreementChange(event.target.checked)}
             />

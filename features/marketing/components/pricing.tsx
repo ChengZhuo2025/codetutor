@@ -129,13 +129,13 @@ export function LandingPricing() {
               className={cn(
                 "relative flex flex-col rounded-[30px] border p-8 transition-all hover:-translate-y-1 hover:border-brand/40 hover:bg-brand/5",
                 plan.highlight
-                  ? "border-brand/40 bg-brand/5 shadow-lg shadow-brand/10 dark:bg-[linear-gradient(180deg,oklch(0.2_0.02_210/0.94),oklch(0.16_0.015_235/0.98))] dark:shadow-[0_24px_80px_-42px_oklch(0.78_0.15_180/0.28)]"
+                  ? "border-brand/40 bg-brand/5 shadow-lg shadow-brand/10 dark:bg-[linear-gradient(180deg,oklch(0.2_0.02_210/0.94),oklch(0.16_0.015_235/0.98))] dark:shadow-[0_24px_80px_-42px_oklch(0.73_0.21_261/0.28)]"
                   : "border-border bg-card shadow-md shadow-black/[0.06] dark:border-white/10 dark:bg-surface-2/88 dark:shadow-[0_20px_70px_-50px_rgba(0,0,0,0.72)]",
               )}
             >
               {plan.highlight && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border border-brand/40 bg-brand px-4 py-1 text-xs font-semibold text-brand-foreground">
-                  MVP 推荐
+                  优选推荐
                 </div>
               )}
 

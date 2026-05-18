@@ -242,7 +242,7 @@ export function SubscriptionDetailDialog({
       <DialogContent className={cn(DIALOG_GRADIENT_PANEL_CLASS, "max-h-[90vh] max-w-4xl overflow-y-auto rounded-2xl scrollbar-none sm:max-w-[860px]")}>
         <div className="overflow-hidden rounded-2xl">
           {/* 头部 */}
-          <div className={cn("border-b bg-[radial-gradient(circle_at_top_left,oklch(0.52_0.12_180/0.10),transparent_46%)] px-5 py-4 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.16),transparent_46%)]", USER_PANEL_DIVIDER_CLASS)}>
+          <div className={cn("border-b bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.24_261/0.10),transparent_46%)] px-5 py-4 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_261/0.16),transparent_46%)]", USER_PANEL_DIVIDER_CLASS)}>
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold tracking-tight">
                 套餐订阅与续费

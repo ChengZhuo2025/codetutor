@@ -31,12 +31,12 @@ export function LoginBrandPanel() {
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.55_0.15_175/0.09),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.78_0.17_52/0.09),transparent_24%)] dark:bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.14),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.8_0.18_60/0.12),transparent_24%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.60_0.27_261/0.09),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.78_0.17_52/0.09),transparent_24%)] dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_261/0.14),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.8_0.18_60/0.12),transparent_24%)]" />
 
       {/* 顶部 Logo + 标签 */}
       <div className="relative z-10 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.78_0.15_180/0.72)]">
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.73_0.21_261/0.72)]">
             {information.logoUrl ? (
               <Image src={information.logoUrl} alt={`${information.siteName} logo`} width={36} height={36} className="h-full w-full object-contain" unoptimized />
             ) : (

@@ -84,7 +84,7 @@ function SidebarRailAction({
   const sharedClassName = cn(
     "relative flex h-11 w-11 items-center justify-center rounded-2xl border transition-colors",
     active
-      ? "border-brand/20 bg-brand-dim text-brand shadow-[0_12px_30px_-18px_rgba(8,145,178,0.42)]"
+      ? "border-brand/20 bg-brand-dim text-brand shadow-[0_12px_30px_-18px_rgba(98,92,255,0.42)]"
       : "border-border/60 bg-surface-2/80 text-muted-foreground hover:bg-surface-3 hover:text-foreground",
   );
 
@@ -390,7 +390,7 @@ export function DashboardSidebar({
                   onClick={() => setProfileOpen(true)}
                   aria-label="打开个人资料"
                   title="个人资料"
-                  className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-brand/20 bg-brand-dim text-sm font-bold text-brand shadow-[0_14px_34px_-24px_rgba(8,145,178,0.35)] transition-opacity hover:opacity-85"
+                  className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-brand/20 bg-brand-dim text-sm font-bold text-brand shadow-[0_14px_34px_-24px_rgba(98,92,255,0.35)] transition-opacity hover:opacity-85"
                 >
                   {resolvedProfile.avatarUrl ? (
                     <Image
@@ -440,7 +440,7 @@ export function DashboardSidebar({
             >
               <Bell className="h-4 w-4" />
               {unreadNotificationCount > 0 ? (
-                <span className="absolute -top-1 -right-1 inline-flex min-w-5 items-center justify-center rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-[0_10px_24px_-14px_rgba(8,145,178,0.6)]">
+                <span className="absolute -top-1 -right-1 inline-flex min-w-5 items-center justify-center rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-[0_10px_24px_-14px_rgba(98,92,255,0.6)]">
                   {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
                 </span>
               ) : null}

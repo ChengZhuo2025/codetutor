@@ -84,14 +84,14 @@ export function AdminLoginForm() {
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.08_240/0.12),transparent_30%),radial-gradient(circle_at_top_right,oklch(0.62_0.12_210/0.14),transparent_28%),radial-gradient(circle_at_bottom_left,oklch(0.78_0.15_180/0.12),transparent_30%)] dark:bg-[radial-gradient(circle_at_top_left,oklch(0.28_0.03_240/0.72),transparent_32%),radial-gradient(circle_at_top_right,oklch(0.72_0.13_210/0.14),transparent_28%),radial-gradient(circle_at_bottom_left,oklch(0.74_0.12_180/0.14),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.08_240/0.12),transparent_30%),radial-gradient(circle_at_top_right,oklch(0.62_0.12_210/0.14),transparent_28%),radial-gradient(circle_at_bottom_left,oklch(0.73_0.21_261/0.12),transparent_30%)] dark:bg-[radial-gradient(circle_at_top_left,oklch(0.28_0.03_240/0.72),transparent_32%),radial-gradient(circle_at_top_right,oklch(0.72_0.13_210/0.14),transparent_28%),radial-gradient(circle_at_bottom_left,oklch(0.74_0.20_261/0.14),transparent_30%)]" />
 
       <header className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
         <Link
           href={ROUTES.home}
           className="group inline-flex items-center gap-3"
         >
-          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.78_0.15_180/0.72)]">
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.73_0.21_261/0.72)]">
             {site.information.logoUrl ? (
               <Image
                 src={site.information.logoUrl}
@@ -164,7 +164,7 @@ export function AdminLoginForm() {
           <div className="w-full max-w-sm lg:max-w-md">
             <div className="rounded-[30px] border border-border/70 bg-card/88 p-5 shadow-[0_30px_100px_-44px_rgba(15,23,42,0.4)] backdrop-blur-2xl sm:p-6 lg:p-7">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_20px_48px_-24px_rgba(8,145,178,0.46)]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_20px_48px_-24px_rgba(98,92,255,0.46)]">
                   <ShieldCheck className="h-6 w-6" aria-hidden="true" />
                 </div>
                 <div>

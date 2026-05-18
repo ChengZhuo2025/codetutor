@@ -149,7 +149,7 @@ export function LandingNav() {
     <header className="fixed inset-x-0 top-0 z-50 border-b border-border/80 bg-background/80 backdrop-blur-xl dark:border-white/8 dark:bg-[oklch(0.16_0.01_240/0.5)]">
       <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-6">
         <Link href={ROUTES.home} className="flex items-center gap-3 text-foreground">
-          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.78_0.15_180/0.72)]">
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.73_0.21_261/0.72)]">
             {information.logoUrl ? (
               <Image src={information.logoUrl} alt={`${information.siteName} logo`} width={36} height={36} className="h-full w-full object-contain" unoptimized />
             ) : (

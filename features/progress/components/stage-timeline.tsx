@@ -12,15 +12,15 @@ import type { Stage } from "@/features/progress/types"
 const statusConfig = {
   done: {
     icon: CheckCircle2,
-    nodeStyle: "border-brand/55 bg-brand text-brand-foreground shadow-[0_0_0_6px_rgba(92,225,168,0.08)]",
+    nodeStyle: "border-brand/55 bg-brand text-brand-foreground shadow-[0_0_0_6px_rgba(98,92,255,0.08)]",
     cardStyle: "border-brand/10 bg-brand/5 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.18)] hover:border-brand/35 cursor-pointer dark:bg-brand/18",
     label: "已完成",
     labelStyle: "text-brand",
   },
   current: {
     icon: Play,
-    nodeStyle: "border-brand bg-brand text-brand-foreground shadow-[0_0_30px_oklch(0.78_0.15_180/0.5)]",
-    cardStyle:"border-brand/60 bg-brand/8 dark:border-brand/50 dark:bg-[linear-gradient(145deg,rgba(31,198,164,0.16),rgba(8,16,29,0.94))] dark:shadow-[0_24px_64px_-32px_oklch(0.78_0.15_180/0.55)] cursor-pointer",
+    nodeStyle: "border-brand bg-brand text-brand-foreground shadow-[0_0_30px_oklch(0.73_0.21_261/0.5)]",
+    cardStyle:"border-brand/60 bg-brand/8 dark:border-brand/50 dark:bg-[linear-gradient(145deg,rgba(98,92,255,0.16),rgba(8,16,29,0.94))] dark:shadow-[0_24px_64px_-32px_oklch(0.73_0.21_261/0.55)] cursor-pointer",
     label: "当前任务",
     labelStyle: "text-brand",
   },

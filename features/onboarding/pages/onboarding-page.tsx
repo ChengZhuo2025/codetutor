@@ -261,7 +261,7 @@ export function OnboardingPage() {
   if (isCheckingAccess || toolGroupsState.status !== "success") {
     return (
       <div className="relative flex min-h-screen flex-col overflow-hidden bg-background">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.08),transparent_26%),radial-gradient(circle_at_bottom_right,oklch(0.8_0.18_60/0.08),transparent_20%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_261/0.08),transparent_26%),radial-gradient(circle_at_bottom_right,oklch(0.8_0.18_60/0.08),transparent_20%)]" />
 
         <OnboardingHeader step={step} />
 
@@ -300,7 +300,7 @@ export function OnboardingPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-background">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.15_180/0.08),transparent_26%),radial-gradient(circle_at_bottom_right,oklch(0.8_0.18_60/0.08),transparent_20%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_261/0.08),transparent_26%),radial-gradient(circle_at_bottom_right,oklch(0.8_0.18_60/0.08),transparent_20%)]" />
 
       <OnboardingHeader step={step} />
 

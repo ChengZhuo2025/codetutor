@@ -157,7 +157,7 @@ export function HelpCenterDialog({
                   className={cn(
                     "overflow-hidden rounded-xl border transition-all duration-300",
                     isExpanded
-                      ? "border-brand/25 bg-brand/5 shadow-[0_18px_42px_-32px_rgba(8,145,178,0.28)]"
+                      ? "border-brand/25 bg-brand/5 shadow-[0_18px_42px_-32px_rgba(98,92,255,0.28)]"
                       : "border-border/50 bg-surface-3 hover:border-border/80 hover:bg-surface-2",
                   )}
                 >

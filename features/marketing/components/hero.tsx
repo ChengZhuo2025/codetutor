@@ -44,12 +44,12 @@ export function LandingHero() {
       <div className="pointer-events-none absolute inset-0 z-0 opacity-[0.38] contrast-[0.98] dark:z-[1] dark:opacity-[0.96] dark:contrast-100">
         <LightRays
           raysOrigin="top-center"
-          raysColor="#6ff4d8"
+          raysColor="#8fa0ff"
           raysSpeed={1.55}
           lightSpread={0.9}
           rayLength={2.35}
           fadeDistance={1.95}
-          saturation={1.28}
+          saturation={1.15}
           followMouse
           mouseInfluence={0.18}
           noiseAmount={0.012}
@@ -85,7 +85,7 @@ export function LandingHero() {
       <div className="pointer-events-none absolute inset-0 z-[1] hidden dark:block bg-[linear-gradient(180deg,oklch(0.12_0.008_240/0.14),transparent_14%,transparent_78%,oklch(0.12_0.008_240/0.38)_100%)]" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center text-center">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand/10 px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp dark:border-brand/18 dark:bg-[oklch(0.2_0.02_220/0.38)]">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand/10 px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp dark:border-brand/18 dark:bg-[oklch(0.2_0.02_226/0.38)]">
           <Sparkles className="h-3.5 w-3.5" />
           <span>{information.siteSubtitle} · MVP内测中</span>
         </div>
