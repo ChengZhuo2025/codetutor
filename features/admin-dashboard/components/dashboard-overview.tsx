@@ -53,10 +53,10 @@ function formatMetricDisplay(def: DashboardStatCardDef, metric: AdminDashboardMe
 
 function trendTextClass(trend: AdminDashboardMetric["trend"]) {
   if (trend === "up") {
-    return "text-emerald-700 dark:text-green-400"
+    return "text-chart-3"
   }
   if (trend === "down") {
-    return "text-red-700 dark:text-red-400"
+    return "text-chart-4"
   }
   return "text-muted-foreground"
 }
@@ -141,7 +141,7 @@ export function DashboardOverview() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-green-400">
+          <div className="flex items-center gap-1.5 text-xs text-chart-3 dark:text-green-400">
             <span className="size-1.5 animate-pulse rounded-full bg-emerald-600 dark:bg-green-400" />
             系统正常
           </div>
@@ -298,7 +298,7 @@ export function DashboardOverview() {
                   <Link
                     key={fb.id}
                     href={`${ADMIN_ROUTES.feedback}/${fb.id}`}
-                    className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-accent/50"
+                    className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-2"
                   >
                     <span className="w-20 shrink-0 font-mono text-xs text-muted-foreground">
                       {fb.id.slice(0, 8)}
@@ -307,21 +307,21 @@ export function DashboardOverview() {
                     <span className="hidden w-20 text-xs text-muted-foreground sm:block">{fb.typeLabel}</span>
                     <span
                       className={cn(
-                        "rounded-full px-2 py-0.5 text-[10px] font-medium",
-                        FEEDBACK_STATUS_BADGE_CLASS[fb.statusLabel] ?? "bg-muted text-muted-foreground",
+                        "rounded-full px-2 py-1 text-[11px] font-medium",
+                        FEEDBACK_STATUS_BADGE_CLASS[fb.statusLabel] ?? "bg-chart-2 text-muted-foreground",
                       )}
                     >
                       {fb.statusLabel}
                     </span>
                     <span
                       className={cn(
-                        "rounded-full px-2 py-0.5 text-[10px]",
+                        "rounded-full px-2 py-1 text-[11px]",
                         FEEDBACK_PRIORITY_BADGE_CLASS[fb.priority] ?? "bg-muted text-muted-foreground",
                       )}
                     >
                       {fb.priority === "high" ? "高" : fb.priority === "medium" ? "中" : "低"}
                     </span>
-                    <span className="w-16 shrink-0 text-right text-[10px] text-muted-foreground">
+                    <span className="w-16 shrink-0 text-right text-[11px] text-muted-foreground">
                       {fb.relativeTime}
                     </span>
                   </Link>
@@ -360,7 +360,7 @@ export function DashboardOverview() {
                           "mt-0.5 size-4 shrink-0",
                           alert.severity === "warning"
                             ? "text-amber-700 dark:text-yellow-400"
-                            : "text-emerald-700 dark:text-green-400",
+                            : "text-chart-3 dark:text-green-400",
                         )}
                         aria-hidden
                       />

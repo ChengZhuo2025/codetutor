@@ -59,19 +59,19 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                     "text-sm",
                     task.current
                       ? "border-brand/25 bg-brand-dim/70"
-                      : "border-border/60 bg-surface-3/80",
+                      : "border-border/80 bg-surface-3",
                   )}
                 >
                   <div className="flex items-center gap-2.5">
                     {task.done ? (
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-brand" />
                     ) : task.locked ? (
-                      <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <Lock className="h-4 w-4 shrink-0 opacity-70 text-muted-foreground" />
                     ) : (
                       <div
                         className={cn(
                           "h-4 w-4 shrink-0 rounded-full border-2",
-                          task.current ? "border-brand" : "border-border/60",
+                          task.current ? "border-brand" : "border-border/80",
                         )}
                       />
                     )}
@@ -80,7 +80,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                       className={cn(
                         "truncate",
                         task.current ? "font-medium text-foreground" : "text-muted-foreground",
-                        task.locked && "opacity-50",
+                        task.locked && "opacity-75",
                       )}
                     >
                       {task.label}
