@@ -70,6 +70,32 @@ export type AdminDashboardAiHealthItem = {
   relativeTime: string
 }
 
+export type AdminDashboardOverviewResponseData = {
+  generatedAt: string
+  pendingFeedbackCount: number
+  todayNewUserCount: number
+  todayCompletedTaskCount: number
+  activeLearningPathCount: number
+  todayCheckinCount: number
+  todayOnboardingCompletedCount: number
+  metrics: {
+    todayNewUsers: AdminDashboardMetric
+    todayOnboardingCompleted: AdminDashboardMetric
+    activeLearningPaths: AdminDashboardMetric
+    todayCompletedTasks: AdminDashboardMetric
+    todayCheckinUsers: AdminDashboardMetric
+    pendingFeedback: AdminDashboardMetric
+    aiSuccessRate24h: AdminDashboardMetric | null
+    aiAvgLatencyMs24h: AdminDashboardMetric | null
+  }
+  aiHourlySuccess: AdminDashboardHourlyPoint[] | null
+  weeklyActiveByDay: AdminDashboardDayActivePoint[] | null
+  weeklyActiveSubtitle: string
+  recentFeedback: AdminDashboardFeedbackRow[]
+  aiHealth: AdminDashboardAiHealthItem[] | null
+  canViewAiCharts: boolean
+}
+
 export const ADMIN_NOTIFICATION_SEVERITIES = ["info", "warning", "critical"] as const
 export type AdminNotificationSeverity = (typeof ADMIN_NOTIFICATION_SEVERITIES)[number]
 

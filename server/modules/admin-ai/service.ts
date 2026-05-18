@@ -38,6 +38,7 @@ import type { AdminAuditAction, AdminRoleCode } from "@/lib/api/contracts/admin"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import { isUuid } from "@/server/lib/identifiers"
+import { emitAdminNotification } from "@/server/modules/admin-notifications/service"
 import {
   encryptProviderSecret,
   getProviderSecretPresentation,
@@ -229,6 +230,35 @@ type SessionInsertResult = {
 }
 
 const AI_ALLOWED_ROLES = new Set<AdminRoleCode>(["super_admin", "ai_ops_admin"])
+const AI_NOTIFICATION_DEDUPE_WINDOW_MS = 10 * 60_000
+
+async function emitAIAdminNotification(input: {
+  severity?: "info" | "warning" | "critical"
+  category?: "ai" | "system"
+  title: string
+  content: string
+  sourceType: string
+  sourceId?: string | null
+  targetUrl?: string | null
+  dedupeKey: string
+  payload?: Record<string, unknown>
+}) {
+  await emitAdminNotification({
+    severity: input.severity ?? "warning",
+    category: input.category ?? "ai",
+    title: input.title,
+    content: input.content,
+    targetUrl: input.targetUrl ?? null,
+    sourceType: input.sourceType,
+    sourceId: input.sourceId ?? null,
+    payload: {
+      ...(input.payload ?? {}),
+      dedupeKey: input.dedupeKey,
+    },
+    dedupeKey: input.dedupeKey,
+    dedupeWindowMs: AI_NOTIFICATION_DEDUPE_WINDOW_MS,
+  })
+}
 
 function filterByKeyword(keyword: string | undefined, candidates: Array<string | null | undefined>) {
   const normalized = keyword?.trim().toLowerCase()
@@ -1735,15 +1765,52 @@ export async function testAdminAIProviderConnection(
     if (presetResult.success) {
       return presetResult
     }
+    void emitAIAdminNotification({
+      severity: presetResult.httpStatus && presetResult.httpStatus >= 500 ? "critical" : "warning",
+      category: "ai",
+      title: presetResult.httpStatus === 429 ? "Provider 连接测试触发限流" : "Provider 连接测试失败",
+      content: `${row.code}：${presetResult.message}`,
+      sourceType: "ai_provider_test_connection",
+      sourceId: row.id,
+      targetUrl: `/admin/ai/providers/${row.id}`,
+      dedupeKey: `ai:provider:test:${row.id}:${presetResult.testedPath ?? "unknown"}`,
+      payload: {
+        providerCode: row.code,
+        providerId: row.id,
+        testedPath: presetResult.testedPath ?? null,
+        httpStatus: presetResult.httpStatus ?? null,
+        message: presetResult.message,
+      },
+    })
+    return presetResult
   }
-
-  return probeProviderModelsEndpoint({
+  const result = await probeProviderModelsEndpoint({
     providerType: input.providerType,
     baseUrl: input.baseUrl,
     authMode: input.authMode,
     secret,
     timeoutMs: input.timeoutMs,
   })
+  if (!result.success) {
+    void emitAIAdminNotification({
+      severity: result.httpStatus && result.httpStatus >= 500 ? "critical" : "warning",
+      category: "ai",
+      title: result.httpStatus === 429 ? "Provider 连接测试触发限流" : "Provider 连接测试失败",
+      content: `${row.code}：${result.message}`,
+      sourceType: "ai_provider_test_connection",
+      sourceId: row.id,
+      targetUrl: `/admin/ai/providers/${row.id}`,
+      dedupeKey: `ai:provider:test:${row.id}:${result.testedPath ?? "models"}`,
+      payload: {
+        providerCode: row.code,
+        providerId: row.id,
+        testedPath: result.testedPath ?? null,
+        httpStatus: result.httpStatus ?? null,
+        message: result.message,
+      },
+    })
+  }
+  return result
 }
 
 async function probeOpenAICompatibleModelChatPing(input: {
@@ -3124,6 +3191,31 @@ export async function executeAdminAITest(
     const latencyMs = Date.now() - startedAt
     const message = error instanceof Error ? error.message : "Unknown AI provider error"
     const status = /timed out/i.test(message) ? "timed_out" : "failed"
+    const rateLimited = /429|rate limit|too many requests|限流/i.test(message)
+    const missingSecret = /missing required provider secret|api key|密钥/i.test(message)
+    void emitAIAdminNotification({
+      severity: status === "timed_out" ? "warning" : "critical",
+      category: missingSecret ? "system" : "ai",
+      title: missingSecret
+        ? "AI Provider 密钥不可用"
+        : rateLimited
+          ? "AI 测试调用触发限流"
+          : "AI 测试调用失败",
+      content: `${provider.code}/${model.code}：${message}`,
+      sourceType: "ai_test_run",
+      sourceId: (session.id ?? null),
+      targetUrl: "/admin/ai/overview",
+      dedupeKey: `ai:test:${provider.code}:${model.code}:${missingSecret ? "secret" : rateLimited ? "rate-limit" : status}`,
+      payload: {
+        agentCode: agent.code,
+        providerCode: provider.code,
+        modelCode: model.code,
+        status: missingSecret ? "config_missing" : rateLimited ? "rate_limited" : status,
+        latencyMs,
+        message,
+        stream: input.stream,
+      },
+    })
     const supabase = createSupabaseAdminClient()
     const { data: invocationData, error: invocationError } = await supabase
       .from("llm_invocations")

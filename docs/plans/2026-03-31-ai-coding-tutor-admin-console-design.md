@@ -28,7 +28,7 @@
 > - **学习记录**已落地：学习路径实例列表、详情、CSV 导出、最近会话摘要、`reactivate / archive` 状态操作；路由为 `app/(admin-shell)/admin/learning/*`，业务域为 `features/admin-learning`，服务层为 `server/modules/admin-learning`，OpenAPI 分组为 `admin-learning`。
 > - **Ai 管理**已落地：`/admin/ai` 概览、Provider/Model/Agent 列表与独立详情页、命中规则、Skill 绑定、调用日志列表与独立详情页、命中预览与真实 provider 测试，以及多媒体管理（转译设置、附件管理）；路由为 `app/(admin-shell)/admin/ai/*`，业务域为 `features/admin-ai`，服务层为 `server/modules/admin-ai`，OpenAPI 分组为 `admin-ai`。
 > - **系统设置**已落地：资料与安全入口复用、管理员账号列表与启停、角色权限说明、操作审计列表、系统信息、企业联系方式管理与微信支付配置加密托管；路由为 `app/(admin-shell)/admin/settings`，业务域为 `features/admin-settings`，服务层为 `server/modules/admin-settings` / `server/modules/payments`，OpenAPI 分组为 `admin-settings` 与 `payment`。
-> - **管理后台消息中心**已落地：右上角铃铛抽屉、独立消息中心页、消息列表与已读/忽略动作，以及反馈提交自动入后台消息池；路由为 `app/(admin-shell)/admin/notifications/*`，业务域为 `features/admin-notifications`，服务层为 `server/modules/admin-notifications`，OpenAPI 分组为 `admin-notifications`。
+> - **管理后台消息中心**已落地：右上角铃铛抽屉、独立消息中心页、消息列表与已读/忽略动作，以及反馈、支付回调/订单同步、AI 连接/调用失败、系统配置/审计异常、用户软删/恢复/账号冲突等高价值事件源自动入后台消息池；路由为 `app/(admin-shell)/admin/notifications/*`，业务域为 `features/admin-notifications`，服务层为 `server/modules/admin-notifications`，OpenAPI 分组为 `admin-notifications`。
 > - 管理端鉴权主链路已切换为 `admin-access-token` / `admin-refresh-token` Cookie，会话守卫与 `/api-docs` 访问守卫已接入 `proxy.ts`。
 > - 运行时 API 文档（`/api/docs/openapi`、`/api-docs`）已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning`、`admin-ai`、`admin-settings` 分组。
 > - 本文中关于 `x-admin-secret` 的描述仅代表早期过渡方案背景，不再代表当前主实现。若与代码冲突，优先以 `docs/plans/2026-03-23-ai-coding-tutor-api-spec.md` 与实际代码为准。

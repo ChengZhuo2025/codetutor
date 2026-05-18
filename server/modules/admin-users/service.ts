@@ -8,6 +8,7 @@ import type { AdminAuditAction } from "@/lib/api/contracts/admin"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import { isUuid } from "@/server/lib/identifiers"
+import { emitAdminNotification } from "@/server/modules/admin-notifications/service"
 import { buildAdminUsersExportCsv } from "./export"
 
 const EXPORT_VIEW = "user_profile_export_view"
@@ -15,6 +16,34 @@ export const ADMIN_USER_EXPORT_MAX_ROWS = 10_000
 
 const USER_ID_UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const USER_NOTIFICATION_DEDUPE_WINDOW_MS = 15 * 60_000
+
+async function emitUserOpsNotification(input: {
+  severity?: "info" | "warning" | "critical"
+  title: string
+  content: string
+  sourceType: string
+  sourceId?: string | null
+  targetUrl?: string | null
+  dedupeKey: string
+  payload?: Record<string, unknown>
+}) {
+  await emitAdminNotification({
+    severity: input.severity ?? "warning",
+    category: "user",
+    title: input.title,
+    content: input.content,
+    targetUrl: input.targetUrl ?? null,
+    sourceType: input.sourceType,
+    sourceId: input.sourceId ?? null,
+    payload: {
+      ...(input.payload ?? {}),
+      dedupeKey: input.dedupeKey,
+    },
+    dedupeKey: input.dedupeKey,
+    dedupeWindowMs: USER_NOTIFICATION_DEDUPE_WINDOW_MS,
+  })
+}
 
 function escapeIlikeFragment(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_")
@@ -221,6 +250,20 @@ async function assertUserNotLinkedToAdminAccount(userId: string) {
   assertSupabaseSuccess(error, "failed to query admin account relation before soft delete")
 
   if (data) {
+    void emitUserOpsNotification({
+      severity: "critical",
+      title: "用户软删除被账号冲突阻断",
+      content: "管理员关联的用户档案不允许软删除，请先确认账号归属与权限关系。",
+      sourceType: "admin_user_account_conflict",
+      sourceId: userId,
+      targetUrl: `/admin/users/${userId}`,
+      dedupeKey: `user:account-conflict:${userId}`,
+      payload: {
+        userId,
+        adminAccountId: (data as { id?: string }).id ?? null,
+        conflictType: "admin_account_relation",
+      },
+    })
     const conflict = new Error("管理员关联的用户档案不允许软删除。")
     conflict.name = "CONFLICT"
     throw conflict
@@ -487,6 +530,23 @@ export async function softDeleteAdminUser(
   assertSupabaseSuccess(error, "failed to soft-delete user profile")
 
   const after = await getAdminUserDetail(userId)
+  void emitUserOpsNotification({
+    severity: "critical",
+    title: "用户已软删除",
+    content: `用户 ${before.nickname ?? before.authPhone ?? userId} 已被软删除。${reason ? `原因：${reason}` : ""}`,
+    sourceType: "admin_user_soft_delete",
+    sourceId: userId,
+    targetUrl: `/admin/users/${userId}`,
+    dedupeKey: `user:soft-delete:${userId}:${after?.deletedAt ?? now}`,
+    payload: {
+      userId,
+      adminAccountId,
+      nickname: before.nickname,
+      authPhone: before.authPhone,
+      reason: reason ?? null,
+      deletedAt: after?.deletedAt ?? now,
+    },
+  })
 
   try {
     await writeAdminUserAudit({
@@ -537,6 +597,22 @@ export async function restoreAdminUser(
   assertSupabaseSuccess(error, "failed to restore user profile")
 
   const after = await getAdminUserDetail(userId)
+  void emitUserOpsNotification({
+    severity: "warning",
+    title: "用户已恢复",
+    content: `用户 ${before.nickname ?? before.authPhone ?? userId} 已从软删除状态恢复。`,
+    sourceType: "admin_user_restore",
+    sourceId: userId,
+    targetUrl: `/admin/users/${userId}`,
+    dedupeKey: `user:restore:${userId}:${now}`,
+    payload: {
+      userId,
+      adminAccountId,
+      nickname: before.nickname,
+      authPhone: before.authPhone,
+      previousDeletedAt: before.deletedAt,
+    },
+  })
 
   try {
     await writeAdminUserAudit({

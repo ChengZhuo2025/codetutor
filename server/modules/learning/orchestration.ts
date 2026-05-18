@@ -24,6 +24,7 @@ import {
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import { normalizeUuid } from "@/server/lib/identifiers"
 import { touchLearningPathActivity } from "@/server/modules/learning-paths/service"
+import { emitAdminNotification } from "@/server/modules/admin-notifications/service"
 import {
   invokeMaterialAudioTranscription,
   invokeMaterialPipelineModel,
@@ -209,6 +210,31 @@ export type LearningInteractionType =
   | "concept_qa"
 
 const textEncoder = new TextEncoder()
+const LEARNING_AI_NOTIFICATION_DEDUPE_WINDOW_MS = 10 * 60_000
+
+async function emitLearningAIAdminNotification(input: {
+  severity?: "info" | "warning" | "critical"
+  category?: "ai" | "system"
+  title: string
+  content: string
+  sourceType: string
+  dedupeKey: string
+  payload?: Record<string, unknown>
+}) {
+  await emitAdminNotification({
+    severity: input.severity ?? "warning",
+    category: input.category ?? "ai",
+    title: input.title,
+    content: input.content,
+    sourceType: input.sourceType,
+    payload: {
+      ...(input.payload ?? {}),
+      dedupeKey: input.dedupeKey,
+    },
+    dedupeKey: input.dedupeKey,
+    dedupeWindowMs: LEARNING_AI_NOTIFICATION_DEDUPE_WINDOW_MS,
+  })
+}
 
 function buildAssistantPresentation(
   interactionType: LearningInteractionType,
@@ -1661,6 +1687,9 @@ export async function orchestrateLearningMessage(
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown AI provider error"
+    const timedOut = /timed out|超时/i.test(message)
+    const rateLimited = /429|rate limit|too many requests|限流/i.test(message)
+    const missingSecret = /missing required provider secret|api key|密钥/i.test(message)
 
     await persistFailedInvocation({
       ...prepared,
@@ -1668,6 +1697,30 @@ export async function orchestrateLearningMessage(
       now,
       userMessageId,
       errorMessage: message,
+    })
+    void emitLearningAIAdminNotification({
+      severity: timedOut ? "warning" : "critical",
+      category: missingSecret ? "system" : "ai",
+      title: missingSecret
+        ? "AI Provider 密钥不可用"
+        : rateLimited
+          ? "AI 调用触发限流"
+          : timedOut
+            ? "AI 调用超时"
+            : "AI 调用失败",
+      content: `${provider.code}/${model.code}：${message}`,
+      sourceType: "learning_ai_invocation",
+      dedupeKey: `ai:learning:${provider.code}:${model.code}:${missingSecret ? "secret" : rateLimited ? "rate-limit" : timedOut ? "timeout" : "failed"}`,
+      payload: {
+        providerCode: provider.code,
+        modelCode: model.code,
+        agentCode: agent.code,
+        sessionId: session.id,
+        userId,
+        taskId: task.id,
+        status: missingSecret ? "config_missing" : rateLimited ? "rate_limited" : timedOut ? "timed_out" : "failed",
+        errorMessage: message,
+      },
     })
 
     if (error instanceof LearningAIProviderError) {
@@ -1819,6 +1872,9 @@ export async function streamLearningMessage(
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown AI provider stream error"
+        const timedOut = /timed out|超时/i.test(message)
+        const rateLimited = /429|rate limit|too many requests|限流/i.test(message)
+        const missingSecret = /missing required provider secret|api key|密钥/i.test(message)
 
         await persistFailedInvocation({
           ...prepared,
@@ -1826,6 +1882,30 @@ export async function streamLearningMessage(
           now,
           userMessageId,
           errorMessage: message,
+        })
+        void emitLearningAIAdminNotification({
+          severity: timedOut ? "warning" : "critical",
+          category: missingSecret ? "system" : "ai",
+          title: missingSecret
+            ? "AI Provider 密钥不可用"
+            : rateLimited
+              ? "AI 流式调用触发限流"
+              : timedOut
+                ? "AI 流式调用超时"
+                : "AI 流式调用失败",
+          content: `${provider.code}/${model.code}：${message}`,
+          sourceType: "learning_ai_stream_invocation",
+          dedupeKey: `ai:learning-stream:${provider.code}:${model.code}:${missingSecret ? "secret" : rateLimited ? "rate-limit" : timedOut ? "timeout" : "failed"}`,
+          payload: {
+            providerCode: provider.code,
+            modelCode: model.code,
+            agentCode: agent.code,
+            sessionId: session.id,
+            userId,
+            taskId: task.id,
+            status: missingSecret ? "config_missing" : rateLimited ? "rate_limited" : timedOut ? "timed_out" : "failed",
+            errorMessage: message,
+          },
         })
 
         send("error", {

@@ -155,10 +155,39 @@ export async function dismissAdminNotification(notificationId: string) {
 }
 
 export async function createAdminNotification(
-  input: AdminCreateNotificationRequest,
+  input: AdminCreateNotificationRequest & {
+    dedupeKey?: string
+    dedupeWindowMs?: number
+  },
 ): Promise<AdminNotificationMutationResponseData | null> {
   const supabase = createSupabaseAdminClient()
   const now = new Date().toISOString()
+  const dedupeKey = input.dedupeKey?.trim() || (typeof input.payload?.dedupeKey === "string" ? input.payload.dedupeKey.trim() : "")
+  if (dedupeKey) {
+    const dedupeWindowMs = Math.max(60_000, input.dedupeWindowMs ?? 15 * 60_000)
+    const since = new Date(Date.now() - dedupeWindowMs).toISOString()
+    const { data: existing, error: existingError } = await supabase
+      .from("admin_notifications")
+      .select("id, status, read_at, dismissed_at")
+      .eq("category", input.category)
+      .eq("source_type", input.sourceType)
+      .gte("created_at", since)
+      .contains("payload", { dedupeKey })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    assertSupabaseSuccess(existingError, "failed to query admin notification dedupe state")
+    if (existing) {
+      return {
+        id: String(existing.id),
+        status: existing.status,
+        readAt: existing.read_at,
+        dismissedAt: existing.dismissed_at,
+      }
+    }
+  }
+
   const { data, error } = await supabase
     .from("admin_notifications")
     .insert({
@@ -179,10 +208,33 @@ export async function createAdminNotification(
 
   assertSupabaseSuccess(error, "failed to create admin notification")
 
+  if (!data) {
+    throw new Error("admin notification creation returned no data")
+  }
+
   return {
     id: String(data.id),
     status: data.status,
     readAt: data.read_at,
     dismissedAt: data.dismissed_at,
+  }
+}
+
+export async function emitAdminNotification(
+  input: AdminCreateNotificationRequest & {
+    dedupeKey?: string
+    dedupeWindowMs?: number
+  },
+) {
+  try {
+    return await createAdminNotification(input)
+  } catch (error) {
+    console.error("failed to emit admin notification", {
+      title: input.title,
+      category: input.category,
+      sourceType: input.sourceType,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return null
   }
 }

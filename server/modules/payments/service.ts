@@ -29,6 +29,7 @@ import type {
 } from "@/lib/api/contracts/payment"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
+import { emitAdminNotification } from "@/server/modules/admin-notifications/service"
 import {
   normalizeAlipayPaymentConfigPatch,
   normalizeAlipayPaymentConfigInput,
@@ -61,6 +62,7 @@ const ALIPAY_GATEWAY_URL = "https://openapi.alipay.com/gateway.do"
 const ORDER_EXPIRES_IN_MS = 30 * 60 * 1000
 const WECHAT_PAY_REQUEST_TIMEOUT_MS = 8000
 const ALIPAY_REQUEST_TIMEOUT_MS = 8000
+const PAYMENT_NOTIFICATION_DEDUPE_WINDOW_MS = 30 * 60 * 1000
 
 type EncryptedSecret = {
   ciphertext: string
@@ -230,6 +232,99 @@ function decryptSecret(input: {
   ]).toString("utf8")
 }
 
+async function emitPaymentAdminNotification(input: {
+  severity?: "info" | "warning" | "critical"
+  category?: "payment" | "system" | "ai" | "user"
+  title: string
+  content: string
+  sourceType: string
+  sourceId?: string | null
+  targetUrl?: string | null
+  dedupeKey: string
+  payload?: Record<string, unknown>
+}) {
+  await emitAdminNotification({
+    severity: input.severity ?? "warning",
+    category: input.category ?? "payment",
+    title: input.title,
+    content: input.content,
+    targetUrl: input.targetUrl ?? null,
+    sourceType: input.sourceType,
+    sourceId: input.sourceId ?? null,
+    payload: {
+      ...(input.payload ?? {}),
+      dedupeKey: input.dedupeKey,
+    },
+    dedupeKey: input.dedupeKey,
+    dedupeWindowMs: PAYMENT_NOTIFICATION_DEDUPE_WINDOW_MS,
+  })
+}
+
+function classifyPaymentFailureMessage(message: string) {
+  const lower = message.toLowerCase()
+  if (lower.includes("验签") || lower.includes("signature") || lower.includes("sign")) {
+    return { title: "支付回调验签失败", bucket: "signature", severity: "critical" as const }
+  }
+  if (lower.includes("时间戳") || lower.includes("timestamp")) {
+    return { title: "支付回调时间戳异常", bucket: "timestamp", severity: "warning" as const }
+  }
+  if (
+    lower.includes("金额")
+    || lower.includes("币种")
+    || lower.includes("身份")
+    || lower.includes("资源")
+    || lower.includes("订单")
+  ) {
+    return { title: "支付回调校验异常", bucket: "validation", severity: "warning" as const }
+  }
+  return { title: "支付回调处理失败", bucket: "general", severity: "critical" as const }
+}
+
+async function emitPaymentWebhookFailureNotification(input: {
+  channel: "wechat" | "alipay"
+  orderNo: string | null
+  error: unknown
+}) {
+  const message = input.error instanceof Error ? input.error.message : String(input.error)
+  const classification = classifyPaymentFailureMessage(message)
+  await emitPaymentAdminNotification({
+    severity: classification.severity,
+    category: "payment",
+    title: `支付回调失败：${input.channel === "wechat" ? "微信" : "支付宝"}`,
+    content: `${classification.title}：${message}`,
+    sourceType: `payment_${input.channel}_notify`,
+    targetUrl: "/admin/finance/orders",
+    dedupeKey: `payment:webhook:${input.channel}:${classification.bucket}:${input.orderNo ?? "unknown"}`,
+    payload: {
+      channel: input.channel,
+      orderNo: input.orderNo,
+      errorMessage: message,
+      bucket: classification.bucket,
+    },
+  })
+}
+
+async function emitPaymentConfigMissingNotification(input: {
+  channel: "wechat" | "alipay"
+  message: string
+}) {
+  await emitPaymentAdminNotification({
+    severity: "critical",
+    category: "system",
+    title: `${input.channel === "wechat" ? "微信" : "支付宝"}支付配置缺失`,
+    content: input.message,
+    sourceType: `payment_${input.channel}_settings`,
+    targetUrl: input.channel === "wechat"
+      ? "/admin/settings/payment/wechat"
+      : "/admin/settings/payment/alipay",
+    dedupeKey: `payment:config:${input.channel}:missing`,
+    payload: {
+      channel: input.channel,
+      errorMessage: input.message,
+    },
+  })
+}
+
 function configured(row: PaymentSettingsRow) {
   return Boolean(
     row.enabled
@@ -325,6 +420,10 @@ async function loadRuntimeWechatPaymentConfig(): Promise<RuntimeWechatPaymentCon
   if (!parsed.ok || !parsed.data.enabled) {
     const error = new Error("微信支付配置未启用或不完整。")
     error.name = "PAYMENT_CONFIG_INCOMPLETE"
+    void emitPaymentConfigMissingNotification({
+      channel: "wechat",
+      message: error.message,
+    })
     throw error
   }
   return parsed.data
@@ -351,6 +450,10 @@ async function loadRuntimeAlipayPaymentConfig(): Promise<RuntimeAlipayPaymentCon
   if (!parsed.ok || !parsed.data.enabled) {
     const error = new Error("支付宝支付配置未启用或不完整。")
     error.name = "PAYMENT_CONFIG_INCOMPLETE"
+    void emitPaymentConfigMissingNotification({
+      channel: "alipay",
+      message: error.message,
+    })
     throw error
   }
   return parsed.data
@@ -1626,58 +1729,76 @@ export async function syncAdminFinanceOrder(orderNo: string) {
   if (row.status === "paid" || row.status === "closed" || row.status === "expired" || row.status === "failed") {
     return detail
   }
-  if (row.paymentChannel === "alipay") {
-    const config = await loadRuntimeAlipayPaymentConfig()
-    const transaction = await callAlipay<Record<string, unknown>>({
+  try {
+    if (row.paymentChannel === "alipay") {
+      const config = await loadRuntimeAlipayPaymentConfig()
+      const transaction = await callAlipay<Record<string, unknown>>({
+        config,
+        method: "alipay.trade.query",
+        bizContent: { out_trade_no: orderNo },
+      })
+      const supabase = createSupabaseAdminClient()
+      const { data: current, error } = await supabase.from("payment_orders").select("*").eq("order_no", orderNo).single()
+      assertSupabaseSuccess(error, "failed to reload alipay admin finance order")
+      if (transaction.trade_status === "TRADE_SUCCESS" || transaction.trade_status === "TRADE_FINISHED") {
+        await completePaidOrder(current as PaymentOrderRow, transaction)
+      } else {
+        const terminalStatus = normalizeAlipayTradeStatusForOrder({
+          tradeStatus: transaction.trade_status,
+          localExpiresAt: row.expiresAt,
+        })
+        if (terminalStatus) {
+          await supabase.from("payment_orders").update({
+            status: terminalStatus,
+            alipay_trade_status: typeof transaction.trade_status === "string" ? transaction.trade_status : terminalStatus.toUpperCase(),
+            alipay_callback_payload: transaction,
+          }).eq("order_no", orderNo).neq("status", "paid")
+        }
+      }
+      return getAdminFinanceOrderDetail(orderNo)
+    }
+    const config = await loadRuntimeWechatPaymentConfig()
+    const transaction = await callWechatPay<Record<string, unknown>>({
       config,
-      method: "alipay.trade.query",
-      bizContent: { out_trade_no: orderNo },
+      method: "GET",
+      pathWithQuery: `/v3/pay/transactions/out-trade-no/${encodeURIComponent(orderNo)}?mchid=${encodeURIComponent(config.mchId)}`,
     })
     const supabase = createSupabaseAdminClient()
     const { data: current, error } = await supabase.from("payment_orders").select("*").eq("order_no", orderNo).single()
-    assertSupabaseSuccess(error, "failed to reload alipay admin finance order")
-    if (transaction.trade_status === "TRADE_SUCCESS" || transaction.trade_status === "TRADE_FINISHED") {
+    assertSupabaseSuccess(error, "failed to reload wechat admin finance order")
+    if (transaction.trade_state === "SUCCESS") {
       await completePaidOrder(current as PaymentOrderRow, transaction)
     } else {
-      const terminalStatus = normalizeAlipayTradeStatusForOrder({
-        tradeStatus: transaction.trade_status,
+      const terminalStatus = normalizeWechatTradeStateForOrder({
+        tradeState: transaction.trade_state,
         localExpiresAt: row.expiresAt,
       })
       if (terminalStatus) {
         await supabase.from("payment_orders").update({
           status: terminalStatus,
-          alipay_trade_status: typeof transaction.trade_status === "string" ? transaction.trade_status : terminalStatus.toUpperCase(),
-          alipay_callback_payload: transaction,
+          wechat_trade_state: typeof transaction.trade_state === "string" ? transaction.trade_state : terminalStatus.toUpperCase(),
+          wechat_callback_payload: transaction,
         }).eq("order_no", orderNo).neq("status", "paid")
       }
     }
     return getAdminFinanceOrderDetail(orderNo)
-  }
-  const config = await loadRuntimeWechatPaymentConfig()
-  const transaction = await callWechatPay<Record<string, unknown>>({
-    config,
-    method: "GET",
-    pathWithQuery: `/v3/pay/transactions/out-trade-no/${encodeURIComponent(orderNo)}?mchid=${encodeURIComponent(config.mchId)}`,
-  })
-  const supabase = createSupabaseAdminClient()
-  const { data: current, error } = await supabase.from("payment_orders").select("*").eq("order_no", orderNo).single()
-  assertSupabaseSuccess(error, "failed to reload wechat admin finance order")
-  if (transaction.trade_state === "SUCCESS") {
-    await completePaidOrder(current as PaymentOrderRow, transaction)
-  } else {
-    const terminalStatus = normalizeWechatTradeStateForOrder({
-      tradeState: transaction.trade_state,
-      localExpiresAt: row.expiresAt,
+  } catch (error) {
+    void emitPaymentAdminNotification({
+      severity: "warning",
+      category: "payment",
+      title: "财务订单同步异常",
+      content: error instanceof Error ? error.message : String(error),
+      sourceType: "payment_order_sync",
+      targetUrl: "/admin/finance/orders",
+      dedupeKey: `payment:order-sync:${orderNo}`,
+      payload: {
+        orderNo,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        channel: row.paymentChannel,
+      },
     })
-    if (terminalStatus) {
-      await supabase.from("payment_orders").update({
-        status: terminalStatus,
-        wechat_trade_state: typeof transaction.trade_state === "string" ? transaction.trade_state : terminalStatus.toUpperCase(),
-        wechat_callback_payload: transaction,
-      }).eq("order_no", orderNo).neq("status", "paid")
-    }
+    throw error
   }
-  return getAdminFinanceOrderDetail(orderNo)
 }
 
 export async function getAdminFinanceStats(
@@ -1718,146 +1839,165 @@ export async function getAdminFinanceStats(
 export async function handleAlipayPaymentNotify(input: {
   form: Record<string, string>
 }) {
-  const config = await loadRuntimeAlipayPaymentConfig()
-  // 支付宝仅支持 RSA2，其他 sign_type（包括遗留的 RSA/SHA1）一律拒绝，防止签名降级攻击。
-  if (input.form.sign_type && input.form.sign_type !== "RSA2") {
-    throw new Error("支付宝支付回调签名算法不支持。")
-  }
-  // 时间戳新鲜度校验：防止历史合法 notify 被重放攻击。
-  const notifyTs = parseAlipayBeijingTimeToEpochSeconds(input.form.notify_time)
-  if (!isFreshTimestamp(notifyTs)) {
-    throw new Error("支付宝支付回调时间戳已过期。")
-  }
-  if (!verifyAlipaySignature({ params: input.form, publicKeyPem: config.alipayPublicKeyPem })) {
-    throw new Error("支付宝支付回调验签失败。")
-  }
   const orderNo = input.form.out_trade_no ?? ""
-  const tradeStatus = input.form.trade_status ?? ""
-  if (!orderNo || (tradeStatus !== "TRADE_SUCCESS" && tradeStatus !== "TRADE_FINISHED")) {
-    throw new Error("支付宝支付回调状态不是成功支付。")
+  try {
+    const config = await loadRuntimeAlipayPaymentConfig()
+    // 支付宝仅支持 RSA2，其他 sign_type（包括遗留的 RSA/SHA1）一律拒绝，防止签名降级攻击。
+    if (input.form.sign_type && input.form.sign_type !== "RSA2") {
+      throw new Error("支付宝支付回调签名算法不支持。")
+    }
+    // 时间戳新鲜度校验：防止历史合法 notify 被重放攻击。
+    const notifyTs = parseAlipayBeijingTimeToEpochSeconds(input.form.notify_time)
+    if (!isFreshTimestamp(notifyTs)) {
+      throw new Error("支付宝支付回调时间戳已过期。")
+    }
+    if (!verifyAlipaySignature({ params: input.form, publicKeyPem: config.alipayPublicKeyPem })) {
+      throw new Error("支付宝支付回调验签失败。")
+    }
+    const tradeStatus = input.form.trade_status ?? ""
+    if (!orderNo || (tradeStatus !== "TRADE_SUCCESS" && tradeStatus !== "TRADE_FINISHED")) {
+      throw new Error("支付宝支付回调状态不是成功支付。")
+    }
+    if (input.form.app_id !== config.appId) {
+      throw new Error("支付宝支付回调应用身份不匹配。")
+    }
+    const supabase = createSupabaseAdminClient()
+    const { error: eventInsertError } = await supabase.from("payment_webhook_events").insert({
+      provider: "alipay",
+      alipay_notify_id: input.form.notify_id ?? null,
+      order_no: orderNo,
+      headers: {},
+      payload: input.form,
+      decrypted_payload: input.form,
+    })
+    if (eventInsertError && eventInsertError.code !== "23505") {
+      assertSupabaseSuccess(eventInsertError, "failed to record alipay webhook event")
+    }
+    const { data, error } = await supabase
+      .from("payment_orders")
+      .select("*")
+      .eq("order_no", orderNo)
+      .single()
+    assertSupabaseSuccess(error, "failed to load alipay callback payment order")
+    const row = data as PaymentOrderRow
+    if ((row.payment_channel) !== "alipay") {
+      throw new Error("支付宝支付回调订单渠道不匹配。")
+    }
+    if (parseAlipayAmountCents(input.form.total_amount) !== row.amount_cents) {
+      throw new Error("支付宝支付回调金额不匹配。")
+    }
+    // 支付宝 notify 不包含 currency 字段，白名单放行 CNY 订单。
+    if (row.currency !== "CNY") {
+      throw new Error("支付宝支付回调币种不支持。")
+    }
+    const paidAt = input.form.gmt_payment
+      ? `${input.form.gmt_payment.replace(" ", "T")}+08:00`
+      : new Date().toISOString()
+    await completePaidOrder(row, {
+      ...input.form,
+      success_time: paidAt,
+    })
+  } catch (error) {
+    void emitPaymentWebhookFailureNotification({
+      channel: "alipay",
+      orderNo: orderNo || null,
+      error,
+    })
+    throw error
   }
-  if (input.form.app_id !== config.appId) {
-    throw new Error("支付宝支付回调应用身份不匹配。")
-  }
-  const supabase = createSupabaseAdminClient()
-  const { error: eventInsertError } = await supabase.from("payment_webhook_events").insert({
-    provider: "alipay",
-    alipay_notify_id: input.form.notify_id ?? null,
-    order_no: orderNo,
-    headers: {},
-    payload: input.form,
-    decrypted_payload: input.form,
-  })
-  if (eventInsertError && eventInsertError.code !== "23505") {
-    assertSupabaseSuccess(eventInsertError, "failed to record alipay webhook event")
-  }
-  const { data, error } = await supabase
-    .from("payment_orders")
-    .select("*")
-    .eq("order_no", orderNo)
-    .single()
-  assertSupabaseSuccess(error, "failed to load alipay callback payment order")
-  const row = data as PaymentOrderRow
-  if ((row.payment_channel) !== "alipay") {
-    throw new Error("支付宝支付回调订单渠道不匹配。")
-  }
-  if (parseAlipayAmountCents(input.form.total_amount) !== row.amount_cents) {
-    throw new Error("支付宝支付回调金额不匹配。")
-  }
-  // 支付宝 notify 不包含 currency 字段，白名单放行 CNY 订单。
-  if (row.currency !== "CNY") {
-    throw new Error("支付宝支付回调币种不支持。")
-  }
-  const paidAt = input.form.gmt_payment
-    ? `${input.form.gmt_payment.replace(" ", "T")}+08:00`
-    : new Date().toISOString()
-  await completePaidOrder(row, {
-    ...input.form,
-    success_time: paidAt,
-  })
 }
 
 export async function handleWechatPaymentNotify(input: {
   headers: Headers
   rawBody: string
 }) {
-  const config = await loadRuntimeWechatPaymentConfig()
-  const signature = input.headers.get("Wechatpay-Signature")
-  const timestamp = input.headers.get("Wechatpay-Timestamp")
-  const nonce = input.headers.get("Wechatpay-Nonce")
-  const serial = input.headers.get("Wechatpay-Serial")
-  if (!signature || !timestamp || !nonce || !serial) {
-    throw new Error("微信支付回调缺少签名头。")
-  }
-  // 时间戳新鲜度校验：微信支付官方规范要求 ±5 分钟，防止重放攻击。
-  if (!isFreshTimestamp(Number(timestamp))) {
-    throw new Error("微信支付回调时间戳已过期。")
-  }
-  if (serial !== config.wechatpayPublicKeyId) {
-    throw new Error("微信支付回调公钥 ID 不匹配。")
-  }
-  if (!verifyWechatPaySignature({
-    publicKeyPem: config.wechatpayPublicKeyPem,
-    timestamp,
-    nonce,
-    body: input.rawBody,
-    signature,
-  })) {
-    throw new Error("微信支付回调验签失败。")
-  }
-  const payload = JSON.parse(input.rawBody) as {
-    id?: string
-    resource?: {
-      associated_data?: string
-      nonce?: string
-      ciphertext?: string
+  let orderNo: string | null = null
+  try {
+    const config = await loadRuntimeWechatPaymentConfig()
+    const signature = input.headers.get("Wechatpay-Signature")
+    const timestamp = input.headers.get("Wechatpay-Timestamp")
+    const nonce = input.headers.get("Wechatpay-Nonce")
+    const serial = input.headers.get("Wechatpay-Serial")
+    if (!signature || !timestamp || !nonce || !serial) {
+      throw new Error("微信支付回调缺少签名头。")
     }
+    // 时间戳新鲜度校验：微信支付官方规范要求 ±5 分钟，防止重放攻击。
+    if (!isFreshTimestamp(Number(timestamp))) {
+      throw new Error("微信支付回调时间戳已过期。")
+    }
+    if (serial !== config.wechatpayPublicKeyId) {
+      throw new Error("微信支付回调公钥 ID 不匹配。")
+    }
+    if (!verifyWechatPaySignature({
+      publicKeyPem: config.wechatpayPublicKeyPem,
+      timestamp,
+      nonce,
+      body: input.rawBody,
+      signature,
+    })) {
+      throw new Error("微信支付回调验签失败。")
+    }
+    const payload = JSON.parse(input.rawBody) as {
+      id?: string
+      resource?: {
+        associated_data?: string
+        nonce?: string
+        ciphertext?: string
+      }
+    }
+    const resource = payload.resource
+    if (!resource?.associated_data || !resource.nonce || !resource.ciphertext) {
+      throw new Error("微信支付回调资源不完整。")
+    }
+    const transaction = decryptWechatPayResource({
+      apiV3Key: config.apiV3Key,
+      associatedData: resource.associated_data,
+      nonce: resource.nonce,
+      ciphertext: resource.ciphertext,
+    })
+    orderNo = typeof transaction.out_trade_no === "string" ? transaction.out_trade_no : ""
+    if (!orderNo || transaction.trade_state !== "SUCCESS") {
+      throw new Error("微信支付回调状态不是成功支付。")
+    }
+    if (transaction.appid !== config.appId || transaction.mchid !== config.mchId) {
+      throw new Error("微信支付回调商户身份不匹配。")
+    }
+    const supabase = createSupabaseAdminClient()
+    const { error: eventInsertError } = await supabase.from("payment_webhook_events").insert({
+      wechat_event_id: payload.id ?? null,
+      order_no: orderNo,
+      headers: Object.fromEntries(input.headers.entries()),
+      payload,
+      decrypted_payload: transaction,
+    })
+    if (eventInsertError && eventInsertError.code !== "23505") {
+      assertSupabaseSuccess(eventInsertError, "failed to record payment webhook event")
+    }
+    const { data, error } = await supabase
+      .from("payment_orders")
+      .select("*")
+      .eq("order_no", orderNo)
+      .single()
+    assertSupabaseSuccess(error, "failed to load callback payment order")
+    const row = data as PaymentOrderRow
+    if (Number(transaction.amount && typeof transaction.amount === "object" ? (transaction.amount as { total?: unknown }).total : null) !== row.amount_cents) {
+      throw new Error("微信支付回调金额不匹配。")
+    }
+    const callbackCurrency = transaction.amount && typeof transaction.amount === "object"
+      ? (transaction.amount as { currency?: unknown }).currency
+      : null
+    if (callbackCurrency && callbackCurrency !== row.currency) {
+      throw new Error("微信支付回调币种不匹配。")
+    }
+    await completePaidOrder(row, transaction)
+  } catch (error) {
+    void emitPaymentWebhookFailureNotification({
+      channel: "wechat",
+      orderNo,
+      error,
+    })
+    throw error
   }
-  const resource = payload.resource
-  if (!resource?.associated_data || !resource.nonce || !resource.ciphertext) {
-    throw new Error("微信支付回调资源不完整。")
-  }
-  const transaction = decryptWechatPayResource({
-    apiV3Key: config.apiV3Key,
-    associatedData: resource.associated_data,
-    nonce: resource.nonce,
-    ciphertext: resource.ciphertext,
-  })
-  const orderNo = typeof transaction.out_trade_no === "string" ? transaction.out_trade_no : ""
-  if (!orderNo || transaction.trade_state !== "SUCCESS") {
-    throw new Error("微信支付回调状态不是成功支付。")
-  }
-  if (transaction.appid !== config.appId || transaction.mchid !== config.mchId) {
-    throw new Error("微信支付回调商户身份不匹配。")
-  }
-  const supabase = createSupabaseAdminClient()
-  const { error: eventInsertError } = await supabase.from("payment_webhook_events").insert({
-    wechat_event_id: payload.id ?? null,
-    order_no: orderNo,
-    headers: Object.fromEntries(input.headers.entries()),
-    payload,
-    decrypted_payload: transaction,
-  })
-  if (eventInsertError && eventInsertError.code !== "23505") {
-    assertSupabaseSuccess(eventInsertError, "failed to record payment webhook event")
-  }
-  const { data, error } = await supabase
-    .from("payment_orders")
-    .select("*")
-    .eq("order_no", orderNo)
-    .single()
-  assertSupabaseSuccess(error, "failed to load callback payment order")
-  const row = data as PaymentOrderRow
-  if (Number(transaction.amount && typeof transaction.amount === "object" ? (transaction.amount as { total?: unknown }).total : null) !== row.amount_cents) {
-    throw new Error("微信支付回调金额不匹配。")
-  }
-  const callbackCurrency = transaction.amount && typeof transaction.amount === "object"
-    ? (transaction.amount as { currency?: unknown }).currency
-    : null
-  if (callbackCurrency && callbackCurrency !== row.currency) {
-    throw new Error("微信支付回调币种不匹配。")
-  }
-  await completePaidOrder(row, transaction)
 }
 
 export async function getSubscriptionForUser(userId: string): Promise<SubscriptionMeResponseData> {

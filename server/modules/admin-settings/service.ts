@@ -21,6 +21,7 @@ import type {
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { assertSupabaseSuccess } from "@/server/lib/supabase"
 import { isUuid } from "@/server/lib/identifiers"
+import { emitAdminNotification } from "@/server/modules/admin-notifications/service"
 import {
   QR_CODE_BUCKET,
   QR_CODE_MAX_BYTES,
@@ -88,6 +89,35 @@ const ADMIN_AUTH_MODE = "Supabase Auth + admin_accounts"
 const INFRA_DATABASE = "Supabase PostgreSQL"
 const INFRA_STORAGE = "Supabase Storage"
 const INFRA_AUTH = "Supabase Auth"
+const SYSTEM_NOTIFICATION_DEDUPE_WINDOW_MS = 15 * 60_000
+
+async function emitSystemAdminNotification(input: {
+  severity?: "info" | "warning" | "critical"
+  category?: "system" | "user"
+  title: string
+  content: string
+  sourceType: string
+  sourceId?: string | null
+  targetUrl?: string | null
+  dedupeKey: string
+  payload?: Record<string, unknown>
+}) {
+  await emitAdminNotification({
+    severity: input.severity ?? "warning",
+    category: input.category ?? "system",
+    title: input.title,
+    content: input.content,
+    targetUrl: input.targetUrl ?? null,
+    sourceType: input.sourceType,
+    sourceId: input.sourceId ?? null,
+    payload: {
+      ...(input.payload ?? {}),
+      dedupeKey: input.dedupeKey,
+    },
+    dedupeKey: input.dedupeKey,
+    dedupeWindowMs: SYSTEM_NOTIFICATION_DEDUPE_WINDOW_MS,
+  })
+}
 
 function getPackageVersion(name: string) {
   return PACKAGE_JSON.dependencies?.[name]
@@ -300,6 +330,22 @@ async function writeAdminAccountAudit(input: {
   })
 
   if (error) {
+    void emitSystemAdminNotification({
+      severity: "critical",
+      category: "system",
+      title: "审计日志写入失败",
+      content: `管理员账号状态审计写入失败：${error.message}`,
+      sourceType: "admin_audit_write_failed",
+      sourceId: input.targetAdminAccountId,
+      targetUrl: "/admin/settings",
+      dedupeKey: `system:audit:admin-account:${input.targetAdminAccountId}:${input.action}`,
+      payload: {
+        action: input.action,
+        targetAdminAccountId: input.targetAdminAccountId,
+        adminAccountId: input.adminAccountId,
+        errorMessage: error.message,
+      },
+    })
     throw new Error(`AUDIT_LOG_WRITE_FAILED:failed to write admin account audit log: ${error.message}`)
   }
 }
@@ -449,6 +495,26 @@ export async function updateAdminSettingsAdminAccountStatus(
   } catch (auditError) {
     throw auditError
   }
+
+  void emitSystemAdminNotification({
+    severity: input.action === "deactivate" ? "critical" : "warning",
+    category: "system",
+    title: input.action === "deactivate" ? "管理员账号已停用" : "管理员账号已启用",
+    content: `${actor.display_name} 已${input.action === "deactivate" ? "停用" : "启用"}管理员账号 ${target.display_name}。`,
+    sourceType: "admin_account_status_change",
+    sourceId: target.id,
+    targetUrl: "/admin/settings",
+    dedupeKey: `system:admin-account-status:${target.id}:${nextStatus}`,
+    payload: {
+      actorAdminAccountId: adminAccountId,
+      actorDisplayName: actor.display_name,
+      targetAdminAccountId: target.id,
+      targetDisplayName: target.display_name,
+      previousStatus: target.status,
+      nextStatus,
+      reason: input.reason ?? null,
+    },
+  })
 
   return {
     adminAccountId: target.id,
