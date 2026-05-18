@@ -77,6 +77,12 @@ assert.match(
 )
 
 assert.match(
+  editSheetSource,
+  /扫码授权[\s\S]*微信扫码登录[\s\S]*抖音扫码登录/,
+  "The admin users edit sheet should expose read-only WeChat and Douyin OAuth authorization state",
+)
+
+assert.match(
   detailSource,
   /用户资料/,
   "The admin user detail page should expose the profile section shortcut",
@@ -98,6 +104,12 @@ assert.match(
   detailSource,
   /反馈工单|查看全部工单/,
   "The admin user detail page should expose the feedback section and its deep link",
+)
+
+assert.match(
+  detailSource,
+  /扫码授权[\s\S]*微信扫码登录[\s\S]*抖音扫码登录/,
+  "The admin user detail page should expose WeChat and Douyin OAuth authorization fields",
 )
 
 assert.doesNotMatch(

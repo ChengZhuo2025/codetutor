@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
+import { Smartphone } from "lucide-react"
 import type { AdminUserDetailResponseData, AdminUserListItem } from "@/lib/api/contracts/admin-users"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -55,6 +57,26 @@ export function UserEditSheet({
     setContactEmail(user.contactEmail ?? "")
     setWechat(user.wechat ?? "")
   }, [open, user])
+
+  const getOAuthBindingLabel = (linked: boolean | null | undefined) => {
+    if (linked === true) {
+      return "已授权"
+    }
+    if (linked === false) {
+      return "未授权"
+    }
+    return "未同步"
+  }
+
+  const getOAuthBindingClassName = (linked: boolean | null | undefined) => {
+    if (linked === true) {
+      return "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+    }
+    if (linked === false) {
+      return "border-border bg-muted/70 text-muted-foreground"
+    }
+    return "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+  }
 
   const handleSave = async () => {
     if (!user) {
@@ -135,6 +157,32 @@ export function UserEditSheet({
             <div className="space-y-1.5">
               <Label htmlFor="edit-authPhone">手机号</Label>
               <Input id="edit-authPhone" value={user?.authPhone ?? "暂无手机号"} disabled readOnly />
+            </div>
+            <div className="space-y-1.5">
+              <Label>扫码授权</Label>
+              <div className="rounded-lg border border-border bg-muted/30 px-3 py-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Smartphone className="h-4 w-4 text-primary" />
+                  授权状态
+                </div>
+                <div className="mt-3 grid gap-2">
+                  <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-background px-3 py-2">
+                    <span className="text-sm text-muted-foreground">微信扫码登录</span>
+                    <Badge className={getOAuthBindingClassName(user?.oauthWechatLinked)}>
+                      {getOAuthBindingLabel(user?.oauthWechatLinked)}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-background px-3 py-2">
+                    <span className="text-sm text-muted-foreground">抖音扫码登录</span>
+                    <Badge className={getOAuthBindingClassName(user?.oauthDouyinLinked)}>
+                      {getOAuthBindingLabel(user?.oauthDouyinLinked)}
+                    </Badge>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  授权绑定由用户扫码完成，管理员仅可查看状态，不在此处修改第三方身份。
+                </p>
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="edit-nickname">昵称</Label>

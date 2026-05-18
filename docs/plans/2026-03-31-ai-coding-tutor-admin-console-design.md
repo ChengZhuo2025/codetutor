@@ -24,7 +24,7 @@
 > 2026-04-05 对齐说明（以代码为准）：
 >
 > - 管理后台 Phase 1 已落地管理员登录、会话、登出、改密、看板、反馈、管理员资料编辑（含头像上传）链路。
-> - **用户运营**已落地：用户列表、详情、导出、受控资料更新、软删除与恢复、与反馈列表联动；路由为 `app/(admin-shell)/admin/users/*`，业务域为 `features/admin-users`，服务层为 `server/modules/admin-users`，OpenAPI 分组为 `admin-users`。
+> - **用户运营**已落地：用户列表、详情、导出、受控资料更新、微信/抖音授权状态查看、软删除与恢复、与反馈列表联动；路由为 `app/(admin-shell)/admin/users/*`，业务域为 `features/admin-users`，服务层为 `server/modules/admin-users`，OpenAPI 分组为 `admin-users`。
 > - **学习记录**已落地：学习路径实例列表、详情、CSV 导出、最近会话摘要、`reactivate / archive` 状态操作；路由为 `app/(admin-shell)/admin/learning/*`，业务域为 `features/admin-learning`，服务层为 `server/modules/admin-learning`，OpenAPI 分组为 `admin-learning`。
 > - **Ai 管理**已落地：`/admin/ai` 概览、Provider/Model/Agent 列表与独立详情页、命中规则、Skill 绑定、调用日志列表与独立详情页、命中预览与真实 provider 测试，以及多媒体管理（转译设置、附件管理）；路由为 `app/(admin-shell)/admin/ai/*`，业务域为 `features/admin-ai`，服务层为 `server/modules/admin-ai`，OpenAPI 分组为 `admin-ai`。
 > - **系统设置**已落地：资料与安全入口复用、管理员账号列表与启停、角色权限说明、操作审计列表、系统信息、企业联系方式管理与微信支付配置加密托管；路由为 `app/(admin-shell)/admin/settings`，业务域为 `features/admin-settings`，服务层为 `server/modules/admin-settings` / `server/modules/payments`，OpenAPI 分组为 `admin-settings` 与 `payment`。
@@ -61,7 +61,7 @@
 
 - `GET /api/admin/users`：分页列表，支持关键词与筛选（账号状态、onboarding、是否具备进行中的学习计划等，以查询参数与 OpenAPI 为准）
 - `GET /api/admin/users/export`：基于 `user_profile_export_view` 的 CSV 导出
-- `GET /api/admin/users/{userId}`：详情 read model（与导出视图同构字段 + 学习/任务聚合）
+- `GET /api/admin/users/{userId}`：详情 read model（与导出视图同构字段 + 学习/任务聚合 + 微信/抖音 Supabase Auth identities 授权摘要）
 - `PATCH /api/admin/users/{userId}`：受控更新昵称、简介、联系邮箱、微信、内容语言等（非任意字段、不替代 Supabase Auth 凭证管理）
 - `POST /api/admin/users/{userId}/soft-delete`、`POST /api/admin/users/{userId}/restore`：软删除与恢复
 
@@ -197,7 +197,7 @@
 #### 已落地（与代码对齐，2026-04）
 
 - **用户列表**：分页、`keyword`、账号状态（含已软删）、onboarding、是否具备进行中计划等筛选；列表行内打开资料编辑抽屉。
-- **用户详情**（`/admin/users/[userId]`）：单页纵向信息架构——身份与徽章、运营摘要、可点击跳转的指标摘要卡、资料与登录渠道字段、当前学习计划与任务分布、累计任务统计、最近反馈工单与跳转全量列表；顶栏提供刷新、复制 ID/邮箱/手机、编辑资料、跳转工单列表；侧栏提供锚点导航与软删除/恢复。
+- **用户详情**（`/admin/users/[userId]`）：单页纵向信息架构——身份与徽章、运营摘要、可点击跳转的指标摘要卡、资料与登录渠道字段、微信/抖音扫码授权状态、当前学习计划与任务分布、累计任务统计、最近反馈工单与跳转全量列表；顶栏提供刷新、复制 ID/邮箱/手机、编辑资料、跳转工单列表；侧栏提供锚点导航与软删除/恢复。
 - **用户导出**：`GET /api/admin/users/export`，数据源为 `user_profile_export_view`。
 - **受控资料更新**：`PATCH /api/admin/users/{userId}` 限定白名单字段（昵称、简介、联系邮箱、微信、内容语言等），**不**承担修改 Supabase Auth 手机/邮箱或任意列覆盖。
 - **账号状态**：`POST .../soft-delete`（可选原因）、`POST .../restore`。

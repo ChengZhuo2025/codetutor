@@ -14,6 +14,7 @@ import {
   Loader2,
   RefreshCw,
   ShieldAlert,
+  Smartphone,
   Target,
   UserRound,
 } from "lucide-react"
@@ -70,10 +71,32 @@ function formatProviderLabel(raw: string | null): string {
     phone: "手机",
     email: "邮箱",
     wechat: "微信",
+    douyin: "抖音",
     github: "GitHub",
     google: "Google",
   }
   return map[key] ?? raw
+}
+
+function getOAuthBindingMeta(linked: boolean | null) {
+  if (linked === true) {
+    return {
+      label: "已授权",
+      className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    }
+  }
+
+  if (linked === false) {
+    return {
+      label: "未授权",
+      className: "border-border bg-muted/70 text-muted-foreground",
+    }
+  }
+
+  return {
+    label: "未同步",
+    className: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  }
 }
 
 function formatDateTime(iso: string | null) {
@@ -226,6 +249,30 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     <div className="flex items-start justify-between gap-4 py-2.5">
       <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="max-w-[65%] text-right text-sm text-foreground">{value}</dd>
+    </div>
+  )
+}
+
+function OAuthProviderCard({
+  label,
+  linked,
+  description,
+}: {
+  label: string
+  linked: boolean | null
+  description: string
+}) {
+  const meta = getOAuthBindingMeta(linked)
+
+  return (
+    <div className="rounded-xl border border-border bg-background px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+        </div>
+        <Badge className={meta.className}>{meta.label}</Badge>
+      </div>
     </div>
   )
 }
@@ -687,13 +734,34 @@ export function UserDetail({ userId }: UserDetailProps) {
               <InfoRow label="联系邮箱" value={data.contactEmail ?? "暂无"} />
               <InfoRow label="Auth 邮箱" value={data.authEmail ?? "暂无"} />
               <InfoRow label="Auth 手机" value={data.authPhone ?? "暂无"} />
-              <InfoRow label="微信" value={data.wechat ?? "暂无"} />
+              <InfoRow label="微信号" value={data.wechat ?? "暂无"} />
               <InfoRow label="注册渠道" value={formatProviderLabel(data.signupProvider)} />
               <InfoRow label="最近登录方式" value={formatProviderLabel(data.lastLoginProvider)} />
               <InfoRow label="最近登录时间" value={formatDateTime(data.lastLoginAt)} />
               <InfoRow label="注册时间" value={formatDateTime(data.profileCreatedAt)} />
               <InfoRow label="资料更新时间" value={formatDateTime(data.profileUpdatedAt)} />
             </dl>
+            <div className="mt-4 rounded-xl border border-border bg-muted/20 p-4">
+              <div className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">扫码授权</h3>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                微信、抖音授权状态来自 Supabase Auth identities；手机号仍是当前业务主账号。
+              </p>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <OAuthProviderCard
+                  label="微信扫码登录"
+                  linked={data.oauthWechatLinked}
+                  description="可通过微信授权身份登录当前手机号账号"
+                />
+                <OAuthProviderCard
+                  label="抖音扫码登录"
+                  linked={data.oauthDouyinLinked}
+                  description="可通过抖音授权身份登录当前手机号账号"
+                />
+              </div>
+            </div>
             <div className="mt-4 rounded-xl border border-border bg-muted/20 px-4 py-3">
               <p className="text-xs font-medium text-muted-foreground">个人简介</p>
               <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
@@ -925,6 +993,14 @@ export function UserDetail({ userId }: UserDetailProps) {
               <div className="flex justify-between gap-2">
                 <dt className="shrink-0 text-muted-foreground">最近登录</dt>
                 <dd className="text-right text-foreground">{formatProviderLabel(data.lastLoginProvider)}</dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="shrink-0 text-muted-foreground">微信授权</dt>
+                <dd className="text-right text-foreground">{getOAuthBindingMeta(data.oauthWechatLinked).label}</dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="shrink-0 text-muted-foreground">抖音授权</dt>
+                <dd className="text-right text-foreground">{getOAuthBindingMeta(data.oauthDouyinLinked).label}</dd>
               </div>
               <div className="flex justify-between gap-2">
                 <dt className="shrink-0 text-muted-foreground">登录时间</dt>

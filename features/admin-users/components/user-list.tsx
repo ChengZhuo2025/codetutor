@@ -128,11 +128,13 @@ function ListStatCard({
 function ListRowActions({
   item,
   deletingUserId,
+  editingUserId,
   onEdit,
   onSoftDelete,
 }: {
   item: AdminUserListItem
   deletingUserId: string | null
+  editingUserId: string | null
   onEdit: (item: AdminUserListItem) => void
   onSoftDelete: (userId: string) => Promise<void>
 }) {
@@ -141,8 +143,14 @@ function ListRowActions({
       <Button type="button" variant="outline" size="sm" className="h-8 px-2.5" asChild>
         <Link href={`${ADMIN_ROUTES.users}/${item.userId}`}>详情</Link>
       </Button>
-      <Button type="button" size="sm" className="h-8 px-2.5" onClick={() => onEdit(item)}>
-        编辑
+      <Button
+        type="button"
+        size="sm"
+        className="h-8 px-2.5"
+        disabled={editingUserId === item.userId}
+        onClick={() => onEdit(item)}
+      >
+        {editingUserId === item.userId ? "加载中…" : "编辑"}
       </Button>
       <Button
         type="button"
@@ -174,6 +182,7 @@ export function UserList() {
   const [authExpired, setAuthExpired] = useState(false)
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
   const [editingUser, setEditingUser] = useState<AdminUserListItem | null>(null)
+  const [editingUserId, setEditingUserId] = useState<string | null>(null)
   const [editSheetOpen, setEditSheetOpen] = useState(false)
 
   useAdminSessionExpiryRedirect(authExpired)
@@ -299,6 +308,24 @@ export function UserList() {
       toast.error(getAdminApiErrorMessage(softDeleteError, "删除失败"))
     } finally {
       setDeletingUserId(null)
+    }
+  }
+
+  const handleOpenEditUser = async (targetUser: AdminUserListItem) => {
+    setEditingUserId(targetUser.userId)
+    try {
+      const detail = await adminRequestData<AdminUserDetailResponseData>(
+        `/admin/users/${targetUser.userId}`,
+        { method: "GET" },
+        "获取用户详情失败",
+      )
+      setEditingUser(detail)
+      setEditSheetOpen(true)
+    } catch (editError) {
+      setAuthExpired(isAdminSessionExpiredError(editError))
+      toast.error(getAdminApiErrorMessage(editError, "获取用户详情失败"))
+    } finally {
+      setEditingUserId(null)
     }
   }
 
@@ -542,10 +569,8 @@ export function UserList() {
                         <ListRowActions
                           item={item}
                           deletingUserId={deletingUserId}
-                          onEdit={(targetUser) => {
-                            setEditingUser(targetUser)
-                            setEditSheetOpen(true)
-                          }}
+                          editingUserId={editingUserId}
+                          onEdit={(targetUser) => void handleOpenEditUser(targetUser)}
                           onSoftDelete={handleSoftDeleteUser}
                         />
                       </td>

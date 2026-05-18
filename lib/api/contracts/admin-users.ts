@@ -6,6 +6,9 @@ export type AdminUserExportViewRow = {
   nickname: string | null
   avatarUrl: string | null
   wechat: string | null
+  oauthWechatLinked: boolean | null
+  oauthDouyinLinked: boolean | null
+  oauthLinkedProviders: string[] | null
   contactEmail: string | null
   bio: string | null
   signupProvider: string | null

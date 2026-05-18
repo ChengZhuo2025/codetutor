@@ -40,12 +40,67 @@ type ListFilters = {
 
 type ExportViewRow = Record<string, unknown>
 
+type SupabaseAuthIdentity = {
+  provider?: string | null
+  identity_data?: Record<string, unknown> | null
+}
+
+type AuthUserRow = {
+  identities?: SupabaseAuthIdentity[] | null
+}
+
+function normalizeProviderName(provider: string | null | undefined) {
+  if (!provider) {
+    return null
+  }
+
+  const normalized = provider.trim().toLowerCase()
+  if (!normalized) {
+    return null
+  }
+  if (normalized === "wechat" || normalized === "douyin" || normalized === "phone") {
+    return normalized
+  }
+
+  return normalized
+}
+
+function buildOAuthLinkedProviders(user: AuthUserRow | null | undefined) {
+  const providers = new Set<string>()
+
+  for (const identity of user?.identities ?? []) {
+    const provider = normalizeProviderName(identity.provider)
+    if (provider === "wechat" || provider === "douyin") {
+      providers.add(provider)
+      continue
+    }
+
+    const identityDataProvider = normalizeProviderName(
+      typeof identity.identity_data?.provider === "string"
+        ? identity.identity_data.provider
+        : null,
+    )
+    if (identityDataProvider === "wechat" || identityDataProvider === "douyin") {
+      providers.add(identityDataProvider)
+    }
+  }
+
+  return Array.from(providers).sort()
+}
+
 function mapExportRow(row: ExportViewRow): AdminUserDetailResponseData {
+  const linkedProviders = Array.isArray(row.oauth_linked_providers)
+    ? row.oauth_linked_providers.map((item) => String(item))
+    : []
+
   return {
     userId: String(row.user_id),
     nickname: row.nickname == null ? null : String(row.nickname),
     avatarUrl: row.avatar_url == null ? null : String(row.avatar_url),
     wechat: row.wechat == null ? null : String(row.wechat),
+    oauthWechatLinked: row.oauth_wechat_linked == null ? null : Boolean(row.oauth_wechat_linked),
+    oauthDouyinLinked: row.oauth_douyin_linked == null ? null : Boolean(row.oauth_douyin_linked),
+    oauthLinkedProviders: linkedProviders.length > 0 ? linkedProviders : null,
     contactEmail: row.contact_email == null ? null : String(row.contact_email),
     bio: row.bio == null ? null : String(row.bio),
     signupProvider: row.signup_provider == null ? null : String(row.signup_provider),
@@ -249,7 +304,17 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
     return null
   }
 
-  return mapExportRow(data as ExportViewRow)
+  const { data: authData, error: authError } = await supabase.auth.admin.getUserById(userId)
+  assertSupabaseSuccess(authError, "failed to query auth user for admin user detail")
+
+  const linkedProviders = buildOAuthLinkedProviders(authData.user as AuthUserRow | null | undefined)
+
+  return {
+    ...mapExportRow(data as ExportViewRow),
+    oauthWechatLinked: linkedProviders.includes("wechat"),
+    oauthDouyinLinked: linkedProviders.includes("douyin"),
+    oauthLinkedProviders: linkedProviders.length > 0 ? linkedProviders : null,
+  }
 }
 
 export async function getAdminUsersExportCsv(
