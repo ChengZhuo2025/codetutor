@@ -1,14 +1,15 @@
 "use client"
 
-import { Bell } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
 import type { AdminSessionResponseData } from "@/lib/api/contracts/admin"
+import { AdminNotificationCenter } from "@/features/admin-notifications/components/admin-notification-center"
 import { AdminAccountMenu } from "./admin-account-menu"
 
 const breadcrumbMap: Record<string, string> = {
   "/admin": "总览看板",
   "/admin/users": "用户运营",
+  "/admin/notifications": "消息中心",
   "/admin/feedback": "反馈工单",
   "/admin/learning": "学习记录",
   "/admin/ai": "Ai 管理 / 概览",
@@ -49,14 +50,7 @@ export function AdminHeader({ session }: AdminHeaderProps) {
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <ThemeToggle className="size-9 rounded-full hover:bg-brand/10" />
-        <button
-          type="button"
-          className="relative mr-3 flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-brand/10 hover:text-foreground dark:hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-brand/10 dark:active:bg-primary/15"
-          aria-label="通知"
-        >
-          <Bell className="size-4" aria-hidden />
-          <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-destructive ring-2 ring-background" />
-        </button>
+        <AdminNotificationCenter />
         <AdminAccountMenu session={session} />
       </div>
     </header>

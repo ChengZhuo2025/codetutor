@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Users,
   MessageSquare,
+  Bell,
   BookOpen,
   Bot,
   Server,
@@ -39,6 +40,12 @@ export const menuItems: MenuItem[] = [
     label: "反馈工单",
     href: "/admin/feedback",
     icon: MessageSquare,
+    active: true,
+  },
+  {
+    label: "消息中心",
+    href: "/admin/notifications",
+    icon: Bell,
     active: true,
   },
   {

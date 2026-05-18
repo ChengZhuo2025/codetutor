@@ -17,6 +17,7 @@ import type {
   FeedbackTicketListItem,
   FeedbackType,
 } from "@/lib/api/contracts/feedback"
+import { createAdminNotification } from "@/server/modules/admin-notifications/service"
 import { getLearningLevelLabel } from "@/constants/learning-taxonomy"
 import { getRankName } from "@/constants/ranks"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
@@ -329,6 +330,24 @@ export async function createFeedbackTicket(
   if (!data) {
     throw new Error("failed to create feedback ticket: missing inserted row")
   }
+
+  void createAdminNotification({
+    category: "feedback",
+    severity: "warning",
+    title: `新的反馈工单：${input.title.trim()}`,
+    content: input.content.trim().slice(0, 240),
+    targetUrl: `/admin/feedback/${data.id}`,
+    sourceType: "feedback_ticket",
+    sourceId: data.id,
+    payload: {
+      ticketId: data.id,
+      feedbackType: input.feedbackType,
+      source: normalizeOptionalString(input.source ?? null),
+      contactMethod: normalizeOptionalString(input.contactMethod),
+    },
+  }).catch((error) => {
+    console.error("failed to create admin feedback notification", error)
+  })
 
   return {
     ticketId: data.id,

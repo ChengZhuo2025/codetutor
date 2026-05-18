@@ -70,33 +70,60 @@ export type AdminDashboardAiHealthItem = {
   relativeTime: string
 }
 
-// 总览看板响应数据
-export type AdminDashboardOverviewResponseData = {
-  generatedAt: string
-  pendingFeedbackCount: number
-  todayNewUserCount: number
-  todayCompletedTaskCount: number
-  activeLearningPathCount: number
-  todayCheckinCount: number
-  todayOnboardingCompletedCount: number
-  metrics: {
-    todayNewUsers: AdminDashboardMetric
-    todayOnboardingCompleted: AdminDashboardMetric
-    activeLearningPaths: AdminDashboardMetric
-    todayCompletedTasks: AdminDashboardMetric
-    todayCheckinUsers: AdminDashboardMetric
-    pendingFeedback: AdminDashboardMetric
-    aiSuccessRate24h: AdminDashboardMetric | null
-    aiAvgLatencyMs24h: AdminDashboardMetric | null
-  }
-  /** 近 24h 按小时成功率；无 AI 权限时为 null */
-  aiHourlySuccess: AdminDashboardHourlyPoint[] | null
-  /** 本周按日去重活跃用户数（event_logs）；无数据则为 0 */
-  weeklyActiveByDay: AdminDashboardDayActivePoint[] | null
-  weeklyActiveSubtitle: string
-  recentFeedback: AdminDashboardFeedbackRow[]
-  aiHealth: AdminDashboardAiHealthItem[] | null
-  canViewAiCharts: boolean
+export const ADMIN_NOTIFICATION_SEVERITIES = ["info", "warning", "critical"] as const
+export type AdminNotificationSeverity = (typeof ADMIN_NOTIFICATION_SEVERITIES)[number]
+
+export const ADMIN_NOTIFICATION_STATUSES = ["unread", "read", "dismissed"] as const
+export type AdminNotificationStatus = (typeof ADMIN_NOTIFICATION_STATUSES)[number]
+
+export const ADMIN_NOTIFICATION_CATEGORIES = [
+  "feedback",
+  "payment",
+  "ai",
+  "system",
+  "user",
+] as const
+export type AdminNotificationCategory = (typeof ADMIN_NOTIFICATION_CATEGORIES)[number]
+
+export type AdminNotificationListItem = {
+  id: string
+  severity: AdminNotificationSeverity
+  category: AdminNotificationCategory
+  title: string
+  content: string
+  status: AdminNotificationStatus
+  targetUrl: string | null
+  sourceType: string
+  sourceId: string | null
+  payload: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+  readAt: string | null
+  dismissedAt: string | null
+}
+
+export type AdminNotificationListResponseData = {
+  items: AdminNotificationListItem[]
+  total: number
+  unreadCount: number
+}
+
+export type AdminNotificationMutationResponseData = {
+  id: string
+  status: AdminNotificationStatus
+  readAt: string | null
+  dismissedAt: string | null
+}
+
+export type AdminCreateNotificationRequest = {
+  severity?: AdminNotificationSeverity
+  category: AdminNotificationCategory
+  title: string
+  content: string
+  targetUrl?: string | null
+  sourceType: string
+  sourceId?: string | null
+  payload?: Record<string, unknown>
 }
 
 // 审计日志操作类型

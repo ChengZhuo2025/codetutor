@@ -16,7 +16,7 @@ test("openapi document covers all registered api operations and special transpor
     ),
   )
 
-  assert.equal(operations.length, 133)
+  assert.equal(operations.length, 136)
 
   assert.ok(paths["/api/auth/login"]?.post)
   assert.ok(paths["/api/auth/oauth-temp-user/discard"]?.post)
@@ -51,6 +51,9 @@ test("openapi document covers all registered api operations and special transpor
   assert.ok(paths["/api/admin/feedback/batch-delete"]?.post)
   assert.ok(paths["/api/admin/feedback/{id}/reply"]?.post)
   assert.ok(paths["/api/admin/feedback/{id}/user-snapshot"]?.get)
+  assert.ok(paths["/api/admin/notifications"]?.get)
+  assert.ok(paths["/api/admin/notifications/{id}/read"]?.post)
+  assert.ok(paths["/api/admin/notifications/{id}/dismiss"]?.post)
   assert.ok(paths["/api/admin/auth/change-password"]?.post)
   assert.ok(paths["/api/admin/users"]?.get)
   assert.ok(paths["/api/admin/users/export"]?.get)

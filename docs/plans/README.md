@@ -17,7 +17,7 @@
 - `app/api` 当前已大量收敛为薄入口层，请求校验、统一响应、错误映射与部分路由编排已下沉到 `server/lib/*` 与各域 `route-handler.ts`。
 - 已落地数据侧：远程 Supabase、`001` 到 `047` 迁移（含 `018` 材料摄取与计划草稿表、`019` 用户软删除、`020` analytics/notifications、`021` Provider API Key 数据库加密托管、`024` async material intake / generation runs / chunks、`025` editable drafts / revisions、`026` material chunk evidence metadata、`027` 草稿任务 `mastery_points` / `cautions` 契约升级、planner prompt 同步与历史已确认自学路径 `key_points/pitfalls` 回填、`028` AI Model 结构化画像字段与 metadata 兼容回填、`034`-`040` 支付订阅、套餐管理、支付宝扫码支付扩展、订单管理字段、财务 RPC 与 `SECURITY DEFINER` RPC `search_path` 安全修复、`043` 学习对话附件表与私有 Storage bucket、`044` 学习对话媒体 agent 场景、`045` 多媒体转译设置表、`046` 材料计划生成 run claim 与草稿确认事务 RPC、`047` 材料计划 RPC `search_path` 安全修复）、头像 Storage、反馈工单表、学习计划 `interrupted` 状态迁移、成长写模型、每日打卡表、AI 会话 / provider / agent / skill / invocation 表，以及管理员账号/角色/审计日志表。
 - 已补 Phase 1 运行时性能与稳定性加固：进程内短 TTL 用户鉴权 / 管理员会话缓存、AI 配置快照缓存、关键接口限流与请求级观测头 / 结构化日志；当前仍未引入 Redis / 消息队列，缓存与限流均为单实例进程内实现。
-- 仍待实现：细粒度权限深化、用户域更深写能力如内部备注 / 人工积分调整、AI 域更深运营化能力（prompt 版本化、灰度/回滚、成本与稳定性面板等）、支付退款/自动续费/JSAPI/H5 变体。（**用户运营**、**学习记录**、**Ai 管理**、**系统设置**、**财务管理首版**、**analytics 事件写入**、**通知设置落库/站内提醒** 与 **微信 Native / 支付宝扫码支付首版闭环** 已在代码中落地。）
+- 仍待实现：细粒度权限深化、用户域更深写能力如内部备注 / 人工积分调整、AI 域更深运营化能力（prompt 版本化、灰度/回滚、成本与稳定性面板等）、支付退款/自动续费/JSAPI/H5 变体。（**用户运营**、**学习记录**、**Ai 管理**、**系统设置**、**财务管理首版**、**analytics 事件写入**、**通知设置落库/站内提醒**、**管理后台消息中心** 与 **微信 Native / 支付宝扫码支付首版闭环** 已在代码中落地。）
 - 若只想最快了解真实现状，优先读：
   1. `docs/plans/README.md`
   2. `docs/plans/2026-03-23-ai-coding-tutor-frontend-engineering-guide.md`
@@ -112,7 +112,7 @@
 
 - AI 第二阶段能力：按 `2026-03-30-ai-coding-tutor-ai-orchestration-design.md` 的 `15.2` 落地更细粒度的 agent 控制，包括按不同工具/路径补 agent seed、按不同 `interactionType` 补专用 agent、补 prompt 版本化管理。
 - analytics 深化：当前已落地 `POST /api/analytics/event`、`event_logs` 与基础聚合函数；后续重点转为把聚合结果接到增长看板、留存/漏斗分析和更深运营指标。
-- 通知体系深化：当前已落地通知设置落库、站内提醒记录与工作台侧边栏提醒卡；后续如需邮件/微信真实发送或独立通知中心，再在现有模型上扩展。
+- 通知体系深化：当前已落地通知设置落库、站内提醒记录、工作台侧边栏提醒卡与管理后台消息中心；后续如需邮件/微信真实发送或更深的消息分发编排，再在现有模型上扩展。
 - 管理员后台后续阶段：在 Phase 1、用户运营、学习记录、Ai 管理 与系统设置已交付的基础上，继续补齐细粒度权限控制深化、AI 域更深运营化能力，以及用户域的后续能力（如内部备注、人工积分调整等，以代码与 OpenAPI 为准）。
 
 ### P2：商业化与基础设施增强
@@ -124,7 +124,7 @@
 
 ### 当前建议开发顺序
 
-1. 先补 `管理员后台后续能力 + analytics/notifications 的运营化深化`（用户运营、学习记录、Ai 管理、系统设置、analytics 事件写入与通知设置落库已交付；重点转为权限与审计深化、AI 更深运营化，以及更深用户运营写能力），把运营与运维能力接上。
+1. 先补 `管理员后台后续能力 + analytics/notifications 的运营化深化`（用户运营、学习记录、Ai 管理、系统设置、analytics 事件写入、通知设置落库/站内提醒与管理后台消息中心已交付；重点转为权限与审计深化、AI 更深运营化，以及更深用户运营写能力），把运营与运维能力接上。
 2. 再继续做学习消息链路的运营化增强，优先落 `15.2 第二阶段`，例如不同工具/路径/交互类型的 agent 拆分与 prompt 版本化管理。
    当前 AI 相关权威设计以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准。
    其中第一阶段已完成；文档里的 `15.2 第二阶段`、`15.3 第三阶段` 目前都还没有开始。

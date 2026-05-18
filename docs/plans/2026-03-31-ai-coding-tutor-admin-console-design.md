@@ -28,6 +28,7 @@
 > - **学习记录**已落地：学习路径实例列表、详情、CSV 导出、最近会话摘要、`reactivate / archive` 状态操作；路由为 `app/(admin-shell)/admin/learning/*`，业务域为 `features/admin-learning`，服务层为 `server/modules/admin-learning`，OpenAPI 分组为 `admin-learning`。
 > - **Ai 管理**已落地：`/admin/ai` 概览、Provider/Model/Agent 列表与独立详情页、命中规则、Skill 绑定、调用日志列表与独立详情页、命中预览与真实 provider 测试，以及多媒体管理（转译设置、附件管理）；路由为 `app/(admin-shell)/admin/ai/*`，业务域为 `features/admin-ai`，服务层为 `server/modules/admin-ai`，OpenAPI 分组为 `admin-ai`。
 > - **系统设置**已落地：资料与安全入口复用、管理员账号列表与启停、角色权限说明、操作审计列表、系统信息、企业联系方式管理与微信支付配置加密托管；路由为 `app/(admin-shell)/admin/settings`，业务域为 `features/admin-settings`，服务层为 `server/modules/admin-settings` / `server/modules/payments`，OpenAPI 分组为 `admin-settings` 与 `payment`。
+> - **管理后台消息中心**已落地：右上角铃铛抽屉、独立消息中心页、消息列表与已读/忽略动作，以及反馈提交自动入后台消息池；路由为 `app/(admin-shell)/admin/notifications/*`，业务域为 `features/admin-notifications`，服务层为 `server/modules/admin-notifications`，OpenAPI 分组为 `admin-notifications`。
 > - 管理端鉴权主链路已切换为 `admin-access-token` / `admin-refresh-token` Cookie，会话守卫与 `/api-docs` 访问守卫已接入 `proxy.ts`。
 > - 运行时 API 文档（`/api/docs/openapi`、`/api-docs`）已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning`、`admin-ai`、`admin-settings` 分组。
 > - 本文中关于 `x-admin-secret` 的描述仅代表早期过渡方案背景，不再代表当前主实现。若与代码冲突，优先以 `docs/plans/2026-03-23-ai-coding-tutor-api-spec.md` 与实际代码为准。
@@ -56,6 +57,12 @@
 - `GET /api/admin/feedback/{id}`
 - `POST /api/admin/feedback/{id}/reply`
 - `POST /api/admin/feedback/{id}/status`
+
+**管理后台消息中心**
+
+- `GET /api/admin/notifications`
+- `POST /api/admin/notifications/{id}/read`
+- `POST /api/admin/notifications/{id}/dismiss`
 
 **用户运营（终端用户）**
 
@@ -610,10 +617,12 @@ Agents 管理页必须补齐的辅助能力：
 - `/admin/ai`：Ai 管理
 - `/admin/settings`：系统设置
 - `/admin/feedback`：反馈工单
+- `/admin/notifications`：管理后台消息中心
 
 当前真实页面联动关系：
 
 - 用户详情页可携带 `?userId=` 跳转到反馈工单列表，保持用户筛选上下文。
+- 右上角铃铛会打开管理后台消息中心抽屉，独立页 `/admin/notifications` 保留完整筛选、刷新与已读/忽略动作。
 - 学习记录列表页进入学习路径详情页后，详情页右侧展示用户快照，并可跳转到对应用户详情页。
 - 用户运营与学习记录共享同一套后台壳层、顶部 breadcrumb、管理员会话守卫和 BFF 客户端错误处理。
 - 学习记录中的状态操作统一走 `POST /api/admin/learning-paths/{pathId}/status`，由服务端复用用户侧学习路径状态机约束并写入审计。
@@ -704,6 +713,7 @@ Agents 管理页必须补齐的辅助能力：
 | 用户备注 | `GET /api/admin/users/{userId}/notes`、`POST /api/admin/users/{userId}/notes` | 规划中 |
 | 积分调整 | `POST /api/admin/users/{userId}/score-adjustments` | 规划中 |
 | 反馈工单 | `GET /api/admin/feedback`、`GET /api/admin/feedback/{id}`、`POST /api/admin/feedback/{id}/reply`、`POST /api/admin/feedback/{id}/status` | 已有 |
+| 管理后台消息中心 | `GET /api/admin/notifications`、`POST /api/admin/notifications/{id}/read`、`POST /api/admin/notifications/{id}/dismiss` | **已落地** |
 | 学习记录 | `GET /api/admin/learning-paths`、`GET /api/admin/learning-paths/export`、`GET /api/admin/learning-paths/{pathId}`、`POST /api/admin/learning-paths/{pathId}/status` | **已落地** |
 | Ai 管理 | `GET /api/admin/ai/overview`、`GET /api/admin/ai/invocations`、`GET /api/admin/ai/invocations/{id}` | **已落地** |
 | LLM 管理 | `GET /api/admin/ai/providers`、`POST /api/admin/ai/providers`、`GET /api/admin/ai/providers/{id}`、`PATCH /api/admin/ai/providers/{id}`、`GET /api/admin/ai/models`、`POST /api/admin/ai/models`、`GET /api/admin/ai/models/{id}`、`PATCH /api/admin/ai/models/{id}` | **已落地** |

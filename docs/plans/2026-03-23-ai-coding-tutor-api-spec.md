@@ -164,6 +164,9 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `GET /api/admin/feedback/{id}`
 - `POST /api/admin/feedback/{id}/reply`
 - `POST /api/admin/feedback/{id}/status`
+- `GET /api/admin/notifications`
+- `POST /api/admin/notifications/{id}/read`
+- `POST /api/admin/notifications/{id}/dismiss`
 - `GET /api/admin/learning-paths`
 - `GET /api/admin/learning-paths/export`
 - `GET /api/admin/learning-paths/{pathId}`
@@ -305,6 +308,9 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - `GET /api/admin/feedback/{id}`
 - `POST /api/admin/feedback/{id}/reply`
 - `POST /api/admin/feedback/{id}/status`
+- `GET /api/admin/notifications`
+- `POST /api/admin/notifications/{id}/read`
+- `POST /api/admin/notifications/{id}/dismiss`
 - `GET /api/admin/learning-paths`
 - `GET /api/admin/learning-paths/export`
 - `GET /api/admin/learning-paths/{pathId}`
@@ -343,6 +349,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | Ai 管理 | `/admin/ai`、`/admin/ai/providers`、`/admin/ai/providers/[providerId]`、`/admin/ai/models`、`/admin/ai/models/[modelId]`、`/admin/ai/agents`、`/admin/ai/agents/[agentId]`、`/admin/ai/bindings`、`/admin/ai/skills`、`/admin/ai/invocations`、`/admin/ai/invocations/[invocationId]`、`/admin/ai/test`、`/admin/ai/media/transcription-settings`、`/admin/ai/media/attachments` | `GET /api/admin/ai/overview`、`GET/POST/PATCH /api/admin/ai/providers*`、`POST /api/admin/ai/providers/{providerId}/reveal-secret`、`GET/POST/PATCH /api/admin/ai/models*`、`GET/POST/PATCH /api/admin/ai/agents*`、`GET/POST/PATCH /api/admin/ai/agent-bindings*`、`GET /api/admin/ai/skills`、`GET/POST/PATCH /api/admin/ai/agent-skill-bindings*`、`GET /api/admin/ai/invocations`、`GET /api/admin/ai/invocations/{invocationId}`、`POST /api/admin/ai/resolve-preview`、`POST /api/admin/ai/agent/test`、`GET/PATCH /api/admin/ai/media/transcription-settings*`、`GET /api/admin/ai/media/attachments` | 当前已落地 AI 配置真源管理、Provider API Key 脱敏展示 / 按需明文读取 / 数据库加密托管、列表页与独立详情页、命中规则/Skill 绑定、调用日志只读、命中预览与真实 Provider 测试链路、多媒体转译设置与附件管理；其中 `/api/admin/ai/models*` 已升级为结构化模型画像字段（`modelFamily` / `runtimeCapabilities` / `connectionTestMode` / `reasoningEnabled` / `profileGroup` / `notes`），仅保留 `metadata` 作为高级扩展区 |
 | 系统设置 | `/admin/settings` | `GET /api/admin/settings/overview`、`GET /api/admin/settings/admin-accounts`、`POST /api/admin/settings/admin-accounts/{adminAccountId}/status`、`GET /api/admin/settings/audit-logs`、`GET/PATCH /api/admin/settings/contact`、`GET/PATCH /api/admin/settings/payment/wechat`、`GET/PATCH /api/admin/settings/payment/alipay`、`GET /api/contact` | 当前已落地资料/安全入口复用、管理员账号列表与启停、角色权限说明、操作审计、**企业联系方式全链路管理**、**微信/支付宝支付配置加密托管** 与系统信息 |
 | 管理端反馈 | `/admin/feedback`、`/admin/feedback/[id]` | `GET /api/admin/feedback`、`GET /api/admin/feedback/{id}`、`POST /api/admin/feedback/{id}/reply`、`POST /api/admin/feedback/{id}/status` | 当前已落地列表筛选、详情回复与状态流转 |
+| 管理后台消息中心 | `/admin/notifications` | `GET /api/admin/notifications`、`POST /api/admin/notifications/{id}/read`、`POST /api/admin/notifications/{id}/dismiss` | 当前已落地右上角消息抽屉、独立消息中心页，以及反馈提交后自动入消息池 |
 
 以下内容继续保留前端本地静态配置，不进入 MVP 首期后端：
 
@@ -2020,6 +2027,7 @@ SSE 事件补充：
 | `GET /api/admin/learning-paths*` | 管理员 | 学习路径列表、导出、详情 |
 | `POST /api/admin/learning-paths/{pathId}/status` | 管理员 | 学习路径受控状态操作（`reactivate/archive`） |
 | `GET /api/admin/feedback*` | 管理员 | 管理员反馈查询与回复 |
+| `GET /api/admin/notifications*` | 管理员 | 管理后台消息中心列表与状态流转 |
 | `POST /api/admin/auth/login` | 否 | 管理员登录入口 |
 | `GET /api/admin/auth/session` | 是 | 获取管理员会话摘要 |
 | `POST /api/admin/auth/logout` | 是 | 管理员登出 |

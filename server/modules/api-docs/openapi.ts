@@ -58,6 +58,9 @@ import {
   adminSettingsAuditLogListQuerySchema,
   adminSettingsAuditLogListResponseDataSchema,
   adminSettingsOverviewResponseDataSchema,
+  adminNotificationQuerySchema,
+  adminNotificationListResponseDataSchema,
+  adminNotificationMutationResponseDataSchema,
   adminSubscriptionPlanListResponseDataSchema,
   adminFinanceOrderDetailResponseDataSchema,
   adminFinanceOrderListResponseDataSchema,
@@ -1766,6 +1769,37 @@ const successExamples = {
       inReview: 7,
       highPriority: 4,
     },
+  },
+  adminNotificationsList: {
+    items: [
+      {
+        id: "550e8400-e29b-41d4-a716-446655440021",
+        severity: "warning",
+        category: "feedback",
+        title: "新的反馈工单：希望支持项目级模板",
+        content: "如果能直接从项目生成学习路径会更方便。",
+        status: "unread",
+        targetUrl: "/admin/feedback/ticket-1",
+        sourceType: "feedback_ticket",
+        sourceId: "550e8400-e29b-41d4-a716-446655440022",
+        payload: {
+          ticketId: "550e8400-e29b-41d4-a716-446655440022",
+          feedbackType: "feature_request",
+        },
+        createdAt: EXAMPLE_NOW,
+        updatedAt: EXAMPLE_NOW,
+        readAt: null,
+        dismissedAt: null,
+      },
+    ],
+    total: 1,
+    unreadCount: 1,
+  },
+  adminNotificationsMutation: {
+    id: "550e8400-e29b-41d4-a716-446655440021",
+    status: "read",
+    readAt: EXAMPLE_LATER,
+    dismissedAt: null,
   },
   adminFeedbackDetail: adminFeedbackDetailExample,
   adminUserExportRow: adminUserExportRowExample,
@@ -3760,6 +3794,72 @@ registry.registerPath({
       "登录邮箱已更新，请使用新邮箱重新登录",
     ),
     ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/notifications",
+  operationId: "getAdminNotifications",
+  tags: ["admin-notifications"],
+  summary: "读取管理后台消息中心列表",
+  security: [],
+  request: {
+    query: adminNotificationQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminNotificationListResponseDataSchema,
+      "AdminNotificationListResponse",
+      "消息列表读取成功",
+      successExamples.adminNotificationsList,
+      "messages listed",
+    ),
+    ...commonErrorResponses(["403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/notifications/{id}/read",
+  operationId: "postAdminNotificationRead",
+  tags: ["admin-notifications"],
+  summary: "标记后台消息已读",
+  security: [],
+  request: {
+    params: routeIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminNotificationMutationResponseDataSchema,
+      "AdminNotificationReadResponse",
+      "消息已标记为已读",
+      successExamples.adminNotificationsMutation,
+      "message read",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/notifications/{id}/dismiss",
+  operationId: "postAdminNotificationDismiss",
+  tags: ["admin-notifications"],
+  summary: "忽略后台消息",
+  security: [],
+  request: {
+    params: routeIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminNotificationMutationResponseDataSchema,
+      "AdminNotificationDismissResponse",
+      "消息已忽略",
+      { ...successExamples.adminNotificationsMutation, status: "dismissed", dismissedAt: EXAMPLE_LATER },
+      "message dismissed",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
   },
 })
 

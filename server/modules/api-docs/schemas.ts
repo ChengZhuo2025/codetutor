@@ -2097,6 +2097,76 @@ export const adminDashboardOverviewResponseDataSchema = z
 
 const adminNullableString = z.string().nullable()
 
+export const adminNotificationSeveritySchema = z
+  .enum(["info", "warning", "critical"])
+  .openapi("AdminNotificationSeverity")
+
+export const adminNotificationStatusSchema = z
+  .enum(["unread", "read", "dismissed"])
+  .openapi("AdminNotificationStatus")
+
+export const adminNotificationCategorySchema = z
+  .enum(["feedback", "payment", "ai", "system", "user"])
+  .openapi("AdminNotificationCategory")
+
+export const adminNotificationListItemSchema = z
+  .object({
+    id: z.string().uuid(),
+    severity: adminNotificationSeveritySchema,
+    category: adminNotificationCategorySchema,
+    title: z.string(),
+    content: z.string(),
+    status: adminNotificationStatusSchema,
+    targetUrl: z.string().nullable(),
+    sourceType: z.string(),
+    sourceId: z.string().uuid().nullable(),
+    payload: z.record(z.unknown()),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    readAt: z.string().nullable(),
+    dismissedAt: z.string().nullable(),
+  })
+  .openapi("AdminNotificationListItem")
+
+export const adminNotificationListResponseDataSchema = z
+  .object({
+    items: z.array(adminNotificationListItemSchema),
+    total: z.number().int().nonnegative(),
+    unreadCount: z.number().int().nonnegative(),
+  })
+  .openapi("AdminNotificationListResponseData")
+
+export const adminNotificationMutationResponseDataSchema = z
+  .object({
+    id: z.string().uuid(),
+    status: adminNotificationStatusSchema,
+    readAt: z.string().nullable(),
+    dismissedAt: z.string().nullable(),
+  })
+  .openapi("AdminNotificationMutationResponseData")
+
+export const adminCreateNotificationRequestSchema = z
+  .object({
+    severity: adminNotificationSeveritySchema.optional(),
+    category: adminNotificationCategorySchema,
+    title: z.string().min(1).max(160),
+    content: z.string().min(1),
+    targetUrl: z.string().nullable().optional(),
+    sourceType: z.string().min(1).max(32),
+    sourceId: z.string().uuid().nullable().optional(),
+    payload: z.record(z.unknown()).optional(),
+  })
+  .openapi("AdminCreateNotificationRequest")
+
+export const adminNotificationQuerySchema = z
+  .object({
+    status: adminNotificationStatusSchema.optional(),
+    category: adminNotificationCategorySchema.optional(),
+    limit: z.coerce.number().int().min(1).max(50).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+  })
+  .openapi("AdminNotificationQuery")
+
 export const adminUserExportViewDataSchema = z
   .object({
     userId: z.string().uuid(),

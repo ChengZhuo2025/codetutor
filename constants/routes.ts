@@ -23,6 +23,7 @@ export const USER_PROTECTED_ROUTES = [
 export const ADMIN_ROUTES = {
   login: "/admin/login",
   home: "/admin",
+  notifications: "/admin/notifications",
   feedback: "/admin/feedback",
   users: "/admin/users",
   learning: "/admin/learning",
