@@ -53,7 +53,7 @@ export function LearnChatHeader({
   }
 
   return (
-    <div className="shrink-0 border-b border-border/80 bg-surface-1/80 px-4 py-4 backdrop-blur-sm sm:px-6">
+    <div className="shrink-0 border-b border-border/80 bg-surface-1 px-4 py-4 backdrop-blur-sm sm:px-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">

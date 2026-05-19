@@ -44,13 +44,13 @@ const MESSAGE_KIND_META = {
   },
   coach: {
     badge: "AI 教练",
-    bubbleClass: "text-foreground",
-    avatarClass: "bg-brand text-brand-foreground",
+    bubbleClass: "text-white",
+    avatarClass: "bg-brand text-white",
     avatarLabel: "AI",
   },
   user_input: {
     badge: "我的反馈",
-    bubbleClass: "border-brand/80 bg-brand font-medium text-white dark:text-black",
+    bubbleClass: "border-brand/80 bg-brand font-medium text-white",
     avatarClass: "bg-surface-4 text-muted-foreground",
     avatarLabel: "我",
   },

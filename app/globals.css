@@ -122,9 +122,9 @@
   --gold: oklch(0.80 0.18 75);
   --gold-dim: oklch(0.80 0.18 75 / 0.12);
   --surface-1: oklch(0.18 0.008 270);
-  --surface-2: oklch(0.24 0.006 270);
-  --surface-3: oklch(0.28 0.007 270);
-  --surface-4: oklch(0.32 0.008 270);
+  --surface-2: oklch(0.22 0.006 270);
+  --surface-3: oklch(0.26 0.007 270);
+  --surface-4: oklch(0.30 0.008 270);
   --admin-dashboard-chart: oklch(0.68 0.28 270);
   --chart-1: oklch(0.68 0.28 270);
   --chart-2: oklch(0.80 0.32 75);

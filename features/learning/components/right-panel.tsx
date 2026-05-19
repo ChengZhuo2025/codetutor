@@ -58,7 +58,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                     WORKSPACE_ASIDE_INSET_CARD_CLASS,
                     "text-sm",
                     task.current
-                      ? "border-brand/25 bg-brand-dim/70"
+                      ? "border-brand/25 bg-brand-dim/70 dark:border-brand/40 dark:bg-brand/20"
                       : "border-border/80 bg-surface-3",
                   )}
                 >
@@ -87,7 +87,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                     </span>
 
                     {task.current ? (
-                      <span className="ml-auto shrink-0 rounded-full bg-brand px-1.5 py-0.5 text-[11px] font-medium text-brand-foreground">
+                      <span className="ml-auto shrink-0 rounded-full bg-brand px-1.5 py-0.5 text-[11px] font-medium text-white">
                         进行中
                       </span>
                     ) : null}
@@ -194,12 +194,12 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
                   <div
                     className={cn(
                       "mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full",
-                      caution.isTrap ? "bg-rose-500" : "bg-muted-foreground/45",
+                      caution.isTrap ? "bg-chart-4" : "bg-muted-foreground/45",
                     )}
                   />
                   <div className="min-w-0 flex-1">
                     {caution.isTrap ? (
-                      <span className="mb-1 inline-flex items-center gap-1 rounded-full border border-destructive/20 bg-rose-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-rose-500">
+                      <span className="mb-1 inline-flex items-center gap-1 rounded-full border border-chart-4/25 bg-chart-4/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-chart-4">
                         <AlertTriangle className="h-3 w-3" />
                         卡点提醒
                       </span>
@@ -211,7 +211,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
             </div>
           </PageSection>
 
-          <div className={cn(WORKSPACE_ASIDE_CARD_CLASS, "border-gold/15 bg-gold-dim/35")}>
+          <div className={cn(WORKSPACE_ASIDE_CARD_CLASS, "border-gold/15 bg-gold-dim/35 dark:border-gold/20 dark:bg-gold/8")}>
             <div className="flex items-start gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold dark:border-gold/15 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.06))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                 <Compass className="h-5 w-5" />

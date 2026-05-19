@@ -85,7 +85,7 @@ function SidebarRailAction({
     "relative flex h-11 w-11 items-center justify-center rounded-2xl border transition-colors",
     active
       ? "border-brand/20 bg-brand-dim text-brand shadow-[0_12px_30px_-18px_rgba(98,92,255,0.42)]"
-      : "border-border/60 bg-surface-2/80 text-muted-foreground hover:bg-surface-3 hover:text-foreground",
+      : "border-border/60 bg-surface-2 text-muted-foreground hover:bg-surface-3 hover:text-foreground",
   );
 
   const content = href ? (
@@ -568,7 +568,7 @@ export function DashboardSidebar({
                 </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                  <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-background px-3 py-2.5">
+                  <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-background dark:bg-surface-1 px-3 py-2.5">
                     <Flame className="h-4 w-4 text-gold" />
                     <div>
                       <p className="text-[11px] text-muted-foreground">
@@ -579,7 +579,7 @@ export function DashboardSidebar({
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-background px-3 py-2.5">
+                  <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-background dark:bg-surface-1 px-3 py-2.5">
                     <Star className="h-4 w-4 text-brand" />
                     <div>
                       <p className="text-[11px] text-muted-foreground">已完成</p>
@@ -598,7 +598,7 @@ export function DashboardSidebar({
               ) : null}
             </div>
 
-            <nav className="space-y-1 rounded-[24px] border border-border/60 bg-surface-2/80 p-2">
+            <nav className="space-y-1 rounded-[24px] border border-border/60 bg-surface-2 p-2">
               {items.map((item) => {
                 const Icon = item.icon;
 
@@ -620,7 +620,7 @@ export function DashboardSidebar({
               })}
             </nav>
 
-            <div className="relative overflow-hidden rounded-[24px] border border-border/60 bg-surface-2/80">
+            <div className="relative overflow-hidden rounded-[24px] border border-border/60 bg-surface-2">
               <button
                 type="button"
                 onClick={() =>
@@ -644,7 +644,7 @@ export function DashboardSidebar({
                         "rounded-full border px-2 py-0.5 text-[10px]",
                         unreadNotificationCount > 0
                           ? "border-brand/45 bg-brand/12 font-medium text-brand shadow-sm shadow-brand/20"
-                          : "border-border/80 bg-background/60 text-muted-foreground",
+                          : "border-border/80 bg-background/80 dark:bg-surface-1 text-muted-foreground",
                       )}
                     >
                       {unreadNotificationCount > 0
@@ -715,7 +715,7 @@ export function DashboardSidebar({
                                   "rounded-full border px-2 py-0.5 text-[10px]",
                                   isUnread
                                     ? "border-brand/30 bg-brand/10 text-brand"
-                                    : "border-border/80 bg-background/40 text-muted-foreground",
+                                    : "border-border/80 bg-background/80 dark:bg-surface-1 text-muted-foreground",
                                 )}
                               >
                                 {isUnread ? "未读" : "已读"}
@@ -728,10 +728,10 @@ export function DashboardSidebar({
                                     void removeReadNotification(event, item.id)
                                   }
                                   className={cn(
-                                    "rounded-full p-1.5 text-rose-600 transition-colors",
-                                    "hover:bg-rose-500/12 hover:text-rose-700",
-                                    "dark:text-rose-400 dark:hover:bg-rose-500/18 dark:hover:text-rose-300",
-                                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                                    "rounded-full p-1.5 text-chart-4 transition-colors",
+                                    "hover:bg-chart-4/20 hover:text-chart-4/10",
+                                    "dark:text-chart-4 dark:hover:bg-chart-4/20 dark:hover:text-chart-4",
+                                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-4/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                                   )}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -751,7 +751,7 @@ export function DashboardSidebar({
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-border/60 bg-surface-2/80 p-4">
+            <div className="rounded-[24px] border border-border/60 bg-surface-2 p-4">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/55">
                   最近学习
@@ -809,7 +809,7 @@ export function DashboardSidebar({
             {children ? <div className="space-y-3">{children}</div> : null}
 
             {footerContent ? (
-              <div className="rounded-[24px] border border-border/60 bg-surface-2/80 p-4">
+              <div className="rounded-[24px] border border-border/60 bg-surface-2 p-4">
                 {footerContent}
               </div>
             ) : null}

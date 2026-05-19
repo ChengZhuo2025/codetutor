@@ -346,8 +346,8 @@ function renderInlineText(
 export function renderPlainContent(text: string, tone: PlainTextTone = "default") {
   const paragraphClass =
     tone === "inverted"
-      ? "text-white/95 dark:text-black/90"
-      : "text-foreground/90"
+      ? "text-white"
+      : "text-white"
 
   return text.split("\n").map((line, index) =>
     line === "" ? (
