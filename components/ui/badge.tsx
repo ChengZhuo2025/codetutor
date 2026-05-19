@@ -10,11 +10,17 @@ const badgeVariants = cva(
       variant: {
         neutral: 'border-border bg-muted/60 text-muted-foreground',
         outline: 'border-border bg-background text-foreground',
-        success: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-        warning: 'border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300',
-        danger: 'border-destructive/20 bg-destructive/10 text-destructive',
-        info: 'border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300',
-        primary: 'border-primary/20 bg-primary/10 text-primary',
+        success: 'border-chart-3/20 bg-chart-3/10 text-chart-3',
+        warning: 'border-chart-2/20 bg-chart-2/10 text-chart-2',
+        danger: 'border-chart-4/20 bg-chart-4/10 text-chart-4',
+        info: 'border-chart-5/20 bg-chart-5/10 text-chart-5',
+        primary: 'border-chart-1/20 bg-chart-1/10 text-chart-1',
+        // chart颜色变体
+        chart1: 'border-chart-1/20 bg-chart-1/10 text-chart-1',
+        chart2: 'border-chart-2/20 bg-chart-2/10 text-chart-2',
+        chart3: 'border-chart-3/20 bg-chart-3/10 text-chart-3',
+        chart4: 'border-chart-4/20 bg-chart-4/10 text-chart-4',
+        chart5: 'border-chart-5/20 bg-chart-5/10 text-chart-5',
       },
       size: {
         sm: 'px-2 py-0.5 text-[10px]',

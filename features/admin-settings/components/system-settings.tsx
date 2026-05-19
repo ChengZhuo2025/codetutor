@@ -56,8 +56,14 @@ import { Plus, Trash2 } from "lucide-react";
 import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider";
 import { useAppToast } from "@/components/app-feedback/app-toast-provider";
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer";
-import { AdminListTag } from "@/features/admin-shell/components/admin-list-tag";
 import { AdminSelect } from "@/features/admin-shell/components/admin-select";
+import {
+  AdminAccountStatusTag,
+  AdminTag,
+  ConfigurationStatusTag,
+  RoleTag,
+  SubscriptionPlanStatusTag,
+} from "@/features/admin-shell/components/admin-tag";
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect";
 import { usePublicSite } from "@/features/site/providers/public-site-provider";
 import {
@@ -135,17 +141,6 @@ const ROLE_LABELS: Record<AdminRoleCode, string> = {
   ai_ops_admin: "Ai 管理管理员",
 };
 
-const ROLE_BADGE_CLASS: Record<AdminRoleCode, string> = {
-  super_admin:
-    "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300",
-  support_admin:
-    "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  ops_admin:
-    "border-violet-500/20 bg-violet-500/10 text-violet-700 dark:text-violet-300",
-  ai_ops_admin:
-    "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300",
-};
-
 function formatDateTime(value: string | null) {
   if (!value) {
     return "暂无";
@@ -157,32 +152,6 @@ function formatDateTime(value: string | null) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
-}
-
-function getStatusLabel(status: string) {
-  switch (status) {
-    case "active":
-      return "启用";
-    case "inactive":
-      return "停用";
-    case "suspended":
-      return "冻结";
-    default:
-      return status;
-  }
-}
-
-function getStatusBadgeClass(status: string) {
-  switch (status) {
-    case "active":
-      return "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
-    case "inactive":
-      return "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300";
-    case "suspended":
-      return "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300";
-    default:
-      return "border-border bg-muted/60 text-muted-foreground";
-  }
 }
 
 function getAuditActionLabel(action: string) {
@@ -218,9 +187,7 @@ function getAuditActionLabel(action: string) {
 
 function RoleBadge({ role }: { role: AdminRoleCode }) {
   return (
-    <AdminListTag className={ROLE_BADGE_CLASS[role]}>
-      {ROLE_LABELS[role]}
-    </AdminListTag>
+    <RoleTag role={role}>{ROLE_LABELS[role]}</RoleTag>
   );
 }
 
@@ -852,11 +819,7 @@ export function SystemSettings() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <AdminListTag
-                            className={getStatusBadgeClass(item.status)}
-                          >
-                            {getStatusLabel(item.status)}
-                          </AdminListTag>
+                          <AdminAccountStatusTag status={item.status} />
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {formatDateTime(item.lastLoginAt)}
@@ -1189,9 +1152,9 @@ export function SystemSettings() {
                     <span className="text-sm font-medium text-foreground">
                       {member.name}
                     </span>
-                    <AdminListTag className="border-primary/20 bg-primary/10 text-primary">
+                    <AdminTag category="tone" value="primary">
                       {member.role}
-                    </AdminListTag>
+                    </AdminTag>
                   </div>
                   <p className="text-sm leading-6 text-muted-foreground line-clamp-1">
                     {member.description}
@@ -1403,9 +1366,7 @@ export function SystemSettings() {
               凭据不会写入 .env；商户私钥、APIv3 密钥、微信支付公钥会使用服务端主密钥加密后落库。
             </p>
           </div>
-          <AdminListTag className={paymentData?.configured ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700" : "border-amber-500/20 bg-amber-500/10 text-amber-700"}>
-            {paymentData?.configured ? "已配置" : "未完整配置"}
-          </AdminListTag>
+          <ConfigurationStatusTag status={paymentData?.configured ? "configured" : "incomplete"} />
         </div>
 
         {paymentError ? (
@@ -1479,9 +1440,7 @@ export function SystemSettings() {
               使用支付宝开放平台普通公钥 RSA2 模式；应用私钥和支付宝公钥会加密落库。
             </p>
           </div>
-          <AdminListTag className={alipayData?.configured ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700" : "border-amber-500/20 bg-amber-500/10 text-amber-700"}>
-            {alipayData?.configured ? "已配置" : "未完整配置"}
-          </AdminListTag>
+          <ConfigurationStatusTag status={alipayData?.configured ? "configured" : "incomplete"} />
         </div>
 
         {paymentError ? null : paymentLoading ? (
@@ -1674,7 +1633,7 @@ export function SystemSettings() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <p className="font-medium text-foreground">{plan.name}</p>
-                            {plan.highlight ? <AdminListTag className="border-brand/20 bg-brand/10 text-brand">推荐</AdminListTag> : null}
+                            {plan.highlight ? <SubscriptionPlanStatusTag status="highlight" /> : null}
                           </div>
                           <p className="font-mono text-[11px] text-muted-foreground">{plan.code}</p>
                           <p className="max-w-md text-xs text-muted-foreground">{plan.description}</p>
@@ -1683,17 +1642,13 @@ export function SystemSettings() {
                       <td className="px-4 py-3 text-muted-foreground">
                         ¥{(plan.priceCents / 100).toFixed(2)}{plan.periodLabel}
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-2">
-                          <AdminListTag className={plan.active ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700" : "border-amber-500/20 bg-amber-500/10 text-amber-700"}>
-                            {plan.active ? "上架" : "下架"}
-                          </AdminListTag>
-                          <AdminListTag className={plan.purchasable ? "border-sky-500/20 bg-sky-500/10 text-sky-700" : "border-muted bg-muted text-muted-foreground"}>
-                            {plan.purchasable ? "可购买" : "仅展示"}
-                          </AdminListTag>
-                          {plan.archivedAt ? <AdminListTag className="border-rose-500/20 bg-rose-500/10 text-rose-700">已归档</AdminListTag> : null}
-                        </div>
-                      </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-2">
+                            <SubscriptionPlanStatusTag status={plan.active ? "active" : "inactive"} />
+                            <SubscriptionPlanStatusTag status={plan.purchasable ? "purchasable" : "display_only"} />
+                            {plan.archivedAt ? <SubscriptionPlanStatusTag status="archived" /> : null}
+                          </div>
+                        </td>
                       <td className="px-4 py-3 text-muted-foreground">{plan.displayOrder}</td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">
@@ -2399,8 +2354,8 @@ export function SystemSettings() {
               onClick={() => setActiveTab(tab.id)}
               className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === tab.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                  ? "bg-primary text-white"
+                  : "bg-surface-2 text-muted-foreground hover:bg-surface-3 hover:text-foreground"
               }`}
             >
               {tab.label}

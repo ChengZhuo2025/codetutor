@@ -65,6 +65,18 @@ assert.match(
 )
 
 assert.match(
+  listSource,
+  /AdminTag/,
+  "The admin users list should use the shared admin-tag component for the deleted status tag",
+)
+
+assert.doesNotMatch(
+  listSource,
+  /<AdminListTag variant="danger">已删除<\/AdminListTag>/,
+  "The admin users list should not keep the deleted status tag on the legacy admin-list-tag component",
+)
+
+assert.match(
   editSheetSource,
   /SheetContent side="right" className="w-full sm:max-w-md xl:max-w-\[26vw\]"/,
   "The admin users edit action should open in a right-side sheet",

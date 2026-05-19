@@ -7,9 +7,9 @@ import type { AdminAIInvocationListResponseData } from "@/lib/api/contracts/admi
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatePanel } from "@/components/ui/state-panel"
-import { AdminListTag } from "@/features/admin-shell/components/admin-list-tag"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
+import { AdminTag } from "@/features/admin-shell/components/admin-tag"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
   adminRequestData,
@@ -240,9 +240,9 @@ export function InvocationLog() {
                               <p className="mt-1 text-xs line-clamp-1 text-muted-foreground">user {item.userId}</p>
                             </td>
                             <td className="px-4 py-4 align-top">
-                              <AdminListTag className={meta.className}>
+                              <AdminTag category="tone" value={mapInvocationTone(item.status)} className={meta.className}>
                                 {meta.label}
-                              </AdminListTag>
+                              </AdminTag>
                             </td>
                             <td className="px-4 py-4 align-top">
                               <p className="text-sm line-clamp-1 text-foreground">{item.agentCode}</p>
@@ -302,4 +302,21 @@ export function InvocationLog() {
       </div>
     </>
   )
+}
+
+function mapInvocationTone(status: string) {
+  switch (status) {
+    case "succeeded":
+      return "success"
+    case "failed":
+      return "danger"
+    case "timed_out":
+      return "warning"
+    case "streaming":
+      return "info"
+    case "cancelled":
+      return "neutral"
+    default:
+      return "neutral"
+  }
 }

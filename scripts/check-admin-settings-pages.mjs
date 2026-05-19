@@ -71,6 +71,36 @@ assert.match(
 
 assert.match(
   settingsSource,
+  /RoleTag/,
+  "The admin settings page should use a shared role tag component",
+)
+
+assert.match(
+  settingsSource,
+  /AdminAccountStatusTag/,
+  "The admin settings page should use a shared admin-account status tag component",
+)
+
+assert.match(
+  settingsSource,
+  /ConfigurationStatusTag/,
+  "The admin settings page should use a shared configuration-status tag component",
+)
+
+assert.match(
+  settingsSource,
+  /SubscriptionPlanStatusTag|category="tone"/,
+  "The admin settings page should use shared admin-tag components for role and status labels",
+)
+
+assert.doesNotMatch(
+  settingsSource,
+  /AdminListTag|getRoleTagStyle|getStatusBadgeClass|getStatusLabel/,
+  "The admin settings page should not keep legacy local tag styling helpers",
+)
+
+assert.match(
+  settingsSource,
   /操作审计|目标类型|操作人|原因/,
   "The admin settings page should expose an audit log section",
 )

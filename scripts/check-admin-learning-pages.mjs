@@ -59,6 +59,24 @@ assert.match(
 )
 
 assert.match(
+  listSource,
+  /LearningStatusTag/,
+  "The admin learning list should use the shared admin-tag component for path status labels",
+)
+
+assert.match(
+  listSource,
+  /AdminTag/,
+  "The admin learning list should use the shared admin-tag component for metadata labels",
+)
+
+assert.doesNotMatch(
+  listSource,
+  /AdminListTag/,
+  "The admin learning list should not keep legacy admin-list-tag usage",
+)
+
+assert.match(
   detailSource,
   /状态时间线|步骤|最近会话|重新激活|归档|来源草稿|查看草稿详情|查看全部会话/,
   "The admin learning detail should expose timeline, steps, recent sessions, material-plan summary, and drill-down actions",
@@ -74,6 +92,12 @@ assert.match(
   detailSource,
   /当前路径未关联教程链接草稿|该学习路径不是由教程链接生成计划确认后创建/,
   "The admin learning detail should explain when a path has no linked material-plan draft",
+)
+
+assert.match(
+  detailSource,
+  /LearningStatusTag/,
+  "The admin learning detail should use the shared admin-tag component for path status labels",
 )
 
 assert.match(

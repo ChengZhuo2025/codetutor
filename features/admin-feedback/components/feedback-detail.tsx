@@ -24,6 +24,7 @@ import { ADMIN_ROUTES } from "@/constants/routes"
 import { feedbackPriorityLabels } from "../data/status-config"
 import { cn } from "@/lib/utils"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
+import { FeedbackStatusTag, PriorityTag } from "@/features/admin-shell/components/admin-tag"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
   adminRequestData,
@@ -73,12 +74,7 @@ const SOURCE_LABEL: Record<(typeof FEEDBACK_SOURCES)[number], string> = {
   history_sidebar: "历史侧栏",
 }
 
-const feedbackStatusPillClassNames: Record<FeedbackStatus, string> = {
-  submitted: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  in_review: "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300",
-  replied: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  closed: "border-border bg-muted/60 text-muted-foreground",
-}
+
 
 export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
   const confirm = useAppConfirm()
@@ -317,30 +313,8 @@ export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={cn(
-                      "rounded-full border px-2.5 py-0.5 text-sm font-medium",
-                      feedbackStatusPillClassNames[data.status],
-                    )}
-                  >
-                    {data.statusLabel}
-                  </span>
-                  <span
-                    className={cn(
-                      "rounded-full px-2.5 py-0.5 text-sm font-medium",
-                      data.priority === "high"
-                        ? "bg-destructive/15 text-destructive"
-                        : data.priority === "medium"
-                          ? "bg-chart-2/20 text-chart-2"
-                          : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {data.priority === "high"
-                      ? "高优先级"
-                      : data.priority === "medium"
-                        ? "中优先级"
-                        : "低优先级"}
-                  </span>
+                  <FeedbackStatusTag status={data.status} size="lg" />
+                  <PriorityTag priority={data.priority} size="lg" />
                 </div>
                 <h1 className="text-lg font-semibold leading-snug text-foreground sm:text-xl">
                   {data.title}

@@ -2,6 +2,7 @@
 
 import type { PaymentChannel, PaymentOrderStatus } from "@/lib/api/contracts/payment"
 import { Badge } from "@/components/ui/badge"
+import { OrderStatusTag } from "@/features/admin-shell/components/admin-tag"
 
 export function formatMoney(cents: number) {
   return `¥${(cents / 100).toLocaleString("zh-CN", {
@@ -31,8 +32,17 @@ const orderStatusMeta: Record<PaymentOrderStatus, { label: string; variant: "neu
 }
 
 export function OrderStatusBadge({ status }: { status: PaymentOrderStatus }) {
-  const meta = orderStatusMeta[status]
-  return <Badge variant={meta.variant}>{meta.label}</Badge>
+  // 映射到AdminTag的orderStatus值
+  const statusMap: Record<PaymentOrderStatus, string> = {
+    created: "pending",
+    prepay_created: "pending",
+    paid: "paid",
+    closed: "cancelled",
+    expired: "cancelled",
+    failed: "cancelled",
+  }
+  
+  return <OrderStatusTag status={statusMap[status] || "pending"} />
 }
 
 export function ChannelBadge({ channel }: { channel: PaymentChannel }) {

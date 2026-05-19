@@ -4,7 +4,7 @@ import type { ReactNode } from "react"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { AdminListTag } from "@/features/admin-shell/components/admin-list-tag"
+import { EnabledTag } from "@/features/admin-shell/components/admin-tag"
 import { cn } from "@/lib/utils"
 
 export function PageSection({
@@ -81,9 +81,9 @@ export function ActiveStateBadge({
   inactiveLabel?: string
 }) {
   return (
-    <AdminListTag variant={active ? "success" : "warning"}>
+    <EnabledTag enabled={active}>
       {active ? activeLabel : inactiveLabel}
-    </AdminListTag>
+    </EnabledTag>
   )
 }
 

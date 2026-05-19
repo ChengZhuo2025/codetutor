@@ -13,8 +13,8 @@ import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
-import { AdminListTag } from "@/features/admin-shell/components/admin-list-tag"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
+import { FeedbackStatusTag, PriorityTag } from "@/features/admin-shell/components/admin-tag"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import { ADMIN_ROUTES } from "@/constants/routes"
 import {
@@ -461,34 +461,10 @@ export function FeedbackList() {
                     {feedbackTypeLabels[item.feedbackType]}
                   </td>
                   <td className="px-3 py-3 align-middle">
-                    <AdminListTag
-                      size="lg"
-                      variant={
-                        item.priority === "high"
-                          ? "danger"
-                          : item.priority === "medium"
-                            ? "warning"
-                            : "neutral"
-                      }
-                    >
-                      {feedbackPriorityLabels[item.priority]}
-                    </AdminListTag>
+                    <PriorityTag priority={item.priority} size="lg" />
                   </td>
                   <td className="px-3 py-3 align-middle">
-                    <AdminListTag
-                      size="lg"
-                      variant={
-                        item.status === "submitted"
-                          ? "warning"
-                          : item.status === "in_review"
-                            ? "info"
-                            : item.status === "replied"
-                              ? "success"
-                              : "neutral"
-                      }
-                    >
-                      {item.statusLabel}
-                    </AdminListTag>
+                    <FeedbackStatusTag status={item.status} size="lg" />
                   </td>
                   <td className="px-3 py-3 align-middle text-sm text-muted-foreground whitespace-nowrap">
                     {formatSubmittedAt(item.submittedAt)}

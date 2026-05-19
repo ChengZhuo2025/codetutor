@@ -45,17 +45,17 @@ export function getInvocationStatusMeta(status: string) {
     case "succeeded":
       return {
         label: "成功",
-        className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+        className: "border-chart-3/20 bg-chart-3/10 text-chart-3",
       }
     case "failed":
       return {
         label: "失败",
-        className: "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+        className: "border-chart-4/20 bg-chart-4/10 text-chart-4",
       }
     case "timed_out":
       return {
         label: "超时",
-        className: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+        className: "border-chart-2/20 bg-chart-2/10 text-chart-2",
       }
     case "cancelled":
       return {
@@ -65,7 +65,7 @@ export function getInvocationStatusMeta(status: string) {
     case "streaming":
       return {
         label: "流式中",
-        className: "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+        className: "border-chart-1/20 bg-chart-1/10 text-chart-1",
       }
     default:
       return {

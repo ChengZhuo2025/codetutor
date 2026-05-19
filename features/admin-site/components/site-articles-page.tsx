@@ -203,8 +203,8 @@ export function SiteArticlesPage() {
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition-colors",
               activeSlug === tab.slug
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground",
+                ? "bg-primary text-white"
+                : "bg-surface-2 text-muted-foreground hover:bg-surface-3 hover:text-foreground"
             )}
           >
             {tab.label}

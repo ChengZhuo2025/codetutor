@@ -123,8 +123,8 @@ export function SkillManagement() {
             onClick={() => setActiveTab("bindings")}
             className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === "bindings"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                ? "bg-primary text-white"
+                : "bg-surface-2 text-muted-foreground hover:bg-surface-3 hover:text-foreground"
             }`}
           >
             Skill 绑定
@@ -134,8 +134,8 @@ export function SkillManagement() {
             onClick={() => setActiveTab("registry")}
             className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === "registry"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                ? "bg-primary text-white"
+                : "bg-surface-2 text-muted-foreground hover:bg-surface-3 hover:text-foreground"
             }`}
           >
             Skill Registry

@@ -78,13 +78,13 @@ export function AdminLoginForm() {
         className="pointer-events-none absolute inset-0 opacity-70 dark:opacity-100"
         style={{
           backgroundImage: `
-            linear-gradient(to right, oklch(0.55 0.018 240 / 0.12) 1px, transparent 1px),
-            linear-gradient(to bottom, oklch(0.55 0.018 240 / 0.12) 1px, transparent 1px)
+            linear-gradient(to right, oklch(0.55 0.018 270 / 0.12) 1px, transparent 1px),
+            linear-gradient(to bottom, oklch(0.55 0.018 270 / 0.12) 1px, transparent 1px)
           `,
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.08_270/0.12),transparent_30%),radial-gradient(circle_at_top_right,oklch(0.62_0.12_210/0.14),transparent_28%),radial-gradient(circle_at_bottom_left,oklch(0.73_0.21_270/0.12),transparent_30%)] dark:bg-[radial-gradient(circle_at_top_left,oklch(0.28_0.03_270/0.72),transparent_32%),radial-gradient(circle_at_top_right,oklch(0.72_0.13_210/0.14),transparent_28%),radial-gradient(circle_at_bottom_left,oklch(0.74_0.20_270/0.14),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.08_270/0.12),transparent_30%),radial-gradient(circle_at_top_right,oklch(0.65_0.28_240/0.08),transparent_28%),radial-gradient(circle_at_bottom_left,oklch(0.73_0.21_270/0.12),transparent_30%)] dark:bg-[radial-gradient(circle_at_top_left,oklch(0.28_0.03_270/0.72),transparent_32%),radial-gradient(circle_at_top_right,oklch(0.72_0.24_240/0.12),transparent_28%),radial-gradient(circle_at_bottom_left,oklch(0.74_0.20_270/0.14),transparent_30%)]" />
 
       <header className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
         <Link

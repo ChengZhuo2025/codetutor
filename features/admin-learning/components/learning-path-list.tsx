@@ -18,8 +18,8 @@ import { Input } from "@/components/ui/input";
 import { StatePanel } from "@/components/ui/state-panel";
 import { ADMIN_ROUTES } from "@/constants/routes";
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer";
-import { AdminListTag } from "@/features/admin-shell/components/admin-list-tag";
 import { AdminSelect } from "@/features/admin-shell/components/admin-select";
+import { AdminTag, LearningStatusTag } from "@/features/admin-shell/components/admin-tag";
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect";
 import {
   adminBffFetch,
@@ -27,10 +27,7 @@ import {
   getAdminApiErrorMessage,
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client";
-import {
-  formatAdminLearningShortDateTime,
-  getAdminLearningStatusMeta,
-} from "../lib/view-model";
+import { formatAdminLearningShortDateTime } from "../lib/view-model";
 
 const EMPTY_STATS = {
   totalPaths: 0,
@@ -361,7 +358,6 @@ export function LearningPathList() {
           <>
             <div className="space-y-3 p-4">
               {listItems.map((item) => {
-                const statusMeta = getAdminLearningStatusMeta(item.status);
                 return (
                   <div
                     key={item.pathId}
@@ -370,12 +366,10 @@ export function LearningPathList() {
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <AdminListTag className={statusMeta.className}>
-                            {statusMeta.label}
-                          </AdminListTag>
-                          <AdminListTag>{item.toolName}</AdminListTag>
-                          <AdminListTag>{item.learningLevelLabel}</AdminListTag>
-                          <AdminListTag>{item.selectionModeLabel}</AdminListTag>
+                          <LearningStatusTag status={item.status} />
+                          <AdminTag category="tone" value="neutral">{item.toolName}</AdminTag>
+                          <AdminTag category="tone" value="neutral">{item.learningLevelLabel}</AdminTag>
+                          <AdminTag category="tone" value="neutral">{item.selectionModeLabel}</AdminTag>
                         </div>
                         <div className="mt-3 flex min-w-0 items-start gap-3">
                           {item.userAvatarUrl ? (

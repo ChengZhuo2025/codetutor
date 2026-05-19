@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { StatePanel } from "@/components/ui/state-panel"
 import { ADMIN_ROUTES } from "@/constants/routes"
+import { LearningStatusTag } from "@/features/admin-shell/components/admin-tag"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
   adminRequestData,
@@ -273,9 +274,7 @@ export function LearningPathDetail({ pathId }: LearningPathDetailProps) {
           <div className="w-full">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">{data.path.pathName}</h1>
-              <Badge className={statusMeta.className}>
-                {statusMeta.label}
-              </Badge>
+              <LearningStatusTag status={data.path.status} />
               <Badge>
                 {data.path.toolName}
               </Badge>

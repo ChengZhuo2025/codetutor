@@ -15,8 +15,8 @@ import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
-import { AdminListTag } from "@/features/admin-shell/components/admin-list-tag"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
+import { AdminTag, LearningStatusTag } from "@/features/admin-shell/components/admin-tag"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
   adminBffFetch,
@@ -48,47 +48,7 @@ function formatDateTime(iso: string | null) {
   }).format(new Date(iso))
 }
 
-function getPlanStatusMeta(user: AdminUserListItem) {
-  if (!user.activePathCode) {
-    return {
-      label: "无计划",
-      className: "border-border bg-muted/70 text-muted-foreground",
-    }
-  }
 
-  switch (user.activePathStatus) {
-    case "active":
-      return {
-        label: "进行中",
-        className: "border-chart-5/15 bg-chart-5/10 text-chart-5",
-      }
-    case "interrupted":
-      return {
-        label: "已中断",
-        className: "border-chart-2/15 bg-chart-2/10 text-chart-2",
-      }
-    case "completed":
-      return {
-        label: "已完成",
-        className: "border-chart-3/15 bg-chart-3/10 text-chart-3",
-      }
-    case "abandoned":
-      return {
-        label: "已放弃",
-        className: "border-chart-4/15 bg-chart-4/10 text-chart-4",
-      }
-    case "archived":
-      return {
-        label: "已归档",
-        className: "border-border bg-muted/70 text-muted-foreground",
-      }
-    default:
-      return {
-        label: "有计划",
-        className: "border-primary/20 bg-primary/10 text-primary",
-      }
-    }
-}
 
 const listStatValueToneClass = {
   default: "text-foreground",
@@ -475,7 +435,6 @@ export function UserList() {
               </thead>
               <tbody className="divide-y divide-border">
                 {listItems.map((item) => {
-                  const planStatusMeta = getPlanStatusMeta(item)
                   const completionPercent = getUserTaskCompletionPercent(item)
 
                   return (
@@ -501,7 +460,11 @@ export function UserList() {
                               <p className="truncate text-sm font-medium text-foreground">
                                 {item.nickname ?? "未命名用户"}
                               </p>
-                              {item.deletedAt ? <AdminListTag variant="danger">已删除</AdminListTag> : null}
+                              {item.deletedAt ? (
+                                <AdminTag category="tone" value="danger">
+                                  已删除
+                                </AdminTag>
+                              ) : null}
                             </div>
                             <p className="truncate font-mono text-xs text-muted-foreground">
                               {item.authPhone || "暂无手机号"}
@@ -520,9 +483,7 @@ export function UserList() {
                       </td>
                       <td className="px-4 py-4 align-top">
                         <div className="space-y-2">
-                          <AdminListTag className={planStatusMeta.className}>
-                            {planStatusMeta.label}
-                          </AdminListTag>
+                          <LearningStatusTag status={item.activePathStatus || "archived"} />
                           <div>
                             <p className="truncate text-sm font-medium text-foreground">
                               {item.activePathName ?? "暂无进行中计划"}
