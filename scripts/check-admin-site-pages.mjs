@@ -38,6 +38,7 @@ assert.match(siteInformationPage, /\/admin\/site\/information/, "site informatio
 assert.match(siteInformationPage, /\/admin\/site\/logo-upload/, "site information page should upload logo")
 assert.match(siteInformationPage, /seoKeywords/, "site information page should edit SEO keywords")
 assert.match(siteInformationPage, /备案号/, "site information page should expose ICP number")
+assert.match(siteInformationPage, /variant="secondary"[\s\S]*上传 Logo/, "site information page should use the shared secondary button style for the upload logo action")
 
 assert.match(siteArticlesPage, /about_us/, "site article page should manage about us")
 assert.match(siteArticlesPage, /user_agreement/, "site article page should manage user agreement")

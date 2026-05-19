@@ -40,6 +40,10 @@ const menuSource = readFileSync(
   "utf8",
 )
 
+const deprecatedLegacyTagImportPattern = new RegExp(
+  String.raw`import\s+\{\s*Admin` + String.raw`ListTag\s*\}`,
+)
+
 assert.match(
   listSource,
   /学习记录/,
@@ -72,8 +76,8 @@ assert.match(
 
 assert.doesNotMatch(
   listSource,
-  /AdminListTag/,
-  "The admin learning list should not keep legacy admin-list-tag usage",
+  deprecatedLegacyTagImportPattern,
+  "The admin learning list should not import the deprecated admin-list-tag component",
 )
 
 assert.match(

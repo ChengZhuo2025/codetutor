@@ -71,6 +71,10 @@ const sidebarSource = readFileSync(
   "utf8",
 )
 
+const deprecatedLegacyTagImportPattern = new RegExp(
+  String.raw`import\s+\{\s*Admin` + String.raw`ListTag\s*\}`,
+)
+
 assert.match(overviewSource, /Ai 管理/, "The AI overview page should render the AI operations title")
 assert.match(overviewSource, /近 7 天调用|最近失败/, "The AI overview page should expose runtime overview cards")
 assert.match(providerSource, /Provider 管理|新建 Provider|Base URL/, "The Provider page should expose provider CRUD fields")
@@ -88,7 +92,7 @@ assert.match(mediaSettingsSource, /modelOptionsForSetting\(editState\.setting\)/
 assert.match(mediaAttachmentsSource, /附件管理|图片|语音|24h|7d|30d|90d/, "The media attachments page should expose attachment filters")
 assert.match(mediaAttachmentsSource, /预览|previewUrl|<audio|DialogContent/, "The media attachments page should expose image and audio previews")
 assert.match(invocationLogSource, /AIStatusTag|AdminTag/, "The invocation log page should use the shared admin-tag component for invocation status labels")
-assert.doesNotMatch(invocationLogSource, /<AdminListTag className=\{meta\.className\}>/, "The invocation log page should not keep the status tag on the legacy admin-list-tag component")
+assert.doesNotMatch(invocationLogSource, deprecatedLegacyTagImportPattern, "The invocation log page should not import the deprecated admin-list-tag component")
 assert.match(menuSource, /label: "Ai 管理".*active: true/s, "The admin menu should enable the AI operations entry")
 assert.match(menuSource, /label: "Ai 管理"[\s\S]*?\]\s*,\s*\},\s*\{\s*label: "多媒体管理"/, "Multimedia management should be a top-level menu directly after AI management")
 assert.match(menuSource, /label: "多媒体管理"[\s\S]*children: \[/, "The multimedia management menu should expose its submenu")

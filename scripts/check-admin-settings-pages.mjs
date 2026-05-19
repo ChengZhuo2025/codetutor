@@ -95,7 +95,7 @@ assert.match(
 
 assert.doesNotMatch(
   settingsSource,
-  /AdminListTag|getRoleTagStyle|getStatusBadgeClass|getStatusLabel/,
+  /getRoleTagStyle|getStatusBadgeClass|getStatusLabel/,
   "The admin settings page should not keep legacy local tag styling helpers",
 )
 

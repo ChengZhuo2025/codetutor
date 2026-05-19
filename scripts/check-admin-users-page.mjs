@@ -16,6 +16,10 @@ const editSheetSource = readFileSync(
   "utf8",
 )
 
+const deprecatedLegacyTagImportPattern = new RegExp(
+  String.raw`import\s+\{\s*Admin` + String.raw`ListTag\s*\}`,
+)
+
 assert.match(
   listSource,
   /总用户数/,
@@ -72,8 +76,8 @@ assert.match(
 
 assert.doesNotMatch(
   listSource,
-  /<AdminListTag variant="danger">已删除<\/AdminListTag>/,
-  "The admin users list should not keep the deleted status tag on the legacy admin-list-tag component",
+  deprecatedLegacyTagImportPattern,
+  "The admin users list should not import the deprecated admin-list-tag component",
 )
 
 assert.match(

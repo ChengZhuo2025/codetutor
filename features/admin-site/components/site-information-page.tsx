@@ -267,20 +267,22 @@ export function SiteInformationPage() {
                   </span>
                 )}
               </div>
-              <label className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-muted">
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
-                上传 Logo
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                  className="hidden"
-                  disabled={uploading}
-                  onChange={(event) => {
-                    void handleLogoUpload(event.target.files?.[0])
-                    event.target.value = ""
-                  }}
-                />
-              </label>
+              <Button variant="secondary" className="mt-5 gap-2" asChild>
+                <label>
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
+                  上传 Logo
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(event) => {
+                      void handleLogoUpload(event.target.files?.[0])
+                      event.target.value = ""
+                    }}
+                  />
+                </label>
+              </Button>
               <p className="mt-3 text-center text-xs leading-5 text-muted-foreground">
                 支持 JPG、PNG、WebP、SVG，最大 2MB。上传后记得保存网站信息。
               </p>
