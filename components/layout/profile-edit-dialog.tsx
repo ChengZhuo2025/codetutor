@@ -463,12 +463,12 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
-        <div className="overflow-hidden rounded-2xl">
-          <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[560px] p-0">
+        <div className="overflow-hidden">
+          <div className="border-b border-border bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.24_270/0.12),transparent_46%)] px-4 py-5 dark:border-white/14 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_270/0.16),transparent_46%)] sm:px-5">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold">个人资料</DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">
+              <DialogTitle className="text-2xl font-semibold tracking-tight">个人资料</DialogTitle>
+              <DialogDescription className="max-w-3xl text-sm leading-6 text-muted-foreground">
                 修改头像、昵称、联系方式和个人简介
               </DialogDescription>
             </DialogHeader>
@@ -602,19 +602,19 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
               </div>
             ) : null}
 
-            <div className={cn("space-y-3 rounded-2xl border px-4 py-4", USER_PANEL_SECTION_CLASS)}>
+            <div className="space-y-3 rounded-2xl border border-border/70 bg-surface-2 px-4 py-4">
               <div>
                 <p className="text-sm font-semibold text-foreground">登录方式</p>
                 <p className="mt-1 text-xs text-muted-foreground">手机号为主账号，微信和抖音绑定后可用于扫码登录。</p>
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between rounded-xl border border-border/70 bg-background/60 px-3 py-2.5">
+                <div className="flex items-center justify-between rounded-xl border border-border/70 bg-surface-1 px-3 py-2.5">
                   <div>
                     <p className="text-sm font-medium text-foreground">手机号</p>
                     <p className="text-xs text-muted-foreground">{profile.phone || "未绑定手机号"}</p>
                   </div>
-                  <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                  <span className="rounded-full border border-chart-3/20 bg-chart-3/10 px-2.5 py-1 text-xs font-medium text-chart-3">
                     主账号
                   </span>
                 </div>
@@ -640,7 +640,7 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
                         </div>
                       </div>
                       {linked ? (
-                        <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                        <span className="rounded-full border border-chart-3/20 bg-chart-3/10 px-2.5 py-1 text-xs font-medium text-chart-3">
                           已绑定
                         </span>
                       ) : (
@@ -675,7 +675,7 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
             ) : null}
 
             {successMessage ? (
-              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
+              <div className="rounded-xl border border-chart-3/20 bg-chart-3/10 px-3 py-2 text-sm text-chart-3">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 shrink-0" />
                   <span>{successMessage}</span>

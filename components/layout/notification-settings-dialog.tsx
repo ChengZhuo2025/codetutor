@@ -110,12 +110,12 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[480px]">
-        <div className="overflow-hidden rounded-2xl">
-          <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[480px] p-0">
+        <div className="overflow-hidden">
+          <div className="border-b border-border bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.24_270/0.12),transparent_46%)] px-4 py-5 dark:border-white/14 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_270/0.16),transparent_46%)] sm:px-5">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold">通知设置</DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">
+              <DialogTitle className="text-2xl font-semibold tracking-tight">通知设置</DialogTitle>
+              <DialogDescription className="max-w-3xl text-sm leading-6 text-muted-foreground">
                 管理学习提醒和消息推送方式
               </DialogDescription>
             </DialogHeader>
@@ -131,7 +131,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
 
             {!isLoading ? (
               <>
-                <div className={cn("p-4", USER_PANEL_SECTION_CLASS)}>
+                <div className="p-4 rounded-2xl border border-border/70 bg-surface-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-brand/20 bg-brand/10 text-brand">
@@ -164,7 +164,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                   )}
                 </div>
 
-                <div className={cn("p-4", USER_PANEL_SECTION_CLASS)}>
+                <div className="p-4 rounded-2xl border border-border/70 bg-surface-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-chart-3/20 bg-chart-3/10 text-chart-3">
@@ -183,7 +183,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                   </div>
                 </div>
 
-                <div className={cn("p-4", USER_PANEL_SECTION_CLASS)}>
+                <div className="p-4 rounded-2xl border border-border/70 bg-surface-2">
                   <p className="mb-3 text-sm font-medium text-foreground">提醒方式</p>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -227,7 +227,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                   当前只有站内提醒已接入真实发送；邮件和微信通知会保存你的偏好，但暂不会实际下发。
                 </p>
 
-                <div className={cn("p-4", USER_PANEL_SECTION_CLASS)}>
+                <div className="p-4 rounded-2xl border border-border/70 bg-surface-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-gold/20 bg-gold/10 text-gold">
