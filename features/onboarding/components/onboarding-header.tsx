@@ -32,7 +32,7 @@ export function OnboardingHeader({ step }: OnboardingHeaderProps) {
   const { information } = site
 
   return (
-    <header className="relative z-10 border-b border-border/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(247,249,251,0.82))] px-6 py-5 shadow-[0_14px_38px_-34px_rgba(15,23,42,0.28)] backdrop-blur dark:bg-[linear-gradient(180deg,oklch(0.19_0.012_250/0.92),oklch(0.16_0.01_250/0.82))]">
+    <header className="relative z-10 border-b border-border/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(247,249,251,0.82))] px-6 py-5 shadow-[0_14px_38px_-34px_rgba(15,23,42,0.28)] backdrop-blur dark:bg-[linear-gradient(180deg,oklch(0.19_0.012_270/0.92),oklch(0.16_0.01_270/0.82))]">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
         {/* Logo - 与首页样式保持一致 */}
         <Link href={ROUTES.home} className="flex items-center gap-3 text-foreground">

@@ -545,14 +545,14 @@ export function LearnChatComposer({
               className={cn(
                 "ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl",
                 (input.trim() || previewAttachment) && !isTyping && !isRecording
-                  ? USER_ICON_BUTTON_CLASS
-                  : "cursor-not-allowed border-transparent bg-[oklch(0.72_0.01_270)] text-white/70 shadow-none dark:bg-[oklch(0.30_0.24_270)]",
+                  ? USER_BUTTON_PRIMARY_CLASS
+                  : "text-foreground/20 dark:text-muted-foreground/40",
               )}
             >
               {isTyping ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
+                <RefreshCw className="h-4.5 w-4.5 animate-spin" />
               ) : (
-                <Send className="h-4 w-4" />
+                <Send className="h-4.5 w-4.5" />
               )}
             </button>
           </div>

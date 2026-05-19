@@ -78,7 +78,7 @@ export function StageTimeline({
                     isSelected && "ring-2 ring-brand/28 ring-offset-2 ring-offset-background",
                   )}
                 >
-                  <span className="absolute -left-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-border/70 bg-surface-1 px-1 text-[10px] font-bold text-foreground shadow-sm dark:border-white/10 dark:bg-[oklch(0.22_0.015_250/0.98)]">
+                  <span className="absolute -left-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-border/70 bg-surface-1 px-1 text-[10px] font-bold text-foreground shadow-sm dark:border-white/10 dark:bg-[oklch(0.22_0.015_270/0.98)]">
                     {stage.id}
                   </span>
                   <Icon className="h-5 w-5" />

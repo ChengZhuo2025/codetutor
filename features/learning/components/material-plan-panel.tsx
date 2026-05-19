@@ -596,7 +596,7 @@ export function MaterialPlanPanel({
       {isGeneratingPlan ? (
         <div className="absolute inset-0 z-20 flex items-start justify-center rounded-2xl border border-brand/12 bg-[linear-gradient(135deg,oklch(0.985_0.004_270/0.82),oklch(0.94_0.018_178/0.78)_46%,oklch(0.985_0.004_270/0.86))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-sm dark:border-brand/18 dark:bg-[linear-gradient(135deg,oklch(0.13_0.012_270/0.9),oklch(0.18_0.03_178/0.84)_48%,oklch(0.12_0.01_270/0.9))] sm:py-6">
           <div className="pointer-events-none absolute inset-0 rounded-2xl bg-[linear-gradient(to_right,oklch(0.55_0.03_270/0.08)_1px,transparent_1px),linear-gradient(to_bottom,oklch(0.55_0.03_270/0.08)_1px,transparent_1px)] bg-[size:28px_28px] opacity-45 dark:opacity-20" />
-          <div className="sticky top-4 w-full max-w-md rounded-2xl border border-brand/20 bg-surface-1/96 p-5 shadow-[0_24px_80px_-42px_rgba(15,23,42,0.55)] ring-1 ring-black/[0.04] dark:border-brand/18 dark:bg-[oklch(0.18_0.012_250/0.96)] dark:ring-white/10 sm:top-6">
+          <div className="sticky top-4 w-full max-w-md rounded-2xl border border-brand/20 bg-surface-1/96 p-5 shadow-[0_24px_80px_-42px_rgba(15,23,42,0.55)] ring-1 ring-black/[0.04] dark:border-brand/18 dark:bg-[oklch(0.18_0.012_270/0.96)] dark:ring-white/10 sm:top-6">
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-brand/24 bg-brand/12 text-brand">
                 <Loader2 className="size-5 animate-spin" aria-hidden />

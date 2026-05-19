@@ -511,7 +511,7 @@ export function DashboardSidebar({
 
         <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none">
           <div className="space-y-4 px-4 py-4">
-            <div className="rounded-[24px] border border-border/50 bg-surface-3 p-4">
+            <div className="rounded-[24px] border border-border/70 bg-surface-2 p-4">
               <div className="mb-3 flex items-center gap-3">
                 <button
                   type="button"

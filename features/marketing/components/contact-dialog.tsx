@@ -335,7 +335,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                   </div>
                 </section>
 
-                <section className="rounded-[28px]  border border-border/70 bg-card p-4 sm:p-5 dark:border-white/10 dark:bg-[linear-gradient(180deg,oklch(0.20_0.015_238/0.94),oklch(0.17_0.012_248/0.96))]">
+                <section className="rounded-[28px]  border border-border/70 bg-card p-4 sm:p-5 dark:border-white/10 dark:bg-[linear-gradient(180deg,oklch(0.20_0.015_258/0.94),oklch(0.17_0.012_248/0.96))]">
                   <div className="border-b border-border/60 pb-4 dark:border-white/8">
                     <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                       企业信息
