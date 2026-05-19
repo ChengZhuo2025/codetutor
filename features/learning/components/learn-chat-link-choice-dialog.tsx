@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
-  DIALOG_PANEL_CLASS,
   USER_PANEL_OUTLINE_BUTTON_CLASS,
   USER_PANEL_SECTION_CLASS,
   USER_PANEL_DIVIDER_CLASS,
@@ -22,7 +21,6 @@ type LearnChatLinkChoiceDialogProps = {
   links: string[]
   onGeneratePlan: () => void
   onContinueChat: () => Promise<void> | void
-  panelClassName?: string
 }
 
 export function LearnChatLinkChoiceDialog({
@@ -31,16 +29,10 @@ export function LearnChatLinkChoiceDialog({
   links,
   onGeneratePlan,
   onContinueChat,
-  panelClassName,
 }: LearnChatLinkChoiceDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={cn(
-          panelClassName ?? DIALOG_PANEL_CLASS,
-          "max-h-[75vh] overflow-y-auto rounded-2xl p-0 sm:max-w-[520px]",
-        )}
-      >
+      <DialogContent className="max-h-[75vh] overflow-y-auto p-0 sm:max-w-[520px]">
         <div className={cn("border-b px-5 pt-5 pb-4", USER_PANEL_DIVIDER_CLASS)}>
           <DialogHeader className="text-left">
             <DialogTitle className="text-base">检测到教程链接</DialogTitle>

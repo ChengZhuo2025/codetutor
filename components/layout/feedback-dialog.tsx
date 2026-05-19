@@ -23,7 +23,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { StatePanel } from "@/components/ui/state-panel"
 import {
-  DIALOG_PANEL_CLASS,
   USER_BUTTON_SECONDARY_CLASS,
   USER_ICON_BUTTON_CLASS,
   USER_PANEL_DIVIDER_CLASS,
@@ -300,25 +299,25 @@ export function FeedbackDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className={cn(DIALOG_PANEL_CLASS, "max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-[720px]")}>
-        <div className="overflow-hidden rounded-2xl">
-          <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[720px] p-0">
+        <div className="overflow-hidden">
+          <div className="border-b border-border bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.24_270/0.12),transparent_46%)] px-6 py-5 dark:border-white/14 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_270/0.16),transparent_46%)] sm:px-8">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold">建议反馈</DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">
+              <DialogTitle className="text-2xl font-semibold tracking-tight">建议反馈</DialogTitle>
+              <DialogDescription className="max-w-3xl text-sm leading-6 text-muted-foreground">
                 提交你对产品的建议、问题和使用感受，也可以查看官方回复进度。
               </DialogDescription>
             </DialogHeader>
 
-            <div className={cn("mt-4 inline-flex gap-2 p-1", USER_PANEL_SUBTLE_SECTION_CLASS)}>
+            <div className={cn("mt-4 inline-flex gap-2")}>
               <button
                 type="button"
                 onClick={() => setActiveTab("submit")}
                 className={cn(
                   "rounded-[10px] px-3 py-2 text-sm font-medium transition-colors",
                   activeTab === "submit"
-                    ? cn(USER_BUTTON_SECONDARY_CLASS, "shadow-none hover:translate-y-0")
-                    : "text-foreground/72 hover:bg-muted/70 hover:text-foreground dark:hover:bg-foreground/6",
+                    ? "bg-primary text-white"
+                    : "bg-surface-2 text-muted-foreground hover:bg-surface-3 hover:text-foreground"
                 )}
               >
                 提交反馈
@@ -329,8 +328,8 @@ export function FeedbackDialog({
                 className={cn(
                   "rounded-[10px] px-3 py-2 text-sm font-medium transition-colors",
                   activeTab === "mine"
-                    ? cn(USER_BUTTON_SECONDARY_CLASS, "shadow-none hover:translate-y-0")
-                    : "text-foreground/72 hover:bg-muted/70 hover:text-foreground dark:hover:bg-foreground/6",
+                    ? "bg-primary text-white"
+                    : "bg-surface-2 text-muted-foreground hover:bg-surface-3 hover:text-foreground"
                 )}
               >
                 我的反馈
@@ -367,8 +366,8 @@ export function FeedbackDialog({
                           className={cn(
                             "flex items-center gap-3 rounded-3xl border px-4 py-2 text-left transition-colors",
                             active
-                              ? "border-brand/30 bg-brand/10 text-brand"
-                              : "border-border/70 bg-surface-1/90 text-foreground/78 hover:border-border hover:bg-muted/60 hover:text-foreground dark:border-border/70 dark:bg-surface-2/85 dark:hover:border-border dark:hover:bg-foreground/6",
+                              ? "border-brand/20 bg-brand/10 text-brand dark:border-brand/30 dark:bg-brand/15"
+                              : "border-border/50 bg-surface-2 text-foreground/80 hover:border-border hover:bg-surface-1 hover:text-foreground dark:border-border dark:bg-surface-2 dark:hover:border-white/20 dark:hover:bg-surface-1",
                           )}
                         >
                           <div
@@ -376,7 +375,7 @@ export function FeedbackDialog({
                               "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
                               active
                                 ? "border-brand bg-brand/10"
-                                : "border-border/70 bg-transparent dark:border-border/80",
+                                : "border-border bg-surface-1 dark:border-white/20",
                             )}
                           >
                             <span
@@ -525,8 +524,8 @@ export function FeedbackDialog({
                               className={cn(
                                 "group relative w-full overflow-hidden rounded-2xl border px-3 py-3 text-left transition-all duration-200",
                                 isActive
-                                  ? "translate-x-[2px] border-brand/35 bg-brand/10 shadow-[0_16px_40px_-28px_rgba(22,214,200,0.45)]"
-                                  : "border-border/70 bg-surface-1/85 hover:border-border hover:bg-muted/60 hover:translate-x-[1px] dark:border-border/70 dark:bg-surface-2/82 dark:hover:border-border dark:hover:bg-foreground/6",
+                                  ? "border-brand/35 bg-brand/10"
+                                  : "border-border/70 bg-surface-2 hover:border-border hover:bg-surface-1",
                               )}
                             >
                             <div className="flex items-start justify-between gap-3">
@@ -539,7 +538,7 @@ export function FeedbackDialog({
                                 >
                                   {ticket.title}
                                 </p>
-                                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
                                   <span
                                     className={cn(
                                       "rounded-full border px-2 py-0.5 text-[11px] transition-colors",
@@ -554,15 +553,14 @@ export function FeedbackDialog({
                                     <span
                                       className={cn(
                                         "inline-flex items-center gap-0.5 rounded-md border px-1.5 py-0.5 text-[11px] font-medium tabular-nums",
-                                        "border-sky-200 bg-sky-50 text-sky-900",
-                                        "dark:border-sky-400/35 dark:bg-sky-950/75 dark:text-sky-100",
+                                        "border-chart-3/20 bg-chart-3/10 text-chart-3",
                                         isActive
-                                          ? "border-sky-300 bg-sky-100 dark:border-sky-300/50 dark:bg-sky-900/65"
-                                          : "dark:text-sky-200/95",
+                                          ? "border-chart-3/20 bg-chart-3/10"
+                                          : "dark:text-chart-3",
                                       )}
                                     >
                                       <MessageSquareText
-                                        className="h-3 w-3 shrink-0 text-sky-600 dark:text-sky-300"
+                                        className="h-3 w-3 shrink-0 text-chart-3"
                                         aria-hidden
                                       />
                                       {ticket.replyCount} 条回复
@@ -652,7 +650,7 @@ export function FeedbackDialog({
 
                 {listState.status === "success" && detailState.status === "success" && detailState.data ? (
                   <div className="space-y-4">
-                    <div className={cn("rounded-[24px] p-4", USER_PANEL_SECTION_CLASS)}>
+                    <div className="rounded-[24px] p-4 border border-border/70 bg-surface-2 dark:border-white/14">
                       <div className="flex flex-wrap items-center gap-2">
                         <span
                           className={cn(
@@ -707,8 +705,8 @@ export function FeedbackDialog({
                               className={cn(
                                 "rounded-xl border px-4 py-3",
                                 isAdmin
-                                  ? "border-emerald-500/18 bg-emerald-500/10"
-                                  : "border-border/70 bg-muted/45 dark:border-border/70 dark:bg-surface-2/85",
+                                  ? "border-brand/20 bg-brand/10"
+                                  : "border-border bg-surface-2",
                               )}
                             >
                               <div className="flex items-center justify-between gap-3">

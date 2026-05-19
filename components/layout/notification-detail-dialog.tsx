@@ -11,10 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import {
-  DIALOG_PANEL_CLASS,
-  USER_PANEL_DIVIDER_CLASS,
-} from "@/components/ui/surface-styles"
+import { USER_PANEL_DIVIDER_CLASS } from "@/components/ui/surface-styles"
 import type { NotificationInAppItem } from "@/lib/api/contracts/notifications"
 import { getInAppNotificationListTitle } from "@/lib/notifications/in-app-display"
 import { cn } from "@/lib/utils"
@@ -76,10 +73,7 @@ export function NotificationDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn(
-          DIALOG_PANEL_CLASS,
-          "max-h-[90vh] overflow-y-auto rounded-2xl p-0 sm:max-w-md",
-        )}
+        className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-md"
       >
         <div className={cn("border-b px-5 pt-5 pb-4", USER_PANEL_DIVIDER_CLASS)}>
           <DialogHeader className="text-left">

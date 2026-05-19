@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dialog"
 import { StatePanel } from "@/components/ui/state-panel"
 import {
-  DIALOG_PANEL_CLASS,
   USER_PANEL_DIVIDER_CLASS,
   USER_PANEL_SECTION_CLASS,
   USER_PANEL_SUBTLE_SECTION_CLASS,
@@ -92,10 +91,7 @@ export function HistoryReviewDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn(
-          DIALOG_PANEL_CLASS,
-          "max-h-[85vh] overflow-y-auto rounded-2xl p-0 sm:max-w-3xl",
-        )}
+        className="max-h-[85vh] overflow-y-auto p-0 sm:max-w-3xl"
       >
         {detailState.status === "success" ? (
           <div className="overflow-hidden rounded-2xl">

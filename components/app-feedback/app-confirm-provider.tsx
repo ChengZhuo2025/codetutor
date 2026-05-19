@@ -95,7 +95,7 @@ export function AppConfirmProvider({ children }: AppConfirmProviderProps) {
           }
         }}
       >
-        <DialogContent showCloseButton={false} className="max-w-[min(92vw,30rem)] rounded-2xl border-border/80 p-0">
+        <DialogContent showCloseButton={false} className="max-w-[min(92vw,30rem)] p-0">
           <div className="px-6 py-5">
             <DialogHeader className="gap-3 text-left">
               <div className="flex items-start gap-3">

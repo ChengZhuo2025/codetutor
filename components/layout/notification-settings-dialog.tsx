@@ -13,7 +13,6 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import {
-  DIALOG_PANEL_CLASS,
   USER_PANEL_DIVIDER_CLASS,
   USER_PANEL_OUTLINE_BUTTON_CLASS,
   USER_PANEL_SECTION_CLASS,
@@ -111,12 +110,7 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={cn(
-          DIALOG_PANEL_CLASS,
-          "max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-[480px]",
-        )}
-      >
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[480px]">
         <div className="overflow-hidden rounded-2xl">
           <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
             <DialogHeader>

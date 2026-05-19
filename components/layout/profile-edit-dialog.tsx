@@ -35,7 +35,6 @@ import {
 } from "@/lib/supabase/storage"
 import { dispatchProfileUpdated } from "@/lib/profile/events"
 import {
-  DIALOG_PANEL_CLASS,
   USER_PANEL_DIVIDER_CLASS,
   USER_PANEL_FIELD_CLASS,
   USER_PANEL_OUTLINE_BUTTON_CLASS,
@@ -464,7 +463,7 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn(DIALOG_PANEL_CLASS, "max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-[560px]")}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
         <div className="overflow-hidden rounded-2xl">
           <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
             <DialogHeader>

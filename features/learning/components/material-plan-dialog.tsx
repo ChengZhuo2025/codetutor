@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { DIALOG_PANEL_CLASS, USER_PANEL_DIVIDER_CLASS } from "@/components/ui/surface-styles"
+import { USER_PANEL_DIVIDER_CLASS } from "@/components/ui/surface-styles"
 import { MaterialPlanPanel } from "@/features/learning/components/material-plan-panel"
 import type { LearningCurrentSessionResponseData } from "@/lib/api/contracts/learning"
 import { cn } from "@/lib/utils"
@@ -44,10 +44,7 @@ export function MaterialPlanDialog({
     >
       <DialogContent
         showCloseButton
-        className={cn(
-          DIALOG_PANEL_CLASS,
-          "max-h-[85vh] min-w-0 overflow-x-hidden overflow-y-auto rounded-2xl p-0 sm:max-w-[760px]",
-        )}
+        className="max-h-[85vh] min-w-0 overflow-x-hidden overflow-y-auto p-0 sm:max-w-[760px]"
       >
         <div className={cn("min-w-0 border-b px-5 pt-5 pb-4", USER_PANEL_DIVIDER_CLASS)}>
           <DialogHeader className="min-w-0 text-left">

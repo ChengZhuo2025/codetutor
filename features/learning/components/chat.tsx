@@ -47,7 +47,6 @@ import { buildStructuredLearningMessageContent } from "@/lib/learning/structured
 import { splitSpeechTextIntoSegments } from "@/lib/learning/speech-text"
 import { useAppEventTracker } from "@/providers/app-providers"
 import { useWorkspaceSidebarData } from "@/providers/workspace-sidebar-provider"
-import { DIALOG_PANEL_CLASS } from "@/components/ui/surface-styles"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 
 const STREAMING_BATCH_SIZE = 16
@@ -1349,7 +1348,6 @@ export function LearnChat({
         open={restartDialogOpen}
         onOpenChange={setRestartDialogOpen}
         restartSubmitting={restartSubmitting}
-        panelClassName={DIALOG_PANEL_CLASS}
         onConfirm={() => {
           void confirmRestartConversation()
         }}
@@ -1361,7 +1359,6 @@ export function LearnChat({
         links={linkChoiceLinks}
         onGeneratePlan={handleGeneratePlanFromLinkChoice}
         onContinueChat={handleContinueChatFromLinkChoice}
-        panelClassName={DIALOG_PANEL_CLASS}
       />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

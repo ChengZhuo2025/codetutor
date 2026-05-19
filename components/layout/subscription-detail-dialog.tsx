@@ -12,7 +12,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
-  DIALOG_GRADIENT_PANEL_CLASS,
   USER_BUTTON_PRIMARY_CLASS,
   USER_PANEL_DIVIDER_CLASS,
   USER_PANEL_OUTLINE_BUTTON_CLASS,
@@ -239,15 +238,15 @@ export function SubscriptionDetailDialog({
     <>
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
-      <DialogContent className={cn(DIALOG_GRADIENT_PANEL_CLASS, "max-h-[90vh] max-w-4xl overflow-y-auto rounded-2xl scrollbar-none sm:max-w-[860px]")}>
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto scrollbar-none sm:max-w-[860px] p-0">
         <div className="overflow-hidden rounded-2xl">
           {/* 头部 */}
-          <div className={cn("border-b bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.24_270/0.10),transparent_46%)] px-5 py-4 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_270/0.16),transparent_46%)]", USER_PANEL_DIVIDER_CLASS)}>
+          <div className="border-b border-border bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.24_270/0.12),transparent_46%)] px-6 py-5 dark:border-white/14 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_270/0.16),transparent_46%)] sm:px-8">
             <DialogHeader>
-              <DialogTitle className="text-xl font-semibold tracking-tight">
+              <DialogTitle className="text-2xl font-semibold tracking-tight">
                 套餐订阅与续费
               </DialogTitle>
-              <DialogDescription className="max-w-3xl text-sm text-muted-foreground">
+              <DialogDescription className="max-w-3xl text-sm leading-6 text-muted-foreground">
                 您已订阅 <span className="text-primary font-bold">{currentPlanName}</span>，可直接扫码完成套餐升级或续费。
               </DialogDescription>
             </DialogHeader>
@@ -355,12 +354,12 @@ export function SubscriptionDetailDialog({
                   <div
                     key={plan.code}
                     className={cn(
-                      "relative flex flex-col rounded-xl border p-4 transition-all",
+                      "relative flex flex-col rounded-xl border pt-4 px-5 pb-5 transition-all",
                       isCurrent
-                        ? "border-brand/50 bg-brand-dim/50 ring-4 ring-brand/10"
+                        ? "border-brand/70 bg-brand/10 ring-4 ring-brand/10"
                         : isDowngrade
-                          ? "border-border/60 bg-surface-2/70 opacity-55 dark:border-border/70 dark:bg-surface-2/80"
-                          : "border-border/70 bg-surface-1/95 dark:border-border/70 dark:bg-surface-2/90",
+                          ? "border-border bg-surface-3"
+                          : "border-border/70 bg-surface-2",
                     )}
                   >
                     {/* 当前套餐标签 */}
@@ -466,7 +465,7 @@ export function SubscriptionDetailDialog({
             ) : null}
 
             {/* 底部提示 - flex 布局 */}
-            <div className="flex items-start justify-center gap-8 py-3 px-0">
+            <div className="flex items-start justify-center gap-8 pb-3 px-0">
               {[
                 "学习记录、会话历史和阶段进度保持连续",
                 "升级后可立即解锁更多陪练频次",
@@ -485,7 +484,7 @@ export function SubscriptionDetailDialog({
       </DialogContent>
     </Dialog>
     <Dialog open={paymentDialogOpen} onOpenChange={handlePaymentDialogOpenChange}>
-      <DialogContent className={cn(DIALOG_GRADIENT_PANEL_CLASS, "max-w-[calc(100%-2rem)] overflow-hidden p-0 sm:max-w-[480px]")}>
+      <DialogContent className="max-w-[calc(100%-2rem)] overflow-hidden p-0 sm:max-w-[480px]">
         <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">

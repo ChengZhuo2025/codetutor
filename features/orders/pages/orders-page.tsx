@@ -17,7 +17,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
-  DIALOG_GRADIENT_PANEL_CLASS,
   USER_BUTTON_PRIMARY_CLASS,
   USER_BUTTON_SECONDARY_CLASS,
   USER_PANEL_DIVIDER_CLASS,
@@ -269,7 +268,7 @@ export function OrdersPage() {
       asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
     >
       <Dialog open={payDialogOpen} onOpenChange={handlePaymentDialogOpenChange}>
-        <DialogContent className={cn(DIALOG_GRADIENT_PANEL_CLASS, "max-w-[calc(100%-2rem)] overflow-hidden p-0 sm:max-w-[520px]")}>
+        <DialogContent className="max-w-[calc(100%-2rem)] overflow-hidden p-0 sm:max-w-[520px]">
           <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-xl">

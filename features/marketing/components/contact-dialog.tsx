@@ -25,7 +25,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
-  DIALOG_DARK_GRADIENT_PANEL_CLASS,
   USER_PANEL_OUTLINE_BUTTON_CLASS,
 } from "@/components/ui/surface-styles"
 import { MockQr } from "@/features/marketing/components/mock-qr"
@@ -228,12 +227,12 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
       <DialogTrigger asChild>
         <button className={triggerClassName}>联系我们</button>
       </DialogTrigger>
-      <DialogContent className={cn(DIALOG_DARK_GRADIENT_PANEL_CLASS, "w-[min(900px,calc(100vw-1rem))] max-h-[calc(100dvh-1rem)] overflow-hidden rounded-[30px] sm:max-w-[980px]")}>
-        <div className="flex max-h-[calc(100dvh-1rem)] flex-col overflow-hidden rounded-[30px]">
-          <div className="border-b border-border bg-[radial-gradient(circle_at_top,oklch(0.62_0.24_270/0.1),transparent_52%)] px-5 py-4 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,oklch(0.73_0.21_270/0.16),transparent_52%)] sm:px-7 sm:py-5">
-            <DialogHeader className="gap-3">
+      <DialogContent className="w-[min(900px,calc(100vw-1rem))] max-h-[calc(100dvh-1rem)] p-0 sm:max-w-[980px]">
+        <div className="flex flex-col overflow-hidden">
+        <div className="border-b border-border bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.24_270/0.12),transparent_46%)] px-6 py-5 dark:border-white/14 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_270/0.16),transparent_46%)] sm:px-8">
+            <DialogHeader>
               <DialogTitle className="text-2xl font-semibold tracking-tight">联系我们</DialogTitle>
-              <DialogDescription className="max-w-2xl text-sm leading-6 text-muted-foreground">
+              <DialogDescription className="max-w-3xl text-sm leading-6 text-muted-foreground">
                 想了解产品功能、申请试用、洽谈合作，或交流分享Ai编辑经验和心得，可以联系我们。
                 {fetchError && <span className="text-amber-400 block mt-1 text-xs">({fetchError})</span>}
               </DialogDescription>
@@ -245,8 +244,8 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
               <div className="flex h-64 items-center justify-center text-muted-foreground">加载联系方式...</div>
             ) : (
               <div className="grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
-                <section className="rounded-[28px] border border-border bg-muted/40 p-4 sm:p-5 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]">
-                  <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-4 dark:border-white/8">
+                <section className="rounded-[28px] border border-border bg-muted/40 p-4 sm:p-5 dark:border-white/14 dark:bg-surface-4">
+                  <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-4 dark:border-white/10">
                     <div>
                       <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                         直接联系
@@ -288,7 +287,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                             </div>
                           </div>
 
-                          <div className="mt-4 flex items-center justify-between gap-3 rounded-[12px] border border-border bg-muted/50 p-4 dark:border-white/8 dark:bg-black/10">
+                          <div className="mt-4 flex items-center justify-between gap-3 rounded-[12px] border border-border bg-muted/50 p-4 dark:border-white/10 dark:bg-black/10">
                             <div className="min-w-0">
                               <p className="truncate text-sm font-semibold text-foreground">
                                 {channel.maskedHandle}
@@ -335,8 +334,8 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                   </div>
                 </section>
 
-                <section className="rounded-[28px]  border border-border/70 bg-card p-4 sm:p-5 dark:border-white/10 dark:bg-[linear-gradient(180deg,oklch(0.20_0.015_258/0.94),oklch(0.17_0.012_248/0.96))]">
-                  <div className="border-b border-border/60 pb-4 dark:border-white/8">
+                <section className="rounded-[28px] border border-border/70 bg-muted/40 p-4 sm:p-5 dark:border-white/14 dark:bg-surface-4">
+                  <div className="border-b border-border/60 pb-4 dark:border-white/10">
                     <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                       企业信息
                     </p>
@@ -350,7 +349,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                       return (
                         <div
                           key={item.label}
-                          className="flex items-start gap-3 rounded-[14px] border border-border bg-muted/40 px-4 py-3 dark:border-white/8 dark:bg-white/3"
+                          className="flex items-start gap-3 rounded-[14px] border border-border bg-muted/40 px-4 py-3 dark:border-white/10 dark:bg-white/3"
                         >
                           <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-muted text-muted-foreground dark:bg-white/6">
                             <Icon className="h-4 w-4" />

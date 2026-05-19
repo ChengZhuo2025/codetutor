@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
-  DIALOG_PANEL_CLASS,
   USER_BUTTON_PRIMARY_CLASS,
   USER_PANEL_DIVIDER_CLASS,
   USER_PANEL_OUTLINE_BUTTON_CLASS,
@@ -21,7 +20,6 @@ type LearnChatRestartDialogProps = {
   onOpenChange: (open: boolean) => void
   restartSubmitting: boolean
   onConfirm: () => void
-  panelClassName?: string
 }
 
 export function LearnChatRestartDialog({
@@ -29,16 +27,10 @@ export function LearnChatRestartDialog({
   onOpenChange,
   restartSubmitting,
   onConfirm,
-  panelClassName,
 }: LearnChatRestartDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={cn(
-          panelClassName ?? DIALOG_PANEL_CLASS,
-          "max-h-[75vh] overflow-y-auto rounded-2xl p-0 sm:max-w-[400px]",
-        )}
-      >
+      <DialogContent className="max-h-[75vh] overflow-y-auto p-0 sm:max-w-[400px]">
         <div className={cn("border-b px-5 pt-5 pb-6", USER_PANEL_DIVIDER_CLASS)}>
           <DialogHeader className="text-left">
             <DialogTitle className="text-base">重头开始本关对话？</DialogTitle>

@@ -1,9 +1,3 @@
-export const DIALOG_PANEL_CLASS =
-  "border border-border bg-popover p-0 text-foreground shadow-[0_28px_80px_-40px_rgba(15,23,42,0.28)] ring-1 ring-black/[0.04] backdrop-blur-xl dark:border-white/10 dark:bg-[oklch(0.2_0.015_270/0.98)] dark:ring-white/10 dark:shadow-[0_36px_100px_-48px_rgba(0,0,0,0.88)]"
-
-export const DIALOG_GRADIENT_PANEL_CLASS =
-  "border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,250,0.96))] p-0 text-foreground shadow-[0_28px_80px_-40px_rgba(15,23,42,0.28)] ring-1 ring-black/[0.04] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,oklch(0.22_0.02_255/0.98),oklch(0.17_0.015_270/0.98))] dark:ring-white/10 dark:shadow-[0_36px_100px_-48px_rgba(0,0,0,0.88)]"
-
 export const FLOATING_PANEL_CLASS =
   "border border-border bg-popover text-foreground shadow-[0_20px_60px_-32px_rgba(15,23,42,0.24)] ring-1 ring-black/[0.04] backdrop-blur-xl dark:border-white/10 dark:bg-[oklch(0.2_0.015_270/0.98)] dark:ring-white/10 dark:shadow-[0_32px_80px_-36px_rgba(0,0,0,0.9)]"
 
@@ -44,9 +38,5 @@ export const USER_PANEL_HERO_CARD_CLASS =
 
 export const USER_PANEL_HERO_TOP_SECTION_CLASS =
   "border-b border-brand/15 bg-[radial-gradient(circle_at_top_right,oklch(0.66_0.24_270/0.10),transparent_56%),linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0.02))] dark:border-brand/12 dark:bg-[radial-gradient(circle_at_top_right,oklch(0.72_0.22_270/0.22),transparent_48%),radial-gradient(circle_at_top_left,oklch(0.60_0.24_240/0.14),transparent_52%),linear-gradient(180deg,rgba(255,255,255,0.055),rgba(255,255,255,0))]"
-
-export const DIALOG_DARK_PANEL_CLASS = DIALOG_PANEL_CLASS
-
-export const DIALOG_DARK_GRADIENT_PANEL_CLASS = DIALOG_GRADIENT_PANEL_CLASS
 
 export const FLOATING_DARK_PANEL_CLASS = FLOATING_PANEL_CLASS

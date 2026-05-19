@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import {
-  BookOpenCheck,
   ChevronDown,
   CreditCard,
   HelpCircle,
@@ -129,19 +128,12 @@ export function HelpCenterDialog({
         </button>
       </DialogTrigger>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[720px]">
-        <div className="border-b border-border/70 bg-surface-2/80 px-6 py-5">
-          <DialogHeader className="pr-8 text-left">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand/20 bg-brand-dim text-brand">
-                <BookOpenCheck className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <DialogTitle className="text-lg">帮助中心</DialogTitle>
-                <DialogDescription className="mt-2 leading-6">
-                  快速了解学习计划、历史记录、订阅订单与反馈处理方式。
-                </DialogDescription>
-              </div>
-            </div>
+        <div className="border-b border-border bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.24_270/0.12),transparent_46%)] px-6 py-5 dark:border-white/14 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_270/0.16),transparent_46%)] sm:px-8">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-semibold tracking-tight">帮助中心</DialogTitle>
+            <DialogDescription className="max-w-3xl text-sm leading-6 text-muted-foreground">
+              快速了解学习计划、历史记录、订阅订单与反馈处理方式。
+              </DialogDescription>
           </DialogHeader>
         </div>
 
@@ -157,8 +149,8 @@ export function HelpCenterDialog({
                   className={cn(
                     "overflow-hidden rounded-xl border transition-all duration-300",
                     isExpanded
-                      ? "border-brand/25 bg-brand/5 shadow-[0_18px_42px_-32px_rgba(98,92,255,0.28)]"
-                      : "border-border/50 bg-surface-3 hover:border-border/80 hover:bg-surface-2",
+                      ? "border-brand/25 bg-brand/8 dark:border-brand/50 dark:bg-brand/20"
+                      : "border-border/50 bg-surface-2 hover:border-brand/25 hover:bg-brand/6 dark:border-white/14 dark:bg-surface-4 dark:hover:border-brand/30 dark:hover:bg-brand/15",
                   )}
                 >
                   <button
@@ -170,22 +162,22 @@ export function HelpCenterDialog({
                   >
                     <span
                       className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition-colors",
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors",
                         isExpanded
-                          ? "border-brand/25 bg-background text-brand"
-                          : "border-border/50 bg-background/70 text-muted-foreground",
+                          ? "border-brand/50 dark:bg-brand/50 dark:text-white"
+                          : "border-border/50 bg-background text-foreground/50 dark:bg-white/10",
                       )}
                     >
-                      <CategoryIcon className="h-4 w-4" />
+                      <CategoryIcon className="h-5 w-5" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[11px] font-medium leading-4 text-muted-foreground">
+                      <span className="block text-[11px] font-medium leading-5 text-muted-foreground">
                         {item.category}
                       </span>
                       <span
                         className={cn(
                           "block text-sm font-semibold leading-5 transition-colors",
-                          isExpanded ? "text-brand" : "text-foreground",
+                          isExpanded ? "text-foreground" : "text-foreground",
                         )}
                       >
                         {item.question}
@@ -206,7 +198,7 @@ export function HelpCenterDialog({
                       isExpanded ? "max-h-[220px] opacity-100" : "max-h-0 opacity-0",
                     )}
                   >
-                    <div className="border-t border-border/25 px-4 pb-4 pt-3 sm:pl-[4.25rem]">
+                    <div className="border-t border-brand/15 dark:border-brand/25 px-4 pb-4 pt-3 sm:pl-[4.25rem]">
                       <p className="text-sm leading-6 text-muted-foreground">
                         {item.answer}
                       </p>
