@@ -5,10 +5,10 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import type { ClipboardEvent, DragEvent, RefObject } from "react"
 import { ImagePlus, Lightbulb, Mic, RefreshCw, Send, Square, WifiOff, X } from "lucide-react"
 import { StatePanel } from "@/components/ui/state-panel"
+import { Textarea } from "@/components/ui/textarea"
 import {
   USER_BUTTON_PRIMARY_CLASS,
   USER_BUTTON_SECONDARY_CLASS,
-  USER_ICON_BUTTON_CLASS,
 } from "@/components/ui/surface-styles"
 import type { ConnectionState } from "@/features/learning/components/learn-chat-types"
 import type {
@@ -518,13 +518,13 @@ export function LearnChatComposer({
                 </div>
               </div>
             ) : (
-              <textarea
+              <Textarea
                 ref={textareaRef}
                 rows={1}
                 placeholder="把教程链接、代码片段或你卡住的问题发给我"
                 aria-label="消息输入框"
                 aria-describedby="input-hint"
-                className="scrollbar-none flex-1 resize-none bg-transparent py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground/50"
+                className="scrollbar-none min-h-0 flex-1 resize-none border-0 bg-transparent px-0 py-1 text-sm leading-6 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
                 style={{ maxHeight: `${TEXTAREA_MAX_HEIGHT}px`, overflowY: "auto" }}
                 value={input}
                 onChange={(event) => onInputChange(event.target.value)}

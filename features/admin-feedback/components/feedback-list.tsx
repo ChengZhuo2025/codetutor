@@ -12,6 +12,8 @@ import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { FeedbackStatusTag, PriorityTag } from "@/features/admin-shell/components/admin-tag"
@@ -303,7 +305,7 @@ export function FeedbackList() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-32 max-w-md">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <input
+            <Input
               type="search"
               placeholder="搜索工单号、标题、用户昵称..."
               value={keyword}
@@ -313,7 +315,7 @@ export function FeedbackList() {
                   handleApplySearch()
                 }
               }}
-              className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              className="h-9 bg-background pl-8"
             />
           </div>
           <Button type="button" variant="secondary" size="sm" className="h-9" onClick={handleApplySearch}>
@@ -392,11 +394,9 @@ export function FeedbackList() {
             <thead className="bg-muted/50">
               <tr className="border-b border-border">
                 <th className="w-10 px-3 py-3 text-left">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={allVisibleSelected}
                     onChange={toggleSelectAll}
-                    className="h-3.5 w-3.5 rounded border-border bg-background text-primary"
                     aria-label="全选当前列表"
                   />
                 </th>
@@ -414,11 +414,9 @@ export function FeedbackList() {
               {listItems.map((item) => (
                 <tr key={item.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-3 py-3 align-middle">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={selectedIds.includes(item.id)}
                       onChange={() => toggleSelectOne(item.id)}
-                      className="h-3.5 w-3.5 rounded border-border bg-background text-primary"
                       aria-label={`选择工单 ${item.id}`}
                     />
                   </td>

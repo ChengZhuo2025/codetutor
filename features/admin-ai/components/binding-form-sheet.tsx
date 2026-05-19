@@ -8,6 +8,7 @@ import type {
 } from "@/lib/api/contracts/admin-ai"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { Button } from "@/components/ui/button"
+import { CheckboxField } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
   Sheet,
@@ -276,10 +277,12 @@ export function BindingFormSheet({
                 <Input id="binding-priority" type="number" value={String(form.priority)} onChange={(event) => setForm((prev) => ({ ...prev, priority: Number(event.target.value) || 0 }))} />
               </div>
             </div>
-            <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-none">
-              <input type="checkbox" checked={form.isActive} onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))} />
+            <CheckboxField
+              checked={form.isActive}
+              onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isActive: checked }))}
+            >
               启用
-            </label>
+            </CheckboxField>
             <div className="space-y-1.5">
               <AdminFieldLabel htmlFor="binding-metadata" label="Metadata JSON" helpText="可留空，默认填 {}。用于记录该命中规则的补充信息。" />
               <Textarea id="binding-metadata" rows={6} value={form.metadataText} onChange={(event) => setForm((prev) => ({ ...prev, metadataText: event.target.value }))} />

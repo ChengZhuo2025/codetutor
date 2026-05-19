@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { StatePanel } from "@/components/ui/state-panel"
 import {
+  DIALOG_PANEL_CLASS,
   USER_BUTTON_SECONDARY_CLASS,
   USER_ICON_BUTTON_CLASS,
   USER_PANEL_DIVIDER_CLASS,
@@ -299,7 +300,7 @@ export function FeedbackDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[720px] p-0">
+      <DialogContent className={cn(DIALOG_PANEL_CLASS, "max-h-[90vh] overflow-y-auto sm:max-w-[720px] p-0")}>
         <div className="overflow-hidden">
           <div className="border-b border-border bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.24_270/0.12),transparent_46%)] px-4 py-5 dark:border-white/14 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_270/0.16),transparent_46%)] sm:px-5">
             <DialogHeader>

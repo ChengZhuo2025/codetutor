@@ -9,7 +9,9 @@ import type {
 } from "@/lib/api/contracts/admin-ai"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { Button } from "@/components/ui/button"
+import { CheckboxField } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { SimpleSelect } from "@/components/ui/simple-select"
 import {
   Sheet,
   SheetContent,
@@ -258,31 +260,45 @@ export function AgentFormSheet({
                 </div>
                 <div className="space-y-1.5">
                   <AdminFieldLabel htmlFor="agent-scenarioType" label="场景类型" required />
-                  <select id="agent-scenarioType" value={form.scenarioType} onChange={(event) => setForm((prev) => ({ ...prev, scenarioType: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
-                    {scenarioTypeOptions.map((item) => (
-                      <option key={item} value={item}>
-                        {getAdminAIAgentScenarioTypeLabel(item)}
-                      </option>
-                    ))}
-                  </select>
+                  <SimpleSelect
+                    id="agent-scenarioType"
+                    value={form.scenarioType}
+                    onValueChange={(next) => setForm((prev) => ({ ...prev, scenarioType: next }))}
+                    options={scenarioTypeOptions.map((item) => ({
+                      value: item,
+                      label: getAdminAIAgentScenarioTypeLabel(item),
+                    }))}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <AdminFieldLabel htmlFor="agent-defaultProviderCode" label="默认 Provider" required />
-                  <select id="agent-defaultProviderCode" value={form.defaultProviderCode} onChange={(event) => setForm((prev) => ({ ...prev, defaultProviderCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
-                    <option value="">请选择</option>
-                    {providers?.items.map((item) => (
-                      <option key={item.providerId} value={item.code}>{item.name} ({item.code})</option>
-                    ))}
-                  </select>
+                  <SimpleSelect
+                    id="agent-defaultProviderCode"
+                    value={form.defaultProviderCode}
+                    onValueChange={(next) => setForm((prev) => ({ ...prev, defaultProviderCode: next }))}
+                    options={[
+                      { value: "", label: "请选择" },
+                      ...(providers?.items.map((item) => ({
+                        value: item.code,
+                        label: `${item.name} (${item.code})`,
+                      })) ?? []),
+                    ]}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <AdminFieldLabel htmlFor="agent-defaultModelCode" label="默认 Model" required />
-                  <select id="agent-defaultModelCode" value={form.defaultModelCode} onChange={(event) => setForm((prev) => ({ ...prev, defaultModelCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
-                    <option value="">请选择</option>
-                    {models?.items.map((item) => (
-                      <option key={item.modelId} value={item.code}>{item.displayName} ({item.code})</option>
-                    ))}
-                  </select>
+                  <SimpleSelect
+                    id="agent-defaultModelCode"
+                    value={form.defaultModelCode}
+                    onValueChange={(next) => setForm((prev) => ({ ...prev, defaultModelCode: next }))}
+                    options={[
+                      { value: "", label: "请选择" },
+                      ...(models?.items.map((item) => ({
+                        value: item.code,
+                        label: `${item.displayName} (${item.code})`,
+                      })) ?? []),
+                    ]}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <AdminFieldLabel htmlFor="agent-description" label="描述" />
@@ -330,14 +346,18 @@ export function AgentFormSheet({
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-none">
-                  <input type="checkbox" checked={form.streamEnabled} onChange={(event) => setForm((prev) => ({ ...prev, streamEnabled: event.target.checked }))} />
+                <CheckboxField
+                  checked={form.streamEnabled}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, streamEnabled: checked }))}
+                >
                   启用流式输出
-                </label>
-                <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-none">
-                  <input type="checkbox" checked={form.isActive} onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))} />
+                </CheckboxField>
+                <CheckboxField
+                  checked={form.isActive}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isActive: checked }))}
+                >
                   启用
-                </label>
+                </CheckboxField>
               </div>
 
               <div className="space-y-1.5">

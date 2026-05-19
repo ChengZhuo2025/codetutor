@@ -19,7 +19,9 @@ import {
 } from "@/lib/api/contracts/admin-ai"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { Button } from "@/components/ui/button"
+import { CheckboxField, CheckboxGroup } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { SimpleSelect } from "@/components/ui/simple-select"
 import {
   Sheet,
   SheetContent,
@@ -43,9 +45,6 @@ import {
   safeJsonParse,
 } from "@/features/admin-ai/lib/view-model"
 import { AdminFieldLabel } from "./admin-field-label"
-
-const MODEL_BOOL_TILE_CLASS =
-  "flex min-h-9 shrink-0 cursor-pointer items-center gap-2.5 rounded-md border border-border/90 bg-muted/45 px-3 py-2 text-sm text-foreground shadow-none has-[:focus-visible]:outline-none has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/50"
 
 type ModelFormState = {
   providerCode: string
@@ -377,12 +376,18 @@ export function ModelFormSheet({
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
                   <AdminFieldLabel htmlFor="model-providerCode" label="Provider" required />
-                  <select id="model-providerCode" value={form.providerCode} onChange={(event) => setForm((prev) => ({ ...prev, providerCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
-                    <option value="">请选择 Provider</option>
-                    {providers?.items.map((item) => (
-                      <option key={item.providerId} value={item.code}>{item.name} ({item.code})</option>
-                    ))}
-                  </select>
+                  <SimpleSelect
+                    id="model-providerCode"
+                    value={form.providerCode}
+                    onValueChange={(next) => setForm((prev) => ({ ...prev, providerCode: next }))}
+                    options={[
+                      { value: "", label: "请选择 Provider" },
+                      ...(providers?.items.map((item) => ({
+                        value: item.code,
+                        label: `${item.name} (${item.code})`,
+                      })) ?? []),
+                    ]}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <AdminFieldLabel htmlFor="model-code" label="Code" required />
@@ -416,29 +421,27 @@ export function ModelFormSheet({
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
                   <AdminFieldLabel htmlFor="model-modelFamily" label="模型类别" required helpText="让管理员一眼区分聊天、推理、ASR、视觉等模型。" />
-                  <select
+                  <SimpleSelect
                     id="model-modelFamily"
                     value={form.modelFamily}
-                    onChange={(event) => setForm((prev) => ({ ...prev, modelFamily: event.target.value as AdminAIModelFamily }))}
-                    className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none"
-                  >
-                    {ADMIN_AI_MODEL_FAMILIES.map((item) => (
-                      <option key={item} value={item}>{getAdminAIModelFamilyLabel(item)}</option>
-                    ))}
-                  </select>
+                    onValueChange={(next) => setForm((prev) => ({ ...prev, modelFamily: next as AdminAIModelFamily }))}
+                    options={ADMIN_AI_MODEL_FAMILIES.map((item) => ({
+                      value: item,
+                      label: getAdminAIModelFamilyLabel(item),
+                    }))}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <AdminFieldLabel htmlFor="model-connectionTestMode" label="连接测试模式" required helpText="定义后台连接测试应该发起 chat、音频转写，还是仅验证 /models 连通性。" />
-                  <select
+                  <SimpleSelect
                     id="model-connectionTestMode"
                     value={form.connectionTestMode}
-                    onChange={(event) => setForm((prev) => ({ ...prev, connectionTestMode: event.target.value as AdminAIModelConnectionTestMode }))}
-                    className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none"
-                  >
-                    {ADMIN_AI_MODEL_CONNECTION_TEST_MODES.map((item) => (
-                      <option key={item} value={item}>{getAdminAIModelConnectionTestModeLabel(item)}</option>
-                    ))}
-                  </select>
+                    onValueChange={(next) => setForm((prev) => ({ ...prev, connectionTestMode: next as AdminAIModelConnectionTestMode }))}
+                    options={ADMIN_AI_MODEL_CONNECTION_TEST_MODES.map((item) => ({
+                      value: item,
+                      label: getAdminAIModelConnectionTestModeLabel(item),
+                    }))}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <AdminFieldLabel htmlFor="model-profileGroup" label="配置分组" helpText="例如 balanced_default、reasoning_lab，用于后台识别分组。" />
@@ -452,67 +455,55 @@ export function ModelFormSheet({
 
               <div className="space-y-2">
                 <AdminFieldLabel label="运行时用途" required helpText="用于当前项目真实链路：教程材料 ASR、视觉/OCR、学习计划质量校验。无用途可不选。" />
-                <div className="grid gap-2 md:grid-cols-3">
+                <CheckboxGroup className="md:grid-cols-3">
                   {capabilityOptions.map((option) => (
-                    <label key={option.value} className={MODEL_BOOL_TILE_CLASS}>
-                      <input
-                        type="checkbox"
-                        className="shrink-0 rounded border-border accent-primary"
-                        checked={form.runtimeCapabilities.includes(option.value)}
-                        onChange={(event) => toggleRuntimeCapability(option.value, event.target.checked)}
-                      />
-                      <span>{option.label}</span>
-                    </label>
+                    <CheckboxField
+                      key={option.value}
+                      checked={form.runtimeCapabilities.includes(option.value)}
+                      onCheckedChange={(checked) => toggleRuntimeCapability(option.value, checked)}
+                    >
+                      {option.label}
+                    </CheckboxField>
                   ))}
-                </div>
+                </CheckboxGroup>
               </div>
 
               <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-2">
-                <label className={MODEL_BOOL_TILE_CLASS}>
-                  <input
-                    type="checkbox"
-                    className="shrink-0 rounded border-border accent-primary"
-                    checked={form.supportsStream}
-                    onChange={(event) => setForm((prev) => ({ ...prev, supportsStream: event.target.checked }))}
-                  />
+                <CheckboxField
+                  checked={form.supportsStream}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, supportsStream: checked }))}
+                  className="shrink-0"
+                >
                   <span className="whitespace-nowrap">支持流式</span>
-                </label>
-                <label className={MODEL_BOOL_TILE_CLASS}>
-                  <input
-                    type="checkbox"
-                    className="shrink-0 rounded border-border accent-primary"
-                    checked={form.supportsJsonMode}
-                    onChange={(event) => setForm((prev) => ({ ...prev, supportsJsonMode: event.target.checked }))}
-                  />
+                </CheckboxField>
+                <CheckboxField
+                  checked={form.supportsJsonMode}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, supportsJsonMode: checked }))}
+                  className="shrink-0"
+                >
                   <span className="whitespace-nowrap">支持 JSON</span>
-                </label>
-                <label className={MODEL_BOOL_TILE_CLASS}>
-                  <input
-                    type="checkbox"
-                    className="shrink-0 rounded border-border accent-primary"
-                    checked={form.supportsToolCalling}
-                    onChange={(event) => setForm((prev) => ({ ...prev, supportsToolCalling: event.target.checked }))}
-                  />
+                </CheckboxField>
+                <CheckboxField
+                  checked={form.supportsToolCalling}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, supportsToolCalling: checked }))}
+                  className="shrink-0"
+                >
                   <span className="whitespace-nowrap">支持 Tool Calling</span>
-                </label>
-                <label className={MODEL_BOOL_TILE_CLASS}>
-                  <input
-                    type="checkbox"
-                    className="shrink-0 rounded border-border accent-primary"
-                    checked={form.reasoningEnabled}
-                    onChange={(event) => setForm((prev) => ({ ...prev, reasoningEnabled: event.target.checked }))}
-                  />
+                </CheckboxField>
+                <CheckboxField
+                  checked={form.reasoningEnabled}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, reasoningEnabled: checked }))}
+                  className="shrink-0"
+                >
                   <span className="whitespace-nowrap">推理模式</span>
-                </label>
-                <label className={MODEL_BOOL_TILE_CLASS}>
-                  <input
-                    type="checkbox"
-                    className="shrink-0 rounded border-border accent-primary"
-                    checked={form.isActive}
-                    onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))}
-                  />
+                </CheckboxField>
+                <CheckboxField
+                  checked={form.isActive}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isActive: checked }))}
+                  className="shrink-0"
+                >
                   <span className="whitespace-nowrap">启用</span>
-                </label>
+                </CheckboxField>
               </div>
 
               <div className="space-y-1.5">

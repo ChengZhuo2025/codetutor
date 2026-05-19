@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Loader2, RefreshCw, Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { CheckboxField } from "@/components/ui/checkbox"
 import { USER_BUTTON_PRIMARY_CLASS } from "@/components/ui/surface-styles"
 import { Input } from "@/components/ui/input"
 import { PageSection } from "@/components/ui/page-section"
@@ -1157,28 +1158,27 @@ export function MaterialPlanPanel({
                     disabled={busyAction !== null}
                     placeholder="预计分钟数"
                   />
-                  <label className="flex items-center gap-2 rounded-xl border border-border/60 px-3 text-sm text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={task.recommendedForWeek1}
-                      onChange={(e) =>
+                  <CheckboxField
+                    checked={task.recommendedForWeek1}
+                    onCheckedChange={(checked) =>
                         setDraftDetail((current) =>
                           current
                             ? {
                                 ...current,
                                 tasks: current.tasks.map((item) =>
                                   item.id === task.id
-                                    ? { ...item, recommendedForWeek1: e.target.checked }
+                                    ? { ...item, recommendedForWeek1: checked }
                                     : item,
                                 ),
                               }
                             : current,
                         )
                       }
-                      disabled={busyAction !== null}
-                    />
+                    disabled={busyAction !== null}
+                    className="border-border/60 text-muted-foreground"
+                  >
                     Week 1 推荐
-                  </label>
+                  </CheckboxField>
                 </div>
               </div>
             ))}

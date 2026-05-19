@@ -4,6 +4,14 @@ export const FLOATING_PANEL_CLASS =
 export const FLOATING_LIGHT_PANEL_CLASS =
   "border border-border/80 bg-popover shadow-lg shadow-black/10"
 
+export const DIALOG_PANEL_CLASS =
+  "border border-border/70 bg-background/96 shadow-[0_32px_80px_-40px_rgba(15,23,42,0.45)] ring-1 ring-black/[0.05] backdrop-blur-xl dark:border-white/14 dark:bg-card dark:ring-white/14 dark:shadow-[0_32px_80px_-40px_rgba(0,0,0,0.55)]"
+
+export const DIALOG_GRADIENT_PANEL_CLASS =
+  "border border-border/70 bg-background/96 shadow-[0_32px_80px_-40px_rgba(15,23,42,0.45)] ring-1 ring-black/[0.05] backdrop-blur-xl dark:border-white/14 dark:bg-[linear-gradient(135deg,oklch(0.12_0.032_240/0.97),oklch(0.16_0.045_270/0.96)_52%,oklch(0.13_0.03_285/0.97))] dark:ring-white/14 dark:shadow-[0_32px_80px_-40px_rgba(0,0,0,0.55)]"
+
+export const DIALOG_DARK_GRADIENT_PANEL_CLASS = DIALOG_GRADIENT_PANEL_CLASS
+
 export const USER_PANEL_SECTION_CLASS =
   "rounded-xl border border-border/70 bg-surface-1/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] dark:border-white/10 dark:bg-background/80 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
 

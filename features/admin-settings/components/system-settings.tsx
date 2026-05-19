@@ -41,6 +41,7 @@ import type {
   UpdateSiteContactRequest,
 } from "@/lib/api/contracts/admin-settings";
 import { Button } from "@/components/ui/button";
+import { CheckboxField, CheckboxGroup } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -1377,14 +1378,12 @@ export function SystemSettings() {
           </div>
         ) : (
           <div className="space-y-5">
-            <label className="flex items-center gap-2 text-sm text-foreground">
-              <input
-                type="checkbox"
-                checked={paymentForm.enabled === true}
-                onChange={(event) => updatePaymentField("enabled", event.target.checked)}
-              />
+            <CheckboxField
+              checked={paymentForm.enabled === true}
+              onCheckedChange={(checked) => updatePaymentField("enabled", checked)}
+            >
               启用微信支付
-            </label>
+            </CheckboxField>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -1449,14 +1448,12 @@ export function SystemSettings() {
           </div>
         ) : (
           <div className="space-y-5">
-            <label className="flex items-center gap-2 text-sm text-foreground">
-              <input
-                type="checkbox"
-                checked={alipayForm.enabled === true}
-                onChange={(event) => updateAlipayField("enabled", event.target.checked)}
-              />
+            <CheckboxField
+              checked={alipayForm.enabled === true}
+              onCheckedChange={(checked) => updateAlipayField("enabled", checked)}
+            >
               启用支付宝支付
-            </label>
+            </CheckboxField>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -1726,22 +1723,21 @@ export function SystemSettings() {
                 添加权益
               </Button>
             </div>
-            <div className="grid gap-2 text-sm text-foreground">
+            <CheckboxGroup>
               {[
                 ["highlight", "推荐套餐"],
                 ["purchasable", "允许购买"],
                 ["active", "上架展示"],
               ].map(([field, label]) => (
-                <label key={field} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(planForm[field as "highlight" | "purchasable" | "active"])}
-                    onChange={(event) => updatePlanField(field as "highlight" | "purchasable" | "active", event.target.checked)}
-                  />
+                <CheckboxField
+                  key={field}
+                  checked={Boolean(planForm[field as "highlight" | "purchasable" | "active"])}
+                  onCheckedChange={(checked) => updatePlanField(field as "highlight" | "purchasable" | "active", checked)}
+                >
                   {label}
-                </label>
+                </CheckboxField>
               ))}
-            </div>
+            </CheckboxGroup>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={startCreatePlan} disabled={plansSaving}>
                 重置

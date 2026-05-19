@@ -2,6 +2,8 @@
 
 import { ArrowRight, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -173,13 +175,13 @@ export function LoginForm({
                   showPhoneFormatError ? "bg-destructive/35" : "bg-border/60",
                 )}
               />
-              <input
+              <Input
                 id="phone-input"
                 type="tel"
                 inputMode="numeric"
                 pattern="[0-9]*"
                 placeholder="请输入手机号"
-                className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50"
+                className="h-auto flex-1 border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
                 value={phone}
                 onChange={(event) => onPhoneChange(event.target.value)}
                 maxLength={11}
@@ -215,13 +217,13 @@ export function LoginForm({
             </label>
             <div className="flex gap-3">
               <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-surface-2 px-4 py-3 transition-all focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.73_0.21_270/0.08)]">
-                <input
+                <Input
                   id="code-input"
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   placeholder="请输入验证码"
-                  className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50"
+                  className="h-auto flex-1 border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
                   value={code}
                   onChange={(event) => onCodeChange(event.target.value)}
                   maxLength={6}
@@ -275,9 +277,8 @@ export function LoginForm({
           ) : null}
 
           <label className="mt-1 flex cursor-pointer items-start gap-2 rounded-lg px-1 text-xs leading-5 text-muted-foreground/80">
-            <input
-              type="checkbox"
-              className="mt-0.5 h-4 w-4 rounded border-border bg-background accent-[oklch(0.73_0.21_270)]"
+            <Checkbox
+              className="mt-0.5"
               checked={agreedToLegal}
               onChange={(event) => onAgreementChange(event.target.checked)}
             />

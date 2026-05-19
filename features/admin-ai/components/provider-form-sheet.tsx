@@ -13,7 +13,9 @@ import type {
 } from "@/lib/api/contracts/admin-ai"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { Button } from "@/components/ui/button"
+import { CheckboxField } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { SimpleSelect } from "@/components/ui/simple-select"
 import {
   Sheet,
   SheetContent,
@@ -404,18 +406,28 @@ export function ProviderFormSheet({
                 </div>
                 <div className="space-y-1.5">
                   <AdminFieldLabel htmlFor="provider-type" label="Provider 类型" required />
-                  <select id="provider-type" value={form.providerType} onChange={(event) => setForm((prev) => ({ ...prev, providerType: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
-                    <option value="openai_compatible">openai_compatible</option>
-                    <option value="siliconflow">siliconflow</option>
-                    <option value="anthropic">anthropic</option>
-                  </select>
+                  <SimpleSelect
+                    id="provider-type"
+                    value={form.providerType}
+                    onValueChange={(next) => setForm((prev) => ({ ...prev, providerType: next }))}
+                    options={[
+                      { value: "openai_compatible", label: "openai_compatible" },
+                      { value: "siliconflow", label: "siliconflow" },
+                      { value: "anthropic", label: "anthropic" },
+                    ]}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <AdminFieldLabel htmlFor="provider-authMode" label="鉴权方式" required />
-                  <select id="provider-authMode" value={form.authMode} onChange={(event) => setForm((prev) => ({ ...prev, authMode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
-                    <option value="bearer">bearer</option>
-                    <option value="api_key_header">api_key_header</option>
-                  </select>
+                  <SimpleSelect
+                    id="provider-authMode"
+                    value={form.authMode}
+                    onValueChange={(next) => setForm((prev) => ({ ...prev, authMode: next }))}
+                    options={[
+                      { value: "bearer", label: "bearer" },
+                      { value: "api_key_header", label: "api_key_header" },
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -486,18 +498,24 @@ export function ProviderFormSheet({
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
-                <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-none">
-                  <input type="checkbox" checked={form.supportsStream} onChange={(event) => setForm((prev) => ({ ...prev, supportsStream: event.target.checked }))} />
+                <CheckboxField
+                  checked={form.supportsStream}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, supportsStream: checked }))}
+                >
                   支持流式输出
-                </label>
-                <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-none">
-                  <input type="checkbox" checked={form.supportsJsonMode} onChange={(event) => setForm((prev) => ({ ...prev, supportsJsonMode: event.target.checked }))} />
+                </CheckboxField>
+                <CheckboxField
+                  checked={form.supportsJsonMode}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, supportsJsonMode: checked }))}
+                >
                   支持 JSON mode
-                </label>
-                <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-none">
-                  <input type="checkbox" checked={form.isActive} onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))} />
+                </CheckboxField>
+                <CheckboxField
+                  checked={form.isActive}
+                  onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isActive: checked }))}
+                >
                   启用
-                </label>
+                </CheckboxField>
               </div>
 
               <div className="space-y-1.5">

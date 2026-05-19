@@ -20,9 +20,9 @@ import { FEEDBACK_SOURCES } from "@/lib/api/contracts/feedback"
 import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
 import { ADMIN_ROUTES } from "@/constants/routes"
 import { feedbackPriorityLabels } from "../data/status-config"
-import { cn } from "@/lib/utils"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { FeedbackStatusTag, PriorityTag } from "@/features/admin-shell/components/admin-tag"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
@@ -411,12 +411,12 @@ export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
               <h2 className="text-sm font-medium text-foreground">回复用户</h2>
             </div>
 
-            <textarea
+            <Textarea
               value={replyContent}
               onChange={(e) => setReplyContent(e.target.value)}
               placeholder="输入回复内容…"
               rows={5}
-              className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              className="resize-none bg-background"
             />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">

@@ -8,7 +8,9 @@ import type {
 } from "@/lib/api/contracts/admin-ai"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { Button } from "@/components/ui/button"
+import { CheckboxField } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { SimpleSelect } from "@/components/ui/simple-select"
 import {
   Sheet,
   SheetContent,
@@ -138,21 +140,27 @@ export function SkillBindingSheet({
           <div className="space-y-4">
             <div className="space-y-1.5">
               <AdminFieldLabel htmlFor="skill-binding-agentCode" label="Agent" required />
-              <select id="skill-binding-agentCode" value={form.agentCode} onChange={(event) => setForm((prev) => ({ ...prev, agentCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
-                <option value="">请选择 Agent</option>
-                {options?.agentOptions?.map((item) => (
-                  <option key={item.code} value={item.code}>{item.name}</option>
-                ))}
-              </select>
+              <SimpleSelect
+                id="skill-binding-agentCode"
+                value={form.agentCode}
+                onValueChange={(next) => setForm((prev) => ({ ...prev, agentCode: next }))}
+                options={[
+                  { value: "", label: "请选择 Agent" },
+                  ...(options?.agentOptions?.map((item) => ({ value: item.code, label: item.name })) ?? []),
+                ]}
+              />
             </div>
             <div className="space-y-1.5">
               <AdminFieldLabel htmlFor="skill-binding-skillCode" label="Skill" required />
-              <select id="skill-binding-skillCode" value={form.skillCode} onChange={(event) => setForm((prev) => ({ ...prev, skillCode: event.target.value }))} className="h-10 w-full rounded-md border border-border bg-muted/45 px-3 text-sm text-foreground shadow-none">
-                <option value="">请选择 Skill</option>
-                {options?.skillOptions?.map((item) => (
-                  <option key={item.code} value={item.code}>{item.name}</option>
-                ))}
-              </select>
+              <SimpleSelect
+                id="skill-binding-skillCode"
+                value={form.skillCode}
+                onValueChange={(next) => setForm((prev) => ({ ...prev, skillCode: next }))}
+                options={[
+                  { value: "", label: "请选择 Skill" },
+                  ...(options?.skillOptions?.map((item) => ({ value: item.code, label: item.name })) ?? []),
+                ]}
+              />
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
@@ -165,14 +173,18 @@ export function SkillBindingSheet({
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-none">
-                <input type="checkbox" checked={form.isRequired} onChange={(event) => setForm((prev) => ({ ...prev, isRequired: event.target.checked }))} />
+              <CheckboxField
+                checked={form.isRequired}
+                onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isRequired: checked }))}
+              >
                 Required
-              </label>
-              <label className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm text-foreground shadow-none">
-                <input type="checkbox" checked={form.isActive} onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))} />
+              </CheckboxField>
+              <CheckboxField
+                checked={form.isActive}
+                onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isActive: checked }))}
+              >
                 启用
-              </label>
+              </CheckboxField>
             </div>
             <div className="space-y-1.5">
               <AdminFieldLabel htmlFor="skill-binding-metadata" label="Metadata JSON" helpText="可留空，默认填 {}。用于记录 Skill 绑定的附加信息。" />

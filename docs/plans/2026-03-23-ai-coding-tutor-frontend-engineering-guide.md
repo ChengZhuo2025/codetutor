@@ -598,6 +598,14 @@ features/<domain>/
 - 只在单个 feature 内使用：放在该 feature 的 `data/`
 - 多个 feature 复用：放在 `constants/`
 
+### 6.3.1 表单组件使用约定
+
+当前可见表单控件统一从 `components/ui` 引入：`Input`、`Textarea`、`SimpleSelect`、`Checkbox` / `CheckboxField` / `CheckboxGroup`、`RadioGroup` / `RadioField`、`Switch` 与 `FormField` 系列。业务页面不再直接手写可见的 `<input>`、`<select>`、`<textarea>`、checkbox 或 radio；隐藏的文件上传 input 可以保留原生实现。
+
+新增或调整表单页面后，运行：
+
+- `pnpm test:unified-form-controls`
+
 ### 6.4 新增类型时
 
 判断规则：

@@ -25,6 +25,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
+  DIALOG_GRADIENT_PANEL_CLASS,
   USER_PANEL_OUTLINE_BUTTON_CLASS,
 } from "@/components/ui/surface-styles"
 import { MockQr } from "@/features/marketing/components/mock-qr"
@@ -227,7 +228,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
       <DialogTrigger asChild>
         <button className={triggerClassName}>联系我们</button>
       </DialogTrigger>
-      <DialogContent className="w-[min(900px,calc(100vw-1rem))] max-h-[calc(100dvh-1rem)] p-0 sm:max-w-[980px]">
+      <DialogContent className={cn(DIALOG_GRADIENT_PANEL_CLASS, "w-[min(900px,calc(100vw-1rem))] max-h-[calc(100dvh-1rem)] p-0 sm:max-w-[980px]")}>
         <div className="flex flex-col overflow-hidden">
         <div className="border-b border-border bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.24_270/0.12),transparent_46%)] px-4 py-5 dark:border-white/14 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_270/0.16),transparent_46%)] sm:px-5">
             <DialogHeader>

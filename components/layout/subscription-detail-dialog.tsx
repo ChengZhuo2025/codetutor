@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
+  DIALOG_GRADIENT_PANEL_CLASS,
   USER_BUTTON_PRIMARY_CLASS,
   USER_PANEL_DIVIDER_CLASS,
   USER_PANEL_OUTLINE_BUTTON_CLASS,
@@ -238,7 +239,7 @@ export function SubscriptionDetailDialog({
     <>
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto scrollbar-none sm:max-w-[860px] p-0">
+      <DialogContent className={cn(DIALOG_GRADIENT_PANEL_CLASS, "max-h-[90vh] max-w-4xl overflow-y-auto scrollbar-none sm:max-w-[860px] p-0")}>
         <div className="overflow-hidden rounded-2xl">
           {/* 头部 */}
           <div className="border-b border-border bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.24_270/0.12),transparent_46%)] px-4 py-5 dark:border-white/14 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_270/0.16),transparent_46%)] sm:px-5">
@@ -484,7 +485,7 @@ export function SubscriptionDetailDialog({
       </DialogContent>
     </Dialog>
     <Dialog open={paymentDialogOpen} onOpenChange={handlePaymentDialogOpenChange}>
-      <DialogContent className="max-w-[calc(100%-2rem)] overflow-hidden p-0 sm:max-w-[480px]">
+      <DialogContent className={cn(DIALOG_GRADIENT_PANEL_CLASS, "max-w-[calc(100%-2rem)] overflow-hidden p-0 sm:max-w-[480px]")}>
         <div className={cn("border-b px-5 py-4", USER_PANEL_DIVIDER_CLASS)}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">

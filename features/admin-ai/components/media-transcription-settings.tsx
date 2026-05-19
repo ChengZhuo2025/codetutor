@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/sheet"
 import { Switch } from "@/components/ui/switch"
 import { StatePanel } from "@/components/ui/state-panel"
+import { Textarea } from "@/components/ui/textarea"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import {
@@ -279,10 +280,10 @@ export function MediaTranscriptionSettings() {
               </label>
               <label className="space-y-2">
                 <span className="text-sm font-medium text-foreground">变更原因</span>
-                <textarea
+                <Textarea
                   value={editState.changeReason}
                   onChange={(event) => setEditState((prev) => prev ? { ...prev, changeReason: event.target.value } : prev)}
-                  className="min-h-24 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                  className="bg-background"
                   placeholder="说明本次模型或状态调整原因"
                 />
               </label>
