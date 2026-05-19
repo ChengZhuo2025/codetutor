@@ -10,7 +10,7 @@ export function LoginBrandPanel() {
   const { information } = site
 
   return (
-    <div className="relative hidden w-[60%] flex-col overflow-hidden bg-surface-2 px-7 pt-6 pb-20 lg:flex">
+    <div className="relative hidden w-[60%] flex-col overflow-hidden bg-surface-2 dark:bg-surface-1 px-7 pt-6 pb-20 lg:flex">
       <div
         className="pointer-events-none absolute inset-0 dark:hidden"
         style={{

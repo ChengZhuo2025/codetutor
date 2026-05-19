@@ -152,7 +152,7 @@ export function LoginForm({
                 "flex items-center gap-2 rounded-2xl border bg-surface-2 px-4 py-3 transition-all",
                 showPhoneFormatError
                   ? "border-destructive/60 bg-destructive/5 shadow-[0_0_0_4px_oklch(0.64_0.21_25/0.12)] focus-within:border-destructive/70"
-                  : "border-border focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.72_0.24_270/0.08)]",
+                  : "border-border focus-within:border-brand/60 focus-within:shadow-[0_0_0_4px_oklch(0.72_0.24_270/0.08)]",
               )}
             >
               <Phone
@@ -181,7 +181,7 @@ export function LoginForm({
                 inputMode="numeric"
                 pattern="[0-9]*"
                 placeholder="请输入手机号"
-                className="h-auto flex-1 border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
+                className="h-auto flex-1 border-0 rounded-none bg-transparent px-0 py-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
                 value={phone}
                 onChange={(event) => onPhoneChange(event.target.value)}
                 maxLength={11}
@@ -216,14 +216,14 @@ export function LoginForm({
               验证码
             </label>
             <div className="flex gap-3">
-              <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-surface-2 px-4 py-3 transition-all focus-within:border-brand/60 focus-within:bg-surface-1 focus-within:shadow-[0_0_0_4px_oklch(0.73_0.21_270/0.08)]">
+              <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-surface-2 px-4 py-3 transition-all focus-within:border-brand/60 focus-within:shadow-[0_0_0_4px_oklch(0.73_0.21_270/0.08)]">
                 <Input
                   id="code-input"
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   placeholder="请输入验证码"
-                  className="h-auto flex-1 border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
+                  className="h-auto flex-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
                   value={code}
                   onChange={(event) => onCodeChange(event.target.value)}
                   maxLength={6}
