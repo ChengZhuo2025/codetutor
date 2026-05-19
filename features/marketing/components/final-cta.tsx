@@ -23,9 +23,9 @@ export function LandingFinalCta() {
     <section id="start" className="relative overflow-hidden px-6 py-24">
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
       {/* 背景装饰 */}
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,oklch(0.92_0.02_261/0.5)_50%,oklch(0.90_0.015_261/0.8)_100%)] dark:bg-[linear-gradient(180deg,transparent_0%,oklch(0.15_0.015_261/0.6)_50%,oklch(0.12_0.01_261/0.9)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,oklch(0.96_0.02_270/0.5)_50%,oklch(0.90_0.018_270/0.8)_100%)] dark:bg-[linear-gradient(180deg,transparent_0%,oklch(0.18_0.024_270/0.6)_50%,oklch(0.12_0.01_270/0.9)_100%)]" />
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,oklch(0.73_0.21_261/0.15),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,oklch(0.84_0.28_270/0.15),transparent_50%)]" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-4xl text-center">

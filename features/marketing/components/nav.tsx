@@ -94,7 +94,7 @@ export function LandingNav() {
     authState.status === "authenticated" ? (
       <>
         <ThemeToggle />
-        <div className="rounded-full border border-brand/20 bg-brand/10 px-3 py-1 text-xs font-medium text-brand">
+        <div className="rounded-full border border-brand/20 bg-brand/12 px-3 py-1 text-xs font-medium text-brand dark:border-brand/30 dark:bg-brand/20">
           {maskedPhone}
         </div>
         <Link href={authState.summary.redirectTo}>
@@ -115,7 +115,7 @@ export function LandingNav() {
     ) : authState.status === "guest" ? (
       <>
         <ThemeToggle />
-        <div className="rounded-full border border-brand/20 bg-brand/10 px-3 py-1 text-xs font-medium text-brand">
+        <div className="rounded-full border border-brand/20 bg-brand/12 px-3 py-1 text-xs font-medium text-brand dark:border-brand/30 dark:bg-brand/20">
           v{information.version} Beta
         </div>
         <Link href={ROUTES.login}>
@@ -146,10 +146,10 @@ export function LandingNav() {
     )
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-border/80 bg-background/80 backdrop-blur-xl dark:border-white/8 dark:bg-[oklch(0.16_0.01_240/0.5)]">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-border/80 bg-background/80 backdrop-blur-xl dark:border-white/8 dark:bg-[oklch(0.16_0.01_270/0.5)]">
       <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-6">
         <Link href={ROUTES.home} className="flex items-center gap-3 text-foreground">
-          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.73_0.21_261/0.72)]">
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.73_0.21_270/0.72)]">
             {information.logoUrl ? (
               <Image src={information.logoUrl} alt={`${information.siteName} logo`} width={36} height={36} className="h-full w-full object-contain" unoptimized />
             ) : (
@@ -199,7 +199,7 @@ export function LandingNav() {
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-border/80 bg-background/95 px-6 pb-6 pt-4 dark:border-white/8 dark:bg-[oklch(0.16_0.01_240/0.74)] md:hidden">
+        <div className="border-t border-border/80 bg-background/95 px-6 pb-6 pt-4 dark:border-white/8 dark:bg-[oklch(0.16_0.01_270/0.74)] md:hidden">
           <div className="mb-4 flex items-center gap-2 rounded-2xl border border-brand/20 bg-brand/10 px-3 py-2 text-sm text-brand">
             <Sparkles className="h-4 w-4" />
             当前可直接体验登录、引导和学习流程 Demo

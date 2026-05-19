@@ -15,8 +15,8 @@ export function LoginBrandPanel() {
         className="pointer-events-none absolute inset-0 dark:hidden"
         style={{
           backgroundImage: `
-            linear-gradient(to right, oklch(0.55 0.018 240 / 0.064) 1px, transparent 1px),
-            linear-gradient(to bottom, oklch(0.55 0.018 240 / 0.064) 1px, transparent 1px)
+            linear-gradient(to right, oklch(0.55 0.018 270 / 0.064) 1px, transparent 1px),
+            linear-gradient(to bottom, oklch(0.55 0.018 270 / 0.064) 1px, transparent 1px)
           `,
           backgroundSize: "48px 48px",
         }}
@@ -25,18 +25,18 @@ export function LoginBrandPanel() {
         className="pointer-events-none absolute inset-0 hidden dark:block"
         style={{
           backgroundImage: `
-            linear-gradient(to right, oklch(0.62 0.04 195 / 0.16) 1px, transparent 1px),
-            linear-gradient(to bottom, oklch(0.62 0.04 195 / 0.16) 1px, transparent 1px)
+            linear-gradient(to right, oklch(0.62 0.04 150 / 0.16) 1px, transparent 1px),
+            linear-gradient(to bottom, oklch(0.62 0.04 150 / 0.16) 1px, transparent 1px)
           `,
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.60_0.27_261/0.09),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.78_0.17_52/0.09),transparent_24%)] dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_261/0.14),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.8_0.18_60/0.12),transparent_24%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.60_0.27_270/0.09),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.65_0.32_280/0.08),transparent_24%)] dark:bg-[radial-gradient(circle_at_top_left,oklch(0.75_0.24_270/0.14),transparent_28%),radial-gradient(circle_at_bottom_right,oklch(0.64_0.32_280/0.08),transparent_24%)]" />
 
       {/* 顶部 Logo + 标签 */}
       <div className="relative z-10 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.73_0.21_261/0.72)]">
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.73_0.21_270/0.72)]">
             {information.logoUrl ? (
               <Image src={information.logoUrl} alt={`${information.siteName} logo`} width={36} height={36} className="h-full w-full object-contain" unoptimized />
             ) : (
@@ -78,7 +78,7 @@ export function LoginBrandPanel() {
       </div>
 
       {/* AI 导师对话 - 复用首页滚动对话 */}
-      <div className="relative z-10 mx-12 mt-5 flex-1 overflow-hidden rounded-2xl border border-border/70 bg-surface-1 shadow-[0_20px_60px_-34px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:border-border/70 dark:bg-[oklch(0.15_0.012_240/0.48)] dark:shadow-none">
+      <div className="relative z-10 mx-12 mt-5 flex-1 overflow-hidden rounded-2xl border border-border/70 bg-surface-1 shadow-[0_20px_60px_-34px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:border-border/70 dark:bg-[oklch(0.15_0.012_270/0.48)] dark:shadow-none">
         <div className="flex items-center gap-2 border-b border-border/80 px-4 py-2.5 dark:border-white/8">
           <div className="h-2.5 w-2.5 rounded-full bg-destructive/70" />
           <div className="h-2.5 w-2.5 rounded-full bg-gold/70" />
@@ -87,8 +87,8 @@ export function LoginBrandPanel() {
         </div>
 
         <div className="relative h-full overflow-hidden">
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-12 bg-[linear-gradient(180deg,oklch(0.98_0.005_240/0.95),transparent)] dark:bg-[linear-gradient(180deg,oklch(0.14_0.01_240/0.78),transparent)]" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-[linear-gradient(180deg,transparent,oklch(0.98_0.005_240/0.92))] dark:bg-[linear-gradient(180deg,transparent,oklch(0.14_0.01_240/0.86))]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-12 bg-[linear-gradient(180deg,oklch(0.98_0.005_270/0.95),transparent)] dark:bg-[linear-gradient(180deg,oklch(0.14_0.01_270/0.78),transparent)]" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-[linear-gradient(180deg,transparent,oklch(0.98_0.005_270/0.92))] dark:bg-[linear-gradient(180deg,transparent,oklch(0.14_0.01_270/0.86))]" />
 
           <div className="animate-[hero-chat-scroll_26s_linear_infinite] space-y-3.5 p-5">
             {[0, 1].flatMap((loop) =>

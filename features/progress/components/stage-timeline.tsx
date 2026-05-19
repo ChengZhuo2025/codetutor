@@ -19,8 +19,8 @@ const statusConfig = {
   },
   current: {
     icon: Play,
-    nodeStyle: "border-brand bg-brand text-brand-foreground shadow-[0_0_30px_oklch(0.73_0.21_261/0.5)]",
-    cardStyle:"border-brand/60 bg-brand/8 dark:border-brand/50 dark:bg-[linear-gradient(145deg,rgba(98,92,255,0.16),rgba(8,16,29,0.94))] dark:shadow-[0_24px_64px_-32px_oklch(0.73_0.21_261/0.55)] cursor-pointer",
+    nodeStyle: "border-brand bg-brand text-brand-foreground shadow-[0_0_30px_oklch(0.73_0.21_270/0.5)]",
+    cardStyle:"border-brand/60 bg-brand/8 dark:border-brand/50 dark:bg-[linear-gradient(145deg,rgba(98,92,255,0.16),rgba(8,16,29,0.94))] dark:shadow-[0_24px_64px_-32px_oklch(0.73_0.21_270/0.55)] cursor-pointer",
     label: "当前任务",
     labelStyle: "text-brand",
   },

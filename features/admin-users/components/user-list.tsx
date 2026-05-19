@@ -60,22 +60,22 @@ function getPlanStatusMeta(user: AdminUserListItem) {
     case "active":
       return {
         label: "进行中",
-        className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+        className: "border-chart-5/15 bg-chart-5/10 text-chart-5",
       }
     case "interrupted":
       return {
         label: "已中断",
-        className: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+        className: "border-chart-2/15 bg-chart-2/10 text-chart-2",
       }
     case "completed":
       return {
         label: "已完成",
-        className: "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+        className: "border-chart-3/15 bg-chart-3/10 text-chart-3",
       }
     case "abandoned":
       return {
         label: "已放弃",
-        className: "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+        className: "border-chart-4/15 bg-chart-4/10 text-chart-4",
       }
     case "archived":
       return {

@@ -7,12 +7,6 @@ import { cn } from "@/lib/utils"
 export function LandingTools() {
   return (
     <section id="tools" className="relative px-6 py-24">
-      {/* 背景装饰 */}
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,oklch(0.92_0.02_261/0.45)_50%,oklch(0.90_0.015_261/0.75)_100%)] dark:bg-[linear-gradient(180deg,transparent_0%,oklch(0.15_0.015_261/0.55)_50%,oklch(0.12_0.01_261/0.85)_100%)]" />
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,oklch(0.73_0.21_261/0.12),transparent_50%)]" />
-      </div>
-
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
       <div className="mx-auto max-w-6xl relative z-10 ">
         <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">

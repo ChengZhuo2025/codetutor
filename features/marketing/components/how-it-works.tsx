@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 
 export function LandingHowItWorks() {
   return (
-    <section id="how" className="relative bg-surface-1 px-6 py-24">
+    <section id="how" className="relative px-6 py-24">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
 
       <div className="mx-auto max-w-6xl">
@@ -31,7 +31,7 @@ export function LandingHowItWorks() {
               <React.Fragment key={item.step}>
                 <div
                   className={cn(
-                    "group relative overflow-hidden rounded-[30px] border p-8 backdrop-blur animate-fadeUp transition-all hover:-translate-y-1 hover:border-brand/24 hover:bg-brand/4 dark:hover:bg-surface-2",
+                    "group relative overflow-hidden rounded-[30px] border p-8 backdrop-blur animate-fadeUp transition-all hover:-translate-y-1 hover:border-brand/20 hover:bg-brand/4 dark:hover:bg-surface-2",
                     item.panelClassName,
                     index === 0
                       ? "animate-delay-100"
@@ -83,11 +83,11 @@ export function LandingHowItWorks() {
           })}
         </div>
 
-        <div className="mx-auto mt-10 max-w-5xl grid gap-3 md:grid-cols-2">
+        <div className="mx-auto mt-10 max-w-6xl grid gap-6 md:grid-cols-2">
           {marketingFitNotes.map((note, index) => (
             <div
               key={note.title}
-              className="flex min-h-[96px] items-center gap-4 rounded-[24px] bg-card px-5 py-4 transition-all hover:-translate-y-0.5 hover:border-brand/24 hover:bg-brand/4 animate-fadeUp dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none dark:hover:bg-surface-2"
+              className="flex min-h-[96px] items-center gap-6 rounded-[24px] border border-border/70 bg-card px-4 py-4 transition-all hover:-translate-y-0.5 hover:border-brand/24 hover:bg-brand/4 dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none dark:hover:bg-surface-2"
               style={{ animationDelay: `${400 + index * 100}ms` }}
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/12 text-brand">

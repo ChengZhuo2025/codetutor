@@ -546,7 +546,7 @@ export function LearnChatComposer({
                 "ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl",
                 (input.trim() || previewAttachment) && !isTyping && !isRecording
                   ? USER_ICON_BUTTON_CLASS
-                  : "cursor-not-allowed border-transparent bg-[oklch(0.72_0.01_240)] text-white/70 shadow-none dark:bg-[oklch(0.30_0.01_240)]",
+                  : "cursor-not-allowed border-transparent bg-[oklch(0.72_0.01_270)] text-white/70 shadow-none dark:bg-[oklch(0.30_0.24_270)]",
               )}
             >
               {isTyping ? (

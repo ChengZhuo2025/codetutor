@@ -24,10 +24,10 @@ export function LandingBenefits() {
             return (
               <div
                 key={benefit.title}
-                className="group relative overflow-hidden rounded-[28px]  border border-border/70 bg-card p-6 transition-all hover:-translate-y-1 hover:border-brand/24 hover:bg-brand/4 dark:border-white/10 dark:bg-surface-2/88 dark:shadow-none dark:hover:bg-surface-2"
+                className="group relative overflow-hidden rounded-[28px] border p-6 transition-all hover:-translate-y-1 border-brand/30 bg-brand/5 shadow-lg shadow-brand/10 dark:bg-[linear-gradient(180deg,oklch(0.24_0.04_270/0.94),oklch(0.16_0.015_270/0.98))] dark:shadow-[0_24px_80px_-42px_oklch(0.75_0.24_270/0.28)]"
               >
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.03),transparent_40%)] opacity-60 dark:bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.06),transparent_40%)]" />
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/18" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.04),transparent_32%)] opacity-80 dark:bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_32%)]" />
 
                 <div
                   className={cn(

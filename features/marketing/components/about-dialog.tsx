@@ -36,7 +36,7 @@ export function AboutDialog({
       </DialogTrigger>
       <DialogContent className={cn(DIALOG_DARK_GRADIENT_PANEL_CLASS, "max-w-4xl sm:max-w-[680px]")}>
         <div className="overflow-hidden">
-          <div className="border-b border-border bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.24_261/0.12),transparent_46%)] px-6 py-5 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_261/0.16),transparent_46%)] sm:px-8">
+          <div className="border-b border-border bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.24_270/0.12),transparent_46%)] px-6 py-5 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_270/0.16),transparent_46%)] sm:px-8">
             <DialogHeader>
               <DialogTitle className="text-2xl font-semibold tracking-tight">
                 {article.title}

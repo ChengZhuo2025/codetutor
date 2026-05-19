@@ -230,7 +230,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
       </DialogTrigger>
       <DialogContent className={cn(DIALOG_DARK_GRADIENT_PANEL_CLASS, "w-[min(900px,calc(100vw-1rem))] max-h-[calc(100dvh-1rem)] overflow-hidden rounded-[30px] sm:max-w-[980px]")}>
         <div className="flex max-h-[calc(100dvh-1rem)] flex-col overflow-hidden rounded-[30px]">
-          <div className="border-b border-border bg-[radial-gradient(circle_at_top,oklch(0.62_0.24_261/0.1),transparent_52%)] px-5 py-4 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,oklch(0.73_0.21_261/0.16),transparent_52%)] sm:px-7 sm:py-5">
+          <div className="border-b border-border bg-[radial-gradient(circle_at_top,oklch(0.62_0.24_270/0.1),transparent_52%)] px-5 py-4 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,oklch(0.73_0.21_270/0.16),transparent_52%)] sm:px-7 sm:py-5">
             <DialogHeader className="gap-3">
               <DialogTitle className="text-2xl font-semibold tracking-tight">联系我们</DialogTitle>
               <DialogDescription className="max-w-2xl text-sm leading-6 text-muted-foreground">

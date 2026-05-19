@@ -81,11 +81,11 @@ export function LandingHero() {
       {/* 亮色：去掉四周压暗的「相框」，改为顶部柔和光晕；底部用页面底色做长距离融接，消除横向硬边 */}
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(ellipse_95%_70%_at_50%_-12%,oklch(0.97_0.04_195/0.38),transparent_58%)] dark:hidden" />
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,transparent_0%,transparent_38%,color-mix(in_oklch,var(--background)_55%,transparent)_72%,var(--background)_96%,var(--background)_100%)] dark:hidden" />
-      <div className="pointer-events-none absolute inset-0 z-[1] hidden dark:block bg-[radial-gradient(ellipse_at_center,transparent_14%,oklch(0.12_0.008_240/0.62)_84%)]" />
-      <div className="pointer-events-none absolute inset-0 z-[1] hidden dark:block bg-[linear-gradient(180deg,oklch(0.12_0.008_240/0.14),transparent_14%,transparent_78%,oklch(0.12_0.008_240/0.38)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 z-[1] hidden dark:block bg-[radial-gradient(ellipse_at_center,transparent_14%,oklch(0.12_0.008_270/0.62)_84%)]" />
+      <div className="pointer-events-none absolute inset-0 z-[1] hidden dark:block bg-[linear-gradient(180deg,oklch(0.12_0.008_270/0.14),transparent_14%,transparent_78%,oklch(0.12_0.008_270/0.38)_100%)]" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center text-center">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand/10 px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp dark:border-brand/18 dark:bg-[oklch(0.2_0.02_226/0.38)]">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand/40 px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp dark:border-brand/30 dark:bg-[oklch(0.60_0.24_270/0.20)]">
           <Sparkles className="h-3.5 w-3.5" />
           <span>{information.siteSubtitle} · MVP内测中</span>
         </div>
@@ -146,7 +146,7 @@ export function LandingHero() {
           {heroStats.map((item) => (
             <div
               key={item.label}
-              className="rounded-2xl border border-border/80 bg-surface-1/96 px-5 py-4 text-left shadow-[0_16px_36px_-28px_rgba(15,23,42,0.14)] backdrop-blur-md dark:border-border/70 dark:bg-[oklch(0.17_0.01_240/0.38)] dark:shadow-none"
+              className="rounded-2xl border border-border/70 bg-card px-5 py-4 text-left shadow-[0_16px_36px_-28px_rgba(15,23,42,0.14)] backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-brand/24 hover:bg-brand/4 dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none dark:hover:bg-surface-2"
             >
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 {item.label}
@@ -160,10 +160,10 @@ export function LandingHero() {
       </div>
 
       <div className="relative z-10 mx-auto mt-12 w-full max-w-5xl">
-        <div className="overflow-hidden rounded-[32px] border border-border/80 bg-surface-1/98 shadow-[0_26px_80px_-38px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:border-border/70 dark:bg-[oklch(0.15_0.012_240/0.48)] dark:shadow-[0_32px_90px_-45px_rgba(0,0,0,0.85)]">
+        <div className="overflow-hidden rounded-[32px] border border-border/80 bg-surface-2 shadow-[0_26px_80px_-38px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:shadow-[0_32px_90px_-45px_rgba(0,0,0,0.85)]">
           <div className="grid gap-0 lg:grid-cols-[1.25fr_0.75fr]">
-            <div className="border-b border-border/80 lg:border-b-0 lg:border-r lg:border-r-border/80 dark:border-white/8 dark:lg:border-r-white/8">
-              <div className="flex items-center gap-2 border-b border-border/80 px-4 py-3 dark:border-white/8">
+            <div className="border-b border-border/80 lg:border-b-0 lg:border-r lg:border-r-border/80 dark:border-white/10 dark:lg:border-r-white/10">
+              <div className="flex items-center gap-2 border-b border-border/80 px-4 py-3 dark:border-white/10">
                 <div className="h-3 w-3 rounded-full bg-destructive/70" />
                 <div className="h-3 w-3 rounded-full bg-gold/70" />
                 <div className="h-3 w-3 rounded-full bg-brand/70" />
@@ -172,9 +172,9 @@ export function LandingHero() {
                 </span>
               </div>
 
-              <div className="relative h-[27rem] overflow-hidden p-6">
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-18 bg-[linear-gradient(180deg,oklch(0.98_0.005_240/0.95),transparent)] dark:bg-[linear-gradient(180deg,oklch(0.14_0.01_240/0.78),transparent)]" />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-[linear-gradient(180deg,transparent,oklch(0.98_0.005_240/0.92))] dark:bg-[linear-gradient(180deg,transparent,oklch(0.14_0.01_240/0.86))]" />
+              <div className="relative h-[31rem] overflow-hidden p-6">
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-18 bg-[linear-gradient(180deg,oklch(0.98_0.005_270/0.95),transparent)] dark:bg-[linear-gradient(180deg,oklch(0.14_0.01_270/0.78),transparent)]" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-[linear-gradient(180deg,transparent,oklch(0.98_0.005_270/0.92))] dark:bg-[linear-gradient(180deg,transparent,oklch(0.14_0.01_270/0.86))]" />
 
                 <div className="animate-[hero-chat-scroll_26s_linear_infinite] space-y-4">
                   {[0, 1].flatMap((loop) =>
@@ -247,7 +247,7 @@ export function LandingHero() {
               </div>
             </div>
 
-            <div className="bg-surface-2/78 p-6 dark:bg-[oklch(0.14_0.01_240/0.3)]">
+            <div className="bg-surface-2/78 p-6 dark:bg-surface-2">
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 今日学习路径
               </p>

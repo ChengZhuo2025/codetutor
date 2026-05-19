@@ -36,7 +36,7 @@ export function OnboardingHeader({ step }: OnboardingHeaderProps) {
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
         {/* Logo - 与首页样式保持一致 */}
         <Link href={ROUTES.home} className="flex items-center gap-3 text-foreground">
-          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.73_0.21_261/0.72)]">
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-brand text-brand-foreground shadow-[0_10px_28px_-18px_oklch(0.73_0.21_270/0.72)]">
             {information.logoUrl ? (
               <Image
                 src={information.logoUrl}
@@ -66,7 +66,7 @@ export function OnboardingHeader({ step }: OnboardingHeaderProps) {
                 className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-full border text-sm font-semibold transition-all",
                   item === step
-                    ? "border-brand/40 bg-brand text-brand-foreground shadow-[0_16px_36px_-22px_oklch(0.73_0.21_261/0.8)]"
+                    ? "border-brand/40 bg-brand text-brand-foreground shadow-[0_16px_36px_-22px_oklch(0.73_0.21_270/0.8)]"
                     : item < step
                       ? "border-brand/25 bg-brand/12 text-brand"
                       : "border-border/70 bg-surface-1 text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
