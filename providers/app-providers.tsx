@@ -5,7 +5,6 @@ import {
   useContext,
   Suspense,
 } from "react"
-import { ThemeProvider } from "next-themes"
 import { Analytics } from "@vercel/analytics/next"
 import { AppConfirmProvider } from "@/components/app-feedback/app-confirm-provider"
 import { AppToastProvider } from "@/components/app-feedback/app-toast-provider"
@@ -13,10 +12,13 @@ import { PaymentReturnHandler } from "@/components/payment-return-handler"
 import { APP_EVENT_CHANNEL } from "@/constants/events"
 import type { AppEventName } from "@/constants/events"
 import { PublicSiteProvider } from "@/features/site/providers/public-site-provider"
+import type { PublicSiteResponseData } from "@/lib/api/contracts/admin-site"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import { ThemeProvider } from "./theme-provider"
 
 type AppProvidersProps = {
   children: React.ReactNode
+  initialPublicSite?: PublicSiteResponseData
 }
 
 type TrackEventPayload = Record<string, string | number | boolean | null | undefined>
@@ -76,18 +78,16 @@ function trackEvent(name: AppEventName, payload?: TrackEventPayload) {
   }
 }
 
-export function AppProviders({ children }: AppProvidersProps) {
+export function AppProviders({ children, initialPublicSite }: AppProvidersProps) {
   return (
     <ThemeProvider
-      attribute="class"
       defaultTheme="dark"
-      enableSystem={false}
       storageKey="codetutor-theme"
     >
       <AppEventContext.Provider value={{ trackEvent }}>
         <AppToastProvider>
           <AppConfirmProvider>
-            <PublicSiteProvider>
+            <PublicSiteProvider initialSite={initialPublicSite}>
               <Suspense fallback={null}>
                 <PaymentReturnHandler />
               </Suspense>

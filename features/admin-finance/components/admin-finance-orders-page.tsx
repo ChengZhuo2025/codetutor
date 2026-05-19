@@ -117,7 +117,7 @@ export function AdminFinanceOrdersPage() {
             { value: "alipay", label: "支付宝" },
             { value: "wechat", label: "微信" },
           ]} />
-          <Button type="button" onClick={() => { setPage(1); setKeywordApplied(keyword.trim()) }}>搜索</Button>
+          <Button type="button" variant="secondary" size="sm" className="h-9" onClick={() => { setPage(1); setKeywordApplied(keyword.trim()) }}>搜索</Button>
         </div>
 
         <div className="overflow-x-auto">

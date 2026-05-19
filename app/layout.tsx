@@ -5,7 +5,8 @@ import {
   APP_TITLE,
 } from '@/constants/app'
 import { DEFAULT_PUBLIC_SITE } from '@/features/site/data/default-site'
-import { loadSiteInformation } from '@/server/modules/admin-site/service'
+import type { PublicSiteResponseData } from '@/lib/api/contracts/admin-site'
+import { loadPublicSite, loadSiteInformation } from '@/server/modules/admin-site/service'
 import { AppProviders } from '@/providers/app-providers'
 import './globals.css'
 
@@ -46,11 +47,19 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  let initialPublicSite: PublicSiteResponseData | undefined
+
+  try {
+    initialPublicSite = await loadPublicSite()
+  } catch {
+    initialPublicSite = undefined
+  }
+
   return (
     <html
       lang={APP_LANG}
@@ -58,7 +67,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="font-sans antialiased">
-        <AppProviders>{children}</AppProviders>
+        <AppProviders initialPublicSite={initialPublicSite}>{children}</AppProviders>
       </body>
     </html>
   )

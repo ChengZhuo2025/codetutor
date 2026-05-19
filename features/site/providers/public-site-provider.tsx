@@ -19,9 +19,17 @@ type PublicSiteContextValue = {
 
 const PublicSiteContext = createContext<PublicSiteContextValue | null>(null)
 
-export function PublicSiteProvider({ children }: { children: React.ReactNode }) {
-  const [site, setSite] = useState<PublicSiteResponseData>(DEFAULT_PUBLIC_SITE)
-  const [loading, setLoading] = useState(true)
+type PublicSiteProviderProps = {
+  children: React.ReactNode
+  initialSite?: PublicSiteResponseData
+}
+
+export function PublicSiteProvider({
+  children,
+  initialSite = DEFAULT_PUBLIC_SITE,
+}: PublicSiteProviderProps) {
+  const [site, setSite] = useState<PublicSiteResponseData>(initialSite)
+  const [loading, setLoading] = useState(!initialSite)
 
   useEffect(() => {
     let cancelled = false

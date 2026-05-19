@@ -758,7 +758,9 @@ export function SystemSettings() {
               />
               <Button
                 type="button"
-                variant="outline"
+                variant="secondary"
+                size="sm"
+                className="h-9"
                 onClick={() => {
                   setAccountPage(1);
                   setAccountKeywordApplied(accountKeyword.trim());
@@ -1024,7 +1026,9 @@ export function SystemSettings() {
             </div>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
+              size="sm"
+              className="h-9"
               onClick={() => {
                 setAuditPage(1);
                 setAuditKeywordApplied(auditKeyword.trim());

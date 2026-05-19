@@ -269,7 +269,9 @@ export function LearningPathList() {
             </div>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
+              size="sm"
+              className="h-9"
               onClick={() => {
                 setPage(1);
                 setKeywordApplied(keyword.trim());
