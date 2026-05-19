@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Download, Search } from "lucide-react"
+import { Download } from "lucide-react"
 import { feedbackPriorityLabels, feedbackTypeLabels } from "../data/status-config"
 import { buildAdminFeedbackListQuery, readAdminFeedbackUserIdFromSearchParams } from "../lib/list-filters"
 import type { AdminFeedbackListResponseData } from "@/lib/api/contracts/feedback"
@@ -13,7 +13,7 @@ import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/ui/search-input"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { FeedbackStatusTag, PriorityTag } from "@/features/admin-shell/components/admin-tag"
@@ -303,21 +303,16 @@ export function FeedbackList() {
 
       <div className="rounded-lg border border-border bg-card p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-32 max-w-md">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="搜索工单号、标题、用户昵称..."
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleApplySearch()
-                }
-              }}
-              className="h-9 bg-background pl-8"
-            />
-          </div>
+          <SearchInput
+            placeholder="搜索工单号、标题、用户昵称..."
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleApplySearch()
+              }
+            }}
+          />
           <Button type="button" variant="secondary" size="sm" className="h-9" onClick={handleApplySearch}>
             搜索
           </Button>

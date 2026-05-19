@@ -416,7 +416,6 @@ export function FeedbackDetail({ ticketId }: FeedbackDetailProps) {
               onChange={(e) => setReplyContent(e.target.value)}
               placeholder="输入回复内容…"
               rows={5}
-              className="resize-none bg-background"
             />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">

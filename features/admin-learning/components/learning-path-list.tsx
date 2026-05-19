@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   BookOpen,
   Download,
-  Search,
   TimerReset,
   Trophy,
   Users,
@@ -14,7 +13,7 @@ import {
 import type { AdminLearningPathListResponseData } from "@/lib/api/contracts/admin-learning";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { StatePanel } from "@/components/ui/state-panel";
 import { ADMIN_ROUTES } from "@/constants/routes";
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer";
@@ -255,15 +254,11 @@ export function LearningPathList() {
       <div className="rounded-2xl border border-border bg-card">
         <div className="border-b border-border px-4 py-4">
           <div className="flex flex-col gap-3 md:flex-row">
-            <div className="relative flex-1 min-w-32 max-w-md">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-                placeholder="关键词：用户昵称 / 邮箱 / 路径名 / 路径代码"
-                className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            </div>
+            <SearchInput
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="关键词：用户昵称 / 邮箱 / 路径名 / 路径代码"
+            />
             <Button
               type="button"
               variant="secondary"

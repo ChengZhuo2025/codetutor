@@ -24,13 +24,9 @@ import { Label } from "@/components/ui/label"
 import { StatePanel } from "@/components/ui/state-panel"
 import {
   DIALOG_PANEL_CLASS,
-  USER_BUTTON_SECONDARY_CLASS,
   USER_ICON_BUTTON_CLASS,
   USER_PANEL_DIVIDER_CLASS,
-  USER_PANEL_FIELD_CLASS,
   USER_PANEL_OUTLINE_BUTTON_CLASS,
-  USER_PANEL_SECTION_CLASS,
-  USER_PANEL_SUBTLE_SECTION_CLASS,
 } from "@/components/ui/surface-styles"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
@@ -402,7 +398,6 @@ export function FeedbackDialog({
                     value={form.title}
                     onChange={(event) => updateField("title", event.target.value)}
                     placeholder="一句话概括你的建议或问题"
-                    className={cn("rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
                   />
                 </div>
 
@@ -416,7 +411,6 @@ export function FeedbackDialog({
                     onChange={(event) => updateField("content", event.target.value)}
                     placeholder="详细描述你遇到的问题、建议或希望优化的地方"
                     rows={4}
-                    className={cn("resize-none rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>至少 10 个字符，尽量写清楚场景、问题和预期效果。</span>
@@ -433,7 +427,6 @@ export function FeedbackDialog({
                     value={form.contactMethod}
                     onChange={(event) => updateField("contactMethod", event.target.value)}
                     placeholder="手机号、微信号或邮箱，选填"
-                    className={cn("rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
                   />
                 </div>
               </div>

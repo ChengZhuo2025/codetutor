@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { RefreshCw, Search } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 import type { AdminAIInvocationListResponseData } from "@/lib/api/contracts/admin-ai"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/ui/search-input"
 import { StatePanel } from "@/components/ui/state-panel"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
@@ -147,20 +147,16 @@ export function InvocationLog() {
           <>
             <ListFilterCard>
             <div className="flex flex-col gap-3 md:flex-row">
-                <div className="relative flex-1 min-w-32 max-w-md">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={keyword}
-                    onChange={(event) => setKeyword(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        applySearch()
-                      }
-                    }}
-                    placeholder="关键词：invocation / session / user / provider / model / agent / errorCode"
-                    className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                  />
-                </div>
+                <SearchInput
+                  value={keyword}
+                  onChange={(event) => setKeyword(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      applySearch()
+                    }
+                  }}
+                  placeholder="关键词：invocation / session / user / provider / model / agent / errorCode"
+                />
                 <AdminSelect
                   value={status}
                   onValueChange={(next) => {

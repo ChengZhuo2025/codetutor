@@ -283,7 +283,6 @@ export function MediaTranscriptionSettings() {
                 <Textarea
                   value={editState.changeReason}
                   onChange={(event) => setEditState((prev) => prev ? { ...prev, changeReason: event.target.value } : prev)}
-                  className="bg-background"
                   placeholder="说明本次模型或状态调整原因"
                 />
               </label>

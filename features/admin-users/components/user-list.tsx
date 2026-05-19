@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Download, Flame, FolderKanban, MapPin, Search, ShieldAlert, Users } from "lucide-react"
+import { Download, Flame, FolderKanban, MapPin, ShieldAlert, Users } from "lucide-react"
 import type {
   AdminUserDetailResponseData,
   AdminUserListItem,
@@ -13,7 +13,7 @@ import { useAppConfirm } from "@/components/app-feedback/app-confirm-provider"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 import { StatePanel } from "@/components/ui/state-panel"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/ui/search-input"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
 import { AdminTag, LearningStatusTag } from "@/features/admin-shell/components/admin-tag"
@@ -351,21 +351,16 @@ export function UserList() {
 
       <div className="rounded-xl border border-border bg-card p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-32 max-w-md">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="搜索昵称、邮箱、手机号、用户 UUID"
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  applySearch()
-                }
-              }}
-              className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            />
-          </div>
+          <SearchInput
+            placeholder="搜索昵称、邮箱、手机号、用户 UUID"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                applySearch()
+              }
+            }}
+          />
           <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applySearch}>
             搜索
           </Button>

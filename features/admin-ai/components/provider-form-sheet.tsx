@@ -466,7 +466,7 @@ export function ProviderFormSheet({
                       value={form.apiKey}
                       onChange={(event) => setForm((prev) => ({ ...prev, apiKey: event.target.value }))}
                       placeholder={providerId ? "留空表示保留当前密钥；填写后覆盖" : "请输入 Provider API Key"}
-                      className="font-mono"
+                      variant="code"
                     />
                     <Button
                       type="button"

@@ -37,7 +37,6 @@ import { dispatchProfileUpdated } from "@/lib/profile/events"
 import {
   DIALOG_PANEL_CLASS,
   USER_PANEL_DIVIDER_CLASS,
-  USER_PANEL_FIELD_CLASS,
   USER_PANEL_OUTLINE_BUTTON_CLASS,
   USER_PANEL_SECTION_CLASS,
 } from "@/components/ui/surface-styles"
@@ -526,7 +525,6 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
                   onChange={(e) => updateField("nickname", e.target.value)}
                   placeholder="输入昵称"
                   disabled={isBusy}
-                  className={cn("rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
                 />
               </div>
 
@@ -540,7 +538,6 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
                   readOnly
                   disabled
                   placeholder="未绑定手机号"
-                  className={cn("rounded-[10px] text-foreground/60 placeholder:text-muted-foreground/40", USER_PANEL_FIELD_CLASS)}
                 />
               </div>
 
@@ -554,7 +551,6 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
                   onChange={(e) => updateField("wechat", e.target.value)}
                   placeholder="输入微信号（可选）"
                   disabled={isBusy}
-                  className={cn("rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
                 />
               </div>
 
@@ -569,7 +565,6 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
                   onChange={(e) => updateField("email", e.target.value)}
                   placeholder="输入邮箱（可选）"
                   disabled={isBusy}
-                  className={cn("rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
                 />
               </div>
             </div>
@@ -585,7 +580,6 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
                 placeholder="介绍一下自己吧（可选）"
                 rows={4}
                 disabled={isBusy}
-                className={cn("resize-none rounded-[10px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand/50 focus:ring-brand/20", USER_PANEL_FIELD_CLASS)}
               />
               <p className="text-right text-xs text-muted-foreground">{profile.bio.trim().length}/300</p>
             </div>

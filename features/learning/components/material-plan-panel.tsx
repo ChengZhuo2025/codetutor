@@ -641,7 +641,7 @@ export function MaterialPlanPanel({
           placeholder={"https://developer.mozilla.org/..."}
           rows={2}
           disabled={busyAction !== null}
-          className="field-sizing-fixed max-w-full min-h-[88px] min-w-0 resize-y break-all bg-background font-mono text-sm"
+          variant="code"
         />
       </div>
 
@@ -651,11 +651,10 @@ export function MaterialPlanPanel({
           <Textarea
             value={userGoal}
             onChange={(e) => setUserGoal(e.target.value)}
-            placeholder="例如：希望两周内能独立改一个现有页面的交互。"
-            rows={2}
-            disabled={busyAction !== null}
-            className="field-sizing-fixed max-w-full min-w-0 resize-y wrap-break-word bg-background text-sm"
-          />
+          placeholder="例如：希望两周内能独立改一个现有页面的交互。"
+          rows={2}
+          disabled={busyAction !== null}
+        />
         </div>
         <div className="space-y-2">
           <p className="text-xs font-medium text-muted-foreground">每周可投入（小时，可选）</p>
@@ -666,7 +665,6 @@ export function MaterialPlanPanel({
             value={weeklyHours}
             onChange={(e) => setWeeklyHours(e.target.value)}
             disabled={busyAction !== null}
-            className="h-10 rounded-xl border-border/70 bg-background text-sm"
             placeholder="例如 6"
           />
         </div>
@@ -676,7 +674,6 @@ export function MaterialPlanPanel({
             value={currentConstraints}
             onChange={(e) => setCurrentConstraints(e.target.value)}
             disabled={busyAction !== null}
-            className="h-10 rounded-xl border-border/70 bg-background text-sm"
             placeholder="例如 2 周内完成、优先项目实战"
           />
         </div>

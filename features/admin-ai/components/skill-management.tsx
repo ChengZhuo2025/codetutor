@@ -1,14 +1,14 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Plus, RefreshCw, Search } from "lucide-react"
+import { Plus, RefreshCw } from "lucide-react"
 import type {
   AdminAIAgentSkillBindingListItem,
   AdminAIAgentSkillBindingListResponseData,
   AdminAISkillListResponseData,
 } from "@/lib/api/contracts/admin-ai"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/ui/search-input"
 import { StatePanel } from "@/components/ui/state-panel"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
@@ -170,20 +170,16 @@ export function SkillManagement() {
               </div>
               <ListFilterCard>
                 <div className="flex flex-col gap-3 md:flex-row">
-                  <div className="relative min-w-32 max-w-md flex-1">
-                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      value={bindingKeyword}
-                      onChange={(event) => setBindingKeyword(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          applyBindingSearch()
-                        }
-                      }}
-                      placeholder="关键词：agent / skill"
-                      className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                    />
-                  </div>
+                  <SearchInput
+                    value={bindingKeyword}
+                    onChange={(event) => setBindingKeyword(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        applyBindingSearch()
+                      }
+                    }}
+                    placeholder="关键词：agent / skill"
+                  />
                   <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applyBindingSearch}>
                     搜索
                   </Button>
@@ -281,20 +277,16 @@ export function SkillManagement() {
               </div>
               <ListFilterCard>
                 <div className="flex flex-col gap-3 md:flex-row">
-                  <div className="relative min-w-0 flex-1 max-w-md">
-                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      value={keyword}
-                      onChange={(event) => setKeyword(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          applySkillSearch()
-                        }
-                      }}
-                      placeholder="关键词：code / name / source / trust"
-                      className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                    />
-                  </div>
+                  <SearchInput
+                    value={keyword}
+                    onChange={(event) => setKeyword(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        applySkillSearch()
+                      }
+                    }}
+                    placeholder="关键词：code / name / source / trust"
+                  />
                   <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applySkillSearch}>
                     搜索
                   </Button>

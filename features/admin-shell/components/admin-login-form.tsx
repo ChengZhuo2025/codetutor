@@ -189,7 +189,7 @@ export function AdminLoginForm() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="admin@example.com"
                       disabled={isLoading}
-                      className="h-11 rounded-2xl border-border/75 bg-background/82 pl-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
+                      className="pl-10"
                       autoComplete="email"
                       required
                     />
@@ -209,7 +209,7 @@ export function AdminLoginForm() {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="请输入密码"
                       disabled={isLoading}
-                      className="h-11 rounded-2xl border-border/75 bg-background/82 pl-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
+                      className="pl-10"
                       autoComplete="current-password"
                       required
                     />

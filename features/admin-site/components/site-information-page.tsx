@@ -214,7 +214,6 @@ export function SiteInformationPage() {
               <Textarea
                 value={form.siteDescription}
                 onChange={(event) => updateField("siteDescription", event.target.value)}
-                className="min-h-24"
               />
             </div>
             <div className="space-y-2 md:col-span-2">
@@ -225,7 +224,6 @@ export function SiteInformationPage() {
               <Textarea
                 value={form.seoKeywordsText}
                 onChange={(event) => updateField("seoKeywordsText", event.target.value)}
-                className="min-h-20"
                 placeholder="AI 编程，学习陪练，CodeTutor"
               />
             </div>

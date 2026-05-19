@@ -726,7 +726,7 @@ export function AITestConsole() {
                           onChange={(event) =>
                             setTestForm((prev) => ({ ...prev, prompt: event.target.value }))
                           }
-                          className="min-h-40 font-mono text-sm"
+                          variant="code"
                           placeholder="输入要发给模型的内容…"
                         />
                         <div className="flex flex-wrap gap-2">
@@ -751,7 +751,6 @@ export function AITestConsole() {
                           onChange={(event) =>
                             setTestForm((prev) => ({ ...prev, changeReason: event.target.value }))
                           }
-                          className="min-h-20 text-sm"
                           placeholder="说明本次测试目的，便于审计追溯"
                         />
                         <Button

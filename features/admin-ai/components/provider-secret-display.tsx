@@ -77,7 +77,7 @@ export function ProviderSecretDisplay({
           value={revealed ? (revealedSecret ?? secretMasked) : secretMasked}
           type={revealed ? "text" : "password"}
           readOnly
-          className="font-mono"
+          variant="code"
         />
         <Button
           type="button"

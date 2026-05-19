@@ -237,7 +237,8 @@ export function SiteArticlesPage() {
             <Textarea
               value={form.contentMarkdown}
               onChange={(event) => updateForm("contentMarkdown", event.target.value)}
-              className="min-h-[520px] font-mono text-sm leading-6"
+              variant="code"
+              rows={22}
               spellCheck={false}
             />
           </div>

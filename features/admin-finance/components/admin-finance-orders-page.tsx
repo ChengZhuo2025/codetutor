@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { RefreshCw, Search } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/ui/search-input"
 import { StatePanel } from "@/components/ui/state-panel"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
 import { AdminSelect } from "@/features/admin-shell/components/admin-select"
@@ -95,15 +95,12 @@ export function AdminFinanceOrdersPage() {
 
       <div className="rounded-lg border border-border bg-card">
         <div className="flex flex-col gap-3 border-b border-border p-3 lg:flex-row lg:items-center">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={keyword} onChange={(event) => setKeyword(event.target.value)} onKeyDown={(event) => {
+          <SearchInput value={keyword} onChange={(event) => setKeyword(event.target.value)} onKeyDown={(event) => {
               if (event.key === "Enter") {
                 setPage(1)
                 setKeywordApplied(keyword.trim())
               }
-            }} placeholder="搜索订单号或套餐名" className="pl-9" />
-          </div>
+            }} placeholder="搜索订单号或套餐名" wrapperClassName="max-w-none" />
           <AdminSelect value={status} onValueChange={(value) => { setPage(1); setStatus(value) }} options={[
             { value: "all", label: "全部状态" },
             { value: "prepay_created", label: "待支付" },

@@ -12,7 +12,6 @@ import {
   Mail,
   MessageCircle,
   Phone,
-  Search,
   Server,
   Shield,
   Sparkles,
@@ -43,6 +42,7 @@ import type {
 import { Button } from "@/components/ui/button";
 import { CheckboxField, CheckboxGroup } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -695,21 +695,17 @@ export function SystemSettings() {
         <div className="rounded-2xl border border-border bg-card">
           <div className="flex flex-col gap-3 border-b border-border px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
-              <div className="relative flex-1 min-w-32 max-w-md">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={accountKeyword}
-                  onChange={(event) => setAccountKeyword(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      setAccountPage(1);
-                      setAccountKeywordApplied(accountKeyword.trim());
-                    }
-                  }}
-                  className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                  placeholder="搜索管理员姓名、邮箱、用户 ID"
-                />
-              </div>
+              <SearchInput
+                value={accountKeyword}
+                onChange={(event) => setAccountKeyword(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    setAccountPage(1);
+                    setAccountKeywordApplied(accountKeyword.trim());
+                  }
+                }}
+                placeholder="搜索管理员姓名、邮箱、用户 ID"
+              />
               <AdminSelect
                 value={accountStatus}
                 onValueChange={(next) => {
@@ -933,21 +929,17 @@ export function SystemSettings() {
         <div className="rounded-2xl border border-border bg-card">
           <div className="flex flex-col gap-3 border-b border-border px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
-              <div className="relative max-w-md flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={auditKeyword}
-                  onChange={(event) => setAuditKeyword(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      setAuditPage(1);
-                      setAuditKeywordApplied(auditKeyword.trim());
-                    }
-                  }}
-                  className="pl-9"
-                  placeholder="搜索操作审计、原因、目标类型"
-                />
-              </div>
+              <SearchInput
+                value={auditKeyword}
+                onChange={(event) => setAuditKeyword(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    setAuditPage(1);
+                    setAuditKeywordApplied(auditKeyword.trim());
+                  }
+                }}
+                placeholder="搜索操作审计、原因、目标类型"
+              />
               <AdminSelect
                 value={auditAction}
                 onValueChange={(next) => {
@@ -2090,7 +2082,6 @@ export function SystemSettings() {
                               computeMaskedHandle(channel.handle || "")
                             }
                             readOnly
-                            className="bg-muted/50 cursor-not-allowed"
                           />
                         </div>
 
@@ -2175,7 +2166,7 @@ export function SystemSettings() {
                             <Input
                               value={channel.qrImageUrl}
                               readOnly
-                              className="text-[10px] font-mono bg-muted/50 mt-2"
+                              variant="code"
                             />
                           )}
                         </div>
