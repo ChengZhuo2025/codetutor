@@ -160,8 +160,12 @@ export function resolveLearningUserInteractionType(input: {
     return "path_guidance"
   }
 
+  if (/(安装|初始化|配置|环境|setup|install|configure|config)/i.test(input.content)) {
+    return "teaching"
+  }
+
   if (
-    /(什么是|怎么理解|如何理解|解释一下|概念是|是什么意思|有什么作用|是做什么的|有什么区别|区别是什么|和.*的区别|对比.*和|干什么用的|干嘛的|有什么用)/i.test(input.content)
+    /((?:我想|想)?(?:请教|问)(?:一个)?问题|请问|你(?:对.+)?(?:是否)?了解|你知道|了解一下|介绍一下|说说|聊聊|什么是|怎么理解|如何理解|解释一下|概念是|是什么意思|有什么作用|是做什么的|有什么区别|区别是什么|和.*的区别|对比.*和|干什么用的|干嘛的|有什么用)/i.test(input.content)
   ) {
     return "concept_qa"
   }

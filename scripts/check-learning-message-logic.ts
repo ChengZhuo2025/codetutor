@@ -63,6 +63,26 @@ test("resolveLearningUserInteractionType still routes explicit concept questions
   )
 })
 
+test("resolveLearningUserInteractionType routes free-practice consultation questions to concept QA", () => {
+  assert.equal(
+    resolveLearningUserInteractionType({
+      requestedInteractionType: null,
+      content: "我想请教一个问题，请问你对 cc-switch 是否了解",
+      taskStatus: "in_progress",
+    }),
+    "concept_qa",
+  )
+
+  assert.equal(
+    resolveLearningUserInteractionType({
+      requestedInteractionType: null,
+      content: "你了解 MCP server 吗？",
+      taskStatus: "in_progress",
+    }),
+    "concept_qa",
+  )
+})
+
 test("resolveAgentBindingInteractionFallbacks falls back from unmatched teaching to global concept QA", () => {
   assert.deepEqual(resolveAgentBindingInteractionFallbacks("concept_qa"), ["concept_qa"])
   assert.deepEqual(resolveAgentBindingInteractionFallbacks("teaching"), ["teaching", "concept_qa"])

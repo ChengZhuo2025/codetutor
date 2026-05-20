@@ -22,18 +22,11 @@ export function formatDateTime(iso: string | null) {
   }).format(new Date(iso))
 }
 
-const orderStatusMeta: Record<PaymentOrderStatus, { label: string; variant: "neutral" | "success" | "warning" | "danger" | "info" }> = {
-  created: { label: "待支付", variant: "warning" },
-  prepay_created: { label: "待支付", variant: "warning" },
-  paid: { label: "已支付", variant: "success" },
-  closed: { label: "已关闭", variant: "neutral" },
-  expired: { label: "已过期", variant: "neutral" },
-  failed: { label: "失败", variant: "danger" },
-}
+type AdminOrderStatus = "pending" | "paid" | "cancelled"
 
 export function OrderStatusBadge({ status }: { status: PaymentOrderStatus }) {
   // 映射到AdminTag的orderStatus值
-  const statusMap: Record<PaymentOrderStatus, string> = {
+  const statusMap: Record<PaymentOrderStatus, AdminOrderStatus> = {
     created: "pending",
     prepay_created: "pending",
     paid: "paid",

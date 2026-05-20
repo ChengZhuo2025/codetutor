@@ -421,12 +421,10 @@ type ChatGenerationResult = {
 当前确认：
 
 1. 后端对模型调用采用真实流式输出
-2. 前端不直接逐 token 渲染 provider 原始 chunk
-3. 前端对流式内容做节奏化缓冲后再递增显示
-4. 首期推荐缓冲策略为：
-   - 按时间窗口合并，例如 `80-150ms`
-   - 或按文本长度合并，例如累计 `10-20` 个汉字后再刷新
-5. 最终目标体验是“像一小块一小块、一行一行自然出现”，而不是机械抖动
+2. 服务端 SSE 直接转发 provider 增量文本，不做服务端节奏化缓冲
+3. 前端按浏览器动画帧合并同一帧内到达的 provider delta，避免逐 token 高频重渲染，也不再额外按固定时间窗口或固定字数切片
+4. Provider 流式超时语义为 idle timeout：首包前和每次收到上游数据后都会重置超时；只要上游持续返回增量，不因总生成时间超过 `timeout_ms` 被强制中断
+5. 最终目标体验是“随 provider 增量自然推进”，避免机械抖动和人为卡顿
 
 这样做的原因：
 
@@ -1125,7 +1123,7 @@ ai/skills/
 | `secret_last_updated_at` | `timestamptz` | nullable | 最近一次密钥更新时间 |
 | `supports_stream` | `boolean` | not null default true | 是否支持真实流式 |
 | `supports_json_mode` | `boolean` | not null default false | 是否支持 JSON 输出 |
-| `timeout_ms` | `integer` | not null default 60000 | 默认超时 |
+| `timeout_ms` | `integer` | not null default 60000 | 默认超时；流式调用中作为首包/idle timeout 使用，每次收到上游数据后重置 |
 | `retry_count` | `integer` | not null default 1 | 默认重试次数 |
 | `is_active` | `boolean` | not null default true | 是否启用 |
 | `metadata` | `jsonb` | not null default '{}' | 速率限制、平台说明等扩展字段 |
@@ -1773,7 +1771,7 @@ data: {"code":"AI_PROVIDER_ERROR","message":"provider stream interrupted"}
 当前确认：
 
 1. SSE 中发的是 provider 原始增量文本，不做服务端节奏化缓冲。
-2. 节奏化分块渲染固定由前端完成。
+2. 前端只按浏览器动画帧合并同一帧内增量，避免额外固定延迟与过碎 React 重渲染。
 3. 服务端最终仍只落一条合并后的 assistant 消息，不落逐 chunk 明细。
 
 ### 12.2.6 幂等规则
@@ -2178,7 +2176,7 @@ data: {"code":"AI_PROVIDER_ERROR","message":"provider stream interrupted"}
 
 1. 先在当前项目的 `app/api + server/modules` 实现核心 AI orchestration。
 2. 先做多 provider 抽象，但第一阶段只接入硅基流动。
-3. 第一阶段采用真实流式，前端做节奏化分块渲染。
+3. 第一阶段采用真实流式，服务端转发 provider 增量，前端按浏览器动画帧合并渲染。
 4. 不把 agent 等同于 prompt，而是做成独立配置实体。
 5. 不把规则写死在代码 if/else 中，而是通过 `agent_bindings` 做解析。
 6. Skill 是首期能力增强主路径，文件系统为内容真源，数据库为绑定真源。

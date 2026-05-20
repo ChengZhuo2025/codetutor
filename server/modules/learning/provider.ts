@@ -265,9 +265,15 @@ async function callOpenAICompatibleStream(
   input: StreamAIProviderInput,
 ): Promise<AIProviderResult> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => {
+  let timeout = setTimeout(() => {
     controller.abort()
   }, input.provider.timeoutMs)
+  const resetIdleTimeout = () => {
+    clearTimeout(timeout)
+    timeout = setTimeout(() => {
+      controller.abort()
+    }, input.provider.timeoutMs)
+  }
 
   const startedAt = Date.now()
 
@@ -326,6 +332,7 @@ async function callOpenAICompatibleStream(
       if (done) {
         break
       }
+      resetIdleTimeout()
 
       buffer += decoder.decode(value, { stream: true })
 

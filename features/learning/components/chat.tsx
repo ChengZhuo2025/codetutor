@@ -49,9 +49,6 @@ import { useAppEventTracker } from "@/providers/app-providers"
 import { useWorkspaceSidebarData } from "@/providers/workspace-sidebar-provider"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
 
-const STREAMING_BATCH_SIZE = 16
-const STREAMING_BATCH_DELAY_MS = 70
-
 type PendingDraft = {
   text: string
   attachment: DraftAttachment | null
@@ -243,7 +240,7 @@ export function LearnChat({
   const nextMessageId = useRef(learningData.messages.length + 1)
   const reconnectTimerRef = useRef<number | null>(null)
   const streamBufferRef = useRef("")
-  const streamFlushTimerRef = useRef<number | null>(null)
+  const streamFlushFrameRef = useRef<number | null>(null)
   const streamTargetMessageIdRef = useRef<number | null>(null)
   const streamHasVisibleContentRef = useRef(false)
   const prependScrollMetricsRef = useRef<{
@@ -345,8 +342,8 @@ export function LearnChat({
       if (reconnectTimerRef.current) {
         window.clearTimeout(reconnectTimerRef.current)
       }
-      if (streamFlushTimerRef.current) {
-        window.clearTimeout(streamFlushTimerRef.current)
+      if (streamFlushFrameRef.current !== null) {
+        window.cancelAnimationFrame(streamFlushFrameRef.current)
       }
     }
   }, [])
@@ -599,9 +596,9 @@ export function LearnChat({
   }
 
   const clearStreamFlushTimer = () => {
-    if (streamFlushTimerRef.current) {
-      window.clearTimeout(streamFlushTimerRef.current)
-      streamFlushTimerRef.current = null
+    if (streamFlushFrameRef.current !== null) {
+      window.cancelAnimationFrame(streamFlushFrameRef.current)
+      streamFlushFrameRef.current = null
     }
   }
 
@@ -625,13 +622,13 @@ export function LearnChat({
     )
   }
 
-  const scheduleStreamFlush = (delayMs = STREAMING_BATCH_DELAY_MS) => {
-    if (streamFlushTimerRef.current) {
+  const scheduleStreamFlush = () => {
+    if (streamFlushFrameRef.current !== null) {
       return
     }
 
-    streamFlushTimerRef.current = window.setTimeout(() => {
-      streamFlushTimerRef.current = null
+    streamFlushFrameRef.current = window.requestAnimationFrame(() => {
+      streamFlushFrameRef.current = null
 
       const messageId = streamTargetMessageIdRef.current
       if (messageId === null) {
@@ -643,25 +640,9 @@ export function LearnChat({
         return
       }
 
-      let chunk = buffered
-      if (buffered.length > STREAMING_BATCH_SIZE) {
-        const punctuationIndex = buffered
-          .slice(0, STREAMING_BATCH_SIZE + 1)
-          .search(/[，。！？；：\n]/)
-
-        chunk =
-          punctuationIndex >= 0
-            ? buffered.slice(0, punctuationIndex + 1)
-            : buffered.slice(0, STREAMING_BATCH_SIZE)
-      }
-
-      streamBufferRef.current = buffered.slice(chunk.length)
-      appendAssistantChunk(messageId, chunk)
-
-      if (streamBufferRef.current) {
-        scheduleStreamFlush()
-      }
-    }, delayMs)
+      streamBufferRef.current = ""
+      appendAssistantChunk(messageId, buffered)
+    })
   }
 
   const enqueueStreamDelta = (messageId: number, delta: string) => {
@@ -678,15 +659,6 @@ export function LearnChat({
     }
 
     streamBufferRef.current += delta
-
-    if (
-      streamBufferRef.current.length >= STREAMING_BATCH_SIZE ||
-      /[，。！？；：\n]/.test(streamBufferRef.current)
-    ) {
-      scheduleStreamFlush(30)
-      return
-    }
-
     scheduleStreamFlush()
   }
 

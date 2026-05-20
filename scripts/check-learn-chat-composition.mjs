@@ -241,6 +241,16 @@ assert.match(
   /typeof payload\.content === "string"/,
   "LearnChat should replace streamed assistant text with the final persisted content from SSE completion payload",
 )
+assert.doesNotMatch(
+  learnChatSource,
+  /STREAMING_BATCH_DELAY_MS/,
+  "LearnChat should not add a second artificial delay layer on top of provider streaming",
+)
+assert.doesNotMatch(
+  learnChatSource,
+  /STREAMING_BATCH_SIZE/,
+  "LearnChat should not re-chunk provider deltas into tiny batches",
+)
 assert.match(
   messageItemSource,
   /Boolean\(message\.speechMessageId\)/,
