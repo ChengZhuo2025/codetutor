@@ -91,6 +91,7 @@ function findImageFileFromItems(items: DataTransferItemList) {
 
 type LearnChatComposerProps = {
   sendError: string | null
+  canRetry: boolean
   onRetry: () => void
   connectionState: ConnectionState
   quickActions: QuickAction[]
@@ -108,6 +109,7 @@ type LearnChatComposerProps = {
   onRemovePreview: () => void
   onSelectAttachment: (file: File) => void
   onRecordAudio: (file: File, durationMs: number) => void
+  onRecordingError: (message: string) => void
   fileInputRef: RefObject<HTMLInputElement | null>
   textareaRef: RefObject<HTMLTextAreaElement | null>
   input: string
@@ -117,6 +119,7 @@ type LearnChatComposerProps = {
 
 export function LearnChatComposer({
   sendError,
+  canRetry,
   onRetry,
   connectionState,
   quickActions,
@@ -134,6 +137,7 @@ export function LearnChatComposer({
   onRemovePreview,
   onSelectAttachment,
   onRecordAudio,
+  onRecordingError,
   fileInputRef,
   textareaRef,
   input,
@@ -144,6 +148,7 @@ export function LearnChatComposer({
   const [recordingElapsedMs, setRecordingElapsedMs] = useState(0)
   const [isDraggingImage, setIsDraggingImage] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const recordingStreamRef = useRef<MediaStream | null>(null)
   const audioChunksRef = useRef<BlobPart[]>([])
   const recordingStartedAtRef = useRef<number>(0)
   const inputHint = getInputHint(connectionState, isTyping, previewAttachment, isRecording)
@@ -157,6 +162,11 @@ export function LearnChatComposer({
 
   const stopRecording = useCallback(() => {
     mediaRecorderRef.current?.stop()
+  }, [])
+
+  const releaseRecordingStream = useCallback(() => {
+    recordingStreamRef.current?.getTracks().forEach((track) => track.stop())
+    recordingStreamRef.current = null
   }, [])
 
   useEffect(() => {
@@ -181,13 +191,43 @@ export function LearnChatComposer({
     }
   }, [isRecording, stopRecording])
 
+  useEffect(() => () => {
+    mediaRecorderRef.current?.stop()
+    releaseRecordingStream()
+  }, [releaseRecordingStream])
+
   const startRecording = async () => {
     if (isTyping || connectionState !== "online" || previewAttachment) {
       return
     }
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    const recorder = new MediaRecorder(stream)
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      onRecordingError("当前浏览器不支持网页录音，请改用文字或截图发送。")
+      return
+    }
+
+    let stream: MediaStream
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch (error) {
+      const message =
+        error instanceof DOMException && error.name === "NotAllowedError"
+          ? "浏览器没有麦克风权限，请允许访问后再试。"
+          : "无法访问麦克风，请检查设备是否可用后再试。"
+      onRecordingError(message)
+      return
+    }
+
+    let recorder: MediaRecorder
+    try {
+      recorder = new MediaRecorder(stream)
+    } catch {
+      stream.getTracks().forEach((track) => track.stop())
+      onRecordingError("当前浏览器暂时无法创建录音，请改用文字输入。")
+      return
+    }
+
+    recordingStreamRef.current = stream
     audioChunksRef.current = []
     recordingStartedAtRef.current = Date.now()
     setRecordingElapsedMs(0)
@@ -206,7 +246,7 @@ export function LearnChatComposer({
       const extension = mimeType.includes("ogg") ? "ogg" : mimeType.includes("mp4") ? "m4a" : "webm"
       const file = new File([blob], `learning-voice-${Date.now()}.${extension}`, { type: mimeType })
 
-      stream.getTracks().forEach((track) => track.stop())
+      releaseRecordingStream()
       mediaRecorderRef.current = null
       setIsRecording(false)
       setRecordingElapsedMs(0)
@@ -304,8 +344,8 @@ export function LearnChatComposer({
             status="error"
             title="消息发送失败"
             description={sendError}
-            actionLabel="重试发送"
-            onAction={connectionState === "online" ? onRetry : undefined}
+            actionLabel={canRetry ? "重试发送" : undefined}
+            onAction={canRetry && connectionState === "online" ? onRetry : undefined}
             compact
             className="mb-3"
             extra={

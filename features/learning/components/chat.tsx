@@ -57,6 +57,17 @@ type PendingDraft = {
   attachment: DraftAttachment | null
 }
 
+type PendingRetry =
+  | {
+      kind: "message"
+      draft: PendingDraft
+    }
+  | {
+      kind: "complete_task"
+      userContent?: string
+      appendUserMessage: boolean
+    }
+
 type SpeechStatus = "idle" | "loading" | "playing" | "paused"
 
 type SSEEventHandler = (event: string, data: Record<string, unknown>) => void
@@ -204,7 +215,7 @@ export function LearnChat({
   const [previewAttachment, setPreviewAttachment] =
     useState<DraftAttachment | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
-  const [failedDraft, setFailedDraft] = useState<PendingDraft | null>(null)
+  const [pendingRetry, setPendingRetry] = useState<PendingRetry | null>(null)
   const [connectionState, setConnectionState] =
     useState<ConnectionState>("online")
   const [showSupportOptions, setShowSupportOptions] = useState(false)
@@ -703,7 +714,7 @@ export function LearnChat({
     setInput("")
     setPreviewAttachment(null)
     setSendError(null)
-    setFailedDraft(null)
+    setPendingRetry(null)
     if (textareaRef.current) textareaRef.current.style.height = "auto"
   }
 
@@ -770,21 +781,35 @@ export function LearnChat({
     return data
   }
 
-  const completeCurrentTask = async (userContent?: string) => {
+  const completeCurrentTask = async (
+    userContent?: string,
+    options?: {
+      appendUserMessage?: boolean
+    },
+  ) => {
     if (connectionState !== "online") {
+      setPendingRetry({
+        kind: "complete_task",
+        userContent,
+        appendUserMessage: options?.appendUserMessage ?? true,
+      })
       setSendError("当前网络连接不稳定，完成结果尚未提交。恢复后请重试。")
       return
     }
 
-    const userMessage: Message = {
-      id: allocateMessageId(),
-      role: "user",
-      kind: "user_input",
-      title: "我的反馈",
-      content: userContent?.trim() || "我完成了",
+    const shouldAppendUserMessage = options?.appendUserMessage ?? true
+    if (shouldAppendUserMessage) {
+      const userMessage: Message = {
+        id: allocateMessageId(),
+        role: "user",
+        kind: "user_input",
+        title: "我的反馈",
+        content: userContent?.trim() || "我完成了",
+      }
+
+      setMessages((prev) => [...prev, userMessage])
     }
 
-    setMessages((prev) => [...prev, userMessage])
     setShowSupportOptions(false)
     setIsTyping(true)
     setSendError(null)
@@ -800,11 +825,16 @@ export function LearnChat({
 
       setTaskState("completed")
       appendTaskFeedbackMessage(data)
-      setFailedDraft(null)
+      setPendingRetry(null)
       setInput("")
       setPreviewAttachment(null)
       requestSessionRefresh()
     } catch (error) {
+      setPendingRetry({
+        kind: "complete_task",
+        userContent,
+        appendUserMessage: false,
+      })
       setSendError(
         error instanceof Error ? error.message : "任务完成失败，请稍后重试。",
       )
@@ -820,7 +850,10 @@ export function LearnChat({
     },
   ) => {
     if (connectionState !== "online") {
-      setFailedDraft(draft)
+      setPendingRetry({
+        kind: "message",
+        draft,
+      })
       setSendError("当前网络连接不稳定，消息尚未发出。恢复后可直接重试。")
       return
     }
@@ -1025,14 +1058,17 @@ export function LearnChat({
         )
       }
 
-      setFailedDraft(null)
+      setPendingRetry(null)
       setSendError(null)
     } catch (error) {
       resetStreamState()
       setMessages((prev) =>
         prev.filter((message) => message.id !== assistantMessageId),
       )
-      setFailedDraft(draft)
+      setPendingRetry({
+        kind: "message",
+        draft,
+      })
       setSendError(
         error instanceof Error ? error.message : "消息发送失败，请稍后重试。",
       )
@@ -1197,10 +1233,21 @@ export function LearnChat({
     )
   }
 
-  const handleRetry = () => {
-    if (!failedDraft || connectionState !== "online") return
+  const retryPendingOperation = () => {
+    if (!pendingRetry || connectionState !== "online") return
+
+    const retry = pendingRetry
     setSendError(null)
-    void dispatchDraft(failedDraft)
+    setPendingRetry(null)
+
+    if (retry.kind === "complete_task") {
+      void completeCurrentTask(retry.userContent, {
+        appendUserMessage: retry.appendUserMessage,
+      })
+      return
+    }
+
+    void dispatchDraft(retry.draft)
   }
 
   const handleResume = () => {
@@ -1401,7 +1448,8 @@ export function LearnChat({
 
         <LearnChatComposer
           sendError={sendError}
-          onRetry={handleRetry}
+          canRetry={Boolean(pendingRetry)}
+          onRetry={retryPendingOperation}
           connectionState={connectionState}
           quickActions={learningData.quickActions}
           canTriggerCompleteQuickAction={canTriggerCompleteQuickAction}
@@ -1418,6 +1466,9 @@ export function LearnChat({
           onRemovePreview={removePreview}
           onSelectAttachment={handleSelectAttachment}
           onRecordAudio={handleRecordAudio}
+          onRecordingError={(message) => {
+            toast.error("无法开始录音", message)
+          }}
           fileInputRef={fileInputRef}
           textareaRef={textareaRef}
           input={input}

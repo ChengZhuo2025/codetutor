@@ -178,6 +178,7 @@ export function LearnPage() {
 
     try {
       if (window.sessionStorage?.getItem(key) === "1") return
+      window.sessionStorage?.setItem(key, "1")
       window.setTimeout(() => setMaterialDialog((prev) => ({ ...prev, open: true })), 0)
     } catch (error) {
       console.warn("Failed to access sessionStorage:", error)

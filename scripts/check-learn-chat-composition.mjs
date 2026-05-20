@@ -218,6 +218,21 @@ assert.match(
 )
 assert.match(
   learnChatSource,
+  /type PendingRetry/,
+  "LearnChat should model retryable failed operations explicitly",
+)
+assert.match(
+  learnChatSource,
+  /kind: "complete_task"/,
+  "LearnChat should preserve failed task-completion attempts for retry",
+)
+assert.match(
+  learnChatSource,
+  /retryPendingOperation/,
+  "LearnChat should route retry actions through the pending operation type",
+)
+assert.match(
+  learnChatSource,
   /typeof payload\.messageId === "string"/,
   "LearnChat should store the persisted assistant message id from SSE completion payload",
 )
@@ -245,6 +260,31 @@ assert.match(
   composerSource,
   /onDrop=\{handleDrop\}/,
   "learn chat composer should accept dropped image files",
+)
+assert.match(
+  composerSource,
+  /onRecordingError/,
+  "learn chat composer should surface microphone recording errors to the parent",
+)
+assert.match(
+  composerSource,
+  /actionLabel=\{canRetry \? "重试发送" : undefined\}/,
+  "learn chat composer should only show retry action when a retryable operation exists",
+)
+assert.match(
+  composerSource,
+  /getUserMedia[\s\S]*catch/,
+  "learn chat composer should catch microphone permission and device failures",
+)
+assert.match(
+  composerSource,
+  /MediaRecorder/,
+  "learn chat composer should guard browser recording support",
+)
+assert.match(
+  learnPageSource,
+  /sessionStorage\?\.setItem\(key, "1"\)[\s\S]*setMaterialDialog\(\(prev\) => \(\{ \.\.\.prev, open: true \}\)\)/,
+  "learn page should persist the self-directed plan prompt before auto-opening the dialog",
 )
 assert.match(
   richContentSource,
