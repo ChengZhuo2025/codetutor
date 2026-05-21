@@ -34,7 +34,7 @@ export function LearnChatHero({ mission, rightPanel }: LearnChatHeroProps) {
           未获取到任务信息
         </div>
         <p className="text-sm leading-7 text-muted-foreground">
-          当前任务卡暂时没有拿到可展示的数据。你可以回到学习地图重新进入本关，或者等待联调接口后自动恢复。
+          当前任务卡暂时没有拿到可展示的数据。你可以回到学习地图重新进入当前任务，或者等待联调接口后自动恢复。
         </p>
       </div>
     );

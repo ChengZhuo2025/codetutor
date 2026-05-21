@@ -150,26 +150,26 @@ function getDraftTaskValidationError(
 ) {
   for (const task of draftDetail.tasks) {
     if (task.lessonBrief.trim().length < 20) {
-      return `第 ${task.taskNo} 关“先理解方法”需要写成可读的新手教案。`
+      return `第 ${task.taskNo} 步“先理解方法”需要写成可读的新手教案。`
     }
 
     if (task.submissionGuide.trim().length < 10) {
-      return `第 ${task.taskNo} 关“提交说明”需要明确用户做完后提交什么。`
+      return `第 ${task.taskNo} 步“提交说明”需要明确用户做完后提交什么。`
     }
 
     const checkpointCount = task.checkpoints.filter((item) => item.trim().length > 0).length
     if (checkpointCount < 2) {
-      return `第 ${task.taskNo} 关“AI 检查点”至少保留 2 条。`
+      return `第 ${task.taskNo} 步“AI 检查点”至少保留 2 条。`
     }
 
     const masteryPointCount = task.masteryPoints.filter((item) => item.trim().length > 0).length
     if (masteryPointCount < 2) {
-      return `第 ${task.taskNo} 关“本关要掌握”至少保留 2 条。`
+      return `第 ${task.taskNo} 步“当前任务要掌握”至少保留 2 条。`
     }
 
     const cautionCount = task.cautions.filter((item) => item.text.trim().length > 0).length
     if (cautionCount < 1) {
-      return `第 ${task.taskNo} 关“注意事项”至少保留 1 条。`
+      return `第 ${task.taskNo} 步“注意事项”至少保留 1 条。`
     }
   }
 
@@ -928,7 +928,7 @@ export function MaterialPlanPanel({
             {draftDetail.tasks.map((task) => (
               <div key={task.id} className="space-y-3 rounded-2xl border border-border/50 bg-background/70 p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-foreground">第 {task.taskNo} 关</p>
+                  <p className="text-sm font-medium text-foreground">第 {task.taskNo} 步</p>
                   <Button
                     type="button"
                     size="sm"
@@ -941,7 +941,7 @@ export function MaterialPlanPanel({
                     ) : (
                       <RefreshCw className="size-4" aria-hidden />
                     )}
-                    重生成此关
+                    重生成此步
                   </Button>
                 </div>
 
@@ -1095,7 +1095,7 @@ export function MaterialPlanPanel({
 
                 <div className="grid gap-3 lg:grid-cols-2">
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">本关要掌握（每行一条）</p>
+                    <p className="text-xs font-medium text-muted-foreground">当前任务要掌握（每行一条）</p>
                     <Textarea
                       value={task.masteryPoints.join("\n")}
                       onChange={(e) =>
@@ -1120,7 +1120,7 @@ export function MaterialPlanPanel({
                       }
                       rows={4}
                       disabled={busyAction !== null}
-                      placeholder={"例如：知道这关要验证什么\n例如：能独立判断是否完成"}
+                      placeholder={"例如：知道这一步要验证什么\n例如：能独立判断是否完成"}
                     />
                   </div>
                   <div className="space-y-2">

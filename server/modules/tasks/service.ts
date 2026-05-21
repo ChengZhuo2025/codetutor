@@ -163,7 +163,7 @@ function buildCompletionSummary(completedTitle: string, nextTaskTitle: string | 
 
 function assertActivePath(path: PathRow) {
   if (path.status !== "active") {
-    throw new Error("当前学习计划不是进行中状态，无法更新关卡。")
+    throw new Error("当前学习计划不是进行中状态，无法更新任务。")
   }
 }
 
@@ -185,7 +185,7 @@ export async function completeTask(
 
   const profile = await loadProfile(userId)
   if (!profile) {
-    throw new Error("当前用户档案不存在，无法完成关卡。")
+    throw new Error("当前用户档案不存在，无法完成任务。")
   }
 
   const pathTasks = await loadPathTasks(path.id)
@@ -194,7 +194,7 @@ export async function completeTask(
   const currentStep = stepById.get(task.path_step_id)
 
   if (!currentStep) {
-    throw new Error("当前任务步骤不存在，无法完成关卡。")
+    throw new Error("当前任务步骤不存在，无法完成任务。")
   }
 
   if (task.status === "completed") {
@@ -202,7 +202,7 @@ export async function completeTask(
       path.current_task_id === null
         ? null
         : pathTasks.find((item) => item.id === path.current_task_id) ?? null
-    const nextTaskTitle = nextTask ? stepById.get(nextTask.path_step_id)?.title ?? "下一关" : null
+    const nextTaskTitle = nextTask ? stepById.get(nextTask.path_step_id)?.title ?? "下一步" : null
 
     return {
       taskId: task.id,
@@ -225,7 +225,7 @@ export async function completeTask(
   assertActivePath(path)
 
   if (path.current_task_id !== task.id) {
-    throw new Error("只能完成当前正在进行的关卡。")
+    throw new Error("只能完成当前正在进行的任务。")
   }
 
   const progression = resolveTaskProgression({
@@ -245,7 +245,7 @@ export async function completeTask(
     progression.nextTaskId === null
       ? null
       : pathTasks.find((item) => item.id === progression.nextTaskId) ?? null
-  const nextTaskTitle = nextTask ? stepById.get(nextTask.path_step_id)?.title ?? "下一关" : null
+  const nextTaskTitle = nextTask ? stepById.get(nextTask.path_step_id)?.title ?? "下一步" : null
   const nextScore = profile.current_score + scoreDelta
   const supabase = createSupabaseAdminClient()
 
@@ -343,7 +343,7 @@ export async function completeTask(
   assertSupabaseSuccess(profileError, "failed to update user profile score")
 
   await createProgressMilestoneNotification(userId, {
-    title: `第 ${currentStep.step_no} 关已完成`,
+    title: `第 ${currentStep.step_no} 步已完成`,
     content: buildCompletionSummary(currentStep.title, nextTaskTitle),
     actionHref: progression.pathCompleted ? ROUTES.history : ROUTES.learn,
     actionLabel: progression.pathCompleted ? "查看历史" : "继续学习",
@@ -395,7 +395,7 @@ export async function updateTaskStatus(
   assertActivePath(path)
 
   if (path.current_task_id !== task.id) {
-    throw new Error("只能更新当前正在进行的关卡状态。")
+    throw new Error("只能更新当前正在进行的任务状态。")
   }
 
   const nextStatus = input.status

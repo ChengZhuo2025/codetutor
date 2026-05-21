@@ -34,19 +34,19 @@ test("buildStableAssistantActions always returns two user prompts plus one curre
     [
       {
         label: "我应该先做哪一步？",
-        prompt: "我应该先做哪一步？请结合当前关卡给我一个最小可执行动作。",
+        prompt: "我应该先做哪一步？请结合当前任务给我一个最小可执行动作。",
         tone: "secondary",
         kind: "prefill",
       },
       {
         label: "这是我的结果，请帮我判断",
-        prompt: "这是我的结果，请帮我判断是否达到当前关卡的完成标准：\n",
+        prompt: "这是我的结果，请帮我判断是否达到当前任务的完成标准：\n",
         tone: "secondary",
         kind: "prefill",
       },
       {
         label: "继续下一步",
-        prompt: "请继续当前关卡中的下一项练习，并告诉我先做什么。",
+        prompt: "请继续当前任务中的下一项练习，并告诉我先做什么。",
         tone: "primary",
         kind: "prefill",
       },
@@ -94,7 +94,7 @@ test("buildStableAssistantActions keeps contextual assistant prompts before the 
       },
       {
         label: "继续下一步",
-        prompt: "请继续当前关卡中的下一项练习，并告诉我先做什么。",
+        prompt: "请继续当前任务中的下一项练习，并告诉我先做什么。",
         tone: "primary",
         kind: "prefill",
       },
@@ -118,8 +118,8 @@ test("buildStableAssistantActions exposes next-stage progress only after complet
       nextTaskTitle: "变量和状态",
     }).at(-1),
     {
-      label: "继续下一关",
-      prompt: "进入下一关：变量和状态",
+      label: "进入下一步",
+      prompt: "进入下一步：变量和状态",
       tone: "success",
       kind: "advance_next_task",
     },
@@ -135,7 +135,7 @@ test("buildStableAssistantActions exposes next-stage progress only after complet
     }).at(-1),
     {
       label: "完成学习计划",
-      prompt: "我已完成当前关卡，请完成本轮学习计划。",
+      prompt: "我已完成当前任务，请完成本轮学习计划。",
       tone: "success",
       kind: "advance_next_task",
     },
@@ -150,8 +150,8 @@ test("buildStableAssistantActions exposes next-stage progress only after complet
       nextTaskTitle: "变量和状态",
     }).at(-1),
     {
-      label: "继续下一关",
-      prompt: "进入下一关：变量和状态",
+      label: "进入下一步",
+      prompt: "进入下一步：变量和状态",
       tone: "success",
       kind: "advance_next_task",
     },
@@ -164,7 +164,7 @@ test("shouldRenderMessageTaskPatch hides task patch while the assistant message 
       {
         taskId: "task-1",
         status: "in_progress",
-        suggestedNextAction: "继续推进当前关卡",
+        suggestedNextAction: "继续推进当前任务",
       },
       {
         messageId: 101,
@@ -179,7 +179,7 @@ test("shouldRenderMessageTaskPatch hides task patch while the assistant message 
       {
         taskId: "task-1",
         status: "in_progress",
-        suggestedNextAction: "继续推进当前关卡",
+        suggestedNextAction: "继续推进当前任务",
       },
       {
         messageId: 101,
@@ -252,6 +252,9 @@ test("isExplicitTaskCompletionInput recognizes strong completion intents but ign
   assert.equal(isExplicitTaskCompletionInput("我完成了"), true)
   assert.equal(isExplicitTaskCompletionInput("我已经完成第1关了，请开启下一关"), true)
   assert.equal(isExplicitTaskCompletionInput("这一关我已完成，可以继续下一步"), true)
+  assert.equal(isExplicitTaskCompletionInput("我已经完成第一步了"), false)
+  assert.equal(isExplicitTaskCompletionInput("我已经完成了这个小练习"), false)
+  assert.equal(isExplicitTaskCompletionInput("这项练习完成了，下一步是什么"), false)
   assert.equal(isExplicitTaskCompletionInput("我已经准备好开始第2关的学习"), false)
   assert.equal(isExplicitTaskCompletionInput("进入下一关"), false)
   assert.equal(isExplicitTaskCompletionInput("我完成了吗？"), false)
@@ -264,7 +267,7 @@ test("shouldCompleteCurrentTaskFromAssistantAction only promotes real completion
       messageKind: "task_feedback",
       taskPatchStatus: "completed",
       actionLabel: "继续下一步",
-      nextStep: "进入下一关：交互控制与智能辅助",
+      nextStep: "进入下一步：交互控制与智能辅助",
     }),
     true,
   )
@@ -274,7 +277,7 @@ test("shouldCompleteCurrentTaskFromAssistantAction only promotes real completion
       messageKind: "coach",
       taskPatchStatus: "in_progress",
       actionLabel: "进入下一关",
-      nextStep: "进入下一关：交互控制与智能辅助",
+      nextStep: "进入下一步：交互控制与智能辅助",
     }),
     false,
   )
@@ -287,7 +290,7 @@ test("resolveAssistantActionIntent keeps suggestion buttons as composer prefill 
       messageKind: "task_feedback",
       taskPatchStatus: "completed",
       actionLabel: "继续下一步",
-      nextStep: "进入下一关：交互控制与智能辅助",
+      nextStep: "进入下一步：交互控制与智能辅助",
     }),
     "prefill",
   )
@@ -297,7 +300,7 @@ test("resolveAssistantActionIntent keeps suggestion buttons as composer prefill 
       actionKind: "advance_next_task",
       messageKind: "coach",
       taskPatchStatus: "completed",
-      actionLabel: "继续下一关",
+      actionLabel: "进入下一步",
       nextStep: null,
     }),
     "advance_next_task",
@@ -337,9 +340,9 @@ test("canUseCompletionQuickAction requires both user evidence and assistant comp
         {
           role: "ai",
           kind: "coach",
-          content: "你已经满足本关完成标准，可以点击“我完成了”进入下一关。",
+          content: "你已经满足当前任务完成标准，可以点击“我完成了”进入下一步。",
           interactionType: "task_review",
-          actionLabels: ["进入下一关"],
+          actionLabels: ["进入下一步"],
           taskPatchStatus: "in_progress",
         },
       ],

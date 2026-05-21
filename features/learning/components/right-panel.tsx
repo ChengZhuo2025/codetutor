@@ -38,8 +38,8 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
         <>
           <PageSection
             eyebrow="你现在学到哪了"
-            title="本关任务进行到哪一步"
-            description="本关步骤依序展示：勾选为已完成，「进行中」为当前；全路径点「查看全部」。"
+            title="当前任务进行到哪一步"
+            description="当前学习计划依序展示：勾选为已完成，「进行中」为当前；全路径点「查看全部」。"
           >
             <div className="mb-3 flex items-center justify-end">
               <a
@@ -99,7 +99,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
 
           <PageSection
             eyebrow="先理解方法"
-            title="请先仔细阅读本关教案"
+            title="请先仔细阅读当前任务教案"
             description={rightPanel.lessonBrief}
           >
             <div className="space-y-2">
@@ -153,7 +153,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
               ) : null}
               <div className={WORKSPACE_ASIDE_INSET_CARD_CLASS}>
                 <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60">
-                  <span>本关进度</span>
+                  <span>任务进度</span>
                   <span>{mission.progressLabel}</span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-black/6 dark:bg-white/10">
@@ -167,7 +167,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
           </PageSection>
 
           <PageSection
-            eyebrow="本关要掌握"
+            eyebrow="当前任务要掌握"
             title="这一步真正要学会什么"
             description="按编号要点逐项对齐掌握标准。"
           >
@@ -219,7 +219,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
               <div className="min-w-0 flex-1">
                 <div className="mt-1 flex items-center gap-1 text-xs uppercase tracking-[0.12em] text-gold">
                   <Lightbulb className="h-3 w-3" />
-                  {mission.nextPreviewIsFinal ? "学习计划收尾" : "下一关预告"}
+                  {mission.nextPreviewIsFinal ? "学习计划收尾" : "下一步预告"}
                 </div>
                 <p className="mt-1 text-sm font-semibold text-foreground">
                   {mission.nextUnlockTitle}
@@ -235,7 +235,7 @@ export function LearnRightPanel({ className, learningData }: LearnRightPanelProp
         <StatePanel
           status="empty"
           title="任务上下文暂不可用"
-          description="当前会话没有可展示的关卡摘要。请刷新页面或从学习地图重新进入本关；若问题持续，请联系支持。"
+          description="当前会话没有可展示的任务摘要。请刷新页面或从学习地图重新进入当前任务；若问题持续，请联系支持。"
           extra={
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               <AlertCircle className="h-3.5 w-3.5" />

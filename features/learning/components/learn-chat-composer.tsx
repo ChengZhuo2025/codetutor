@@ -376,7 +376,7 @@ export function LearnChatComposer({
                   disabled={disabled}
                   title={
                     isCompletionAction && !canTriggerCompleteQuickAction
-                      ? "先提交一次结果、代码或问题，再标记当前关卡完成。"
+                      ? "先提交一次结果、代码或问题，再标记当前任务完成。"
                       : undefined
                   }
                   className={cn(

@@ -166,7 +166,7 @@ export function resolveLearningUserInteractionType(input: {
 
   // 自由对话兜底：未命中任何学习关键词的输入（包含偏题、闲聊、自然口吻提问等）
   // 都路由到概念问答 agent。learning-concept-qa-coach 的 system prompt 会对偏题
-  // 给出一两句简短回应并引回当前关卡，避免 teaching agent 因结构化生成卡顿超时。
+  // 给出一两句简短回应并引回当前任务，避免 teaching agent 因结构化生成卡顿超时。
   return "concept_qa"
 }
 
@@ -234,6 +234,13 @@ const ASSISTANT_COMPLETION_NEGATION_PATTERNS = [
 ]
 
 const ASSISTANT_COMPLETION_PATTERNS = [
+  /已经满足了?当前任务的完成标准/,
+  /已满足当前任务的完成标准/,
+  /已达到当前任务完成标准/,
+  /达到当前任务完成标准/,
+  /当前任务已通过验收/,
+  /当前任务.{0,4}验收(?:通过|完成|合格|成功)/,
+  /已通过当前任务(?:的)?验收/,
   /已经满足了?本关的完成标准/,
   /已满足本关的完成标准/,
   /已达到本关完成标准/,
@@ -242,8 +249,11 @@ const ASSISTANT_COMPLETION_PATTERNS = [
   /本关.{0,4}验收(?:通过|完成|合格|成功)/,
   /已通过本关(?:的)?验收/,
   /验收(?:结论|合格)/,
-  /恭喜你成功掌握了第\s*\d+\s*关/,
+  /恭喜你成功掌握了第\s*\d+\s*(?:步|关)/,
   /可(?:以)?进入下一关/,
+  /可(?:以)?进入下一步/,
+  /(?:你|您)?已(?:经)?(?:成功)?完成(?:了)?(?:当前任务|这个任务|这项任务)(?![的之])/,
+  /(?:当前任务|这个任务|这项任务)(?:的)?(?:学习|内容|目标|任务|练习|挑战)?(?:已经?|顺利|成功){1,3}(?:完成|结束|达成|通过)/,
   /(?:你|您)?已(?:经)?(?:成功)?完成(?:了)?(?:本关|这一关|当前(?:这)?关)(?![的之])/,
   /(?:本关|这一关|当前关卡)(?:的)?(?:学习|内容|目标|任务|练习|关卡|挑战)?(?:已经?|顺利|成功){1,3}(?:完成|结束|过关|达成|通过)/,
   /已达成本关(?:目标|目的|完成标准)/,
@@ -285,7 +295,7 @@ export function finalizeAssistantTaskPatch(input: {
     return {
       taskId: input.taskId,
       status: "completed" as const,
-      suggestedNextAction: "你已达到本关完成标准，可点击“我完成了”进入下一关。",
+      suggestedNextAction: "你已达到当前任务完成标准，可点击“我完成了”进入下一步。",
     }
   }
 
@@ -312,7 +322,7 @@ export function deriveTaskPatch(input: {
     return {
       taskId: input.taskId,
       status: "completed",
-      suggestedNextAction: "你已达到本关完成标准，可点击“我完成了”进入下一关。",
+      suggestedNextAction: "你已达到当前任务完成标准，可点击“我完成了”进入下一步。",
     }
   }
 
@@ -328,7 +338,7 @@ export function deriveTaskPatch(input: {
         ? "先按当前建议完成一个最小验证结果，再继续扩展"
         : input.interactionType === "task_review"
           ? "先根据复盘建议修正一个最关键缺口，再反馈结果"
-          : "继续围绕当前关卡做最小验证，并把结果反馈回来",
+          : "继续围绕当前任务做最小验证，并把结果反馈回来",
   }
 }
 

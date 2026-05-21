@@ -65,7 +65,7 @@ export function createCompleteTaskPostHandler(dependencies: {
           status: 400,
           messageIncludes: [
             "当前学习计划不是进行中状态",
-            "只能完成当前正在进行的关卡",
+            "只能完成当前正在进行的任务",
             "当前任务步骤不存在",
           ],
         },
@@ -107,7 +107,7 @@ export function createUpdateTaskStatusPostHandler(dependencies: {
           status: 400,
           messageIncludes: [
             "当前学习计划不是进行中状态",
-            "只能更新当前正在进行的关卡状态",
+            "只能更新当前正在进行的任务状态",
           ],
         },
       ])

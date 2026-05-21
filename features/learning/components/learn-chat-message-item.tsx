@@ -93,7 +93,7 @@ function getTaskPatchDisplayMeta(taskPatch: NonNullable<Message["taskPatch"]>) {
 
   if (taskPatch.status === "completed") {
     return {
-      badge: "已完成当前关卡",
+      badge: "已完成当前任务",
       badgeClass: CHAT_TONE_CLASS.success.badge,
       panelClass: CHAT_TONE_CLASS.success.panel,
       iconClass: CHAT_TONE_CLASS.success.icon,
@@ -101,7 +101,7 @@ function getTaskPatchDisplayMeta(taskPatch: NonNullable<Message["taskPatch"]>) {
   }
 
   return {
-    badge: "继续推进当前关卡",
+    badge: "继续推进当前任务",
     badgeClass: CHAT_TONE_CLASS.info.badge,
     panelClass: CHAT_TONE_CLASS.info.panel,
     iconClass: CHAT_TONE_CLASS.info.icon,

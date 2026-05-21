@@ -136,6 +136,6 @@ export type LearningMission = {
   coachCue: string
   nextUnlockTitle: string
   nextUnlockSummary: string
-  /** 为 true 时表示当前已是路径上最后一关，预告区应展示收尾语义而非「下一关」 */
+  /** 为 true 时表示当前已是路径上最后一步，预告区应展示收尾语义而非「下一步」 */
   nextPreviewIsFinal: boolean
 }

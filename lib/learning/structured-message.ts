@@ -117,8 +117,8 @@ function normalizeInTaskAction(
   if (/(巩固).*(第\s*\d+\s*关|下一关)/.test(combined)) {
     return {
       ...action,
-      label: "巩固本关技巧",
-      prompt: "我想再巩固一下当前这一关的一个技巧，请给我一个针对性的练习任务。",
+      label: "巩固当前任务技巧",
+      prompt: "我想再巩固一下当前任务里的一个技巧，请给我一个针对性的练习任务。",
     }
   }
 
@@ -126,7 +126,7 @@ function normalizeInTaskAction(
     return {
       ...action,
       label: "进入下一步",
-      prompt: "请继续当前关卡中的下一项练习，并告诉我先做什么。",
+      prompt: "请继续当前任务中的下一项练习，并告诉我先做什么。",
     }
   }
 
@@ -468,8 +468,8 @@ function buildStructuredActions(input: {
   ) {
     return [
       {
-        label: "进入下一关",
-        prompt: "我已完成当前关卡，请带我进入下一关并告诉我开头第一步该做什么。",
+        label: "进入下一步",
+        prompt: "我已完成当前任务，请带我进入下一步并告诉我开头第一步该做什么。",
         tone: "success",
       },
     ]
@@ -508,7 +508,7 @@ function buildStructuredActions(input: {
   return [
     {
       label: "进入下一步",
-      prompt: "请继续当前关卡中的下一项练习，并告诉我先做什么。",
+      prompt: "请继续当前任务中的下一项练习，并告诉我先做什么。",
       tone: "primary",
     },
   ]

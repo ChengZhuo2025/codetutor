@@ -35,7 +35,7 @@ assert.doesNotMatch(
 )
 assert.match(
   learnSource,
-  /eyebrow="你现在学到哪了"[\s\S]*title="本关任务进行到哪一步"[\s\S]*description="本关步骤依序展示：勾选为已完成，「进行中」为当前；全路径点「查看全部」。"/,
+  /eyebrow="你现在学到哪了"[\s\S]*title="当前任务进行到哪一步"[\s\S]*description="当前学习计划依序展示：勾选为已完成，「进行中」为当前；全路径点「查看全部」。"/,
   "LearnRightPanel should use learner-friendly wording for the current path card",
 )
 assert.match(

@@ -33,9 +33,9 @@ export function LearnChatRestartDialog({
       <DialogContent className="max-h-[75vh] overflow-y-auto p-0 sm:max-w-[400px]">
         <div className={cn("border-b px-5 pt-5 pb-6", USER_PANEL_DIVIDER_CLASS)}>
           <DialogHeader className="text-left">
-            <DialogTitle className="text-base">重头开始本关对话？</DialogTitle>
+            <DialogTitle className="text-base">重头开始当前任务对话？</DialogTitle>
             <DialogDescription className="mt-2 text-sm text-muted-foreground">
-              当前关卡的聊天记录将从学习页隐藏，并在你下次发送消息时开启新的对话。历史仍保留在服务端，不会用于新对话上下文。
+              当前任务的聊天记录将从学习页隐藏，并在你下次发送消息时开启新的对话。历史仍保留在服务端，不会用于新对话上下文。
             </DialogDescription>
           </DialogHeader>
         </div>

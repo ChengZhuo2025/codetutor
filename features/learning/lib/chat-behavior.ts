@@ -62,6 +62,12 @@ const COMPLETION_QUESTION_PATTERNS = [
   /是否.*完成/,
 ]
 
+const PARTIAL_STEP_COMPLETION_PATTERNS = [
+  /完成(?:了|好|完)?第?\s*\d+\s*步/,
+  /完成(?:了|好|完)?第?\s*[一二三四五六七八九十]+\s*步/,
+  /完成(?:了|好|完)?(?:这一步|当前这一步|这个步骤|这项练习|这一项|当前练习|这个小练习|小练习|子步骤)/,
+]
+
 const ADVANCE_NEXT_TASK_NEGATION_PATTERNS = [
   /还没完成/,
   /还没有完成/,
@@ -113,7 +119,7 @@ const ADVANCE_NEXT_TASK_INTENT_PATTERNS = [
 ]
 
 // 与 server/modules/learning/logic.ts 中 ASSISTANT_COMPLETION_NEGATION_PATTERNS 保持等价。
-// 用于前端识别 AI 上一条回复"是否表示本关已完成"。
+// 用于前端识别 AI 上一条回复"是否表示当前任务已完成"。
 const ASSISTANT_COMPLETION_NEGATION_PATTERNS = [
   /还需要确认/,
   /还需确认/,
@@ -132,6 +138,13 @@ const ASSISTANT_COMPLETION_NEGATION_PATTERNS = [
 
 // 与 server/modules/learning/logic.ts 中 ASSISTANT_COMPLETION_PATTERNS 保持等价。
 const ASSISTANT_COMPLETION_PATTERNS = [
+  /已经满足了?当前任务的完成标准/,
+  /已满足当前任务的完成标准/,
+  /已达到当前任务完成标准/,
+  /达到当前任务完成标准/,
+  /当前任务已通过验收/,
+  /当前任务.{0,4}验收(?:通过|完成|合格|成功)/,
+  /已通过当前任务(?:的)?验收/,
   /已经满足了?本关的完成标准/,
   /已满足本关的完成标准/,
   /已达到本关完成标准/,
@@ -140,8 +153,11 @@ const ASSISTANT_COMPLETION_PATTERNS = [
   /本关.{0,4}验收(?:通过|完成|合格|成功)/,
   /已通过本关(?:的)?验收/,
   /验收(?:结论|合格)/,
-  /恭喜你成功掌握了第\s*\d+\s*关/,
+  /恭喜你成功掌握了第\s*\d+\s*(?:步|关)/,
   /可(?:以)?进入下一关/,
+  /可(?:以)?进入下一步/,
+  /(?:你|您)?已(?:经)?(?:成功)?完成(?:了)?(?:当前任务|这个任务|这项任务)(?![的之])/,
+  /(?:当前任务|这个任务|这项任务)(?:的)?(?:学习|内容|目标|任务|练习|挑战)?(?:已经?|顺利|成功){1,3}(?:完成|结束|达成|通过)/,
   /(?:你|您)?已(?:经)?(?:成功)?完成(?:了)?(?:本关|这一关|当前(?:这)?关)(?![的之])/,
   /(?:本关|这一关|当前关卡)(?:的)?(?:学习|内容|目标|任务|练习|关卡|挑战)?(?:已经?|顺利|成功){1,3}(?:完成|结束|过关|达成|通过)/,
   /已达成本关(?:目标|目的|完成标准)/,
@@ -172,6 +188,10 @@ export function isExplicitTaskCompletionInput(text: string) {
   }
 
   if (COMPLETION_QUESTION_PATTERNS.some((pattern) => pattern.test(normalized))) {
+    return false
+  }
+
+  if (PARTIAL_STEP_COMPLETION_PATTERNS.some((pattern) => pattern.test(normalized))) {
     return false
   }
 
@@ -234,13 +254,13 @@ export function buildStableAssistantActions(input: {
         }
       : {
           label: "我应该先做哪一步？",
-          prompt: "我应该先做哪一步？请结合当前关卡给我一个最小可执行动作。",
+          prompt: "我应该先做哪一步？请结合当前任务给我一个最小可执行动作。",
           tone: "secondary",
           kind: "prefill",
         },
     {
       label: "这是我的结果，请帮我判断",
-      prompt: "这是我的结果，请帮我判断是否达到当前关卡的完成标准：\n",
+      prompt: "这是我的结果，请帮我判断是否达到当前任务的完成标准：\n",
       tone: "secondary",
       kind: "prefill",
     },
@@ -259,21 +279,21 @@ export function buildStableAssistantActions(input: {
       ? input.isFinalTask
         ? {
             label: "完成学习计划",
-            prompt: "我已完成当前关卡，请完成本轮学习计划。",
+            prompt: "我已完成当前任务，请完成本轮学习计划。",
             tone: "success",
             kind: "advance_next_task",
           }
         : {
-            label: "继续下一关",
+            label: "进入下一步",
             prompt: input.nextTaskTitle
-              ? `进入下一关：${input.nextTaskTitle}`
-              : "我已完成当前关卡，请进入下一关。",
+              ? `进入下一步：${input.nextTaskTitle}`
+              : "我已完成当前任务，请进入下一步。",
             tone: "success",
             kind: "advance_next_task",
           }
       : {
           label: "继续下一步",
-          prompt: "请继续当前关卡中的下一项练习，并告诉我先做什么。",
+          prompt: "请继续当前任务中的下一项练习，并告诉我先做什么。",
           tone: "primary",
           kind: "prefill",
         }
@@ -373,14 +393,14 @@ export function canUseCompletionQuickAction(input: {
     }
 
     if (
-      /(已满足本关.*完成标准|本关.*已完成|可以点击.?我完成了.?进入下一关|可以结束本关)/.test(
+      /(已满足(?:本关|当前任务).*完成标准|(?:本关|当前任务).*已完成|可以点击.?我完成了.?(?:进入下一关|进入下一步)|可以结束(?:本关|当前任务))/.test(
         message.content,
       )
     ) {
       return true
     }
 
-    return message.actionLabels.some((label) => /完成本关|进入下一关/.test(label))
+    return message.actionLabels.some((label) => /完成(?:本关|当前任务)|进入下一(?:关|步)/.test(label))
   })
 }
 
@@ -402,7 +422,7 @@ export function shouldAutoAdvanceFromAdvanceIntent(input: {
   }>
 }) {
   if (input.taskState === "completed") {
-    // 任务已经处于完成态，再发"进入下一关"应通过 /task/complete 推进。
+    // 任务已经处于完成态，再发“进入下一步/下一关”应通过 /task/complete 推进。
     return true
   }
 

@@ -77,7 +77,7 @@ const ASSISTANT_MESSAGE_VARIANT_META: Record<
 > = {
   default: {
     label: "学习引导",
-    hint: "这里是你这关的练习重点，按步骤做一小步就好。",
+    hint: "这里是当前任务的练习重点，按步骤做一小步就好。",
     panelClass: "border-brand/20 bg-surface-2",
     iconClass: "text-brand",
     chipClass: "border-brand/20 bg-brand-dim/60 text-brand",
@@ -133,7 +133,7 @@ const ASSISTANT_MESSAGE_VARIANT_META: Record<
   },
   completion: {
     label: "完成反馈",
-    hint: "总结这一步收获，并准备进入下一关。",
+    hint: "总结当前任务收获，并准备进入下一步。",
     panelClass: "border-emerald-500/20 bg-surface-2",
     iconClass: "text-emerald-600 dark:text-emerald-300",
     chipClass:
@@ -204,7 +204,7 @@ const ASSISTANT_MESSAGE_INTERACTION_META: Record<
   },
   concept_qa: {
     label: "概念解答",
-    hint: "直接回答技术概念问题，不受关卡范围限制。",
+    hint: "直接回答技术概念问题，不受当前任务范围限制。",
     panelClass: "border-sky-500/20 bg-surface-2",
     iconClass: "text-sky-500",
     chipClass: "border-sky-500/20 bg-sky-500/10 text-sky-500",

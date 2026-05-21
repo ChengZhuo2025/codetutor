@@ -216,7 +216,7 @@ test("deriveTaskPatch keeps normal teaching interactions in progress before task
     {
       taskId: "task-2",
       status: "in_progress",
-      suggestedNextAction: "继续围绕当前关卡做最小验证，并把结果反馈回来",
+      suggestedNextAction: "继续围绕当前任务做最小验证，并把结果反馈回来",
     },
   )
 })
@@ -224,14 +224,14 @@ test("deriveTaskPatch keeps normal teaching interactions in progress before task
 test("assistant completion detection only upgrades real pass/fail conclusions", () => {
   assert.equal(
     shouldTreatAssistantResponseAsCompletion(
-      "结合你之前对 /clear 的准确理解，你已经满足了本关的完成标准。",
+      "结合你之前对 /clear 的准确理解，你已经满足了当前任务的完成标准。",
     ),
     true,
   )
 
   assert.equal(
     shouldTreatAssistantResponseAsCompletion(
-      "为了全面验收本关，我们还需要确认其他三项技巧的掌握情况。",
+      "为了全面验收当前任务，我们还需要确认其他三项技巧的掌握情况。",
     ),
     false,
   )
@@ -242,7 +242,7 @@ test("resolveAssistantInteractionType upgrades teaching replies that clearly con
     resolveAssistantInteractionType({
       requestedInteractionType: "teaching",
       assistantContent:
-        "非常好！结合你之前的展示，你已经满足了本关的完成标准。建议进入下一关。",
+        "非常好！结合你之前的展示，你已经满足了当前任务的完成标准。建议进入下一步。",
     }),
     "completion_feedback",
   )
@@ -250,7 +250,7 @@ test("resolveAssistantInteractionType upgrades teaching replies that clearly con
   assert.equal(
     resolveAssistantInteractionType({
       requestedInteractionType: "teaching",
-      assistantContent: "现在进入关卡验收，请再选择至少一项进行演示。",
+      assistantContent: "现在进入任务验收，请再选择至少一项进行演示。",
     }),
     "teaching",
   )
@@ -263,15 +263,15 @@ test("finalizeAssistantTaskPatch upgrades accepted review replies into a complet
       initialTaskPatch: {
         taskId: "task-3",
         status: "in_progress",
-        suggestedNextAction: "继续围绕当前关卡做最小验证，并把结果反馈回来",
+        suggestedNextAction: "继续围绕当前任务做最小验证，并把结果反馈回来",
       },
       assistantContent:
-        "结合你之前对 /clear 的准确理解，你已经满足了本关的完成标准。",
+        "结合你之前对 /clear 的准确理解，你已经满足了当前任务的完成标准。",
     }),
     {
       taskId: "task-3",
       status: "completed",
-      suggestedNextAction: "你已达到本关完成标准，可点击“我完成了”进入下一关。",
+      suggestedNextAction: "你已达到当前任务完成标准，可点击“我完成了”进入下一步。",
     },
   )
 })
@@ -306,7 +306,7 @@ test("shouldPersistTaskPatch only persists state changes that are not completion
       {
         taskId: "task-1",
         status: "completed",
-        suggestedNextAction: "进入下一关",
+        suggestedNextAction: "进入下一步",
       },
       "in_progress",
     ),
@@ -443,7 +443,7 @@ test("parseStoredStructuredLearningMessageContent restores persisted structured 
       blocks: [
         {
           type: "unordered_list",
-          items: ["你已经确认了当前关卡的关键能力", "接下来可以进入下一关"],
+          items: ["你已经确认了当前任务的关键能力", "接下来可以进入下一步"],
         },
       ],
     }),
@@ -454,7 +454,7 @@ test("parseStoredStructuredLearningMessageContent restores persisted structured 
       blocks: [
         {
           type: "unordered_list",
-          items: ["你已经确认了当前关卡的关键能力", "接下来可以进入下一关"],
+          items: ["你已经确认了当前任务的关键能力", "接下来可以进入下一步"],
         },
       ],
       sections: [
@@ -464,15 +464,15 @@ test("parseStoredStructuredLearningMessageContent restores persisted structured 
           blocks: [
             {
               type: "unordered_list",
-              items: ["你已经确认了当前关卡的关键能力", "接下来可以进入下一关"],
+              items: ["你已经确认了当前任务的关键能力", "接下来可以进入下一步"],
             },
           ],
         },
       ],
       actions: [
         {
-          label: "进入下一关",
-          prompt: "我已完成当前关卡，请带我进入下一关并告诉我开头第一步该做什么。",
+          label: "进入下一步",
+          prompt: "我已完成当前任务，请带我进入下一步并告诉我开头第一步该做什么。",
           tone: "success",
         },
       ],
@@ -497,7 +497,7 @@ test("buildStructuredLearningMessageContent parses agent-native markdown heading
         "- 先看终端输出，不要凭感觉改",
         "",
         "## 建议动作",
-        "- 继续当前关卡｜请根据当前上下文告诉我接下来最小的一步应该做什么。",
+        "- 继续当前任务｜请根据当前上下文告诉我接下来最小的一步应该做什么。",
         "- 给我最小示例｜请给我一个最小可运行示例，并说明我该先验证什么。",
       ].join("\n"),
     }),
@@ -529,7 +529,7 @@ test("buildStructuredLearningMessageContent parses agent-native markdown heading
         {
           type: "unordered_list",
           items: [
-            "继续当前关卡｜请根据当前上下文告诉我接下来最小的一步应该做什么。",
+            "继续当前任务｜请根据当前上下文告诉我接下来最小的一步应该做什么。",
             "给我最小示例｜请给我一个最小可运行示例，并说明我该先验证什么。",
           ],
         },
@@ -558,7 +558,7 @@ test("buildStructuredLearningMessageContent parses agent-native markdown heading
       ],
       actions: [
         {
-          label: "继续当前关卡",
+          label: "继续当前任务",
           prompt: "请根据当前上下文告诉我接下来最小的一步应该做什么。",
           tone: "secondary",
         },
@@ -671,7 +671,7 @@ test("buildStructuredLearningMessageContent strips markdown from action labels a
       kind: "coach",
       interactionType: "path_guidance",
       content: [
-        "先完成本关当前这个练习，再继续。",
+        "先完成当前任务里的这个练习，再继续。",
         "",
         "## 建议动作",
         "- **进入下一关**｜请介绍第5关的内容和第一步应该做什么。",
@@ -681,12 +681,12 @@ test("buildStructuredLearningMessageContent strips markdown from action labels a
     [
       {
         label: "进入下一步",
-        prompt: "请继续当前关卡中的下一项练习，并告诉我先做什么。",
+        prompt: "请继续当前任务中的下一项练习，并告诉我先做什么。",
         tone: "secondary",
       },
       {
-        label: "巩固本关技巧",
-        prompt: "我想再巩固一下当前这一关的一个技巧，请给我一个针对性的练习任务。",
+        label: "巩固当前任务技巧",
+        prompt: "我想再巩固一下当前任务里的一个技巧，请给我一个针对性的练习任务。",
         tone: "secondary",
       },
     ],
@@ -722,7 +722,7 @@ test("parseStoredStructuredLearningMessageContent normalizes stored action label
     parseStoredStructuredLearningMessageContent({
       interactionType: "path_guidance",
       variant: "path_guidance",
-      summary: "继续推进当前关卡。",
+      summary: "继续推进当前任务。",
       blocks: [],
       actions: [
         {
@@ -735,7 +735,7 @@ test("parseStoredStructuredLearningMessageContent normalizes stored action label
     [
       {
         label: "进入下一步",
-        prompt: "请继续当前关卡中的下一项练习，并告诉我先做什么。",
+        prompt: "请继续当前任务中的下一项练习，并告诉我先做什么。",
         tone: "secondary",
       },
     ],

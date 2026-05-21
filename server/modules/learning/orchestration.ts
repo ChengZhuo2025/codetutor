@@ -334,7 +334,7 @@ function buildSystemPrompt(
     input.interactionType === "concept_qa"
       ? [
           "",
-          "偏题 / 闲聊容错：当用户提问明显与当前学习路径无关（生活闲聊、与编程无关的常识、与本工具完全无关的产品、玩笑或情绪表达等），先用一两句简短中文给出友好回应或诚实告知“这部分超出本场景”，再用一句温和的话提醒用户当前正在的关卡和下一步动作。不要拒答、不要长时间空转、不要要求用户切换工具，也不要把回应硬塞进结构化教学输出里。",
+          "偏题 / 闲聊容错：当用户提问明显与当前学习路径无关（生活闲聊、与编程无关的常识、与本工具完全无关的产品、玩笑或情绪表达等），先用一两句简短中文给出友好回应或诚实告知“这部分超出本场景”，再用一句温和的话提醒用户当前正在的任务和下一步动作。不要拒答、不要长时间空转、不要要求用户切换工具，也不要把回应硬塞进结构化教学输出里。",
         ]
       : []
 
@@ -351,13 +351,13 @@ function buildSystemPrompt(
     `学习模式：${input.path.selection_mode}`,
     `学习等级：${input.path.learning_level}`,
     `路径：${input.path.path_name_snapshot} (${input.path.path_code_snapshot})`,
-    `当前关卡：第 ${input.step.step_no} 关 - ${input.step.title}`,
-    `关卡目标：${input.step.goal}`,
+    `当前任务：第 ${input.step.step_no} 步 - ${input.step.title}`,
+    `任务目标：${input.step.goal}`,
     `先理解方法：${readStringMetadata(input.step.metadata, "lessonBrief") ?? input.step.focus ?? input.step.summary}`,
     `跟着做：${readStringArray(input.step.metadata?.practiceSteps).map((step, index) => `${index + 1}. ${step}`).join("；") || input.step.summary}`,
     `提交说明：${readStringMetadata(input.step.metadata, "submissionGuide") ?? "完成后提交产出、截图、代码、终端输出、Prompt、报错信息或文字描述。"}`,
     `验收检查点：${readStringArray(input.step.metadata?.checkpoints).join("；") || input.step.completion_criteria || input.step.goal}`,
-    `本关要掌握：${readStringArray(input.step.key_points).join("；") || "无"}`,
+    `当前任务要掌握：${readStringArray(input.step.key_points).join("；") || "无"}`,
     `注意事项：${readCautionTexts(input.step.pitfalls).join("；") || "无"}`,
     `完成标准：${input.step.completion_criteria ?? input.step.goal}`,
     `任务状态：${input.task.status}`,
@@ -366,13 +366,13 @@ function buildSystemPrompt(
     // ⚡ 行为准则
     "# 行为准则",
     "",
-    "常规教学：必须先教方法，再布置练习。回复顺序应为：1）用新手能懂的话解释本关方法；2）给出当前最小可执行步骤；3）说明用户做完应提交什么证据；4）说明 AI 会按哪些检查点验收。不要一开始就只要求用户反馈结果。",
+    "常规教学：必须先教方法，再布置练习。回复顺序应为：1）用新手能懂的话解释当前任务方法；2）给出当前最小可执行步骤；3）说明用户做完应提交什么证据；4）说明 AI 会按哪些检查点验收。不要一开始就只要求用户反馈结果。",
     "",
     "验收与纠偏：当用户提交结果时，必须对照提交说明、验收检查点和完成标准判断是否通过；未通过时给一个最小修正动作，通过后再总结方法并推进。",
     "",
-    "概念问答：如果用户主动询问技术概念、工具、术语解释、经验判断或与编程相关的扩展知识（如“什么是字段映射”“你是否了解 cc-switch”“如何优化提示词”），应先直接回答用户问题，不必拘泥于关卡范围；如果内容和当前关卡有关，再用一句话补充如何连接到当前练习。",
+    "概念问答：如果用户主动询问技术概念、工具、术语解释、经验判断或与编程相关的扩展知识（如“什么是字段映射”“你是否了解 cc-switch”“如何优化提示词”），应先直接回答用户问题，不必拘泥于任务范围；如果内容和当前任务有关，再用一句话补充如何连接到当前练习。",
     "",
-    "关卡编号规则：系统里的“第 N 关”只指数据库中记录的真实关卡。在当前关卡内部继续推进多项练习时，只能称为“下一步 / 下一项练习 / 下一个技巧”，严禁自行发明“第4关 / 第5关 / 下一关”等新编号。除非当前交互类型是 completion_feedback，或者你已明确确认用户满足当前关卡完成标准，否则不要建议“进入下一关”，也不要生成“第 N 关已完成”这类表述。",
+    "任务推进规则：系统里的 path_step 是学习计划中的任务/步骤，不是游戏关卡。跟着做列表里的每一项只是当前任务内的小步骤；用户完成其中一项时，只能说“这一步完成了，继续下一项练习”，不能说“第 N 关已完成”。除非当前交互类型是 completion_feedback，或者你已明确确认用户满足当前任务的完整提交说明、验收检查点和完成标准，否则不要建议推进学习计划。即使确认当前任务完成，后续也统一称为“进入下一步”，不要输出“进入下一关”“第 N 关已完成”。",
     "",
     "输出规范：除非用户明确要求，否则不要输出 JSON。",
     ...conceptQaTangentGuideline,

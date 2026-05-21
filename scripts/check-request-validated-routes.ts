@@ -227,7 +227,7 @@ test("task update-status route keeps business validation errors at 400", async (
     getRequestAuth: async () => ({ userId: "user-1" }),
     getRequestAuthHelpText: () => "ignored",
     updateTaskStatus: async () => {
-      throw new Error("只能更新当前正在进行的关卡状态")
+      throw new Error("只能更新当前正在进行的任务状态")
     },
   })
 
@@ -241,7 +241,7 @@ test("task update-status route keeps business validation errors at 400", async (
   assert.equal(response.status, 400)
   assert.deepEqual(await response.json(), {
     code: "VALIDATION_FAILED",
-    message: "只能更新当前正在进行的关卡状态",
+    message: "只能更新当前正在进行的任务状态",
     data: null,
   })
 })

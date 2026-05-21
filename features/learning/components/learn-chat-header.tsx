@@ -82,7 +82,7 @@ export function LearnChatHeader({
               <p className="mt-1 text-xs text-muted-foreground">
                 {mission
                   ? `${mission.tool} · ${mission.stageLabel}`
-                  : "稍后重试，或从学习地图重新进入本关。"}
+                  : "稍后重试，或从学习地图重新进入当前任务。"}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">

@@ -102,7 +102,7 @@ function buildRuleChecks(input: RunPlanQualityGateInput): QualityCheck[] {
   const numberedTaskPacingMessage =
     input.sourceStructure?.minimumTaskCount && input.sourceStructure.numberedItemCount
       ? `材料中识别到约 ${input.sourceStructure.numberedItemCount} 个编号项，计划至少拆成 ${input.sourceStructure.minimumTaskCount} 关。`
-      : "编号型教程需要按材料节奏拆成足够细的关卡。"
+      : "编号型教程需要按材料节奏拆成足够细的学习任务。"
 
   return [
     {
@@ -123,7 +123,7 @@ function buildRuleChecks(input: RunPlanQualityGateInput): QualityCheck[] {
     {
       code: "MASTERY_POINTS_PRESENT",
       passed: input.plan.tasks.every((task) => task.masteryPoints.length >= 2),
-      message: "每个任务都必须给出至少 2 条本关要掌握。",
+      message: "每个任务都必须给出至少 2 条当前任务要掌握。",
     },
     {
       code: "CAUTIONS_PRESENT",
@@ -352,7 +352,7 @@ export async function runPlanQualityGate(
             selfCheck: {
               enabled: false,
               decision: "retry",
-              reason: "编号型教程关卡粒度过粗，退回重生成。",
+              reason: "编号型教程任务粒度过粗，退回重生成。",
             },
             fallbackReason: "numbered_outline_task_count_underflow",
           },
@@ -370,7 +370,7 @@ export async function runPlanQualityGate(
           selfCheck: {
             enabled: false,
             decision: "skipped",
-            reason: "编号型教程关卡粒度仍偏粗，但已耗尽自动重试次数。",
+            reason: "编号型教程任务粒度仍偏粗，但已耗尽自动重试次数。",
           },
           fallbackReason: "numbered_outline_retry_exhausted",
         },

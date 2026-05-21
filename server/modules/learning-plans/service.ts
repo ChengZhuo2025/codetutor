@@ -197,14 +197,14 @@ function assertDraftTasksHaveSupplementalContent(tasks: Array<{
       .map((item) => item.trim())
       .filter((item) => item.length > 0)
     if (masteryPoints.length < 2) {
-      throw aiResponseInvalid(`第 ${task.taskNo} 关“本关要掌握”至少保留 2 条。`)
+      throw aiResponseInvalid(`第 ${task.taskNo} 步“当前任务要掌握”至少保留 2 条。`)
     }
 
     const cautions = task.cautions
       .map((item) => ({ ...item, text: item.text.trim() }))
       .filter((item) => item.text.length > 0)
     if (cautions.length < 1) {
-      throw aiResponseInvalid(`第 ${task.taskNo} 关“注意事项”至少保留 1 条。`)
+      throw aiResponseInvalid(`第 ${task.taskNo} 步“注意事项”至少保留 1 条。`)
     }
   }
 }
@@ -240,7 +240,7 @@ function buildLegacyTaskLessonBrief(task: Record<string, unknown>) {
   const steps = readStringArrayFromRecord(task, "practiceSteps")
   const acceptanceCriteria = readStringOrNull(task.acceptanceCriteria)
   const basis = [
-    objective ? `本关先围绕“${objective}”建立操作方法。` : "本关先把教程内容转成一个可执行的小练习。",
+    objective ? `当前任务先围绕“${objective}”建立操作方法。` : "当前任务先把教程内容转成一个可执行的小练习。",
     steps.length > 0 ? `开始前先看清要做的动作：${steps.slice(0, 3).join("、")}。` : "开始前先确认目标、操作入口和成功标准。",
     acceptanceCriteria ? `做的过程中用“${acceptanceCriteria}”判断是否达标。` : "做的过程中不要只看感觉，要用可提交证据判断是否达标。",
   ].join("")
@@ -259,7 +259,7 @@ function buildLegacyTaskCheckpoints(task: Record<string, unknown>) {
   const steps = readStringArrayFromRecord(task, "practiceSteps")
   const acceptanceCriteria = readStringOrNull(task.acceptanceCriteria)
   const checkpoints = [
-    steps[0] ? `能说明或展示已完成操作：${steps[0]}` : "提交内容能说明本关已完成实际操作。",
+    steps[0] ? `能说明或展示已完成操作：${steps[0]}` : "提交内容能说明当前任务已完成实际操作。",
     acceptanceCriteria ? `提交证据能对应验收标准：${acceptanceCriteria}` : "提交内容包含截图、代码、终端输出或文字说明等可检查证据。",
     steps[1] ? `能说明或展示已完成操作：${steps[1]}` : null,
   ].filter((item): item is string => Boolean(item))
@@ -1214,7 +1214,7 @@ function buildTaskRegenerationUserMessage(input: {
   parts.push(`当前操作步骤：${targetTask.practiceSteps.join("；") || "无"}`)
   parts.push(`当前提交说明：${targetTask.submissionGuide}`)
   parts.push(`当前检查点：${targetTask.checkpoints.join("；") || "无"}`)
-  parts.push(`当前本关要掌握：${targetTask.masteryPoints.join("；") || "无"}`)
+  parts.push(`当前任务要掌握：${targetTask.masteryPoints.join("；") || "无"}`)
   parts.push(`当前注意事项：${targetTask.cautions.map((item) => item.text).join("；") || "无"}`)
   parts.push("现有任务列表：")
   for (const task of input.draft.tasks) {
@@ -1593,7 +1593,7 @@ export async function executeMaterialPlanGenerationRun(runId: string) {
         break
       }
 
-      retryFeedback = qualityGateResult.qualityReport.warnings.at(-1) ?? "关卡拆分过粗，请按材料原始节奏重新规划。"
+      retryFeedback = qualityGateResult.qualityReport.warnings.at(-1) ?? "任务拆分过粗，请按材料原始节奏重新规划。"
     }
 
     if (!plan || !qualityGateResult) {

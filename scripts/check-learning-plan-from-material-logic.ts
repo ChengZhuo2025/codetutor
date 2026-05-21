@@ -485,8 +485,8 @@ function addTeachingFields<T extends { tasks: Array<Record<string, unknown>> }>(
     ...plan,
     tasks: plan.tasks.map((task, index) => ({
       lessonBrief:
-        `先理解第 ${index + 1} 关的方法：按教程目标做最小动作，再用结果判断是否进入下一步。`,
-      submissionGuide: "提交截图、代码片段、终端输出或文字说明，证明本关已经完成。",
+        `先理解第 ${index + 1} 步的方法：按教程目标做最小动作，再用结果判断是否进入下一步。`,
+      submissionGuide: "提交截图、代码片段、终端输出或文字说明，证明当前任务已经完成。",
       checkpoints: ["截图或终端输出能证明最小操作完成", "能用文字说明提交证据对应的结果"],
       ...task,
     })),
@@ -948,7 +948,7 @@ test("runPlanQualityGate falls back to pilot plan for weak evidence and generic 
       { taskNo: 1, title: "第一步", objective: "先了解一下主题", practiceSteps: ["看一遍", "记一下"], acceptanceCriteria: "知道大概是什么", sourceRefs: ["c1"], masteryPoints: ["知道主题核心范围", "知道这关输出什么"], cautions: [{ text: "不要只扫读标题就进入下一步", isTrap: true }] },
       { taskNo: 2, title: "第二步", objective: "继续了解一下更多内容", practiceSteps: ["再看一遍", "做记录"], acceptanceCriteria: "知道更多概念", sourceRefs: ["c1"], masteryPoints: ["能说出新增概念", "能记录核心差异"], cautions: [{ text: "不要只记名词不记含义" }] },
       { taskNo: 3, title: "第三步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"], masteryPoints: ["能复述关键概念", "知道概念之间的关系"], cautions: [{ text: "不要在概念没理顺时直接扩展练习" }] },
-      { taskNo: 4, title: "第四步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"], masteryPoints: ["能复述关键概念", "知道本关边界"], cautions: [{ text: "不要堆积未验证理解" }] },
+      { taskNo: 4, title: "第四步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"], masteryPoints: ["能复述关键概念", "知道当前任务边界"], cautions: [{ text: "不要堆积未验证理解" }] },
       { taskNo: 5, title: "第五步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"], masteryPoints: ["能指出关键概念", "能说明验证方式"], cautions: [{ text: "不要跳过记录过程" }] },
       { taskNo: 6, title: "第六步", objective: "熟悉概念并继续阅读资料", practiceSteps: ["阅读", "标记"], acceptanceCriteria: "能复述部分内容", sourceRefs: ["c1"], masteryPoints: ["能复述关键信息", "能说明下一步"], cautions: [{ text: "不要把弱证据当成结论", isTrap: true }] },
     ],
@@ -1019,7 +1019,7 @@ test("runPlanQualityGate falls back after quality self-check keeps asking for re
     goal: "完成一个最小改造",
     tasks: [
       { taskNo: 1, title: "第一步", objective: "完成本地环境准备并记录初始状态", practiceSteps: ["安装依赖", "运行项目"], acceptanceCriteria: "项目可以正常启动", sourceRefs: ["c1"], masteryPoints: ["知道环境是否准备完成", "知道启动成功的判断标准"], cautions: [{ text: "不要跳过启动验证", isTrap: true }] },
-      { taskNo: 2, title: "第二步", objective: "根据材料完成一次页面结构改造并截图对比", practiceSteps: ["调整布局", "保存截图"], acceptanceCriteria: "页面结构更新且截图可对比", sourceRefs: ["c1"], masteryPoints: ["知道本关改动范围", "知道如何对比改造前后"], cautions: [{ text: "不要同时修改无关模块" }] },
+      { taskNo: 2, title: "第二步", objective: "根据材料完成一次页面结构改造并截图对比", practiceSteps: ["调整布局", "保存截图"], acceptanceCriteria: "页面结构更新且截图可对比", sourceRefs: ["c1"], masteryPoints: ["知道当前任务改动范围", "知道如何对比改造前后"], cautions: [{ text: "不要同时修改无关模块" }] },
       { taskNo: 3, title: "第三步", objective: "整理复盘并记录下一步优化清单", practiceSteps: ["记录问题", "列出优化项"], acceptanceCriteria: "产出一份复盘清单", sourceRefs: ["c1"], masteryPoints: ["能复述这次练习产出", "能列出下一步优化点"], cautions: [{ text: "不要只记录结果不记录原因" }] },
     ],
   }))

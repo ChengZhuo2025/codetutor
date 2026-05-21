@@ -1298,12 +1298,12 @@ const successExamples = {
     mission: {
       title: "完成第一次代码补全",
       tool: "Cursor",
-      stageLabel: "第 1 关",
+      stageLabel: "第 1 步",
       goal: "在编辑器里完成一次真实补全",
       summary: "学会在具体代码上下文里请求补全。",
       estimatedTime: "15 分钟",
       reward: "+20 XP",
-      progressLabel: "已完成 2 / 5",
+      progressLabel: "2 / 5 步已完成",
       progressPercent: 40,
       coachCue: "先选中一小段代码，再描述你想要的改动。",
       nextUnlockTitle: "第一次智能重构",
@@ -1364,7 +1364,7 @@ const successExamples = {
       {
         id: "round-1",
         taskTitle: "完成第一次代码补全",
-        stageLabel: "第 1 关",
+        stageLabel: "第 1 步",
         lastActiveLabel: "5 分钟前",
         status: "in_progress",
       },
@@ -1513,7 +1513,7 @@ const successExamples = {
     currentScore: 140,
     currentRank: "新手学徒",
     rankChanged: false,
-    completionSummary: "你已经完成第一次真实补全。",
+    completionSummary: "已完成「完成第一次代码补全」，下一步进入「第一次智能重构」。",
     nextTask: {
       taskId: "task-2",
       title: "第一次智能重构",
@@ -2628,7 +2628,7 @@ registry.registerPath({
   tags: ["learning"],
   summary: "获取当前学习会话",
   description:
-    "默认返回当前进行中的学习关卡；当传入 `sessionId` 或 `taskId` 时，可切换到指定关卡的复盘视图。`sessionId` 优先级高于 `taskId`。",
+    "默认返回当前进行中的学习任务；当传入 `sessionId` 或 `taskId` 时，可切换到指定任务的复盘视图。`sessionId` 优先级高于 `taskId`。",
   security: [{ bearerAuth: [] }],
   parameters: [
     {
@@ -2639,7 +2639,7 @@ registry.registerPath({
         type: "string",
         format: "uuid",
       },
-      description: "可选。指定已完成关卡对应的会话 ID，用于在 /learn 中打开该关卡的复盘记录。",
+      description: "可选。指定已完成任务对应的会话 ID，用于在 /learn 中打开该任务的复盘记录。",
     },
     {
       name: "taskId",
@@ -2668,7 +2668,7 @@ registry.registerPath({
   path: "/api/learning/restart-conversation",
   operationId: "postLearningRestartConversation",
   tags: ["learning"],
-  summary: "归档当前关卡活跃对话并清空任务会话指针，以便重新开始",
+  summary: "归档当前任务活跃对话并清空任务会话指针，以便重新开始",
   description:
     "将当前任务下 status=active 且非管理员测试的 conversation_sessions 标记为 archived，并把 user_tasks.last_conversation_id 置空。若无活跃会话则返回 restarted=false。",
   security: [{ bearerAuth: [] }],
@@ -3071,10 +3071,10 @@ registry.registerPath({
         },
       },
       "422": {
-        description: "草稿任务缺少必要的本关要掌握或注意事项，无法确认。",
+        description: "草稿任务缺少必要的当前任务要掌握或注意事项，无法确认。",
         example: {
           code: "AI_RESPONSE_INVALID",
-          message: "第 2 关“注意事项”至少保留 1 条后才能启用计划。",
+          message: "第 2 步“注意事项”至少保留 1 条后才能启用计划。",
           data: null,
         },
       },
@@ -3206,7 +3206,7 @@ registry.registerPath({
         description: "任务存在，但当前学习路径状态不允许完成该任务。",
         example: {
           code: "VALIDATION_FAILED",
-          message: "只能完成当前正在进行的关卡",
+          message: "只能完成当前正在进行的任务",
           data: null,
         },
       },
@@ -3251,7 +3251,7 @@ registry.registerPath({
         description: "任务存在，但当前学习路径状态不允许更新该任务状态。",
         example: {
           code: "VALIDATION_FAILED",
-          message: "只能更新当前正在进行的关卡状态",
+          message: "只能更新当前正在进行的任务状态",
           data: null,
         },
       },

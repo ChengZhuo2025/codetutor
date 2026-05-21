@@ -55,12 +55,12 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
         title: "继续上次学习",
         summary: "你已经完成了基础安装与第一次提问，现在继续验证 Ask 与 Agent 的职责边界。",
         lastSeenLabel: "上次停留在 18 分钟前",
-        ctaLabel: "继续这一关",
+        ctaLabel: "继续当前任务",
       },
       mission: {
         title: currentStage.title,
         tool: currentLearningPlan.tool.label,
-        stageLabel: `第 ${currentStage.id} 关 / 共 ${currentLearningPlan.stages.length} 关`,
+        stageLabel: `第 ${currentStage.id} 步 / 共 ${currentLearningPlan.stages.length} 步`,
         goal: currentStage.goal,
         summary: currentStage.focus,
         estimatedTime: `约 ${currentStage.estimatedTime}`,
@@ -79,7 +79,7 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
           kind: "system_goal",
           title: "系统目标说明",
           content:
-            "本关只验证一件事：Agent 是否更适合生成完整文件。\n\n1. 打开 Cursor\n2. 按 Cmd+I 打开 Agent\n3. 输入「创建一个显示当前时间的 React 组件」\n4. 观察 AI 生成的完整代码",
+            "当前任务只验证一件事：Agent 是否更适合生成完整文件。\n\n1. 打开 Cursor\n2. 按 Cmd+I 打开 Agent\n3. 输入「创建一个显示当前时间的 React 组件」\n4. 观察 AI 生成的完整代码",
         },
         {
           id: 2,
@@ -142,9 +142,9 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
           kind: "task_feedback",
           title: "任务反馈",
           content:
-            `很好，这一步已经完成。\n\n**你刚刚确认了两件事：**\n- Agent 更适合生成完整文件或功能块\n- Ask 更适合解释概念、追问细节和排查思路\n\n接下来进入第 ${nextStage.id} 关，开始练习${nextStage.title}。`,
+            `很好，这一步已经完成。\n\n**你刚刚确认了两件事：**\n- Agent 更适合生成完整文件或功能块\n- Ask 更适合解释概念、追问细节和排查思路\n\n接下来进入下一步：${nextStage.title}。`,
           xp: currentStage.xp,
-          nextStep: `进入第 ${nextStage.id} 关：${nextStage.title}`,
+          nextStep: `进入下一步：${nextStage.title}`,
         },
         {
           trigger: "帮我拆细一点",
@@ -191,7 +191,7 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
       recentPracticeRounds: currentLearningPlan.stages.slice(0, 3).map((stage, index) => ({
         id: `practice-round-${String(index + 1).padStart(3, "0")}`,
         taskTitle: stage.title,
-        stageLabel: `第 ${stage.id} 关`,
+        stageLabel: `第 ${stage.id} 步`,
         lastActiveLabel: stage.status === "current" ? "18 分钟前" : index === 0 ? "今天" : "昨天",
         status: stage.status === "done" ? "completed" : "in_progress",
       })),

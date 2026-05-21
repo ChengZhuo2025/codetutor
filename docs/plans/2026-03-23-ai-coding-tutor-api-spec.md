@@ -336,7 +336,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | 营销首页 | `/` | `GET /api/auth/session` | 首页导航、Hero、套餐区、页脚与最终 CTA 会根据登录态切换为“继续学习”，并跳转到 `/learn`、`/history` 或 `/onboarding` |
 | 登录页 | `/login` | `POST /api/auth/login`、`GET /api/auth/phone-status`、`GET/PATCH /api/profile/me`、`POST /api/profile/avatar` | 当前已打通手机号验证码登录即注册、微信/抖音绑定后扫码登录、OAuth 未绑定手机号拦截与绑定、用户档案读取与资料编辑；`phone-status` 接口保留兼容，当前统一登录页不再做注册状态预检 |
 | 新手引导 | `/onboarding` | `GET /api/onboarding/tools`、`GET /api/onboarding/path-options`、`POST /api/onboarding/complete` | 产出主工具、学习等级、学习模式、初始学习路径实例 |
-| 学习页 | `/learn` | `GET /api/learning/current-session`、`POST /api/learning/restart-conversation`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`、`POST /api/learning/plan-from-material`、`GET /api/learning/material-intakes/{id}`、`GET/PATCH /api/learning/plan-drafts/{id}`、`POST /api/learning/plan-drafts/{id}/confirm`、`POST /api/learning/plan-drafts/{id}/regenerate`、`POST /api/learning/plan-drafts/{id}/tasks/{taskId}/regenerate` | 已打通学习主界面 read model、历史消息分页、真实 AI provider 消息编排、SSE 与任务状态写入；支持归档当前关卡活跃对话并清空任务会话指针后重头开始；自学模式（`selection_mode=self_directed`）已支持异步教程链接 intake、草稿详情编辑与确认后替换当前 active 路径 |
+| 学习页 | `/learn` | `GET /api/learning/current-session`、`POST /api/learning/restart-conversation`、`GET /api/learning/messages`、`POST /api/learning/message`、`POST /api/task/complete`、`POST /api/task/update-status`、`POST /api/learning/plan-from-material`、`GET /api/learning/material-intakes/{id}`、`GET/PATCH /api/learning/plan-drafts/{id}`、`POST /api/learning/plan-drafts/{id}/confirm`、`POST /api/learning/plan-drafts/{id}/regenerate`、`POST /api/learning/plan-drafts/{id}/tasks/{taskId}/regenerate` | 已打通学习主界面 read model、历史消息分页、真实 AI provider 消息编排、SSE 与任务状态写入；支持归档当前任务活跃对话并清空任务会话指针后重头开始；自学模式（`selection_mode=self_directed`）已支持异步教程链接 intake、草稿详情编辑与确认后替换当前 active 路径 |
 | 地图页 | `/map` | `GET /api/progress/current`、`GET /api/progress/map` | 展示当前路径实例及各关卡状态 |
 | 成就页 | `/achievements` | `GET /api/achievement/summary` | 当前已打通成长总览 read model，并支持真实每日打卡 |
 | 历史页 | `/history` | `GET /api/history/recent`、`GET /api/history/{id}`、`POST /api/history/{id}/status` | 当前前端实际需要的是“历史学习计划列表 + 详情复盘 + 状态操作”，而不是“最近对话列表” |
@@ -965,12 +965,12 @@ SSE 事件补充：
       "title": "继续上次学习",
       "summary": "你已经完成了基础安装与第一次提问，现在继续验证 Ask 与 Agent 的职责边界。",
       "lastSeenLabel": "上次停留在 18 分钟前",
-      "ctaLabel": "继续这一关"
+      "ctaLabel": "继续当前任务"
     },
     "mission": {
       "title": "理解 Ask 与 Agent 的区别",
       "tool": "Cursor",
-      "stageLabel": "第 3 关 / 共 6 关",
+      "stageLabel": "第 3 步 / 共 6 步",
       "goal": "用 Cursor 的 Agent 功能创建一个 React 时钟组件。",
       "summary": "只做一个最小实验：让 Agent 生成一个 React 时钟组件，理解它和 Ask 的职责边界。",
       "estimatedTime": "约 8 分钟",
@@ -988,7 +988,7 @@ SSE 事件补充：
         "role": "system",
         "kind": "system_goal",
         "title": "系统目标说明",
-        "content": "本关只验证一件事：Agent 是否更适合生成完整文件。"
+        "content": "当前任务只验证一件事：Agent 是否更适合生成完整文件。"
       }
     ],
     "quickActions": [
@@ -1029,7 +1029,7 @@ SSE 事件补充：
       {
         "id": "practice-round-001",
         "taskTitle": "安装与配置 Cursor",
-        "stageLabel": "第 1 关",
+        "stageLabel": "第 1 步",
         "lastActiveLabel": "今天",
         "status": "completed"
       }
@@ -1064,7 +1064,7 @@ SSE 事件补充：
 
 用途：
 
-- 学习页「重头开始」：将当前任务下 `status=active` 且非管理员测试的 `conversation_sessions` 标记为 `archived`（写入 `closed_at`），并把 `user_tasks.last_conversation_id` 置空；下次 `POST /api/learning/message` 会按现有逻辑创建新会话。旧会话中的消息仍保留在库中，但不再作为当前关卡的活跃会话。
+- 学习页「重头开始」：将当前任务下 `status=active` 且非管理员测试的 `conversation_sessions` 标记为 `archived`（写入 `closed_at`），并把 `user_tasks.last_conversation_id` 置空；下次 `POST /api/learning/message` 会按现有逻辑创建新会话。旧会话中的消息仍保留在库中，但不再作为当前任务的活跃会话。
 
 鉴权：
 
@@ -1154,8 +1154,8 @@ SSE 事件补充：
 - 创建时立即返回 `processingMode=async`、`intakeId`、`runId` 和当前状态；前端通过 `GET /api/learning/material-intakes/{id}` 轮询进度
 - intake worker 现已固定按 `raw text -> subtitle -> ASR -> OCR/vision` 顺序提取证据；仅当前一层内容不足时才继续调用更贵模型
 - `learning_material_chunks` 现已稳定写入 `modality`、`source_ref`、`evidence_type`、`confidence`，供 planner 与质量闸门追溯证据
-- planner 生成的每个 task 除 `title/objective/practiceSteps/acceptanceCriteria` 外，还必须包含 `lessonBrief`（AI 重写的新手教案）、`submissionGuide`（用户提交证据说明）、`checkpoints`（AI 验收检查点）、`masteryPoints`（本关要掌握）与 `cautions`（注意事项，可含 `isTrap`）
-- planner 输出进入规则质量闸门；若证据偏弱或计划质量不足，会自动降级为 3 关试点计划，并在草稿 `qualityReport` 中写出原因
+- planner 生成的每个 task 除 `title/objective/practiceSteps/acceptanceCriteria` 外，还必须包含 `lessonBrief`（AI 重写的新手教案）、`submissionGuide`（用户提交证据说明）、`checkpoints`（AI 验收检查点）、`masteryPoints`（当前任务要掌握）与 `cautions`（注意事项，可含 `isTrap`）
+- planner 输出进入规则质量闸门；若证据偏弱或计划质量不足，会自动降级为 3 个任务的试点计划，并在草稿 `qualityReport` 中写出原因
 - 成功后写入 `learning_material_intakes` / `learning_material_chunks` / `learning_plan_generation_runs` / `learning_plan_drafts` / `learning_plan_draft_tasks` / `learning_plan_draft_revisions`，不直接改动当前 active path
 - 主工具与等级来自 `user_profiles`，无需在请求中传 `targetToolCode`
 - 运行时契约与 Swagger：`GET /api/docs/openapi`（operationId `postLearningPlanFromMaterial` 等）、调试页 `/api-docs`
@@ -1340,8 +1340,8 @@ SSE 事件补充：
 - 同一任务重复完成不得重复发分
 - 当前首版实现会同步更新 `user_tasks`、`user_learning_paths`、`user_profiles`
 - 当前已落地成长写模型：任务完成时会写入 `score_ledgers`，并刷新 `user_ranks`
-- 完成当前关卡后，若仍有下一关，则自动推进 `current_task_id` 并把下一关置为 `in_progress`
-- 若当前已是最后一关，则整条 `user_learning_path` 自动转为 `completed`
+- 完成当前任务后，若仍有下一步，则自动推进 `current_task_id` 并把下一任务置为 `in_progress`
+- 若当前已是最后一步，则整条 `user_learning_path` 自动转为 `completed`
 
 ## 8.2 `POST /api/task/update-status`
 
@@ -1366,7 +1366,7 @@ SSE 事件补充：
 
 业务规则：
 
-- 仅允许更新当前 `active` 学习计划中的当前关卡
+- 仅允许更新当前 `active` 学习计划中的当前任务
 - `blocked` 会写入 `blocked_at` 与 `block_reason`
 - `in_progress` 会清理 `blocked_at` 与 `block_reason`
 - 当前 `/learn` 页里的“我完成了”和求助动作已接入这两个真实任务写接口
@@ -2020,14 +2020,14 @@ SSE 事件补充：
 | `POST /api/onboarding/complete` | 是 | 写用户引导结果 |
 | `POST /api/learning/message` | 是 | 核心学习数据 |
 | `GET /api/learning/current-session` | 是 | 恢复当前学习上下文 |
-| `POST /api/learning/restart-conversation` | 是 | 归档当前关卡活跃对话并清空任务会话指针，供学习页重头开始 |
+| `POST /api/learning/restart-conversation` | 是 | 归档当前任务活跃对话并清空任务会话指针，供学习页重头开始 |
 | `GET /api/learning/messages` | 是 | 分页读取当前学习会话历史消息 |
 | `POST /api/learning/plan-from-material` | 是 | 自学模式（`selection_mode=self_directed`）下提交异步 material intake，按多模态证据生成学习计划草稿 |
 | `POST /api/learning/plan-drafts/{id}/confirm` | 是 | 确认当前用户草稿并物化为 `learning_paths` / `path_steps` / `user_learning_paths` / `user_tasks`，幂等 |
 | `POST /api/learning/plan-drafts/{id}/regenerate` | 是 | 为当前用户重生成草稿；旧草稿标记 `superseded`，不直接改 active path |
 | `POST /api/learning/stuck-help` | 是，规划中 | 请求卡住帮助 |
-| `POST /api/task/complete` | 是 | 写任务完成、推进下一关、同步积分快照 |
-| `POST /api/task/update-status` | 是 | 更新当前关卡状态 |
+| `POST /api/task/complete` | 是 | 写任务完成、推进下一步、同步积分快照 |
+| `POST /api/task/update-status` | 是 | 更新当前任务状态 |
 | `GET /api/progress/current` | 是 | 当前路径总览 |
 | `GET /api/progress/map` | 是 | 当前路径地图 |
 | `GET /api/achievement/summary` | 是 | 私人成长总览 |

@@ -428,7 +428,7 @@ function mapTaskState(status: TaskRow["status"]): LearningTaskState {
   return "pending"
 }
 
-/** 下一关卡片/侧栏说明：与当前关 whyThisStep 一致，优先 focus，再 summary / goal 等。 */
+/** 下一步卡片/侧栏说明：与当前任务 whyThisStep 一致，优先 focus，再 summary / goal 等。 */
 function resolveNextStepBodyText(step: StepRow | null): string | null {
   if (!step) {
     return null
@@ -447,9 +447,9 @@ function resolveNextStepBodyText(step: StepRow | null): string | null {
   return null
 }
 
-const FINAL_PATH_STEP_TITLE = "当前已是最后一关"
+const FINAL_PATH_STEP_TITLE = "当前已是最后一步"
 const FINAL_PATH_STEP_PREVIEW =
-  "你正处在本路径的最后一关；完成本关后，该学习计划在这条路径上的练习即全部结束。之后可到学习地图查看整体进度，或选择新的学习内容。"
+  "你正处在本学习计划的最后一步；完成当前任务后，这条路径上的练习即全部结束。之后可到学习地图查看整体进度，或选择新的学习内容。"
 
 const LONG_FOCUS_MIN_LEN = 120
 
@@ -496,7 +496,7 @@ function resolveCoachCue(input: {
     return focus
   }
 
-  return "先把任务做小，只验证当前这一关的核心能力，不要一次扩展太多。"
+  return "先把任务做小，只验证当前任务的核心能力，不要一次扩展太多。"
 }
 
 function resolveDefaultCoachSeedContent(input: {
@@ -682,9 +682,9 @@ function buildDefaultMessages(input: {
         id: 1,
         role: "system",
         kind: "system_goal",
-        title: "本关复盘说明",
+        title: "当前任务复盘说明",
         content: [
-          `你正在回看「${currentStep.title}」这一关。`,
+          `你正在回看「${currentStep.title}」这个任务。`,
           "",
           `复盘重点：${reviewSummary}`,
           "建议先对照右侧的掌握点和注意事项，再回顾你当时的对话记录。",
@@ -720,7 +720,7 @@ function buildDefaultMessages(input: {
       kind: "system_goal",
       title: "系统目标说明",
       content: [
-        `本关只验证一件事：${currentStep.goal}`,
+        `当前任务只验证一件事：${currentStep.goal}`,
         "",
         "先理解方法，再跟着步骤完成练习，最后提交可检查的结果。",
         "",
@@ -1256,16 +1256,16 @@ export async function getLearningCurrentSessionData(
             content: [
               "很好，这一步已经完成。",
               "",
-              "**你已经确认了当前关卡的关键能力：**",
+              "**你已经确认了当前任务的关键能力：**",
               `- ${currentStep.title}`,
               nextStep
-                ? `- 接下来可以进入 ${nextStep.title}`
-                : "- 当前已是本路径最后一关，完成后该路径练习将全部结束",
+                ? `- 接下来可以进入下一步：${nextStep.title}`
+                : "- 当前已是本路径最后一步，完成后该路径练习将全部结束",
             ].join("\n"),
             xp: currentStep.reward_score,
             nextStep: nextStep
-              ? `进入下一关：${nextStep.title}`
-              : "完成本关后本路径练习全部结束，可前往学习地图查看进度",
+              ? `进入下一步：${nextStep.title}`
+              : "完成当前任务后本路径练习全部结束，可前往学习地图查看进度",
           },
           {
             trigger: "帮我拆细一点",
@@ -1359,18 +1359,18 @@ export async function getLearningCurrentSessionData(
             lastSeenLabel: getRelativeLastSeenLabel(
               state.activePath.last_activity_at ?? state.profile.last_learning_at,
             ),
-            ctaLabel: "继续这一关",
+            ctaLabel: "继续当前任务",
           }
         : null,
     mission: {
       title: currentStep.title,
       tool: state.tool.name,
-      stageLabel: `第 ${currentStep.step_no} 关 / 共 ${totalSteps} 关`,
+      stageLabel: `第 ${currentStep.step_no} 步 / 共 ${totalSteps} 步`,
       goal: currentStep.goal,
       summary: isCompletedReviewTask ? reviewSummary : (currentStep.focus ?? currentStep.summary),
       estimatedTime: `约 ${currentStep.estimated_minutes ?? 10} 分钟`,
       reward: `+${currentStep.reward_score} XP`,
-      progressLabel: `${state.activePath.completed_steps} / ${totalSteps} 关已完成`,
+      progressLabel: `${state.activePath.completed_steps} / ${totalSteps} 步已完成`,
       progressPercent: currentProgressPercent,
       coachCue: resolveCoachCue({
         currentStep,
@@ -1409,7 +1409,7 @@ export async function getLearningCurrentSessionData(
       return {
         id: `practice-round-${String(step.step_no).padStart(3, "0")}`,
         taskTitle: step.title,
-        stageLabel: `第 ${step.step_no} 关`,
+        stageLabel: `第 ${step.step_no} 步`,
         lastActiveLabel:
           status === "completed"
             ? "已完成"
