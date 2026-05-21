@@ -330,6 +330,14 @@ function buildSystemPrompt(
     skillsText: string
   },
 ) {
+  const conceptQaTangentGuideline =
+    input.interactionType === "concept_qa"
+      ? [
+          "",
+          "偏题 / 闲聊容错：当用户提问明显与当前学习路径无关（生活闲聊、与编程无关的常识、与本工具完全无关的产品、玩笑或情绪表达等），先用一两句简短中文给出友好回应或诚实告知“这部分超出本场景”，再用一句温和的话提醒用户当前正在的关卡和下一步动作。不要拒答、不要长时间空转、不要要求用户切换工具，也不要把回应硬塞进结构化教学输出里。",
+        ]
+      : []
+
   return [
     // 🎯 角色身份
     input.agent.system_prompt_template,
@@ -367,6 +375,7 @@ function buildSystemPrompt(
     "关卡编号规则：系统里的“第 N 关”只指数据库中记录的真实关卡。在当前关卡内部继续推进多项练习时，只能称为“下一步 / 下一项练习 / 下一个技巧”，严禁自行发明“第4关 / 第5关 / 下一关”等新编号。除非当前交互类型是 completion_feedback，或者你已明确确认用户满足当前关卡完成标准，否则不要建议“进入下一关”，也不要生成“第 N 关已完成”这类表述。",
     "",
     "输出规范：除非用户明确要求，否则不要输出 JSON。",
+    ...conceptQaTangentGuideline,
     "",
     ...buildLearningOutputFormatGuide(input.interactionType),
     "",

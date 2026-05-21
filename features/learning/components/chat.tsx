@@ -24,9 +24,11 @@ import type {
 import {
   buildComposerDraftFromAssistantAction,
   canUseCompletionQuickAction,
+  isAdvanceNextTaskIntent,
   isExplicitTaskCompletionInput,
   mergeAssistantActionIntoInput,
   resolveAssistantActionIntent,
+  shouldAutoAdvanceFromAdvanceIntent,
   shouldRenderLearningResumeCard,
   type StableAssistantAction,
 } from "@/features/learning/lib/chat-behavior"
@@ -1097,6 +1099,28 @@ export function LearnChat({
     if ((!draft.text && !draft.attachment) || isTyping) return
 
     if (!draft.attachment && isExplicitTaskCompletionInput(draft.text)) {
+      await completeCurrentTask(draft.text)
+      return
+    }
+
+    if (
+      !draft.attachment &&
+      draft.text &&
+      isAdvanceNextTaskIntent(draft.text) &&
+      shouldAutoAdvanceFromAdvanceIntent({
+        taskState,
+        messages: messages.map((message) => ({
+          role: message.role,
+          kind: message.kind,
+          content: message.content,
+          interactionType:
+            message.role === "ai"
+              ? resolveAssistantInteractionType(message)
+              : null,
+          taskPatchStatus: message.taskPatch?.status ?? null,
+        })),
+      })
+    ) {
       await completeCurrentTask(draft.text)
       return
     }

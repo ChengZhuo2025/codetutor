@@ -21,7 +21,10 @@ import type {
 } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
 import { buildOAuthRedirectTo } from "@/lib/auth/oauth-redirect"
-import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import {
+  createSupabaseBrowserClient,
+  getSafeSupabaseBrowserSession,
+} from "@/lib/supabase/client"
 import {
   OAUTH_PROVIDERS,
   getOAuthProviderMeta,
@@ -339,9 +342,7 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
 
     try {
       const supabase = createSupabaseBrowserClient()
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      const session = await getSafeSupabaseBrowserSession(supabase)
 
       if (!session?.access_token) {
         throw new Error("登录状态已失效，请重新登录后再上传头像。")

@@ -13,7 +13,7 @@ import { APP_EVENT_CHANNEL } from "@/constants/events"
 import type { AppEventName } from "@/constants/events"
 import { PublicSiteProvider } from "@/features/site/providers/public-site-provider"
 import type { PublicSiteResponseData } from "@/lib/api/contracts/admin-site"
-import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import { getSafeSupabaseBrowserSession } from "@/lib/supabase/client"
 import { ThemeProvider } from "./theme-provider"
 
 type AppProvidersProps = {
@@ -47,10 +47,7 @@ function trackEvent(name: AppEventName, payload?: TrackEventPayload) {
         const headers = new Headers({
           "Content-Type": "application/json",
         })
-        const supabase = createSupabaseBrowserClient()
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
+        const session = await getSafeSupabaseBrowserSession()
 
         if (session?.access_token) {
           headers.set("Authorization", `Bearer ${session.access_token}`)

@@ -62,6 +62,33 @@ const COMPLETION_QUESTION_PATTERNS = [
   /是否.*完成/,
 ]
 
+const ADVANCE_NEXT_TASK_NEGATION_PATTERNS = [
+  /还没完成/,
+  /还没有完成/,
+  /没完成/,
+  /没有完成/,
+  /未完成/,
+  /尚未完成/,
+  /没做完/,
+  /还没做完/,
+  /不能进入下一关/,
+  /不可以进入下一关/,
+  /还不能.*下一关/,
+  /还不可以.*下一关/,
+  /下一关之前/,
+  /下一关之后/,
+  /没准备好.*下一关/,
+  /还需.*才能.*下一关/,
+]
+
+const ADVANCE_NEXT_TASK_QUESTION_PATTERNS = [
+  /[?？]/,
+  /什么时候.*下一关/,
+  /可以.*下一关吗/,
+  /何时.*下一关/,
+  /怎么.*下一关/,
+]
+
 const COMPLETION_SIGNAL_PATTERNS = [
   /我完成了/,
   /我已经完成/,
@@ -76,6 +103,63 @@ const COMPLETION_SIGNAL_PATTERNS = [
   /我已经搞定/,
   /第\s*\d+\s*关.*完成/,
 ]
+
+const ADVANCE_NEXT_TASK_INTENT_PATTERNS = [
+  /(?:开始|进入|开启|去做|来做|跳到|切换到)\s*下一关/,
+  /我要(?:进入|开始|做|去做|来做|跳到|切换到)?\s*下一关/,
+  /继续(?:做|学|去|进入|进行)?\s*下一关/,
+  /下一关.{0,4}(?:开始|开干|走|来吧|启动|出发)/,
+  /(?:推进|进入|跳转|切换)\s*到\s*下一关/,
+]
+
+// 与 server/modules/learning/logic.ts 中 ASSISTANT_COMPLETION_NEGATION_PATTERNS 保持等价。
+// 用于前端识别 AI 上一条回复"是否表示本关已完成"。
+const ASSISTANT_COMPLETION_NEGATION_PATTERNS = [
+  /还需要确认/,
+  /还需确认/,
+  /再选择至少一项/,
+  /继续验收/,
+  /尚未达到/,
+  /未达到/,
+  /完成此项展示后/,
+  /即可判断/,
+  /还没完成/,
+  /还没有完成/,
+  /还未完成/,
+  /尚未完成/,
+  /还需完成/,
+]
+
+// 与 server/modules/learning/logic.ts 中 ASSISTANT_COMPLETION_PATTERNS 保持等价。
+const ASSISTANT_COMPLETION_PATTERNS = [
+  /已经满足了?本关的完成标准/,
+  /已满足本关的完成标准/,
+  /已达到本关完成标准/,
+  /达到本关完成标准/,
+  /本关已通过验收/,
+  /本关.{0,4}验收(?:通过|完成|合格|成功)/,
+  /已通过本关(?:的)?验收/,
+  /验收(?:结论|合格)/,
+  /恭喜你成功掌握了第\s*\d+\s*关/,
+  /可(?:以)?进入下一关/,
+  /(?:你|您)?已(?:经)?(?:成功)?完成(?:了)?(?:本关|这一关|当前(?:这)?关)(?![的之])/,
+  /(?:本关|这一关|当前关卡)(?:的)?(?:学习|内容|目标|任务|练习|关卡|挑战)?(?:已经?|顺利|成功){1,3}(?:完成|结束|过关|达成|通过)/,
+  /已达成本关(?:目标|目的|完成标准)/,
+  /(?:本关|这一关).{0,8}(?:全部|所有)?(?:检查点|验收点).{0,8}(?:通过|达成|完成)/,
+]
+
+function shouldTreatAssistantContentAsCompletion(content: string) {
+  const normalized = content.replace(/\s+/g, "").trim()
+  if (!normalized) {
+    return false
+  }
+
+  if (ASSISTANT_COMPLETION_NEGATION_PATTERNS.some((pattern) => pattern.test(normalized))) {
+    return false
+  }
+
+  return ASSISTANT_COMPLETION_PATTERNS.some((pattern) => pattern.test(normalized))
+}
 
 export function isExplicitTaskCompletionInput(text: string) {
   const normalized = text.replace(/\s+/g, "").trim()
@@ -92,6 +176,23 @@ export function isExplicitTaskCompletionInput(text: string) {
   }
 
   return COMPLETION_SIGNAL_PATTERNS.some((pattern) => pattern.test(normalized))
+}
+
+export function isAdvanceNextTaskIntent(text: string) {
+  const normalized = text.replace(/\s+/g, "").trim()
+  if (!normalized) {
+    return false
+  }
+
+  if (ADVANCE_NEXT_TASK_NEGATION_PATTERNS.some((pattern) => pattern.test(normalized))) {
+    return false
+  }
+
+  if (ADVANCE_NEXT_TASK_QUESTION_PATTERNS.some((pattern) => pattern.test(normalized))) {
+    return false
+  }
+
+  return ADVANCE_NEXT_TASK_INTENT_PATTERNS.some((pattern) => pattern.test(normalized))
 }
 
 export function normalizeAssistantAction<T extends { label: string; prompt: string }>(
@@ -281,6 +382,47 @@ export function canUseCompletionQuickAction(input: {
 
     return message.actionLabels.some((label) => /完成本关|进入下一关/.test(label))
   })
+}
+
+export function shouldAutoAdvanceFromAdvanceIntent(input: {
+  taskState: "pending" | "in_progress" | "blocked" | "completed"
+  messages: Array<{
+    role: "system" | "ai" | "user"
+    kind: "system_goal" | "coach" | "user_input" | "task_feedback"
+    content: string
+    interactionType:
+      | "teaching"
+      | "blocked_help"
+      | "task_review"
+      | "completion_feedback"
+      | "path_guidance"
+      | "concept_qa"
+      | null
+    taskPatchStatus: "in_progress" | "blocked" | "completed" | null
+  }>
+}) {
+  if (input.taskState === "completed") {
+    // 任务已经处于完成态，再发"进入下一关"应通过 /task/complete 推进。
+    return true
+  }
+
+  const lastAssistantMessage = [...input.messages]
+    .reverse()
+    .find((message) => message.role === "ai")
+
+  if (!lastAssistantMessage) {
+    return false
+  }
+
+  if (
+    lastAssistantMessage.kind === "task_feedback"
+    || lastAssistantMessage.taskPatchStatus === "completed"
+    || lastAssistantMessage.interactionType === "completion_feedback"
+  ) {
+    return true
+  }
+
+  return shouldTreatAssistantContentAsCompletion(lastAssistantMessage.content)
 }
 
 export function shouldCompleteCurrentTaskFromAssistantAction(input: {

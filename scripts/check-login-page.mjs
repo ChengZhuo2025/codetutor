@@ -159,7 +159,7 @@ assert.match(
 )
 assert.match(
   loginPageSource,
-  /signOut\(\{ scope: "local" \}\)/,
+  /clearSupabaseBrowserSession/,
   "Login page should clear the local Supabase session when restoring a stale browser session or finalizing app login fails.",
 )
 assert.match(
@@ -284,7 +284,7 @@ assert.match(
 )
 assert.match(
   callbackSource,
-  /requestData\("\/auth\/oauth-temp-user\/discard"[\s\S]*\.catch\(\(\) => undefined\)[\s\S]*supabase\.auth\.signOut\(\{ scope: "local" \}\)/,
+  /requestData\("\/auth\/oauth-temp-user\/discard"[\s\S]*\.catch\(\(\) => undefined\)[\s\S]*clearSupabaseBrowserSession\(supabase\)/,
   "Auth callback should always clear the popup's local OAuth session before notifying the login page to bind a phone.",
 )
 assert.match(

@@ -16,7 +16,11 @@ import type { AuthStep, AuthOAuthProvider } from "@/features/auth/types"
 import type { AuthLoginResponseData } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
 import { buildOAuthRedirectTo } from "@/lib/auth/oauth-redirect"
-import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import {
+  clearSupabaseBrowserSession,
+  createSupabaseBrowserClient,
+  getSafeSupabaseBrowserSession,
+} from "@/lib/supabase/client"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { useAppEventTracker } from "@/providers/app-providers"
 
@@ -64,8 +68,7 @@ type OAuthMessage =
 
 async function clearBrowserAuthSession() {
   const supabase = createSupabaseBrowserClient()
-  await supabase.auth.signOut({ scope: "local" }).catch(() => undefined)
-  await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined)
+  await clearSupabaseBrowserSession(supabase)
 }
 
 function openOAuthPopup(url?: string) {
@@ -302,9 +305,7 @@ export function LoginPage() {
     async function restoreExistingSession() {
       try {
         const supabase = createSupabaseBrowserClient()
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
+        const session = await getSafeSupabaseBrowserSession(supabase)
 
         if (cancelled) {
           return

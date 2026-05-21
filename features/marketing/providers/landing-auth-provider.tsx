@@ -10,7 +10,10 @@ import {
 } from "react"
 import type { AuthSessionSummaryResponseData } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
-import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import {
+  createSupabaseBrowserClient,
+  getSafeSupabaseBrowserSession,
+} from "@/lib/supabase/client"
 import { ROUTES } from "@/constants/routes"
 
 type LandingAuthState =
@@ -54,9 +57,7 @@ export function LandingAuthProvider({ children }: { children: ReactNode }) {
     const supabase = createSupabaseBrowserClient()
 
     async function loadAuthSummary() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      const session = await getSafeSupabaseBrowserSession(supabase)
 
       if (cancelled) {
         return

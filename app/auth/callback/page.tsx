@@ -13,7 +13,11 @@ import type { AuthLoginResponseData, ProfileMeResponseData } from "@/lib/api/con
 import { requestData } from "@/lib/api/client"
 import { isApiError } from "@/lib/api/types"
 import { getOAuthRedirectOrigin } from "@/lib/auth/oauth-redirect"
-import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import {
+  clearSupabaseBrowserSession,
+  createSupabaseBrowserClient,
+  getSafeSupabaseBrowserSession,
+} from "@/lib/supabase/client"
 import { ROUTES } from "@/constants/routes"
 import type { OAuthProviderProfile } from "@/features/auth/types"
 import { usePublicSite } from "@/features/site/providers/public-site-provider"
@@ -395,9 +399,7 @@ function AuthCallbackContent() {
 
             accessToken = sessionData.session?.access_token
           } else {
-            const {
-              data: { session },
-            } = await supabase.auth.getSession()
+            const session = await getSafeSupabaseBrowserSession(supabase)
 
             accessToken = session?.access_token ?? hashTokens.accessToken
           }
@@ -488,17 +490,14 @@ function AuthCallbackContent() {
         ) {
           try {
             const supabase = createSupabaseBrowserClient()
-            const {
-              data: { session },
-            } = await supabase.auth.getSession()
+            const session = await getSafeSupabaseBrowserSession(supabase)
 
             await requestData("/auth/oauth-temp-user/discard", {
               method: "POST",
               headers: withAuthorization(session?.access_token),
               body: JSON.stringify({ provider }),
             }).catch(() => undefined)
-            await supabase.auth.signOut({ scope: "local" }).catch(() => undefined)
-            await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined)
+            await clearSupabaseBrowserSession(supabase)
           } finally {
             if (!cancelled && notifyParentOAuthBindingRequired(provider)) {
               setStatus("success")
@@ -511,8 +510,7 @@ function AuthCallbackContent() {
 
         if (flow === "login") {
           const supabase = createSupabaseBrowserClient()
-          await supabase.auth.signOut({ scope: "local" }).catch(() => undefined)
-          await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined)
+          await clearSupabaseBrowserSession(supabase)
         }
         setStatus("error")
         setMessage(message)

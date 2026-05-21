@@ -26,7 +26,7 @@ import type {
 } from "@/lib/api/contracts/onboarding"
 import type { LearningCurrentSessionResponseData } from "@/lib/api/contracts/learning"
 import { requestData } from "@/lib/api/client"
-import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import { getSafeSupabaseBrowserSession } from "@/lib/supabase/client"
 import { useAppEventTracker } from "@/providers/app-providers"
 import type { ApiRequestState } from "@/types/api"
 
@@ -97,10 +97,7 @@ export function OnboardingPage() {
 
     async function checkExistingActivePlan() {
       try {
-        const supabase = createSupabaseBrowserClient()
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
+        const session = await getSafeSupabaseBrowserSession()
 
         if (!session?.access_token) {
           if (!cancelled) {

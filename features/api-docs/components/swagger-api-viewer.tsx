@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import { getSafeSupabaseBrowserSession } from "@/lib/supabase/client"
 
 type SwaggerApiViewerProps = {
   spec: Record<string, unknown>
@@ -90,10 +90,7 @@ export function SwaggerApiViewer({ spec }: SwaggerApiViewerProps) {
           ? [SwaggerUIBundle.presets.apis]
           : undefined,
         requestInterceptor: async (request: SwaggerRequest) => {
-          const supabase = createSupabaseBrowserClient()
-          const {
-            data: { session },
-          } = await supabase.auth.getSession()
+          const session = await getSafeSupabaseBrowserSession()
 
           if (session?.access_token) {
             request.headers = {

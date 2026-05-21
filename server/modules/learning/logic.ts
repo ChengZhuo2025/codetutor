@@ -164,13 +164,10 @@ export function resolveLearningUserInteractionType(input: {
     return "teaching"
   }
 
-  if (
-    /((?:我想|想)?(?:请教|问)(?:一个)?问题|请问|你(?:对.+)?(?:是否)?了解|你知道|了解一下|介绍一下|说说|聊聊|什么是|怎么理解|如何理解|解释一下|概念是|是什么意思|有什么作用|是做什么的|有什么区别|区别是什么|和.*的区别|对比.*和|干什么用的|干嘛的|有什么用)/i.test(input.content)
-  ) {
-    return "concept_qa"
-  }
-
-  return "teaching"
+  // 自由对话兜底：未命中任何学习关键词的输入（包含偏题、闲聊、自然口吻提问等）
+  // 都路由到概念问答 agent。learning-concept-qa-coach 的 system prompt 会对偏题
+  // 给出一两句简短回应并引回当前关卡，避免 teaching agent 因结构化生成卡顿超时。
+  return "concept_qa"
 }
 
 export function resolveAgentBindingInteractionFallbacks(
@@ -229,6 +226,11 @@ const ASSISTANT_COMPLETION_NEGATION_PATTERNS = [
   /未达到/,
   /完成此项展示后/,
   /即可判断/,
+  /还没完成/,
+  /还没有完成/,
+  /还未完成/,
+  /尚未完成/,
+  /还需完成/,
 ]
 
 const ASSISTANT_COMPLETION_PATTERNS = [
@@ -237,9 +239,15 @@ const ASSISTANT_COMPLETION_PATTERNS = [
   /已达到本关完成标准/,
   /达到本关完成标准/,
   /本关已通过验收/,
+  /本关.{0,4}验收(?:通过|完成|合格|成功)/,
+  /已通过本关(?:的)?验收/,
   /验收(?:结论|合格)/,
   /恭喜你成功掌握了第\s*\d+\s*关/,
   /可(?:以)?进入下一关/,
+  /(?:你|您)?已(?:经)?(?:成功)?完成(?:了)?(?:本关|这一关|当前(?:这)?关)(?![的之])/,
+  /(?:本关|这一关|当前关卡)(?:的)?(?:学习|内容|目标|任务|练习|关卡|挑战)?(?:已经?|顺利|成功){1,3}(?:完成|结束|过关|达成|通过)/,
+  /已达成本关(?:目标|目的|完成标准)/,
+  /(?:本关|这一关).{0,8}(?:全部|所有)?(?:检查点|验收点).{0,8}(?:通过|达成|完成)/,
 ]
 
 export function shouldTreatAssistantResponseAsCompletion(content: string) {

@@ -1,5 +1,5 @@
 import type { ApiResponse } from "@/lib/api/types"
-import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import { getSafeSupabaseBrowserSession } from "@/lib/supabase/client"
 import { unwrapResponse } from "@/lib/api/types"
 
 const API_BASE_PATH = "/api"
@@ -14,10 +14,7 @@ export async function buildRequestHeaders(initHeaders?: HeadersInit) {
   headers.delete("X-Use-FormData")
 
   if (typeof window !== "undefined") {
-    const supabase = createSupabaseBrowserClient()
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
+    const session = await getSafeSupabaseBrowserSession()
 
     if (session?.access_token && !headers.has("Authorization")) {
       headers.set("Authorization", `Bearer ${session.access_token}`)
