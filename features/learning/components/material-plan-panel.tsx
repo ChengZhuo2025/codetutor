@@ -236,6 +236,9 @@ export function MaterialPlanPanel({
     }
   }
 
+  const resolveUnknownMaterialPlanErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback
+
   const parseLinks = useMemo(
     () => () =>
       linksText
@@ -402,38 +405,43 @@ export function MaterialPlanPanel({
       weekly = parsed
     }
 
-    setBusyAction("generate")
-    setDraftDetail(null)
-    const res = await apiClient.post<PlanFromMaterialResponseData>(
-      "/learning/plan-from-material",
-      {
-        links,
-        userGoal: userGoal.trim() || undefined,
-        weeklyHours: weekly,
-        currentConstraints: currentConstraints.trim() || undefined,
-      },
-    )
-    setBusyAction(null)
+    try {
+      setBusyAction("generate")
+      setDraftDetail(null)
+      const res = await apiClient.post<PlanFromMaterialResponseData>(
+        "/learning/plan-from-material",
+        {
+          links,
+          userGoal: userGoal.trim() || undefined,
+          weeklyHours: weekly,
+          currentConstraints: currentConstraints.trim() || undefined,
+        },
+      )
 
-    if (res.code !== "OK" || !res.data) {
-      setError(resolveMaterialPlanErrorMessage(res.code, res.message ?? "生成失败，请稍后重试。"))
-      return
-    }
+      if (res.code !== "OK" || !res.data) {
+        setError(resolveMaterialPlanErrorMessage(res.code, res.message ?? "生成失败，请稍后重试。"))
+        return
+      }
 
-    setIntakeStatus({
-      intakeId: res.data.intakeId,
-      status: res.data.status,
-      processingStage: res.data.status,
-      progressPercent: 0,
-      progressMessage: "已提交，等待开始处理。",
-      draftId: res.data.draftId,
-      runId: res.data.runId,
-      errorCode: null,
-      errorMessage: null,
-    })
+      setIntakeStatus({
+        intakeId: res.data.intakeId,
+        status: res.data.status,
+        processingStage: res.data.status,
+        progressPercent: 0,
+        progressMessage: "已提交，等待开始处理。",
+        draftId: res.data.draftId,
+        runId: res.data.runId,
+        errorCode: null,
+        errorMessage: null,
+      })
 
-    if (res.data.status === "ready" && res.data.draftId) {
-      await loadDraftDetail(res.data.draftId)
+      if (res.data.status === "ready" && res.data.draftId) {
+        await loadDraftDetail(res.data.draftId)
+      }
+    } catch (error) {
+      setError(resolveUnknownMaterialPlanErrorMessage(error, "生成失败，请稍后重试。"))
+    } finally {
+      setBusyAction(null)
     }
   }
 
@@ -442,23 +450,28 @@ export function MaterialPlanPanel({
       return
     }
 
-    setError(null)
-    setBusyAction("confirm")
-    const res = await apiClient.post<PlanDraftConfirmResponseData>(
-      `/learning/plan-drafts/${draftDetail.draftId}/confirm`,
-      {},
-    )
-    setBusyAction(null)
+    try {
+      setError(null)
+      setBusyAction("confirm")
+      const res = await apiClient.post<PlanDraftConfirmResponseData>(
+        `/learning/plan-drafts/${draftDetail.draftId}/confirm`,
+        {},
+      )
 
-    if (res.code !== "OK" || !res.data) {
-      setError(resolveMaterialPlanErrorMessage(res.code, res.message ?? "确认失败。"))
-      return
+      if (res.code !== "OK" || !res.data) {
+        setError(resolveMaterialPlanErrorMessage(res.code, res.message ?? "确认失败。"))
+        return
+      }
+
+      setDraftDetail(null)
+      setIntakeStatus(null)
+      onSessionRefresh()
+      onDone?.()
+    } catch (error) {
+      setError(resolveUnknownMaterialPlanErrorMessage(error, "确认失败。"))
+    } finally {
+      setBusyAction(null)
     }
-
-    setDraftDetail(null)
-    setIntakeStatus(null)
-    onSessionRefresh()
-    onDone?.()
   }
 
   const handleSaveDraft = async () => {
@@ -472,39 +485,44 @@ export function MaterialPlanPanel({
       return
     }
 
-    setError(null)
-    setBusyAction("save")
-    const body: LearningPlanDraftPatchRequestContract = {
-      title: draftDetail.title,
-      goal: draftDetail.goal,
-      tasks: draftDetail.tasks.map((task) => ({
-        id: task.id,
-        title: task.title,
-        objective: task.objective,
-        lessonBrief: task.lessonBrief,
-        practiceSteps: task.practiceSteps,
-        submissionGuide: task.submissionGuide,
-        checkpoints: task.checkpoints,
-        acceptanceCriteria: task.acceptanceCriteria,
-        estimatedMinutes: task.estimatedMinutes,
-        masteryPoints: task.masteryPoints,
-        cautions: task.cautions,
-        recommendedForWeek1: task.recommendedForWeek1,
-      })),
+    try {
+      setError(null)
+      setBusyAction("save")
+      const body: LearningPlanDraftPatchRequestContract = {
+        title: draftDetail.title,
+        goal: draftDetail.goal,
+        tasks: draftDetail.tasks.map((task) => ({
+          id: task.id,
+          title: task.title,
+          objective: task.objective,
+          lessonBrief: task.lessonBrief,
+          practiceSteps: task.practiceSteps,
+          submissionGuide: task.submissionGuide,
+          checkpoints: task.checkpoints,
+          acceptanceCriteria: task.acceptanceCriteria,
+          estimatedMinutes: task.estimatedMinutes,
+          masteryPoints: task.masteryPoints,
+          cautions: task.cautions,
+          recommendedForWeek1: task.recommendedForWeek1,
+        })),
+      }
+
+      const res = await apiClient.patch<LearningPlanDraftDetailResponseData>(
+        `/learning/plan-drafts/${draftDetail.draftId}`,
+        body,
+      )
+
+      if (res.code !== "OK" || !res.data) {
+        setError(res.message ?? "保存草稿失败。")
+        return
+      }
+
+      setDraftDetail(res.data)
+    } catch (error) {
+      setError(resolveUnknownMaterialPlanErrorMessage(error, "保存草稿失败。"))
+    } finally {
+      setBusyAction(null)
     }
-
-    const res = await apiClient.patch<LearningPlanDraftDetailResponseData>(
-      `/learning/plan-drafts/${draftDetail.draftId}`,
-      body,
-    )
-    setBusyAction(null)
-
-    if (res.code !== "OK" || !res.data) {
-      setError(res.message ?? "保存草稿失败。")
-      return
-    }
-
-    setDraftDetail(res.data)
   }
 
   const handleRegenerateDraft = async () => {
@@ -512,56 +530,59 @@ export function MaterialPlanPanel({
       return
     }
 
-    setError(null)
-    setBusyAction("regenerate")
-    const links = parseLinks()
-    if (links.length > 1) {
-      setError("一次仅支持使用 1 条教程链接生成学习计划。")
-      setBusyAction(null)
-      return
-    }
-
-    const body: PlanDraftRegenerateRequestContract = {
-      userGoal: userGoal.trim() || undefined,
-      currentConstraints: currentConstraints.trim() || undefined,
-    }
-    if (links.length > 0) {
-      body.links = links
-    }
-    const wh = weeklyHours.trim()
-    if (wh) {
-      const parsed = Number(wh)
-      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 40) {
-        setError("每周学时需为 1–40 的整数，或留空。")
-        setBusyAction(null)
+    try {
+      setError(null)
+      setBusyAction("regenerate")
+      const links = parseLinks()
+      if (links.length > 1) {
+        setError("一次仅支持使用 1 条教程链接生成学习计划。")
         return
       }
-      body.weeklyHours = parsed
+
+      const body: PlanDraftRegenerateRequestContract = {
+        userGoal: userGoal.trim() || undefined,
+        currentConstraints: currentConstraints.trim() || undefined,
+      }
+      if (links.length > 0) {
+        body.links = links
+      }
+      const wh = weeklyHours.trim()
+      if (wh) {
+        const parsed = Number(wh)
+        if (!Number.isInteger(parsed) || parsed < 1 || parsed > 40) {
+          setError("每周学时需为 1–40 的整数，或留空。")
+          return
+        }
+        body.weeklyHours = parsed
+      }
+
+      const res = await apiClient.post<PlanFromMaterialResponseData>(
+        `/learning/plan-drafts/${draftDetail.draftId}/regenerate`,
+        body,
+      )
+
+      if (res.code !== "OK" || !res.data) {
+        setError(resolveMaterialPlanErrorMessage(res.code, res.message ?? "重新生成失败。"))
+        return
+      }
+
+      setDraftDetail(null)
+      setIntakeStatus({
+        intakeId: res.data.intakeId,
+        status: res.data.status,
+        processingStage: res.data.status,
+        progressPercent: 0,
+        progressMessage: "已提交重生成任务，等待开始处理。",
+        draftId: res.data.draftId,
+        runId: res.data.runId,
+        errorCode: null,
+        errorMessage: null,
+      })
+    } catch (error) {
+      setError(resolveUnknownMaterialPlanErrorMessage(error, "重新生成失败。"))
+    } finally {
+      setBusyAction(null)
     }
-
-    const res = await apiClient.post<PlanFromMaterialResponseData>(
-      `/learning/plan-drafts/${draftDetail.draftId}/regenerate`,
-      body,
-    )
-    setBusyAction(null)
-
-    if (res.code !== "OK" || !res.data) {
-      setError(resolveMaterialPlanErrorMessage(res.code, res.message ?? "重新生成失败。"))
-      return
-    }
-
-    setDraftDetail(null)
-    setIntakeStatus({
-      intakeId: res.data.intakeId,
-      status: res.data.status,
-      processingStage: res.data.status,
-      progressPercent: 0,
-      progressMessage: "已提交重生成任务，等待开始处理。",
-      draftId: res.data.draftId,
-      runId: res.data.runId,
-      errorCode: null,
-      errorMessage: null,
-    })
   }
 
   const handleRegenerateTask = async (taskId: string) => {
@@ -569,20 +590,25 @@ export function MaterialPlanPanel({
       return
     }
 
-    setError(null)
-    setBusyAction(`task:${taskId}`)
-    const res = await apiClient.post<LearningPlanDraftDetailResponseData>(
-      `/learning/plan-drafts/${draftDetail.draftId}/tasks/${taskId}/regenerate`,
-      {},
-    )
-    setBusyAction(null)
+    try {
+      setError(null)
+      setBusyAction(`task:${taskId}`)
+      const res = await apiClient.post<LearningPlanDraftDetailResponseData>(
+        `/learning/plan-drafts/${draftDetail.draftId}/tasks/${taskId}/regenerate`,
+        {},
+      )
 
-    if (res.code !== "OK" || !res.data) {
-      setError(res.message ?? "单任务重生成失败。")
-      return
+      if (res.code !== "OK" || !res.data) {
+        setError(res.message ?? "单任务重生成失败。")
+        return
+      }
+
+      setDraftDetail(res.data)
+    } catch (error) {
+      setError(resolveUnknownMaterialPlanErrorMessage(error, "单任务重生成失败。"))
+    } finally {
+      setBusyAction(null)
     }
-
-    setDraftDetail(res.data)
   }
 
   return (

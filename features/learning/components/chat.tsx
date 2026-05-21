@@ -54,10 +54,18 @@ type PendingDraft = {
   attachment: DraftAttachment | null
 }
 
+type UploadedDraftAttachment = {
+  attachmentIds: string[]
+  attachment: MessageAttachment | null
+}
+
 type PendingRetry =
   | {
       kind: "message"
       draft: PendingDraft
+      clientMessageId: string
+      uploadedAttachment?: UploadedDraftAttachment
+      appendUserMessage: boolean
     }
   | {
       kind: "complete_task"
@@ -250,6 +258,7 @@ export function LearnChat({
   const speechAudioRef = useRef<HTMLAudioElement | null>(null)
   const speechObjectUrlsRef = useRef<string[]>([])
   const speechRequestTokenRef = useRef(0)
+  const messageAttachmentObjectUrlsRef = useRef<string[]>([])
 
   const { mission, planSummary, resume, rightPanel, supportOptions } =
     learningData
@@ -297,6 +306,10 @@ export function LearnChat({
   }
 
   useEffect(() => {
+    for (const objectUrl of messageAttachmentObjectUrlsRef.current) {
+      URL.revokeObjectURL(objectUrl)
+    }
+    messageAttachmentObjectUrlsRef.current = []
     setMessages(learningData.messages)
     setConversationId(learningData.conversationId)
     setTaskState(learningData.task.status)
@@ -389,6 +402,10 @@ export function LearnChat({
         URL.revokeObjectURL(objectUrl)
       }
       speechObjectUrlsRef.current = []
+      for (const objectUrl of messageAttachmentObjectUrlsRef.current) {
+        URL.revokeObjectURL(objectUrl)
+      }
+      messageAttachmentObjectUrlsRef.current = []
     }
   }, [])
 
@@ -536,12 +553,15 @@ export function LearnChat({
   const createClientMessageId = () =>
     `msg_client_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
 
+  const createMessageAttachmentObjectUrl = (attachment: DraftAttachment) => {
+    const objectUrl = URL.createObjectURL(attachment.file)
+    messageAttachmentObjectUrlsRef.current.push(objectUrl)
+    return objectUrl
+  }
+
   const uploadDraftAttachment = async (
     attachment: DraftAttachment | null,
-  ): Promise<{
-    attachmentIds: string[]
-    attachment: MessageAttachment | null
-  }> => {
+  ): Promise<UploadedDraftAttachment> => {
     if (!attachment) {
       return {
         attachmentIds: [],
@@ -577,7 +597,7 @@ export function LearnChat({
     const messageAttachment: MessageAttachment = {
       id: uploaded.id,
       type: uploaded.kind,
-      url: attachment.localUrl,
+      url: createMessageAttachmentObjectUrl(attachment),
       name: uploaded.originalFilename ?? attachment.name,
       mimeType: uploaded.mimeType,
       sizeBytes: uploaded.sizeBytes,
@@ -819,12 +839,22 @@ export function LearnChat({
     draft: PendingDraft,
     options?: {
       preserveBlockedStatus?: boolean
+      clientMessageId?: string
+      uploadedAttachment?: UploadedDraftAttachment
+      appendUserMessage?: boolean
     },
   ) => {
+    const clientMessageId = options?.clientMessageId ?? createClientMessageId()
+    let uploadedAttachment = options?.uploadedAttachment
+    let appendUserMessage = options?.appendUserMessage ?? true
+
     if (connectionState !== "online") {
       setPendingRetry({
         kind: "message",
         draft,
+        clientMessageId,
+        uploadedAttachment,
+        appendUserMessage,
       })
       setSendError("当前网络连接不稳定，消息尚未发出。恢复后可直接重试。")
       return
@@ -850,24 +880,28 @@ export function LearnChat({
         await syncTaskStatus("in_progress")
       }
 
-      const clientMessageId = createClientMessageId()
-      const uploadedAttachment = await uploadDraftAttachment(draft.attachment)
+      uploadedAttachment ??= await uploadDraftAttachment(draft.attachment)
       const userVisibleContent =
         draft.text ||
         (draft.attachment?.type === "audio"
           ? "我发送了一条语音消息，请帮我解答。"
           : "我上传了一张截图，请帮我定位问题。")
-      const userMessage: Message = {
-        id: allocateMessageId(),
-        role: "user",
-        kind: "user_input",
-        title: "我的反馈",
-        content: userVisibleContent,
-        attachment: uploadedAttachment.attachment ?? undefined,
-        attachments: uploadedAttachment.attachment ? [uploadedAttachment.attachment] : [],
+
+      if (appendUserMessage) {
+        const userMessage: Message = {
+          id: allocateMessageId(),
+          role: "user",
+          kind: "user_input",
+          title: "我的反馈",
+          content: userVisibleContent,
+          attachment: uploadedAttachment.attachment ?? undefined,
+          attachments: uploadedAttachment.attachment ? [uploadedAttachment.attachment] : [],
+        }
+
+        setMessages((prev) => [...prev, userMessage])
+        appendUserMessage = false
       }
 
-      setMessages((prev) => [...prev, userMessage])
       resetAgent()
 
       let assistantInserted = false
@@ -1040,6 +1074,9 @@ export function LearnChat({
       setPendingRetry({
         kind: "message",
         draft,
+        clientMessageId,
+        uploadedAttachment,
+        appendUserMessage,
       })
       setSendError(
         error instanceof Error ? error.message : "消息发送失败，请稍后重试。",
@@ -1219,7 +1256,11 @@ export function LearnChat({
       return
     }
 
-    void dispatchDraft(retry.draft)
+    void dispatchDraft(retry.draft, {
+      clientMessageId: retry.clientMessageId,
+      uploadedAttachment: retry.uploadedAttachment,
+      appendUserMessage: retry.appendUserMessage,
+    })
   }
 
   const handleResume = () => {

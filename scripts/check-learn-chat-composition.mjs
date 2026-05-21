@@ -14,6 +14,7 @@ const messageItemSource = read("features/learning/components/learn-chat-message-
 const resumeSource = read("features/learning/components/learn-chat-resume-card.tsx")
 const composerSource = read("features/learning/components/learn-chat-composer.tsx")
 const richContentSource = read("features/learning/components/learn-chat-rich-content.tsx")
+const materialPlanPanelSource = read("features/learning/components/material-plan-panel.tsx")
 
 assert.match(
   learnPageSource,
@@ -228,8 +229,38 @@ assert.match(
 )
 assert.match(
   learnChatSource,
+  /clientMessageId: string/,
+  "LearnChat should keep the logical client message id in retry state",
+)
+assert.match(
+  learnChatSource,
+  /appendUserMessage: boolean/,
+  "LearnChat should track whether a retryable message already appended its visible user bubble",
+)
+assert.match(
+  learnChatSource,
+  /uploadedAttachment\?: UploadedDraftAttachment/,
+  "LearnChat should preserve an uploaded attachment across message retries",
+)
+assert.match(
+  learnChatSource,
   /retryPendingOperation/,
   "LearnChat should route retry actions through the pending operation type",
+)
+assert.match(
+  learnChatSource,
+  /createMessageAttachmentObjectUrl/,
+  "LearnChat should allocate a separate object URL for sent message attachments",
+)
+assert.match(
+  learnChatSource,
+  /messageAttachmentObjectUrlsRef/,
+  "LearnChat should track sent message attachment object URLs separately from composer previews",
+)
+assert.match(
+  learnChatSource,
+  /URL\.revokeObjectURL\(objectUrl\)/,
+  "LearnChat should revoke sent message attachment object URLs on cleanup",
 )
 assert.match(
   learnChatSource,
@@ -278,6 +309,11 @@ assert.match(
 )
 assert.match(
   composerSource,
+  /!isAcceptedImageFile\(file\)[\s\S]*onRecordingError/,
+  "learn chat composer should reject unsupported files selected from the file picker",
+)
+assert.match(
+  composerSource,
   /actionLabel=\{canRetry \? "重试发送" : undefined\}/,
   "learn chat composer should only show retry action when a retryable operation exists",
 )
@@ -310,6 +346,16 @@ assert.match(
   richContentSource,
   /navigator\.clipboard\.writeText\(code\)/,
   "learn chat code copy button should copy the raw code text",
+)
+assert.match(
+  materialPlanPanelSource,
+  /finally\s*\{[\s\S]*setBusyAction\(null\)/,
+  "material plan panel async actions should always clear busy state in finally blocks",
+)
+assert.match(
+  materialPlanPanelSource,
+  /catch \(error\)[\s\S]*resolveUnknownMaterialPlanErrorMessage/,
+  "material plan panel async actions should surface thrown network errors",
 )
 
 console.log("Learn chat composition and header collapse wiring are present.")

@@ -525,6 +525,12 @@ export function LearnChatComposer({
                 const file = event.target.files?.[0]
                 if (!file) return
 
+                if (!isAcceptedImageFile(file)) {
+                  event.target.value = ""
+                  onRecordingError("截图仅支持 PNG、JPEG 或 WebP 格式。")
+                  return
+                }
+
                 onSelectAttachment(file)
                 event.target.value = ""
               }}

@@ -1,5 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 
 import type { LearningMessageResponseData } from "../lib/api/contracts/learning.ts"
 import { LearningAIProviderError } from "../server/modules/learning/errors.ts"
@@ -21,6 +22,29 @@ const sampleResponse: LearningMessageResponseData = {
   taskState: "in_progress",
   taskPatch: null,
 }
+
+test("learning orchestration reuses pending user messages for idempotent retries", () => {
+  const source = readFileSync(
+    new URL("../server/modules/learning/orchestration.ts", import.meta.url),
+    "utf8",
+  )
+
+  assert.match(
+    source,
+    /function\s+maybeLoadExistingUserMessage/,
+    "orchestration should load an existing user message before retrying the same clientMessageId",
+  )
+  assert.match(
+    source,
+    /\.eq\("client_message_id", input\.clientMessageId\)/,
+    "orchestration should find pending user messages by clientMessageId",
+  )
+  assert.match(
+    source,
+    /existingUserMessage[\s\S]*userMessageId:[\s\S]*existingUserMessage\.id/,
+    "insertUserMessage should return the existing user message instead of inserting a duplicate",
+  )
+})
 
 test("executeLearningMessageRequest returns json success payload when stream is not requested", async () => {
   const result = await executeLearningMessageRequest({

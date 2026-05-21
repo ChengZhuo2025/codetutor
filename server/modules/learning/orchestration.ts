@@ -155,6 +155,11 @@ type ConversationHistoryRow = {
   content_text: string | null
 }
 
+type ExistingUserMessageRow = {
+  id: string
+  sequence_no: number
+}
+
 type LearningMessageAttachmentRow = {
   id: string
   user_id: string
@@ -1349,6 +1354,14 @@ async function insertUserMessage(
     now: string
   },
 ) {
+  const existingUserMessage = await maybeLoadExistingUserMessage(input)
+  if (existingUserMessage) {
+    return {
+      userMessageId: existingUserMessage.id,
+      userSequenceNo: existingUserMessage.sequence_no,
+    }
+  }
+
   const userSequenceNo = input.session.message_count + 1
 
   const { data: userMessageData, error: userMessageError } = await input.supabase
@@ -1429,6 +1442,24 @@ async function insertUserMessage(
     userMessageId: userMessageData.id,
     userSequenceNo,
   }
+}
+
+async function maybeLoadExistingUserMessage(input: PreparedLearningInvocation) {
+  if (!input.clientMessageId) {
+    return null
+  }
+
+  const { data, error } = await input.supabase
+    .from("conversation_messages")
+    .select("id, sequence_no")
+    .eq("session_id", input.session.id)
+    .eq("client_message_id", input.clientMessageId)
+    .eq("role", "user")
+    .maybeSingle()
+
+  assertSupabaseSuccess(error, "failed to load existing conversation user message")
+
+  return (data as ExistingUserMessageRow | null) ?? null
 }
 
 async function persistAssistantResult(
