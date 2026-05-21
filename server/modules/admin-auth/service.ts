@@ -21,18 +21,13 @@ export type AdminLoginResult = {
   refreshToken: string | null
 }
 
-type AdminAccountRow = {
-  id: string
+type AdminSessionLookupRow = {
+  admin_account_id: string
   user_id: string
   display_name: string
   status: AdminAccountStatus
-  last_login_at: string | null
   avatar_url: string | null
-  admin_account_roles: Array<{
-    admin_roles: {
-      code: AdminRoleCode
-    }
-  }>
+  roles: AdminRoleCode[] | null
 }
 
 const ADMIN_SESSION_CACHE_TTL_MS = 60_000
@@ -43,64 +38,41 @@ const adminSessionCache = createRuntimeCache<AdminSessionResponseData | null>({
   maxEntries: 500,
 })
 
-async function loadAdminAccountByUserId(userId: string) {
-  const supabase = createSupabaseAdminClient()
-
-  const { data: adminAccount, error: adminError } = await supabase
-    .from("admin_accounts")
-    .select(
-      `
-      id,
-      user_id,
-      display_name,
-      status,
-      last_login_at,
-      admin_account_roles(
-        admin_roles(code)
-      )
-    `
-    )
-    .eq("user_id", userId)
-    .maybeSingle()
-
-  assertSupabaseSuccess(adminError, "failed to query admin account")
-
-  if (!adminAccount) {
-    return null
+function normalizeRoleCodes(roles: unknown): AdminRoleCode[] {
+  if (!Array.isArray(roles)) {
+    return []
   }
 
-  const typed = adminAccount as unknown as Omit<AdminAccountRow, "avatar_url">
+  return roles.filter((role): role is AdminRoleCode => typeof role === "string")
+}
 
-  const { data: profileRow, error: profileError } = await supabase
-    .from("user_profiles")
-    .select("avatar_url")
-    .eq("user_id", userId)
-    .maybeSingle()
-
-  assertSupabaseSuccess(profileError, "failed to query user profile avatar for admin session")
-
-  const avatarUrl =
-    typeof (profileRow as { avatar_url?: string | null } | null)?.avatar_url === "string"
-      ? (profileRow as { avatar_url: string }).avatar_url
-      : null
-
+function toAdminSessionDataFromLookup(row: AdminSessionLookupRow): AdminSessionResponseData {
   return {
-    ...typed,
-    avatar_url: avatarUrl,
+    adminAccountId: row.admin_account_id,
+    userId: row.user_id,
+    displayName: row.display_name,
+    avatarUrl: row.avatar_url,
+    roles: normalizeRoleCodes(row.roles),
+    status: row.status,
   }
 }
 
-function toAdminSessionData(account: AdminAccountRow): AdminSessionResponseData {
-  const roles: AdminRoleCode[] = (account.admin_account_roles ?? []).map((r) => r.admin_roles.code)
+async function loadAdminSessionByUserId(userId: string): Promise<AdminSessionResponseData | null> {
+  const supabase = createSupabaseAdminClient()
 
-  return {
-    adminAccountId: account.id,
-    userId: account.user_id,
-    displayName: account.display_name,
-    avatarUrl: account.avatar_url,
-    roles,
-    status: account.status,
+  const { data, error } = await supabase
+    .rpc("get_admin_session_lookup", {
+      p_user_id: userId,
+    })
+    .maybeSingle()
+
+  assertSupabaseSuccess(error, "failed to query admin session lookup")
+
+  if (!data) {
+    return null
   }
+
+  return toAdminSessionDataFromLookup(data as unknown as AdminSessionLookupRow)
 }
 
 async function writeAdminAuditLog(input: {
@@ -164,26 +136,25 @@ export async function adminLogin(email: string, password: string): Promise<Admin
   }
 
   // 2. 查询管理员账号
-  const adminAccount = await loadAdminAccountByUserId(authData.user.id)
+  const sessionData = await loadAdminSessionByUserId(authData.user.id)
 
-  if (!adminAccount) {
+  if (!sessionData) {
     // 不是管理员，登出并报错
     await supabase.auth.signOut()
     throw new Error("ADMIN_FORBIDDEN")
   }
 
-  const account = adminAccount
-
   // 3. 检查账号状态
-  if (account.status !== "active") {
+  if (sessionData.status !== "active") {
     await supabase.auth.signOut()
     throw new Error("ADMIN_INACTIVE_ACCOUNT")
   }
 
-  await touchAdminLogin(account.id, email)
+  await touchAdminLogin(sessionData.adminAccountId, email)
+  preloadAdminSessionCache(authData.session.access_token, sessionData)
 
   return {
-    sessionData: toAdminSessionData(account),
+    sessionData,
     accessToken: authData.session.access_token,
     refreshToken: authData.session.refresh_token,
   }
@@ -207,13 +178,26 @@ export async function getAdminSession(): Promise<AdminSessionResponseData | null
  * 基于 userId 获取管理员会话
  */
 export async function getAdminSessionByUserId(userId: string): Promise<AdminSessionResponseData | null> {
-  const adminAccount = await loadAdminAccountByUserId(userId)
+  const sessionData = await loadAdminSessionByUserId(userId)
 
-  if (!adminAccount || adminAccount.status !== "active") {
+  if (!sessionData || sessionData.status !== "active") {
     return null
   }
 
-  return toAdminSessionData(adminAccount)
+  return sessionData
+}
+
+export function preloadAdminSessionCache(
+  accessToken: string | null | undefined,
+  sessionData: AdminSessionResponseData,
+) {
+  const normalized = accessToken?.trim()
+
+  if (!normalized) {
+    return
+  }
+
+  adminSessionCache.set(hashSensitiveValue(normalized), sessionData)
 }
 
 /**

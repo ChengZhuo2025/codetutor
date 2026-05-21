@@ -23,6 +23,7 @@ export type RuntimeCache<Value> = {
     key: string,
     loader: () => Promise<Value>,
   ) => Promise<RuntimeCacheLoadResult<Value>>
+  set: (key: string, value: Value) => void
   delete: (key: string) => void
   clear: () => void
   size: () => number
@@ -111,6 +112,15 @@ export function createRuntimeCache<Value>(
       } finally {
         inflight.delete(key)
       }
+    },
+    set(key, value) {
+      store.set(key, {
+        value,
+        expiresAt: Date.now() + options.ttlMs,
+        updatedAt: Date.now(),
+      })
+      inflight.delete(key)
+      evictOverflow(store, options.maxEntries)
     },
     delete(key) {
       store.delete(key)

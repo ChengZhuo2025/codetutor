@@ -59,6 +59,7 @@
 - `047_fix_material_plan_rpc_search_path.sql` (将材料计划生成与草稿确认 RPC 的函数级 `search_path` 固定为空字符串，消除 Supabase Security Advisor 警示)
 - `050_add_user_login_ip_tracking.sql` / `051_update_user_profile_export_view_with_ip.sql` (新增用户登录 IP / 城市追踪并扩展运营导出视图)
 - `052_create_site_information.sql` (新增站点信息、通用文章与 `site-assets` public bucket，支持后台站点内容管理)
+- `053_create_admin_session_lookup_rpc.sql` (新增管理后台会话聚合 RPC，一次返回管理员账号、角色与头像，供登录与会话校验复用)
 
 当前数据库中已落地的核心业务表包括：
 
@@ -407,6 +408,8 @@ erDiagram
 | `signup_provider` | `varchar(32)` | nullable | 首次注册来源，如 `phone`、`wechat` |
 | `last_login_provider` | `varchar(32)` | nullable | 最近一次登录方式 |
 | `last_login_at` | `timestamptz` | nullable | 最近一次登录时间 |
+| `last_login_ip` | `varchar(64)` | nullable | 最近一次登录 IP |
+| `last_login_city` | `varchar(128)` | nullable | 最近一次登录城市 |
 | `primary_tool_id` | `uuid` | FK, nullable | 当前主学习工具 |
 | `learning_level` | `learning_level` | not null | 当前学习等级 |
 | `current_rank_code` | `rank_code` | not null | 当前段位 |
@@ -422,6 +425,10 @@ erDiagram
 
 - `idx_user_profiles_primary_tool_id`
 - `idx_user_profiles_learning_level`
+
+说明：
+
+- `last_login_ip` 与 `last_login_city` 已在登录链路中落地，其中城市字段改为登录后异步回写，避免第三方地理解析阻塞主登录响应。
 
 导出建议：
 

@@ -323,8 +323,6 @@ export async function finalizeAuthLogin(
   const supabase = createSupabaseAdminClient()
   const now = new Date().toISOString()
 
-  const geoPromise = clientIp ? getIpGeocoding(clientIp) : Promise.resolve(null)
-
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
     .select(
@@ -356,8 +354,6 @@ export async function finalizeAuthLogin(
 
   const isNewUser = !profile && !preference
 
-  const geo = await geoPromise
-
   if (!profile) {
     const { error: insertProfileError } = await supabase.from("user_profiles").insert({
       user_id: user.id,
@@ -367,7 +363,6 @@ export async function finalizeAuthLogin(
       last_login_provider: loginType,
       last_login_at: now,
       last_login_ip: clientIp || null,
-      last_login_city: geo?.city || null,
       learning_level: "beginner",
       current_rank_code: "rookie",
       current_score: 0,
@@ -384,26 +379,11 @@ export async function finalizeAuthLogin(
         last_login_provider: loginType,
         last_login_at: now,
         last_login_ip: clientIp || null,
-        last_login_city: geo?.city || null,
         updated_at: now,
       })
       .eq("user_id", user.id)
 
     assertSupabaseSuccess(touchProfileError, "failed to update user profile during auth login")
-  }
-
-  if (clientIp) {
-    const { error: logError } = await supabase.from("user_login_logs").insert({
-      user_id: user.id,
-      login_ip: clientIp,
-      login_city: geo?.city || null,
-      login_provider: loginType,
-      login_at: now,
-    })
-
-    if (logError) {
-      console.warn("failed to write login log:", logError.message)
-    }
   }
 
   if (!preference) {
@@ -453,6 +433,56 @@ export async function finalizeAuthLogin(
     onboardingCompleted: gateState.onboardingCompleted,
     profileCompleted: gateState.onboardingCompleted,
     redirectTo: gateState.redirectTo,
+  }
+}
+
+export async function recordLoginGeoSnapshot(input: {
+  userId: string
+  loginType: AuthLoginType
+  clientIp?: string | null
+  loginAt?: string
+}) {
+  const clientIp = input.clientIp?.trim()
+
+  if (!clientIp) {
+    return
+  }
+
+  const loginAt = input.loginAt ?? new Date().toISOString()
+  const supabase = createSupabaseAdminClient()
+  const geo = await getIpGeocoding(clientIp)
+  const city = geo.city?.trim() || null
+
+  if (city) {
+    let updateQuery = supabase
+      .from("user_profiles")
+      .update({
+        last_login_city: city,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", input.userId)
+
+    if (input.loginAt) {
+      updateQuery = updateQuery.eq("last_login_at", loginAt)
+    }
+
+    const { error: updateError } = await updateQuery
+
+    if (updateError) {
+      console.warn("failed to update login city:", updateError.message)
+    }
+  }
+
+  const { error: logError } = await supabase.from("user_login_logs").insert({
+    user_id: input.userId,
+    login_ip: clientIp,
+    login_city: city,
+    login_provider: input.loginType,
+    login_at: loginAt,
+  })
+
+  if (logError) {
+    console.warn("failed to write login log:", logError.message)
   }
 }
 

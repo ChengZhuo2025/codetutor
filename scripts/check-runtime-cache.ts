@@ -92,3 +92,19 @@ test("runtime cache supports null values for short negative caching", async () =
   assert.equal(second, null)
   assert.equal(loadCount, 1)
 })
+
+test("runtime cache can be prewarmed with an explicit value", async () => {
+  const cache = createRuntimeCache<string>({
+    name: "prewarm-cache",
+    ttlMs: 50,
+    maxEntries: 10,
+  })
+
+  cache.set("alpha", "prewarmed")
+
+  const value = await cache.getOrLoad("alpha", async () => {
+    throw new Error("should not call loader for a prewarmed key")
+  })
+
+  assert.equal(value, "prewarmed")
+})

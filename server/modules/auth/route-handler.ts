@@ -95,6 +95,11 @@ export function createAuthLoginPostHandler(dependencies: {
     user: User,
     loginType: AuthLoginType,
   ) => Promise<AuthLoginResponseData>
+  schedulePostLoginSideEffects?: (
+    user: User,
+    loginType: AuthLoginType,
+    data: AuthLoginResponseData,
+  ) => Promise<void> | void
 }) {
   return async function POST(request: RequestLike) {
     try {
@@ -113,6 +118,7 @@ export function createAuthLoginPostHandler(dependencies: {
       assertLoginTypeMatchesUserIdentity(auth.user, input.data.loginType)
 
       const data = await dependencies.finalizeAuthLogin(auth.user, input.data.loginType)
+      void dependencies.schedulePostLoginSideEffects?.(auth.user, input.data.loginType, data)
 
       return appendUserSessionCookie(jsonSuccess(data), data.userId)
     } catch (error) {

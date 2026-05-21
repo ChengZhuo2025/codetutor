@@ -94,6 +94,48 @@ test("auth login route writes user session cookie after successful authenticatio
   assert.match(response.headers.get("set-cookie") ?? "", /app-user-session=user-1/)
 })
 
+test("auth login route schedules post-login side effects after responding", async () => {
+  const events: string[] = []
+  let releaseSideEffect: (() => void) | null = null
+  const sideEffectDone = new Promise<void>((resolve) => {
+    releaseSideEffect = resolve
+  })
+  const handler = createAuthLoginPostHandler({
+    getRequestAuth: async () => ({
+      user: {
+        id: "user-1",
+      } as never,
+    }),
+    getRequestAuthHelpText: () => "auth required",
+    finalizeAuthLogin: async () => ({
+      userId: "user-1",
+      isNewUser: false,
+      onboardingCompleted: true,
+      profileCompleted: true,
+      redirectTo: "/learn",
+    }),
+    schedulePostLoginSideEffects: async () => {
+      await sideEffectDone
+      events.push("side-effect")
+    },
+  })
+
+  const response = await handler(
+    createJsonRequest(
+      "http://localhost:3000/api/auth/login",
+      JSON.stringify({ loginType: "phone" }),
+      { Authorization: "Bearer token" },
+    ),
+  )
+
+  events.push("response")
+  releaseSideEffect?.()
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  assert.equal(response.status, 200)
+  assert.deepEqual(events, ["response", "side-effect"])
+})
+
 test("auth login route requires phone binding for oauth-only users", async () => {
   const handler = createAuthLoginPostHandler({
     getRequestAuth: async () => ({

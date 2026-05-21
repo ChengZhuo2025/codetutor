@@ -5,7 +5,7 @@ import { getClientIp } from "@/server/lib/request-fingerprint"
 import { applyWindowRateLimit, attachRateLimitHeaders } from "@/server/lib/route-rate-limit"
 import { withNoStoreHeaders } from "@/server/lib/response-cache"
 import { createAuthLoginPostHandler } from "@/server/modules/auth/route-handler"
-import { finalizeAuthLogin } from "@/server/modules/auth/service"
+import { finalizeAuthLogin, recordLoginGeoSnapshot } from "@/server/modules/auth/service"
 
 let request: NextRequest
 
@@ -24,6 +24,18 @@ const postHandler = createAuthLoginPostHandler({
   getRequestAuthHelpText,
   finalizeAuthLogin: async (user, loginType) => {
     return finalizeAuthLogin(user, loginType, getClientIp(request))
+  },
+  schedulePostLoginSideEffects: (user, loginType) => {
+    void recordLoginGeoSnapshot({
+      userId: user.id,
+      loginType,
+      clientIp: getClientIp(request),
+    }).catch((error) => {
+      console.warn(
+        "failed to record login geo snapshot:",
+        error instanceof Error ? error.message : error,
+      )
+    })
   },
 })
 
