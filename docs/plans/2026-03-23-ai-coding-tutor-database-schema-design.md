@@ -767,7 +767,7 @@ Storage：
 | `media_type` | `media_transcription_type` | unique not null | `image_translation` / `speech_to_text` / `text_to_speech` |
 | `model_id` | `uuid` | nullable FK `ai_models.id` | 当前绑定模型 |
 | `is_enabled` | `boolean` | not null default false | 是否启用 |
-| `metadata` | `jsonb` | not null default '{}' | 扩展信息 |
+| `metadata` | `jsonb` | not null default '{}' | 扩展信息；`text_to_speech` 可保存 `speechSpeed`（0.5–2.0，1.0 为正常语速） |
 | `version` | `integer` | not null default 1 | 乐观锁版本 |
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
@@ -782,6 +782,7 @@ Storage：
 - 开启图片转译时应选择具备 `vision` runtime capability 的启用模型
 - 开启语音转文本时应选择具备 `asr` runtime capability 的启用模型
 - 开启文本转语音时应选择具备 `tts` runtime capability 的启用模型
+- `text_to_speech.metadata.speechSpeed` 由管理后台转译设置页维护，运行时会合并到 TTS Model metadata 后传给统一 TTS Provider Gateway；未配置时使用供应商默认语速。
 
 ## 6.10 `score_ledgers`
 

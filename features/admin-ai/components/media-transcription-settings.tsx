@@ -9,6 +9,7 @@ import type {
   AdminAIMediaTranscriptionSettingUpdateResponseData,
 } from "@/lib/api/contracts/admin-ai"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
@@ -41,7 +42,12 @@ type EditState = {
   setting: AdminAIMediaTranscriptionSettingItem
   modelId: string
   isEnabled: boolean
+  speechSpeed: number | null
   changeReason: string
+}
+
+function formatSpeechSpeed(speed: number | null) {
+  return speed ? `${speed.toFixed(2)}x` : "默认"
 }
 
 function modelLabel(model: AdminAIMediaModelOption) {
@@ -115,6 +121,7 @@ export function MediaTranscriptionSettings() {
           body: JSON.stringify({
             modelId: editState.modelId || null,
             isEnabled: editState.isEnabled,
+            speechSpeed: editState.setting.mediaType === "text_to_speech" ? editState.speechSpeed : undefined,
             version: editState.setting.version,
             changeReason: editState.changeReason,
           }),
@@ -192,6 +199,9 @@ export function MediaTranscriptionSettings() {
                       <p className="mt-1 text-xs text-muted-foreground">
                         {item.requiredCapability ? getAdminAIModelRuntimeCapabilityLabel(item.requiredCapability) : "无强制用途"}
                       </p>
+                      {item.mediaType === "text_to_speech" ? (
+                        <p className="mt-1 text-xs text-muted-foreground">语速 {formatSpeechSpeed(item.speechSpeed)}</p>
+                      ) : null}
                     </td>
                     <td className="px-4 py-4 align-top">
                       <ActiveStateBadge active={item.isEnabled} activeLabel="开启" inactiveLabel="停用" />
@@ -214,6 +224,7 @@ export function MediaTranscriptionSettings() {
                             setting: item,
                             modelId: item.modelId ?? "",
                             isEnabled: item.isEnabled,
+                            speechSpeed: item.speechSpeed,
                             changeReason: "",
                           })}
                         >
@@ -245,6 +256,9 @@ export function MediaTranscriptionSettings() {
               <p><span className="text-muted-foreground">模型：</span>{detailItem.modelDisplayName ?? "未选择"}</p>
               <p><span className="text-muted-foreground">Provider：</span>{detailItem.providerName ?? "未绑定"}</p>
               <p><span className="text-muted-foreground">状态：</span>{detailItem.isEnabled ? "开启" : "停用"}</p>
+              {detailItem.mediaType === "text_to_speech" ? (
+                <p><span className="text-muted-foreground">语速：</span>{formatSpeechSpeed(detailItem.speechSpeed)}</p>
+              ) : null}
               <p><span className="text-muted-foreground">更新时间：</span>{formatDateTime(detailItem.updatedAt)}</p>
             </div>
           ) : null}
@@ -278,6 +292,32 @@ export function MediaTranscriptionSettings() {
                   onCheckedChange={(checked) => setEditState((prev) => prev ? { ...prev, isEnabled: checked } : prev)}
                 />
               </label>
+              {editState.setting.mediaType === "text_to_speech" ? (
+                <label className="space-y-2">
+                  <span className="text-sm font-medium text-foreground">语速</span>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="range"
+                      min="0.5"
+                      max="2"
+                      step="0.05"
+                      value={String(editState.speechSpeed ?? 1)}
+                      onChange={(event) => setEditState((prev) => prev ? { ...prev, speechSpeed: Number(event.target.value) } : prev)}
+                      className="h-10 px-0"
+                    />
+                    <Input
+                      type="number"
+                      min="0.5"
+                      max="2"
+                      step="0.05"
+                      value={String(editState.speechSpeed ?? 1)}
+                      onChange={(event) => setEditState((prev) => prev ? { ...prev, speechSpeed: Number(event.target.value) } : prev)}
+                      className="w-24"
+                    />
+                  </div>
+                  <span className="block text-xs text-muted-foreground">1.00 为正常语速，建议在 1.05 到 1.20 之间微调。</span>
+                </label>
+              ) : null}
               <label className="space-y-2">
                 <span className="text-sm font-medium text-foreground">变更原因</span>
                 <Textarea

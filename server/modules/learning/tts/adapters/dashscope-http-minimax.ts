@@ -8,9 +8,11 @@ import {
   getTtsProviderSecret,
   normalizeBaseUrl,
   readAudioResponseBuffer,
+  convertTtsSpeechSpeedToQwenRate,
   readMetadataNumber,
   readMetadataString,
   readProviderError,
+  resolveTtsSpeechSpeed,
   resolveTtsTimeoutMs,
 } from "../utils.ts"
 
@@ -39,6 +41,7 @@ export async function synthesizeDashScopeHttpMiniMax(
   const secret = getTtsProviderSecret(input.runtime)
   const timeoutMs = resolveTtsTimeoutMs(input.runtime)
   const format = readMetadataString(metadata, ["format", "responseFormat"], "mp3")
+  const speed = resolveTtsSpeechSpeed(metadata)
   const requestUrl = `${resolveDashScopeHttpBaseUrl(input)}/services/aigc/multimodal-generation/generation`
 
   const response = await fetchWithTimeout({
@@ -59,7 +62,7 @@ export async function synthesizeDashScopeHttpMiniMax(
           language: readMetadataString(metadata, ["language", "languageType", "language_type"], "zh"),
         },
         parameters: {
-          rate: readMetadataNumber(metadata, ["rate", "speechRate"], 0),
+          rate: readMetadataNumber(metadata, ["rate", "speechRate"], convertTtsSpeechSpeedToQwenRate(speed)),
         },
       }),
     },

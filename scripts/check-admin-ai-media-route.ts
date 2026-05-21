@@ -64,22 +64,24 @@ test("media transcription setting patch validates body and delegates update", as
       assert.deepEqual(input, {
         modelId: "model-1",
         isEnabled: true,
+        speechSpeed: 1.12,
         version: 3,
         changeReason: "切换图片模型",
       })
       return {
         setting: {
           settingId: "setting-1",
-          mediaType: "image_translation",
-          label: "图片转译",
-          description: "识别学习截图",
-          requiredCapability: "vision",
+          mediaType: "text_to_speech",
+          label: "文本转语音",
+          description: "用户端 AI 回复播读",
+          requiredCapability: "tts",
           modelId: "model-1",
           modelCode: "qwen3-6-flash",
           modelDisplayName: "Qwen3.6 Flash",
           providerCode: "aliyuncs",
           providerName: "Aliyun Bailian",
           isEnabled: true,
+          speechSpeed: null,
           version: 4,
           metadata: {},
           createdAt: "2026-05-13T00:00:00.000Z",
@@ -95,6 +97,7 @@ test("media transcription setting patch validates body and delegates update", as
       body: JSON.stringify({
         modelId: " model-1 ",
         isEnabled: true,
+        speechSpeed: 1.12,
         version: 3,
         changeReason: " 切换图片模型 ",
       }),

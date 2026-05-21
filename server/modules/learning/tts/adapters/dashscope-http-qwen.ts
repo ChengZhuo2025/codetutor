@@ -9,9 +9,11 @@ import {
   getTtsProviderSecret,
   normalizeBaseUrl,
   readAudioResponseBuffer,
+  convertTtsSpeechSpeedToQwenRate,
   readMetadataNumber,
   readMetadataString,
   readProviderError,
+  resolveTtsSpeechSpeed,
   resolveTtsTimeoutMs,
 } from "../utils.ts"
 
@@ -40,6 +42,7 @@ export async function synthesizeDashScopeHttpQwen(
   const secret = getTtsProviderSecret(input.runtime)
   const timeoutMs = resolveTtsTimeoutMs(input.runtime)
   const format = readMetadataString(metadata, ["format", "responseFormat"], "wav")
+  const speed = resolveTtsSpeechSpeed(metadata)
   const requestUrl = `${resolveDashScopeHttpBaseUrl(input)}/services/aigc/multimodal-generation/generation`
 
   const response = await fetchWithTimeout({
@@ -60,7 +63,7 @@ export async function synthesizeDashScopeHttpQwen(
           language_type: readMetadataString(metadata, ["languageType", "language_type"], "Chinese"),
         },
         parameters: {
-          rate: readMetadataNumber(metadata, ["rate", "speechRate"], 0),
+          rate: readMetadataNumber(metadata, ["rate", "speechRate"], convertTtsSpeechSpeedToQwenRate(speed)),
         },
       }),
     },

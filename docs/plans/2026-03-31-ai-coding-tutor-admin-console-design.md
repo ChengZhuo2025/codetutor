@@ -378,7 +378,7 @@ Agents 管理必须覆盖两类场景：
 - `/admin/ai/test`
   后台调试页，支持 resolve preview 与 agent test。
 - `/admin/ai/media/transcription-settings`
-  多媒体转译设置页，展示图片转译、语音转文本、文本转语音三类配置，支持详情与编辑。
+  多媒体转译设置页，展示图片转译、语音转文本、文本转语音三类配置，支持详情与编辑；文本转语音支持配置播读语速（0.5–2.0，1.0 为正常语速）。
 - `/admin/ai/media/attachments`
   多媒体附件管理页，只读展示用户上传的图片、语音附件，支持按类型和时间段筛选。
 

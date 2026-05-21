@@ -231,6 +231,20 @@ test("assistant completion detection only upgrades real pass/fail conclusions", 
 
   assert.equal(
     shouldTreatAssistantResponseAsCompletion(
+      "你已经成功完成了第 1 关的所有操作！现在可以继续下一步。",
+    ),
+    true,
+  )
+
+  assert.equal(
+    shouldTreatAssistantResponseAsCompletion(
+      "## ✅ 第 2 关已完成\n接下来先等待系统按钮推进。",
+    ),
+    true,
+  )
+
+  assert.equal(
+    shouldTreatAssistantResponseAsCompletion(
       "为了全面验收当前任务，我们还需要确认其他三项技巧的掌握情况。",
     ),
     false,

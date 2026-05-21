@@ -3067,6 +3067,7 @@ export const adminAIMediaTranscriptionSettingItemSchema = z
     providerCode: z.string().nullable(),
     providerName: z.string().nullable(),
     isEnabled: z.boolean(),
+    speechSpeed: z.number().min(0.5).max(2).nullable(),
     version: z.number().int().positive(),
     metadata: adminAIJsonRecordSchema,
     createdAt: z.string(),
@@ -3085,6 +3086,7 @@ export const adminAIMediaTranscriptionSettingUpdateRequestSchema = z
   .object({
     modelId: z.string().uuid().nullable(),
     isEnabled: z.boolean(),
+    speechSpeed: z.number().min(0.5).max(2).nullable().optional(),
     version: z.number().int().positive().optional(),
     changeReason: z.string().min(1).max(200),
   })

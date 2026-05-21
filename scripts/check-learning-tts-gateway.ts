@@ -173,6 +173,95 @@ test("synthesizeTextToSpeech calls DashScope HTTP Qwen and downloads audio URL",
   assert.equal(calls[1].url, "https://dashscope-result.example/audio.wav")
 })
 
+test("synthesizeTextToSpeech maps shared speech speed across supported adapters", async () => {
+  process.env.TEST_TTS_API_KEY = "sk-test"
+  const qwenCalls: unknown[] = []
+  await synthesizeTextToSpeech({
+    runtime: withRuntime({
+      model: {
+        metadata: {
+          speechSpeed: 1.12,
+        },
+      },
+    }),
+    text: "请朗读这句话。",
+    fetchImpl: async (url: string | URL | Request, init?: RequestInit) => {
+      if (String(url).includes("/services/aigc/multimodal-generation/generation")) {
+        qwenCalls.push(JSON.parse(String(init?.body)))
+        return jsonResponse({
+          output: {
+            audio: {
+              url: "https://dashscope-result.example/audio.wav",
+            },
+          },
+        })
+      }
+      return new Response(Buffer.from("RIFF....WAVE", "ascii"), {
+        status: 200,
+        headers: { "Content-Type": "audio/wav" },
+      })
+    },
+  })
+  assert.equal((qwenCalls[0] as { parameters: { rate: number } }).parameters.rate, 60)
+
+  const miniMaxCalls: unknown[] = []
+  await synthesizeTextToSpeech({
+    runtime: withRuntime({
+      provider: {
+        code: "minimax",
+        baseUrl: "https://api.minimax.chat",
+      },
+      model: {
+        code: "speech-2.8-hd",
+        modelName: "speech-2.8-hd",
+        metadata: {
+          speechSpeed: 1.12,
+        },
+      },
+    }),
+    text: "请朗读这句话。",
+    fetchImpl: async (_url: string | URL | Request, init?: RequestInit) => {
+      miniMaxCalls.push(JSON.parse(String(init?.body)))
+      return jsonResponse({
+        data: {
+          audio: "52494646",
+        },
+        extra_info: {
+          audio_format: "mp3",
+        },
+      })
+    },
+  })
+  assert.equal((miniMaxCalls[0] as { voice_setting: { speed: number } }).voice_setting.speed, 1.12)
+
+  const openAICalls: unknown[] = []
+  await synthesizeTextToSpeech({
+    runtime: withRuntime({
+      provider: {
+        code: "siliconflow",
+        providerType: "siliconflow",
+        baseUrl: "https://api.siliconflow.cn/v1",
+      },
+      model: {
+        code: "cosyvoice2",
+        modelName: "FunAudioLLM/CosyVoice2-0.5B",
+        metadata: {
+          speechSpeed: 1.12,
+        },
+      },
+    }),
+    text: "请朗读这句话。",
+    fetchImpl: async (_url: string | URL | Request, init?: RequestInit) => {
+      openAICalls.push(JSON.parse(String(init?.body)))
+      return new Response(Buffer.from([1, 2, 3, 4]), {
+        status: 200,
+        headers: { "Content-Type": "audio/mpeg" },
+      })
+    },
+  })
+  assert.equal((openAICalls[0] as { speed: number }).speed, 1.12)
+})
+
 test("synthesizeTextToSpeech rejects unsafe DashScope audio URLs before download", async () => {
   process.env.TEST_TTS_API_KEY = "sk-test"
   const calls: string[] = []
@@ -365,6 +454,7 @@ test("synthesizeTextToSpeech decodes MiniMax hex audio", async () => {
     output_format: "hex",
     voice_setting: {
       voice_id: "male-qn-qingse",
+      speed: 1,
     },
     audio_setting: {
       sample_rate: 32000,
@@ -385,6 +475,7 @@ test("synthesizeTextToSpeech handles OpenAI-compatible binary speech response", 
       input: "请朗读这句话。",
       voice: "FunAudioLLM/CosyVoice2-0.5B:alex",
       response_format: "mp3",
+      speed: 1,
     })
     return new Response(Buffer.from([1, 2, 3, 4]), {
       status: 200,
@@ -428,6 +519,7 @@ test("synthesizeTextToSpeech defaults SiliconFlow CosyVoice voice to model-prefi
       input: "请朗读这句话。",
       voice: "FunAudioLLM/CosyVoice2-0.5B:alex",
       response_format: "mp3",
+      speed: 1,
     })
     return new Response(Buffer.from([1, 2, 3, 4]), {
       status: 200,

@@ -1339,6 +1339,7 @@ export function parseAdminAIMediaAttachmentListQuery(searchParams: URLSearchPara
 const adminAIMediaTranscriptionSettingShapeSchema = z.object({
   modelId: z.unknown().nullable().optional(),
   isEnabled: z.boolean(),
+  speechSpeed: z.unknown().nullable().optional(),
   version: z.number().int().positive().optional(),
   changeReason: z.string(),
 })
@@ -1357,9 +1358,20 @@ export function parseAdminAIMediaTranscriptionSettingBody(
   }
 
   const modelId = normalizeOptionalString(shape.data.modelId)
+  const hasSpeechSpeed = Object.hasOwn(shape.data, "speechSpeed")
+  const speechSpeed = !hasSpeechSpeed
+    ? undefined
+    : shape.data.speechSpeed === null || shape.data.speechSpeed === ""
+    ? null
+    : Number(shape.data.speechSpeed)
+  if (speechSpeed !== undefined && speechSpeed !== null && (!Number.isFinite(speechSpeed) || speechSpeed < 0.5 || speechSpeed > 2)) {
+    return fail("VALIDATION_FAILED", "speechSpeed 必须在 0.5 到 2.0 之间。")
+  }
+
   return ok({
     modelId,
     isEnabled: shape.data.isEnabled,
+    ...(hasSpeechSpeed ? { speechSpeed } : {}),
     version: shape.data.version,
     changeReason,
   })

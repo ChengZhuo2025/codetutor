@@ -10,6 +10,7 @@ import {
   readAudioResponseBuffer,
   readMetadataString,
   readProviderError,
+  resolveTtsSpeechSpeed,
   resolveTtsTimeoutMs,
 } from "../utils.ts"
 
@@ -47,6 +48,7 @@ export async function synthesizeOpenAIAudioSpeech(
   const secret = getTtsProviderSecret(input.runtime)
   const timeoutMs = resolveTtsTimeoutMs(input.runtime)
   const responseFormat = readMetadataString(metadata, ["responseFormat", "format"], "mp3")
+  const speed = resolveTtsSpeechSpeed(metadata)
   const response = await fetchWithTimeout({
     fetchImpl: input.fetchImpl,
     url: resolveAudioSpeechPath(input.runtime.provider.baseUrl),
@@ -62,6 +64,7 @@ export async function synthesizeOpenAIAudioSpeech(
         input: input.text,
         voice: readMetadataString(metadata, ["ttsVoice", "voice", "defaultVoice"], resolveOpenAIAudioSpeechDefaultVoice(input)),
         response_format: responseFormat,
+        speed,
       }),
     },
   })

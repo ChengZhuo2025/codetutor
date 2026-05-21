@@ -168,7 +168,7 @@ type TtsProtocol =
   "voice": "Cherry",
   "format": "wav",
   "languageType": "Chinese",
-  "rate": 0
+  "speechSpeed": 1.1
 }
 ```
 
@@ -176,7 +176,8 @@ type TtsProtocol =
 
 - `voice` 默认可为 `Cherry`
 - `languageType` 默认 `Chinese`
-- `rate` 可由统一 speed 转换，也可直接配置
+- `speechSpeed` 由管理后台转译设置页维护，0.5–2.0，1.0 为正常语速；Qwen HTTP adapter 会转换为 `parameters.rate`
+- `rate` / `speechRate` 仍可作为 Model metadata 高级覆盖
 - base URL 建议 provider 配为 `https://dashscope.aliyuncs.com/api/v1`
 
 ### 7.2 MiniMax
@@ -186,6 +187,7 @@ type TtsProtocol =
   "ttsProtocol": "minimax_t2a_v2",
   "voice": "male-qn-qingse",
   "format": "mp3",
+  "speechSpeed": 1.1,
   "sampleRate": 32000,
   "bitrate": 128000,
   "languageBoost": "auto"
@@ -195,6 +197,7 @@ type TtsProtocol =
 说明：
 
 - endpoint 使用 `${baseUrl}/v1/t2a_v2`
+- `speechSpeed` 会映射到 `voice_setting.speed`
 - `output_format` 建议先用 `hex`
 - 响应 `data.audio` 转 Buffer
 - content type 根据 `extra_info.audio_format` 或 metadata format 决定
@@ -206,7 +209,8 @@ type TtsProtocol =
   "ttsProtocol": "openai_audio_speech",
   "voice": "FunAudioLLM/CosyVoice2-0.5B:alex",
   "format": "mp3",
-  "responseFormat": "mp3"
+  "responseFormat": "mp3",
+  "speechSpeed": 1.1
 }
 ```
 
@@ -214,6 +218,7 @@ type TtsProtocol =
 
 - endpoint 使用 `${baseUrl}/audio/speech`
 - 请求体使用 OpenAI-compatible speech 格式
+- `speechSpeed` 会映射到 `/audio/speech` 的 `speed`
 - 响应直接是音频二进制
 - content type 可按 `responseFormat` 映射
 - `FunAudioLLM/*CosyVoice*` 模型未配置 Metadata voice 时，运行时默认推断为 `${modelName}:alex`；管理员仍可通过 `voice` / `ttsVoice` / `defaultVoice` 覆盖。

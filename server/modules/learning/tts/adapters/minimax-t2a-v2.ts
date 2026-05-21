@@ -10,6 +10,7 @@ import {
   readMetadataNumber,
   readMetadataString,
   readProviderError,
+  resolveTtsSpeechSpeed,
   resolveTtsTimeoutMs,
 } from "../utils.ts"
 import { LearningAIProviderError } from "@/server/modules/learning/errors.ts"
@@ -21,6 +22,7 @@ export async function synthesizeMiniMaxT2aV2(
   const secret = getTtsProviderSecret(input.runtime)
   const timeoutMs = resolveTtsTimeoutMs(input.runtime)
   const format = readMetadataString(metadata, ["format", "responseFormat"], "mp3")
+  const speed = resolveTtsSpeechSpeed(metadata)
   const response = await fetchWithTimeout({
     fetchImpl: input.fetchImpl,
     url: `${normalizeBaseUrl(input.runtime.provider.baseUrl)}/v1/t2a_v2`,
@@ -38,6 +40,7 @@ export async function synthesizeMiniMaxT2aV2(
         output_format: "hex",
         voice_setting: {
           voice_id: readMetadataString(metadata, ["ttsVoice", "voice", "defaultVoice"], "male-qn-qingse"),
+          speed,
         },
         audio_setting: {
           sample_rate: readMetadataNumber(metadata, ["sampleRate", "sample_rate"], 32000),

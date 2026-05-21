@@ -1193,7 +1193,7 @@ ai/skills/
 | `media_type` | `media_transcription_type` | `image_translation` / `speech_to_text` / `text_to_speech` |
 | `model_id` | `uuid` | 关联 `ai_models.id`，可为空 |
 | `is_enabled` | `boolean` | 是否启用该类转译 |
-| `metadata` | `jsonb` | 扩展信息 |
+| `metadata` | `jsonb` | 扩展信息；`text_to_speech` 可保存 `speechSpeed`（0.5–2.0，1.0 为正常语速） |
 | `version` | `integer` | 乐观锁版本 |
 | `created_at` / `updated_at` | `timestamptz` | 创建与更新时间 |
 

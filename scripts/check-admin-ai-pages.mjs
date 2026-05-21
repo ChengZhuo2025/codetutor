@@ -89,6 +89,7 @@ assert.match(testSource, /命中预览|真实 AI 测试|llm_invocations/, "The t
 assert.match(mediaSettingsSource, /转译设置|图片转译|语音转文本|文本转语音/, "The media settings page should expose all transcription setting types")
 assert.match(mediaSettingsSource, /详情|编辑|modelOptions/, "The media settings page should expose detail and edit affordances")
 assert.match(mediaSettingsSource, /modelOptionsForSetting\(editState\.setting\)/, "The media settings edit sheet should filter model options by the setting capability")
+assert.match(mediaSettingsSource, /语速|speechSpeed|type="range"/, "The media settings page should expose text-to-speech speed controls")
 assert.match(mediaAttachmentsSource, /附件管理|图片|语音|24h|7d|30d|90d/, "The media attachments page should expose attachment filters")
 assert.match(mediaAttachmentsSource, /预览|previewUrl|<audio|DialogContent/, "The media attachments page should expose image and audio previews")
 assert.match(invocationLogSource, /AIStatusTag|AdminTag/, "The invocation log page should use the shared admin-tag component for invocation status labels")

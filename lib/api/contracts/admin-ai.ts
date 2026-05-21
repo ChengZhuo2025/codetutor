@@ -329,6 +329,7 @@ export type AdminAIMediaTranscriptionSettingItem = {
   providerCode: string | null
   providerName: string | null
   isEnabled: boolean
+  speechSpeed: number | null
   version: number
   metadata: Record<string, unknown>
   createdAt: string
@@ -354,6 +355,7 @@ export type AdminAIMediaTranscriptionSettingsResponseData = {
 export type AdminAIMediaTranscriptionSettingUpdateRequest = {
   modelId: string | null
   isEnabled: boolean
+  speechSpeed?: number | null
   version?: number
   changeReason: string
 }

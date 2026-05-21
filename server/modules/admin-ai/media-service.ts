@@ -93,6 +93,9 @@ export type LearningMediaTranscriptionModels = {
   textToSpeech: MaterialPipelineRuntime | null
 }
 
+const MIN_TTS_SPEECH_SPEED = 0.5
+const MAX_TTS_SPEECH_SPEED = 2
+
 const MEDIA_TYPE_META: Record<AdminAIMediaTranscriptionType, {
   label: string
   description: string
@@ -113,6 +116,19 @@ const MEDIA_TYPE_META: Record<AdminAIMediaTranscriptionType, {
     description: "预留给后续 AI 教练语音播报能力。",
     requiredCapability: "tts",
   },
+}
+
+function normalizeSpeechSpeed(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null
+  }
+
+  const normalized = Math.round(value * 100) / 100
+  if (normalized < MIN_TTS_SPEECH_SPEED || normalized > MAX_TTS_SPEECH_SPEED) {
+    return null
+  }
+
+  return normalized
 }
 
 function throwNamedError(name: "FORBIDDEN" | "CONFLICT" | "VERSION_CONFLICT" | "VALIDATION_FAILED" | "NOT_FOUND", message: string): never {
@@ -205,7 +221,7 @@ function runtimeForSetting(input: {
   mediaType: AdminAIMediaTranscriptionType
   providers: MediaProviderRow[]
   models: MediaModelRow[]
-  settings: Pick<MediaTranscriptionSettingRow, "media_type" | "model_id" | "is_enabled">[]
+  settings: Pick<MediaTranscriptionSettingRow, "media_type" | "model_id" | "is_enabled" | "metadata">[]
 }) {
   const setting = input.settings.find((item) => item.media_type === input.mediaType) ?? null
   if (!setting?.is_enabled || !setting.model_id) {
@@ -217,13 +233,30 @@ function runtimeForSetting(input: {
     return null
   }
 
-  return toRuntime(input.providers, model)
+  const runtime = toRuntime(input.providers, model)
+  const speechSpeed = input.mediaType === "text_to_speech"
+    ? normalizeSpeechSpeed(setting.metadata?.speechSpeed)
+    : null
+  if (!runtime || speechSpeed === null) {
+    return runtime
+  }
+
+  return {
+    ...runtime,
+    model: {
+      ...runtime.model,
+      metadata: {
+        ...(runtime.model.metadata ?? {}),
+        speechSpeed,
+      },
+    },
+  }
 }
 
 export function resolveLearningMediaTranscriptionModelsFromSnapshots(input: {
   providers: MediaProviderRow[]
   models: MediaModelRow[]
-  settings: Pick<MediaTranscriptionSettingRow, "id" | "media_type" | "model_id" | "is_enabled">[]
+  settings: Pick<MediaTranscriptionSettingRow, "id" | "media_type" | "model_id" | "is_enabled" | "metadata">[]
 }): LearningMediaTranscriptionModels {
   return {
     vision: runtimeForSetting({
@@ -255,6 +288,9 @@ export function mapAdminAIMediaTranscriptionSettingRow(
   const model = row.model_id ? modelById.get(row.model_id) ?? null : null
   const provider = model ? providerById.get(model.provider_id) ?? null : null
   const meta = MEDIA_TYPE_META[row.media_type]
+  const speechSpeed = row.media_type === "text_to_speech"
+    ? normalizeSpeechSpeed(row.metadata?.speechSpeed)
+    : null
 
   return {
     settingId: row.id,
@@ -268,6 +304,7 @@ export function mapAdminAIMediaTranscriptionSettingRow(
     providerCode: provider?.code ?? null,
     providerName: provider?.name ?? provider?.code ?? null,
     isEnabled: row.is_enabled,
+    speechSpeed,
     version: row.version,
     metadata: row.metadata ?? {},
     createdAt: row.created_at,
@@ -420,6 +457,22 @@ export async function updateAdminAIMediaTranscriptionSetting(
   if (input.isEnabled && validationMessage) {
     throwNamedError("VALIDATION_FAILED", validationMessage)
   }
+  if (existing.media_type !== "text_to_speech" && input.speechSpeed !== undefined) {
+    throwNamedError("VALIDATION_FAILED", "只有文本转语音设置支持语速配置。")
+  }
+  if (input.speechSpeed !== undefined && input.speechSpeed !== null && normalizeSpeechSpeed(input.speechSpeed) === null) {
+    throwNamedError("VALIDATION_FAILED", "文本转语音语速必须在 0.5 到 2.0 之间。")
+  }
+
+  const nextMetadata = { ...(existing.metadata ?? {}) }
+  if (existing.media_type === "text_to_speech" && input.speechSpeed !== undefined) {
+    const speechSpeed = normalizeSpeechSpeed(input.speechSpeed)
+    if (speechSpeed === null) {
+      delete nextMetadata.speechSpeed
+    } else {
+      nextMetadata.speechSpeed = speechSpeed
+    }
+  }
 
   const supabase = createSupabaseAdminClient()
   const { data: updatedRow, error } = await supabase
@@ -427,6 +480,7 @@ export async function updateAdminAIMediaTranscriptionSetting(
     .update({
       model_id: input.modelId,
       is_enabled: input.isEnabled,
+      metadata: nextMetadata,
     })
     .eq("id", existing.id)
     .eq("version", existing.version)
@@ -447,6 +501,7 @@ export async function updateAdminAIMediaTranscriptionSetting(
     after_snapshot: {
       modelId: input.modelId,
       isEnabled: input.isEnabled,
+      metadata: nextMetadata,
     },
     reason: input.changeReason,
   })

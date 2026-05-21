@@ -352,6 +352,24 @@ test("canUseCompletionQuickAction requires both user evidence and assistant comp
 
   assert.equal(
     canUseCompletionQuickAction({
+      taskState: "in_progress",
+      messages: [
+        { role: "user", kind: "user_input", content: "都执行完了，没有报错。", interactionType: null, actionLabels: [], taskPatchStatus: null },
+        {
+          role: "ai",
+          kind: "coach",
+          content: "你已经成功完成了第 1 关的所有操作！",
+          interactionType: "task_review",
+          actionLabels: [],
+          taskPatchStatus: "in_progress",
+        },
+      ],
+    }),
+    true,
+  )
+
+  assert.equal(
+    canUseCompletionQuickAction({
       taskState: "completed",
       messages: [
         { role: "user", kind: "user_input", content: "done", interactionType: null, actionLabels: [], taskPatchStatus: null },

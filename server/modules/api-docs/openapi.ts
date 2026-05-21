@@ -807,6 +807,7 @@ const adminAIMediaTranscriptionSettingsExample = {
       providerCode: "aliyuncs",
       providerName: "Aliyun Bailian",
       isEnabled: true,
+      speechSpeed: null,
       version: 2,
       metadata: {},
       createdAt: EXAMPLE_NOW,

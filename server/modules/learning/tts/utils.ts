@@ -61,6 +61,18 @@ export function readMetadataNumber(
   return fallback
 }
 
+export function resolveTtsSpeechSpeed(metadata: Record<string, unknown> | null | undefined) {
+  const speed = readMetadataNumber(metadata, ["speechSpeed", "speed"], 1)
+  if (!Number.isFinite(speed)) {
+    return 1
+  }
+  return Math.min(2, Math.max(0.5, Math.round(speed * 100) / 100))
+}
+
+export function convertTtsSpeechSpeedToQwenRate(speed: number) {
+  return Math.round((Math.min(2, Math.max(0.5, speed)) - 1) * 500)
+}
+
 export function resolveTtsTimeoutMs(runtime: MaterialPipelineRuntime) {
   const timeoutMs = runtime.provider.timeoutMs || DEFAULT_TIMEOUT_MS
   return Math.min(MAX_TIMEOUT_MS, Math.max(MIN_TIMEOUT_MS, timeoutMs))

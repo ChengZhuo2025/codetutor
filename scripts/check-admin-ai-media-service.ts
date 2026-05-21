@@ -65,6 +65,9 @@ const ttsModel = {
   recommended_temperature: 0.2,
   is_active: true,
   runtime_capabilities: ["tts"],
+  metadata: {
+    voice: "Cherry",
+  },
 }
 
 test("resolveLearningMediaTranscriptionModelsFromSnapshots uses enabled admin settings", () => {
@@ -89,6 +92,9 @@ test("resolveLearningMediaTranscriptionModelsFromSnapshots uses enabled admin se
         media_type: "text_to_speech",
         model_id: "model-tts",
         is_enabled: true,
+        metadata: {
+          speechSpeed: 1.12,
+        },
       },
     ],
   })
@@ -98,6 +104,10 @@ test("resolveLearningMediaTranscriptionModelsFromSnapshots uses enabled admin se
   assert.equal(resolved.asr?.provider.code, "aliyuncs")
   assert.equal(resolved.asr?.model.code, "qwen3-asr-flash")
   assert.equal(resolved.textToSpeech?.model.code, "qwen3-tts-flash-realtime")
+  assert.deepEqual(resolved.textToSpeech?.model.metadata, {
+    voice: "Cherry",
+    speechSpeed: 1.12,
+  })
 })
 
 test("resolveLearningMediaTranscriptionModelsFromSnapshots ignores disabled settings and inactive providers", () => {
@@ -172,6 +182,28 @@ test("mapAdminAIMediaTranscriptionSettingRow exposes model and provider summary"
   assert.equal(item.providerCode, "aliyuncs")
   assert.equal(item.isEnabled, true)
   assert.equal(item.version, 2)
+})
+
+test("mapAdminAIMediaTranscriptionSettingRow exposes text to speech speed", () => {
+  const item = mapAdminAIMediaTranscriptionSettingRow(
+    {
+      id: "setting-tts",
+      media_type: "text_to_speech",
+      model_id: "model-tts",
+      is_enabled: true,
+      metadata: {
+        speechSpeed: 1.12,
+      },
+      version: 2,
+      created_at: "2026-05-13T00:00:00.000Z",
+      updated_at: "2026-05-13T01:00:00.000Z",
+    },
+    new Map([["model-tts", ttsModel]]),
+    new Map([["provider-aliyun", activeProvider]]),
+  )
+
+  assert.equal(item.mediaType, "text_to_speech")
+  assert.equal(item.speechSpeed, 1.12)
 })
 
 test("mapAdminAIMediaAttachmentRow formats attachment list item", () => {
