@@ -47,6 +47,7 @@
 - [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md)
 - [自由学习模式教程链接自动拆解实施方案](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-04-01-ai-coding-tutor-free-mode-material-plan-implementation.md)
 - [自由学习模式异步多模态实施计划](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-04-08-ai-coding-tutor-material-plan-async-multimodal-implementation-plan.md)
+- [自由模式初始化学习任务现状说明](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-05-21-free-mode-initial-learning-task-current-state.md)
 - [管理后台设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-31-ai-coding-tutor-admin-console-design.md)
 - [微信 Native 支付验收文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-04-26-wechat-native-payment-acceptance.md)
 
@@ -76,6 +77,8 @@
   自由学习模式中“教程链接 -> 材料摄取 -> 自动生成学习计划草稿 -> 确认激活”的实施方案与验收机制；当前代码已落地 **单链接异步材料摄取、HTML 图文来源（MDN / Next.js / web.dev）+ 公开抖音 / 小红书 / B 站来源、可编辑草稿与确认激活**。
 - `2026-04-08-ai-coding-tutor-material-plan-async-multimodal-implementation-plan.md`
   基于 `2026-04-01` 目标态方案拆出的可执行实施计划，覆盖异步 intake、多模态解析、可编辑草稿工作台、质量闸门、通知恢复与文档同步顺序。
+- `2026-05-21-free-mode-initial-learning-task-current-state.md`
+  自由模式下 onboarding 后首次进入 `/learn` 时初始化学习任务的真实来源、功能链路、核心数据表、agent / skill 边界与后续升级注意事项。
 - `2026-03-31-ai-coding-tutor-admin-console-design.md`
   管理后台的运营需求、技术方案、后端契约、数据库扩展与推进顺序主文档。
 - `2026-04-26-wechat-native-payment-acceptance.md`
