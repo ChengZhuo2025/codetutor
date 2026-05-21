@@ -11,7 +11,7 @@ type BrowserAuthClient = {
       }
       error?: unknown
     }>
-    signOut: (options?: { scope?: "global" | "local" | "others" | string }) => Promise<unknown>
+    signOut: (options?: { scope?: "global" | "local" | "others" }) => Promise<unknown>
   }
 }
 
