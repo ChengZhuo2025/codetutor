@@ -1,6 +1,6 @@
 import "server-only"
 
-/** Phase A: frozen whitelist hostnames (lowercase, no port). */
+/** Legacy Phase A HTML host list. Runtime source support is resolved by source-resolver.ts. */
 export const MATERIAL_PLAN_ALLOWED_HOSTS = new Set([
   "developer.mozilla.org",
   "nextjs.org",

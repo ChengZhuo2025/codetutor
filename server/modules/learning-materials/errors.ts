@@ -13,7 +13,7 @@ export class MaterialPlanError extends Error {
 }
 
 export function materialUnsupportedSource(
-  message = "当前仅支持 developer.mozilla.org、nextjs.org、web.dev 的教程链接。",
+  message = "当前仅支持 developer.mozilla.org、nextjs.org、web.dev，以及公开的抖音、小红书、B 站教程链接。",
 ) {
   return new MaterialPlanError("MATERIAL_UNSUPPORTED_SOURCE", message, 422)
 }

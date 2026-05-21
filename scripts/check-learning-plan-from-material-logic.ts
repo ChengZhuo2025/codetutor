@@ -39,12 +39,15 @@ import {
   resolveMaterialPlanStatusDisplay,
 } from "../features/learning/lib/material-plan-messages.ts"
 
-test("assertHostnameAllowed accepts frozen whitelist hosts", () => {
+test("assertHostnameAllowed accepts configured material source hosts", () => {
   assert.doesNotThrow(() =>
     assertHostnameAllowed("https://developer.mozilla.org/en-US/docs/Web"),
   )
   assert.doesNotThrow(() => assertHostnameAllowed("https://nextjs.org/docs"))
   assert.doesNotThrow(() => assertHostnameAllowed("https://web.dev/learn/"))
+  assert.doesNotThrow(() => assertHostnameAllowed("https://www.douyin.com/video/123"))
+  assert.doesNotThrow(() => assertHostnameAllowed("https://www.xiaohongshu.com/explore/123"))
+  assert.doesNotThrow(() => assertHostnameAllowed("https://www.bilibili.com/video/BV1xx"))
 })
 
 test("assertHostnameAllowed rejects unknown host", () => {

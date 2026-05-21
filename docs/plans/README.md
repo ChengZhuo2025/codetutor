@@ -73,7 +73,7 @@
 - `2026-03-30-ai-coding-tutor-ai-orchestration-design.md`
   AI 编排模块的持久性设计主文档，用于说明 provider、agent、会话、消息、上下文与运行时链路。
 - `2026-04-01-ai-coding-tutor-free-mode-material-plan-implementation.md`
-  自由学习模式中“教程链接 -> 材料摄取 -> 自动生成学习计划草稿 -> 确认激活”的实施方案与验收机制；**Phase A（白名单图文 + 同步草稿 + confirm 物化）已在代码与迁移中落地**，后续 Phase B/C 仍以本文档为范围说明。
+  自由学习模式中“教程链接 -> 材料摄取 -> 自动生成学习计划草稿 -> 确认激活”的实施方案与验收机制；当前代码已落地 **单链接异步材料摄取、HTML 图文来源（MDN / Next.js / web.dev）+ 公开抖音 / 小红书 / B 站来源、可编辑草稿与确认激活**。
 - `2026-04-08-ai-coding-tutor-material-plan-async-multimodal-implementation-plan.md`
   基于 `2026-04-01` 目标态方案拆出的可执行实施计划，覆盖异步 intake、多模态解析、可编辑草稿工作台、质量闸门、通知恢复与文档同步顺序。
 - `2026-03-31-ai-coding-tutor-admin-console-design.md`
