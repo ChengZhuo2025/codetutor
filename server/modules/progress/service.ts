@@ -161,6 +161,8 @@ async function loadActivePath(userId: string) {
 
   assertSupabaseSuccess(taskError, "failed to load active path tasks")
 
+  const taskRows = (tasks ?? []) as TaskRow[]
+  const taskStepIds = Array.from(new Set(taskRows.map((task) => task.path_step_id)))
   const todayDate = getCheckinDateKey()
   const { data: todayCheckin, error: todayCheckinError } = await supabase
     .from("daily_checkins")
@@ -174,7 +176,7 @@ async function loadActivePath(userId: string) {
   const { data: steps, error: stepError } = await supabase
     .from("path_steps")
     .select("id, step_no, title, summary, focus, goal, completion_criteria, review_summary, estimated_minutes, reward_score, knowledge_points, key_points, pitfalls")
-    .eq("path_id", activePath.template_path_id)
+    .in("id", taskStepIds.length > 0 ? taskStepIds : ["00000000-0000-0000-0000-000000000000"])
     .order("step_no", { ascending: true })
 
   assertSupabaseSuccess(stepError, "failed to load active path steps")
@@ -183,7 +185,7 @@ async function loadActivePath(userId: string) {
     profile: profile as ProfileRow,
     activePath: activePath as ActivePathRow,
     tool: tool as ToolRow,
-    tasks: (tasks ?? []) as TaskRow[],
+    tasks: taskRows,
     checkedInToday: ((todayCheckin ?? []) as DailyCheckinRow[]).length > 0,
     steps: (steps ?? []) as StepRow[],
   }

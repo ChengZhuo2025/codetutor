@@ -99,6 +99,14 @@ import {
   adminLearningPathSessionIdParamsSchema,
   adminLearningPathSessionListResponseDataSchema,
   adminLearningSessionListQuerySchema,
+  adminLearningTemplateDetailResponseDataSchema,
+  adminLearningTemplateGenerateRequestSchema,
+  adminLearningTemplateGenerateResponseDataSchema,
+  adminLearningTemplateIdParamsSchema,
+  adminLearningTemplateListQuerySchema,
+  adminLearningTemplateListResponseDataSchema,
+  adminLearningTemplateSyncResponseDataSchema,
+  adminLearningTemplateUpsertRequestSchema,
   adminUpdateLearningPathStatusRequestSchema,
   adminUpdateLearningPathStatusResponseDataSchema,
   adminUpdateAdminAccountStatusRequestSchema,
@@ -375,6 +383,93 @@ const adminLearningPathListExample = {
       name: "Cursor",
     },
   ],
+}
+
+const adminLearningTemplateStepExample = {
+  stepId: "550e8400-e29b-41d4-a716-446655440201",
+  stepNo: 1,
+  title: "整理自学目标",
+  summary: "把当前材料、目标和第一个问题写清楚。",
+  focus: "先明确范围，再开始让 AI 协助。",
+  goal: "形成一个可执行的自学入口。",
+  completionCriteria: "提交材料清单和第一个可验证问题。",
+  reviewSummary: "确认目标是否具体、可执行。",
+  estimatedMinutes: 30,
+  rewardScore: 20,
+  knowledgePoints: ["目标拆解"],
+  keyPoints: ["能描述自己要学什么"],
+  pitfalls: ["目标过大"],
+  lessonBrief: "先整理学习材料和目标。",
+  practiceSteps: ["列出材料", "写出第一个问题"],
+  submissionGuide: "提交材料清单和问题。",
+  checkpoints: ["材料清单完整"],
+}
+
+const adminLearningTemplateDetailExample = {
+  template: {
+    templateId: "550e8400-e29b-41d4-a716-446655440200",
+    toolCode: "codex",
+    toolName: "Codex",
+    learningLevel: "intermediate",
+    learningLevelLabel: "进阶",
+    code: "path-codex-intermediate-self-study",
+    name: "Codex 自学初始化模板",
+    description: "帮助用户进入 Codex 自学模式。",
+    stageCount: 1,
+    isActive: true,
+    syncablePathCount: 2,
+    updatedAt: EXAMPLE_LATEST,
+    preview: ["整理材料", "拆出第一步"],
+    agentCode: null,
+    createdAt: EXAMPLE_NOW,
+  },
+  steps: [adminLearningTemplateStepExample],
+}
+
+const adminLearningTemplateListExample = {
+  items: [adminLearningTemplateDetailExample.template],
+  total: 1,
+  page: 1,
+  limit: 20,
+  toolOptions: [{ code: "codex", name: "Codex" }],
+}
+
+const adminLearningTemplateGenerateExample = {
+  generated: {
+    name: "Codex 自学初始化模板",
+    description: "帮助用户从明确目标开始进入 Codex 自学。",
+    preview: ["整理材料", "完成第一个可验证练习"],
+    steps: [
+      {
+        stepId: null,
+        title: adminLearningTemplateStepExample.title,
+        summary: adminLearningTemplateStepExample.summary,
+        focus: adminLearningTemplateStepExample.focus,
+        goal: adminLearningTemplateStepExample.goal,
+        completionCriteria: adminLearningTemplateStepExample.completionCriteria,
+        reviewSummary: adminLearningTemplateStepExample.reviewSummary,
+        estimatedMinutes: adminLearningTemplateStepExample.estimatedMinutes,
+        rewardScore: adminLearningTemplateStepExample.rewardScore,
+        knowledgePoints: adminLearningTemplateStepExample.knowledgePoints,
+        keyPoints: adminLearningTemplateStepExample.keyPoints,
+        pitfalls: adminLearningTemplateStepExample.pitfalls,
+        lessonBrief: adminLearningTemplateStepExample.lessonBrief,
+        practiceSteps: adminLearningTemplateStepExample.practiceSteps,
+        submissionGuide: adminLearningTemplateStepExample.submissionGuide,
+        checkpoints: adminLearningTemplateStepExample.checkpoints,
+      },
+    ],
+  },
+  agentCode: "self-study-template-planner",
+  providerCode: "siliconflow",
+  modelCode: "deepseek-v3-2",
+  invocationId: "550e8400-e29b-41d4-a716-446655440299",
+  usage: {
+    promptTokens: 800,
+    completionTokens: 1200,
+    totalTokens: 2000,
+  },
+  latencyMs: 3200,
 }
 
 const adminLearningPathDetailExample = {
@@ -1821,6 +1916,15 @@ const successExamples = {
   },
   adminLearningPathList: adminLearningPathListExample,
   adminLearningPathDetail: adminLearningPathDetailExample,
+  adminLearningTemplateList: adminLearningTemplateListExample,
+  adminLearningTemplateDetail: adminLearningTemplateDetailExample,
+  adminLearningTemplateGenerate: adminLearningTemplateGenerateExample,
+  adminLearningTemplateSync: {
+    templateId: "550e8400-e29b-41d4-a716-446655440200",
+    matchedPathCount: 2,
+    syncedPathCount: 2,
+    skippedPathCount: 0,
+  },
   adminLearningMaterialPlanDetail: adminLearningMaterialPlanDetailExample,
   adminLearningSessionList: adminLearningSessionListExample,
   adminLearningSessionDetail: adminLearningSessionDetailExample,
@@ -4497,6 +4601,191 @@ registry.registerPath({
       "学习路径状态已更新",
     ),
     ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/learning/templates",
+  operationId: "getAdminLearningTemplateList",
+  tags: ["admin-learning"],
+  summary: "管理端自学路径模板列表",
+  description: "管理 learning_paths.source_type=self_directed 的初始化模板。",
+  security: [],
+  request: {
+    query: adminLearningTemplateListQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminLearningTemplateListResponseDataSchema,
+      "AdminLearningTemplateListResponse",
+      "学习路径模板列表读取成功",
+      successExamples.adminLearningTemplateList,
+      "学习路径模板列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/learning/templates",
+  operationId: "postAdminLearningTemplate",
+  tags: ["admin-learning"],
+  summary: "创建自学路径模板",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminLearningTemplateUpsertRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminLearningTemplateDetailResponseDataSchema,
+      "AdminLearningTemplateCreateResponse",
+      "学习路径模板创建成功",
+      successExamples.adminLearningTemplateDetail,
+      "学习路径模板创建成功",
+    ),
+    ...commonErrorResponses(["400", "403", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/learning/templates/{templateId}",
+  operationId: "getAdminLearningTemplateDetail",
+  tags: ["admin-learning"],
+  summary: "管理端自学路径模板详情",
+  security: [],
+  request: {
+    params: adminLearningTemplateIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminLearningTemplateDetailResponseDataSchema,
+      "AdminLearningTemplateDetailResponse",
+      "学习路径模板详情读取成功",
+      successExamples.adminLearningTemplateDetail,
+      "学习路径模板详情读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/learning/templates/{templateId}",
+  operationId: "patchAdminLearningTemplate",
+  tags: ["admin-learning"],
+  summary: "保存自学路径模板",
+  security: [],
+  request: {
+    params: adminLearningTemplateIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminLearningTemplateUpsertRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminLearningTemplateDetailResponseDataSchema,
+      "AdminLearningTemplateUpdateResponse",
+      "学习路径模板保存成功",
+      successExamples.adminLearningTemplateDetail,
+      "学习路径模板保存成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/learning/templates/generate",
+  operationId: "postAdminLearningTemplateGenerate",
+  tags: ["admin-learning"],
+  summary: "AI 生成自学路径模板草稿",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminLearningTemplateGenerateRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminLearningTemplateGenerateResponseDataSchema,
+      "AdminLearningTemplateGenerateResponse",
+      "学习路径模板 AI 生成成功",
+      successExamples.adminLearningTemplateGenerate,
+      "学习路径模板 AI 生成成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/learning/templates/{templateId}/generate",
+  operationId: "postAdminLearningTemplateRegenerate",
+  tags: ["admin-learning"],
+  summary: "基于已有模板 AI 生成草稿",
+  security: [],
+  request: {
+    params: adminLearningTemplateIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminLearningTemplateGenerateRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminLearningTemplateGenerateResponseDataSchema,
+      "AdminLearningTemplateRegenerateResponse",
+      "学习路径模板 AI 生成成功",
+      successExamples.adminLearningTemplateGenerate,
+      "学习路径模板 AI 生成成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/learning/templates/{templateId}/sync-unstarted",
+  operationId: "postAdminLearningTemplateSyncUnstarted",
+  tags: ["admin-learning"],
+  summary: "同步未开始的自学初始化用户路径",
+  security: [],
+  request: {
+    params: adminLearningTemplateIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminLearningTemplateSyncResponseDataSchema,
+      "AdminLearningTemplateSyncResponse",
+      "未开始用户路径同步成功",
+      successExamples.adminLearningTemplateSync,
+      "未开始用户路径同步成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
   },
 })
 

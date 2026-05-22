@@ -8,12 +8,12 @@
 
 ## 结论摘要
 
-自由模式下刚进入 `/learn` 时展示的初始化学习任务，不是由管理后台 agent 实时生成，也不是由 skill 生成。
+自由模式下刚进入 `/learn` 时展示的初始化学习任务，不是由用户侧 agent 实时生成，也不是由 skill 生成。当前模板内容可以由管理后台维护；后台 AI 只在模板编辑器里生成草稿，管理员保存后才生效。
 
 当前链路是：
 
-1. Supabase seed 预置自学路径模板到 `learning_paths`。
-2. Supabase seed 预置通用自学三步任务到 `path_steps`。
+1. Supabase seed 或管理后台预置自学路径模板到 `learning_paths`。
+2. Supabase seed 或管理后台预置自学任务步骤到 `path_steps`。
 3. 用户完成 onboarding 且选择 `self_directed` 后，服务端把模板复制为用户自己的 `user_learning_paths`。
 4. 服务端按模板步骤创建该用户的 `user_tasks`，第一步设为 `in_progress`。
 5. `/learn` 读取当前用户 `active` 的 `user_learning_paths`、`user_tasks`、`path_steps` 并组装页面数据。
@@ -48,7 +48,7 @@ const targetPathCode =
     : selectedPathId
 ```
 
-但实际查询 self-directed 模板时，当前代码按 `tool_id + source_type + is_active` 查找，并按 `target_level` 升序取第一条，没有严格按 `targetPathCode` 或用户选择的 `learningLevel` 精确匹配：
+实际查询 self-directed 模板时，当前代码已经按 `tool_id + source_type + target_level + is_active` 精确匹配：
 
 ```ts
 supabase
@@ -56,13 +56,12 @@ supabase
   .select("id, code, name, description, stage_count, metadata")
   .eq("tool_id", tool.id)
   .eq("source_type", "self_directed")
+  .eq("target_level", learningLevel)
   .eq("is_active", true)
-  .order("target_level", { ascending: true })
-  .limit(1)
   .maybeSingle()
 ```
 
-这在当前每个工具通常只有一条自学模板时可以工作；如果后续同一工具要支持多个等级或多套自学初始化模板，需要收紧这段查询。
+如果对应工具和水平没有启用模板，onboarding 会返回模板不存在，需要管理员先在后台补齐。
 
 ### 2. 创建用户学习路径实例
 
@@ -117,7 +116,7 @@ API 路由：
 2. 查最新 active 学习路径：`user_learning_paths`
 3. 查学习工具：`learning_tools`
 4. 查用户任务实例：`user_tasks`
-5. 查模板步骤内容：`path_steps`
+5. 按用户任务引用的 `path_step_id` 查模板步骤内容：`path_steps`
 6. 如果是自由模式，额外查是否有待处理的材料计划草稿或 intake：
    - `learning_plan_drafts`
    - `learning_material_intakes`
@@ -443,6 +442,9 @@ order by updated_at desc;
 | `app/api/learning/current-session/route.ts` | 当前学习会话 API 入口 |
 | `server/modules/learning/service.ts` | 读取 active 学习路径、用户任务、模板步骤，并组装 `/learn` 响应 |
 | `server/modules/onboarding/service.ts` | onboarding 完成时创建 `user_learning_paths` 和 `user_tasks` |
+| `features/admin-learning-templates` | 管理后台自学路径模板列表、编辑器与 AI 生成草稿 |
+| `server/modules/admin-learning-templates` | 管理后台模板 CRUD、AI 生成、同步未开始用户路径服务 |
+| `supabase/migrations/054_self_directed_template_management.sql` | 自学模板启用唯一约束、步骤归档索引与后台专用生成 agent |
 | `supabase/seeds/001_dictionary.sql` | Cursor / Trae / Windsurf 等首批自学路径和通用三步初始化任务 seed |
 | `supabase/seeds/003_onboarding_tool_expansion.sql` | Claude Code / Codex / OpenCode / Stitch / Bolt / Lovable 等自学路径和通用三步初始化任务 seed |
 | `supabase/seeds/006_ai_agent_and_binding_registry.sql` | self-directed 路径与 coach agent 的绑定 seed |
@@ -453,10 +455,9 @@ order by updated_at desc;
 
 ## 后续升级注意事项
 
-1. 如果要改“刚进入 `/learn` 看到的初始化任务”，优先改 `learning_paths` / `path_steps` seed 或新增运营化管理能力，不要误改 `learning_plan_drafts`。
-2. 如果要让初始化任务由管理后台配置，需要新增或复用“学习路径模板管理”能力；当前 admin learning 主要是学习记录运营，不是路径模板编辑器。
-3. 如果要让初始化任务由 agent 生成，需要重新设计 onboarding 完成后的写入链路，并明确生成结果何时落到 `learning_paths` / `path_steps` 或是否直接生成用户私有路径。
-4. 如果同一工具未来存在多个自学模板，必须修正 `completeOnboarding` 中 self-directed 模板查询逻辑，避免永远取 target_level 排序后的第一条。
+1. 如果要改“刚进入 `/learn` 看到的初始化任务”，优先使用 `/admin/learning/templates` 管理 `learning_paths` / `path_steps`，不要误改 `learning_plan_drafts`。
+2. 管理后台模板保存会影响新完成 onboarding 的用户；若要影响已存在但未开始的初始化自学路径，需要管理员手动执行“同步未开始”。
+3. 当前后台 AI 生成只返回模板草稿，不直接落库；管理员保存后才发布到 `learning_paths` / `path_steps`。
+4. 同一工具和水平只能有一个启用的 `self_directed` 模板，数据库通过 `054` 的部分唯一索引保护。
 5. `/learn` 首屏展示依赖 `user_learning_paths.status = 'active'`。学习路径状态机已有 `active`、`interrupted`、`completed`、`abandoned`、`archived`，升级时要避免破坏 `/learn`、`/map`、`/history` 的共同主线。
 6. `path_steps.metadata` 已被材料生成计划用于 `practiceSteps`、`lessonBrief`、`submissionGuide`、`checkpoints` 等扩展字段；如果初始化模板也要支持更丰富任务说明，可以复用这些字段，但要同步页面和文档口径。
-

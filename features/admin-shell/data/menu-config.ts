@@ -5,6 +5,7 @@ import {
   MessageSquare,
   Bell,
   BookOpen,
+  Route,
   Bot,
   Server,
   Cpu,
@@ -51,10 +52,14 @@ export const menuItems: MenuItem[] = [
     active: true,
   },
   {
-    label: "学习记录",
+    label: "学习运营",
     href: "/admin/learning",
     icon: BookOpen,
     active: true,
+    children: [
+      { label: "学习记录", href: "/admin/learning", icon: BookOpen, active: true },
+      { label: "路径模板", href: "/admin/learning/templates", icon: Route, active: true },
+    ],
   },
   {
     label: "Ai 管理",

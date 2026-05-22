@@ -48,6 +48,7 @@
     "test:admin-learning-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-admin-learning-route.ts",
     "test:admin-learning-pages": "node scripts/check-admin-learning-pages.mjs",
     "test:admin-learning": "pnpm test:admin-learning-validation && pnpm test:admin-learning-route && pnpm test:admin-learning-pages",
+    "test:admin-learning-templates": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-admin-learning-templates-route.ts scripts/check-admin-learning-templates-service.ts && node scripts/check-admin-learning-templates-pages.mjs",
     "test:admin-settings-validation": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-admin-settings-validation.ts",
     "test:admin-settings-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-admin-settings-route.ts",
     "test:admin-settings-pages": "node scripts/check-admin-settings-pages.mjs",

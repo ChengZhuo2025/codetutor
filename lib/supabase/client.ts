@@ -15,6 +15,14 @@ type BrowserAuthClient = {
   }
 }
 
+export function getSupabaseBrowserClientAuthOptions() {
+  return {
+    autoRefreshToken: false,
+    persistSession: true,
+    detectSessionInUrl: true,
+  }
+}
+
 export function createSupabaseBrowserClient(): SupabaseClient {
   if (browserClient) {
     return browserClient
@@ -22,7 +30,9 @@ export function createSupabaseBrowserClient(): SupabaseClient {
 
   const { url, anonKey } = getPublicSupabaseEnv()
 
-  browserClient = createClient(url, anonKey)
+  browserClient = createClient(url, anonKey, {
+    auth: getSupabaseBrowserClientAuthOptions(),
+  })
 
   return browserClient
 }

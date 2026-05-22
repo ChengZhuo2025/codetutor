@@ -8,6 +8,7 @@ import {
   ADMIN_SETTINGS_AUDIT_TARGET_TYPES,
 } from "@/lib/api/contracts/admin-settings"
 import { SITE_ARTICLE_SLUGS } from "@/lib/api/contracts/admin-site"
+import { ADMIN_LEARNING_TEMPLATE_STATUSES } from "@/lib/api/contracts/admin-learning-templates"
 import {
   ADMIN_AI_ACTIVE_STATUS_OPTIONS,
   ADMIN_AI_AGENT_SCENARIO_TYPES,
@@ -2649,6 +2650,159 @@ export const adminUpdateLearningPathStatusResponseDataSchema = z
     status: adminLearningPathStatusSchema,
   })
   .openapi("AdminUpdateLearningPathStatusResponseData")
+
+export const adminLearningTemplateStatusSchema = z
+  .enum(ADMIN_LEARNING_TEMPLATE_STATUSES)
+  .openapi("AdminLearningTemplateStatus")
+
+export const adminLearningTemplateToolOptionSchema = z
+  .object({
+    code: z.string(),
+    name: z.string(),
+  })
+  .openapi("AdminLearningTemplateToolOption")
+
+export const adminLearningTemplateStepInputSchema = z
+  .object({
+    stepId: z.string().uuid().nullable().optional(),
+    title: z.string(),
+    summary: z.string(),
+    focus: z.string().nullable().optional(),
+    goal: z.string(),
+    completionCriteria: z.string().nullable().optional(),
+    reviewSummary: z.string().nullable().optional(),
+    estimatedMinutes: z.number().int().nonnegative().nullable().optional(),
+    rewardScore: z.number().int().nonnegative(),
+    knowledgePoints: z.array(z.string()),
+    keyPoints: z.array(z.string()),
+    pitfalls: z.array(z.string()),
+    lessonBrief: z.string().nullable().optional(),
+    practiceSteps: z.array(z.string()),
+    submissionGuide: z.string().nullable().optional(),
+    checkpoints: z.array(z.string()),
+  })
+  .openapi("AdminLearningTemplateStepInput")
+
+export const adminLearningTemplateUpsertRequestSchema = z
+  .object({
+    toolCode: z.string(),
+    learningLevel: learningLevelSchema,
+    code: z.string().nullable().optional(),
+    name: z.string(),
+    description: z.string().nullable().optional(),
+    preview: z.array(z.string()),
+    agentCode: z.string().nullable().optional(),
+    isActive: z.boolean(),
+    steps: z.array(adminLearningTemplateStepInputSchema),
+    changeReason: z.string(),
+  })
+  .openapi("AdminLearningTemplateUpsertRequest")
+
+export const adminLearningTemplateStepSchema = adminLearningTemplateStepInputSchema
+  .extend({
+    stepId: z.string().uuid(),
+    stepNo: z.number().int().positive(),
+  })
+  .openapi("AdminLearningTemplateStep")
+
+export const adminLearningTemplateListItemSchema = z
+  .object({
+    templateId: z.string().uuid(),
+    toolCode: z.string(),
+    toolName: z.string(),
+    learningLevel: learningLevelSchema,
+    learningLevelLabel: z.string(),
+    code: z.string(),
+    name: z.string(),
+    description: z.string().nullable(),
+    stageCount: z.number().int().nonnegative(),
+    isActive: z.boolean(),
+    syncablePathCount: z.number().int().nonnegative(),
+    updatedAt: z.string(),
+  })
+  .openapi("AdminLearningTemplateListItem")
+
+export const adminLearningTemplateListResponseDataSchema = z
+  .object({
+    items: z.array(adminLearningTemplateListItemSchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().min(1),
+    limit: z.number().int().min(1).max(100),
+    toolOptions: z.array(adminLearningTemplateToolOptionSchema),
+  })
+  .openapi("AdminLearningTemplateListResponseData")
+
+export const adminLearningTemplateListQuerySchema = z
+  .object({
+    keyword: z.string().optional(),
+    status: adminLearningTemplateStatusSchema.optional(),
+    toolCode: z.string().optional(),
+    learningLevel: learningLevelSchema.optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+  })
+  .openapi("AdminLearningTemplateListQuery")
+
+export const adminLearningTemplateIdParamsSchema = z
+  .object({
+    templateId: z.string().uuid(),
+  })
+  .openapi("AdminLearningTemplateIdParams")
+
+export const adminLearningTemplateDetailResponseDataSchema = z
+  .object({
+    template: adminLearningTemplateListItemSchema.extend({
+      preview: z.array(z.string()),
+      agentCode: z.string().nullable(),
+      createdAt: z.string(),
+    }),
+    steps: z.array(adminLearningTemplateStepSchema),
+  })
+  .openapi("AdminLearningTemplateDetailResponseData")
+
+export const adminLearningTemplateGenerateRequestSchema = z
+  .object({
+    toolCode: z.string(),
+    learningLevel: learningLevelSchema,
+    operatorGoal: z.string().nullable().optional(),
+    currentTemplate: z.object({
+      name: z.string().nullable().optional(),
+      description: z.string().nullable().optional(),
+      preview: z.array(z.string()).optional(),
+      steps: z.array(adminLearningTemplateStepInputSchema).optional(),
+    }).nullable().optional(),
+  })
+  .openapi("AdminLearningTemplateGenerateRequest")
+
+export const adminLearningTemplateGenerateResponseDataSchema = z
+  .object({
+    generated: z.object({
+      name: z.string(),
+      description: z.string(),
+      preview: z.array(z.string()),
+      steps: z.array(adminLearningTemplateStepInputSchema),
+    }),
+    agentCode: z.string(),
+    providerCode: z.string(),
+    modelCode: z.string(),
+    invocationId: z.string().uuid().nullable(),
+    usage: z.object({
+      promptTokens: z.number().int().nonnegative(),
+      completionTokens: z.number().int().nonnegative(),
+      totalTokens: z.number().int().nonnegative(),
+    }),
+    latencyMs: z.number().int().nonnegative(),
+  })
+  .openapi("AdminLearningTemplateGenerateResponseData")
+
+export const adminLearningTemplateSyncResponseDataSchema = z
+  .object({
+    templateId: z.string().uuid(),
+    matchedPathCount: z.number().int().nonnegative(),
+    syncedPathCount: z.number().int().nonnegative(),
+    skippedPathCount: z.number().int().nonnegative(),
+  })
+  .openapi("AdminLearningTemplateSyncResponseData")
 
 export const adminAIProviderTypeSchema = z.enum(ADMIN_AI_PROVIDER_TYPES).openapi("AdminAIProviderType")
 

@@ -16,7 +16,7 @@ test("openapi document covers all registered api operations and special transpor
     ),
   )
 
-  assert.equal(operations.length, 143)
+  assert.equal(operations.length, 150)
 
   assert.ok(paths["/api/auth/login"]?.post)
   assert.ok(paths["/api/auth/oauth-temp-user/discard"]?.post)
@@ -68,6 +68,13 @@ test("openapi document covers all registered api operations and special transpor
   assert.ok(paths["/api/admin/learning-paths/{pathId}/sessions"]?.get)
   assert.ok(paths["/api/admin/learning-paths/{pathId}/sessions/{sessionId}"]?.get)
   assert.ok(paths["/api/admin/learning-paths/{pathId}/status"]?.post)
+  assert.ok(paths["/api/admin/learning/templates"]?.get)
+  assert.ok(paths["/api/admin/learning/templates"]?.post)
+  assert.ok(paths["/api/admin/learning/templates/{templateId}"]?.get)
+  assert.ok(paths["/api/admin/learning/templates/{templateId}"]?.patch)
+  assert.ok(paths["/api/admin/learning/templates/generate"]?.post)
+  assert.ok(paths["/api/admin/learning/templates/{templateId}/generate"]?.post)
+  assert.ok(paths["/api/admin/learning/templates/{templateId}/sync-unstarted"]?.post)
   assert.ok(paths["/api/admin/settings/overview"]?.get)
   assert.ok(paths["/api/admin/settings/admin-accounts"]?.get)
   assert.ok(paths["/api/admin/settings/admin-accounts/{adminAccountId}/status"]?.post)

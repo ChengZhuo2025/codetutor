@@ -2,9 +2,16 @@ import test from "node:test"
 import assert from "node:assert/strict"
 
 import {
+  getSupabaseBrowserClientAuthOptions,
   getSafeSupabaseBrowserSession,
   isInvalidSupabaseRefreshTokenError,
 } from "../lib/supabase/client.ts"
+
+test("browser Supabase client defers refresh errors to safe session reads", () => {
+  assert.equal(getSupabaseBrowserClientAuthOptions().autoRefreshToken, false)
+  assert.equal(getSupabaseBrowserClientAuthOptions().persistSession, true)
+  assert.equal(getSupabaseBrowserClientAuthOptions().detectSessionInUrl, true)
+})
 
 test("invalid Supabase refresh token errors are treated as expired browser sessions", async () => {
   const error = Object.assign(

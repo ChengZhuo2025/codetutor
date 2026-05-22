@@ -573,13 +573,15 @@ async function loadLearningState(userId: string) {
 
   assertSupabaseSuccess(taskError, "failed to load learning tasks")
 
+  const taskRows = (tasks ?? []) as TaskRow[]
+  const taskStepIds = Array.from(new Set(taskRows.map((task) => task.path_step_id)))
   const { data: steps, error: stepError } =
-    activePath.template_path_id === null
+    taskStepIds.length === 0
       ? { data: [] as StepRow[], error: null }
       : await supabase
           .from("path_steps")
           .select("id, step_no, title, summary, focus, goal, completion_criteria, review_summary, estimated_minutes, reward_score, knowledge_points, key_points, pitfalls, metadata")
-          .eq("path_id", activePath.template_path_id)
+          .in("id", taskStepIds)
           .order("step_no", { ascending: true })
 
   assertSupabaseSuccess(stepError, "failed to load path steps")
@@ -623,7 +625,7 @@ async function loadLearningState(userId: string) {
     profile: profile as ProfileRow,
     tool: tool as ToolRow,
     activePath: activePath as ActivePathRow,
-    tasks: (tasks ?? []) as TaskRow[],
+    tasks: taskRows,
     steps: (steps ?? []) as StepRow[],
     pendingMaterialPlanDraft: pendingDraft as PendingMaterialPlanDraftRow | null,
     activeMaterialPlanIntake: activeMaterialPlanIntake as ActiveMaterialPlanIntakeRow | null,

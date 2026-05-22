@@ -60,6 +60,7 @@
 - `050_add_user_login_ip_tracking.sql` / `051_update_user_profile_export_view_with_ip.sql` (新增用户登录 IP / 城市追踪并扩展运营导出视图)
 - `052_create_site_information.sql` (新增站点信息、通用文章与 `site-assets` public bucket，支持后台站点内容管理)
 - `053_create_admin_session_lookup_rpc.sql` (新增管理后台会话聚合 RPC，一次返回管理员账号、角色与头像，供登录与会话校验复用)
+- `054_self_directed_template_management.sql` (新增自学路径模板管理约束：同一工具/水平仅一个启用 self-directed 模板、未归档步骤索引，并 seed 后台专用 `self-study-template-planner` agent)
 
 当前数据库中已落地的核心业务表包括：
 
@@ -514,6 +515,7 @@ erDiagram
 
 - `idx_learning_paths_tool_level`
 - `idx_learning_paths_code`
+- `uidx_learning_paths_self_directed_active_tool_level`：`source_type = 'self_directed' AND is_active = true` 时，限制同一 `tool_id + target_level` 只能有一个启用模板
 
 ## 6.5 `path_steps`
 
@@ -549,6 +551,7 @@ erDiagram
 
 - `path_steps.goal`、`path_steps.summary`、`path_steps.completion_criteria`、`path_steps.key_points`、`path_steps.pitfalls` 等字段由 `learning_plan_draft_tasks` 对应字段转写而来
 - `path_steps.metadata` 在自学模式 confirm 后必须写入 `source_refs`、`goal_alignment_refs`、`recommended_for_week_1` 与 `draft_revision_no`，以便追溯材料来源与草稿版本
+- 管理后台模板编辑器删除已被 `user_tasks` 引用的步骤时，不物理删除，而在 `path_steps.metadata.archivedAt` 写入归档标记；新 onboarding 和模板编辑详情只读取未归档步骤，已有用户任务仍可按 `path_step_id` 读取旧步骤
 
 约束建议：
 
@@ -557,6 +560,7 @@ erDiagram
 索引建议：
 
 - `idx_path_steps_path_id_step_no`
+- `idx_path_steps_active_path_step_no`：仅覆盖 `metadata->>'archivedAt' IS NULL` 的当前有效模板步骤
 
 ## 6.6 `user_learning_paths`
 

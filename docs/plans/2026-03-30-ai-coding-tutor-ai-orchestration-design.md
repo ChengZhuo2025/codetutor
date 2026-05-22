@@ -81,6 +81,7 @@
 - 当前仓库已经具备适合承载该能力的基础设施：`app/api`、`server/modules`、Supabase Auth、Database、Storage、远程迁移执行脚本
 - **学习对话多模态附件与播读**：`/learn` 已支持图片和语音附件。前端先调用 `POST /api/learning/attachments` 上传到私有 Storage，再在 `POST /api/learning/message` 传 `attachmentIds`；服务端验证归属后做 deterministic media preprocessing，图片转译和语音转文本模型由后台 `media_transcription_settings` 配置决定，处理结果写回 `learning_message_attachments` 并注入教学上下文。AI 回复消息底部支持按需播读，`POST /api/learning/message-speech` 调用后台 `text_to_speech` 配置并返回临时音频，首版不持久化音频。
 - **教程链接生成学习计划（Phase A/B）**：已落地专用接口 `POST /api/learning/plan-from-material`（及草稿 `confirm` / `regenerate`），计划生成使用 `agent_templates.code = self-study-material-planner` 与 `invokeAIProvider` 非流式 JSON，不经过 `POST /api/learning/message` 主消息编排；intake worker 现已按 `raw text -> subtitle -> ASR -> OCR/vision` 顺序做多模态证据摄取，并通过独立 quality gate 做规则校验；仅在弱证据、长计划、缺少时长估算或时长压力较高时才触发轻量化模型自检，自检超时只记入 `selfCheck.reason`，不再污染用户可见 warning
+- **后台自学路径模板生成**：已落地 `agent_templates.code = self-study-template-planner`，仅供 `/admin/learning/templates` 编辑器调用；它使用 `invokeAIProvider` 非流式 JSON 生成模板草稿，不接入用户侧 `/learn` 对话，不直接写入 `learning_paths` / `path_steps`，管理员应用并保存后才发布。
 - 当前仍未引入 Redis / 消息队列；上述缓存、限流与观测增强均为单实例进程内实现，属于第一阶段运行时加固而非分布式基础设施
 
 因此，本文档既是后续扩展规范，也是当前首版真实实现的权威快照
@@ -1240,6 +1241,11 @@ ai/skills/
 
 - `uidx_agent_templates_code`
 - `idx_agent_templates_scenario_active`
+
+当前与自学模式相关的后台专用 agent：
+
+- `self-study-material-planner`：用户侧教程链接材料计划草稿生成，供 material intake / draft flow 使用。
+- `self-study-template-planner`：管理后台自学初始化模板草稿生成，仅供模板编辑器使用。
 
 ### `agent_bindings`
 

@@ -35,6 +35,7 @@ type PathRow = {
 type StepRow = {
   id: string
   step_no: number
+  metadata?: JsonRecord | null
 }
 
 const GROUP_NAME_MAP: Record<string, string> = {
@@ -221,9 +222,8 @@ export async function completeOnboarding(
           .select("id, code, name, description, stage_count, metadata")
           .eq("tool_id", tool.id)
           .eq("source_type", "self_directed")
+          .eq("target_level", learningLevel)
           .eq("is_active", true)
-          .order("target_level", { ascending: true })
-          .limit(1)
           .maybeSingle()
       : supabase
           .from("learning_paths")
@@ -244,13 +244,14 @@ export async function completeOnboarding(
 
   const { data: steps, error: stepError } = await supabase
     .from("path_steps")
-    .select("id, step_no")
+    .select("id, step_no, metadata")
     .eq("path_id", path.id)
     .order("step_no", { ascending: true })
 
   assertSupabaseSuccess(stepError, "failed to load path steps")
 
-  const orderedSteps = (steps ?? []) as StepRow[]
+  const orderedSteps = ((steps ?? []) as Array<StepRow & { metadata?: JsonRecord | null }>)
+    .filter((step) => typeof step.metadata?.archivedAt !== "string")
 
   if (orderedSteps.length === 0) {
     throw new Error(`Path template ${path.code} has no steps`)

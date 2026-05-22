@@ -33,6 +33,13 @@ import {
   type AdminLearningUpdatedWithin,
 } from "@/lib/api/contracts/admin-learning"
 import {
+  ADMIN_LEARNING_TEMPLATE_STATUSES,
+  type AdminLearningTemplateGenerateRequest,
+  type AdminLearningTemplateStatus,
+  type AdminLearningTemplateUpsertRequest,
+  type AdminLearningTemplateStepInput,
+} from "@/lib/api/contracts/admin-learning-templates"
+import {
   ADMIN_SETTINGS_ACCOUNT_LIST_STATUSES,
   ADMIN_SETTINGS_ACCOUNT_STATUS_ACTIONS,
   ADMIN_SETTINGS_AUDIT_TARGET_TYPES,
@@ -1193,6 +1200,41 @@ export function parseAdminLearningSessionListQuery(searchParams: URLSearchParams
   return parseSharedListPagination(searchParams)
 }
 
+export function parseAdminLearningTemplateListQuery(searchParams: URLSearchParams) {
+  const pagination = parseSharedListPagination(searchParams)
+  if (!pagination.ok) {
+    return pagination
+  }
+
+  const rawStatus = searchParams.get("status")
+  const rawLearningLevel = searchParams.get("learningLevel")
+
+  let status: AdminLearningTemplateStatus = "all"
+  if (rawStatus) {
+    if (!ADMIN_LEARNING_TEMPLATE_STATUSES.includes(rawStatus as AdminLearningTemplateStatus)) {
+      return fail("VALIDATION_FAILED", "status 参数不合法。")
+    }
+    status = rawStatus as AdminLearningTemplateStatus
+  }
+
+  let learningLevel: "beginner" | "intermediate" | "advanced" | undefined
+  if (rawLearningLevel) {
+    if (!ADMIN_LEARNING_LEVELS.includes(rawLearningLevel as (typeof ADMIN_LEARNING_LEVELS)[number])) {
+      return fail("VALIDATION_FAILED", "learningLevel 参数不合法。")
+    }
+    learningLevel = rawLearningLevel as (typeof ADMIN_LEARNING_LEVELS)[number]
+  }
+
+  return ok({
+    keyword: searchParams.get("keyword")?.trim() || undefined,
+    status,
+    toolCode: searchParams.get("toolCode")?.trim() || undefined,
+    learningLevel,
+    limit: pagination.data.limit,
+    page: pagination.data.page,
+  })
+}
+
 export function parseAdminAIAgentListQuery(
   searchParams: URLSearchParams,
   options?: {
@@ -2004,6 +2046,238 @@ export function parseAdminAIResolvePreviewBody(
     selectionMode,
     pathId: pathId.data,
     stepNo,
+  })
+}
+
+const adminLearningTemplateStepShapeSchema = z.object({
+  stepId: z.unknown().optional(),
+  title: z.unknown(),
+  summary: z.unknown(),
+  focus: z.unknown().optional(),
+  goal: z.unknown(),
+  completionCriteria: z.unknown().optional(),
+  reviewSummary: z.unknown().optional(),
+  estimatedMinutes: z.unknown().optional(),
+  rewardScore: z.unknown(),
+  knowledgePoints: z.unknown().optional(),
+  keyPoints: z.unknown().optional(),
+  pitfalls: z.unknown().optional(),
+  lessonBrief: z.unknown().optional(),
+  practiceSteps: z.unknown().optional(),
+  submissionGuide: z.unknown().optional(),
+  checkpoints: z.unknown().optional(),
+}).strict()
+
+const adminLearningTemplateShapeSchema = z.object({
+  toolCode: z.unknown(),
+  learningLevel: z.unknown(),
+  code: z.unknown().optional(),
+  name: z.unknown(),
+  description: z.unknown().optional(),
+  preview: z.unknown().optional(),
+  agentCode: z.unknown().optional(),
+  isActive: z.unknown(),
+  steps: z.unknown(),
+  changeReason: z.unknown(),
+}).strict()
+
+function parseStringArrayField(value: unknown, fieldName: string, maxItems = 20): ValidationResult<string[]> {
+  if (value == null) {
+    return ok([])
+  }
+  if (!Array.isArray(value)) {
+    return fail("VALIDATION_FAILED", `${fieldName} 字段不合法。`)
+  }
+  if (value.length > maxItems) {
+    return fail("VALIDATION_FAILED", `${fieldName} 最多 ${maxItems} 项。`)
+  }
+  const items = value
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter((item) => item.length > 0)
+  if (items.length !== value.filter((item) => typeof item === "string" && item.trim().length > 0).length) {
+    return fail("VALIDATION_FAILED", `${fieldName} 中存在不合法项目。`)
+  }
+  return ok(items)
+}
+
+function parseOptionalTextField(
+  value: unknown,
+  fieldName: string,
+  minLength: number,
+  maxLength?: number,
+): ValidationResult<string | null> {
+  if (value == null) {
+    return ok(null)
+  }
+  const effectiveMaxLength = typeof maxLength === "number" ? maxLength : minLength
+  const effectiveMinLength = typeof maxLength === "number" ? minLength : 0
+  if (typeof effectiveMaxLength !== "number" || typeof effectiveMinLength !== "number") {
+    return fail("VALIDATION_FAILED", `${fieldName} 长度配置不合法。`)
+  }
+  if (typeof value !== "string") {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是字符串或 null。`)
+  }
+  const normalized = value.trim()
+  if (
+    normalized.length > 0
+    && (normalized.length < effectiveMinLength || normalized.length > effectiveMaxLength)
+  ) {
+    return fail("VALIDATION_FAILED", `${fieldName} 长度不合法。`)
+  }
+  return ok(normalized.length > 0 ? normalized : null)
+}
+
+function parseOptionalNonNegativeInteger(value: unknown, fieldName: string, max: number): ValidationResult<number | null> {
+  if (value == null || value === "") {
+    return ok(null)
+  }
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > max) {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是 0 到 ${max} 之间的整数。`)
+  }
+  return ok(value)
+}
+
+function parseAdminLearningTemplateStep(input: unknown, index: number): ValidationResult<AdminLearningTemplateStepInput> {
+  const shape = adminLearningTemplateStepShapeSchema.safeParse(input)
+  if (!shape.success) {
+    return fail("BAD_REQUEST", `第 ${index + 1} 步请求体不合法。`)
+  }
+
+  const stepId = parseUuidOrNull(shape.data.stepId, "stepId")
+  const title = parseTrimmedRequiredString(shape.data.title, "title", 2, 128)
+  const summary = parseTrimmedRequiredString(shape.data.summary, "summary", 2, 3000)
+  const focus = parseOptionalTextField(shape.data.focus, "focus", 3000)
+  const goal = parseTrimmedRequiredString(shape.data.goal, "goal", 2, 3000)
+  const completionCriteria = parseOptionalTextField(shape.data.completionCriteria, "completionCriteria", 3000)
+  const reviewSummary = parseOptionalTextField(shape.data.reviewSummary, "reviewSummary", 3000)
+  const estimatedMinutes = parseOptionalNonNegativeInteger(shape.data.estimatedMinutes, "estimatedMinutes", 10_000)
+  const rewardScore = parseOptionalNonNegativeInteger(shape.data.rewardScore, "rewardScore", 100_000)
+  const knowledgePoints = parseStringArrayField(shape.data.knowledgePoints, "knowledgePoints")
+  const keyPoints = parseStringArrayField(shape.data.keyPoints, "keyPoints")
+  const pitfalls = parseStringArrayField(shape.data.pitfalls, "pitfalls")
+  const lessonBrief = parseOptionalTextField(shape.data.lessonBrief, "lessonBrief", 5000)
+  const practiceSteps = parseStringArrayField(shape.data.practiceSteps, "practiceSteps", 30)
+  const submissionGuide = parseOptionalTextField(shape.data.submissionGuide, "submissionGuide", 3000)
+  const checkpoints = parseStringArrayField(shape.data.checkpoints, "checkpoints", 30)
+
+  if (
+    !stepId.ok
+    || !title.ok
+    || !summary.ok
+    || !focus.ok
+    || !goal.ok
+    || !completionCriteria.ok
+    || !reviewSummary.ok
+    || !estimatedMinutes.ok
+    || !rewardScore.ok
+    || !knowledgePoints.ok
+    || !keyPoints.ok
+    || !pitfalls.ok
+    || !lessonBrief.ok
+    || !practiceSteps.ok
+    || !submissionGuide.ok
+    || !checkpoints.ok
+  ) {
+    return fail("VALIDATION_FAILED", `第 ${index + 1} 步字段不合法。`)
+  }
+
+  return ok({
+    stepId: stepId.data,
+    title: title.data,
+    summary: summary.data,
+    focus: focus.data,
+    goal: goal.data,
+    completionCriteria: completionCriteria.data,
+    reviewSummary: reviewSummary.data,
+    estimatedMinutes: estimatedMinutes.data,
+    rewardScore: rewardScore.data ?? 0,
+    knowledgePoints: knowledgePoints.data,
+    keyPoints: keyPoints.data,
+    pitfalls: pitfalls.data,
+    lessonBrief: lessonBrief.data,
+    practiceSteps: practiceSteps.data,
+    submissionGuide: submissionGuide.data,
+    checkpoints: checkpoints.data,
+  })
+}
+
+export function parseAdminLearningTemplateBody(input: unknown): ValidationResult<AdminLearningTemplateUpsertRequest> {
+  const shape = adminLearningTemplateShapeSchema.safeParse(input)
+  if (!shape.success || !Array.isArray(shape.data.steps)) {
+    return fail("BAD_REQUEST", "学习路径模板请求体不合法。")
+  }
+
+  const toolCode = parseTrimmedRequiredString(shape.data.toolCode, "toolCode", 2, 64)
+  const name = parseTrimmedRequiredString(shape.data.name, "name", 2, 128)
+  const code = parseOptionalTextField(shape.data.code, "code", 2, 64)
+  const description = parseOptionalTextField(shape.data.description, "description", 1, 3000)
+  const preview = parseStringArrayField(shape.data.preview, "preview", 10)
+  const agentCode = parseOptionalTextField(shape.data.agentCode, "agentCode", 2, 64)
+  const isActive = parseBooleanField(shape.data.isActive, "isActive")
+  const changeReason = parseChangeReason(shape.data.changeReason)
+
+  if (!toolCode.ok || !name.ok || !code.ok || !description.ok || !preview.ok || !agentCode.ok || !isActive.ok || !changeReason.ok) {
+    return fail("VALIDATION_FAILED", "学习路径模板字段不合法。")
+  }
+
+  if (!ADMIN_LEARNING_LEVELS.includes(shape.data.learningLevel as (typeof ADMIN_LEARNING_LEVELS)[number])) {
+    return fail("VALIDATION_FAILED", "learningLevel 参数不合法。")
+  }
+
+  const steps: AdminLearningTemplateStepInput[] = []
+  for (let index = 0; index < shape.data.steps.length; index += 1) {
+    const parsed = parseAdminLearningTemplateStep(shape.data.steps[index], index)
+    if (!parsed.ok) {
+      return parsed
+    }
+    steps.push(parsed.data)
+  }
+
+  return ok({
+    toolCode: toolCode.data.toLowerCase(),
+    learningLevel: shape.data.learningLevel as "beginner" | "intermediate" | "advanced",
+    code: code.data,
+    name: name.data,
+    description: description.data,
+    preview: preview.data,
+    agentCode: agentCode.data,
+    isActive: isActive.data,
+    steps,
+    changeReason: changeReason.data,
+  })
+}
+
+const adminLearningTemplateGenerateShapeSchema = z.object({
+  toolCode: z.unknown(),
+  learningLevel: z.unknown(),
+  operatorGoal: z.unknown().optional(),
+  currentTemplate: z.unknown().optional(),
+}).strict()
+
+export function parseAdminLearningTemplateGenerateBody(input: unknown): ValidationResult<AdminLearningTemplateGenerateRequest> {
+  const shape = adminLearningTemplateGenerateShapeSchema.safeParse(input)
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "AI 生成请求体不合法。")
+  }
+
+  const toolCode = parseTrimmedRequiredString(shape.data.toolCode, "toolCode", 2, 64)
+  const operatorGoal = parseOptionalTextField(shape.data.operatorGoal, "operatorGoal", 1, 2000)
+  if (!toolCode.ok || !operatorGoal.ok) {
+    return fail("VALIDATION_FAILED", "AI 生成请求字段不合法。")
+  }
+
+  if (!ADMIN_LEARNING_LEVELS.includes(shape.data.learningLevel as (typeof ADMIN_LEARNING_LEVELS)[number])) {
+    return fail("VALIDATION_FAILED", "learningLevel 参数不合法。")
+  }
+
+  return ok({
+    toolCode: toolCode.data.toLowerCase(),
+    learningLevel: shape.data.learningLevel as "beginner" | "intermediate" | "advanced",
+    operatorGoal: operatorGoal.data,
+    currentTemplate:
+      shape.data.currentTemplate && typeof shape.data.currentTemplate === "object"
+        ? shape.data.currentTemplate as AdminLearningTemplateGenerateRequest["currentTemplate"]
+        : null,
   })
 }
 

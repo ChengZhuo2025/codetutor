@@ -27,6 +27,7 @@ export const ADMIN_ROUTES = {
   feedback: "/admin/feedback",
   users: "/admin/users",
   learning: "/admin/learning",
+  learningTemplates: "/admin/learning/templates",
   ai: "/admin/ai",
   finance: "/admin/finance",
   site: "/admin/site",
