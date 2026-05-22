@@ -79,6 +79,46 @@ test("learning attachment route rejects audio longer than 60 seconds", async () 
   })
 })
 
+test("learning attachment route accepts browser-recorded WebM opus audio", async () => {
+  const handler = createLearningAttachmentPostHandler({
+    getRequestAuth: async () => ({ userId: "user-1" }),
+    getRequestAuthHelpText: () => "ignored",
+    createLearningMessageAttachment: async (userId, input) => {
+      assert.equal(userId, "user-1")
+      assert.equal(input.kind, "audio")
+      assert.equal(input.file.name, "voice.webm")
+      assert.equal(input.file.type, "audio/webm;codecs=opus")
+      assert.equal(input.durationMs, 3200)
+      return {
+        attachment: {
+          id: "attachment-audio-1",
+          kind: "audio",
+          processingStatus: "pending",
+          originalFilename: "voice.webm",
+          mimeType: "audio/webm;codecs=opus",
+          sizeBytes: 5,
+          durationMs: 3200,
+          width: null,
+          height: null,
+          createdAt: "2026-05-22T00:00:00.000Z",
+        },
+      }
+    },
+  })
+
+  const formData = new FormData()
+  formData.set("kind", "audio")
+  formData.set("durationMs", "3200")
+  formData.set("file", new File(["audio"], "voice.webm", { type: "audio/webm;codecs=opus" }))
+
+  const response = await handler(createFormRequest(formData))
+  const payload = await response.json()
+
+  assert.equal(response.status, 200)
+  assert.equal(payload.code, "OK")
+  assert.equal(payload.data.attachment.id, "attachment-audio-1")
+})
+
 test("learning attachment route passes valid image metadata to service", async () => {
   const handler = createLearningAttachmentPostHandler({
     getRequestAuth: async () => ({ userId: "user-1" }),

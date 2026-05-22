@@ -139,6 +139,10 @@ function normalizeOptionalString(value: unknown) {
   return normalized.length > 0 ? normalized : null
 }
 
+function normalizeMimeType(value: string) {
+  return value.split(";", 1)[0]?.trim().toLowerCase() ?? ""
+}
+
 function isValidUrl(value: string) {
   try {
     const url = new URL(value)
@@ -3448,7 +3452,8 @@ export function parseLearningAttachmentFile(
     return ok(file)
   }
 
-  if (!LEARNING_CHAT_AUDIO_ALLOWED_TYPES.includes(file.type as (typeof LEARNING_CHAT_AUDIO_ALLOWED_TYPES)[number])) {
+  const normalizedAudioType = normalizeMimeType(file.type)
+  if (!LEARNING_CHAT_AUDIO_ALLOWED_TYPES.includes(normalizedAudioType as (typeof LEARNING_CHAT_AUDIO_ALLOWED_TYPES)[number])) {
     return fail("VALIDATION_FAILED", "语音仅支持 WebM、OGG、MP3、M4A 格式。")
   }
 
