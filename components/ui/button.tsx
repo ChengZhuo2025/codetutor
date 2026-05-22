@@ -16,9 +16,9 @@ const buttonVariants = cva(
         destructiveSoft:
           'border border-destructive/10 bg-destructive/10 text-destructive shadow-[0_14px_36px_-28px_rgba(220,38,38,0.18)] hover:-translate-y-0.5 hover:bg-destructive/12 hover:border-destructive/15 hover:text-destructive active:translate-y-0 focus-visible:ring-destructive/25 dark:border-destructive/50 dark:bg-destructive/60 dark:text-white dark:shadow-[0_16px_42px_-30px_rgba(220,38,38,0.22)] dark:hover:bg-destructive/70 dark:hover:text-white dark:[&_svg]:text-white',
         outline:
-          'border border-transparent bg-[oklch(0.75_0.15_270)] text-white shadow-[0_16px_42px_-32px_rgba(88,70,170,0.24)] hover:-translate-y-0.5 hover:bg-[oklch(0.80_0.15_270)] active:translate-y-0 dark:border-transparent dark:bg-[oklch(0.40_0.024_270)] dark:text-white dark:shadow-[0_20px_48px_-32px_rgba(0,0,0,0.42)] dark:hover:bg-[oklch(0.45_0.024_270)]',
+          'border border-transparent bg-[oklch(0.70_0.30_230)] text-white shadow-[0_16px_42px_-32px_rgba(88,70,170,0.24)] hover:-translate-y-0.5 hover:bg-[oklch(0.75_0.30_230)] active:translate-y-0 dark:border-transparent dark:bg-[oklch(0.40_0.024_270)] dark:text-white dark:shadow-[0_20px_48px_-32px_rgba(0,0,0,0.42)] dark:hover:bg-[oklch(0.45_0.024_270)]',
         secondary:
-        'border border-transparent bg-[oklch(0.75_0.15_270)] text-white shadow-[0_16px_42px_-32px_rgba(88,70,170,0.24)] hover:-translate-y-0.5 hover:bg-[oklch(0.80_0.15_270)] active:translate-y-0 dark:border-transparent dark:bg-[oklch(0.40_0.024_270)] dark:text-white dark:shadow-[0_20px_48px_-32px_rgba(0,0,0,0.42)] dark:hover:bg-[oklch(0.45_0.024_270)]',
+        'border border-transparent bg-[oklch(0.70_0.30_230)] text-white shadow-[0_16px_42px_-32px_rgba(88,70,170,0.24)] hover:-translate-y-0.5 hover:bg-[oklch(0.75_0.30_230)] active:translate-y-0 dark:border-transparent dark:bg-[oklch(0.40_0.024_270)] dark:text-white dark:shadow-[0_20px_48px_-32px_rgba(0,0,0,0.42)] dark:hover:bg-[oklch(0.45_0.024_270)]',
         ghost:
           'hover:bg-muted hover:text-foreground dark:hover:bg-primary/15',
         link: 'text-primary underline-offset-4 hover:underline',

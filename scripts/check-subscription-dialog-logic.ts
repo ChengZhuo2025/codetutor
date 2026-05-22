@@ -69,6 +69,17 @@ test("subscription dialog renders payment qr in a nested top-level dialog", () =
   assert.doesNotMatch(source, /grid gap-4 rounded-xl border border-border\/70 bg-surface-1\/95 p-4 md:grid-cols-\[260px_1fr\]/)
 })
 
+test("subscription dialog renders selectable alipay and wechat payment options", () => {
+  const source = readFileSync(new URL("../components/layout/subscription-detail-dialog.tsx", import.meta.url), "utf8")
+
+  assert.match(source, /PAYMENT_CHANNEL_OPTIONS/)
+  assert.match(source, /const \[selectedPaymentChannel,\s*setSelectedPaymentChannel\] = useState<PaymentChannel>\("alipay"\)/)
+  assert.match(source, /PAYMENT_CHANNEL_OPTIONS\.map\(\(option\) =>/)
+  assert.match(source, /onClick=\{\(\) => setSelectedPaymentChannel\(option\.channel\)\}/)
+  assert.match(source, /aria-pressed=\{selected\}/)
+  assert.doesNotMatch(source, /暂时隐藏“选择支付方式”卡片/)
+})
+
 test("dynamic non-purchasable plans are disabled without relying on hardcoded plan codes", () => {
   assert.deepEqual(
     getPlanActionState({

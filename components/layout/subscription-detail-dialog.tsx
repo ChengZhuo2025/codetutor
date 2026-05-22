@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react"
 import QRCode from "qrcode"
-import { CalendarClock, Check, CheckCircle2, Crown, FileText, Loader2, Lock, MessageCircle, XCircle } from "lucide-react"
+import { CalendarClock, Check, CheckCircle2, CreditCard, Crown, FileText, Loader2, Lock, MessageCircle, XCircle } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils"
 import type { SubscriptionSnapshot } from "@/types/profile"
 import { requestData } from "@/lib/api/client"
 import {
+  PAYMENT_CHANNEL_OPTIONS,
   buildPaymentDialogTitle,
   getPaymentOrderErrorMessage,
   getPlanActionState,
@@ -95,13 +96,27 @@ function getPaymentResultCopy(status: PaymentOrderStatus | undefined) {
     }
   }
   return {
-    title: "微信扫码支付",
-    description: "请使用微信扫码完成支付，系统会自动同步支付状态。",
+    title: "等待支付",
+    description: "请完成支付，系统会自动同步支付状态。",
     toneClass: "border-brand/30 bg-brand-dim/35 text-foreground",
     icon: MessageCircle,
     iconWrapClass: "border-brand/30 bg-brand/15 text-brand",
     showPendingHint: true,
   }
+}
+
+function PaymentChannelIcon({ channel }: { channel: PaymentChannel }) {
+  const Icon = channel === "alipay" ? CreditCard : MessageCircle
+
+  return (
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand/20 bg-brand/10 text-brand">
+      <Icon className="h-5 w-5" />
+    </span>
+  )
+}
+
+function getPaymentScanLabel(channel: PaymentChannel) {
+  return channel === "alipay" ? "支付宝" : "微信"
 }
 
 export function SubscriptionDetailDialog({
@@ -117,7 +132,7 @@ export function SubscriptionDetailDialog({
   const [activeOrder, setActiveOrder] = useState<PaymentOrderResponseData | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [loadingPlanCode, setLoadingPlanCode] = useState<PaymentPlanCode | null>(null)
-  const [selectedPaymentChannel] = useState<PaymentChannel>("wechat")
+  const [selectedPaymentChannel, setSelectedPaymentChannel] = useState<PaymentChannel>("alipay")
   const [paymentMessage, setPaymentMessage] = useState<string | null>(null)
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
   const currentPlanName = subscriptionData?.current.planName ?? subscription.planName
@@ -283,15 +298,9 @@ export function SubscriptionDetailDialog({
             </div>
 
             {!activeOrder || !paymentDialogOpen ? (
-              <>
-                {/*
-                  暂时隐藏“选择支付方式”卡片。
-                  原逻辑保留在注释中，后续支付宝网页应用资质通过后可恢复。
-                */}
-                {/*
-                <div className="rounded-xl border border-border/70 bg-surface-1/95 p-4">
-                  <p className="mb-3 text-sm font-medium text-foreground">选择支付方式</p>
-                  <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-xl border border-border/70 bg-surface-1/95 p-4">
+                <p className="mb-3 text-sm font-medium text-foreground">选择支付方式</p>
+                <div className="grid gap-3 md:grid-cols-2">
                     {PAYMENT_CHANNEL_OPTIONS.map((option) => {
                       const selected = selectedPaymentChannel === option.channel
 
@@ -326,11 +335,9 @@ export function SubscriptionDetailDialog({
                           </span>
                         </button>
                       )
-                    })}
-                  </div>
+                  })}
                 </div>
-                */}
-              </>
+              </div>
             ) : null}
             
             {/* 套餐列表 - 显示全部3个套餐 */}
@@ -517,13 +524,13 @@ export function SubscriptionDetailDialog({
                   <div className="mx-auto flex h-[248px] w-[248px] items-center justify-center rounded-2xl border border-border/60 bg-white p-3 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.72)]">
                     {qrDataUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={qrDataUrl} alt="微信支付二维码" className="h-full w-full" />
+                      <img src={qrDataUrl} alt={`${getPaymentScanLabel(activeOrder?.paymentChannel ?? selectedPaymentChannel)}支付二维码`} className="h-full w-full" />
                     ) : (
                       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     )}
                   </div>
                   <p className="text-center text-sm leading-6 text-muted-foreground">
-                    请使用微信扫码完成支付，支付成功后会自动切换到结果状态。
+                    请使用{getPaymentScanLabel(activeOrder?.paymentChannel ?? selectedPaymentChannel)}扫码完成支付，支付成功后会自动切换到结果状态。
                   </p>
                 </div>
               </div>

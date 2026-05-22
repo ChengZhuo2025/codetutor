@@ -28,13 +28,13 @@ export const USER_BUTTON_PRIMARY_CLASS =
   `!rounded-full border border-transparent bg-brand text-white shadow-[0_20px_54px_-28px_rgba(98,92,255,0.42)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[oklch(0.66_0.24_270)] active:translate-y-0 focus-visible:ring-brand/35 dark:bg-brand dark:text-white dark:shadow-[0_24px_60px_-30px_rgba(116,102,255,0.28)] dark:hover:bg-[oklch(0.78_0.28_270)] dark:[&_svg]:text-white [&_svg]:text-white ${USER_BUTTON_DISABLED_CLASS}`
 
 export const USER_BUTTON_SECONDARY_CLASS =
-  `!rounded-full border border-transparent bg-[oklch(0.75_0.15_270)] text-white shadow-[0_16px_42px_-32px_rgba(88,70,170,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[oklch(0.80_0.15_270)] active:translate-y-0 focus-visible:ring-brand/30 [&_svg]:text-current dark:border-transparent dark:bg-[oklch(0.40_0.024_270)] dark:text-white dark:shadow-[0_20px_48px_-32px_rgba(0,0,0,0.42)] dark:hover:bg-[oklch(0.45_0.024_270)] dark:[&_svg]:text-white ${USER_BUTTON_DISABLED_CLASS}`
+  `!rounded-full border border-transparent bg-[oklch(0.70_0.30_230)] text-white shadow-[0_16px_42px_-32px_rgba(88,70,170,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[oklch(0.75_0.30_230)] active:translate-y-0 focus-visible:ring-brand/30 [&_svg]:text-current dark:border-transparent dark:bg-[oklch(0.40_0.024_270)] dark:text-white dark:shadow-[0_20px_48px_-32px_rgba(0,0,0,0.42)] dark:hover:bg-[oklch(0.45_0.024_270)] dark:[&_svg]:text-white ${USER_BUTTON_DISABLED_CLASS}`
 
 export const USER_BUTTON_DANGER_CLASS =
   `!rounded-full border border-transparent bg-[oklch(0.52_0.19_26)] text-white shadow-[0_18px_48px_-28px_rgba(220,38,38,0.36)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[oklch(0.56_0.2_26)] active:translate-y-0 focus-visible:ring-destructive/30 dark:bg-[oklch(0.48_0.17_26)] dark:text-white dark:shadow-[0_22px_52px_-30px_rgba(127,29,29,0.5)] dark:hover:bg-[oklch(0.52_0.18_26)] [&_svg]:text-white ${USER_BUTTON_DISABLED_CLASS}`
 
 export const USER_ICON_BUTTON_CLASS =
-`!rounded-full border border-transparent bg-[oklch(0.75_0.15_270)] text-white shadow-[0_16px_42px_-32px_rgba(88,70,170,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[oklch(0.80_0.15_270)] active:translate-y-0 focus-visible:ring-brand/30 [&_svg]:text-current dark:border-transparent dark:bg-[oklch(0.40_0.024_270)] dark:text-white dark:shadow-[0_20px_48px_-32px_rgba(0,0,0,0.42)] dark:hover:bg-[oklch(0.45_0.024_270)] dark:[&_svg]:text-white ${USER_BUTTON_DISABLED_CLASS}`
+`!rounded-full border border-transparent bg-[oklch(0.70_0.30_230)] text-white shadow-[0_16px_42px_-32px_rgba(88,70,170,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[oklch(0.75_0.30_230)] active:translate-y-0 focus-visible:ring-brand/30 [&_svg]:text-current dark:border-transparent dark:bg-[oklch(0.40_0.024_270)] dark:text-white dark:shadow-[0_20px_48px_-32px_rgba(0,0,0,0.42)] dark:hover:bg-[oklch(0.45_0.024_270)] dark:[&_svg]:text-white ${USER_BUTTON_DISABLED_CLASS}`
 
 export const USER_PANEL_OUTLINE_BUTTON_CLASS = USER_BUTTON_SECONDARY_CLASS
 
