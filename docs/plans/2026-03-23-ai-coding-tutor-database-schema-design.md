@@ -60,7 +60,7 @@
 - `050_add_user_login_ip_tracking.sql` / `051_update_user_profile_export_view_with_ip.sql` (新增用户登录 IP / 城市追踪并扩展运营导出视图)
 - `052_create_site_information.sql` (新增站点信息、通用文章与 `site-assets` public bucket，支持后台站点内容管理)
 - `053_create_admin_session_lookup_rpc.sql` (新增管理后台会话聚合 RPC，一次返回管理员账号、角色与头像，供登录与会话校验复用)
-- `054_self_directed_template_management.sql` (新增自学路径模板管理约束：同一工具/水平仅一个启用 self-directed 模板、未归档步骤索引，并 seed 后台专用 `self-study-template-planner` agent)
+- `054_self_directed_template_management.sql` (新增自学路径模板管理约束：同一工具/水平仅一个启用 `metadata.templateScope = admin_self_directed_initial` 的 self-directed 初始化模板、未归档步骤索引、模板保存/同步事务 RPC，并在模型依赖存在时 seed 后台专用 `self-study-template-planner` agent)
 
 当前数据库中已落地的核心业务表包括：
 
@@ -507,7 +507,7 @@ erDiagram
 | `agent_code` | `varchar(64)` | nullable | 后台配置的训练 agent 标识 |
 | `stage_count` | `integer` | not null default 1 | 路径预计关卡数 |
 | `description` | `text` | nullable | 路径说明 |
-| `metadata` | `jsonb` | not null default '{}' | 扩展信息，如推荐文案、适配场景、预览关卡 |
+| `metadata` | `jsonb` | not null default '{}' | 扩展信息，如推荐文案、适配场景、预览关卡；后台自学初始化模板使用 `templateScope = admin_self_directed_initial` |
 | `created_at` | `timestamptz` | not null | 创建时间 |
 | `updated_at` | `timestamptz` | not null | 更新时间 |
 
@@ -515,7 +515,7 @@ erDiagram
 
 - `idx_learning_paths_tool_level`
 - `idx_learning_paths_code`
-- `uidx_learning_paths_self_directed_active_tool_level`：`source_type = 'self_directed' AND is_active = true` 时，限制同一 `tool_id + target_level` 只能有一个启用模板
+- `uidx_learning_paths_self_directed_active_tool_level`：`source_type = 'self_directed' AND metadata->>'templateScope' = 'admin_self_directed_initial' AND is_active = true` 时，限制同一 `tool_id + target_level` 只能有一个启用初始化模板
 
 ## 6.5 `path_steps`
 

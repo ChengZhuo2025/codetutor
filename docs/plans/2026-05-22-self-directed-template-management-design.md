@@ -91,6 +91,7 @@ self-study-template-planner
 | `source_type` | 固定为 `self_directed` |
 | `stage_count` | 步骤数，保存时按 steps 数量同步 |
 | `description` | 模板简介 |
+| `metadata.templateScope` | 固定为 `admin_self_directed_initial`，用于和用户材料生成的 self-directed 路径区分 |
 | `metadata.preview` | `/learn` 首屏预览文案 |
 | `agent_code` | 可选，仍优先由现有 agent binding 体系处理 |
 | `is_active` | 是否启用 |
@@ -106,7 +107,9 @@ unique active self-directed template per tool and target_level
 ```sql
 CREATE UNIQUE INDEX ...
 ON public.learning_paths(tool_id, target_level)
-WHERE source_type = 'self_directed' AND is_active = true;
+WHERE source_type = 'self_directed'
+  AND metadata->>'templateScope' = 'admin_self_directed_initial'
+  AND is_active = true;
 ```
 
 ### 5.2 `path_steps`

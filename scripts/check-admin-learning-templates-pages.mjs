@@ -25,14 +25,23 @@ const headerSource = readFileSync(
   new URL("../features/admin-shell/components/admin-header.tsx", import.meta.url),
   "utf8",
 )
+const migrationSource = readFileSync(
+  new URL("../supabase/migrations/054_self_directed_template_management.sql", import.meta.url),
+  "utf8",
+)
 
 assert.match(listSource, /学习路径模板|新建模板|AI 生成|同步未开始/, "Template list should expose core operations.")
 assert.match(listSource, /\/admin\/learning\/templates\?\$\{params\.toString\(\)\}/, "Template list should read the admin templates API.")
 assert.match(editorSource, /保存模板|AI 生成模板草稿|学习步骤|发布设置/, "Template editor should expose save, AI draft, step editing, and publish settings.")
 assert.match(editorSource, /\/admin\/learning\/templates\/generate|\/admin\/learning\/templates\/\$\{templateId\}\/generate/, "Template editor should call AI generation endpoints.")
+assert.match(editorSource, /savedTemplateId/, "Template editor should switch to the saved template id after creating a new template.")
+assert.match(editorSource, /router\.replace/, "Template editor should update route state after creating a template.")
+assert.match(listSource, /DialogTitle>确认同步未开始路径|syncConfirmTemplate/, "Template list should confirm before syncing user paths.")
 assert.match(listRouteSource, /LearningTemplateListPage/, "List app route should mount the template list page.")
 assert.match(editorRouteSource, /LearningTemplateEditorPage/, "Editor app route should mount the template editor page.")
 assert.match(menuSource, /label: "路径模板".*href: "\/admin\/learning\/templates"/s, "Admin menu should include the template management entry.")
 assert.match(headerSource, /学习运营 \/ 路径模板/, "Admin header should include the template breadcrumb.")
+assert.match(migrationSource, /save_self_directed_learning_template/, "Migration should provide a transaction RPC for template saves.")
+assert.match(migrationSource, /sync_self_directed_learning_template_unstarted/, "Migration should provide a transaction RPC for syncing unstarted paths.")
 
 console.log("Admin learning template pages expose the expected operations IA.")

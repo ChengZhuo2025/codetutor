@@ -7,6 +7,7 @@ import {
   parseRequiredRouteId,
 } from "@/server/lib/request-validation"
 import type {
+  AdminLearningTemplateDetailResponseData,
   AdminLearningTemplateGenerateRequest,
   AdminLearningTemplateUpsertRequest,
 } from "@/lib/api/contracts/admin-learning-templates"
@@ -166,20 +167,49 @@ export function createAdminLearningTemplateDetailHandlers(dependencies: {
 
 export function createAdminLearningTemplateGeneratePostHandler(dependencies: {
   getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  getAdminLearningTemplateDetail?: (templateId: string) => Promise<AdminLearningTemplateDetailResponseData | null>
   generateAdminLearningTemplate: (adminAccountId: string, input: AdminLearningTemplateGenerateRequest) => Promise<unknown>
 }) {
-  return async function POST(request: Request) {
+  return async function POST(request: Request, routeContext?: { params: Promise<{ templateId: string }> }) {
     try {
       const admin = await requireAdmin(dependencies.getRequestAdmin, request)
       if (!admin.ok) {
         return admin.response
       }
+      let routeTemplate: AdminLearningTemplateDetailResponseData | null = null
+      if (routeContext) {
+        const { templateId: rawId } = await routeContext.params
+        const routeId = parseRequiredRouteId(rawId, "模板 ID 不合法。")
+        if (!routeId.ok || !isUuid(routeId.data)) {
+          return jsonError("BAD_REQUEST", "模板 ID 不合法。", 400)
+        }
+        if (!dependencies.getAdminLearningTemplateDetail) {
+          return jsonError("INTERNAL_ERROR", "学习路径模板 AI 生成失败", 500)
+        }
+        routeTemplate = await dependencies.getAdminLearningTemplateDetail(routeId.data)
+        if (!routeTemplate) {
+          return jsonError("NOT_FOUND", "学习路径模板不存在。", 404)
+        }
+      }
       const parsed = parseAdminLearningTemplateGenerateBody(await request.json())
       if (!parsed.ok) {
         return jsonError(parsed.code, parsed.message, 400)
       }
+      const input: AdminLearningTemplateGenerateRequest = routeTemplate && !parsed.data.currentTemplate
+        ? {
+            ...parsed.data,
+            toolCode: routeTemplate.template.toolCode,
+            learningLevel: routeTemplate.template.learningLevel,
+            currentTemplate: {
+              name: routeTemplate.template.name,
+              description: routeTemplate.template.description,
+              preview: routeTemplate.template.preview,
+              steps: routeTemplate.steps,
+            },
+          }
+        : parsed.data
       try {
-        const data = await dependencies.generateAdminLearningTemplate(admin.adminId, parsed.data)
+        const data = await dependencies.generateAdminLearningTemplate(admin.adminId, input)
         return jsonSuccess(data, "学习路径模板 AI 生成成功")
       } catch (error) {
         return mapRouteError(error, "学习路径模板 AI 生成失败")

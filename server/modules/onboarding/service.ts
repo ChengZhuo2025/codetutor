@@ -222,6 +222,7 @@ export async function completeOnboarding(
           .select("id, code, name, description, stage_count, metadata")
           .eq("tool_id", tool.id)
           .eq("source_type", "self_directed")
+          .eq("metadata->>templateScope", "admin_self_directed_initial")
           .eq("target_level", learningLevel)
           .eq("is_active", true)
           .maybeSingle()

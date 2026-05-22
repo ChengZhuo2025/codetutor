@@ -2,7 +2,7 @@
 
 import { use, useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   ArrowLeft,
   Bot,
@@ -159,8 +159,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export function LearningTemplateEditorPage({ params }: { params: Promise<{ templateId: string }> }) {
   const { templateId } = use(params)
   const isNew = templateId === "new"
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [state, setState] = useState<EditorState>(initialState)
+  const [savedTemplateId, setSavedTemplateId] = useState<string | null>(isNew ? null : templateId)
   const [toolOptions, setToolOptions] = useState<Array<{ code: string; name: string }>>([])
   const [isLoading, setIsLoading] = useState(!isNew)
   const [isSaving, setIsSaving] = useState(false)
@@ -229,6 +231,7 @@ export function LearningTemplateEditorPage({ params }: { params: Promise<{ templ
     () => toolOptions.find((item) => item.code === state.toolCode)?.name ?? state.toolCode,
     [state.toolCode, toolOptions],
   )
+  const effectiveTemplateId = savedTemplateId ?? (isNew ? null : templateId)
 
   const updateStep = (localId: string, patch: Partial<EditorStep>) => {
     setState((prev) => ({
@@ -243,17 +246,19 @@ export function LearningTemplateEditorPage({ params }: { params: Promise<{ templ
     setNotice(null)
     try {
       const payload = toRequest(state)
+      const isCreating = !effectiveTemplateId
       const result = await adminRequestData<AdminLearningTemplateDetailResponseData>(
-        isNew ? "/admin/learning/templates" : `/admin/learning/templates/${templateId}`,
+        isCreating ? "/admin/learning/templates" : `/admin/learning/templates/${effectiveTemplateId}`,
         {
-          method: isNew ? "POST" : "PATCH",
+          method: isCreating ? "POST" : "PATCH",
           body: JSON.stringify(payload),
         },
         "保存模板失败",
       )
       setNotice("模板已保存。")
-      if (isNew) {
-        window.history.replaceState(null, "", `${ADMIN_ROUTES.learningTemplates}/${result.template.templateId}`)
+      if (isCreating) {
+        setSavedTemplateId(result.template.templateId)
+        router.replace(`${ADMIN_ROUTES.learningTemplates}/${result.template.templateId}`)
       }
       setState((prev) => ({
         ...prev,
@@ -274,7 +279,9 @@ export function LearningTemplateEditorPage({ params }: { params: Promise<{ templ
     setNotice(null)
     try {
       const result = await adminRequestData<AdminLearningTemplateGenerateResponseData>(
-        isNew ? "/admin/learning/templates/generate" : `/admin/learning/templates/${templateId}/generate`,
+        effectiveTemplateId
+          ? `/admin/learning/templates/${effectiveTemplateId}/generate`
+          : "/admin/learning/templates/generate",
         {
           method: "POST",
           body: JSON.stringify({

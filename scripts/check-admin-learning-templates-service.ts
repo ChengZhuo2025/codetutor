@@ -1,11 +1,25 @@
 import test from "node:test"
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 
 import {
   isSyncableInitialSelfDirectedPath,
   parseGeneratedTemplateJson,
   validateTemplateUpsert,
 } from "../server/modules/admin-learning-templates/logic.ts"
+
+const serviceSource = readFileSync(
+  new URL("../server/modules/admin-learning-templates/service.ts", import.meta.url),
+  "utf8",
+)
+const migrationSource = readFileSync(
+  new URL("../supabase/migrations/054_self_directed_template_management.sql", import.meta.url),
+  "utf8",
+)
+const onboardingSource = readFileSync(
+  new URL("../server/modules/onboarding/service.ts", import.meta.url),
+  "utf8",
+)
 
 const validStep = {
   title: "整理学习目标",
@@ -124,5 +138,41 @@ test("syncable path predicate only allows unstarted onboarding-created self-dire
       metadata: { seedSource: "plan_draft_confirmed" },
     }),
     false,
+  )
+})
+
+test("template service uses transaction RPCs and maps unique conflicts", () => {
+  assert.match(
+    serviceSource,
+    /\.rpc\("save_self_directed_learning_template"/,
+    "Template create/update should use the transaction RPC for path, steps, and audit writes.",
+  )
+  assert.match(
+    serviceSource,
+    /\.rpc\("sync_self_directed_learning_template_unstarted"/,
+    "Template sync should use the transaction RPC for deleting and recreating user tasks.",
+  )
+  assert.match(
+    serviceSource,
+    /23505|uidx_learning_paths_self_directed_active_tool_level/,
+    "Template mutations should map unique active tool-level conflicts to CONFLICT.",
+  )
+})
+
+test("admin templates are scoped away from user-generated self-directed paths", () => {
+  assert.match(
+    migrationSource,
+    /WHERE source_type = 'self_directed'[\s\S]*metadata->>'templateScope' = 'admin_self_directed_initial'[\s\S]*AND is_active = true/,
+    "The active template uniqueness index must not include user material-generated self-directed paths.",
+  )
+  assert.match(
+    serviceSource,
+    /eq\("metadata->>templateScope", "admin_self_directed_initial"\)/,
+    "Admin template reads should only list admin initial templates.",
+  )
+  assert.match(
+    onboardingSource,
+    /eq\("metadata->>templateScope", "admin_self_directed_initial"\)/,
+    "Onboarding should select the admin-managed initial self-study template.",
   )
 })

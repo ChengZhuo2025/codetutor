@@ -205,6 +205,7 @@ async function loadTemplateById(templateId: string) {
     .select("id, tool_id, code, name, target_level, source_type, stage_count, description, metadata, agent_code, is_active, created_at, updated_at")
     .eq("id", templateId)
     .eq("source_type", "self_directed")
+    .eq("metadata->>templateScope", "admin_self_directed_initial")
     .maybeSingle()
 
   assertSupabaseSuccess(error, "failed to query learning template")
@@ -285,12 +286,17 @@ export async function getAdminLearningTemplateList(filters: {
   const from = (page - 1) * limit
   const to = from + limit - 1
 
-  const countBase = supabase.from("learning_paths").select("*", { count: "exact", head: true }).eq("source_type", "self_directed")
+  const countBase = supabase
+    .from("learning_paths")
+    .select("*", { count: "exact", head: true })
+    .eq("source_type", "self_directed")
+    .eq("metadata->>templateScope", "admin_self_directed_initial")
   let countQuery: unknown = countBase
   const baseQuery = supabase
     .from("learning_paths")
     .select("id, tool_id, code, name, target_level, source_type, stage_count, description, metadata, agent_code, is_active, created_at, updated_at")
     .eq("source_type", "self_directed")
+    .eq("metadata->>templateScope", "admin_self_directed_initial")
     .order("updated_at", { ascending: false })
     .range(from, to)
   let query: unknown = baseQuery
@@ -368,150 +374,74 @@ function buildTemplateCode(toolCode: string, level: string) {
   return `path-${toolCode}-${level}-self-study`
 }
 
-async function assertNoActiveConflict(input: {
-  toolId: string
-  level: "beginner" | "intermediate" | "advanced"
-  excludeTemplateId?: string
-}) {
-  const supabase = createSupabaseAdminClient()
-  let query = supabase
-    .from("learning_paths")
-    .select("id")
-    .eq("tool_id", input.toolId)
-    .eq("target_level", input.level)
-    .eq("source_type", "self_directed")
-    .eq("is_active", true)
-
-  if (input.excludeTemplateId) {
-    query = query.neq("id", input.excludeTemplateId)
-  }
-
-  const { data, error } = await query.limit(1)
-  assertSupabaseSuccess(error, "failed to query template conflict")
-  if ((data ?? []).length > 0) {
-    throwNamedError("CONFLICT", "同一工具和水平下已存在启用的自学模板。")
-  }
-}
-
-function buildStepWriteRow(templateId: string, step: AdminLearningTemplateStepInput, stepNo: number, now: string) {
+function buildTemplateStepPayload(step: AdminLearningTemplateStepInput) {
   const normalized = normalizeTemplateStep(step)
   return {
-    path_id: templateId,
-    step_no: stepNo,
+    stepId: normalized.stepId && isUuid(normalized.stepId) ? normalized.stepId : null,
     title: normalized.title,
     summary: normalized.summary,
     focus: normalized.focus,
     goal: normalized.goal,
-    completion_criteria: normalized.completionCriteria,
-    review_summary: normalized.reviewSummary,
-    estimated_minutes: normalized.estimatedMinutes,
-    reward_score: normalized.rewardScore,
-    knowledge_points: normalized.knowledgePoints,
-    key_points: normalized.keyPoints,
+    completionCriteria: normalized.completionCriteria,
+    reviewSummary: normalized.reviewSummary,
+    estimatedMinutes: normalized.estimatedMinutes,
+    rewardScore: normalized.rewardScore,
+    knowledgePoints: normalized.knowledgePoints,
+    keyPoints: normalized.keyPoints,
     pitfalls: normalized.pitfalls,
-    metadata: {
-      lessonBrief: normalized.lessonBrief,
-      practiceSteps: normalized.practiceSteps,
-      submissionGuide: normalized.submissionGuide,
-      checkpoints: normalized.checkpoints,
-    },
-    updated_at: now,
+    lessonBrief: normalized.lessonBrief,
+    practiceSteps: normalized.practiceSteps,
+    submissionGuide: normalized.submissionGuide,
+    checkpoints: normalized.checkpoints,
   }
 }
 
-async function replaceTemplateSteps(templateId: string, steps: AdminLearningTemplateStepInput[], now: string) {
-  const supabase = createSupabaseAdminClient()
-  const { data: existingData, error: existingError } = await supabase
-    .from("path_steps")
-    .select("id, step_no, metadata")
-    .eq("path_id", templateId)
-    .order("step_no", { ascending: true })
+type TemplateRpcError = {
+  code?: string
+  message?: string
+  details?: string
+  hint?: string
+}
 
-  assertSupabaseSuccess(existingError, "failed to query old template steps")
-
-  const existingRows = ((existingData ?? []) as Array<{ id: string; step_no: number; metadata: Record<string, unknown> | null }>)
-  const activeRows = existingRows.filter((row) => !isArchivedStep(row))
-  const archivedRows = existingRows.filter(isArchivedStep)
-  const submittedIds = new Set(
-    steps
-      .map((step) => step.stepId)
-      .filter((stepId): stepId is string => Boolean(stepId && isUuid(stepId))),
-  )
-  const removedRows = activeRows.filter((row) => !submittedIds.has(row.id))
-  const maxStepNo = existingRows.reduce((max, row) => Math.max(max, row.step_no), steps.length)
-  const temporaryOffset = Math.max(maxStepNo, steps.length) + 1000
-
-  for (const [index, row] of [...activeRows, ...archivedRows].entries()) {
-    const { error: moveError } = await supabase
-      .from("path_steps")
-      .update({
-        step_no: temporaryOffset + index + 1,
-        updated_at: now,
-      })
-      .eq("id", row.id)
-    assertSupabaseSuccess(moveError, "failed to reserve template step numbers")
+function mapTemplateRpcError(error: TemplateRpcError, context: string): never {
+  const message = `${error.message ?? ""} ${error.details ?? ""} ${error.hint ?? ""}`
+  if (
+    error.code === "23505"
+    || message.includes("TEMPLATE_UNIQUE_CONFLICT")
+    || message.includes("uidx_learning_paths_self_directed_active_tool_level")
+    || message.includes("learning_paths_code_key")
+    || message.includes("duplicate key")
+  ) {
+    throwNamedError("CONFLICT", "同一工具和水平下已存在启用模板，或模板 code 已存在。")
   }
-
-  if (removedRows.length > 0) {
-    const { data: referencedData, error: referencedError } = await supabase
-      .from("user_tasks")
-      .select("path_step_id")
-      .in("path_step_id", removedRows.map((row) => row.id))
-
-    assertSupabaseSuccess(referencedError, "failed to query referenced template steps")
-
-    const referencedIds = new Set(
-      ((referencedData ?? []) as Array<{ path_step_id: string }>).map((row) => row.path_step_id),
-    )
-
-    for (const [index, row] of removedRows.entries()) {
-      if (referencedIds.has(row.id)) {
-        const { error: archiveError } = await supabase
-          .from("path_steps")
-          .update({
-            step_no: temporaryOffset + activeRows.length + archivedRows.length + index + 1,
-            metadata: {
-              ...(row.metadata ?? {}),
-              archivedAt: now,
-              archiveReason: "admin_template_step_removed",
-            },
-            updated_at: now,
-          })
-          .eq("id", row.id)
-        assertSupabaseSuccess(archiveError, "failed to archive referenced template step")
-      } else {
-        const { error: deleteError } = await supabase.from("path_steps").delete().eq("id", row.id)
-        assertSupabaseSuccess(deleteError, "failed to delete unused template step")
-      }
-    }
+  if (message.includes("TEMPLATE_NOT_FOUND")) {
+    throwNamedError("NOT_FOUND", "学习路径模板不存在。")
   }
-
-  const insertRows: Array<Record<string, unknown>> = []
-  for (const [index, step] of steps.entries()) {
-    const stepNo = index + 1
-    if (step.stepId && isUuid(step.stepId) && activeRows.some((row) => row.id === step.stepId)) {
-      const { error: updateError } = await supabase
-        .from("path_steps")
-        .update(buildStepWriteRow(templateId, step, stepNo, now))
-        .eq("id", step.stepId)
-        .eq("path_id", templateId)
-      assertSupabaseSuccess(updateError, "failed to update template step")
-    } else {
-      insertRows.push({
-        ...buildStepWriteRow(templateId, step, stepNo, now),
-        created_at: now,
-      })
-    }
+  if (message.includes("TEMPLATE_TOOL_NOT_FOUND")) {
+    throwNamedError("VALIDATION_FAILED", "学习工具不存在。")
   }
+  if (message.includes("TEMPLATE_STEPS_EMPTY")) {
+    throwNamedError("VALIDATION_FAILED", "至少需要 1 个学习步骤。")
+  }
+  throw new Error(`${context}: ${error.message ?? "unknown Supabase error"}`)
+}
 
-  if (insertRows.length > 0) {
-    const { error } = await supabase.from("path_steps").insert(insertRows)
-    assertSupabaseSuccess(error, "failed to insert template steps")
+function assertTemplateRpcSuccess(error: TemplateRpcError | null, context: string) {
+  if (error) {
+    mapTemplateRpcError(error, context)
   }
 }
 
-export async function createAdminLearningTemplate(
+function readTemplateIdFromRpc(data: unknown) {
+  if (data && typeof data === "object" && "templateId" in data && typeof data.templateId === "string") {
+    return data.templateId
+  }
+  return null
+}
+
+async function saveAdminLearningTemplate(
   adminAccountId: string,
+  templateId: string | null,
   input: AdminLearningTemplateUpsertRequest,
 ): Promise<AdminLearningTemplateDetailResponseData> {
   const validation = validateTemplateUpsert(input)
@@ -523,53 +453,43 @@ export async function createAdminLearningTemplate(
   if (!tool) {
     throwNamedError("VALIDATION_FAILED", "学习工具不存在。")
   }
-  if (input.isActive) {
-    await assertNoActiveConflict({ toolId: tool.id, level: input.learningLevel })
-  }
 
-  const now = new Date().toISOString()
-  const code = input.code?.trim() || buildTemplateCode(tool.code, input.learningLevel)
+  const code = templateId ? input.code?.trim() || null : input.code?.trim() || buildTemplateCode(tool.code, input.learningLevel)
   const supabase = createSupabaseAdminClient()
   const { data, error } = await supabase
-    .from("learning_paths")
-    .insert({
-      tool_id: tool.id,
-      code,
-      name: input.name.trim(),
-      target_level: input.learningLevel,
-      source_type: "self_directed",
-      version: 1,
-      is_default: false,
-      is_active: input.isActive,
-      agent_code: input.agentCode,
-      stage_count: input.steps.length,
-      description: input.description,
-      metadata: {
-        preview: input.preview,
-      },
-      created_at: now,
-      updated_at: now,
+    .rpc("save_self_directed_learning_template", {
+      p_admin_account_id: adminAccountId,
+      p_template_id: templateId,
+      p_tool_code: tool.code,
+      p_learning_level: input.learningLevel,
+      p_code: code,
+      p_name: input.name.trim(),
+      p_description: input.description?.trim() || null,
+      p_preview: input.preview,
+      p_agent_code: input.agentCode?.trim() || null,
+      p_is_active: input.isActive,
+      p_steps: input.steps.map(buildTemplateStepPayload),
+      p_change_reason: input.changeReason.trim() || "管理后台保存自学模板",
     })
-    .select("id")
-    .single()
 
-  assertSupabaseSuccess(error, "failed to create learning template")
-  const templateId = (data as { id: string }).id
-  await replaceTemplateSteps(templateId, input.steps, now)
-  await writeAudit({
-    adminAccountId,
-    action: "learning_template_create",
-    targetType: "learning_path_template",
-    targetId: templateId,
-    afterSnapshot: { ...input, templateId },
-    reason: input.changeReason,
-  })
+  assertTemplateRpcSuccess(error, "failed to save learning template")
+  const savedTemplateId = readTemplateIdFromRpc(data)
+  if (!savedTemplateId) {
+    throw new Error("saved template missing")
+  }
 
-  const detail = await getAdminLearningTemplateDetail(templateId)
+  const detail = await getAdminLearningTemplateDetail(savedTemplateId)
   if (!detail) {
-    throw new Error("created template missing")
+    throw new Error("saved template missing")
   }
   return detail
+}
+
+export async function createAdminLearningTemplate(
+  adminAccountId: string,
+  input: AdminLearningTemplateUpsertRequest,
+): Promise<AdminLearningTemplateDetailResponseData> {
+  return saveAdminLearningTemplate(adminAccountId, null, input)
 }
 
 export async function updateAdminLearningTemplate(
@@ -577,58 +497,10 @@ export async function updateAdminLearningTemplate(
   templateId: string,
   input: AdminLearningTemplateUpsertRequest,
 ): Promise<AdminLearningTemplateDetailResponseData | null> {
-  const existing = await getAdminLearningTemplateDetail(templateId)
-  const existingRow = await loadTemplateById(templateId)
-  if (!existing || !existingRow) {
+  if (!isUuid(templateId)) {
     return null
   }
-
-  const validation = validateTemplateUpsert(input)
-  if (!validation.ok) {
-    throwNamedError("VALIDATION_FAILED", validation.errors.join(" "))
-  }
-  const tool = await loadToolByCode(input.toolCode)
-  if (!tool) {
-    throwNamedError("VALIDATION_FAILED", "学习工具不存在。")
-  }
-  if (input.isActive) {
-    await assertNoActiveConflict({ toolId: tool.id, level: input.learningLevel, excludeTemplateId: templateId })
-  }
-
-  const now = new Date().toISOString()
-  const supabase = createSupabaseAdminClient()
-  const { error } = await supabase
-    .from("learning_paths")
-    .update({
-      tool_id: tool.id,
-      code: input.code?.trim() || existing.template.code,
-      name: input.name.trim(),
-      target_level: input.learningLevel,
-      description: input.description,
-      metadata: {
-        ...(existingRow.metadata ?? {}),
-        preview: input.preview,
-      },
-      agent_code: input.agentCode,
-      is_active: input.isActive,
-      stage_count: input.steps.length,
-      updated_at: now,
-    })
-    .eq("id", templateId)
-
-  assertSupabaseSuccess(error, "failed to update learning template")
-  await replaceTemplateSteps(templateId, input.steps, now)
-  await writeAudit({
-    adminAccountId,
-    action: "learning_template_update",
-    targetType: "learning_path_template",
-    targetId: templateId,
-    beforeSnapshot: existing as unknown as Record<string, unknown>,
-    afterSnapshot: { ...input, templateId },
-    reason: input.changeReason,
-  })
-
-  return getAdminLearningTemplateDetail(templateId)
+  return saveAdminLearningTemplate(adminAccountId, templateId, input)
 }
 
 async function loadPlannerRuntime() {
@@ -823,89 +695,25 @@ export async function syncUnstartedAdminLearningTemplate(
   adminAccountId: string,
   templateId: string,
 ): Promise<AdminLearningTemplateSyncResponseData | null> {
-  const template = await loadTemplateById(templateId)
-  if (!template) {
+  if (!isUuid(templateId)) {
     return null
   }
-  const steps = await loadSteps(templateId)
   const supabase = createSupabaseAdminClient()
   const { data, error } = await supabase
-    .from("user_learning_paths")
-    .select("id, selection_mode, status, completed_steps, metadata")
-    .eq("template_path_id", templateId)
-    .in("status", ["active", "interrupted"])
-  assertSupabaseSuccess(error, "failed to query paths for template sync")
+    .rpc("sync_self_directed_learning_template_unstarted", {
+      p_admin_account_id: adminAccountId,
+      p_template_id: templateId,
+    })
 
-  const candidates = ((data ?? []) as UserPathRow[]).filter(isSyncableInitialSelfDirectedPath)
-  const now = new Date().toISOString()
-  let synced = 0
-
-  for (const path of candidates) {
-    const { data: pathData, error: pathError } = await supabase
-      .from("user_learning_paths")
-      .select("user_id")
-      .eq("id", path.id)
-      .maybeSingle()
-    assertSupabaseSuccess(pathError, "failed to query sync path user")
-    const userId = (pathData as { user_id: string } | null)?.user_id
-    if (!userId) {
-      continue
-    }
-
-    const { error: deleteError } = await supabase.from("user_tasks").delete().eq("user_learning_path_id", path.id)
-    assertSupabaseSuccess(deleteError, "failed to delete old user tasks during template sync")
-
-    const taskRows = steps.map((step, index) => ({
-      user_id: userId,
-      user_learning_path_id: path.id,
-      path_step_id: step.id,
-      status: index === 0 ? "in_progress" : "not_started",
-      started_at: index === 0 ? now : null,
-      attempt_count: 0,
-      score_awarded: 0,
-      metadata: {},
-      created_at: now,
-      updated_at: now,
-    }))
-    const { data: taskData, error: taskError } = await supabase.from("user_tasks").insert(taskRows).select("id, path_step_id")
-    assertSupabaseSuccess(taskError, "failed to insert user tasks during template sync")
-    const firstTaskId = (taskData as Array<{ id: string; path_step_id: string }> | null)?.find((task) => task.path_step_id === steps[0]?.id)?.id ?? null
-    const { error: updateError } = await supabase
-      .from("user_learning_paths")
-      .update({
-        path_name_snapshot: template.name,
-        path_summary_snapshot: template.description,
-        total_steps: steps.length,
-        current_task_id: firstTaskId,
-        metadata: {
-          ...(path.metadata ?? {}),
-          templateSyncedAt: now,
-          templateSyncedBy: adminAccountId,
-        },
-        updated_at: now,
-      })
-      .eq("id", path.id)
-    assertSupabaseSuccess(updateError, "failed to update user path during template sync")
-    synced += 1
+  assertTemplateRpcSuccess(error, "failed to sync unstarted learning template")
+  if (!data) {
+    return null
   }
 
-  await writeAudit({
-    adminAccountId,
-    action: "learning_template_sync_unstarted",
-    targetType: "learning_path_template",
-    targetId: templateId,
-    afterSnapshot: {
-      matchedPathCount: candidates.length,
-      syncedPathCount: synced,
-      skippedPathCount: candidates.length - synced,
-    },
-    reason: "同步未开始的初始化自学路径",
-  })
-
   return {
-    templateId,
-    matchedPathCount: candidates.length,
-    syncedPathCount: synced,
-    skippedPathCount: candidates.length - synced,
+    templateId: String((data as { templateId?: unknown }).templateId ?? templateId),
+    matchedPathCount: Number((data as { matchedPathCount?: unknown }).matchedPathCount ?? 0),
+    syncedPathCount: Number((data as { syncedPathCount?: unknown }).syncedPathCount ?? 0),
+    skippedPathCount: Number((data as { skippedPathCount?: unknown }).skippedPathCount ?? 0),
   }
 }

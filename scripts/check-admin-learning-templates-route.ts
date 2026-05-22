@@ -199,3 +199,53 @@ test("generate and sync handlers return OK payloads", async () => {
   })
   assert.equal(syncResponse.status, 200)
 })
+
+test("template scoped generate handler validates template id and existence", async () => {
+  let loadedTemplateId = ""
+  const generateHandler = createAdminLearningTemplateGeneratePostHandler({
+    getRequestAdmin: async () => okAdmin,
+    getAdminLearningTemplateDetail: async (templateId) => {
+      loadedTemplateId = templateId
+      return sampleDetail
+    },
+    generateAdminLearningTemplate: async () => ({
+      generated: {
+        name: "Codex CLI 自学模板",
+        description: "自学初始化模板",
+        preview: ["整理材料"],
+        steps: sampleDetail.steps,
+      },
+      agentCode: "self-study-template-planner",
+      providerCode: "siliconflow",
+      modelCode: "deepseek-v3-2",
+      invocationId: null,
+      usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+      latencyMs: 10,
+    }),
+  })
+
+  const response = await generateHandler(new Request("https://example.test/api/admin/learning/templates/550e8400-e29b-41d4-a716-446655440900/generate", {
+    method: "POST",
+    body: JSON.stringify({ toolCode: "codex", learningLevel: "intermediate" }),
+  }), {
+    params: Promise.resolve({ templateId: "550e8400-e29b-41d4-a716-446655440900" }),
+  })
+
+  assert.equal(response.status, 200)
+  assert.equal(loadedTemplateId, "550e8400-e29b-41d4-a716-446655440900")
+
+  const missingHandler = createAdminLearningTemplateGeneratePostHandler({
+    getRequestAdmin: async () => okAdmin,
+    getAdminLearningTemplateDetail: async () => null,
+    generateAdminLearningTemplate: async () => {
+      throw new Error("should not generate for missing template")
+    },
+  })
+  const missing = await missingHandler(new Request("https://example.test/api/admin/learning/templates/550e8400-e29b-41d4-a716-446655440900/generate", {
+    method: "POST",
+    body: JSON.stringify({ toolCode: "codex", learningLevel: "intermediate" }),
+  }), {
+    params: Promise.resolve({ templateId: "550e8400-e29b-41d4-a716-446655440900" }),
+  })
+  assert.equal(missing.status, 404)
+})

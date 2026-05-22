@@ -11,6 +11,14 @@ import {
   Workflow,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { SearchInput } from "@/components/ui/search-input"
 import { StatePanel } from "@/components/ui/state-panel"
 import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
@@ -23,6 +31,7 @@ import {
   isAdminSessionExpiredError,
 } from "@/lib/api/admin-bff-client"
 import type {
+  AdminLearningTemplateListItem,
   AdminLearningTemplateListResponseData,
   AdminLearningTemplateSyncResponseData,
 } from "@/lib/api/contracts/admin-learning-templates"
@@ -42,6 +51,7 @@ export function LearningTemplateList() {
   const [page, setPage] = useState(1)
   const [authExpired, setAuthExpired] = useState(false)
   const [syncingId, setSyncingId] = useState<string | null>(null)
+  const [syncConfirmTemplate, setSyncConfirmTemplate] = useState<AdminLearningTemplateListItem | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
   useAdminSessionExpiryRedirect(authExpired)
@@ -97,6 +107,7 @@ export function LearningTemplateList() {
         "同步未开始路径失败",
       )
       setNotice(`已同步 ${result.syncedPathCount} 条，跳过 ${result.skippedPathCount} 条。`)
+      setSyncConfirmTemplate(null)
       await fetchList()
     } catch (syncError) {
       setAuthExpired(isAdminSessionExpiredError(syncError))
@@ -282,7 +293,7 @@ export function LearningTemplateList() {
                         variant="outline"
                         size="sm"
                         disabled={syncingId === item.templateId}
-                        onClick={() => void syncTemplate(item.templateId)}
+                        onClick={() => setSyncConfirmTemplate(item)}
                       >
                         <RefreshCw className="h-4 w-4" />
                         {syncingId === item.templateId ? "同步中" : "同步未开始"}
@@ -310,6 +321,44 @@ export function LearningTemplateList() {
           </>
         )}
       </div>
+      <Dialog open={Boolean(syncConfirmTemplate)} onOpenChange={(open) => {
+        if (!open && !syncingId) {
+          setSyncConfirmTemplate(null)
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认同步未开始路径</DialogTitle>
+            <DialogDescription>
+              此操作会重建该模板下尚未开始的初始化自学路径任务，仅影响 onboarding 创建且完成步数为 0 的用户路径。
+            </DialogDescription>
+          </DialogHeader>
+          {syncConfirmTemplate ? (
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">{syncConfirmTemplate.name}</p>
+              <p className="mt-1">
+                {syncConfirmTemplate.toolName} · {syncConfirmTemplate.learningLevelLabel} · 可同步 {syncConfirmTemplate.syncablePathCount} 条
+              </p>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={Boolean(syncingId)} onClick={() => setSyncConfirmTemplate(null)}>
+              取消
+            </Button>
+            <Button
+              type="button"
+              disabled={!syncConfirmTemplate || Boolean(syncingId)}
+              onClick={() => {
+                if (syncConfirmTemplate) {
+                  void syncTemplate(syncConfirmTemplate.templateId)
+                }
+              }}
+            >
+              {syncingId ? "同步中" : "确认同步"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
