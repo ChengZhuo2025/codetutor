@@ -52,6 +52,7 @@ import {
   type AIChatContentPart,
   type AIProviderResult,
 } from "./provider.ts"
+import { createSafeReadableStreamSender } from "./stream-safety.ts"
 import { loadAgentSkillContexts } from "./skills.ts"
 
 type JsonRecord = Record<string, unknown>
@@ -1793,6 +1794,7 @@ export async function streamLearningMessage(
   if (existingResponse) {
     return new ReadableStream<Uint8Array>({
       start(controller) {
+        const streamSender = createSafeReadableStreamSender(controller)
         const replayEvents = buildIdempotentReplaySSEEvents({
           conversationId: session.id,
           interactionType: prepared.interactionType,
@@ -1808,10 +1810,12 @@ export async function streamLearningMessage(
         })
 
         for (const event of replayEvents) {
-          controller.enqueue(encodeSSEEvent(event.event, event.data))
+          if (!streamSender.send(encodeSSEEvent(event.event, event.data))) {
+            break
+          }
         }
 
-        controller.close()
+        streamSender.close()
       },
     })
   }
@@ -1832,8 +1836,9 @@ export async function streamLearningMessage(
 
   return new ReadableStream<Uint8Array>({
     async start(controller) {
+      const streamSender = createSafeReadableStreamSender(controller)
       const send = (event: string, data: Record<string, unknown>) => {
-        controller.enqueue(encodeSSEEvent(event, data))
+        return streamSender.send(encodeSSEEvent(event, data))
       }
 
       try {
@@ -1954,7 +1959,7 @@ export async function streamLearningMessage(
           message,
         })
       } finally {
-        controller.close()
+        streamSender.close()
       }
     },
   })

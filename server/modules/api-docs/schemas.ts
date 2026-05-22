@@ -320,6 +320,7 @@ export const learningInteractionTypeSchema = z
     "task_review",
     "completion_feedback",
     "path_guidance",
+    "concept_qa",
   ])
   .openapi("LearningInteractionType")
 

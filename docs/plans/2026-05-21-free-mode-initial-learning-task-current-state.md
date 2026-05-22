@@ -300,6 +300,8 @@ activePath.selection_mode === "self_directed"
 
 自由模式下用户发送学习消息时，`POST /api/learning/message` 会根据当前工具、路径、模式、交互类型解析 agent。
 
+当前实现中，用户关闭“粘贴教程链接生成学习计划”的弹框后，仍然可以直接围绕初始化自学任务对话；这条消息链路不依赖 `learning_material_intakes` 或 `learning_plan_drafts`。类似“请继续当前任务中的下一项练习，并告诉我先做什么”的推进型话术会被推断为 `path_guidance`，继续命中当前自学路径对应的 self-study coach，例如 Codex 自学路径命中 `codex-self-study-coach`。明确概念咨询或自由问题才会落到全局 `learning-concept-qa-coach`。
+
 相关表：
 
 - `agent_templates`

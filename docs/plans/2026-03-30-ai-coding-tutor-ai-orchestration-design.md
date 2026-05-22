@@ -861,6 +861,7 @@ ai/skills/
 1. 若 `learning_paths.agent_code` 有值，`teaching` 与 `path_guidance` 默认直接命中该值。
 2. 若 `learning_paths.agent_code` 为空，按上表命中该工具的 self-study agent。
 3. 第一阶段不按 `step_no` 再拆独立 agent，step 差异通过结构化任务上下文和 skill 绑定表达。
+4. 自动意图推断中，“下一步 / 继续当前任务 / 下一项练习 / 先做什么”等当前任务推进语义必须归入 `path_guidance`，避免误落到全局 `concept_qa`。
 
 ## 10.5 首批辅助场景 Agent 命中表
 
@@ -877,6 +878,7 @@ ai/skills/
 | `task_review` | `claude-code`、`codex`、`opencode` | `cli-task-reviewer` | CLI 输出、diff、验证动作回看 |
 | `task_review` | `stitch`、`bolt`、`lovable` | `web-builder-task-reviewer` | 页面生成结果、可视化迭代回看 |
 | `completion_feedback` | 全部 | `learning-completion-coach` | 通用完成反馈、成长鼓励、下一步建议 |
+| `concept_qa` | 全部 | `learning-concept-qa-coach` | 明确概念问答、自由咨询和偏题问题的轻量回应 |
 
 当前确认：
 
@@ -1643,7 +1645,7 @@ ai/skills/
 | `conversationId` | 否 | `string` | 当前会话 ID；为空时服务端自动创建新会话 |
 | `taskId` | 否 | `string` | 当前任务 ID；为空时服务端从当前 `active` 计划解析 |
 | `clientMessageId` | 是 | `string` | 前端生成的幂等消息 ID |
-| `interactionType` | 否 | `string` | `teaching` / `blocked_help` / `task_review` / `completion_feedback` / `path_guidance`；为空时由服务端自动推断 |
+| `interactionType` | 否 | `string` | `teaching` / `blocked_help` / `task_review` / `completion_feedback` / `path_guidance` / `concept_qa`；为空时由服务端自动推断 |
 | `inputType` | 是 | `string` | 第一阶段固定支持 `text` / `link` / `code` |
 | `content` | 是 | `string` | 用户输入内容 |
 | `stream` | 否 | `boolean` | 是否期望流式返回；为 `true` 时优先返回 SSE |
@@ -1779,6 +1781,7 @@ data: {"code":"AI_PROVIDER_ERROR","message":"provider stream interrupted"}
 1. SSE 中发的是 provider 原始增量文本，不做服务端节奏化缓冲。
 2. 前端只按浏览器动画帧合并同一帧内增量，避免额外固定延迟与过碎 React 重渲染。
 3. 服务端最终仍只落一条合并后的 assistant 消息，不落逐 chunk 明细。
+4. 若 provider 超时或失败后客户端连接已关闭，服务端只记录原始 provider 失败；`ReadableStream` controller 已关闭属于传输层状态，不再额外写入 `llm_invocations` 失败记录或覆盖原始错误。
 
 ### 12.2.6 幂等规则
 

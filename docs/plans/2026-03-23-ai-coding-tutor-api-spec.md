@@ -743,6 +743,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 当前已接通真实 AI 编排链路：会话创建/复用、用户消息持久化、agent 解析、skill 上下文装配、provider 调用、assistant 消息持久化、`llm_invocations` 审计写入
 - 当前同时支持 `application/json` 与 `text/event-stream` 两种返回方式；当请求头 `Accept` 包含 `text/event-stream` 或请求体传 `stream=true` 时，返回 SSE
 - 当前消息返回与持久化都已显式包含 `structuredContent`，其中至少包含 `interactionType`、`variant`、`summary`、`blocks`、`sections`、`actions`；`blocks` / `sections.blocks` 当前支持 `heading`、`paragraph`、`code_block`、`unordered_list`、`ordered_list`
+- 当前 `interactionType` 自动推断会把“下一步 / 继续当前任务 / 下一项练习 / 先做什么”等当前任务推进意图路由到 `path_guidance`，把明确概念咨询或自由问题路由到 `concept_qa`
 - 当前支持学习对话附件：前端先通过 `POST /api/learning/attachments` 上传图片或语音，再在本接口请求体传 `attachmentIds`；服务端会验证附件归属、执行图片理解或语音转写，并把附件处理结果写入用户消息的 `content_json.attachments`
 - 当前图片预处理模型由管理后台 `Ai 管理 / 多媒体管理 / 转译设置` 中的 `image_translation` 配置决定；服务端会把私有 Storage 图片读取为 `data:<mime>;base64,...` 后传给模型，避免 provider 无法访问 signed URL
 - 当前语音预处理模型由 `speech_to_text` 配置决定；阿里云百炼 `Qwen3-ASR-Flash` 仍通过 OpenAI-compatible `/chat/completions` 的 `input_audio` 调用。AI 回复播读通过 `POST /api/learning/message-speech` 按需调用 `text_to_speech` 配置，服务端统一 TTS Provider Gateway 会按 Model metadata / provider / modelName 选择 HTTP TTS adapter，首版返回临时音频，不持久化音频文件。管理端 Model 连接测试支持 `chat` / `asr` / `tts` / `models_list` 四类模式，其中 ASR 只验证 `/models` 鉴权连通性，TTS 通过统一 gateway 做短文本真实合成探测。
@@ -772,7 +773,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 | `conversationId` | 否 | 无则新建会话 |
 | `taskId` | 否 | 当前任务 ID |
 | `clientMessageId` | 否 | 前端幂等消息 ID；当前真实实现已支持并建议始终传入 |
-| `interactionType` | 否 | `teaching` / `blocked_help` / `task_review` / `completion_feedback` / `path_guidance`；为空时由服务端自动推断 |
+| `interactionType` | 否 | `teaching` / `blocked_help` / `task_review` / `completion_feedback` / `path_guidance` / `concept_qa`；为空时由服务端自动推断 |
 | `inputType` | 是 | `text` / `link` / `code` |
 | `content` | 是 | 用户输入内容；当 `attachmentIds` 非空时允许为空字符串 |
 | `attachmentIds` | 否 | 已通过 `POST /api/learning/attachments` 创建的附件 ID 列表；当前前端单条消息发送一张图片或一条语音 |

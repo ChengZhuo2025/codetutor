@@ -63,6 +63,26 @@ test("resolveLearningUserInteractionType still routes explicit concept questions
   )
 })
 
+test("resolveLearningUserInteractionType routes current-task next exercise prompts to path guidance", () => {
+  assert.equal(
+    resolveLearningUserInteractionType({
+      requestedInteractionType: null,
+      content: "请继续当前任务中的下一项练习，并告诉我先做什么。",
+      taskStatus: "in_progress",
+    }),
+    "path_guidance",
+  )
+
+  assert.equal(
+    resolveLearningUserInteractionType({
+      requestedInteractionType: null,
+      content: "当前任务我应该先做什么？",
+      taskStatus: "not_started",
+    }),
+    "path_guidance",
+  )
+})
+
 test("resolveLearningUserInteractionType routes free-practice consultation questions to concept QA", () => {
   assert.equal(
     resolveLearningUserInteractionType({

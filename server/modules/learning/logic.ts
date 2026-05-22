@@ -156,7 +156,9 @@ export function resolveLearningUserInteractionType(input: {
     return "task_review"
   }
 
-  if (/(下一步|接下来|继续学|继续做)/i.test(input.content)) {
+  if (
+    /(下一步|接下来|继续学|继续做|继续当前任务|下一项练习|下一项|先做什么|当前任务.*(?:做什么|怎么做|如何做|开始|继续)|current task|next exercise|next step)/i.test(input.content)
+  ) {
     return "path_guidance"
   }
 
