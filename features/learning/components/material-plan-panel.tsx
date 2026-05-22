@@ -9,6 +9,7 @@ import { USER_BUTTON_PRIMARY_CLASS } from "@/components/ui/surface-styles"
 import { Input } from "@/components/ui/input"
 import { PageSection } from "@/components/ui/page-section"
 import { Textarea } from "@/components/ui/textarea"
+import { MaterialPlanGenerationLoader } from "@/features/learning/components/material-plan-generation-loader"
 import { apiClient } from "@/lib/api/client"
 import type {
   LearningPlanDraftPatchRequestContract,
@@ -623,39 +624,11 @@ export function MaterialPlanPanel({
       {isGeneratingPlan ? (
         <div className="absolute inset-0 z-20 flex items-start justify-center rounded-2xl border border-brand/12 bg-[linear-gradient(135deg,oklch(0.985_0.004_270/0.82),oklch(0.94_0.018_178/0.78)_46%,oklch(0.985_0.004_270/0.86))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-sm dark:border-brand/18 dark:bg-[linear-gradient(135deg,oklch(0.13_0.012_270/0.9),oklch(0.18_0.03_178/0.84)_48%,oklch(0.12_0.01_270/0.9))] sm:py-6">
           <div className="pointer-events-none absolute inset-0 rounded-2xl bg-[linear-gradient(to_right,oklch(0.55_0.03_270/0.08)_1px,transparent_1px),linear-gradient(to_bottom,oklch(0.55_0.03_270/0.08)_1px,transparent_1px)] bg-[size:28px_28px] opacity-45 dark:opacity-20" />
-          <div className="sticky top-4 w-full max-w-md rounded-2xl border border-brand/20 bg-surface-1/96 p-5 shadow-[0_24px_80px_-42px_rgba(15,23,42,0.55)] ring-1 ring-black/[0.04] dark:border-brand/18 dark:bg-[oklch(0.18_0.012_270/0.96)] dark:ring-white/10 sm:top-6">
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-brand/24 bg-brand/12 text-brand">
-                <Loader2 className="size-5 animate-spin" aria-hidden />
-              </div>
-              <div className="min-w-0">
-                <p className="text-base font-semibold text-foreground">正在生成学习计划</p>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  {loadingProgressMessage}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 flex items-center justify-between gap-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                生成进度
-              </p>
-              <p className="text-sm font-medium text-foreground">
-                {Math.round(renderedProgressPercent)}%
-              </p>
-            </div>
-            <div className="relative mt-2 h-2.5 overflow-hidden rounded-full bg-muted">
-              <div
-                className="relative h-full overflow-hidden rounded-full bg-brand transition-all duration-700 ease-out"
-                style={{ width: `${renderedProgressPercent}%` }}
-              >
-                <div className="absolute inset-y-0 w-16 animate-[material-plan-progress-shine_1.4s_ease-in-out_infinite] bg-white/35 blur-[1px]" />
-              </div>
-            </div>
-            <p className="mt-3 text-xs leading-5 text-muted-foreground">
-              生成会在后台继续处理。你可以先关闭弹框，回到学习工作台后会自动恢复进度。
-            </p>
-          </div>
+          <MaterialPlanGenerationLoader
+            status={intakeStatus?.status}
+            progressPercent={renderedProgressPercent}
+            progressMessage={loadingProgressMessage}
+          />
         </div>
       ) : null}
 

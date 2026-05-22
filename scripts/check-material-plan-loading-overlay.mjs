@@ -7,6 +7,7 @@ function read(path) {
 
 const dialogSource = read("features/learning/components/material-plan-dialog.tsx")
 const panelSource = read("features/learning/components/material-plan-panel.tsx")
+const loaderSource = read("features/learning/components/material-plan-generation-loader.tsx")
 
 assert.match(
   dialogSource,
@@ -45,21 +46,93 @@ assert.match(
 )
 
 assert.match(
-  panelSource,
+  loaderSource,
   /回到学习工作台后会自动恢复进度/,
-  "material plan panel should explain that async generation can be restored after closing",
+  "material plan loader should explain that async generation can be restored after closing",
 )
 
 assert.match(
-  panelSource,
+  loaderSource,
   /sticky top-4/,
-  "material plan loading card should stay visible within the dialog scroll viewport",
+  "material plan loading surface should stay visible within the dialog scroll viewport",
 )
 
 assert.match(
   panelSource,
   /aria-busy=\{isGeneratingPlan\}/,
   "material plan panel should expose busy state for the loading overlay",
+)
+
+assert.match(
+  panelSource,
+  /MaterialPlanGenerationLoader/,
+  "material plan panel should delegate the generation overlay body to the OpenMAIC-style loader",
+)
+
+assert.match(
+  loaderSource,
+  /OpenMAIC/,
+  "material plan generation loader should document the OpenMAIC interaction it adapts",
+)
+
+assert.match(
+  loaderSource,
+  /解析教程内容/,
+  "material plan generation loader should show the material extraction milestone",
+)
+
+assert.match(
+  loaderSource,
+  /拆解学习路径/,
+  "material plan generation loader should show the planning milestone",
+)
+
+assert.match(
+  loaderSource,
+  /校验计划质量/,
+  "material plan generation loader should show the quality gate milestone",
+)
+
+assert.doesNotMatch(
+  loaderSource,
+  /material-plan-orbit-card/,
+  "material plan generation loader should avoid a nested orbit card inside the modal overlay",
+)
+
+assert.match(
+  loaderSource,
+  /material-plan-step-dot/,
+  "material plan generation loader should include stage progress dots",
+)
+
+assert.match(
+  loaderSource,
+  /material-plan-visual-object/,
+  "material plan generation loader should keep the central OpenMAIC-style visual as an unframed object",
+)
+
+assert.match(
+  loaderSource,
+  /border-b border-border\/50/,
+  "material plan generation milestones should be a flat step list with separators, not nested cards",
+)
+
+assert.doesNotMatch(
+  loaderSource,
+  /rounded-xl border px-3 py-3/,
+  "material plan generation milestones should not render as individual nested cards",
+)
+
+assert.doesNotMatch(
+  loaderSource,
+  /material-plan-orbit-ring/,
+  "material plan generation loader should reduce motion density by removing orbit ring animations",
+)
+
+assert.doesNotMatch(
+  loaderSource,
+  /material-plan-step-dot-pulse/,
+  "material plan generation loader should reduce motion density by removing step dot pulse animation",
 )
 
 console.log("Material plan loading overlay contracts are present.")

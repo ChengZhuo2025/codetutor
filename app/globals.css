@@ -346,6 +346,56 @@
   }
 }
 
+@keyframes material-plan-card-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-0.3rem);
+  }
+}
+
+@keyframes material-plan-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.38;
+  }
+
+  50% {
+    opacity: 0.86;
+  }
+}
+
+@keyframes material-plan-scan {
+  0% {
+    transform: translateX(-150%) skewX(-12deg);
+  }
+
+  100% {
+    transform: translateX(210%) skewX(-12deg);
+  }
+}
+
+.material-plan-visual-object {
+  animation: material-plan-card-float 3.4s ease-in-out infinite;
+}
+
+.material-plan-skeleton-line {
+  animation: material-plan-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.material-plan-scan-beam {
+  background: linear-gradient(
+    120deg,
+    transparent 18%,
+    rgb(255 255 255 / 0.28) 48%,
+    transparent 70%
+  );
+  animation: material-plan-scan 2.4s linear infinite;
+}
+
 @keyframes learn-speech-wave {
   0%,
   100% {
@@ -381,6 +431,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .material-plan-visual-object,
+  .material-plan-skeleton-line,
+  .material-plan-scan-beam {
+    animation: none;
+  }
+
   .learn-speech-wave-bar {
     animation: none;
   }
