@@ -96,9 +96,11 @@ test("auth login route writes user session cookie after successful authenticatio
 
 test("auth login route schedules post-login side effects after responding", async () => {
   const events: string[] = []
-  let releaseSideEffect: (() => void) | null = null
+  const sideEffectController: { release: (() => void) | null } = {
+    release: null,
+  }
   const sideEffectDone = new Promise<void>((resolve) => {
-    releaseSideEffect = resolve
+    sideEffectController.release = resolve
   })
   const handler = createAuthLoginPostHandler({
     getRequestAuth: async () => ({
@@ -129,7 +131,7 @@ test("auth login route schedules post-login side effects after responding", asyn
   )
 
   events.push("response")
-  releaseSideEffect?.()
+  sideEffectController.release?.()
   await new Promise((resolve) => setTimeout(resolve, 0))
 
   assert.equal(response.status, 200)
