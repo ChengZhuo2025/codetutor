@@ -276,6 +276,36 @@ function buildAssistantPresentation(
   }
 }
 
+function buildEmptyContentFallbackContent(prepared: {
+  step: StepRow
+  interactionType: LearningInteractionType
+}): string {
+  const stepTitle = prepared.step.title
+  const stepGoal = prepared.step.goal
+  const suggestedNextAction =
+    prepared.interactionType === "path_guidance"
+      ? "先按当前建议完成一个最小验证结果，再继续扩展"
+      : prepared.interactionType === "task_review"
+        ? "先根据复盘建议修正一个最关键缺口，再反馈结果"
+        : "继续围绕当前任务做最小验证，并把结果反馈回来"
+
+  return [
+    "抱歉，我暂时无法处理这个请求。没关系，让我帮你回到当前的学习任务吧。",
+    "",
+    `你正在进行 **第 ${prepared.step.step_no} 步 - ${stepTitle}**`,
+    `当前目标：${stepGoal}`,
+    "",
+    `建议下一步动作：${suggestedNextAction}`,
+    "",
+    "你可以继续提问当前任务相关的问题，或直接发送你的练习结果让我帮你验收。",
+  ].join("\n")
+}
+
+function isAIEmptyContentError(error: unknown): boolean {
+  return error instanceof LearningAIProviderError
+    && /empty.*(assistant|content)/i.test(error.message)
+}
+
 function buildSkillContextText(
   skills: Array<{ code: string; name: string; content: string }>,
 ) {
@@ -331,13 +361,10 @@ function buildSystemPrompt(
     skillsText: string
   },
 ) {
-  const conceptQaTangentGuideline =
-    input.interactionType === "concept_qa"
-      ? [
-          "",
-          "偏题 / 闲聊容错：当用户提问明显与当前学习路径无关（生活闲聊、与编程无关的常识、与本工具完全无关的产品、玩笑或情绪表达等），先用一两句简短中文给出友好回应或诚实告知“这部分超出本场景”，再用一句温和的话提醒用户当前正在的任务和下一步动作。不要拒答、不要长时间空转、不要要求用户切换工具，也不要把回应硬塞进结构化教学输出里。",
-        ]
-      : []
+  const offTopicGuideline = [
+    "",
+    "偏题 / 闲聊容错（最高优先级）：当用户提问明显与当前学习路径无关（生活闲聊、与编程无关的常识、与本工具完全无关的产品、玩笑或情绪表达等），必须先用一两句简短中文给出友好回应或诚实告知“这部分超出本场景”，再用一句温和的话提醒用户当前正在的任务和下一步动作。绝对不要返回空内容、不要拒答、不要沉默、不要长时间空转、不要要求用户切换工具，也不要把回应硬塞进结构化教学输出里。即使完全不知道如何回答用户的问题，也要用温和的语气诚实说明，然后引导用户回到当前学习任务。这一规则优先于所有其他输出格式要求。",
+  ]
 
   return [
     // 🎯 角色身份
@@ -377,7 +404,7 @@ function buildSystemPrompt(
     "历史纠偏：历史消息里如果出现“下一关”“第 N 关已完成”“进入第 N 关”等旧口径或与当前学习上下文冲突的说法，必须以本条 system prompt 的当前任务、任务状态和完成标准为准，不要沿用历史消息中的关卡编号判断。",
     "",
     "输出规范：除非用户明确要求，否则不要输出 JSON。",
-    ...conceptQaTangentGuideline,
+    ...offTopicGuideline,
     "",
     ...buildLearningOutputFormatGuide(input.interactionType),
     "",
@@ -1729,6 +1756,42 @@ export async function orchestrateLearningMessage(
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown AI provider error"
+
+    if (isAIEmptyContentError(error)) {
+      const fallbackContent = buildEmptyContentFallbackContent(prepared)
+      const fallbackProviderResult: AIProviderResult = {
+        content: fallbackContent,
+        finishReason: "stop",
+        streamChunkCount: 0,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        requestPayloadRedacted: { fallback: true, reason: "empty_ai_content" },
+        responsePayloadRedacted: { fallback: true, reason: "empty_ai_content" },
+      }
+
+      const fallbackResult = await persistAssistantResult({
+        ...prepared,
+        userId,
+        request,
+        now,
+        userMessageId,
+        userSequenceNo,
+        providerResult: fallbackProviderResult,
+        taskPatch,
+      })
+
+      return buildIdempotentReplayResponse({
+        conversationId: session.id,
+        taskId: task.id,
+        taskStatus,
+        assistantTitle: fallbackResult.presentation.title,
+        assistantKind: fallbackResult.presentation.kind,
+        assistantContent: fallbackResult.presentation.content,
+        speechMessageId: fallbackResult.assistantMessageId,
+        structuredContent: fallbackResult.structuredContent,
+        taskPatch: fallbackResult.taskPatch,
+      })
+    }
+
     const timedOut = /timed out|超时/i.test(message)
     const rateLimited = /429|rate limit|too many requests|限流/i.test(message)
     const missingSecret = /missing required provider secret|api key|密钥/i.test(message)
@@ -1918,46 +1981,91 @@ export async function streamLearningMessage(
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown AI provider stream error"
-        const timedOut = /timed out|超时/i.test(message)
-        const rateLimited = /429|rate limit|too many requests|限流/i.test(message)
-        const missingSecret = /missing required provider secret|api key|密钥/i.test(message)
 
-        await persistFailedInvocation({
-          ...prepared,
-          userId,
-          now,
-          userMessageId,
-          errorMessage: message,
-        })
-        void emitLearningAIAdminNotification({
-          severity: timedOut ? "warning" : "critical",
-          category: missingSecret ? "system" : "ai",
-          title: missingSecret
-            ? "AI Provider 密钥不可用"
-            : rateLimited
-              ? "AI 流式调用触发限流"
-              : timedOut
-                ? "AI 流式调用超时"
-                : "AI 流式调用失败",
-          content: `${provider.code}/${model.code}：${message}`,
-          sourceType: "learning_ai_stream_invocation",
-          dedupeKey: `ai:learning-stream:${provider.code}:${model.code}:${missingSecret ? "secret" : rateLimited ? "rate-limit" : timedOut ? "timeout" : "failed"}`,
-          payload: {
-            providerCode: provider.code,
-            modelCode: model.code,
-            agentCode: agent.code,
-            sessionId: session.id,
+        if (isAIEmptyContentError(error)) {
+          const fallbackContent = buildEmptyContentFallbackContent(prepared)
+          const fallbackProviderResult: AIProviderResult = {
+            content: fallbackContent,
+            finishReason: "stop",
+            streamChunkCount: 0,
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+            requestPayloadRedacted: { fallback: true, reason: "empty_ai_content" },
+            responsePayloadRedacted: { fallback: true, reason: "empty_ai_content" },
+          }
+
+          const fallbackResult = await persistAssistantResult({
+            ...prepared,
             userId,
-            taskId: task.id,
-            status: missingSecret ? "config_missing" : rateLimited ? "rate_limited" : timedOut ? "timed_out" : "failed",
-            errorMessage: message,
-          },
-        })
+            request,
+            now,
+            userMessageId,
+            userSequenceNo,
+            providerResult: fallbackProviderResult,
+            taskPatch,
+          })
 
-        send("error", {
-          code: "AI_PROVIDER_ERROR",
-          message,
-        })
+          if (
+            fallbackResult.taskPatch
+            && (
+              !taskPatch
+              || taskPatch.status !== fallbackResult.taskPatch.status
+              || taskPatch.suggestedNextAction !== fallbackResult.taskPatch.suggestedNextAction
+            )
+          ) {
+            send("task_patch", fallbackResult.taskPatch)
+          }
+
+          send("assistant_done", {
+            messageId: fallbackResult.assistantMessageId,
+            title: fallbackResult.presentation.title,
+            kind: fallbackResult.presentation.kind,
+            content: fallbackResult.presentation.content,
+            structuredContent: fallbackResult.structuredContent,
+            finishReason: fallbackProviderResult.finishReason,
+            usage: fallbackProviderResult.usage,
+          })
+        } else {
+          const timedOut = /timed out|超时/i.test(message)
+          const rateLimited = /429|rate limit|too many requests|限流/i.test(message)
+          const missingSecret = /missing required provider secret|api key|密钥/i.test(message)
+
+          await persistFailedInvocation({
+            ...prepared,
+            userId,
+            now,
+            userMessageId,
+            errorMessage: message,
+          })
+          void emitLearningAIAdminNotification({
+            severity: timedOut ? "warning" : "critical",
+            category: missingSecret ? "system" : "ai",
+            title: missingSecret
+              ? "AI Provider 密钥不可用"
+              : rateLimited
+                ? "AI 流式调用触发限流"
+                : timedOut
+                  ? "AI 流式调用超时"
+                  : "AI 流式调用失败",
+            content: `${provider.code}/${model.code}：${message}`,
+            sourceType: "learning_ai_stream_invocation",
+            dedupeKey: `ai:learning-stream:${provider.code}:${model.code}:${missingSecret ? "secret" : rateLimited ? "rate-limit" : timedOut ? "timeout" : "failed"}`,
+            payload: {
+              providerCode: provider.code,
+              modelCode: model.code,
+              agentCode: agent.code,
+              sessionId: session.id,
+              userId,
+              taskId: task.id,
+              status: missingSecret ? "config_missing" : rateLimited ? "rate_limited" : timedOut ? "timed_out" : "failed",
+              errorMessage: message,
+            },
+          })
+
+          send("error", {
+            code: "AI_PROVIDER_ERROR",
+            message,
+          })
+        }
       } finally {
         streamSender.close()
       }
