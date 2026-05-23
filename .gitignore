@@ -2,6 +2,7 @@
 .worktrees/
 .superpowers/
 .vscode
+.serena
 
 # Environment variables
 .env*.local
@@ -11,6 +12,7 @@
 node_modules
 .next/
 next-env.d.ts
+*.tsbuildinfo
 
 # macOS metadata
 .DS_Store
