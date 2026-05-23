@@ -12,6 +12,7 @@ import {
   normalizePhoneInput,
   toFriendlyAuthError,
 } from "@/features/auth/lib/phone-auth"
+import { toSupabaseOAuthProvider } from "@/features/auth/lib/oauth-providers"
 import type { AuthStep, AuthOAuthProvider } from "@/features/auth/types"
 import type { AuthLoginResponseData } from "@/lib/api/contracts/auth"
 import { requestData } from "@/lib/api/client"
@@ -34,8 +35,6 @@ function withAuthorization(accessToken: string | null | undefined) {
   }
 }
 
-const WECHAT_PROVIDER = "wechat" as never
-const DOUYIN_PROVIDER = "douyin" as never
 const LEGAL_ACCEPTANCE_STORAGE_KEY = "codetutor-legal-acceptance-v1"
 const SUBSCRIBE_INTENT_PARAM = "intent=subscribe"
 
@@ -146,9 +145,8 @@ export function LoginPage() {
       flow: "link",
       redirectTo,
     })
-    const oauthProvider = provider === "wechat" ? WECHAT_PROVIDER : DOUYIN_PROVIDER
     const { data, error } = await supabase.auth.linkIdentity({
-      provider: oauthProvider,
+      provider: toSupabaseOAuthProvider(provider),
       options: {
         redirectTo: callbackUrl,
         skipBrowserRedirect: true,
@@ -238,6 +236,8 @@ export function LoginPage() {
   ])
 
   const handleOAuthSubmit = async (provider: AuthOAuthProvider) => {
+    if (oauthPendingProvider) return
+
     if (!agreedToLegal) {
       setErrorMessage("请先阅读并勾选同意《用户协议》和《隐私政策》。")
       return
@@ -254,9 +254,8 @@ export function LoginPage() {
         flow: "login",
         intent: searchParams.get("intent"),
       })
-      const oauthProvider = provider === "wechat" ? WECHAT_PROVIDER : DOUYIN_PROVIDER
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: oauthProvider,
+        provider: toSupabaseOAuthProvider(provider),
         options: {
           redirectTo,
           skipBrowserRedirect: true,

@@ -98,7 +98,6 @@ export const adminOptionalHeadersSchema = z
 export const authLoginRequestSchema = z
   .object({
     loginType: z.enum(["phone", "wechat", "douyin"]),
-    authCode: z.string().optional(),
   })
   .openapi("AuthLoginRequest")
 

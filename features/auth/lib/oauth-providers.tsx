@@ -1,6 +1,11 @@
+import type { Provider } from "@supabase/supabase-js"
 import type { SVGProps } from "react"
 
 import type { AuthOAuthProvider } from "@/features/auth/types"
+
+export function toSupabaseOAuthProvider(provider: AuthOAuthProvider): Provider {
+  return provider as Provider
+}
 
 type ProviderIconProps = SVGProps<SVGSVGElement>
 

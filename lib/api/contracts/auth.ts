@@ -4,7 +4,6 @@ export type AuthLoginType = "phone" | "wechat" | "douyin"
 
 export type AuthLoginRequest = {
   loginType: AuthLoginType
-  authCode?: string
 }
 
 export type AuthOAuthTempDiscardRequest = {

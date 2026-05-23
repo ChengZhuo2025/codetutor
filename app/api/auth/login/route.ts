@@ -7,40 +7,39 @@ import { withNoStoreHeaders } from "@/server/lib/response-cache"
 import { createAuthLoginPostHandler } from "@/server/modules/auth/route-handler"
 import { finalizeAuthLogin, recordLoginGeoSnapshot } from "@/server/modules/auth/service"
 
-let request: NextRequest
-
-const postHandler = createAuthLoginPostHandler({
-  getRequestAuth: async (req) => {
-    const auth = await getRequestAuth(req as NextRequest)
-
-    if (!auth?.user) {
-      return null
-    }
-
-    return {
-      user: auth.user,
-    }
-  },
-  getRequestAuthHelpText,
-  finalizeAuthLogin: async (user, loginType) => {
-    return finalizeAuthLogin(user, loginType, getClientIp(request))
-  },
-  schedulePostLoginSideEffects: (user, loginType) => {
-    void recordLoginGeoSnapshot({
-      userId: user.id,
-      loginType,
-      clientIp: getClientIp(request),
-    }).catch((error) => {
-      console.warn(
-        "failed to record login geo snapshot:",
-        error instanceof Error ? error.message : error,
-      )
-    })
-  },
-})
-
 export async function POST(req: NextRequest) {
-  request = req
+  const clientIp = getClientIp(req)
+
+  const handleLogin = createAuthLoginPostHandler({
+    getRequestAuth: async (reqParam) => {
+      const auth = await getRequestAuth(reqParam as NextRequest)
+
+      if (!auth?.user) {
+        return null
+      }
+
+      return {
+        user: auth.user,
+      }
+    },
+    getRequestAuthHelpText,
+    finalizeAuthLogin: async (user, loginType) => {
+      return finalizeAuthLogin(user, loginType, clientIp)
+    },
+    schedulePostLoginSideEffects: (user, loginType) => {
+      void recordLoginGeoSnapshot({
+        userId: user.id,
+        loginType,
+        clientIp,
+      }).catch((error) => {
+        console.warn(
+          "failed to record login geo snapshot:",
+          error instanceof Error ? error.message : error,
+        )
+      })
+    },
+  })
+
   return withRequestObservability(
     {
       route: "/api/auth/login",
@@ -50,7 +49,7 @@ export async function POST(req: NextRequest) {
     async () => {
       const rateLimit = applyWindowRateLimit({
         bucket: "auth-login",
-        key: getClientIp(request),
+        key: clientIp,
         max: 8,
         windowMs: 10 * 60_000,
         message: "登录请求过于频繁，请稍后再试。",
@@ -60,7 +59,7 @@ export async function POST(req: NextRequest) {
         return withNoStoreHeaders(rateLimit.response)
       }
 
-      const response = attachRateLimitHeaders(await postHandler(request), rateLimit.headers)
+      const response = attachRateLimitHeaders(await handleLogin(req), rateLimit.headers)
       return withNoStoreHeaders(response)
     },
   )

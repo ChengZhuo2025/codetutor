@@ -3,6 +3,10 @@ import type { NextRequest } from "next/server"
 const DEV_USER_ID_HEADER = "x-dev-user-id"
 
 export function getDevUserId(request: NextRequest): string | null {
+  if (process.env.NODE_ENV === "production") {
+    return null
+  }
+
   const fromHeader = request.headers.get(DEV_USER_ID_HEADER)
 
   if (fromHeader) {

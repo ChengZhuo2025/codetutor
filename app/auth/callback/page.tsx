@@ -19,7 +19,7 @@ import {
   getSafeSupabaseBrowserSession,
 } from "@/lib/supabase/client"
 import { ROUTES } from "@/constants/routes"
-import type { OAuthProviderProfile } from "@/features/auth/types"
+import type { AuthOAuthProvider, OAuthProviderProfile } from "@/features/auth/types"
 import { usePublicSite } from "@/features/site/providers/public-site-provider"
 import { USER_BUTTON_PRIMARY_CLASS, USER_BUTTON_SECONDARY_CLASS } from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
@@ -29,7 +29,7 @@ type OAuthCallbackFlow = "login" | "link"
 
 type OAuthCallbackSuccessContext = {
   flow: OAuthCallbackFlow
-  provider: string
+  provider: AuthOAuthProvider
   redirectTo: string
   loginData?: AuthLoginResponseData
   onboardingCompleted?: boolean
@@ -553,7 +553,7 @@ function AuthCallbackContent() {
                     {successContext?.providerProfile?.nickname ?? "第三方头像"}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {getOAuthProviderMeta((successContext?.provider ?? "wechat") as never).label.replace("扫码登录", "")}资料
+                    {getOAuthProviderMeta(successContext?.provider ?? "wechat").label.replace("扫码登录", "")}资料
                   </p>
                 </div>
               </div>

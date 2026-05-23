@@ -53,6 +53,11 @@ export async function getRequestAuth(
   }
 
   markAuthCacheStatus("skip")
+
+  if (process.env.NODE_ENV === "production") {
+    return null
+  }
+
   const devUserId = request.headers.get(DEV_USER_ID_HEADER)
 
   if (!devUserId) {
