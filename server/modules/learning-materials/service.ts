@@ -8,6 +8,7 @@ import {
   MaterialPlanError,
   materialFetchFailed,
   materialInsufficientContent,
+  materialUnsupportedSource,
 } from "./errors.ts"
 import {
   buildChunksFromEvidence,
@@ -462,6 +463,18 @@ export async function runMaterialIntake(
     const current = normalizedLinks[i]!
     try {
       const fetched = await current.adapter.fetch(current.url)
+
+      // Re-validate canonical URL after redirects
+      let canonicalUrlParsed: URL
+      try {
+        canonicalUrlParsed = new URL(fetched.canonicalUrl)
+      } catch {
+        throw materialUnsupportedSource("链接重定向到了无法解析的地址。")
+      }
+      if (!current.adapter.supports(canonicalUrlParsed)) {
+        throw materialUnsupportedSource("链接重定向到了不受支持的域名。")
+      }
+
       const sourceId = randomUUID()
       const extracted = await extractMaterialEvidenceForSource(
         {

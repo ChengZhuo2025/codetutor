@@ -81,8 +81,11 @@ function pickDashUrl(
 export const bilibiliMaterialSourceAdapter: MaterialSourceAdapter = {
   sourceCode: "bilibili",
   supports(url) {
-    const hostname = url.hostname.toLowerCase()
-    return hostname.includes("bilibili.com") || hostname.includes("b23.tv")
+    const lower = url.hostname.toLowerCase()
+    return lower === "bilibili.com"
+      || lower.endsWith(".bilibili.com")
+      || lower === "b23.tv"
+      || lower.endsWith(".b23.tv")
   },
   async fetch(rawUrl) {
     const basics = await fetchPublicPageBasics(rawUrl)
