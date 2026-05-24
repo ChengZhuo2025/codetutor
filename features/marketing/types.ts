@@ -15,6 +15,10 @@ export type MarketingTool = {
   tag: string
   color: string
   dot: string
+  exampleGoal?: string
+  firstTask?: string
+  outcome?: string
+  fit?: string
   downloadUrl?: string
   logoSrc?: string
   featuredInFooter?: boolean

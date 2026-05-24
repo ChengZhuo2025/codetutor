@@ -38,7 +38,7 @@ export function LandingHero() {
   return (
     <section
       id="home"
-      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-6 pb-18 pt-30"
+      className="relative overflow-hidden bg-background px-6 pb-16 pt-24 lg:min-h-screen lg:pt-28"
     >
       {/* WebGL：亮色降低强度，避免噪点/高光显得「脏」；暗色保持原视觉 */}
       <div className="pointer-events-none absolute inset-0 z-0 opacity-[0.38] contrast-[0.98] dark:z-[1] dark:opacity-[0.96] dark:contrast-100">
@@ -84,86 +84,88 @@ export function LandingHero() {
       <div className="pointer-events-none absolute inset-0 z-[1] hidden dark:block bg-[radial-gradient(ellipse_at_center,transparent_14%,oklch(0.12_0.008_270/0.62)_84%)]" />
       <div className="pointer-events-none absolute inset-0 z-[1] hidden dark:block bg-[linear-gradient(180deg,oklch(0.12_0.008_270/0.14),transparent_14%,transparent_78%,oklch(0.12_0.008_270/0.38)_100%)]" />
 
-      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center text-center">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand/40 px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp dark:border-brand/30 dark:bg-[oklch(0.60_0.24_270/0.20)]">
-          <Sparkles className="h-3.5 w-3.5" />
-          <span>{information.siteSubtitle} · MVP内测中</span>
-        </div>
+      <div className="relative z-10 mx-auto grid w-full max-w-7xl gap-8 lg:min-h-[calc(100vh-7rem)] lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:gap-10">
+        <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-brand/40 px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp dark:border-brand/30 dark:bg-[oklch(0.60_0.24_270/0.20)]">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>{information.siteSubtitle} · MVP内测中</span>
+          </div>
 
-        <h1 className="max-w-5xl text-4xl font-semibold leading-[1.15] tracking-tight text-balance md:text-6xl lg:text-7xl animate-fadeUp animate-delay-100">
-          {information.siteSlogan}
-          <br />让 AI 导师陪你<span className="text-brand">真正做成</span>
-        </h1>
+          <h1 className="max-w-4xl text-4xl font-semibold leading-[1.12] tracking-tight text-balance md:text-5xl lg:text-6xl animate-fadeUp animate-delay-100">
+            {information.siteSlogan}
+            <br />让 AI 导师陪你
+            <span className="block whitespace-nowrap text-brand sm:inline">
+              真正做成
+            </span>
+          </h1>
 
-        <p className="mt-5 max-w-4xl text-lg leading-8 text-muted-foreground text-pretty animate-fadeUp animate-delay-200">
-          看到大V的{heroFeaturedTools}...等 AI 教程，收藏了就当学过了？
-          <br />
-          {information.siteName}
-          会把教程内容拆分成一步步可实操练习的任务，并全程陪伴你、辅导你从&ldquo;看过&rdquo;走向&ldquo;学会&rdquo;。
-        </p>
+          <p className="mt-5 max-w-2xl text-base leading-8 text-muted-foreground text-pretty md:text-lg animate-fadeUp animate-delay-200">
+            看到大V的{heroFeaturedTools}...等 AI 教程，收藏了就当学过了？
+            {information.siteName}
+            会把教程内容拆成今天能完成的任务，陪你从&ldquo;看过&rdquo;走向&ldquo;学会&rdquo;。
+          </p>
 
-        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row animate-fadeUp animate-delay-300">
-          <Button
-            asChild
-            size="lg"
-            className={cn(
-              "h-12 px-10 text-base font-semibold",
-              USER_BUTTON_PRIMARY_CLASS,
-            )}
-          >
-            <Link
-              href={ctaHref}
+          <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row lg:items-start animate-fadeUp animate-delay-300">
+            <Button
+              asChild
+              size="lg"
+              className={cn(
+                "h-12 px-10 text-base font-semibold",
+                USER_BUTTON_PRIMARY_CLASS,
+              )}
+            >
+              <Link
+                href={ctaHref}
+                onClick={() =>
+                  trackEvent(APP_EVENTS.landingCtaClick, {
+                    source: "marketing_hero_primary",
+                    target: ctaHref,
+                  })
+                }
+              >
+                {authState.status === "authenticated" ? ctaLabel : "免费开始第一课"}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <a
+              href="#how"
+              className={cn(
+                "inline-flex h-12 items-center justify-center px-8 text-base font-medium",
+                USER_BUTTON_SECONDARY_CLASS,
+              )}
               onClick={() =>
                 trackEvent(APP_EVENTS.landingCtaClick, {
-                  source: "marketing_hero_primary",
-                  target: ctaHref,
+                  source: "marketing_hero_secondary",
+                  target: "#how",
                 })
               }
             >
-              {authState.status === "authenticated" ? ctaLabel : "免费开始学习"}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
-          <a
-            href="#how"
-            className={cn(
-              "inline-flex h-12 items-center justify-center px-8 text-base font-medium",
-              USER_BUTTON_SECONDARY_CLASS,
-            )}
-            onClick={() =>
-              trackEvent(APP_EVENTS.landingCtaClick, {
-                source: "marketing_hero_secondary",
-                target: "#how",
-              })
-            }
-          >
-            看看学习方式
-          </a>
+              查看学习方式
+            </a>
+          </div>
+
+          <p className="mt-6 max-w-xl text-sm leading-7 text-muted-foreground animate-fadeUp animate-delay-400">
+            {information.siteDescription}
+          </p>
+
+          <div className="mt-7 grid w-full max-w-xl gap-3 sm:grid-cols-3 animate-fadeUp animate-delay-500">
+            {heroStats.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-2xl border border-border/70 bg-card/90 px-4 py-3 text-left shadow-[0_16px_36px_-28px_rgba(15,23,42,0.14)] backdrop-blur-md dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none"
+              >
+                <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                  {item.label}
+                </p>
+                <p className="mt-1.5 text-lg font-semibold text-foreground">
+                  {item.value}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <p className="mt-8 text-sm text-muted-foreground animate-fadeUp animate-delay-400">
-          {information.siteDescription}
-        </p>
-
-        <div className="mt-10 grid w-full max-w-3xl gap-3 sm:grid-cols-3 animate-fadeUp animate-delay-500">
-          {heroStats.map((item) => (
-            <div
-              key={item.label}
-              className="rounded-2xl border border-border/70 bg-card px-5 py-4 text-left shadow-[0_16px_36px_-28px_rgba(15,23,42,0.14)] backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-brand/24 hover:bg-brand/4 dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none dark:hover:bg-surface-2"
-            >
-              <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                {item.label}
-              </p>
-              <p className="mt-2 text-xl font-semibold text-foreground">
-                {item.value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="relative z-10 mx-auto mt-12 w-full max-w-5xl">
-        <div className="overflow-hidden rounded-[32px] border border-border/80 bg-surface-2 shadow-[0_26px_80px_-38px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:shadow-[0_32px_90px_-45px_rgba(0,0,0,0.85)]">
+        <div className="overflow-hidden rounded-[28px] border border-border/80 bg-surface-2 shadow-[0_26px_80px_-38px_rgba(15,23,42,0.22)] backdrop-blur-xl animate-fadeUp animate-delay-300 dark:shadow-[0_32px_90px_-45px_rgba(0,0,0,0.85)]">
           <div className="grid gap-0 lg:grid-cols-[1.25fr_0.75fr]">
             <div className="border-b border-border/80 lg:border-b-0 lg:border-r lg:border-r-border/80 dark:border-white/10 dark:lg:border-r-white/10">
               <div className="flex items-center gap-2 border-b border-border/80 px-4 py-3 dark:border-white/10">

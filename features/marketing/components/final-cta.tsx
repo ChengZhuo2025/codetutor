@@ -9,12 +9,15 @@ import {
   USER_BUTTON_SECONDARY_CLASS,
 } from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
-import { MARKETING_FREE_PLAN_CHAT_QUOTA_COPY } from "@/features/marketing/data/marketing-content"
 import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
 import { usePublicSite } from "@/features/site/providers/public-site-provider"
 import { useAppEventTracker } from "@/providers/app-providers"
 
-export function LandingFinalCta() {
+type LandingFinalCtaProps = {
+  freePlanFeatureLabel: string
+}
+
+export function LandingFinalCta({ freePlanFeatureLabel }: LandingFinalCtaProps) {
   const { authState, ctaHref, ctaLabel } = useLandingAuthState()
   const { trackEvent } = useAppEventTracker()
   const { site } = usePublicSite()
@@ -65,7 +68,7 @@ export function LandingFinalCta() {
                 })
               }
             >
-              {authState.status === "authenticated" ? ctaLabel : "立即行动"}
+              {authState.status === "authenticated" ? ctaLabel : "免费开始第一课"}
               <ArrowRight className="h-5 w-5" />
             </Link>
           </Button>
@@ -84,7 +87,7 @@ export function LandingFinalCta() {
                 })
               }
             >
-              了解学习方式
+              查看学习方式
             </Link>
           </Button>
         </div>
@@ -101,7 +104,7 @@ export function LandingFinalCta() {
                 />
               </svg>
             </div>
-            <span>免费试用，{MARKETING_FREE_PLAN_CHAT_QUOTA_COPY}</span>
+            <span>免费试用，{freePlanFeatureLabel}</span>
           </div>
           <div className="hidden h-4 w-px bg-border sm:block dark:bg-white/10" />
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

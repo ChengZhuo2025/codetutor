@@ -15,7 +15,7 @@ const firstRankName = getRankName("rookie")
 const lastRankName = getRankName("master")
 const cursorToolName = getToolName("cursor")
 const claudeCodeToolName = getToolName("claude-code")
-const FREE_PLAN_AI_CHAT_QUOTA_LABEL = "每月 30 次 AI 对话"
+const FALLBACK_FREE_PLAN_AI_CHAT_QUOTA_LABEL = "每月 30 次 AI 对话"
 
 export const marketingSteps: MarketingStep[] = [
   {
@@ -59,6 +59,10 @@ export const marketingTools: MarketingTool[] = [
     tag: "CLI 工具",
     color: "text-chart-3",
     dot: "bg-chart-3",
+    exampleGoal: "把 Claude Code 放进真实仓库工作流",
+    firstTask: "读项目结构，生成一份修改前检查清单",
+    outcome: "能用终端完成一次小改动、测试和自查",
+    fit: "适合已有代码基础、想练命令行协作的人",
     downloadUrl: "https://docs.anthropic.com/en/docs/claude-code/getting-started",
     logoSrc: "/tool-logos/claude-code.png",
     featuredInFooter: true,
@@ -68,6 +72,10 @@ export const marketingTools: MarketingTool[] = [
     tag: "图形化 IDE",
     color: "text-brand",
     dot: "bg-brand",
+    exampleGoal: "用 Cursor 跑起一个最小页面",
+    firstTask: "打开本地项目，让 AI 补一个 /api/hello 路由",
+    outcome: "完成第一次从教程到本地项目的可见产出",
+    fit: "适合新手或想用图形化 IDE 起步的人",
     downloadUrl: "https://cursor.com/downloads/",
     logoSrc: "/tool-logos/cursor.png",
     featuredInFooter: true,
@@ -77,6 +85,10 @@ export const marketingTools: MarketingTool[] = [
     tag: "CLI 工具",
     color: "text-chart-5",
     dot: "bg-chart-5",
+    exampleGoal: "用 Codex CLI 修改一个已有功能",
+    firstTask: "让 AI 阅读相关文件，给出最小改动计划",
+    outcome: "掌握命令行里提需求、看 diff、跑验证的闭环",
+    fit: "适合想把 AI 接入日常代码仓库的人",
     downloadUrl: "https://github.com/openai/codex",
     logoSrc: "/tool-logos/codex-cli.png",
     featuredInFooter: true,
@@ -86,6 +98,10 @@ export const marketingTools: MarketingTool[] = [
     tag: "图形化 IDE",
     color: "text-brand",
     dot: "bg-brand",
+    exampleGoal: "用 Trae 做出一个前端小功能",
+    firstTask: "选一个组件，让 AI 拆成页面、状态和样式步骤",
+    outcome: "从中文需求推进到可运行界面",
+    fit: "适合偏中文环境、想降低起步成本的人",
     downloadUrl: "https://www.trae.ai/download",
     logoSrc: "/tool-logos/trae.png",
     featuredInFooter: true,
@@ -95,21 +111,47 @@ export const marketingTools: MarketingTool[] = [
     tag: "图形化 IDE",
     color: "text-brand",
     dot: "bg-brand",
+    exampleGoal: "用 Windsurf 处理跨文件任务",
+    firstTask: "让 AI 先找影响范围，再分步骤改动",
+    outcome: "理解多文件修改时如何控风险",
+    fit: "适合已有项目、想练复杂任务拆解的人",
     downloadUrl: "https://windsurf.com/download",
     logoSrc: "/tool-logos/windsurf.png",
     featuredInFooter: true,
   },
-  { name: getToolName("opencode"), tag: "开源 AI 编程工具", color: "text-gold", dot: "bg-gold" },
+  {
+    name: getToolName("opencode"),
+    tag: "开源 AI 编程工具",
+    color: "text-gold",
+    dot: "bg-gold",
+    exampleGoal: "用 OpenCode 建立可复用 AI 工作流",
+    firstTask: "配置一个仓库任务，并让 AI 输出验证命令",
+    outcome: "知道如何把开源工具接入自己的项目节奏",
+    fit: "适合关注开源和可控环境的人",
+  },
   {
     name: getToolName("lovable"),
     tag: "在线工具",
     color: "text-gold",
     dot: "bg-gold",
+    exampleGoal: "用 Lovable 快速验证产品页面",
+    firstTask: "把一个产品想法拆成页面结构和首个交互",
+    outcome: "先看到可点击原型，再决定是否深入开发",
+    fit: "适合产品、创业者和前端原型验证",
     downloadUrl: "https://docs.lovable.dev/introduction/getting-started",
     logoSrc: "/tool-logos/lovable.jpeg",
     featuredInFooter: true,
   },
-  { name: getToolName("stitch"), tag: "在线工具 前端设计", color: "text-chart-5", dot: "bg-chart-5" },
+  {
+    name: getToolName("stitch"),
+    tag: "在线工具 前端设计",
+    color: "text-chart-5",
+    dot: "bg-chart-5",
+    exampleGoal: "用 Google Stitch 生成界面方向",
+    firstTask: "输入页面目标，比较两版视觉方案",
+    outcome: "把设计灵感转成可继续实现的界面草稿",
+    fit: "适合设计师和想快速定 UI 方向的人",
+  },
 ]
 
 export const marketingAudiences: MarketingAudience[] = [
@@ -225,7 +267,7 @@ export const marketingPlans: MarketingPlan[] = [
     desc: "探索产品核心体验",
     highlight: false,
     features: [
-      FREE_PLAN_AI_CHAT_QUOTA_LABEL,
+      FALLBACK_FREE_PLAN_AI_CHAT_QUOTA_LABEL,
       "工具选择与学习路径",
       "基础学分与段位系统",
       "学习进度追踪",
@@ -270,4 +312,4 @@ export const marketingPlans: MarketingPlan[] = [
   },
 ]
 
-export const MARKETING_FREE_PLAN_CHAT_QUOTA_COPY = FREE_PLAN_AI_CHAT_QUOTA_LABEL
+export const FALLBACK_FREE_PLAN_FEATURE_LABEL = FALLBACK_FREE_PLAN_AI_CHAT_QUOTA_LABEL

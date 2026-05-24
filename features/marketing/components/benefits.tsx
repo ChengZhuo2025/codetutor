@@ -18,20 +18,17 @@ export function LandingBenefits() {
           </p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {marketingBenefits.map((benefit) => {
             const Icon = benefit.icon
             return (
               <div
                 key={benefit.title}
-                className="group relative overflow-hidden rounded-[28px] border p-6 transition-all hover:-translate-y-1 border-brand/30 bg-brand/5 shadow-lg shadow-brand/10 dark:bg-[linear-gradient(180deg,oklch(0.24_0.04_270/0.94),oklch(0.16_0.015_270/0.98))] dark:shadow-[0_24px_80px_-42px_oklch(0.75_0.24_270/0.28)]"
+                className="group relative overflow-hidden border-t border-border/70 px-1 py-6 transition-all hover:border-brand/40 dark:border-white/10"
               >
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/18" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.04),transparent_32%)] opacity-80 dark:bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_32%)]" />
-
                 <div
                   className={cn(
-                    "relative z-10 mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border transition-all group-hover:scale-110",
+                    "relative z-10 mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border transition-all group-hover:scale-105",
                     benefit.borderColor,
                     benefit.bgColor,
                   )}

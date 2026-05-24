@@ -31,8 +31,7 @@ export function LandingHowItWorks() {
               <React.Fragment key={item.step}>
                 <div
                   className={cn(
-                    "group relative overflow-hidden rounded-[30px] border p-8 backdrop-blur animate-fadeUp transition-all hover:-translate-y-1 hover:border-brand/20 hover:bg-brand/4 dark:hover:bg-surface-2",
-                    item.panelClassName,
+                    "group relative overflow-hidden rounded-[26px] border border-border/70 bg-card/82 p-7 backdrop-blur animate-fadeUp transition-all hover:-translate-y-0.5 hover:border-brand/20 hover:bg-brand/4 dark:border-white/10 dark:bg-surface-2/76 dark:hover:bg-surface-2",
                     index === 0
                       ? "animate-delay-100"
                       : index === 1
@@ -40,8 +39,7 @@ export function LandingHowItWorks() {
                         : "animate-delay-300",
                   )}
                 >
-                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/18" />
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.04),transparent_32%)] opacity-80 dark:bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_32%)]" />
+                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand/30 to-transparent" />
 
                   <div className="mb-8 flex items-center justify-between">
                     <div
@@ -83,11 +81,11 @@ export function LandingHowItWorks() {
           })}
         </div>
 
-        <div className="mx-auto mt-10 max-w-6xl grid gap-6 md:grid-cols-2">
+        <div className="mx-auto mt-10 max-w-6xl grid gap-4 md:grid-cols-2">
           {marketingFitNotes.map((note, index) => (
             <div
               key={note.title}
-              className="flex min-h-[96px] items-center gap-6 rounded-[24px] border border-border/70 bg-card px-4 py-4 transition-all hover:-translate-y-0.5 hover:border-brand/24 hover:bg-brand/4 dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none dark:hover:bg-surface-2"
+              className="flex min-h-[96px] items-center gap-5 border-l-2 border-brand/30 bg-transparent px-4 py-4"
               style={{ animationDelay: `${400 + index * 100}ms` }}
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/12 text-brand">

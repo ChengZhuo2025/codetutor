@@ -431,10 +431,24 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+
   .material-plan-visual-object,
   .material-plan-skeleton-line,
-  .material-plan-scan-beam {
+  .material-plan-scan-beam,
+  .animate-fadeUp,
+  .animate-fadeIn {
     animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  [class*='hero-chat-scroll'] {
+    animation: none !important;
   }
 
   .learn-speech-wave-bar {

@@ -22,6 +22,7 @@ import { useAppEventTracker } from "@/providers/app-providers"
 import type { SubscriptionSnapshot } from "@/types/profile"
 
 const SUBSCRIBE_INTENT_PARAM = "intent=subscribe"
+const FREE_PLAN_NAME = "免费版"
 
 const EMPTY_SUBSCRIPTION_SNAPSHOT: SubscriptionSnapshot = {
   planName: "免费版",
@@ -55,7 +56,19 @@ function mapSubscriptionPlanToMarketingPlan(
   }
 }
 
-export function LandingPricing() {
+type LandingPricingProps = {
+  onFreePlanFeatureLabelChange?: (label: string) => void
+}
+
+function getFreePlanFeatureLabel(plans: MarketingPlan[]) {
+  return (
+    plans.find((plan) => plan.name === FREE_PLAN_NAME)?.features.find((feature) =>
+      /AI|对话|轮/.test(feature),
+    ) ?? null
+  )
+}
+
+export function LandingPricing({ onFreePlanFeatureLabelChange }: LandingPricingProps) {
   const { authState, ctaHref, ctaLabel } = useLandingAuthState()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -68,16 +81,27 @@ export function LandingPricing() {
     void requestData<SubscriptionPlansResponseData>("/subscription/plans")
       .then((data) => {
         if (!cancelled && data.plans.length > 0) {
-          setPlans(data.plans.map(mapSubscriptionPlanToMarketingPlan))
+          const nextPlans = data.plans.map(mapSubscriptionPlanToMarketingPlan)
+          setPlans(nextPlans)
+          const nextFreePlanFeatureLabel = getFreePlanFeatureLabel(nextPlans)
+          if (nextFreePlanFeatureLabel) {
+            onFreePlanFeatureLabelChange?.(nextFreePlanFeatureLabel)
+          }
         }
       })
       .catch(() => {
-        if (!cancelled) setPlans(marketingPlans)
+        if (!cancelled) {
+          setPlans(marketingPlans)
+          const fallbackFreePlanFeatureLabel = getFreePlanFeatureLabel(marketingPlans)
+          if (fallbackFreePlanFeatureLabel) {
+            onFreePlanFeatureLabelChange?.(fallbackFreePlanFeatureLabel)
+          }
+        }
       })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [onFreePlanFeatureLabelChange])
 
   useEffect(() => {
     if (authState.status !== "authenticated" || searchParams.get("intent") !== "subscribe") {
@@ -115,7 +139,7 @@ export function LandingPricing() {
             套餐订阅
           </p>
           <h2 className="text-4xl font-bold tracking-tight text-balance">
-            先用免费版体验, 再决定是否持续升级
+            先用免费版体验，再决定是否持续升级
           </h2>
           <p className="mt-4 text-base leading-7 text-muted-foreground">
             当前处于 MVP 内测阶段，定价用于表达能力层级与升级路径，正式联调前仍可能调整。
