@@ -299,7 +299,7 @@ export function finalizeAssistantTaskPatch(input: {
     return {
       taskId: input.taskId,
       status: "completed" as const,
-      suggestedNextAction: "你已达到当前任务完成标准，可点击“我完成了”进入下一步。",
+      suggestedNextAction: "你已达到当前任务完成标准，可点击“我完成了”进入下一关。",
     }
   }
 
@@ -326,7 +326,7 @@ export function deriveTaskPatch(input: {
     return {
       taskId: input.taskId,
       status: "completed",
-      suggestedNextAction: "你已达到当前任务完成标准，可点击“我完成了”进入下一步。",
+      suggestedNextAction: "你已达到当前任务完成标准，可点击“我完成了”进入下一关。",
     }
   }
 

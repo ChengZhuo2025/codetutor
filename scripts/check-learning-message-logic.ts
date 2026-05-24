@@ -305,7 +305,7 @@ test("finalizeAssistantTaskPatch upgrades accepted review replies into a complet
     {
       taskId: "task-3",
       status: "completed",
-      suggestedNextAction: "你已达到当前任务完成标准，可点击“我完成了”进入下一步。",
+      suggestedNextAction: "你已达到当前任务完成标准，可点击“我完成了”进入下一关。",
     },
   )
 })
@@ -505,8 +505,8 @@ test("parseStoredStructuredLearningMessageContent restores persisted structured 
       ],
       actions: [
         {
-          label: "进入下一步",
-          prompt: "我已完成当前任务，请带我进入下一步并告诉我开头第一步该做什么。",
+          label: "进入下一关",
+          prompt: "我已完成当前任务，请带我进入下一关并告诉我开头第一步该做什么。",
           tone: "success",
         },
       ],

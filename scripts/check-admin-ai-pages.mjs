@@ -71,6 +71,11 @@ const sidebarSource = readFileSync(
   "utf8",
 )
 
+const paginationFooterSource = readFileSync(
+  new URL("../features/admin-shell/components/admin-list-pagination-footer.tsx", import.meta.url),
+  "utf8",
+)
+
 const deprecatedLegacyTagImportPattern = new RegExp(
   String.raw`import\s+\{\s*Admin` + String.raw`ListTag\s*\}`,
 )
@@ -102,5 +107,9 @@ assert.match(sidebarSource, /getRenderedExpandedAdminMenuHref\(manualExpandedIte
 assert.match(sidebarSource, /getNextExpandedAdminMenuHref\(renderedCurrent, item\.href\)/, "Admin sidebar should replace the expanded submenu when another parent is clicked")
 assert.match(bindingManagementSource, /AdminSelect/, "The binding page should use the shared AdminSelect component")
 assert.match(bindingManagementSource, /params\.set\("interactionType"|params\.set\("toolId"|params\.set\("selectionMode"/, "The binding page should send structured filter query params")
+assert.match(paginationFooterSource, /useState\(false\)/, "Admin pagination footer should avoid server/client disabled mismatches before hydration")
+assert.match(paginationFooterSource, /queueMicrotask/, "Admin pagination footer should enable hydrated disabled state after hydration")
+assert.match(paginationFooterSource, /disabled=\{paginationHydrated && prevDisabled\}/, "Admin pagination previous button should only emit disabled after hydration")
+assert.match(paginationFooterSource, /disabled=\{paginationHydrated && nextDisabled\}/, "Admin pagination next button should only emit disabled after hydration")
 
 console.log("Admin AI pages expose the expected information architecture and menu wiring.")

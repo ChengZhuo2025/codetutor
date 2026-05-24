@@ -78,7 +78,7 @@ const OUTPUT_FORMAT_TEMPLATES: Record<LearningInteractionType, OutputFormatTempl
       "继续提问｜我还想再问一个相关的问题。",
   },
   completion_feedback: {
-    summaryInstruction: "第一段先确认当前任务已经完成，并给一句成长反馈。不要写“第 N 关已完成”，后续推进统一称为“下一步”。",
+    summaryInstruction: "第一段先确认当前关已经完成，并给一句成长反馈。不要写“第 N 关已完成”，后续推进称为“下一关”。",
     sections: [
       {
         title: "完成确认",
@@ -90,7 +90,7 @@ const OUTPUT_FORMAT_TEMPLATES: Record<LearningInteractionType, OutputFormatTempl
       },
       {
         title: "下一步建议",
-        instruction: "说明进入下一步前最该延续的动作。",
+        instruction: "说明进入下一关前最该延续的动作。",
       },
     ],
     requiredActionExample:
@@ -148,6 +148,6 @@ export function buildLearningOutputFormatGuide(
     "## 建议问题",
     "提供 1-2 条用户视角的建议问题或回复模板，并使用 `- 动作文案｜用户点击后应填入输入框的话` 的格式。",
     `可参考动作：${template.requiredActionExample}`,
-    "不要在这里输出“继续下一关”“进入下一关”“第 N 关已完成”“我完成了”等进度动作；进度推进由系统按钮控制。教学模板中的某部分如果确实没有内容，可以省略对应二级标题；概念问答场景可以完全省略“建议问题”。",
+    "不要在这里输出“我完成了”等系统进度动作；当前关未验收合格时不要输出“继续下一关”“进入下一关”“第 N 关已完成”。教学模板中的某部分如果确实没有内容，可以省略对应二级标题；概念问答场景可以完全省略“建议问题”。",
   ]
 }

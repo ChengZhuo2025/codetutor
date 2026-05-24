@@ -1,7 +1,7 @@
 "use client"
 
 import { ChevronDown, ChevronUp, RefreshCw } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import type { LearningCurrentSessionResponseData } from "@/lib/api/contracts/learning"
 import type { ConnectionState } from "@/features/learning/components/learn-chat-types"
@@ -36,7 +36,23 @@ export function LearnChatHeader({
   restartSubmitting,
   onRestart,
 }: LearnChatHeaderProps) {
-  const [collapsed, setCollapsed] = useState(() => readHeaderCollapsedFromStorage())
+  const [collapsed, setCollapsed] = useState(false)
+
+  useEffect(() => {
+    let active = true
+
+    queueMicrotask(() => {
+      if (!active) {
+        return
+      }
+
+      setCollapsed(readHeaderCollapsedFromStorage())
+    })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   const handleToggleCollapsed = () => {
     setCollapsed((current) => {

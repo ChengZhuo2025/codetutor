@@ -118,8 +118,8 @@ test("buildStableAssistantActions exposes next-stage progress only after complet
       nextTaskTitle: "变量和状态",
     }).at(-1),
     {
-      label: "进入下一步",
-      prompt: "进入下一步：变量和状态",
+      label: "进入下一关",
+      prompt: "进入下一关：变量和状态",
       tone: "success",
       kind: "advance_next_task",
     },
@@ -150,8 +150,8 @@ test("buildStableAssistantActions exposes next-stage progress only after complet
       nextTaskTitle: "变量和状态",
     }).at(-1),
     {
-      label: "进入下一步",
-      prompt: "进入下一步：变量和状态",
+      label: "进入下一关",
+      prompt: "进入下一关：变量和状态",
       tone: "success",
       kind: "advance_next_task",
     },

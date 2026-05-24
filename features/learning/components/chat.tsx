@@ -724,7 +724,7 @@ export function LearnChat({
     }
 
     if (data.nextTask) {
-      lines.push("", `下一步：${data.nextTask.title}`)
+      lines.push("", `下一关：${data.nextTask.title}`)
     }
 
     const message: Message = {
@@ -742,13 +742,13 @@ export function LearnChat({
           taskId: learningData.task.taskId,
           status: "completed",
           suggestedNextAction: data.nextTask
-            ? `进入下一步：${data.nextTask.title}`
+            ? `进入下一关：${data.nextTask.title}`
             : "回到地图查看本轮学习计划状态",
         },
       }),
       xp: data.scoreDelta > 0 ? data.scoreDelta : undefined,
       nextStep: data.nextTask
-        ? `进入下一步：${data.nextTask.title}`
+        ? `进入下一关：${data.nextTask.title}`
         : "本轮学习计划已完成",
     }
 

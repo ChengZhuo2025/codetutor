@@ -55,6 +55,16 @@ assert.match(
   /localStorage/,
   "workspace layout provider should persist layout state to localStorage",
 )
+assert.doesNotMatch(
+  providerSource,
+  /useState\s*\(\s*\(\)\s*=>\s*read(?:Left|Right)CollapsedFromStorage\s*\(/,
+  "workspace layout provider should not read localStorage during the first client render",
+)
+assert.match(
+  providerSource,
+  /useEffect/,
+  "workspace layout provider should load persisted layout state after hydration",
+)
 
 assert.match(
   appShellSource,

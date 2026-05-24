@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -69,10 +70,27 @@ function readRightCollapsedFromStorage(): RightCollapsedByPage {
 }
 
 export function WorkspaceLayoutProvider({ children }: { children: ReactNode }) {
-  const [leftCollapsed, setLeftCollapsed] = useState(() => readLeftCollapsedFromStorage())
-  const [rightCollapsedByPage, setRightCollapsedByPage] = useState<RightCollapsedByPage>(() =>
-    readRightCollapsedFromStorage(),
+  const [leftCollapsed, setLeftCollapsed] = useState(false)
+  const [rightCollapsedByPage, setRightCollapsedByPage] = useState<RightCollapsedByPage>(
+    DEFAULT_RIGHT_COLLAPSED_BY_PAGE,
   )
+
+  useEffect(() => {
+    let active = true
+
+    queueMicrotask(() => {
+      if (!active) {
+        return
+      }
+
+      setLeftCollapsed(readLeftCollapsedFromStorage())
+      setRightCollapsedByPage(readRightCollapsedFromStorage())
+    })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   const toggleLeftCollapsed = useCallback(() => {
     setLeftCollapsed((current) => {

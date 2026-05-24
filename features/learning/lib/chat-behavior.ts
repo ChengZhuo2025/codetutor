@@ -286,10 +286,10 @@ export function buildStableAssistantActions(input: {
             kind: "advance_next_task",
           }
         : {
-            label: "进入下一步",
+            label: "进入下一关",
             prompt: input.nextTaskTitle
-              ? `进入下一步：${input.nextTaskTitle}`
-              : "我已完成当前任务，请进入下一步。",
+              ? `进入下一关：${input.nextTaskTitle}`
+              : "我已完成当前任务，请进入下一关。",
             tone: "success",
             kind: "advance_next_task",
           }

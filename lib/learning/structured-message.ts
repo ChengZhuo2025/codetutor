@@ -468,8 +468,8 @@ function buildStructuredActions(input: {
   ) {
     return [
       {
-        label: "进入下一步",
-        prompt: "我已完成当前任务，请带我进入下一步并告诉我开头第一步该做什么。",
+        label: "进入下一关",
+        prompt: "我已完成当前任务，请带我进入下一关并告诉我开头第一步该做什么。",
         tone: "success",
       },
     ]

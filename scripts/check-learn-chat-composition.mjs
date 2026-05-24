@@ -43,6 +43,16 @@ assert.match(
   /learn:chat-header-collapsed/,
   "learn chat header should persist its local collapsed state",
 )
+assert.doesNotMatch(
+  headerSource,
+  /useState\s*\(\s*\(\)\s*=>\s*readHeaderCollapsedFromStorage\s*\(/,
+  "learn chat header should not read localStorage during the first client render",
+)
+assert.match(
+  headerSource,
+  /useEffect/,
+  "learn chat header should load persisted collapsed state after hydration",
+)
 assert.match(
   headerSource,
   /重头开始/,

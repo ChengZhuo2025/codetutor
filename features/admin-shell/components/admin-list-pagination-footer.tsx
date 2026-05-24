@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import type { ReactNode } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -39,6 +40,24 @@ export function AdminListPaginationFooter({
   centerContent,
   endActions,
 }: AdminListPaginationFooterProps) {
+  const [paginationHydrated, setPaginationHydrated] = useState(false)
+  const prevDisabled = !canPrev || isLoading
+  const nextDisabled = !canNext || isLoading
+
+  useEffect(() => {
+    let active = true
+
+    queueMicrotask(() => {
+      if (active) {
+        setPaginationHydrated(true)
+      }
+    })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
   return (
     <div className="flex flex-col gap-3 border-t border-border bg-muted/20 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -75,8 +94,13 @@ export function AdminListPaginationFooter({
             variant="outline"
             size="icon"
             className="h-8 w-8"
-            disabled={!canPrev || isLoading}
-            onClick={onPrevPage}
+            disabled={paginationHydrated && prevDisabled}
+            onClick={() => {
+              if (prevDisabled) {
+                return
+              }
+              onPrevPage()
+            }}
             aria-label="上一页"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -86,8 +110,13 @@ export function AdminListPaginationFooter({
             variant="outline"
             size="icon"
             className="h-8 w-8"
-            disabled={!canNext || isLoading}
-            onClick={onNextPage}
+            disabled={paginationHydrated && nextDisabled}
+            onClick={() => {
+              if (nextDisabled) {
+                return
+              }
+              onNextPage()
+            }}
             aria-label="下一页"
           >
             <ChevronRight className="h-4 w-4" />

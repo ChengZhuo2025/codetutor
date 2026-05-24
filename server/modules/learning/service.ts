@@ -1261,12 +1261,12 @@ export async function getLearningCurrentSessionData(
               "**你已经确认了当前任务的关键能力：**",
               `- ${currentStep.title}`,
               nextStep
-                ? `- 接下来可以进入下一步：${nextStep.title}`
+                ? `- 接下来可以进入下一关：${nextStep.title}`
                 : "- 当前已是本路径最后一步，完成后该路径练习将全部结束",
             ].join("\n"),
             xp: currentStep.reward_score,
             nextStep: nextStep
-              ? `进入下一步：${nextStep.title}`
+              ? `进入下一关：${nextStep.title}`
               : "完成当前任务后本路径练习全部结束，可前往学习地图查看进度",
           },
           {

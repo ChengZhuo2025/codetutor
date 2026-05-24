@@ -74,10 +74,13 @@ const CHAT_TONE_CLASS = {
     icon: "text-gold",
   },
   success: {
-    panel: "border-teal-200 bg-teal-100",
-    badge: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    panel: "border-teal-200 bg-teal-100 dark:border-emerald-300/30 dark:bg-emerald-300/10",
+    badge: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:border-emerald-200/45 dark:bg-emerald-950/55 dark:text-emerald-100",
     icon: "text-emerald-600 dark:text-emerald-300",
     text: "text-emerald-700 dark:text-emerald-300",
+    mutedText: "text-emerald-900/70 dark:text-emerald-100/75",
+    labelText: "text-emerald-900/75 dark:text-emerald-100/80",
+    bodyText: "text-emerald-950 dark:text-emerald-50",
   },
 } as const
 
@@ -88,6 +91,9 @@ function getTaskPatchDisplayMeta(taskPatch: NonNullable<Message["taskPatch"]>) {
       badgeClass: CHAT_TONE_CLASS.warning.badge,
       panelClass: CHAT_TONE_CLASS.warning.panel,
       iconClass: CHAT_TONE_CLASS.warning.icon,
+      mutedTextClass: "text-muted-foreground",
+      labelTextClass: "text-muted-foreground/80",
+      bodyTextClass: "text-foreground/90",
     }
   }
 
@@ -97,6 +103,9 @@ function getTaskPatchDisplayMeta(taskPatch: NonNullable<Message["taskPatch"]>) {
       badgeClass: CHAT_TONE_CLASS.success.badge,
       panelClass: CHAT_TONE_CLASS.success.panel,
       iconClass: CHAT_TONE_CLASS.success.icon,
+      mutedTextClass: CHAT_TONE_CLASS.success.mutedText,
+      labelTextClass: CHAT_TONE_CLASS.success.labelText,
+      bodyTextClass: CHAT_TONE_CLASS.success.bodyText,
     }
   }
 
@@ -105,6 +114,9 @@ function getTaskPatchDisplayMeta(taskPatch: NonNullable<Message["taskPatch"]>) {
     badgeClass: CHAT_TONE_CLASS.info.badge,
     panelClass: CHAT_TONE_CLASS.info.panel,
     iconClass: CHAT_TONE_CLASS.info.icon,
+    mutedTextClass: "text-muted-foreground",
+    labelTextClass: "text-muted-foreground/80",
+    bodyTextClass: "text-foreground/90",
   }
 }
 
@@ -407,7 +419,7 @@ export function LearnChatMessageItem({
                     >
                       {taskPatchMeta.badge}
                     </span>
-                    <span className="text-[12px] font-medium text-muted-foreground">
+                    <span className={cn("text-[12px] font-medium", taskPatchMeta.mutedTextClass)}>
                       当前任务状态已同步
                     </span>
                   </div>
@@ -416,10 +428,15 @@ export function LearnChatMessageItem({
                       className={cn("h-3.5 w-3.5 shrink-0", taskPatchMeta.iconClass)}
                     />
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
+                      <p
+                        className={cn(
+                          "text-xs font-semibold uppercase tracking-[0.12em]",
+                          taskPatchMeta.labelTextClass,
+                        )}
+                      >
                         下一步建议
                       </p>
-                      <p className="mt-1 text-sm leading-6 text-foreground/90">
+                      <p className={cn("mt-1 text-sm leading-6", taskPatchMeta.bodyTextClass)}>
                         {taskPatch.suggestedNextAction}
                       </p>
                     </div>
