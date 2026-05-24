@@ -139,7 +139,8 @@ export function LandingPricing({ onFreePlanFeatureLabelChange }: LandingPricingP
             套餐订阅
           </p>
           <h2 className="text-4xl font-bold tracking-tight text-balance">
-            先用免费版体验，再决定是否持续升级
+            先用<span className="text-brand">免费版体验</span><span className="font-normal"> / </span>
+            再决定是否升级
           </h2>
           <p className="mt-4 text-base leading-7 text-muted-foreground">
             当前处于 MVP 内测阶段，定价用于表达能力层级与升级路径，正式联调前仍可能调整。
@@ -153,8 +154,8 @@ export function LandingPricing({ onFreePlanFeatureLabelChange }: LandingPricingP
               className={cn(
                 "relative flex flex-col rounded-[30px] border p-8 transition-all hover:-translate-y-1 hover:border-brand/40 hover:bg-brand/5",
                 plan.highlight
-                  ? "border-brand/40 bg-brand/5 shadow-lg shadow-brand/10 dark:bg-[linear-gradient(180deg,oklch(0.24_0.04_270/0.94),oklch(0.16_0.015_270/0.98))] dark:shadow-[0_24px_80px_-42px_oklch(0.75_0.24_270/0.28)]"
-                  : "border-border bg-card shadow-md shadow-black/[0.06] dark:border-white/10 dark:bg-surface-2/88 dark:shadow-[0_20px_70px_-50px_rgba(0,0,0,0.72)]",
+                  ? "border-brand/40 bg-brand/5 shadow-lg shadow-brand/10 dark:bg-[linear-gradient(180deg,oklch(0.24_0.04_270/0.94),oklch(0.16_0.015_270/0.98))] dark:shadow-[0_22px_70px_-46px_oklch(0.75_0.24_270/0.45)]"
+                  : "border-border bg-card shadow-[0_22px_70px_-46px_rgba(15,23,42,0.32)] dark:border-white/10 dark:bg-surface-2/80",
               )}
             >
               {plan.highlight && (

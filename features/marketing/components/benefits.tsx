@@ -11,7 +11,7 @@ export function LandingBenefits() {
             学习收益
           </p>
           <h2 className="text-4xl font-bold tracking-tight text-balance">
-            从 &ldquo;看过教程&rdquo; 到 &ldquo;真正学会&rdquo;
+            从看过教程到<span className="text-brand">真正学会</span>
           </h2>
           <p className="mt-4 text-base leading-7 text-muted-foreground">
             不再只是收藏和观看，让每次学习都有可见产出和持续反馈

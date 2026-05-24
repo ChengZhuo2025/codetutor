@@ -16,7 +16,7 @@ export function LandingHowItWorks() {
             学习方式
           </p>
           <h2 className="text-4xl font-bold tracking-tight text-balance">
-            三步从 &ldquo;看过&rdquo; 走向 &ldquo;做成&rdquo;
+            三步从<span className="text-brand">看过</span>走向<span className="text-brand">做成</span>
           </h2>
           <p className="mt-4 text-base leading-7 text-muted-foreground">
             不把一整套教程直接塞给你，而是先判断当前目标，再拆出一条能继续执行的路径。
@@ -31,7 +31,7 @@ export function LandingHowItWorks() {
               <React.Fragment key={item.step}>
                 <div
                   className={cn(
-                    "group relative overflow-hidden rounded-[26px] border border-border/70 bg-card/82 p-7 backdrop-blur animate-fadeUp transition-all hover:-translate-y-0.5 hover:border-brand/20 hover:bg-brand/4 dark:border-white/10 dark:bg-surface-2/76 dark:hover:bg-surface-2",
+                    "group relative overflow-hidden rounded-[26px] border border-border/70 bg-card/82 p-7 backdrop-blur animate-fadeUp transition-all shadow-[0_22px_70px_-46px_rgba(15,23,42,0.32)] hover:-translate-y-0.5 hover:border-brand/20 hover:bg-brand/4 dark:border-white/10 dark:bg-surface-2/76 dark:hover:bg-surface-2",
                     index === 0
                       ? "animate-delay-100"
                       : index === 1

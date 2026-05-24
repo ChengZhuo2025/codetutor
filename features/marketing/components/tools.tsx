@@ -32,7 +32,7 @@ export function LandingTools() {
               <h2 className="mb-4 text-3xl leading-[1.3] font-bold tracking-tight text-balance">
                 选择一个工具
                 <br />
-                直接进入对应第一课
+                <span className="text-brand">开始进入</span>对应第一课
               </h2>
               <p className="mb-8 max-w-xl text-sm leading-7 text-muted-foreground">
                 先从你真正要用的工具开始学。不同工具不会套同一份课程，而是给出不同的起步任务、提示方式和产出标准。
@@ -46,7 +46,7 @@ export function LandingTools() {
                     aria-pressed={activeTool === tool.name}
                     onClick={() => setActiveTool(tool.name)}
                     className={cn(
-                      "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all",
+                      "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all shadow-[0_10px_20px_-10px_rgba(15,25,45,0.15)]",
                       activeTool === tool.name
                         ? "border-brand/40 bg-brand text-white shadow-[0_18px_44px_-30px_rgba(80,70,220,0.5)]"
                         : "border-border/70 bg-card/80 text-muted-foreground hover:border-brand/24 hover:bg-brand/5 hover:text-foreground dark:border-white/10 dark:bg-surface-2/75",
@@ -136,7 +136,7 @@ export function LandingTools() {
                 {marketingAudiences.map((item) => (
                   <div
                     key={item.label}
-                    className="rounded-2xl bg-surface-1 px-4 py-3 dark:bg-white/5"
+                    className="rounded-2xl bg-surface-1 px-4 py-3 dark:bg-surface-2 transition-all hover:-translate-y-1 hover:bg-brand/8 dark:hover:bg-brand/10"
                   >
                     <p className="text-sm font-semibold">{item.label}</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
