@@ -6,6 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   buildStableAssistantActions,
   normalizeAssistantActions,
+  shouldRenderAssistantMessageActions,
+  shouldRenderAssistantNextStep,
   shouldRenderMessageTaskPatch,
   shouldStabilizePendingAssistantTone,
   type StableAssistantAction,
@@ -134,6 +136,7 @@ type LearnChatMessageItemProps = {
   canTriggerCompleteQuickAction: boolean
   isFinalTask: boolean
   nextTaskTitle?: string | null
+  isReviewMode?: boolean
   speechState?: "idle" | "loading" | "playing" | "paused"
 }
 
@@ -148,6 +151,7 @@ export function LearnChatMessageItem({
   canTriggerCompleteQuickAction,
   isFinalTask,
   nextTaskTitle,
+  isReviewMode = false,
   speechState = "idle",
 }: LearnChatMessageItemProps) {
   const meta = MESSAGE_KIND_META[message.kind]
@@ -174,8 +178,13 @@ export function LearnChatMessageItem({
     : message.attachment
       ? [message.attachment]
       : []
+  const canRenderAssistantActions = shouldRenderAssistantMessageActions({
+    isReviewMode,
+    role: message.role,
+    actionCount: message.structuredContent?.actions?.length ?? 0,
+  })
   const assistantActions =
-    message.role === "ai" && message.structuredContent?.actions?.length
+    canRenderAssistantActions
       ? buildStableAssistantActions({
           actions: normalizeAssistantActions(message.structuredContent.actions),
           taskState,
@@ -192,6 +201,10 @@ export function LearnChatMessageItem({
           nextTaskTitle,
         })
       : []
+  const canRenderNextStep = shouldRenderAssistantNextStep({
+    isReviewMode,
+    nextStep: message.nextStep,
+  })
   const canReadAloud =
     message.role === "ai" &&
     Boolean(message.speechMessageId) &&
@@ -446,7 +459,7 @@ export function LearnChatMessageItem({
             })()
           : null}
 
-        {message.nextStep ? (
+        {canRenderNextStep ? (
           <button
             type="button"
             onClick={() => onNextStepClick(message)}

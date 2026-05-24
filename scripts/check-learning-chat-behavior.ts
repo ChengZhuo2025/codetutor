@@ -10,6 +10,8 @@ import {
   normalizeAssistantAction,
   resolveAssistantActionIntent,
   shouldCompleteCurrentTaskFromAssistantAction,
+  shouldRenderAssistantMessageActions,
+  shouldRenderAssistantNextStep,
   shouldRenderLearningResumeCard,
   shouldRenderMessageTaskPatch,
   shouldRenderStructuredMessageSection,
@@ -155,6 +157,40 @@ test("buildStableAssistantActions exposes next-stage progress only after complet
       tone: "success",
       kind: "advance_next_task",
     },
+  )
+})
+
+test("review mode hides assistant message actions and next-step progress buttons", () => {
+  assert.equal(
+    shouldRenderAssistantMessageActions({
+      isReviewMode: true,
+      role: "ai",
+      actionCount: 3,
+    }),
+    false,
+  )
+  assert.equal(
+    shouldRenderAssistantNextStep({
+      isReviewMode: true,
+      nextStep: "进入下一关：变量和状态",
+    }),
+    false,
+  )
+
+  assert.equal(
+    shouldRenderAssistantMessageActions({
+      isReviewMode: false,
+      role: "ai",
+      actionCount: 3,
+    }),
+    true,
+  )
+  assert.equal(
+    shouldRenderAssistantNextStep({
+      isReviewMode: false,
+      nextStep: "进入下一关：变量和状态",
+    }),
+    true,
   )
 })
 

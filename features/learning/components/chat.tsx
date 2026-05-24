@@ -264,6 +264,7 @@ export function LearnChat({
 
   const { mission, planSummary, resume, rightPanel, supportOptions } =
     learningData
+  const isReviewMode = learningData.task.status === "completed"
   const isFinalTask = mission?.nextPreviewIsFinal ?? false
   const nextTaskTitle = isFinalTask ? null : mission?.nextUnlockTitle ?? null
   const hasResume = Boolean(resume)
@@ -1479,6 +1480,7 @@ export function LearnChat({
           canTriggerCompleteQuickAction={canTriggerCompleteQuickAction}
           isFinalTask={isFinalTask}
           nextTaskTitle={nextTaskTitle}
+          isReviewMode={isReviewMode}
           activeSpeechMessageId={activeSpeechMessageId}
           speechStatus={speechStatus}
         />

@@ -303,6 +303,21 @@ export function buildStableAssistantActions(input: {
   return [...prefillActions, progressAction]
 }
 
+export function shouldRenderAssistantMessageActions(input: {
+  isReviewMode: boolean
+  role: "system" | "ai" | "user"
+  actionCount: number
+}) {
+  return !input.isReviewMode && input.role === "ai" && input.actionCount > 0
+}
+
+export function shouldRenderAssistantNextStep(input: {
+  isReviewMode: boolean
+  nextStep?: string | null
+}) {
+  return !input.isReviewMode && Boolean(input.nextStep)
+}
+
 export function buildComposerDraftFromAssistantAction(input: {
   label: string
   prompt: string

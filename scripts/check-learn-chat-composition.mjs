@@ -188,6 +188,36 @@ assert.match(
   "learn chat message list should pass speech playback controls into message items",
 )
 assert.match(
+  learnChatSource,
+  /const isReviewMode = learningData\.task\.status === "completed"/,
+  "LearnChat should derive completed-task review mode from the selected task status",
+)
+assert.match(
+  learnChatSource,
+  /isReviewMode=\{isReviewMode\}/,
+  "LearnChat should pass review mode into the message list",
+)
+assert.match(
+  messageListSource,
+  /isReviewMode\?: boolean/,
+  "learn chat message list should accept review mode",
+)
+assert.match(
+  messageListSource,
+  /isReviewMode=\{isReviewMode\}/,
+  "learn chat message list should pass review mode into message items",
+)
+assert.match(
+  messageItemSource,
+  /shouldRenderAssistantMessageActions/,
+  "assistant message item should hide message quick actions through a shared review-mode guard",
+)
+assert.match(
+  messageItemSource,
+  /shouldRenderAssistantNextStep/,
+  "assistant message item should hide next-step progress buttons through a shared review-mode guard",
+)
+assert.match(
   messageItemSource,
   /aria-label=\{speechLabel\}/,
   "assistant message speech button should expose an accessible label",

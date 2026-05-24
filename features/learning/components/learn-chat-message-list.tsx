@@ -42,6 +42,7 @@ type LearnChatMessageListProps = {
   canTriggerCompleteQuickAction: boolean
   isFinalTask: boolean
   nextTaskTitle?: string | null
+  isReviewMode?: boolean
   activeSpeechMessageId: number | null
   speechStatus: "idle" | "loading" | "playing" | "paused"
 }
@@ -71,6 +72,7 @@ export function LearnChatMessageList({
   canTriggerCompleteQuickAction,
   isFinalTask,
   nextTaskTitle,
+  isReviewMode = false,
   activeSpeechMessageId,
   speechStatus,
 }: LearnChatMessageListProps) {
@@ -133,6 +135,7 @@ export function LearnChatMessageList({
               canTriggerCompleteQuickAction={canTriggerCompleteQuickAction}
               isFinalTask={isFinalTask}
               nextTaskTitle={nextTaskTitle}
+              isReviewMode={isReviewMode}
               speechState={activeSpeechMessageId === message.id ? speechStatus : "idle"}
             />
           ))
