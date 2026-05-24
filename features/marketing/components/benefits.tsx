@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 
 export function LandingBenefits() {
   return (
-    <section id="benefits" className="relative px-6 py-24">
+    <section id="benefits" className="relative px-6 py-20 scroll-mt-20">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto mb-16 max-w-3xl text-center">
@@ -18,13 +18,13 @@ export function LandingBenefits() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {marketingBenefits.map((benefit) => {
             const Icon = benefit.icon
             return (
               <div
                 key={benefit.title}
-                className="group relative overflow-hidden border-t border-border/70 px-1 py-6 transition-all hover:border-brand/40 dark:border-white/10"
+                className="group relative overflow-hidden border-t border-border/70 px-1 pt-6 transition-all hover:border-brand/40 dark:border-white/10 dark:hover:border-brand/40"
               >
                 <div
                   className={cn(

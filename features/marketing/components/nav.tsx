@@ -18,6 +18,9 @@ import { usePublicSite } from "@/features/site/providers/public-site-provider"
 import { cn } from "@/lib/utils"
 import { useAppEventTracker } from "@/providers/app-providers"
 
+const NAV_HEIGHT = 60
+const SCROLL_OFFSET = NAV_HEIGHT
+
 function scrollToSection(href: string) {
   if (href === "#home") {
     window.scrollTo({ top: 0, behavior: "smooth" })
@@ -27,7 +30,8 @@ function scrollToSection(href: string) {
   const id = href.replace("#", "")
   const el = document.getElementById(id)
   if (el) {
-    el.scrollIntoView({ behavior: "smooth", block: "start" })
+    const top = el.getBoundingClientRect().top + window.scrollY - SCROLL_OFFSET
+    window.scrollTo({ top, behavior: "smooth" })
   }
 }
 

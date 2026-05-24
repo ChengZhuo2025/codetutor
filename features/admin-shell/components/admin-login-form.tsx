@@ -162,7 +162,7 @@ export function AdminLoginForm() {
 
         <section className="relative flex w-full items-center justify-center px-6 pb-10 pt-3 sm:px-8 lg:min-h-screen lg:w-[46%] lg:px-9 lg:pb-8 lg:pt-20">
           <div className="w-full max-w-sm lg:max-w-md">
-            <div className="rounded-[30px] border border-border/70 bg-card/88 p-5 shadow-[0_30px_100px_-44px_rgba(15,23,42,0.4)] backdrop-blur-2xl sm:p-6 lg:p-7">
+            <div className="rounded-[30px] border border-border/70 bg-card dark:bg-surface-2/60 p-5 shadow-[0_30px_100px_-44px_rgba(15,23,42,0.4)] backdrop-blur-2xl sm:p-6 lg:p-7">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_20px_48px_-24px_rgba(98,92,255,0.46)]">
                   <ShieldCheck className="h-6 w-6" aria-hidden="true" />
@@ -236,7 +236,7 @@ export function AdminLoginForm() {
                 </Button>
               </form>
 
-              <div className="mt-4 rounded-[22px] border border-border/70 bg-background/72 px-4 py-2.5 text-sm text-muted-foreground">
+              <div className="mt-4 text-sm text-muted-foreground/50">
                 仅限具备后台权限的管理员账户访问
               </div>
 
@@ -247,7 +247,7 @@ export function AdminLoginForm() {
                 >
                   智酷数能科技有限公司
                 </Link>
-                <span className="text-xs text-muted-foreground">Chrome / Edge</span>
+                <span className="text-xs text-muted-foreground">沪ICP备2026015857号-2</span>
               </div>
             </div>
           </div>

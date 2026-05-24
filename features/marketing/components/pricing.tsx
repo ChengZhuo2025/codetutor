@@ -130,7 +130,7 @@ export function LandingPricing({ onFreePlanFeatureLabelChange }: LandingPricingP
   }
 
   return (
-    <section id="pricing" className="relative px-6 py-24">
+    <section id="pricing" className="relative px-6 py-20 scroll-mt-20">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
 
       <div className="mx-auto max-w-5xl">

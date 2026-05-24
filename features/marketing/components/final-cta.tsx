@@ -9,6 +9,7 @@ import {
   USER_BUTTON_SECONDARY_CLASS,
 } from "@/components/ui/surface-styles"
 import { cn } from "@/lib/utils"
+import { smoothScrollToHash } from "@/lib/smooth-scroll"
 import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider"
 import { usePublicSite } from "@/features/site/providers/public-site-provider"
 import { useAppEventTracker } from "@/providers/app-providers"
@@ -23,7 +24,7 @@ export function LandingFinalCta({ freePlanFeatureLabel }: LandingFinalCtaProps) 
   const { site } = usePublicSite()
 
   return (
-    <section id="start" className="relative overflow-hidden px-6 py-24">
+    <section id="start" className="relative overflow-hidden px-6 py-20 scroll-mt-20">
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
       {/* 背景装饰 */}
       <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,oklch(0.96_0.02_270/0.5)_50%,oklch(0.90_0.018_270/0.8)_100%)] dark:bg-[linear-gradient(180deg,transparent_0%,oklch(0.18_0.024_270/0.6)_50%,oklch(0.12_0.01_270/0.9)_100%)]" />
@@ -80,12 +81,14 @@ export function LandingFinalCta({ freePlanFeatureLabel }: LandingFinalCtaProps) 
           >
             <Link
               href="#how"
-              onClick={() =>
+              onClick={(e) => {
+                e.preventDefault()
                 trackEvent(APP_EVENTS.landingCtaClick, {
                   source: "marketing_final_secondary",
                   target: "#how",
                 })
-              }
+                smoothScrollToHash("#how")
+              }}
             >
               查看学习方式
             </Link>

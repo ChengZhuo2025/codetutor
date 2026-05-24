@@ -7,13 +7,13 @@ import {
   USER_BUTTON_PRIMARY_CLASS,
   USER_BUTTON_SECONDARY_CLASS,
 } from "@/components/ui/surface-styles";
-import { LightRays } from "@/features/marketing/components/light-rays";
 import { getToolName } from "@/constants/tools";
 import { APP_EVENTS } from "@/constants/events";
 import { marketingConversationMessages } from "@/features/marketing/data/marketing-content";
 import { useLandingAuthState } from "@/features/marketing/providers/landing-auth-provider";
 import { usePublicSite } from "@/features/site/providers/public-site-provider";
 import { cn } from "@/lib/utils";
+import { smoothScrollToHash } from "@/lib/smooth-scroll";
 import { useAppEventTracker } from "@/providers/app-providers";
 
 const heroStats = [
@@ -38,26 +38,8 @@ export function LandingHero() {
   return (
     <section
       id="home"
-      className="relative overflow-hidden bg-background px-6 pb-16 pt-24 lg:min-h-screen lg:pt-28"
+      className="relative overflow-hidden bg-background px-6 pt-20 pb-12 lg:min-h-screen lg:pt-24"
     >
-      {/* WebGL：亮色降低强度，避免噪点/高光显得「脏」；暗色保持原视觉 */}
-      <div className="pointer-events-none absolute inset-0 z-0 opacity-[0.38] contrast-[0.98] dark:z-[1] dark:opacity-[0.96] dark:contrast-100">
-        <LightRays
-          raysOrigin="top-center"
-          raysColor="#8fa0ff"
-          raysSpeed={1.55}
-          lightSpread={0.9}
-          rayLength={2.35}
-          fadeDistance={1.95}
-          saturation={1.15}
-          followMouse
-          mouseInfluence={0.18}
-          noiseAmount={0.012}
-          distortion={0.075}
-          className="opacity-100"
-        />
-      </div>
-
       <div
         className="pointer-events-none absolute inset-0 z-[1] dark:hidden"
         style={{
@@ -78,20 +60,26 @@ export function LandingHero() {
           backgroundSize: "48px 48px",
         }}
       />
+      {/* 背景装饰 */}
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,oklch(0.95_0.05_280/0.5)_50%,oklch(0.90_0.020_270/0.8)_100%)] dark:bg-[linear-gradient(180deg,transparent_0%,oklch(0.20_0.024_270/0.6)_50%,oklch(0.14_0.02_270/0.9)_100%)]" />
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,oklch(0.84_0.28_270/0.15),transparent_50%)]" />
+      </div>
+
       {/* 亮色：去掉四周压暗的「相框」，改为顶部柔和光晕；底部用页面底色做长距离融接，消除横向硬边 */}
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(ellipse_95%_70%_at_50%_-12%,oklch(0.97_0.04_195/0.38),transparent_58%)] dark:hidden" />
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,transparent_0%,transparent_38%,color-mix(in_oklch,var(--background)_55%,transparent)_72%,var(--background)_96%,var(--background)_100%)] dark:hidden" />
       <div className="pointer-events-none absolute inset-0 z-[1] hidden dark:block bg-[radial-gradient(ellipse_at_center,transparent_14%,oklch(0.12_0.008_270/0.62)_84%)]" />
       <div className="pointer-events-none absolute inset-0 z-[1] hidden dark:block bg-[linear-gradient(180deg,oklch(0.12_0.008_270/0.14),transparent_14%,transparent_78%,oklch(0.12_0.008_270/0.38)_100%)]" />
 
-      <div className="relative z-10 mx-auto grid w-full max-w-7xl gap-8 lg:min-h-[calc(100vh-7rem)] lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:gap-10">
+      <div className="relative z-10 mx-auto grid w-full max-w-7xl gap-8 lg:min-h-[calc(100vh-8rem)] lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:gap-10">
         <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-brand/40 px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp dark:border-brand/30 dark:bg-[oklch(0.60_0.24_270/0.20)]">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand/40 px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp dark:border-brand/30 dark:bg-[oklch(0.60_0.24_270/0.20)]">
             <Sparkles className="h-3.5 w-3.5" />
             <span>{information.siteSubtitle} · MVP内测中</span>
           </div>
 
-          <h1 className="max-w-4xl text-4xl font-semibold leading-[1.12] tracking-tight text-balance md:text-5xl lg:text-6xl animate-fadeUp animate-delay-100">
+          <h1 className="max-w-3xl text-4xl font-bold leading-[1.15] tracking-tight text-balance md:text-4xl lg:text-5xl animate-fadeUp animate-delay-100">
             {information.siteSlogan}
             <br />让 AI 导师陪你
             <span className="block whitespace-nowrap text-brand sm:inline">
@@ -99,13 +87,13 @@ export function LandingHero() {
             </span>
           </h1>
 
-          <p className="mt-5 max-w-2xl text-base leading-8 text-muted-foreground text-pretty md:text-lg animate-fadeUp animate-delay-200">
+          <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground text-pretty md:text-lg animate-fadeUp animate-delay-200">
             看到大V的{heroFeaturedTools}...等 AI 教程，收藏了就当学过了？
             {information.siteName}
             会把教程内容拆成今天能完成的任务，陪你从&ldquo;看过&rdquo;走向&ldquo;学会&rdquo;。
           </p>
 
-          <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row lg:items-start animate-fadeUp animate-delay-300">
+          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row lg:items-start animate-fadeUp animate-delay-300">
             <Button
               asChild
               size="lg"
@@ -123,7 +111,9 @@ export function LandingHero() {
                   })
                 }
               >
-                {authState.status === "authenticated" ? ctaLabel : "免费开始第一课"}
+                {authState.status === "authenticated"
+                  ? ctaLabel
+                  : "免费开始第一课"}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -133,22 +123,24 @@ export function LandingHero() {
                 "inline-flex h-12 items-center justify-center px-8 text-base font-medium",
                 USER_BUTTON_SECONDARY_CLASS,
               )}
-              onClick={() =>
+              onClick={(e) => {
+                e.preventDefault();
                 trackEvent(APP_EVENTS.landingCtaClick, {
                   source: "marketing_hero_secondary",
                   target: "#how",
-                })
-              }
+                });
+                smoothScrollToHash("#how");
+              }}
             >
               查看学习方式
             </a>
           </div>
 
-          <p className="mt-6 max-w-xl text-sm leading-7 text-muted-foreground animate-fadeUp animate-delay-400">
+          <p className="mt-7 max-w-xl text-sm leading-7 text-muted-foreground animate-fadeUp animate-delay-400">
             {information.siteDescription}
           </p>
 
-          <div className="mt-7 grid w-full max-w-xl gap-3 sm:grid-cols-3 animate-fadeUp animate-delay-500">
+          <div className="mt-8 grid w-full max-w-xl gap-3 sm:grid-cols-3 animate-fadeUp animate-delay-500">
             {heroStats.map((item) => (
               <div
                 key={item.label}
@@ -177,7 +169,7 @@ export function LandingHero() {
                 </span>
               </div>
 
-              <div className="relative h-[31rem] overflow-hidden p-6">
+              <div className="relative h-[32.5rem] overflow-hidden p-6">
                 <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-18 bg-[linear-gradient(180deg,oklch(0.98_0.005_270/0.95),transparent)] dark:bg-[linear-gradient(180deg,oklch(0.14_0.01_270/0.78),transparent)]" />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-[linear-gradient(180deg,transparent,oklch(0.98_0.005_270/0.92))] dark:bg-[linear-gradient(180deg,transparent,oklch(0.14_0.01_270/0.86))]" />
 
@@ -192,7 +184,7 @@ export function LandingHero() {
                               ? "bg-foreground/10 text-foreground dark:bg-white/8"
                               : message.speaker === "system"
                                 ? "bg-gold/14 text-gold"
-                                : "bg-brand text-brand-foreground",
+                                : "bg-brand text-white",
                           )}
                         >
                           {message.speaker === "user"
@@ -304,18 +296,6 @@ export function LandingHero() {
                   {cursorToolName}、{claudeCodeToolName}、{codexToolName}{" "}
                   真正接入自己项目流程的开发者。
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {["新手起步", "项目实战", "调试重构", "接口联调"].map(
-                    (tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-border/80 bg-surface-2/90 px-2.5 py-1 text-xs text-muted-foreground dark:border-white/8 dark:bg-black/18"
-                      >
-                        {tag}
-                      </span>
-                    ),
-                  )}
-                </div>
               </div>
             </div>
           </div>

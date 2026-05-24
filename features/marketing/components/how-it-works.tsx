@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 
 export function LandingHowItWorks() {
   return (
-    <section id="how" className="relative px-6 py-24">
+    <section id="how" className="relative px-6 py-20 scroll-mt-20">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
 
       <div className="mx-auto max-w-6xl">
@@ -85,7 +85,7 @@ export function LandingHowItWorks() {
           {marketingFitNotes.map((note, index) => (
             <div
               key={note.title}
-              className="flex min-h-[96px] items-center gap-5 border-l-2 border-brand/30 bg-transparent px-4 py-4"
+              className="flex min-h-[96px] items-center gap-5 border-l-2 border-brand/30 bg-transparent px-4 py-2"
               style={{ animationDelay: `${400 + index * 100}ms` }}
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/12 text-brand">

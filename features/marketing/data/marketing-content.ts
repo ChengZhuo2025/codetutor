@@ -144,13 +144,26 @@ export const marketingTools: MarketingTool[] = [
   },
   {
     name: getToolName("stitch"),
-    tag: "在线工具 前端设计",
+    tag: "在线工具",
     color: "text-chart-5",
     dot: "bg-chart-5",
     exampleGoal: "用 Google Stitch 生成界面方向",
     firstTask: "输入页面目标，比较两版视觉方案",
     outcome: "把设计灵感转成可继续实现的界面草稿",
     fit: "适合设计师和想快速定 UI 方向的人",
+  },
+  {
+    name: getToolName("bolt"),
+    tag: "在线工具",
+    color: "text-gold",
+    dot: "bg-gold",
+    exampleGoal: "用 Bolt.new 在浏览器里快速验证想法",
+    firstTask: "打开 Bolt.new，描述你想做的页面或功能",
+    outcome: "在浏览器里跑出一个可交互的原型",
+    fit: "适合零安装、想快速试错的人",
+    downloadUrl: "https://bolt.new",
+    logoSrc: "/tool-logos/bolt.png",
+    featuredInFooter: true,
   },
 ]
 
