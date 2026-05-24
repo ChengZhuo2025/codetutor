@@ -3,6 +3,10 @@ import assert from "node:assert/strict"
 
 const file = "features/marketing/components/nav.tsx"
 const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8")
+const publicSiteProviderSource = readFileSync(
+  new URL("../features/site/providers/public-site-provider.tsx", import.meta.url),
+  "utf8",
+)
 
 assert.match(
   source,
@@ -47,6 +51,12 @@ assert.match(
   ),
   /requestData<\s*AuthSessionSummaryResponseData\s*>\("\/auth\/session"\)/,
   "LandingAuthProvider should request the authenticated home-session summary.",
+)
+
+assert.match(
+  publicSiteProviderSource,
+  /if\s*\(\s*initialSite\s*\)\s*\{\s*return\s*\}/,
+  "PublicSiteProvider should not refetch public site data when the server already supplied initialSite.",
 )
 
 console.log("Landing nav restores authenticated session state and shows continue-learning actions.")

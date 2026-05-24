@@ -26,12 +26,16 @@ type PublicSiteProviderProps = {
 
 export function PublicSiteProvider({
   children,
-  initialSite = DEFAULT_PUBLIC_SITE,
+  initialSite,
 }: PublicSiteProviderProps) {
-  const [site, setSite] = useState<PublicSiteResponseData>(initialSite)
+  const [site, setSite] = useState<PublicSiteResponseData>(initialSite ?? DEFAULT_PUBLIC_SITE)
   const [loading, setLoading] = useState(!initialSite)
 
   useEffect(() => {
+    if (initialSite) {
+      return
+    }
+
     let cancelled = false
 
     async function load() {
@@ -62,7 +66,7 @@ export function PublicSiteProvider({
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [initialSite])
 
   const value = useMemo(
     () => ({

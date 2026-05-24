@@ -31,6 +31,36 @@ type LandingAuthContextValue = {
 
 const LandingAuthContext = createContext<LandingAuthContextValue | null>(null)
 
+const AUTH_CACHE_KEY = "landing-auth-v1"
+const AUTH_CACHE_TTL = 30 * 60 * 1000
+
+function getCachedAuthState(): LandingAuthState | null {
+  if (typeof window === "undefined") return null
+  try {
+    const raw = sessionStorage.getItem(AUTH_CACHE_KEY)
+    if (!raw) return null
+    const { state, ts } = JSON.parse(raw) as { state: LandingAuthState; ts: number }
+    if (Date.now() - ts > AUTH_CACHE_TTL) {
+      sessionStorage.removeItem(AUTH_CACHE_KEY)
+      return null
+    }
+    if (state.status === "authenticated" && state.summary?.redirectTo) return state
+    if (state.status === "guest") return state
+    return null
+  } catch {
+    return null
+  }
+}
+
+function setCachedAuthState(state: LandingAuthState) {
+  if (typeof window === "undefined") return
+  try {
+    sessionStorage.setItem(AUTH_CACHE_KEY, JSON.stringify({ state, ts: Date.now() }))
+  } catch {
+    // sessionStorage 不可用时静默忽略。
+  }
+}
+
 function formatMaskedPhone(phone: string | null, nickname: string | null) {
   const digitsOnly = phone?.replace(/\D/g, "") ?? ""
 
@@ -50,8 +80,10 @@ function formatMaskedPhone(phone: string | null, nickname: string | null) {
 }
 
 export function LandingAuthProvider({ children }: { children: ReactNode }) {
-  const [authState, setAuthState] = useState<LandingAuthState>({ status: "checking" })
-
+  const [authState, setAuthState] = useState<LandingAuthState>(() => {
+    if (typeof window === "undefined") return { status: "guest" }
+    return getCachedAuthState() ?? { status: "guest" }
+  })
   useEffect(() => {
     let cancelled = false
     const supabase = createSupabaseBrowserClient()
@@ -59,12 +91,12 @@ export function LandingAuthProvider({ children }: { children: ReactNode }) {
     async function loadAuthSummary() {
       const session = await getSafeSupabaseBrowserSession(supabase)
 
-      if (cancelled) {
-        return
-      }
+      if (cancelled) return
 
       if (!session?.access_token) {
-        setAuthState({ status: "guest" })
+        const next: LandingAuthState = { status: "guest" }
+        setAuthState(next)
+        setCachedAuthState(next)
         return
       }
 
@@ -72,14 +104,15 @@ export function LandingAuthProvider({ children }: { children: ReactNode }) {
         const summary = await requestData<AuthSessionSummaryResponseData>("/auth/session")
 
         if (!cancelled) {
-          setAuthState({
-            status: "authenticated",
-            summary,
-          })
+          const next: LandingAuthState = { status: "authenticated", summary }
+          setAuthState(next)
+          setCachedAuthState(next)
         }
       } catch {
         if (!cancelled) {
-          setAuthState({ status: "guest" })
+          const next: LandingAuthState = { status: "guest" }
+          setAuthState(next)
+          setCachedAuthState(next)
         }
       }
     }
@@ -90,7 +123,9 @@ export function LandingAuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session?.access_token) {
-        setAuthState({ status: "guest" })
+        const next: LandingAuthState = { status: "guest" }
+        setAuthState(next)
+        setCachedAuthState(next)
         return
       }
 

@@ -177,13 +177,16 @@ export function LandingPricing() {
                   {plan.cta}
                 </Button>
               ) : (
-                <Link href={authState.status === "authenticated" ? ctaHref : plan.href}>
-                  <Button
-                    size="lg"
-                    className={cn(
-                      "w-full h-11 px-8 text-base font-semibold",
-                      plan.highlight ? USER_BUTTON_PRIMARY_CLASS : USER_BUTTON_SECONDARY_CLASS,
-                    )}
+                <Button
+                  asChild
+                  size="lg"
+                  className={cn(
+                    "w-full h-11 px-8 text-base font-semibold",
+                    plan.highlight ? USER_BUTTON_PRIMARY_CLASS : USER_BUTTON_SECONDARY_CLASS,
+                  )}
+                >
+                  <Link
+                    href={authState.status === "authenticated" ? ctaHref : plan.href}
                     onClick={() =>
                       trackEvent(APP_EVENTS.landingCtaClick, {
                         source: `marketing_pricing_${plan.name}`,
@@ -192,8 +195,8 @@ export function LandingPricing() {
                     }
                   >
                     {authState.status === "authenticated" ? ctaLabel : plan.cta}
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               )}
             </div>
           ))}

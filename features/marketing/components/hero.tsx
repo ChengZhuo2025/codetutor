@@ -103,13 +103,16 @@ export function LandingHero() {
         </p>
 
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row animate-fadeUp animate-delay-300">
-          <Link href={ctaHref}>
-            <Button
-              size="lg"
-              className={cn(
-                "h-12 px-10 text-base font-semibold",
-                USER_BUTTON_PRIMARY_CLASS,
-              )}
+          <Button
+            asChild
+            size="lg"
+            className={cn(
+              "h-12 px-10 text-base font-semibold",
+              USER_BUTTON_PRIMARY_CLASS,
+            )}
+          >
+            <Link
+              href={ctaHref}
               onClick={() =>
                 trackEvent(APP_EVENTS.landingCtaClick, {
                   source: "marketing_hero_primary",
@@ -119,8 +122,8 @@ export function LandingHero() {
             >
               {authState.status === "authenticated" ? ctaLabel : "免费开始学习"}
               <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <a
             href="#how"
             className={cn(
@@ -259,19 +262,21 @@ export function LandingHero() {
                 ].map((item, index) => (
                   <div
                     key={item}
-                    className={`rounded-2xl border px-4 py-3 backdrop-blur ${
+                    className={cn(
+                      "rounded-2xl border px-4 py-3 backdrop-blur",
                       index === 0
                         ? "border-brand/26 bg-brand/12"
-                        : "border-border/80 bg-surface-1/82 dark:border-white/8 dark:bg-white/4"
-                    }`}
+                        : "border-border/80 bg-surface-1/82 dark:border-white/8 dark:bg-white/4",
+                    )}
                   >
                     <div className="flex items-start gap-3">
                       <div
-                        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                        className={cn(
+                          "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
                           index === 0
                             ? "bg-brand text-brand-foreground"
-                            : "bg-foreground/10 text-muted-foreground dark:bg-white/8"
-                        }`}
+                            : "bg-foreground/10 text-muted-foreground dark:bg-white/8",
+                        )}
                       >
                         {index + 1}
                       </div>

@@ -15,6 +15,7 @@
     "test:daily-checkin-logic": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-daily-checkin-logic.ts",
     "test:home-auth-nav": "node scripts/check-home-auth-nav.mjs",
     "test:home-auth-cta": "node scripts/check-home-auth-cta.mjs",
+    "test:landing-legal-dialogs": "node scripts/check-landing-legal-dialogs.mjs",
     "test:gamification-write-model": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-gamification-write-model.ts",
     "test:learning-message-http-logic": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-http-logic.ts",
     "test:learning-message-history-logic": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-learning-message-history-logic.ts",

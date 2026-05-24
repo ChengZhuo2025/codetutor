@@ -18,6 +18,12 @@ const footerSource = readFileSync(
   "utf8",
 )
 
+const ctaSources = [
+  ["LandingHero", heroSource],
+  ["LandingFinalCta", finalCtaSource],
+  ["LandingPricing", pricingSource],
+]
+
 for (const [name, source] of [
   ["LandingHero", heroSource],
   ["LandingFinalCta", finalCtaSource],
@@ -53,6 +59,25 @@ assert.match(
   footerSource,
   /ctaLabel/,
   "LandingFooter should reuse the shared CTA label when authenticated.",
+)
+
+for (const [name, source] of ctaSources) {
+  assert.match(
+    source,
+    /<Button[\s\S]{0,120}asChild/,
+    `${name} should render CTA links through Button asChild instead of nesting a button inside a link.`,
+  )
+  assert.doesNotMatch(
+    source,
+    /<Link[^>]*>\s*<Button/,
+    `${name} should not nest a native button inside a Next Link.`,
+  )
+}
+
+assert.doesNotMatch(
+  heroSource,
+  /className=\{`/,
+  "LandingHero should use cn(...) for conditional class names instead of template strings.",
 )
 
 console.log("Home CTA components share authenticated landing state and resume-learning copy.")

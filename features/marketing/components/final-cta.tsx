@@ -51,10 +51,13 @@ export function LandingFinalCta() {
 
         {/* CTA按钮组 */}
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <Link href={ctaHref}>
-            <Button
-              size="lg"
-              className={cn("h-12 px-10 text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
+          <Button
+            asChild
+            size="lg"
+            className={cn("h-12 px-10 text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
+          >
+            <Link
+              href={ctaHref}
               onClick={() =>
                 trackEvent(APP_EVENTS.landingCtaClick, {
                   source: "marketing_final_primary",
@@ -64,23 +67,26 @@ export function LandingFinalCta() {
             >
               {authState.status === "authenticated" ? ctaLabel : "立即行动"}
               <ArrowRight className="h-5 w-5" />
-            </Button>
-          </Link>
-          <Link href="#how">
-              <Button
-                size="lg"
-                variant="outline"
-                className={cn("h-12 px-8 text-base font-medium", USER_BUTTON_SECONDARY_CLASS)}
-                onClick={() =>
-                  trackEvent(APP_EVENTS.landingCtaClick, {
-                    source: "marketing_final_secondary",
-                    target: "#how",
-                  })
-                }
-              >
-                了解学习方式
-              </Button>
             </Link>
+          </Button>
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className={cn("h-12 px-8 text-base font-medium", USER_BUTTON_SECONDARY_CLASS)}
+          >
+            <Link
+              href="#how"
+              onClick={() =>
+                trackEvent(APP_EVENTS.landingCtaClick, {
+                  source: "marketing_final_secondary",
+                  target: "#how",
+                })
+              }
+            >
+              了解学习方式
+            </Link>
+          </Button>
         </div>
 
         {/* 信任提示 */}

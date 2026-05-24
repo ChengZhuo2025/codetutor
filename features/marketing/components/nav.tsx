@@ -97,51 +97,52 @@ export function LandingNav() {
         <div className="rounded-full border border-brand/20 bg-brand/12 px-3 py-1 text-xs font-medium text-brand dark:border-brand/30 dark:bg-brand/20">
           {maskedPhone}
         </div>
-        <Link href={authState.summary.redirectTo}>
-          <Button
-            size="sm"
+        <Button
+          asChild
+          size="sm"
+          className={USER_BUTTON_PRIMARY_CLASS}
+        >
+          <Link
+            href={authState.summary.redirectTo}
             onClick={() =>
               trackEvent(APP_EVENTS.landingCtaClick, {
                 source: "marketing_nav_resume",
                 target: authState.summary.redirectTo,
               })
             }
-            className={USER_BUTTON_PRIMARY_CLASS}
           >
             继续学习
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </>
-    ) : authState.status === "guest" ? (
+    ) : (
       <>
         <ThemeToggle />
         <div className="rounded-full border border-brand/20 bg-brand/12 px-3 py-1 text-xs font-medium text-brand dark:border-brand/30 dark:bg-brand/20">
           v{information.version} Beta
         </div>
-        <Link href={ROUTES.login}>
-          <Button variant="outline" size="sm" className={USER_BUTTON_SECONDARY_CLASS}>
+        <Button asChild variant="outline" size="sm" className={USER_BUTTON_SECONDARY_CLASS}>
+          <Link href={ROUTES.login}>
             登录
-          </Button>
-        </Link>
-        <Link href={ROUTES.login}>
-          <Button
-            size="sm"
+          </Link>
+        </Button>
+        <Button
+          asChild
+          size="sm"
+          className={USER_BUTTON_PRIMARY_CLASS}
+        >
+          <Link
+            href={ROUTES.login}
             onClick={() =>
               trackEvent(APP_EVENTS.landingCtaClick, {
                 source: "marketing_nav",
                 target: ROUTES.login,
               })
             }
-            className={USER_BUTTON_PRIMARY_CLASS}
           >
             免费开始
-          </Button>
-        </Link>
-      </>
-    ) : (
-      <>
-        <ThemeToggle />
-        <div className="h-9 w-[132px]" aria-hidden="true" />
+          </Link>
+        </Button>
       </>
     )
 
@@ -230,9 +231,12 @@ export function LandingNav() {
                 <div className="rounded-2xl border border-brand/20 bg-brand/10 px-3 py-2 text-sm text-brand">
                   当前账号：{maskedPhone}
                 </div>
-                <Link href={authState.summary.redirectTo}>
-                  <Button
-                    className={cn("w-full", USER_BUTTON_PRIMARY_CLASS)}
+                <Button
+                  asChild
+                  className={cn("w-full", USER_BUTTON_PRIMARY_CLASS)}
+                >
+                  <Link
+                    href={authState.summary.redirectTo}
                     onClick={() =>
                       trackEvent(APP_EVENTS.landingCtaClick, {
                         source: "marketing_nav_mobile_resume",
@@ -241,13 +245,16 @@ export function LandingNav() {
                     }
                   >
                     继续学习
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </>
-            ) : authState.status === "guest" ? (
-              <Link href={ROUTES.login}>
-                <Button
-                  className={cn("w-full", USER_BUTTON_PRIMARY_CLASS)}
+            ) : (
+              <Button
+                asChild
+                className={cn("w-full", USER_BUTTON_PRIMARY_CLASS)}
+              >
+                <Link
+                  href={ROUTES.login}
                   onClick={() =>
                     trackEvent(APP_EVENTS.landingCtaClick, {
                       source: "marketing_nav_mobile",
@@ -256,12 +263,8 @@ export function LandingNav() {
                   }
                 >
                   免费开始
-                </Button>
-              </Link>
-            ) : (
-              <div className="rounded-2xl border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground dark:border-white/10 dark:bg-white/4">
-                正在恢复登录状态...
-              </div>
+                </Link>
+              </Button>
             )}
           </nav>
         </div>
