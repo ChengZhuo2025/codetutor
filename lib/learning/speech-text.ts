@@ -4,8 +4,10 @@ function stripMarkdownLine(line: string) {
   return line
     .replace(/^#{1,6}\s+/, "")
     .replace(/^>\s?/, "")
-    .replace(/^[-*+]\s+/, "")
-    .replace(/^\d+[.)、]\s+/, "")
+    .replace(/^[-*+]\s*/, "")
+    .replace(/^\d+[.)、]+\s*/, "")
+    .replace(/^\(\d+\)\s*/, "")
+    .replace(/^#\d*\s*/, "")
     .replace(/^[-*_]{3,}$/, "")
 }
 

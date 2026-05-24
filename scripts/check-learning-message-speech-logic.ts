@@ -263,6 +263,38 @@ test("summarizeDashScopeTtsServerEvent captures safe server event diagnostics", 
   )
 })
 
+test("normalizeSpeechTextForTts filters serial number prefixes for TTS playback", () => {
+  assert.equal(
+    normalizeSpeechTextForTts("- 项目一\n-项目二\n-   项目三"),
+    "项目一。项目二。项目三",
+  )
+
+  assert.equal(
+    normalizeSpeechTextForTts("1. 第一步\n2.第二步\n3)、第三步"),
+    "第一步。第二步。第三步",
+  )
+
+  assert.equal(
+    normalizeSpeechTextForTts("(1) 步骤一\n(2)步骤二\n(3)  步骤三"),
+    "步骤一。步骤二。步骤三",
+  )
+
+  assert.equal(
+    normalizeSpeechTextForTts("#1 任务\n#2任务\n#  任务"),
+    "任务。任务。任务",
+  )
+
+  assert.equal(
+    normalizeSpeechTextForTts("- 无序列号内容"),
+    "无序列号内容",
+  )
+
+  assert.equal(
+    normalizeSpeechTextForTts("普通文本没有序列号前缀。"),
+    "普通文本没有序列号前缀。",
+  )
+})
+
 test("resolveLearningTtsVoice supports model metadata override", () => {
   assert.equal(resolveLearningTtsVoice(runtime), "Cherry")
   assert.equal(
