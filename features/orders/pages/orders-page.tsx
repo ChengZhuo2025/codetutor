@@ -13,6 +13,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -94,6 +95,7 @@ export function OrdersPage() {
   const [payingOrder, setPayingOrder] = useState<PaymentOrderResponseData | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [payDialogOpen, setPayDialogOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<PaymentOrderResponseData | null>(null)
 
   const loadOrders = useCallback(async (filter: OrderFilter, page = 1, append = false) => {
     const params = new URLSearchParams({
@@ -232,11 +234,17 @@ export function OrdersPage() {
     }
   }
 
-  const handleDelete = async (order: PaymentOrderResponseData) => {
+  const handleDelete = (order: PaymentOrderResponseData) => {
+    setDeleteTarget(order)
+  }
+
+  const executeDelete = async () => {
+    if (!deleteTarget) return
     setIsMutating(true)
     try {
-      await requestData<PaymentOrderResponseData>(`/payment/orders/${order.orderNo}`, { method: "DELETE" })
+      await requestData<PaymentOrderResponseData>(`/payment/orders/${deleteTarget.orderNo}`, { method: "DELETE" })
       toast.success("订单记录已删除")
+      setDeleteTarget(null)
       await reloadFirstPage()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "删除订单失败")
@@ -334,6 +342,34 @@ export function OrdersPage() {
               </div>
             ) : null}
           </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>确定要删除该订阅记录吗？</DialogTitle>
+            <DialogDescription className="mt-2 leading-6">
+              删除后这条记录将从列表中移除，后台财务数据不受影响。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={isMutating}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={executeDelete}
+              disabled={isMutating}
+            >
+              {isMutating ? "删除中..." : "确认删除"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
