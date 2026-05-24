@@ -5,7 +5,6 @@ import { CheckCircle2, Lightbulb, Mic, Pause, Play, RefreshCw, Volume2, Zap } fr
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   buildStableAssistantActions,
-  normalizeAssistantActions,
   shouldRenderAssistantMessageActions,
   shouldRenderAssistantNextStep,
   shouldRenderMessageTaskPatch,
@@ -178,15 +177,16 @@ export function LearnChatMessageItem({
     : message.attachment
       ? [message.attachment]
       : []
+  const structuredActions = message.structuredContent?.actions ?? []
   const canRenderAssistantActions = shouldRenderAssistantMessageActions({
     isReviewMode,
     role: message.role,
-    actionCount: message.structuredContent?.actions?.length ?? 0,
+    actionCount: structuredActions.length,
   })
   const assistantActions =
     canRenderAssistantActions
       ? buildStableAssistantActions({
-          actions: normalizeAssistantActions(message.structuredContent.actions),
+          actions: structuredActions,
           taskState,
           canAdvanceToNextTask:
             (
