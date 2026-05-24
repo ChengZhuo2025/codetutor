@@ -8,6 +8,7 @@ import type {
   MarketingFitNote,
   MarketingPlan,
   MarketingStep,
+  MarketingTestimonial,
   MarketingTool,
 } from "@/features/marketing/types"
 
@@ -241,7 +242,7 @@ export const marketingBenefits: MarketingBenefit[] = [
   {
     icon: CheckCircle2,
     title: "不再收藏即结束",
-    desc: "从看教程到做出成果，每次学习都有可见产出",
+    desc: "AI 导师帮你将教程拍成可实操的练习",
     color: "text-brand",
     bgColor: "bg-brand/12",
     borderColor: "border-brand/20"
@@ -249,7 +250,7 @@ export const marketingBenefits: MarketingBenefit[] = [
   {
     icon: MessageCircle,
     title: "卡住时有陪练",
-    desc: "AI 导师24/7在线，遇到问题立即获得分层提示",
+    desc: "AI 导师24/7在线，遇到问题及时指正",
     color: "text-chart-3",
     bgColor: "bg-chart-3/10",
     borderColor: "border-chart-3/20"
@@ -265,10 +266,58 @@ export const marketingBenefits: MarketingBenefit[] = [
   {
     icon: Trophy,
     title: "有成就感",
-    desc: "闯关进阶，学分/段位激励，连续打卡让进步看得见",
+    desc: "闯关进阶，学分/段位激励，进步看得见",
     color: "text-gold",
     bgColor: "bg-gold/10",
     borderColor: "border-gold/20"
+  },
+]
+
+export const marketingTestimonials: MarketingTestimonial[] = [
+  {
+    audience: "产品经理 · 零代码基础",
+    metric: "2 周独立做出可点击 MVP",
+    quote:
+      "以前画原型只能靠 Axure 截图拼凑，看了教程也做不出。跟着 AI 导师一步步走，第一次在浏览器里看到自己\"写\"出来的页面，激动得截了 8 张图发群里。",
+    name: "小陈",
+    role: "B 端 SaaS 产品经理",
+    duration: "学习 14 天",
+  },
+  {
+    audience: "设计师 · 让设计稿真正跑起来",
+    metric: "独立交付 5 个前端页面",
+    quote:
+      "以前设计稿交给开发之后总走样，沟通成本很高。用 AI 工具自己把页面跑起来才发现，原来实现门槛没那么高。现在能直接给开发看可交互页面，评审一轮就过。",
+    name: "Lina",
+    role: "UI/UX 设计师",
+    duration: "学习 30 天",
+  },
+  {
+    audience: "创业者 · 快速验证想法",
+    metric: "3 天从想法到上线落地页",
+    quote:
+      "之前找外包做一个落地页要等两周还要花几千。自己用 AI 工具 3 天就搞定了，还能随时改文案跑 A/B。投资人说我们的迭代速度比拿了钱的团队还快。",
+    name: "老周",
+    role: "SaaS 创业者",
+    duration: "学习 7 天",
+  },
+  {
+    audience: "后端开发 · 全栈效率翻倍",
+    metric: "前端开发耗时减少 70%",
+    quote:
+      "后端写了 5 年，一直逃避写前端。AI 工具让我不用背 CSS 属性也能做管理后台，最爽的是改 bug 时让 AI 先扫描相关文件，2 分钟定位问题，以前要翻半小时。",
+    name: "阿强",
+    role: "Java 后端开发",
+    duration: "学习 21 天",
+  },
+  {
+    audience: "在校生 · 从第一行代码到第一个项目",
+    metric: "2 个月从零基础到实战项目",
+    quote:
+      "学校教了语法但做不出完整项目。跟着平台每天做任务，第一个月跑起工具和项目，第二个月跟 AI 配合做出了带数据库的管理后台。面试官看到我 GitHub 提交记录，直接给了实习机会。",
+    name: "小赵",
+    role: "计算机大二在读",
+    duration: "学习 45 天",
   },
 ]
 

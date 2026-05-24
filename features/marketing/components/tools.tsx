@@ -86,7 +86,7 @@ export function LandingTools() {
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-border/70 bg-card/86 p-6 shadow-[0_22px_70px_-46px_rgba(15,23,42,0.32)] dark:border-white/10 dark:bg-surface-2/85">
+          <div className="rounded-[28px] border border-border/70 bg-card p-6 shadow-[0_22px_70px_-46px_rgba(15,23,42,0.32)] dark:border-white/10 dark:bg-surface-2/70">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
@@ -136,7 +136,7 @@ export function LandingTools() {
                 {marketingAudiences.map((item) => (
                   <div
                     key={item.label}
-                    className="rounded-2xl bg-surface-1 px-4 py-3 dark:bg-surface-2 transition-all hover:-translate-y-1 hover:bg-brand/8 dark:hover:bg-brand/10"
+                    className="rounded-2xl bg-surface-2/70 px-4 py-3 dark:dark:bg-white/4 transition-all hover:-translate-y-1 hover:bg-brand/8 dark:hover:bg-brand/10"
                   >
                     <p className="text-sm font-semibold">{item.label}</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">

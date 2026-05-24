@@ -1,4 +1,5 @@
 import { marketingBenefits } from "@/features/marketing/data/marketing-content"
+import { LandingTestimonials } from "@/features/marketing/components/testimonials"
 import { cn } from "@/lib/utils"
 
 export function LandingBenefits() {
@@ -6,7 +7,7 @@ export function LandingBenefits() {
     <section id="benefits" className="relative px-6 py-20 scroll-mt-20">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
       <div className="mx-auto max-w-6xl">
-        <div className="mx-auto mb-16 max-w-3xl text-center">
+        <div className="mx-auto mb-12 max-w-3xl text-center">
           <p className="mb-3 text-sm font-medium uppercase tracking-widest text-muted-foreground">
             学习收益
           </p>
@@ -42,6 +43,8 @@ export function LandingBenefits() {
             )
           })}
         </div>
+
+        <LandingTestimonials />
       </div>
     </section>
   )

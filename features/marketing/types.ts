@@ -51,6 +51,15 @@ export type MarketingBenefit = {
   borderColor: string
 }
 
+export type MarketingTestimonial = {
+  audience: string
+  metric: string
+  quote: string
+  name: string
+  role: string
+  duration: string
+}
+
 export type MarketingPlan = {
   name: string
   price: string

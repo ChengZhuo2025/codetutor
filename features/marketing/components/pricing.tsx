@@ -154,7 +154,7 @@ export function LandingPricing({ onFreePlanFeatureLabelChange }: LandingPricingP
               className={cn(
                 "relative flex flex-col rounded-[30px] border p-8 transition-all hover:-translate-y-1 hover:border-brand/40 hover:bg-brand/5",
                 plan.highlight
-                  ? "border-brand/40 bg-brand/5 shadow-lg shadow-brand/10 dark:bg-[linear-gradient(180deg,oklch(0.24_0.04_270/0.94),oklch(0.16_0.015_270/0.98))] dark:shadow-[0_22px_70px_-46px_oklch(0.75_0.24_270/0.45)]"
+                  ? "border-brand/40 bg-brand/5 shadow-[0_22px_70px_-46px_oklch(0.60_0.24_270/0.55)] dark:bg-[linear-gradient(180deg,oklch(0.24_0.04_270/0.94),oklch(0.16_0.015_270/0.98))] dark:shadow-[0_22px_70px_-46px_oklch(0.85_0.28_270/0.45)]"
                   : "border-border bg-card shadow-[0_22px_70px_-46px_rgba(15,23,42,0.32)] dark:border-white/10 dark:bg-surface-2/80",
               )}
             >
