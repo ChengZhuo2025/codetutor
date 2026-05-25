@@ -36,6 +36,7 @@ type PathSelectionStepProps = {
   selectionMode: OnboardingSelectionMode | null
   selectedPathId: string | null
   isPending: boolean
+  isActive: boolean
   onSelectSelfStudy: () => void
   onSelectPresetPath: (pathId: string) => void
   onBack: () => void
@@ -67,6 +68,7 @@ export function PathSelectionStep({
   selectionMode,
   selectedPathId,
   isPending,
+  isActive,
   onSelectSelfStudy,
   onSelectPresetPath,
   onBack,
@@ -82,22 +84,26 @@ export function PathSelectionStep({
   }
 
   return (
-    <div className="h-full w-1/3 overflow-hidden">
-      <div className="mx-auto flex h-full w-full max-w-5xl flex-col px-6 py-4 mt-4">
+    <div
+      aria-hidden={!isActive}
+      inert={!isActive ? true : undefined}
+      className={cn("w-full md:h-full md:w-1/3 md:overflow-hidden", !isActive && "hidden md:block")}
+    >
+      <div className="mx-auto flex min-h-[calc(100dvh-5.5rem)] w-full max-w-5xl flex-col px-4 pb-24 pt-5 sm:px-6 md:h-full md:min-h-0 md:px-6 md:py-4 md:pb-4 md:pt-8">
         <div className="mx-auto mb-4 max-w-3xl text-center">
-          <div className="mx-auto mb-3 inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand-dim px-3 py-1 text-sm font-medium text-brand">
+          <div className="mx-auto mb-3 inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand-dim px-3 py-1 text-xs font-medium text-brand sm:text-sm">
             <Sparkles className="h-3.5 w-3.5" />
             第 3 步，共 3 步
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-balance md:text-3xl">
+          <h1 className="text-[1.72rem] font-bold leading-tight tracking-tight text-balance sm:text-3xl md:text-3xl">
             打算怎么开始学？
           </h1>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          <p className="mx-auto mt-2 max-w-[22rem] text-sm leading-6 text-muted-foreground sm:max-w-none">
             你可以跟平台推荐的学习路线一步步练，也可以贴自己的教程、链接，让AI教练陪你自学自练。
           </p>
         </div>
 
-        <div className="mx-auto mt-4 mb-4 flex w-full max-w-3xl flex-wrap items-center gap-2">
+        <div className="mx-auto mb-4 flex w-full max-w-3xl flex-wrap items-center gap-2 md:mt-4">
           <span className="text-sm font-medium text-muted-foreground">
             已选主工具：
           </span>
@@ -114,28 +120,28 @@ export function PathSelectionStep({
           <span className={cn(onboardingMetaPillClass, "text-foreground")}>
             {levelLabel}
           </span>
-          <span className={cn(onboardingMetaPillClass, "text-muted-foreground")}>
+          <span className={cn(onboardingMetaPillClass, "hidden text-muted-foreground sm:inline-flex")}>
             在下面选一种即可
           </span>
         </div>
 
-        <div className="mx-auto h-[min(46vh,28rem)] w-full max-w-3xl overflow-hidden">
-          <div className="flex h-full flex-col gap-3 overflow-y-auto scrollbar-none">
+        <div className="mx-auto w-full max-w-3xl md:h-[min(46vh,28rem)] md:overflow-hidden">
+          <div className="flex flex-col gap-3 md:h-full md:overflow-y-auto md:scrollbar-none">
             <button
               onClick={onSelectSelfStudy}
               className={cn(
-                "w-full rounded-[24px] border p-4 text-left transition-all duration-300",
+                "w-full rounded-[22px] border p-4 text-left transition-all duration-300 md:rounded-[24px]",
                 selectionMode === "self_directed"
                   ? "border-brand/45 bg-brand/10 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.28)] ring-1 ring-brand/10 dark:bg-brand/18"
                   : "border-border/70 bg-surface-2 hover:-translate-y-0.5 hover:border-brand/30 hover:bg-surface-1 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
               )}
             >
-              <div className="mb-1 flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2">
+              <div className="mb-2 flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <span className="rounded-full border border-brand/30 bg-brand-dim px-2.5 py-1 text-xs font-semibold text-brand">
                     自带材料
                   </span>
-                  <h2 className="text-xl font-semibold text-foreground">{selfStudyOption.name}</h2>
+                  <h2 className="text-lg font-semibold text-foreground md:text-xl">{selfStudyOption.name}</h2>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-brand">
@@ -150,16 +156,16 @@ export function PathSelectionStep({
                 </div>
               </div>
 
-              <p className="mb-1 text-sm leading-4 text-foreground">{selfStudyOption.summary}</p>
+              <p className="text-sm leading-5 text-foreground md:mb-1 md:leading-4">{selfStudyOption.summary}</p>
             </button>
 
-            <section className={cn(USER_PANEL_SECTION_CLASS, "rounded-[24px] p-4 bg-surface-2 dark:border-white/10 dark:bg-white/5 ")}>
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
+            <section className={cn(USER_PANEL_SECTION_CLASS, "rounded-[22px] bg-surface-2 p-4 dark:border-white/10 dark:bg-white/5 md:rounded-[24px]")}>
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <span className="rounded-full border border-chart-3/30 bg-chart-3/10 px-2.5 py-1 text-xs font-semibold text-chart-3">
                     平台路线
                   </span>
-                  <h2 className="text-xl font-semibold text-foreground">推荐学习路线</h2>
+                  <h2 className="text-lg font-semibold text-foreground md:text-xl">推荐学习路线</h2>
                 </div>
                 <span className="rounded-full border border-border/70 bg-muted/65 px-3 py-1 text-xs text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                   共 {presetPathOptions.length} 条
@@ -176,7 +182,7 @@ export function PathSelectionStep({
                     <div
                       key={path.pathId}
                       className={cn(
-                        "rounded-[22px] border p-3 text-left transition-all duration-300",
+                        "rounded-[20px] border p-3 text-left transition-all duration-300 md:rounded-[22px]",
                         isSelected
                           ? "border-brand/45 bg-brand/10 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.28)] ring-1 ring-brand/10 dark:bg-brand/18"
                           : "border-border/70 bg-surface-1/95 shadow-[0_12px_32px_-28px_rgba(15,23,42,0.22)] hover:border-border hover:bg-surface-1 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
@@ -194,7 +200,7 @@ export function PathSelectionStep({
                         }}
                         className="cursor-pointer"
                       >
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start justify-between gap-3 md:gap-4">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <h3 className="text-base font-semibold text-foreground">{path.name}</h3>
@@ -215,7 +221,7 @@ export function PathSelectionStep({
                                 <Bot className="mr-1 inline h-3.5 w-3.5" />
                                 {path.coachAgentLabel}
                               </span>
-                              {path.tags.map((tag) => (
+                              {path.tags.slice(0, 2).map((tag) => (
                                 <span
                                   key={tag}
                                   className="rounded-full border border-border/70 bg-muted/55 px-2.5 py-1 text-xs text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
@@ -223,12 +229,17 @@ export function PathSelectionStep({
                                   {tag}
                                 </span>
                               ))}
+                              {path.tags.length > 2 ? (
+                                <span className="rounded-full border border-border/70 bg-muted/55 px-2.5 py-1 text-xs text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-white/10 dark:bg-white/5 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                                  +{path.tags.length - 2}
+                                </span>
+                              ) : null}
                             </div>
                           </div>
 
                           <div className="flex shrink-0 items-center gap-2">
                             {path.recommended ? (
-                              <span className="rounded-full border border-brand/40 bg-brand-dim px-2 py-0.5 text-[11px] font-semibold text-brand">
+                              <span className="hidden rounded-full border border-brand/40 bg-brand-dim px-2 py-0.5 text-[11px] font-semibold text-brand sm:inline-flex">
                                 推荐
                               </span>
                             ) : null}
@@ -297,12 +308,12 @@ export function PathSelectionStep({
           </div>
         </div>
 
-        <div className="mx-auto mt-5 flex w-full max-w-3xl flex-col items-center gap-2 rounded-2xl px-4 py-3">
+        <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex w-full flex-col items-center gap-2 border-t border-border/70 bg-background/92 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 shadow-[0_-18px_42px_-34px_rgba(15,23,42,0.5)] backdrop-blur md:static md:mt-5 md:max-w-3xl md:border-0 md:bg-transparent md:px-4 md:py-3 md:shadow-none md:backdrop-blur-0">
           <Button
             onClick={onFinish}
             disabled={!canFinish || isPending}
             className={cn(
-              "h-11 w-full max-w-xs text-md font-semibold",
+              "h-11 w-full max-w-sm text-md font-semibold md:max-w-xs",
               USER_BUTTON_PRIMARY_CLASS,
             )}
           >

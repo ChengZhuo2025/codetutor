@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition, type CSSProperties } from "react"
 import { useRouter } from "next/navigation"
 import { APP_EVENTS } from "@/constants/events"
 import { ROUTES } from "@/constants/routes"
@@ -296,24 +296,24 @@ export function OnboardingPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-background">
+    <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-background md:overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.73_0.21_270/0.08),transparent_26%),radial-gradient(circle_at_bottom_right,oklch(0.8_0.18_60/0.08),transparent_20%)]" />
 
       <OnboardingHeader step={step} />
 
-      <div className="relative z-10 flex-1 overflow-hidden scrollbar-none">
+      <div className="relative z-10 flex-1 md:overflow-hidden md:scrollbar-none">
         <div
-          className="flex h-full overflow-hidden transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="flex h-full overflow-visible md:w-[300%] md:overflow-hidden md:[transform:translateX(var(--onboarding-step-offset))] md:transition-transform md:duration-500 md:ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{
-            transform: `translateX(-${((step - 1) * 100) / 3}%)`,
-            width: "300%",
-          }}
+            "--onboarding-step-offset": `-${((step - 1) * 100) / 3}%`,
+          } as CSSProperties}
         >
           <ToolSelectionStep
             toolGroups={toolGroups}
             colorMap={colorMap}
             selectedBorderMap={selectedBorderMap}
             selectedToolCode={selectedToolCode}
+            isActive={step === 1}
             onSelectTool={handleToolSelect}
             onNext={() => {
               if (!selectedToolCode) return
@@ -332,6 +332,7 @@ export function OnboardingPage() {
             level={level}
             colorMap={colorMap}
             isPending={isPending}
+            isActive={step === 2}
             onSelectLevel={handleLevelSelect}
             onBack={() => goToStep(1)}
             onNext={() => {
@@ -370,6 +371,7 @@ export function OnboardingPage() {
             selectionMode={selectionMode}
             selectedPathId={selectedPathId}
             isPending={isPending}
+            isActive={step === 3}
             onSelectSelfStudy={() => {
               setSelectionMode("self_directed")
               setSelectedPathId(null)

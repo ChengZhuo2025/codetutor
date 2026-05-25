@@ -39,6 +39,7 @@
     "test:supabase-browser-session": "node --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-supabase-browser-session.ts",
     "test:login-page": "node scripts/check-login-page.mjs",
     "test:oauth-production-redirect": "node scripts/check-oauth-production-redirect.mjs",
+    "test:onboarding-mobile": "node scripts/check-onboarding-mobile-ux.mjs",
     "test:admin-auth-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-admin-auth-route.ts",
     "test:admin-users-validation": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-admin-users-validation.ts",
     "test:admin-users-route": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-admin-users-route.ts",
