@@ -25,11 +25,11 @@ export function LandingBenefits() {
             return (
               <div
                 key={benefit.title}
-                className="group relative overflow-hidden border-t border-border/70 px-1 pt-5 transition-all hover:border-brand/40 dark:border-white/10 dark:hover:border-brand/40 lg:pt-6"
+                className="group relative flex items-start gap-4 overflow-hidden border-t border-border/70 px-1 pt-5 transition-all hover:border-brand/40 dark:border-white/10 dark:hover:border-brand/40 sm:block lg:pt-6"
               >
                 <div
                   className={cn(
-                    "relative z-10 mb-4 flex h-11 w-11 items-center justify-center rounded-2xl border transition-all group-hover:scale-105 lg:mb-5 lg:h-12 lg:w-12",
+                    "relative z-10 mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition-all group-hover:scale-105 sm:mb-4 sm:mt-0 lg:mb-5 lg:h-12 lg:w-12",
                     benefit.borderColor,
                     benefit.bgColor,
                   )}
@@ -37,8 +37,14 @@ export function LandingBenefits() {
                   <Icon className={cn("h-7 w-7", benefit.color)} />
                 </div>
 
-                <h3 className="mb-2 text-base font-semibold text-foreground lg:mb-3 lg:text-lg">{benefit.title}</h3>
-                <p className="text-sm leading-6 text-muted-foreground">{benefit.desc}</p>
+                <div className="min-w-0 pt-0.5 sm:pt-0">
+                  <h3 className="mb-1 text-base font-semibold leading-5 text-foreground lg:mb-3 lg:text-lg">
+                    {benefit.title}
+                  </h3>
+                  <p className="text-sm leading-5 text-muted-foreground sm:leading-6">
+                    {benefit.desc}
+                  </p>
+                </div>
               </div>
             )
           })}

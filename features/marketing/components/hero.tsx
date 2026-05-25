@@ -216,8 +216,9 @@ export function LandingHero() {
               ))}
             </div>
           </div>
+        </div>
 
-          <div className="hidden overflow-hidden rounded-[28px] border border-border/80 bg-surface-2 shadow-[0_26px_80px_-38px_rgba(15,23,42,0.22)] backdrop-blur-xl animate-fadeUp animate-delay-300 dark:shadow-[0_32px_90px_-45px_rgba(0,0,0,0.85)] lg:block">
+        <div className="hidden overflow-hidden rounded-[28px] border border-border/80 bg-surface-2 shadow-[0_26px_80px_-38px_rgba(15,23,42,0.22)] backdrop-blur-xl animate-fadeUp animate-delay-300 dark:shadow-[0_32px_90px_-45px_rgba(0,0,0,0.85)] lg:block">
             <div className="grid gap-0 lg:grid-cols-[1.25fr_0.75fr]">
               <div className="border-b border-border/80 lg:border-b-0 lg:border-r lg:border-r-border/80 dark:border-white/10 dark:lg:border-r-white/10">
                 <div className="flex items-center gap-2 border-b border-border/80 px-4 py-3 dark:border-white/10">
@@ -359,7 +360,6 @@ export function LandingHero() {
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </div>
     </section>

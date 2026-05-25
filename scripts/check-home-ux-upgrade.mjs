@@ -8,6 +8,7 @@ function source(path) {
 const heroSource = source("features/marketing/components/hero.tsx")
 const navSource = source("features/marketing/components/nav.tsx")
 const toolsSource = source("features/marketing/components/tools.tsx")
+const benefitsSource = source("features/marketing/components/benefits.tsx")
 const pricingSource = source("features/marketing/components/pricing.tsx")
 const finalCtaSource = source("features/marketing/components/final-cta.tsx")
 const dataSource = source("features/marketing/data/marketing-content.ts")
@@ -86,9 +87,27 @@ assert.match(
 )
 
 assert.match(
+  heroSource,
+  /lg:hidden"[\s\S]+?\n {10}<\/div>\n {8}<\/div>\n\n {8}<div className="hidden overflow-hidden/,
+  "LandingHero desktop preview should be a sibling grid column, not nested inside the text column.",
+)
+
+assert.match(
   toolsSource,
   /md:hidden[\s\S]+更多工具/,
   "LandingTools should collapse less important mobile tool choices behind a secondary group.",
+)
+
+assert.match(
+  benefitsSource,
+  /flex items-start gap-4[\s\S]+sm:block/,
+  "LandingBenefits mobile cards should use a left icon and right copy layout.",
+)
+
+assert.match(
+  benefitsSource,
+  /lg:mb-3[\s\S]+text-sm leading-5/,
+  "LandingBenefits mobile copy should keep title and description tightly grouped.",
 )
 
 for (const [name, sourceText] of [

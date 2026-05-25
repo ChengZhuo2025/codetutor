@@ -262,14 +262,6 @@ export function LandingNav() {
           className="fixed inset-x-0 bottom-0 top-[68px] z-[60] overflow-y-auto border-t border-border/80 bg-background/98 px-6 pb-8 pt-5 shadow-[0_28px_80px_-36px_rgba(15,23,42,0.28)] backdrop-blur-xl dark:border-white/8 dark:bg-[oklch(0.12_0.006_270/0.98)] md:hidden"
         >
           <div className="mx-auto flex min-h-[calc(100dvh-6rem)] max-w-xl flex-col">
-            <div
-              id="landing-mobile-menu-title"
-              className="mb-5 flex items-center gap-2 rounded-2xl border border-brand/20 bg-brand/10 px-4 py-3 text-sm text-brand"
-            >
-              <Sparkles className="h-4 w-4 shrink-0" />
-              当前可直接体验登录、引导和学习流程 Demo
-            </div>
-
             <nav className="flex flex-1 flex-col gap-2" aria-label="移动端首页导航">
               {MARKETING_NAV_ITEMS.map((item) => (
                 <button
