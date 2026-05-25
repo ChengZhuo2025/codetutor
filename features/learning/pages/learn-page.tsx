@@ -226,15 +226,22 @@ export function LearnPage() {
   return (
     <AppShell
       workspacePage="learn"
-      mobileTitle="学习工作台"
-      mobileSubtitle="继续上次学习 · 当前一步 · 任务上下文"
+      mobileTitle="今日练习"
+      mobileSubtitle={
+        sessionState.status === "success"
+          ? `当前学习工具: ${sessionState.data.planSummary.selectedToolName}`
+          : "当前学习工具: 加载中"
+      }
+      mobileNavVariant="minimal"
+      showMobileBrand={false}
+      mobileSheetTopSpacing="compact"
       asideLabel="任务上下文"
       renderSidebar={({ mobile }) => (
         <WorkspaceSidebar activeHref={ROUTES.learn} mobile={mobile} />
       )}
-      renderAside={() =>
+      renderAside={({ mobile }) =>
         sessionState.status === "success" ? (
-          <LearnRightPanel learningData={sessionState.data} />
+          <LearnRightPanel learningData={sessionState.data} compact={mobile} />
         ) : (
           <div className="p-5">
             <StatePanel

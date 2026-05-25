@@ -319,8 +319,8 @@ function renderInlineText(
       : "font-semibold text-foreground"
   const codeClass =
     tone === "inverted"
-      ? "rounded-sm bg-white/15 px-2 py-1 font-mono text-[0.92em] text-white dark:bg-black/10 dark:text-black"
-      : "rounded-sm bg-black/8 dark:bg-white/10 px-2 py-1 font-mono text-[0.92em] text-foreground"
+      ? "break-words rounded-sm bg-white/15 px-1.5 py-0.5 font-mono text-[0.9em] text-white dark:bg-black/10 dark:text-black sm:px-2 sm:py-1 sm:text-[0.92em]"
+      : "break-words rounded-sm bg-black/8 px-1.5 py-0.5 font-mono text-[0.9em] text-foreground dark:bg-white/10 sm:px-2 sm:py-1 sm:text-[0.92em]"
 
   return tokenizeInlineText(text).map((token, index) => {
     if (token.type === "strong") {
@@ -621,7 +621,7 @@ function CodeBlockCard({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-brand/30 bg-background/70 dark:border-white/10 dark:bg-background/50">
+    <div className="max-w-full min-w-0 overflow-hidden rounded-2xl border border-brand/30 bg-background/70 dark:border-white/10 dark:bg-background/50">
       <div className="flex items-center justify-between gap-3 border-b border-brand/20 px-3.5 py-2 dark:border-white/10">
         <div className="min-w-0 flex-1 truncate font-bold text-[11px] uppercase tracking-[0.12em] text-brand">
           {language ?? "code"}
@@ -643,7 +643,7 @@ function CodeBlockCard({
           {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
         </button>
       </div>
-      <pre className="overflow-x-auto px-3.5 py-3 text-[13px] leading-6 text-foreground">
+      <pre className="max-w-full min-w-0 overflow-x-auto px-3 py-2.5 text-[12px] sm:text-[13px] leading-6 text-foreground sm:px-3.5 sm:py-3">
         <code className="block whitespace-pre font-mono">{code}</code>
       </pre>
     </div>

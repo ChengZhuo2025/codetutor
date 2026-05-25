@@ -359,8 +359,8 @@ export function LearnChatComposer({
           />
         ) : null}
 
-        <div className="mb-3">
-          <div className="flex flex-wrap gap-2">
+        <div className="mb-3 -mx-4 overflow-x-auto px-4 pb-0.5 scrollbar-none sm:mx-0 sm:overflow-visible sm:px-0">
+          <div className="flex flex-nowrap gap-2 sm:flex-wrap">
             {quickActions.map((action) => {
               const isCompletionAction = action.label === "我完成了"
               const disabled =
@@ -380,7 +380,7 @@ export function LearnChatComposer({
                       : undefined
                   }
                   className={cn(
-                    "px-3.5 py-1 text-[12px] font-medium",
+                    "min-h-10 shrink-0 whitespace-nowrap px-3.5 py-2 text-[12px] font-medium sm:min-h-0 sm:shrink sm:py-1",
                     QUICK_ACTION_TONE_CLASS[action.tone],
                   )}
                 >
@@ -395,11 +395,12 @@ export function LearnChatComposer({
                   onOpenMaterialPlanDialog?.([])
                 }}
                 disabled={isTyping || connectionState !== "online"}
-                className={cn("px-3.5 py-1 text-[12px] font-medium", USER_BUTTON_PRIMARY_CLASS)}
+                className={cn("min-h-10 shrink-0 whitespace-nowrap px-3.5 py-2 text-[12px] font-medium sm:min-h-0 sm:shrink sm:py-1", USER_BUTTON_PRIMARY_CLASS)}
               >
                 生成学习计划
               </button>
             ) : null}
+            <span aria-hidden="true" className="w-4 shrink-0 sm:hidden" />
           </div>
         </div>
 
@@ -453,7 +454,7 @@ export function LearnChatComposer({
               />
             ) : (
               <div className="flex min-w-64 items-center gap-2 px-3 py-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl bg-brand/75 text-brand-foreground">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl bg-brand/75 text-white">
                   <Mic className="h-4 w-4" />
                 </div>
                 <audio
@@ -495,7 +496,7 @@ export function LearnChatComposer({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isTyping || isRecording || Boolean(previewAttachment)}
-              className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl text-muted-foreground/60 transition-colors hover:bg-surface-3 hover:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-45"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground/60 transition-colors hover:bg-surface-3 hover:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-45 sm:mr-1 sm:h-8 sm:w-8 sm:rounded-2xl"
               title="发送截图"
             >
               <ImagePlus className="h-4 w-4" />
@@ -506,7 +507,7 @@ export function LearnChatComposer({
               onClick={handleRecordClick}
               disabled={isTyping || Boolean(previewAttachment)}
               className={cn(
-                "relative mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl transition-colors disabled:cursor-not-allowed disabled:opacity-45",
+                "relative flex mr-1 h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-45 sm:mr-2 sm:h-8 sm:w-8 sm:rounded-2xl",
                 isRecording
                   ? "bg-red-500/10 text-red-500 hover:bg-red-500/15"
                   : "text-muted-foreground/60 hover:bg-surface-3 hover:text-muted-foreground",
@@ -564,24 +565,30 @@ export function LearnChatComposer({
                 </div>
               </div>
             ) : (
-              <Textarea
-                ref={textareaRef}
-                rows={1}
-                placeholder="把教程链接、代码片段或你卡住的问题发给我"
-                aria-label="消息输入框"
-                aria-describedby="input-hint"
-                className="scrollbar-none min-h-0 flex-1 resize-none border-0 bg-transparent px-0 py-1 text-sm leading-6 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
-                style={{ maxHeight: `${TEXTAREA_MAX_HEIGHT}px`, overflowY: "auto" }}
-                value={input}
-                onChange={(event) => onInputChange(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
-                    event.preventDefault()
-                    onSend()
-                  }
-                }}
-                onPaste={handlePaste}
-              />
+              <div className="relative min-w-0 flex-1">
+                {!input ? (
+                  <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 truncate text-sm text-muted-foreground/50">
+                    点击这里输入问题
+                  </div>
+                ) : null}
+                <Textarea
+                  ref={textareaRef}
+                  rows={1}
+                  aria-label="消息输入框"
+                  aria-describedby="input-hint"
+                  className="scrollbar-none min-h-6 h-6 w-full resize-none border-0 bg-transparent px-0 py-0 text-sm leading-6 shadow-none focus-visible:ring-0 placeholder:text-transparent sm:py-1"
+                  style={{ height: "24px", maxHeight: `${TEXTAREA_MAX_HEIGHT}px`, overflowY: "auto" }}
+                  value={input}
+                  onChange={(event) => onInputChange(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault()
+                      onSend()
+                    }
+                  }}
+                  onPaste={handlePaste}
+                />
+              </div>
             )}
 
             <button
@@ -589,7 +596,7 @@ export function LearnChatComposer({
               onClick={onSend}
               disabled={(!input.trim() && !previewAttachment) || isTyping || isRecording}
               className={cn(
-                "ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl",
+                "ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full sm:ml-1",
                 (input.trim() || previewAttachment) && !isTyping && !isRecording
                   ? USER_BUTTON_PRIMARY_CLASS
                   : "text-foreground/20 dark:text-muted-foreground/40",
@@ -604,7 +611,7 @@ export function LearnChatComposer({
           </div>
         </div>
 
-        <p id="input-hint" className="mt-2 text-center text-xs text-muted-foreground/55">
+        <p id="input-hint" className="hidden sm:block mt-2 text-center text-xs text-muted-foreground/55">
           {inputHint}
         </p>
       </div>

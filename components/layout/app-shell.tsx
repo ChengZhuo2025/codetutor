@@ -21,6 +21,9 @@ type AppShellProps = {
   workspacePage: WorkspacePageKey
   mobileTitle: string
   mobileSubtitle?: string
+  mobileNavVariant?: "default" | "minimal"
+  showMobileBrand?: boolean
+  mobileSheetTopSpacing?: "default" | "compact"
   asideLabel?: string
   renderSidebar: RenderPanel
   renderAside?: RenderPanel
@@ -34,6 +37,9 @@ export function AppShell({
   workspacePage,
   mobileTitle,
   mobileSubtitle,
+  mobileNavVariant,
+  showMobileBrand,
+  mobileSheetTopSpacing = "default",
   asideLabel,
   renderSidebar,
   renderAside,
@@ -47,6 +53,7 @@ export function AppShell({
   const { isRightCollapsed, setRightCollapsed } = useWorkspaceLayout()
   const hasAside = Boolean(renderAside)
   const rightCollapsed = hasAside ? isRightCollapsed(workspacePage) : false
+  const mobileSheetTopClass = mobileSheetTopSpacing === "compact" ? "pt-8" : "pt-16"
 
   return (
     <div
@@ -68,6 +75,8 @@ export function AppShell({
             <AppMobileNav
               title={mobileTitle}
               subtitle={mobileSubtitle}
+              mobileNavVariant={mobileNavVariant}
+              showBrand={showMobileBrand}
               onOpenSidebar={() => setSidebarOpen(true)}
               onOpenAside={hasAside ? () => setAsideOpen(true) : undefined}
               asideLabel={asideLabel}
@@ -136,7 +145,7 @@ export function AppShell({
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent
           side="left"
-          className="w-[88vw] border-r border-border/60 bg-sidebar p-0 sm:max-w-sm"
+          className={cn("w-[88vw] border-r border-border/60 bg-sidebar p-0 sm:max-w-sm", mobileSheetTopClass)}
         >
           <SheetHeader className="sr-only">
             <SheetTitle>{mobileTitle} 导航</SheetTitle>
@@ -150,7 +159,7 @@ export function AppShell({
         <Sheet open={asideOpen} onOpenChange={setAsideOpen}>
           <SheetContent
             side="right"
-            className="w-[92vw] border-l border-border/60 bg-sidebar p-0 sm:max-w-md"
+            className={cn("w-[92vw] border-l border-border/60 bg-sidebar p-0 sm:max-w-md", mobileSheetTopClass)}
           >
             <SheetHeader className="sr-only">
               <SheetTitle>{asideLabel ?? mobileTitle}</SheetTitle>

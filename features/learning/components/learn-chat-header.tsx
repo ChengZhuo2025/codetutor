@@ -70,11 +70,11 @@ export function LearnChatHeader({
 
   return (
     <div className="shrink-0 border-b border-border/80 bg-surface-1 px-4 py-4 backdrop-blur-sm sm:px-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-row items-center justify-between gap-3 sm:items-start">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-brand/20 bg-brand-dim/60 px-2 py-0.5 text-[11px] font-semibold text-brand">
+            <div className="hidden sm:flex flex-wrap items-center gap-2">
+              <span className="inline-flex rounded-full border border-brand/20 bg-brand-dim/60 px-2 py-0.5 text-[11px] font-semibold text-brand">
                 当前任务
               </span>
               {connectionState === "offline" ? (
@@ -127,7 +127,7 @@ export function LearnChatHeader({
             disabled={connectionState !== "online" || restartSubmitting}
             onClick={onRestart}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-surface-3/50 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-none transition-colors",
+              "hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-surface-3/50 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-none transition-colors",
               "hover:border-border hover:bg-surface-3/65 hover:text-foreground",
               "dark:border-brand/20 dark:bg-brand/8 dark:text-brand dark:hover:bg-brand/15",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
@@ -145,7 +145,7 @@ export function LearnChatHeader({
             onClick={handleToggleCollapsed}
             aria-label={collapsed ? "展开学习页标题栏" : "收起学习页标题栏"}
             title={collapsed ? "展开标题栏" : "收起标题栏"}
-            className="rounded-full border border-border/70 bg-surface-1/92 text-muted-foreground shadow-[0_12px_28px_-24px_rgba(15,23,42,0.28)] hover:bg-surface-2 hover:text-foreground"
+            className="size-7 border-0 bg-transparent text-muted-foreground shadow-none hover:bg-surface-2 hover:text-foreground dark:hover:bg-white/8 sm:size-8 sm:border sm:border-border/70 sm:bg-surface-1/92 sm:shadow-[0_12px_28px_-24px_rgba(15,23,42,0.28)]"
           >
             {collapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
           </Button>

@@ -234,14 +234,19 @@ export function LearnChatMessageItem({
     >
       <div
         className={cn(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold",
+          "hidden sm:flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold",
           meta.avatarClass,
         )}
       >
         {meta.avatarLabel}
       </div>
 
-      <div className="flex max-w-[92%] flex-col gap-2 sm:max-w-[85%]">
+      <div
+        className={cn(
+          "flex w-full max-w-full flex-col gap-2 sm:w-auto sm:max-w-[85%]",
+          isUser ? "items-end" : "items-start",
+        )}
+      >
         <div className="flex items-center gap-2 px-1">
           <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
             {message.title ?? meta.badge}
@@ -251,7 +256,7 @@ export function LearnChatMessageItem({
         <div
           className={cn(
             "text-sm leading-relaxed",
-            isUser ? "rounded-3xl px-4 py-3.5 rounded-tr-sm" : "pb-1",
+            isUser ? "w-full rounded-3xl px-4 py-3.5 rounded-tr-sm" : "w-full pb-1",
             meta.bubbleClass,
           )}
         >
@@ -355,7 +360,7 @@ export function LearnChatMessageItem({
         ) : null}
 
         {assistantActions.length || canReadAloud ? (
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 flex-1 flex-wrap gap-2">
               {assistantActions.map((action, actionIndex) => (
                 <button
@@ -364,7 +369,7 @@ export function LearnChatMessageItem({
                   disabled={isTyping}
                   onClick={() => onAssistantAction(message, action)}
                   className={cn(
-                    "px-3 py-2 text-sm font-medium",
+                    "min-h-10 px-3 py-2 text-sm font-medium sm:min-h-0",
                     MESSAGE_ACTION_TONE_CLASS[action.tone],
                   )}
                 >
@@ -373,7 +378,7 @@ export function LearnChatMessageItem({
               ))}
             </div>
             {canReadAloud ? (
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
                 {isSpeechPlaying ? (
                   <div
                     aria-hidden="true"
@@ -395,7 +400,7 @@ export function LearnChatMessageItem({
                   aria-label={speechLabel}
                   title={speechLabel}
                   className={cn(
-                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/60 bg-surface-2 text-muted-foreground transition hover:border-brand/40 hover:text-brand",
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border/60 bg-surface-2 text-muted-foreground transition hover:border-brand/40 hover:text-brand sm:h-9 sm:w-9",
                     (isTyping || speechState === "loading") && "pointer-events-none opacity-60",
                     isSpeechPlaying && "border-brand/40 bg-brand-dim text-brand",
                   )}

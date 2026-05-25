@@ -65,8 +65,8 @@ assert.match(
 )
 assert.match(
   headerSource,
-  /className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"/,
-  "learn chat header should preserve the existing header row layout contract",
+  /className="flex flex-row items-center justify-between gap-3 sm:items-start"/,
+  "learn chat header should keep the mobile title and collapse control on one row",
 )
 
 assert.match(

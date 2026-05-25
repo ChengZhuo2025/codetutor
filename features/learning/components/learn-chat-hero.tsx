@@ -43,9 +43,73 @@ export function LearnChatHero({ mission, rightPanel }: LearnChatHeroProps) {
   const progressLabel = mission.progressLabel.replace(/\s*已完成\s*$/, "");
 
   return (
+    <>
+      <div
+        className={cn(
+          "mb-4 overflow-hidden rounded-[1.5rem] md:hidden",
+          USER_PANEL_HERO_CARD_CLASS,
+        )}
+      >
+        <div className={cn(USER_PANEL_HERO_TOP_SECTION_CLASS, "px-4 py-4")}>
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand/80">
+            <Target className="h-3.5 w-3.5 text-brand" />
+            现在只做这一步
+          </div>
+          <p className="mt-3 text-xl font-bold leading-7 text-foreground">
+            {rightPanel.currentStep}
+          </p>
+          <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
+            {rightPanel.whyThisStep}
+          </p>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="rounded-2xl border border-border/75 bg-surface-1/88 px-3 py-2.5">
+              <p className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/70">
+                时长
+              </p>
+              <p className="mt-1 truncate text-xs font-semibold text-foreground">
+                {mission.estimatedTime}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-border/75 bg-surface-1/88 px-3 py-2.5">
+              <p className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/70">
+                进度
+              </p>
+              <p className="mt-1 truncate text-xs font-semibold text-foreground">
+                {progressLabel}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-gold/25 bg-gold-dim/35 px-3 py-2.5">
+              <p className="text-[10px] uppercase tracking-[0.08em] text-gold/80">
+                奖励
+              </p>
+              <p className="mt-1 truncate text-xs font-bold text-gold">
+                {mission.reward}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-border/60 px-4 py-4">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/90">
+            <ListChecks className="h-3.5 w-3.5 text-brand" />
+            核心步骤
+          </div>
+          <div className="mt-3 space-y-2">
+            {rightPanel.practiceSteps.slice(0, 3).map((step, index) => (
+              <div key={`${step}-${index}`} className="flex gap-2 text-sm leading-6 text-muted-foreground">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/15 text-[11px] font-semibold text-brand">
+                  {index + 1}
+                </span>
+                <span className="line-clamp-2">{step}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
     <div
       className={cn(
-        "overflow-hidden rounded-[2.00rem] mb-6",
+        "hidden md:block overflow-hidden rounded-[2.00rem] mb-6",
         USER_PANEL_HERO_CARD_CLASS,
       )}
     >
@@ -167,5 +231,6 @@ export function LearnChatHero({ mission, rightPanel }: LearnChatHeroProps) {
         </div>
       </div>
     </div>
+    </>
   );
 }

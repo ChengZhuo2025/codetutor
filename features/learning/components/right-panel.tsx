@@ -22,15 +22,103 @@ import { cn } from "@/lib/utils"
 
 type LearnRightPanelProps = {
   className?: string
+  compact?: boolean
   learningData: LearningCurrentSessionResponseData
 }
 
-export function LearnRightPanel({ className, learningData }: LearnRightPanelProps) {
+export function LearnRightPanel({ className, compact = false, learningData }: LearnRightPanelProps) {
   const {
     tasks: learningTasks,
     mission,
     rightPanel,
   } = learningData
+
+  if (compact) {
+    return (
+      <WorkspaceAside className={cn("gap-3 p-4", className)}>
+        {mission ? (
+          <>
+            <div className="rounded-[24px] border border-border/60 bg-surface-2 px-4 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-brand/80">
+                    当前任务
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold leading-7 text-foreground">
+                    {rightPanel.currentStep}
+                  </h2>
+                </div>
+                <span className="shrink-0 rounded-full bg-brand px-2.5 py-1 text-xs font-semibold text-white">
+                  {mission.progressLabel}
+                </span>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/6 dark:bg-white/10">
+                <div
+                  className="h-full rounded-full bg-brand transition-all"
+                  style={{ width: `${mission.progressPercent}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="rounded-[24px] border border-border/60 bg-surface-2 px-4 py-4">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/90">
+                <CheckCircle2 className="h-3.5 w-3.5 text-brand" />
+                核心步骤
+              </div>
+              <div className="mt-3 space-y-2">
+                {rightPanel.practiceSteps.slice(0, 3).map((step, index) => (
+                  <div key={`${step}-${index}`} className="flex gap-2 text-sm leading-6 text-muted-foreground">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/15 text-[11px] font-semibold text-brand">
+                      {index + 1}
+                    </span>
+                    <span>{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[24px] border border-border/60 bg-surface-2 px-4 py-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+                完成标准
+              </p>
+              <p className="mt-2 text-sm leading-6 text-foreground">
+                {rightPanel.completionCriteria}
+              </p>
+              {rightPanel.checkpoints.length > 0 ? (
+                <div className="mt-3 space-y-1.5">
+                  {rightPanel.checkpoints.slice(0, 3).map((checkpoint) => (
+                    <p key={checkpoint} className="text-sm leading-6 text-muted-foreground">
+                      {checkpoint}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="rounded-[24px] border border-gold/20 bg-gold-dim/35 px-4 py-4 dark:bg-gold/8">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-gold">
+                <Lightbulb className="h-3.5 w-3.5" />
+                {mission.nextPreviewIsFinal ? "学习计划收尾" : "下一步预告"}
+              </div>
+              <p className="mt-2 text-sm font-semibold text-foreground">
+                {mission.nextUnlockTitle}
+              </p>
+              <p className="mt-1 line-clamp-3 text-sm leading-6 text-muted-foreground">
+                {rightPanel.nextStepPreview}
+              </p>
+            </div>
+          </>
+        ) : (
+          <StatePanel
+            status="empty"
+            title="任务上下文暂不可用"
+            description="当前会话没有可展示的任务摘要。请刷新页面或从学习地图重新进入当前任务。"
+            compact
+          />
+        )}
+      </WorkspaceAside>
+    )
+  }
 
   return (
     <WorkspaceAside className={className}>
