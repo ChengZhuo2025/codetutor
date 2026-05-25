@@ -115,7 +115,7 @@ export function LandingTestimonials() {
 
   return (
     <div
-      className="mt-14"
+      className="mt-10 lg:mt-14"
       onMouseEnter={handleInteractionStart}
       onMouseLeave={handleInteractionEnd}
       onTouchStart={handleInteractionStart}
@@ -125,7 +125,7 @@ export function LandingTestimonials() {
       <div className="group/carousel relative">
         <div
           ref={scrollRef}
-          className="flex gap-5 overflow-x-auto pb-8"
+          className="flex gap-4 overflow-x-auto pb-6 lg:gap-5 lg:pb-8"
           style={{
             scrollSnapType: "x mandatory",
             scrollbarWidth: "none",
@@ -135,7 +135,7 @@ export function LandingTestimonials() {
           {marketingTestimonials.map((t, i) => (
             <div
               key={i}
-              className="w-[min(370px,74vw)] shrink-0 rounded-[26px] border border-border/70 bg-card/82 p-7 backdrop-blur transition-all shadow-[0_12px_44px_-22px_rgba(15,23,42,0.15)] hover:shadow-[0_14px_44px_-22px_rgba(15,23,42,0.24)] dark:border-white/10 dark:bg-surface-2/76 dark:hover:shadow-[0_18px_48px_-24px_rgba(0,0,0,0.55)]"
+              className="w-[min(320px,82vw)] shrink-0 rounded-[22px] border border-border/70 bg-card/82 p-5 backdrop-blur transition-all shadow-[0_12px_44px_-22px_rgba(15,23,42,0.15)] hover:shadow-[0_14px_44px_-22px_rgba(15,23,42,0.24)] dark:border-white/10 dark:bg-surface-2/76 dark:hover:shadow-[0_18px_48px_-24px_rgba(0,0,0,0.55)] sm:w-[min(370px,74vw)] lg:rounded-[26px] lg:p-7"
               style={{ scrollSnapAlign: "center" }}
             >
               {/* 人群标签 */}
@@ -144,12 +144,12 @@ export function LandingTestimonials() {
               </span>
 
               {/* 核心数据 — 单行 */}
-              <p className="mt-5 text-2xl font-bold leading-tight text-foreground">
+              <p className="mt-4 text-xl font-bold leading-tight text-foreground lg:mt-5 lg:text-2xl">
                 {t.metric}
               </p>
 
               {/* 引语 — 3 行以内 */}
-              <blockquote className="mt-4 border-l-2 border-brand/30 pl-4 text-sm leading-7 text-muted-foreground">
+              <blockquote className="mt-3 line-clamp-4 border-l-2 border-brand/30 pl-4 text-sm leading-7 text-muted-foreground lg:mt-4 lg:line-clamp-none">
                 {t.quote}
               </blockquote>
 

@@ -4,14 +4,14 @@ import { cn } from "@/lib/utils"
 
 export function LandingBenefits() {
   return (
-    <section id="benefits" className="relative px-6 py-20 scroll-mt-20">
+    <section id="benefits" className="relative px-5 py-14 scroll-mt-20 sm:px-6 lg:py-20">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
       <div className="mx-auto max-w-6xl">
-        <div className="mx-auto mb-12 max-w-3xl text-center">
+        <div className="mx-auto mb-9 max-w-3xl text-center lg:mb-12">
           <p className="mb-3 text-sm font-medium uppercase tracking-widest text-muted-foreground">
             学习收益
           </p>
-          <h2 className="text-4xl font-bold tracking-tight text-balance">
+          <h2 className="text-3xl font-bold tracking-tight text-balance lg:text-4xl">
             从看过教程到<span className="text-brand">真正学会</span>
           </h2>
           <p className="mt-4 text-base leading-7 text-muted-foreground">
@@ -19,17 +19,17 @@ export function LandingBenefits() {
           </p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
           {marketingBenefits.map((benefit) => {
             const Icon = benefit.icon
             return (
               <div
                 key={benefit.title}
-                className="group relative overflow-hidden border-t border-border/70 px-1 pt-6 transition-all hover:border-brand/40 dark:border-white/10 dark:hover:border-brand/40"
+                className="group relative overflow-hidden border-t border-border/70 px-1 pt-5 transition-all hover:border-brand/40 dark:border-white/10 dark:hover:border-brand/40 lg:pt-6"
               >
                 <div
                   className={cn(
-                    "relative z-10 mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border transition-all group-hover:scale-105",
+                    "relative z-10 mb-4 flex h-11 w-11 items-center justify-center rounded-2xl border transition-all group-hover:scale-105 lg:mb-5 lg:h-12 lg:w-12",
                     benefit.borderColor,
                     benefit.bgColor,
                   )}
@@ -37,7 +37,7 @@ export function LandingBenefits() {
                   <Icon className={cn("h-7 w-7", benefit.color)} />
                 </div>
 
-                <h3 className="mb-3 text-lg font-semibold text-foreground">{benefit.title}</h3>
+                <h3 className="mb-2 text-base font-semibold text-foreground lg:mb-3 lg:text-lg">{benefit.title}</h3>
                 <p className="text-sm leading-6 text-muted-foreground">{benefit.desc}</p>
               </div>
             )

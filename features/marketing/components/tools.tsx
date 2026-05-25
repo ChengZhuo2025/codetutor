@@ -8,6 +8,8 @@ import {
 } from "@/features/marketing/data/marketing-content";
 import { cn } from "@/lib/utils";
 
+const MOBILE_PRIMARY_TOOL_COUNT = 5;
+
 export function LandingTools() {
   const [activeTool, setActiveTool] = useState(
     marketingTools[1]?.name ?? marketingTools[0]?.name,
@@ -18,9 +20,11 @@ export function LandingTools() {
       marketingTools[0],
     [activeTool],
   );
+  const mobilePrimaryTools = marketingTools.slice(0, MOBILE_PRIMARY_TOOL_COUNT);
+  const mobileSecondaryTools = marketingTools.slice(MOBILE_PRIMARY_TOOL_COUNT);
 
   return (
-    <section id="tools" className="relative px-6 py-20 scroll-mt-20">
+    <section id="tools" className="relative px-5 py-14 scroll-mt-20 sm:px-6 lg:py-20">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
       <div className="mx-auto max-w-6xl relative z-10 ">
         <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
@@ -29,16 +33,16 @@ export function LandingTools() {
               <p className="mb-3 text-sm font-medium uppercase tracking-widest text-muted-foreground">
                 支持工具
               </p>
-              <h2 className="mb-4 text-3xl leading-[1.3] font-bold tracking-tight text-balance">
+              <h2 className="mb-4 text-3xl leading-[1.25] font-bold tracking-tight text-balance lg:leading-[1.3]">
                 选择一个工具
                 <br />
                 <span className="text-brand">开始进入</span>对应第一课
               </h2>
-              <p className="mb-8 max-w-xl text-sm leading-7 text-muted-foreground">
+              <p className="mb-6 max-w-xl text-sm leading-7 text-muted-foreground lg:mb-8">
                 先从你真正要用的工具开始学。不同工具不会套同一份课程，而是给出不同的起步任务、提示方式和产出标准。
               </p>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="hidden flex-wrap gap-3 md:flex">
                 {marketingTools.map((tool) => (
                   <button
                     key={tool.name}
@@ -62,9 +66,64 @@ export function LandingTools() {
                   </button>
                 ))}
               </div>
+              <div className="md:hidden space-y-3">
+                <div className="flex flex-wrap gap-2.5">
+                  {mobilePrimaryTools.map((tool) => (
+                    <button
+                      key={tool.name}
+                      type="button"
+                      aria-pressed={activeTool === tool.name}
+                      onClick={() => setActiveTool(tool.name)}
+                      className={cn(
+                        "inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all shadow-[0_10px_20px_-10px_rgba(15,25,45,0.15)]",
+                        activeTool === tool.name
+                          ? "border-brand/40 bg-brand text-white shadow-[0_18px_44px_-30px_rgba(80,70,220,0.5)]"
+                          : "border-border/70 bg-card/80 text-muted-foreground hover:border-brand/24 hover:bg-brand/5 hover:text-foreground dark:border-white/10 dark:bg-surface-2/75",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "h-2.5 w-2.5 rounded-full",
+                          activeTool === tool.name ? "bg-white" : tool.dot,
+                        )}
+                      />
+                      {tool.name}
+                    </button>
+                  ))}
+                </div>
+                <details className="group rounded-2xl border border-border/70 bg-card/70 px-4 py-3 dark:border-white/10 dark:bg-surface-2/70">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-muted-foreground transition-colors group-open:text-foreground">
+                    更多工具
+                  </summary>
+                  <div className="mt-3 flex flex-wrap gap-2.5">
+                    {mobileSecondaryTools.map((tool) => (
+                      <button
+                        key={tool.name}
+                        type="button"
+                        aria-pressed={activeTool === tool.name}
+                        onClick={() => setActiveTool(tool.name)}
+                        className={cn(
+                          "inline-flex min-h-10 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-all",
+                          activeTool === tool.name
+                            ? "border-brand/40 bg-brand text-white"
+                            : "border-border/70 bg-background/70 text-muted-foreground hover:border-brand/24 hover:bg-brand/5 hover:text-foreground dark:border-white/10 dark:bg-white/4",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "h-2.5 w-2.5 rounded-full",
+                            activeTool === tool.name ? "bg-white" : tool.dot,
+                          )}
+                        />
+                        {tool.name}
+                      </button>
+                    ))}
+                  </div>
+                </details>
+              </div>
             </div>
 
-            <div className="mt-auto pt-8">
+            <div className="mt-auto hidden pt-8 md:block">
               <p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
                 下载工具
               </p>
@@ -86,13 +145,13 @@ export function LandingTools() {
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-border/70 bg-card p-6 shadow-[0_22px_70px_-46px_rgba(15,23,42,0.32)] dark:border-white/10 dark:bg-surface-2/70">
+          <div className="rounded-[24px] border border-border/70 bg-card p-5 shadow-[0_22px_70px_-46px_rgba(15,23,42,0.32)] dark:border-white/10 dark:bg-surface-2/70 lg:rounded-[28px] lg:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   {selectedTool?.tag}
                 </p>
-                <h3 className="mt-2 text-2xl font-semibold text-foreground">
+                <h3 className="mt-2 text-xl font-semibold text-foreground lg:text-2xl">
                   {selectedTool?.name} 起步路径
                 </h3>
               </div>
@@ -101,7 +160,7 @@ export function LandingTools() {
               </span>
             </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:mt-6">
               {[
                 ["学习目标", selectedTool?.exampleGoal],
                 ["第一步任务", selectedTool?.firstTask],
@@ -127,7 +186,7 @@ export function LandingTools() {
               ))}
             </div>
 
-            <div className="mt-6 border-t border-border/70 pt-5 dark:border-white/10">
+            <div className="mt-5 border-t border-border/70 pt-5 dark:border-white/10 lg:mt-6">
               <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
                 <CheckCircle2 className="h-4 w-4 text-brand" />
                 也适合这些学习入口

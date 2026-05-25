@@ -7,15 +7,15 @@ import { cn } from "@/lib/utils"
 
 export function LandingHowItWorks() {
   return (
-    <section id="how" className="relative px-6 py-20 scroll-mt-20">
+    <section id="how" className="relative px-5 py-14 scroll-mt-20 sm:px-6 lg:py-20">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
 
       <div className="mx-auto max-w-6xl">
-        <div className="mx-auto mb-12 max-w-3xl text-center">
+        <div className="mx-auto mb-9 max-w-3xl text-center lg:mb-12">
           <p className="mb-3 text-sm font-medium uppercase tracking-widest text-muted-foreground">
             学习方式
           </p>
-          <h2 className="text-4xl font-bold tracking-tight text-balance">
+          <h2 className="text-3xl font-bold tracking-tight text-balance lg:text-4xl">
             三步从<span className="text-brand">看过</span>走向<span className="text-brand">做成</span>
           </h2>
           <p className="mt-4 text-base leading-7 text-muted-foreground">
@@ -31,7 +31,7 @@ export function LandingHowItWorks() {
               <React.Fragment key={item.step}>
                 <div
                   className={cn(
-                    "group relative overflow-hidden rounded-[26px] border border-border/70 bg-card/82 p-7 backdrop-blur animate-fadeUp transition-all shadow-[0_22px_70px_-46px_rgba(15,23,42,0.32)] hover:-translate-y-0.5 hover:border-brand/20 hover:bg-brand/4 dark:border-white/10 dark:bg-surface-2/76 dark:hover:bg-surface-2",
+                    "group relative overflow-hidden rounded-[22px] border border-border/70 bg-card/82 p-5 backdrop-blur animate-fadeUp transition-all shadow-[0_22px_70px_-46px_rgba(15,23,42,0.32)] hover:-translate-y-0.5 hover:border-brand/20 hover:bg-brand/4 dark:border-white/10 dark:bg-surface-2/76 dark:hover:bg-surface-2 lg:rounded-[26px] lg:p-7",
                     index === 0
                       ? "animate-delay-100"
                       : index === 1
@@ -41,10 +41,10 @@ export function LandingHowItWorks() {
                 >
                   <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand/30 to-transparent" />
 
-                  <div className="mb-8 flex items-center justify-between">
+                  <div className="mb-5 flex items-center justify-between lg:mb-8">
                     <div
                       className={cn(
-                        "relative z-10 flex h-12 w-12 items-center justify-center rounded-2xl border transition-all group-hover:scale-110",
+                        "relative z-10 flex h-11 w-11 items-center justify-center rounded-2xl border transition-all group-hover:scale-110 lg:h-12 lg:w-12",
                         item.iconPanelClassName,
                       )}
                     >
@@ -55,7 +55,7 @@ export function LandingHowItWorks() {
                     </span>
                   </div>
 
-                  <h3 className="mb-3 text-xl font-semibold">{item.title}</h3>
+                  <h3 className="mb-2 text-lg font-semibold lg:mb-3 lg:text-xl">{item.title}</h3>
                   <p className="mb-4 text-sm leading-7 text-muted-foreground">{item.description}</p>
 
                   {/* 预计时间 */}
@@ -81,11 +81,11 @@ export function LandingHowItWorks() {
           })}
         </div>
 
-        <div className="mx-auto mt-10 max-w-6xl grid gap-4 md:grid-cols-2">
+        <div className="mx-auto mt-8 max-w-6xl grid gap-4 md:grid-cols-2 lg:mt-10">
           {marketingFitNotes.map((note, index) => (
             <div
               key={note.title}
-              className="flex min-h-[96px] items-center gap-5 border-l-2 border-brand/30 bg-transparent px-4 py-2"
+              className="flex min-h-[82px] items-center gap-4 border-l-2 border-brand/30 bg-transparent px-3 py-2 lg:min-h-[96px] lg:gap-5 lg:px-4"
               style={{ animationDelay: `${400 + index * 100}ms` }}
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/12 text-brand">

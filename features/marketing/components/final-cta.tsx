@@ -24,7 +24,7 @@ export function LandingFinalCta({ freePlanFeatureLabel }: LandingFinalCtaProps) 
   const { site } = usePublicSite()
 
   return (
-    <section id="start" className="relative overflow-hidden px-6 py-20 scroll-mt-20">
+    <section id="start" className="relative overflow-hidden px-5 py-14 scroll-mt-20 sm:px-6 lg:py-20">
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
       {/* 背景装饰 */}
       <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,oklch(0.96_0.02_270/0.5)_50%,oklch(0.90_0.018_270/0.8)_100%)] dark:bg-[linear-gradient(180deg,transparent_0%,oklch(0.18_0.024_270/0.6)_50%,oklch(0.12_0.01_270/0.9)_100%)]" />
@@ -34,27 +34,27 @@ export function LandingFinalCta({ freePlanFeatureLabel }: LandingFinalCtaProps) 
 
       <div className="relative z-10 mx-auto max-w-4xl text-center">
         {/* 徽章标识 */}
-        <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand/12 px-5 py-2 backdrop-blur-sm">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand/12 px-4 py-2 backdrop-blur-sm lg:mb-8 lg:px-5">
           <Sparkles className="h-4 w-4 text-brand" />
           <span className="text-sm font-medium text-brand">开始你的 AI 编程学习之旅</span>
         </div>
 
         {/* 主标题 */}
-        <h2 className="mb-6 text-3xl leading-15 font-bold tracking-tight text-balance md:text-4xl lg:text-5xl">
+        <h2 className="mb-5 text-3xl leading-tight font-bold tracking-tight text-balance md:text-4xl lg:mb-6 lg:text-5xl">
           从第一个可完成的
           <br />
           <span className="text-brand">AI 编程任务</span> 开始
         </h2>
 
         {/* 描述文案 */}
-        <p className="mx-auto mb-10 max-w-4xl text-lg leading-8 text-muted-foreground text-pretty">
+        <p className="mx-auto mb-8 max-w-4xl text-base leading-8 text-muted-foreground text-pretty lg:mb-10 lg:text-lg">
           今天就把第一条学习路径跑起来。不再只是收藏教程，让 {site.information.siteName} 陪你真正学会 AI 编程工具。
           <br className="hidden sm:block" />
           每天只需要15分钟，选择工具、确认水平，然后直接进入第一课。
         </p>
 
         {/* CTA按钮组 */}
-        <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:gap-4">
           <Button
             asChild
             size="lg"
@@ -96,7 +96,7 @@ export function LandingFinalCta({ freePlanFeatureLabel }: LandingFinalCtaProps) 
         </div>
 
         {/* 信任提示 */}
-        <div className="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+        <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:mt-12 lg:gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-brand/20">
               <svg className="h-3 w-3 text-brand" fill="currentColor" viewBox="0 0 20 20">

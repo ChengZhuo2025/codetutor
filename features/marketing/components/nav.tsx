@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Code2, Menu, Sparkles, X } from "lucide-react"
 import { APP_EVENTS } from "@/constants/events"
 import { MARKETING_NAV_ITEMS } from "@/constants/navigation"
@@ -39,8 +39,11 @@ export function LandingNav() {
   const { site } = usePublicSite()
   const { information } = site
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [showMobileStickyCta, setShowMobileStickyCta] = useState(false)
   const [activeHref, setActiveHref] = useState(MARKETING_NAV_ITEMS[0]?.href ?? "#home")
-  const { authState, maskedPhone } = useLandingAuthState()
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
+  const { authState, maskedPhone, ctaHref, ctaLabel } = useLandingAuthState()
   const { trackEvent } = useAppEventTracker()
 
   useEffect(() => {
@@ -95,16 +98,35 @@ export function LandingNav() {
   }, [])
 
   useEffect(() => {
+    function handleScroll() {
+      setShowMobileStickyCta(window.scrollY > 560)
+    }
+
+    handleScroll()
+    window.addEventListener("scroll", handleScroll, { passive: true })
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+    }
+  }, [])
+
+  useEffect(() => {
     if (!mobileOpen) {
       return
     }
 
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
+    window.setTimeout(() => {
+      mobileMenuRef.current
+        ?.querySelector<HTMLButtonElement | HTMLAnchorElement>("button, a")
+        ?.focus()
+    }, 0)
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setMobileOpen(false)
+        menuButtonRef.current?.focus()
       }
     }
 
@@ -217,6 +239,7 @@ export function LandingNav() {
           <div className="flex items-center gap-1 md:hidden">
             <ThemeToggle />
             <button
+              ref={menuButtonRef}
               className="flex size-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground dark:hover:bg-white/8"
               onClick={() => setMobileOpen((prev) => !prev)}
               aria-label="切换菜单"
@@ -232,10 +255,17 @@ export function LandingNav() {
       {mobileOpen && (
         <div
           id="landing-mobile-menu"
-          className="fixed inset-x-0 bottom-0 top-[68px] z-40 overflow-y-auto border-t border-border/80 bg-background/98 px-6 pb-8 pt-5 shadow-[0_28px_80px_-36px_rgba(15,23,42,0.28)] backdrop-blur-xl dark:border-white/8 dark:bg-[oklch(0.12_0.006_270/0.98)] md:hidden"
+          ref={mobileMenuRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="landing-mobile-menu-title"
+          className="fixed inset-x-0 bottom-0 top-[68px] z-[60] overflow-y-auto border-t border-border/80 bg-background/98 px-6 pb-8 pt-5 shadow-[0_28px_80px_-36px_rgba(15,23,42,0.28)] backdrop-blur-xl dark:border-white/8 dark:bg-[oklch(0.12_0.006_270/0.98)] md:hidden"
         >
           <div className="mx-auto flex min-h-[calc(100dvh-6rem)] max-w-xl flex-col">
-            <div className="mb-5 flex items-center gap-2 rounded-2xl border border-brand/20 bg-brand/10 px-4 py-3 text-sm text-brand">
+            <div
+              id="landing-mobile-menu-title"
+              className="mb-5 flex items-center gap-2 rounded-2xl border border-brand/20 bg-brand/10 px-4 py-3 text-sm text-brand"
+            >
               <Sparkles className="h-4 w-4 shrink-0" />
               当前可直接体验登录、引导和学习流程 Demo
             </div>
@@ -304,6 +334,37 @@ export function LandingNav() {
           </div>
         </div>
       )}
+      {!mobileOpen && showMobileStickyCta ? (
+        <div className="fixed inset-x-0 bottom-0 z-50 md:hidden">
+          <div className="mx-auto max-w-xl px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+            <div className="flex items-center gap-3 rounded-full border border-border/70 bg-background/92 p-1.5 shadow-[0_20px_60px_-34px_rgba(15,23,42,0.45)] backdrop-blur-xl dark:border-white/10 dark:bg-[oklch(0.12_0.006_270/0.92)]">
+              <div className="min-w-0 flex-1 pl-3">
+                <p className="truncate text-xs font-medium text-foreground">
+                  今天先完成第一课
+                </p>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  15 分钟跑通一个可见产出
+                </p>
+              </div>
+              <Link
+                href={ctaHref}
+                className={cn(
+                  "inline-flex h-11 shrink-0 items-center justify-center rounded-full px-5 text-sm font-semibold",
+                  USER_BUTTON_PRIMARY_CLASS,
+                )}
+                onClick={() =>
+                  trackEvent(APP_EVENTS.landingCtaClick, {
+                    source: "marketing_mobile_sticky",
+                    target: ctaHref,
+                  })
+                }
+              >
+                {authState.status === "authenticated" ? ctaLabel : "免费开始"}
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }

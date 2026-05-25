@@ -130,15 +130,15 @@ export function LandingPricing({ onFreePlanFeatureLabelChange }: LandingPricingP
   }
 
   return (
-    <section id="pricing" className="relative px-6 py-20 scroll-mt-20">
+    <section id="pricing" className="relative px-5 py-14 scroll-mt-20 sm:px-6 lg:py-20">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent dark:via-white/16" />
 
       <div className="mx-auto max-w-5xl">
-        <div className="mx-auto mb-14 max-w-3xl text-center">
+        <div className="mx-auto mb-10 max-w-3xl text-center lg:mb-14">
           <p className="mb-3 text-sm font-medium uppercase tracking-widest text-muted-foreground">
             套餐订阅
           </p>
-          <h2 className="text-4xl font-bold tracking-tight text-balance">
+          <h2 className="text-3xl font-bold tracking-tight text-balance lg:text-4xl">
             先用<span className="text-brand">免费版体验</span><span className="font-normal"> / </span>
             再决定是否升级
           </h2>
@@ -152,7 +152,7 @@ export function LandingPricing({ onFreePlanFeatureLabelChange }: LandingPricingP
             <div
               key={plan.name}
               className={cn(
-                "relative flex flex-col rounded-[30px] border p-8 transition-all hover:-translate-y-1 hover:border-brand/40 hover:bg-brand/5",
+                "relative flex flex-col rounded-[24px] border p-6 transition-all hover:-translate-y-1 hover:border-brand/40 hover:bg-brand/5 lg:rounded-[30px] lg:p-8",
                 plan.highlight
                   ? "border-brand/40 bg-brand/5 shadow-[0_22px_70px_-46px_oklch(0.60_0.24_270/0.55)] dark:bg-[linear-gradient(180deg,oklch(0.24_0.04_270/0.94),oklch(0.16_0.015_270/0.98))] dark:shadow-[0_22px_70px_-46px_oklch(0.85_0.28_270/0.45)]"
                   : "border-border bg-card shadow-[0_22px_70px_-46px_rgba(15,23,42,0.32)] dark:border-white/10 dark:bg-surface-2/80",
@@ -167,7 +167,7 @@ export function LandingPricing({ onFreePlanFeatureLabelChange }: LandingPricingP
               <div className="mb-6">
                 <p className="text-sm font-medium text-muted-foreground">{plan.name}</p>
                 <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold">{plan.price}</span>
+                  <span className="text-3xl font-bold lg:text-4xl">{plan.price}</span>
                   {plan.period && (
                     <span className="text-muted-foreground">{plan.period}</span>
                   )}
@@ -175,7 +175,7 @@ export function LandingPricing({ onFreePlanFeatureLabelChange }: LandingPricingP
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{plan.desc}</p>
               </div>
 
-              <ul className="mb-8 flex-1 space-y-3">
+              <ul className="mb-6 flex-1 space-y-2.5 lg:mb-8 lg:space-y-3">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2.5 text-sm">
                     <Check

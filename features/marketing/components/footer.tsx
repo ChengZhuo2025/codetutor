@@ -65,7 +65,7 @@ export function LandingFooter() {
 
   return (
     <>
-      <footer className="pt-10">
+	      <footer className="pt-10 pb-28 md:pb-0">
         <div className="mx-auto max-w-6xl">
           <div className="flex items-center justify-center gap-4">
             <div className="h-px flex-1 bg-gradient-to-r from-transparent to-border dark:to-white/14" />
@@ -106,7 +106,7 @@ export function LandingFooter() {
             ))}
           </div>
         </div>
-        <div className="mt-8 px-26 py-6 border-t border-border/60 bg-surface-2 dark:bg-surface-1 flex flex-col items-center justify-between gap-6 md:flex-row">
+	        <div className="mt-8 px-6 py-6 border-t border-border/60 bg-surface-2 dark:bg-surface-1 flex flex-col items-center justify-between gap-6 md:flex-row md:px-26">
           <div className="flex items-center gap-2 text-muted-foreground">
             <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg bg-brand text-brand-foreground">
               {information.logoUrl ? (

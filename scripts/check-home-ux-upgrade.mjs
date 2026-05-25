@@ -55,6 +55,42 @@ assert.match(
   "LandingNav should lock body scrolling while the mobile menu is open.",
 )
 
+assert.match(
+  navSource,
+  /role="dialog"/,
+  "LandingNav mobile menu should expose dialog semantics.",
+)
+
+assert.match(
+  navSource,
+  /aria-modal="true"/,
+  "LandingNav mobile menu should mark the overlay as modal.",
+)
+
+assert.match(
+  navSource,
+  /fixed inset-x-0 bottom-0 z-50 md:hidden/,
+  "LandingNav should provide a mobile sticky CTA so long mobile pages keep the primary action reachable.",
+)
+
+assert.match(
+  heroSource,
+  /lg:hidden[\s\S]+移动端精简预览/,
+  "LandingHero should render a compact mobile-only product preview.",
+)
+
+assert.match(
+  heroSource,
+  /hidden overflow-hidden[\s\S]+lg:block/,
+  "LandingHero should keep the full desktop product preview out of the mobile flow.",
+)
+
+assert.match(
+  toolsSource,
+  /md:hidden[\s\S]+更多工具/,
+  "LandingTools should collapse less important mobile tool choices behind a secondary group.",
+)
+
 for (const [name, sourceText] of [
   ["LandingHero", heroSource],
   ["LandingFinalCta", finalCtaSource],
