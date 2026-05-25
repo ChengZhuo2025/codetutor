@@ -748,7 +748,7 @@ AI 能力必须稳定输出教学型结构，而不是自由散漫的聊天回�
 
 ### 平台接入确认风险
 
-当前已完成远程数据库连通、短信 OTP 登录、头像 Storage 上传与基础 OAuth callback 接入。生产 OAuth 必须同时满足应用环境变量与 Supabase Auth 控制台配置：`NEXT_PUBLIC_APP_URL=https://www.codetutor.cn`，Supabase Auth Site URL 为 `https://www.codetutor.cn`，Redirect URLs 允许 `https://www.codetutor.cn/auth/callback`。若 Site URL 仍为 `http://localhost:3000` 或生产 callback 未加入 allow list，Supabase 会把扫码成功后的 token fragment 回落到本地域名，造成登录中断与 token 暴露风险。
+当前已完成远程数据库连通、短信 OTP 登录、头像 Storage 上传与基础 OAuth callback 接入。生产 OAuth 必须同时满足应用环境变量与 Supabase Auth 控制台配置：`NEXT_PUBLIC_APP_URL=https://www.codetutor.cn`，Supabase Auth Site URL 为 `https://www.codetutor.cn`，Redirect URLs 允许 `https://www.codetutor.cn/auth/callback`。若 Site URL 仍为 `http://localhost:3000` 或生产 callback 未加入 allow list，Supabase 会把扫码成功后的 token fragment 或 PKCE `code` 回调回落到本地域名，造成登录中断与 token 暴露风险。
 
 ### AI 输出不可控
 

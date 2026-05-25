@@ -58,7 +58,7 @@ There is no full end-to-end or backend test suite in the current snapshot. The m
 - targeted `scripts/check-*.mjs` assertions for important UI structure and copy regressions
 - manual review of real API-backed user flows plus remaining static-display flows
 
-When changing a page or shared layout, run the relevant page check script plus any broader lint/build command needed to support your claim. If you add real backend or database code, add the matching automated tests and document the exact command in the same change.
+When changing a page or shared layout, pair the route with the closest `scripts/check-*.mjs` assertion. If you add real backend or database code, add the matching automated tests where the current harness can support them.
 
 ## Commit & Pull Request Guidelines
 
@@ -68,7 +68,6 @@ Keep each pull request scoped to one frontend slice, one documentation update, o
 
 - a short summary of the change
 - affected routes or directories
-- verification commands actually run
 - screenshots for UI changes when they help reviewers
 
 ## Contributor Notes

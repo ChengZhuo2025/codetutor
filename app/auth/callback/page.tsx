@@ -31,6 +31,7 @@ type OAuthCallbackSuccessContext = {
   flow: OAuthCallbackFlow
   provider: AuthOAuthProvider
   redirectTo: string
+  accessToken?: string | null
   loginData?: AuthLoginResponseData
   onboardingCompleted?: boolean
   providerProfile: OAuthProviderProfile | null
@@ -77,8 +78,22 @@ function isLocalhostOAuthTokenLeak() {
   )
 }
 
-function repairLocalhostOAuthTokenRedirect() {
-  if (typeof window === "undefined" || !isLocalhostOAuthTokenLeak()) {
+function isLocalhostOAuthCallbackLeak() {
+  if (typeof window === "undefined") {
+    return false
+  }
+
+  const isLocalhost =
+    window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+
+  return (
+    isLocalhostOAuthTokenLeak()
+    || (isLocalhost && Boolean(new URLSearchParams(window.location.search).get("code")))
+  )
+}
+
+function repairLocalhostOAuthRedirect() {
+  if (typeof window === "undefined" || !isLocalhostOAuthCallbackLeak()) {
     return false
   }
 
@@ -99,6 +114,7 @@ function notifyParentAuthCompleted(
   data: AuthLoginResponseData,
   provider: string,
   redirectTo: string,
+  accessToken: string | null | undefined,
   providerProfile: OAuthProviderProfile | null,
 ) {
   if (typeof window === "undefined") {
@@ -109,6 +125,7 @@ function notifyParentAuthCompleted(
     type: "codetutor.oauth.completed",
     provider,
     redirectTo,
+    accessToken,
     onboardingCompleted: data.onboardingCompleted,
     providerProfile,
   }
@@ -153,7 +170,11 @@ function notifyParentOAuthBindingRequired(provider: string) {
   return notified
 }
 
-function notifyParentOAuthLinked(provider: string, providerProfile: OAuthProviderProfile | null) {
+function notifyParentOAuthLinked(
+  provider: string,
+  accessToken: string | null | undefined,
+  providerProfile: OAuthProviderProfile | null,
+) {
   if (typeof window === "undefined") {
     return false
   }
@@ -161,6 +182,7 @@ function notifyParentOAuthLinked(provider: string, providerProfile: OAuthProvide
   const payload = {
     type: "codetutor.oauth.linked",
     provider,
+    accessToken,
     providerProfile,
   }
 
@@ -246,10 +268,15 @@ function hasProviderProfile(profile: OAuthProviderProfile | null) {
   return Boolean(profile?.nickname || profile?.avatarUrl)
 }
 
-async function applyOAuthProfileToCurrentUser(providerProfile: OAuthProviderProfile) {
-  const current = await requestData<ProfileMeResponseData>("/profile/me")
+async function applyOAuthProfileToCurrentUser(
+  providerProfile: OAuthProviderProfile,
+  accessToken: string | null | undefined,
+) {
+  const headers = withAuthorization(accessToken)
+  const current = await requestData<ProfileMeResponseData>("/profile/me", { headers })
   const next = await requestData<ProfileMeResponseData>("/profile/me", {
     method: "PATCH",
+    headers,
     body: JSON.stringify({
       nickname: providerProfile.nickname ?? current.nickname,
       avatarUrl: providerProfile.avatarUrl ?? current.avatarUrl,
@@ -296,7 +323,7 @@ function AuthCallbackContent() {
 
     if (context.flow === "link") {
       if (context.canNotifyParent) {
-        notifyParentOAuthLinked(context.provider, context.providerProfile)
+        notifyParentOAuthLinked(context.provider, context.accessToken, context.providerProfile)
         closeOpenedOAuthWindow()
         return
       }
@@ -306,7 +333,13 @@ function AuthCallbackContent() {
     }
 
     if (context.canNotifyParent && context.loginData) {
-      notifyParentAuthCompleted(context.loginData, context.provider, context.redirectTo, context.providerProfile)
+      notifyParentAuthCompleted(
+        context.loginData,
+        context.provider,
+        context.redirectTo,
+        context.accessToken,
+        context.providerProfile,
+      )
       closeOpenedOAuthWindow()
       return
     }
@@ -323,7 +356,7 @@ function AuthCallbackContent() {
     setIsApplyingProfile(true)
 
     try {
-      await applyOAuthProfileToCurrentUser(successContext.providerProfile)
+      await applyOAuthProfileToCurrentUser(successContext.providerProfile, successContext.accessToken)
       finishOAuthSuccess()
     } catch (error) {
       setStatus("error")
@@ -337,7 +370,7 @@ function AuthCallbackContent() {
     let cancelled = false
 
     async function completeAuthCallback() {
-      if (repairLocalhostOAuthTokenRedirect()) {
+      if (repairLocalhostOAuthRedirect()) {
         return
       }
 
@@ -405,6 +438,12 @@ function AuthCallbackContent() {
           }
         }
 
+        if (!accessToken) {
+          setStatus("error")
+          setMessage("扫码登录结果缺少登录凭证，请重新发起扫码登录。")
+          return
+        }
+
         const {
           data: { user },
         } = await supabase.auth.getUser(accessToken)
@@ -419,13 +458,14 @@ function AuthCallbackContent() {
               flow,
               provider,
               redirectTo: getSafeInternalRedirectTo(searchParams.get("redirectTo")) ?? ROUTES.learn,
+              accessToken,
               providerProfile,
               canNotifyParent,
             })
             return
           }
 
-          if (!cancelled && notifyParentOAuthLinked(provider, providerProfile)) {
+          if (!cancelled && notifyParentOAuthLinked(provider, accessToken, providerProfile)) {
             setStatus("success")
             setMessage(`${providerMeta.label.replace("扫码登录", "")}账号已完成绑定，正在返回个人资料。`)
             closeOpenedOAuthWindow()
@@ -456,6 +496,7 @@ function AuthCallbackContent() {
             flow,
             provider,
             redirectTo,
+            accessToken,
             loginData: data,
             onboardingCompleted: data.onboardingCompleted,
             providerProfile,
@@ -464,7 +505,7 @@ function AuthCallbackContent() {
           return
         }
 
-        if (!cancelled && notifyParentAuthCompleted(data, provider, redirectTo, providerProfile)) {
+        if (!cancelled && notifyParentAuthCompleted(data, provider, redirectTo, accessToken, providerProfile)) {
           setStatus("success")
           setMessage(`欢迎回来，正在进入 ${siteName}。`)
           closeOpenedOAuthWindow()
@@ -488,23 +529,34 @@ function AuthCallbackContent() {
             || message.includes("绑定手机号")
           )
         ) {
+          const supabase = createSupabaseBrowserClient()
+
           try {
-            const supabase = createSupabaseBrowserClient()
             const session = await getSafeSupabaseBrowserSession(supabase)
 
             await requestData("/auth/oauth-temp-user/discard", {
               method: "POST",
               headers: withAuthorization(session?.access_token),
               body: JSON.stringify({ provider }),
-            }).catch(() => undefined)
+            })
+          } catch (discardError) {
             await clearSupabaseBrowserSession(supabase)
-          } finally {
-            if (!cancelled && notifyParentOAuthBindingRequired(provider)) {
-              setStatus("success")
-              setMessage("请返回登录页绑定手机号。")
-              closeOpenedOAuthWindow()
-              return
-            }
+            setStatus("error")
+            setMessage(
+              discardError instanceof Error
+                ? `临时扫码账号清理失败：${discardError.message}`
+                : "临时扫码账号清理失败，请重新发起扫码登录。",
+            )
+            return
+          }
+
+          await clearSupabaseBrowserSession(supabase)
+
+          if (!cancelled && notifyParentOAuthBindingRequired(provider)) {
+            setStatus("success")
+            setMessage("请返回登录页绑定手机号。")
+            closeOpenedOAuthWindow()
+            return
           }
         }
 

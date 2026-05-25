@@ -47,6 +47,7 @@ type OAuthCompletedMessage = {
   type: "codetutor.oauth.completed"
   provider?: AuthOAuthProvider
   redirectTo?: string
+  accessToken?: string | null
   onboardingCompleted?: boolean
 }
 
@@ -58,6 +59,7 @@ type OAuthBindingRequiredMessage = {
 type OAuthLinkedMessage = {
   type: "codetutor.oauth.linked"
   provider?: AuthOAuthProvider
+  accessToken?: string | null
 }
 
 type OAuthMessage =
@@ -201,10 +203,26 @@ export function LoginPage() {
       if (event.data.type === "codetutor.oauth.linked") {
         setOauthPendingProvider(null)
         const redirectTo = pendingBindRedirectTo ?? ROUTES.learn
-        setPendingBindProvider(null)
-        setPendingBindRedirectTo(null)
-        setStep("idle")
-        router.replace(getLoginRedirectTo(redirectTo))
+        if (!event.data.accessToken) {
+          setErrorMessage("扫码绑定结果缺少登录凭证，请重新扫码绑定。")
+          return
+        }
+
+        try {
+          const data = await requestData<AuthLoginResponseData>("/auth/login", {
+            method: "POST",
+            headers: withAuthorization(event.data.accessToken),
+            body: JSON.stringify({
+              loginType: "phone",
+            }),
+          })
+          setPendingBindProvider(null)
+          setPendingBindRedirectTo(null)
+          setStep("idle")
+          router.replace(getLoginRedirectTo(data.redirectTo || redirectTo))
+        } catch (error) {
+          setErrorMessage(toFriendlyAuthError(error, "verify"))
+        }
         return
       }
 
@@ -212,16 +230,41 @@ export function LoginPage() {
         return
       }
 
+      if (!event.data.provider) {
+        setErrorMessage("缺少扫码登录 provider，无法完成登录。")
+        return
+      }
+
+      if (!event.data.accessToken) {
+        setErrorMessage("扫码登录结果缺少登录凭证，请重新扫码登录。")
+        return
+      }
+
       setOauthPendingProvider(null)
+
+      let data: AuthLoginResponseData | null = null
+
+      try {
+        data = await requestData<AuthLoginResponseData>("/auth/login", {
+          method: "POST",
+          headers: withAuthorization(event.data.accessToken),
+          body: JSON.stringify({
+            loginType: event.data.provider,
+          }),
+        })
+      } catch (error) {
+        setErrorMessage(toFriendlyAuthError(error, "verify"))
+        return
+      }
 
       trackEvent(APP_EVENTS.loginSubmit, {
         step,
-        loginType: event.data.provider ?? "douyin",
-        onboardingCompleted: Boolean(event.data.onboardingCompleted),
+        loginType: event.data.provider,
+        onboardingCompleted: data.onboardingCompleted,
         legalAcceptedAt,
       })
 
-      router.replace(getLoginRedirectTo(event.data.redirectTo))
+      router.replace(getLoginRedirectTo(data.redirectTo || event.data.redirectTo))
     }
 
     window.addEventListener("message", handleOAuthMessage)

@@ -432,7 +432,7 @@ MVP 默认使用登录态 Session 或 Bearer Token。
 - 手机号登录若用户尚无业务资料，会创建 `user_profiles`、`user_learning_preferences` 与段位快照。
 - 已绑定微信/抖音扫码登录会落到同一个 `auth.users.id`，并只刷新最近登录来源与时间。
 - 未绑定微信/抖音扫码产生的 OAuth-only Auth 用户不会创建业务资料；服务端不会信任客户端把这类 session 声明为 `phone` 登录，仍会返回 `OAUTH_PHONE_BINDING_REQUIRED`；前端会清理临时用户，再引导手机号验证码登录/注册，随后用 Supabase `linkIdentity` 发起二次扫码绑定。
-- OAuth 登录与绑定的 Supabase `redirectTo` 统一由 `NEXT_PUBLIC_APP_URL + /auth/callback` 构造，生产环境必须配置 `NEXT_PUBLIC_APP_URL=https://www.codetutor.cn`。Supabase Auth 的 Site URL 也必须是 `https://www.codetutor.cn`，Redirect URLs 必须允许 `https://www.codetutor.cn/auth/callback`；否则 Supabase 会回落到 Site URL，可能把 token fragment 带到错误域名。
+- OAuth 登录与绑定的 Supabase `redirectTo` 统一由 `NEXT_PUBLIC_APP_URL + /auth/callback` 构造，生产环境必须配置 `NEXT_PUBLIC_APP_URL=https://www.codetutor.cn`。Supabase Auth 的 Site URL 也必须是 `https://www.codetutor.cn`，Redirect URLs 必须允许 `https://www.codetutor.cn/auth/callback`；否则 Supabase 会回落到 Site URL，可能把 token fragment 或 PKCE `code` 回调带到错误域名。
 
 ## 5.1.1 `POST /api/auth/oauth-temp-user/discard`
 

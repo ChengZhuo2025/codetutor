@@ -55,8 +55,13 @@ assert.match(
 )
 assert.match(
   callbackSource,
+  /isLocalhostOAuthCallbackLeak\(/,
+  "OAuth callback should detect localhost code-based fallback redirects.",
+)
+assert.match(
+  callbackSource,
   /window\.location\.replace\(repairUrl\.toString\(\)\)/,
-  "OAuth callback should repair localhost token-fragment redirects to the configured production origin.",
+  "OAuth callback should repair localhost OAuth redirects to the configured production origin.",
 )
 
-console.log("OAuth redirects use the production app URL and guard localhost token fallback.")
+console.log("OAuth redirects use the production app URL and guard localhost OAuth fallback.")

@@ -243,6 +243,16 @@ assert.match(
   "Auth callback should let users apply the provider nickname/avatar to their profile before continuing.",
 )
 assert.match(
+  callbackSource,
+  /applyOAuthProfileToCurrentUser\(successContext\.providerProfile,\s*successContext\.accessToken\)/,
+  "Auth callback should apply provider profile with the OAuth callback access token instead of relying on implicit browser session state.",
+)
+assert.match(
+  callbackSource,
+  /if \(!accessToken\)[\s\S]*缺少登录凭证/,
+  "Auth callback should stop when Supabase does not return an OAuth access token.",
+)
+assert.match(
   loginPageSource,
   /pendingBindProvider/,
   "Login page should keep track of an OAuth provider waiting for phone binding.",
@@ -274,6 +284,26 @@ assert.match(
 )
 assert.match(
   loginPageSource,
+  /event\.data\.type === "codetutor\.oauth\.linked"[\s\S]*requestData<AuthLoginResponseData>\("\/auth\/login"[\s\S]*loginType:\s*"phone"[\s\S]*router\.replace/,
+  "After OAuth phone binding completes, the parent login page should refresh the app login cookie before entering protected routes.",
+)
+assert.match(
+  loginPageSource,
+  /event\.data\.type === "codetutor\.oauth\.linked"[\s\S]*if \(!event\.data\.accessToken\)/,
+  "After OAuth phone binding completes, the parent login page should require the linked callback access token instead of falling back to stale browser session state.",
+)
+assert.match(
+  loginPageSource,
+  /event\.data\.type !== "codetutor\.oauth\.completed"[\s\S]*requestData<AuthLoginResponseData>\("\/auth\/login"[\s\S]*loginType:\s*event\.data\.provider[\s\S]*router\.replace/,
+  "After popup OAuth login completes, the parent login page should finalize app login in the parent window before entering protected routes.",
+)
+assert.match(
+  loginPageSource,
+  /event\.data\.type !== "codetutor\.oauth\.completed"[\s\S]*if \(!event\.data\.accessToken\)/,
+  "After popup OAuth login completes, the parent login page should require the callback access token instead of falling back to stale browser session state.",
+)
+assert.match(
+  loginPageSource,
   /flow", "link"|flow: "link"|flow=link/,
   "Login page should use a dedicated link callback flow for manual identity linking.",
 )
@@ -284,8 +314,13 @@ assert.match(
 )
 assert.match(
   callbackSource,
-  /requestData\("\/auth\/oauth-temp-user\/discard"[\s\S]*\.catch\(\(\) => undefined\)[\s\S]*clearSupabaseBrowserSession\(supabase\)/,
-  "Auth callback should always clear the popup's local OAuth session before notifying the login page to bind a phone.",
+  /await requestData\("\/auth\/oauth-temp-user\/discard"[\s\S]*await clearSupabaseBrowserSession\(supabase\)[\s\S]*notifyParentOAuthBindingRequired\(provider\)/,
+  "Auth callback should clear the popup's local OAuth session only after successfully discarding the temporary OAuth user.",
+)
+assert.doesNotMatch(
+  callbackSource,
+  /requestData\("\/auth\/oauth-temp-user\/discard"[\s\S]*\.catch\(\(\) => undefined\)/,
+  "Auth callback must not continue into phone binding when the temporary OAuth user cleanup fails.",
 )
 assert.match(
   callbackSource,
