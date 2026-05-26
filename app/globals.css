@@ -114,7 +114,7 @@
   --destructive: oklch(0.65 0.28 25);
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(0.28 0.008 270);
-  --input: oklch(0.24 0.006 270);
+  --input: oklch(0.24 0.008 270);
   --ring: oklch(0.68 0.28 270);
   --brand: oklch(0.68 0.28 270);
   --brand-foreground: oklch(0.22 0.02 270);
@@ -122,8 +122,8 @@
   --gold: oklch(0.80 0.18 75);
   --gold-dim: oklch(0.80 0.18 75 / 0.12);
   --surface-1: oklch(0.20 0.008 270);
-  --surface-2: oklch(0.24 0.006 270);
-  --surface-3: oklch(0.28 0.007 270);
+  --surface-2: oklch(0.24 0.008 270);
+  --surface-3: oklch(0.28 0.008 270);
   --surface-4: oklch(0.32 0.008 270);
   --admin-dashboard-chart: oklch(0.68 0.28 270);
   --chart-1: oklch(0.68 0.28 270);

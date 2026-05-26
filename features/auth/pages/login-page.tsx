@@ -386,11 +386,6 @@ export function LoginPage() {
   const sendCode = async () => {
     if (countdown > 0 || isSendingCode) return
 
-    if (!agreedToLegal) {
-      setErrorMessage("请先阅读并勾选同意《用户协议》和《隐私政策》。")
-      return
-    }
-
     const normalizedPhone = normalizePhoneInput(phone)
 
     if (!isValidChinaMainlandPhone(normalizedPhone)) {

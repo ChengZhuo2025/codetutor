@@ -81,7 +81,7 @@ export function LearnChatMessageList({
       ref={scrollContainerRef}
       className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 py-5 sm:px-6 sm:py-6"
     >
-      <div className="mx-auto max-w-3xl space-y-4">
+      <div className="mx-auto space-y-4">
         {conversationId && historyPagination.hasMore ? (
           <div className="flex flex-col items-center gap-2">
             <button

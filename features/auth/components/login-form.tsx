@@ -232,7 +232,7 @@ export function LoginForm({
               <button
                 type="button"
                 onClick={onSendCode}
-                disabled={countdown > 0 || !isValidPhone || isSendingCode || !agreedToLegal}
+                disabled={countdown > 0 || !isValidPhone || isSendingCode}
                 className={cn(
                   "shrink-0 px-4 text-sm font-medium",
                   USER_BUTTON_SECONDARY_CLASS,
@@ -366,7 +366,7 @@ export function LoginForm({
         )}
 
         <p className="mt-6 text-center text-xs leading-5 text-muted-foreground/60">
-          未勾选协议前不可发送验证码或提交。
+          提交时将验证是否已阅读并同意用户协议与隐私政策。
         </p>
 
         {site.information.icpNumber ? (

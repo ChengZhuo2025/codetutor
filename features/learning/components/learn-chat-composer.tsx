@@ -338,7 +338,7 @@ export function LearnChatComposer({
 
   return (
     <div className="shrink-0 border-t border-border/50 bg-surface-1 px-4 pb-4 pt-3 sm:px-6">
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto">
         {sendError ? (
           <StatePanel
             status="error"
