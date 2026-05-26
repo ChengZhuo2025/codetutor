@@ -95,53 +95,61 @@ export function OrderList({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
         <span>共 <span className="font-medium text-foreground">{total}</span> 条订单</span>
         <span>已展示 <span className="font-medium text-foreground">{items.length}</span> 条</span>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-3 sm:gap-4">
         {items.map((order) => {
           const meta = statusMeta[order.status]
           return (
             <article
               key={order.orderNo}
-              className="overflow-hidden rounded-[24px] border border-border/70 bg-surface-1/95 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.25)]"
+              className="overflow-hidden rounded-[22px] border border-border/70 bg-surface-1/95 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.25)] sm:rounded-[24px]"
             >
-              <div className="flex flex-col gap-4 border-b border-border/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="border-b border-border/50 px-4 py-4 sm:px-5">
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-lg font-semibold text-foreground">{order.planName}</h2>
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="min-w-0 text-base font-semibold leading-tight text-foreground sm:text-lg">{order.planName}</h2>
+                    <p className="shrink-0 text-xl font-bold text-foreground sm:text-2xl">{formatAmount(order.amountCents)}</p>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
                     <Badge variant={meta.variant}>{meta.label}</Badge>
                     <Badge variant="outline">{order.paymentChannel === "alipay" ? "支付宝" : "微信"}</Badge>
                   </div>
-                  <p className="mt-1 break-all text-xs text-muted-foreground">订单号：{order.orderNo}</p>
-                </div>
-                <p className="text-2xl font-bold text-foreground">{formatAmount(order.amountCents)}</p>
-              </div>
-              <div className="grid gap-3 px-4 py-4 text-sm text-muted-foreground sm:grid-cols-3">
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  <p className="text-xs">创建时间</p>
-                  <p className="ml-1 font-medium text-foreground">{formatDateTime(order.createdAt)}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  <p className="text-xs">支付时间</p>
-                  <p className="ml-1 font-medium text-foreground">{formatDateTime(order.paidAt)}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
-                  <p className="text-xs">支付有效期</p>
-                  <p className="ml-1 font-medium text-foreground">{formatDateTime(order.expiresAt)}</p>
+                  <p className="mt-2 truncate text-xs text-muted-foreground">订单号：{order.orderNo}</p>
                 </div>
               </div>
-              <div className="flex flex-wrap justify-end gap-2 border-t border-border/40 bg-muted/20 px-5 pt-3 pb-4">
+              <div className="grid grid-cols-2 gap-2.5 px-4 py-4 text-sm text-muted-foreground sm:grid-cols-3 sm:px-5">
+                <div className="rounded-2xl border border-border/60 bg-surface-2 px-3 py-2 dark:border-white/10 dark:bg-white/5">
+                  <div className="flex items-center gap-1 text-xs">
+                    <Clock className="h-3.5 w-3.5" />
+                    创建时间
+                  </div>
+                  <p className="mt-1 font-medium text-foreground">{formatDateTime(order.createdAt)}</p>
+                </div>
+                <div className="rounded-2xl border border-border/60 bg-surface-2 px-3 py-2 dark:border-white/10 dark:bg-white/5">
+                  <div className="flex items-center gap-1 text-xs">
+                    <Clock className="h-3.5 w-3.5" />
+                    支付时间
+                  </div>
+                  <p className="mt-1 font-medium text-foreground">{formatDateTime(order.paidAt)}</p>
+                </div>
+                <div className="col-span-2 rounded-2xl border border-border/60 bg-surface-2 px-3 py-2 dark:border-white/10 dark:bg-white/5 sm:col-span-1">
+                  <div className="flex items-center gap-1 text-xs">
+                    <Calendar className="h-3.5 w-3.5" />
+                    支付有效期
+                  </div>
+                  <p className="mt-1 font-medium text-foreground">{formatDateTime(order.expiresAt)}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 border-t border-border/40 bg-muted/20 px-4 pt-3 pb-4 sm:flex sm:flex-wrap sm:justify-end sm:px-5">
                 {canContinue(order) ? (
                   <Button
                     type="button"
                     size="sm"
-                    className={USER_BUTTON_PRIMARY_CLASS}
+                    className={cn("min-h-11 w-full", USER_BUTTON_PRIMARY_CLASS)}
                     disabled={isMutating}
                     onClick={() => onContinuePay(order)}
                   >
@@ -154,7 +162,7 @@ export function OrderList({
                     type="button"
                     size="sm"
                     variant="outline"
-                    className={USER_PANEL_OUTLINE_BUTTON_CLASS}
+                    className={cn("min-h-11 w-full", USER_PANEL_OUTLINE_BUTTON_CLASS)}
                     disabled={isMutating}
                     onClick={() => onSync(order)}
                   >
@@ -167,7 +175,7 @@ export function OrderList({
                     type="button"
                     size="sm"
                     variant="outline"
-                    className={USER_PANEL_OUTLINE_BUTTON_CLASS}
+                    className={cn("min-h-11 w-full", USER_PANEL_OUTLINE_BUTTON_CLASS)}
                     disabled={isMutating}
                     onClick={() => onCancel(order)}
                   >
@@ -180,6 +188,7 @@ export function OrderList({
                     type="button"
                     size="sm"
                     variant="destructiveSoft"
+                    className="min-h-11 w-full"
                     disabled={isMutating}
                     onClick={() => onDelete(order)}
                   >
