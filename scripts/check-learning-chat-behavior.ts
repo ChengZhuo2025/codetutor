@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 
 import {
   buildComposerDraftFromAssistantAction,
+  canAssistantMessageAdvanceToNextTask,
   canUseCompletionQuickAction,
   buildStableAssistantActions,
   isExplicitTaskCompletionInput,
@@ -411,6 +412,38 @@ test("canUseCompletionQuickAction requires both user evidence and assistant comp
       ],
     }),
     false,
+  )
+})
+
+test("completion-ready assistant replies unlock the completion and next-task actions", () => {
+  assert.equal(
+    canUseCompletionQuickAction({
+      taskState: "in_progress",
+      messages: [
+        { role: "user", kind: "user_input", content: "截图里可以看到 codex 正常启动，没有报错。", interactionType: null, actionLabels: [], taskPatchStatus: null },
+        {
+          role: "ai",
+          kind: "coach",
+          content: "验收通过 ✅ 你的截图清晰地展示了：终端执行了 codex 命令，Codex CLI 成功启动，没有出现 command not found 等报错。",
+          interactionType: "teaching",
+          actionLabels: ["进入下一步"],
+          taskPatchStatus: null,
+        },
+      ],
+    }),
+    true,
+  )
+
+  assert.equal(
+    canAssistantMessageAdvanceToNextTask({
+      taskState: "in_progress",
+      canTriggerCompleteQuickAction: true,
+      messageKind: "coach",
+      taskPatchStatus: null,
+      interactionType: "completion_feedback",
+      content: "验收通过 ✅ 完全符合完成标准。",
+    }),
+    true,
   )
 })
 

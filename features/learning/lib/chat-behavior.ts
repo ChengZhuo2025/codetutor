@@ -152,6 +152,7 @@ const ASSISTANT_COMPLETION_PATTERNS = [
   /本关已通过验收/,
   /本关.{0,4}验收(?:通过|完成|合格|成功)/,
   /已通过本关(?:的)?验收/,
+  /验收通过/,
   /验收(?:结论|合格)/,
   /恭喜你成功掌握了第\s*\d+\s*(?:步|关)/,
   /(?:你|您)?(?:已经|已)(?:成功)?完成(?:了)?第\s*\d+\s*(?:步|关)(?:的)?(?:所有|全部)?(?:操作|内容|步骤|练习|任务)?/,
@@ -395,6 +396,10 @@ export function canUseCompletionQuickAction(input: {
       return true
     }
 
+    if (shouldTreatAssistantContentAsCompletion(message.content)) {
+      return true
+    }
+
     if (
       message.interactionType !== "task_review"
       && message.interactionType !== "path_guidance"
@@ -402,16 +407,35 @@ export function canUseCompletionQuickAction(input: {
       return false
     }
 
-    if (
-      /(已满足(?:本关|当前任务).*完成标准|(?:本关|当前任务).*已完成|(?:已经|已)(?:成功)?完成(?:了)?第\s*\d+\s*(?:步|关)|第\s*\d+\s*(?:步|关)(?:已|已经|顺利|成功){1,3}(?:完成|通过|达成)|可以点击.?我完成了.?(?:进入下一关|进入下一步)|可以结束(?:本关|当前任务))/.test(
-        message.content,
-      )
-    ) {
-      return true
-    }
-
     return message.actionLabels.some((label) => /完成(?:本关|当前任务)|进入下一(?:关|步)/.test(label))
   })
+}
+
+export function canAssistantMessageAdvanceToNextTask(input: {
+  taskState: "pending" | "in_progress" | "blocked" | "completed"
+  canTriggerCompleteQuickAction: boolean
+  messageKind: "system_goal" | "coach" | "user_input" | "task_feedback"
+  taskPatchStatus?: "in_progress" | "blocked" | "completed" | null
+  interactionType?:
+    | "teaching"
+    | "blocked_help"
+    | "task_review"
+    | "completion_feedback"
+    | "path_guidance"
+    | "concept_qa"
+    | null
+  content: string
+}) {
+  if (!input.canTriggerCompleteQuickAction && input.taskState !== "completed") {
+    return false
+  }
+
+  return (
+    input.messageKind === "task_feedback"
+    || input.taskPatchStatus === "completed"
+    || input.interactionType === "completion_feedback"
+    || shouldTreatAssistantContentAsCompletion(input.content)
+  )
 }
 
 export function shouldAutoAdvanceFromAdvanceIntent(input: {

@@ -5,6 +5,7 @@ import { CheckCircle2, Lightbulb, Mic, Pause, Play, RefreshCw, Volume2, Zap } fr
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   buildStableAssistantActions,
+  canAssistantMessageAdvanceToNextTask,
   shouldRenderAssistantMessageActions,
   shouldRenderAssistantNextStep,
   shouldRenderMessageTaskPatch,
@@ -188,15 +189,14 @@ export function LearnChatMessageItem({
       ? buildStableAssistantActions({
           actions: structuredActions,
           taskState,
-          canAdvanceToNextTask:
-            (
-              canTriggerCompleteQuickAction
-              || taskState === "completed"
-            ) && (
-                message.kind === "task_feedback"
-                || message.taskPatch?.status === "completed"
-                || message.structuredContent?.interactionType === "completion_feedback"
-              ),
+          canAdvanceToNextTask: canAssistantMessageAdvanceToNextTask({
+            taskState,
+            canTriggerCompleteQuickAction,
+            messageKind: message.kind,
+            taskPatchStatus: message.taskPatch?.status ?? null,
+            interactionType: message.structuredContent?.interactionType ?? null,
+            content: message.content,
+          }),
           isFinalTask,
           nextTaskTitle,
         })
