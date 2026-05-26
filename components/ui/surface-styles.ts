@@ -42,9 +42,9 @@ export const USER_PANEL_DIVIDER_CLASS =
   "border-border/70 dark:border-white/10"
 
 export const USER_PANEL_HERO_CARD_CLASS =
-  "border border-brand/25 bg-surface-1/97 shadow-[0_26px_70px_-36px_rgba(15,23,42,0.2)] dark:border-brand/20 dark:bg-[linear-gradient(135deg,oklch(0.12_0.032_240/0.97),oklch(0.16_0.045_270/0.96)_52%,oklch(0.13_0.03_285/0.97))] dark:shadow-[0_30px_90px_-42px_oklch(0.68_0.22_270/0.30)]"
+  "border border-brand/20 bg-[linear-gradient(135deg,oklch(0.996_0.004_270/0.98),oklch(0.982_0.012_285/0.96)_48%,oklch(0.974_0.018_82/0.94))] shadow-[0_26px_70px_-36px_rgba(15,23,42,0.2)] ring-1 ring-black/[0.025] dark:border-white/10 dark:bg-[linear-gradient(145deg,oklch(0.205_0.014_282/0.98),oklch(0.175_0.018_292/0.98)_52%,oklch(0.16_0.014_58/0.98))] dark:shadow-[0_30px_90px_-42px_oklch(0.68_0.22_270/0.28)] dark:ring-white/8"
 
 export const USER_PANEL_HERO_TOP_SECTION_CLASS =
-  "border-b border-brand/15 bg-[radial-gradient(circle_at_top_right,oklch(0.66_0.24_270/0.10),transparent_56%),linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0.02))] dark:border-brand/12 dark:bg-[radial-gradient(circle_at_top_right,oklch(0.72_0.22_270/0.22),transparent_48%),radial-gradient(circle_at_top_left,oklch(0.60_0.24_240/0.14),transparent_52%),linear-gradient(180deg,rgba(255,255,255,0.055),rgba(255,255,255,0))]"
+  "border-b border-brand/12 bg-[radial-gradient(circle_at_86%_0%,oklch(0.66_0.24_270/0.14),transparent_48%),radial-gradient(circle_at_0%_4%,oklch(0.78_0.15_230/0.13),transparent_50%),linear-gradient(180deg,rgba(255,255,255,0.38),rgba(255,255,255,0.04))] dark:border-white/10 dark:bg-[radial-gradient(circle_at_84%_0%,oklch(0.72_0.22_270/0.20),transparent_46%),radial-gradient(circle_at_0%_6%,oklch(0.76_0.14_230/0.13),transparent_52%),linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.01))]"
 
 export const FLOATING_DARK_PANEL_CLASS = FLOATING_PANEL_CLASS
