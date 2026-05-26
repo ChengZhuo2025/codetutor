@@ -5,6 +5,9 @@ export type StableAssistantAction = StructuredLearningMessageAction & {
   kind: "prefill" | "advance_next_task"
 }
 
+export const COMPLETION_READY_NEXT_ACTION =
+  "请点击“进入下一关”或底部的“我完成了”按钮，以便进入下一关练习。"
+
 function stripAssistantActionMarkdown(value: string) {
   return value
     .replace(/\[([^[\]]+)\]\([^)]+\)/g, "$1")
@@ -345,6 +348,41 @@ export function shouldRenderMessageTaskPatch(
   }
 
   return input.pendingAssistantMessageId !== input.messageId
+}
+
+export function resolveAssistantTaskPatchForDisplay(
+  taskPatch: MessageTaskPatch | null | undefined,
+  input: {
+    messageKind: "system_goal" | "coach" | "user_input" | "task_feedback"
+    interactionType?:
+      | "teaching"
+      | "blocked_help"
+      | "task_review"
+      | "completion_feedback"
+      | "path_guidance"
+      | "concept_qa"
+      | null
+    content: string
+  },
+) {
+  if (!taskPatch) {
+    return null
+  }
+
+  if (
+    taskPatch.status === "completed"
+    || input.messageKind === "task_feedback"
+    || input.interactionType === "completion_feedback"
+    || shouldTreatAssistantContentAsCompletion(input.content)
+  ) {
+    return {
+      ...taskPatch,
+      status: "completed" as const,
+      suggestedNextAction: COMPLETION_READY_NEXT_ACTION,
+    }
+  }
+
+  return taskPatch
 }
 
 export function shouldRenderStructuredMessageSection(input: {

@@ -5,11 +5,13 @@ import {
   buildComposerDraftFromAssistantAction,
   canAssistantMessageAdvanceToNextTask,
   canUseCompletionQuickAction,
+  COMPLETION_READY_NEXT_ACTION,
   buildStableAssistantActions,
   isExplicitTaskCompletionInput,
   mergeAssistantActionIntoInput,
   normalizeAssistantAction,
   resolveAssistantActionIntent,
+  resolveAssistantTaskPatchForDisplay,
   shouldCompleteCurrentTaskFromAssistantAction,
   shouldRenderAssistantMessageActions,
   shouldRenderAssistantNextStep,
@@ -444,6 +446,28 @@ test("completion-ready assistant replies unlock the completion and next-task act
       content: "验收通过 ✅ 完全符合完成标准。",
     }),
     true,
+  )
+})
+
+test("completion-ready assistant replies show next-task guidance in task patch cards", () => {
+  assert.deepEqual(
+    resolveAssistantTaskPatchForDisplay(
+      {
+        taskId: "task-2",
+        status: "in_progress",
+        suggestedNextAction: "继续围绕当前任务做最小验证，并把结果反馈回来",
+      },
+      {
+        messageKind: "coach",
+        interactionType: "teaching",
+        content: "验收通过 ✅ 当前任务已满足完成标准。",
+      },
+    ),
+    {
+      taskId: "task-2",
+      status: "completed",
+      suggestedNextAction: COMPLETION_READY_NEXT_ACTION,
+    },
   )
 })
 

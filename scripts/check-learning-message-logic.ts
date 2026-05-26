@@ -4,6 +4,7 @@ import assert from "node:assert/strict"
 import {
   buildIdempotentReplayResponse,
   classifyLearningRouteError,
+  COMPLETION_READY_NEXT_ACTION,
   deriveTaskPatch,
   doesAgentBindingMatchLearningScene,
   finalizeAssistantTaskPatch,
@@ -304,7 +305,7 @@ test("finalizeAssistantTaskPatch upgrades accepted review replies into a complet
     {
       taskId: "task-3",
       status: "completed",
-      suggestedNextAction: "你已达到当前任务完成标准，可点击“我完成了”进入下一关。",
+      suggestedNextAction: COMPLETION_READY_NEXT_ACTION,
     },
   )
 })

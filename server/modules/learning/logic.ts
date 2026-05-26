@@ -12,6 +12,9 @@ import {
   LearningValidationError,
 } from "./errors.ts"
 
+export const COMPLETION_READY_NEXT_ACTION =
+  "请点击“进入下一关”或底部的“我完成了”按钮，以便进入下一关练习。"
+
 export type LearningTaskPersistentStatus =
   | "not_started"
   | "in_progress"
@@ -283,7 +286,7 @@ export function finalizeAssistantTaskPatch(input: {
     return {
       taskId: input.taskId,
       status: "completed" as const,
-      suggestedNextAction: "你已达到当前任务完成标准，可点击“我完成了”进入下一关。",
+      suggestedNextAction: COMPLETION_READY_NEXT_ACTION,
     }
   }
 
@@ -310,7 +313,7 @@ export function deriveTaskPatch(input: {
     return {
       taskId: input.taskId,
       status: "completed",
-      suggestedNextAction: "你已达到当前任务完成标准，可点击“我完成了”进入下一关。",
+      suggestedNextAction: COMPLETION_READY_NEXT_ACTION,
     }
   }
 

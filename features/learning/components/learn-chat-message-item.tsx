@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   buildStableAssistantActions,
   canAssistantMessageAdvanceToNextTask,
+  resolveAssistantTaskPatchForDisplay,
   shouldRenderAssistantMessageActions,
   shouldRenderAssistantNextStep,
   shouldRenderMessageTaskPatch,
@@ -173,6 +174,14 @@ export function LearnChatMessageItem({
     message.role === "ai" && interactionType
       ? resolveAssistantMessageVariant(message, interactionType)
       : null
+  const displayTaskPatch =
+    message.role === "ai"
+      ? resolveAssistantTaskPatchForDisplay(message.taskPatch, {
+          messageKind: message.kind,
+          interactionType,
+          content: message.content,
+        })
+      : message.taskPatch
   const attachments = message.attachments?.length
     ? message.attachments
     : message.attachment
@@ -287,7 +296,7 @@ export function LearnChatMessageItem({
                     message.kind,
                     interactionType ?? "teaching",
                     assistantVariant ?? "default",
-                    message.taskPatch,
+                    displayTaskPatch,
                     message.structuredContent,
                   )}
             </div>
@@ -412,12 +421,12 @@ export function LearnChatMessageItem({
           </div>
         ) : null}
 
-        {shouldRenderMessageTaskPatch(message.taskPatch, {
+        {shouldRenderMessageTaskPatch(displayTaskPatch, {
           messageId: message.id,
           pendingAssistantMessageId,
         })
           ? (() => {
-              const taskPatch = message.taskPatch
+              const taskPatch = displayTaskPatch
               if (!taskPatch) {
                 return null
               }
