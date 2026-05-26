@@ -142,7 +142,7 @@ export function HistoryReviewDialog({
                       key={step.id}
                       className={cn(
                         USER_PANEL_SUBTLE_SECTION_CLASS,
-                        "flex items-start justify-between gap-3 rounded-2xl px-4 py-3",
+                        "flex flex-col items-start gap-3 rounded-2xl px-4 py-3 sm:flex-row sm:justify-between",
                       )}
                     >
                       <div className="min-w-0">
@@ -153,7 +153,7 @@ export function HistoryReviewDialog({
                           奖励 {step.rewardXp} XP
                         </p>
                       </div>
-                      <div className="shrink-0 text-right">
+                      <div className="shrink-0 self-start sm:text-right">
                         {step.status === "completed" ? (
                           <div className="inline-flex items-center gap-1 rounded-full border border-green-600/20 bg-green-600/10 px-2 py-1 text-xs font-medium text-green-700 dark:border-green-400/25 dark:bg-green-500/16 dark:text-green-300">
                             <CheckCircle2 className="h-3.5 w-3.5" />

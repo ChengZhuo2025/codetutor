@@ -84,6 +84,7 @@
     "test:admin-ai-pages": "node scripts/check-admin-ai-pages.mjs",
     "test:admin-ai": "pnpm test:admin-ai-validation && pnpm test:admin-ai-provider-secret-helper && pnpm test:admin-ai-service && pnpm test:admin-ai-media-service && pnpm test:admin-ai-route && pnpm test:admin-ai-media-route && pnpm test:admin-ai-pages",
     "test:global-feedback-ui": "node scripts/check-global-feedback-ui.mjs",
+    "test:user-dialog-mobile": "node scripts/check-user-dialog-mobile.mjs",
     "test:analytics-notifications-logic": "node --experimental-loader ./scripts/lib/alias-loader.mjs --experimental-strip-types --experimental-specifier-resolution=node --test scripts/check-analytics-notifications-logic.ts",
     "test:analytics-notifications-ui": "node scripts/check-analytics-notifications-ui.mjs",
     "test:user-reminders-subscription-ui": "node scripts/check-user-reminders-subscription-ui.mjs",

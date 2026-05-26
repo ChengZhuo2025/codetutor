@@ -151,15 +151,15 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                   </div>
 
                   {settings.checkinReminder && (
-                    <div className="mt-3 flex items-center gap-2 pl-[52px]">
-                      <Label htmlFor="checkinTime" className="text-xs text-muted-foreground">
+                    <div className="mt-3 grid grid-cols-2 gap-2 pl-0 sm:flex sm:items-center sm:gap-2 sm:pl-[52px]">
+                      <Label htmlFor="checkinTime" className="col-span-2 text-xs text-muted-foreground sm:col-span-1">
                         提醒时间
                       </Label>
                       <TimePicker
                         id="checkinTime"
                         value={settings.checkinTime}
                         onChange={(value) => updateSetting("checkinTime", value)}
-                        className="w-32 border border-border/70 rounded-md bg-surface-3"
+                        className="w-full rounded-md border border-border/70 bg-surface-3 sm:w-32"
                       />
                     </div>
                   )}
@@ -247,18 +247,18 @@ export function NotificationSettingsDialog({ open, onOpenChange }: NotificationS
                   </div>
 
                   {settings.doNotDisturb && (
-                    <div className="mt-3 flex items-center gap-2 pl-[52px]">
-                      <Label className="text-xs text-muted-foreground">静默时段</Label>
+                    <div className="mt-3 grid grid-cols-2 gap-2 pl-0 sm:flex sm:items-center sm:gap-2 sm:pl-[52px]">
+                      <Label className="col-span-2 text-xs text-muted-foreground sm:col-span-1">静默时段</Label>
                       <TimePicker
                         value={settings.doNotDisturbStart}
                         onChange={(value) => updateSetting("doNotDisturbStart", value)}
-                        className="w-28"
+                        className="w-full sm:w-28"
                       />
-                      <span className="text-xs text-muted-foreground">至</span>
+                      <span className="hidden text-xs text-muted-foreground sm:inline">至</span>
                       <TimePicker
                         value={settings.doNotDisturbEnd}
                         onChange={(value) => updateSetting("doNotDisturbEnd", value)}
-                        className="w-28"
+                        className="w-full sm:w-28"
                       />
                     </div>
                   )}

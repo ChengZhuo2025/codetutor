@@ -473,7 +473,7 @@ export function SubscriptionDetailDialog({
             ) : null}
 
             {/* 底部提示 - flex 布局 */}
-            <div className="flex items-start justify-center gap-8 pb-3 px-0">
+            <div className="grid gap-2 px-0 pb-3 sm:flex sm:items-start sm:justify-center sm:gap-8">
               {[
                 "学习记录、会话历史和阶段进度保持连续",
                 "升级后可立即解锁更多陪练频次",
@@ -521,7 +521,7 @@ export function SubscriptionDetailDialog({
               <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface-1/95 p-5">
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top,oklch(0.82_0.09_160/0.28),transparent_70%)]" />
                 <div className="relative space-y-4">
-                  <div className="mx-auto flex h-[248px] w-[248px] items-center justify-center rounded-2xl border border-border/60 bg-white p-3 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.72)]">
+                  <div className="mx-auto flex size-[min(62vw,248px)] max-w-full items-center justify-center rounded-2xl border border-border/60 bg-white p-2.5 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.72)] sm:p-3">
                     {qrDataUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={qrDataUrl} alt={`${getPaymentScanLabel(activeOrder?.paymentChannel ?? selectedPaymentChannel)}支付二维码`} className="h-full w-full" />

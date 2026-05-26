@@ -476,7 +476,7 @@ export function FeedbackDialog({
                   </Button>
                 </div>
 
-                <div className="max-h-[56vh] space-y-2 overflow-y-auto px-3 pb-4 scrollbar-none">
+                <div className="max-h-[34vh] space-y-2 overflow-y-auto px-3 pb-4 scrollbar-none sm:max-h-[56vh]">
                   {listState.status === "loading" || listState.status === "idle" ? (
                     <StatePanel
                       status="loading"
@@ -587,7 +587,7 @@ export function FeedbackDialog({
                 </div>
               </div>
 
-              <div className="min-h-[56vh] px-5 py-4">
+              <div className="min-h-0 px-5 py-4 sm:min-h-[56vh]">
                 {listState.status === "loading" || listState.status === "idle" ? (
                   <StatePanel
                     status="loading"

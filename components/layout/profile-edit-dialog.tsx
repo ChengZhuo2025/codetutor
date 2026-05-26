@@ -646,7 +646,7 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved }: ProfileEditDi
                           size="sm"
                           disabled={isBusy || Boolean(activeLinkProvider)}
                           onClick={() => void handleLinkProvider(provider.id)}
-                          className={cn("h-8 rounded-full px-3 text-xs", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+                          className={cn("min-h-10 rounded-full px-4 text-xs sm:h-8 sm:min-h-0 sm:px-3", USER_PANEL_OUTLINE_BUTTON_CLASS)}
                         >
                           {isActive ? (
                             <>
