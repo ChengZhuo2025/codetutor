@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { CirclePlus, RotateCcw, Sparkles, X } from "lucide-react"
+import { ChevronDown, ChevronUp, CirclePlus, RotateCcw, Sparkles, X } from "lucide-react"
 import { ROUTES } from "@/constants/routes"
 import { WORKSPACE_ASIDE_WIDTH_CLASS } from "@/constants/workspace-layout"
 import { AppShell } from "@/components/layout/app-shell"
@@ -121,6 +121,7 @@ export function HistoryPage() {
     item: LearningHistory
     action: HistoryPlanAction
   } | null>(null)
+  const [headerCollapsed, setHeaderCollapsed] = useState(true)
 
   const loadHistory = useCallback(
     async (filter: HistoryFilter, page = 1, append = false) => {
@@ -291,7 +292,7 @@ export function HistoryPage() {
     <Button
       type="button"
       onClick={handleContinueOrCreate}
-      className={USER_BUTTON_PRIMARY_CLASS}
+      className={cn("min-h-11 w-full sm:w-auto", USER_BUTTON_PRIMARY_CLASS)}
     >
       {pageSummary?.activeCount ? (
         <RotateCcw className="h-4 w-4" />
@@ -308,31 +309,47 @@ export function HistoryPage() {
         workspacePage="history"
         mobileTitle="学习记录"
         mobileSubtitle="历史学习计划回顾"
+        mobileNavVariant="minimal"
+        showMobileBrand={false}
+        mobileSheetTopSpacing="compact"
         asideLabel="常见问题"
         renderSidebar={({ mobile }) => (
           <WorkspaceSidebar activeHref={ROUTES.history} mobile={mobile} />
         )}
-        renderAside={() => (
-          <div className="p-6">
+        renderAside={({ mobile }) => (
+          <div className={mobile ? "p-4" : "p-6"}>
             <HistorySidebarPanels faqItems={mockFaqItems} />
           </div>
         )}
         asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
       >
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="shrink-0 border-b border-border/50 bg-surface-1/80 px-4 py-5 backdrop-blur-sm sm:px-6">
+          <div className="shrink-0 border-b border-border/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(247,249,251,0.82))] px-4 py-5 shadow-[0_14px_38px_-34px_rgba(15,23,42,0.24)] backdrop-blur-sm dark:bg-[linear-gradient(180deg,oklch(0.19_0.012_270/0.92),oklch(0.16_0.01_270/0.82))] sm:px-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">学习记录</h1>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  回顾你参与过的所有学习计划，查看进度和成就。
-                </p>
+              <div className="flex items-start justify-between gap-3 lg:block">
+                <div className="min-w-0">
+                  <h1 className="text-xl font-bold tracking-tight sm:text-2xl">学习记录</h1>
+                  {!headerCollapsed ? (
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      回顾你参与过的所有学习计划，查看进度和成就。
+                    </p>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setHeaderCollapsed((current) => !current)}
+                  className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground dark:hover:bg-white/8 sm:size-8 sm:border sm:border-border/70 sm:bg-surface-1/92 lg:hidden"
+                  aria-label={headerCollapsed ? "展开学习记录标题区" : "收起学习记录标题区"}
+                  title={headerCollapsed ? "展开标题区" : "收起标题区"}
+                >
+                  {headerCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+                </button>
               </div>
               <div className="shrink-0 lg:mt-0">{renderHeaderAction}</div>
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 py-6 sm:px-6 sm:py-8">
+          <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 py-4 sm:px-6 sm:py-8">
             <StatePanel
               status="error"
               title="学习记录加载失败"
@@ -356,32 +373,48 @@ export function HistoryPage() {
             ? `共 ${pageSummary.totalCount} 条学习计划`
             : "历史学习计划回顾"
         }
+        mobileNavVariant="minimal"
+        showMobileBrand={false}
+        mobileSheetTopSpacing="compact"
         asideLabel="常见问题"
         renderSidebar={({ mobile }) => (
           <WorkspaceSidebar activeHref={ROUTES.history} mobile={mobile} />
         )}
-        renderAside={() => (
-          <div className="p-5">
+        renderAside={({ mobile }) => (
+          <div className={mobile ? "p-4" : "p-5"}>
             <HistorySidebarPanels faqItems={mockFaqItems} />
           </div>
         )}
         asideClassName={WORKSPACE_ASIDE_WIDTH_CLASS}
       >
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="shrink-0 border-b border-border/50 bg-surface-1/80 px-4 py-5 backdrop-blur-sm sm:px-6">
+          <div className="shrink-0 border-b border-border/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(247,249,251,0.82))] px-4 py-5 shadow-[0_14px_38px_-34px_rgba(15,23,42,0.24)] backdrop-blur-sm dark:bg-[linear-gradient(180deg,oklch(0.19_0.012_270/0.92),oklch(0.16_0.01_270/0.82))] sm:px-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">学习记录</h1>
-                <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                  回顾你参与过的所有学习计划，并按状态继续、重新激活、复盘、放弃或清理记录。
-                </p>
+              <div className="flex items-start justify-between gap-3 lg:block">
+                <div className="min-w-0">
+                  <h1 className="text-xl font-bold tracking-tight sm:text-2xl">学习记录</h1>
+                  {!headerCollapsed ? (
+                    <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                      回顾你参与过的所有学习计划，并按状态继续、重新激活、复盘、放弃或清理记录。
+                    </p>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setHeaderCollapsed((current) => !current)}
+                  className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground dark:hover:bg-white/8 sm:size-8 sm:border sm:border-border/70 sm:bg-surface-1/92 lg:hidden"
+                  aria-label={headerCollapsed ? "展开学习记录标题区" : "收起学习记录标题区"}
+                  title={headerCollapsed ? "展开标题区" : "收起标题区"}
+                >
+                  {headerCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+                </button>
               </div>
               <div className="shrink-0 lg:mt-0">{renderHeaderAction}</div>
             </div>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none">
-            <div className="space-y-5 px-4 py-6 sm:px-6 sm:py-8">
+            <div className="space-y-5 px-4 py-4 sm:px-6 sm:py-8">
               {feedbackState ? (
                 <div className="relative">
                   <StatePanel
@@ -422,7 +455,8 @@ export function HistoryPage() {
               ) : null}
 
               {pageSummary ? (
-                <div className="flex flex-wrap gap-2">
+                <div className="-mx-4 overflow-x-auto scrollbar-none px-4 sm:mx-0 sm:flex sm:flex-wrap sm:gap-2 sm:overflow-visible sm:px-0">
+                  <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap">
                   {HISTORY_FILTERS.map((filter) => {
                     const count = filter.getCount(pageSummary)
                     const active = currentFilter === filter.id
@@ -435,7 +469,7 @@ export function HistoryPage() {
                         variant="outline"
                         onClick={() => handleFilterChange(filter.id)}
                         className={cn(
-                          "rounded-full px-4",
+                          "min-h-10 shrink-0 rounded-full px-4",
                           active
                             ? USER_BUTTON_PRIMARY_CLASS
                             : USER_BUTTON_SECONDARY_CLASS,
@@ -446,6 +480,7 @@ export function HistoryPage() {
                       </Button>
                     )
                   })}
+                  </div>
                 </div>
               ) : null}
 

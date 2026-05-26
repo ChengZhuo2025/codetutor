@@ -58,7 +58,7 @@ export function LandingFinalCta({ freePlanFeatureLabel }: LandingFinalCtaProps) 
           <Button
             asChild
             size="lg"
-            className={cn("h-12 px-10 text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
+            className={cn("px-10 text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
           >
             <Link
               href={ctaHref}
@@ -77,7 +77,7 @@ export function LandingFinalCta({ freePlanFeatureLabel }: LandingFinalCtaProps) 
             asChild
             size="lg"
             variant="outline"
-            className={cn("h-12 px-8 text-base font-medium", USER_BUTTON_SECONDARY_CLASS)}
+            className={cn("px-8 text-base font-medium", USER_BUTTON_SECONDARY_CLASS)}
           >
             <Link
               href="#how"

@@ -149,10 +149,11 @@ export function ToolSelectionStep({
             )}
           </p>
           <Button
+            size="lg"
             onClick={onNext}
             disabled={!canGoNext}
             className={cn(
-              "h-11 w-full max-w-sm text-md font-semibold md:max-w-xs",
+              "w-full max-w-sm text-md font-semibold md:max-w-xs",
               USER_BUTTON_PRIMARY_CLASS,
             )}
           >

@@ -99,7 +99,7 @@ export function LandingHero() {
               asChild
               size="lg"
               className={cn(
-                "h-12 px-10 text-base font-semibold",
+                "px-10 text-base font-semibold",
                 USER_BUTTON_PRIMARY_CLASS,
               )}
             >

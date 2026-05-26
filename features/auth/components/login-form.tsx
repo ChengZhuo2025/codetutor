@@ -260,8 +260,9 @@ export function LoginForm({
 
           <Button
             type="submit"
+            size="lg"
             disabled={!canSubmit || isSubmitting}
-            className={cn("mt-1 h-12 w-full text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
+            className={cn("mt-1 w-full text-base font-semibold", USER_BUTTON_PRIMARY_CLASS)}
           >
             {isSubmitting ? "处理中..." : "继续"}
             <ArrowRight className="h-4 w-4" />

@@ -51,7 +51,7 @@ export function HistoryList({
   return (
     <div className="space-y-4">
       {/* 列表统计 */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
         <span>
           共 <span className="font-medium text-foreground">{total}</span> 条记录
         </span>
@@ -61,7 +61,7 @@ export function HistoryList({
       </div>
 
       {/* 卡片列表 */}
-      <div className="grid gap-4">
+      <div className="grid gap-3 sm:gap-4">
         {items.map((item) => (
           <HistoryCard
             key={item.id}

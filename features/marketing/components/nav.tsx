@@ -289,7 +289,8 @@ export function LandingNav() {
                   </div>
                   <Button
                     asChild
-                    className={cn("mt-3 h-12 w-full text-base", USER_BUTTON_PRIMARY_CLASS)}
+                    size="lg"
+                    className={cn("mt-3 w-full text-base", USER_BUTTON_PRIMARY_CLASS)}
                   >
                     <Link
                       href={authState.summary.redirectTo}
@@ -307,7 +308,8 @@ export function LandingNav() {
               ) : (
                 <Button
                   asChild
-                  className={cn("mt-3 h-12 w-full text-base", USER_BUTTON_PRIMARY_CLASS)}
+                  size="lg"
+                  className={cn("mt-3 w-full text-base", USER_BUTTON_PRIMARY_CLASS)}
                 >
                   <Link
                     href={ROUTES.login}

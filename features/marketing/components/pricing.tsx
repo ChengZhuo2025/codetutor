@@ -194,7 +194,7 @@ export function LandingPricing({ onFreePlanFeatureLabelChange }: LandingPricingP
                   type="button"
                   size="lg"
                   className={cn(
-                    "w-full h-11 px-8 text-base font-semibold",
+                    "w-full px-8 text-base font-semibold",
                     plan.highlight ? USER_BUTTON_PRIMARY_CLASS : USER_BUTTON_SECONDARY_CLASS,
                   )}
                   onClick={() => handleSubscribeClick(plan)}
@@ -206,7 +206,7 @@ export function LandingPricing({ onFreePlanFeatureLabelChange }: LandingPricingP
                   asChild
                   size="lg"
                   className={cn(
-                    "w-full h-11 px-8 text-base font-semibold",
+                    "w-full px-8 text-base font-semibold",
                     plan.highlight ? USER_BUTTON_PRIMARY_CLASS : USER_BUTTON_SECONDARY_CLASS,
                   )}
                 >

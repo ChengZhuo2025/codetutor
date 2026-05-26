@@ -126,10 +126,11 @@ export function LevelSelectionStep({
 
         <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex w-full flex-col items-center gap-2 border-t border-border/70 bg-background/92 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 shadow-[0_-18px_42px_-34px_rgba(15,23,42,0.5)] backdrop-blur md:static md:mt-5 md:max-w-3xl md:border-0 md:bg-transparent md:px-4 md:py-3 md:shadow-none md:backdrop-blur-0">
           <Button
+            size="lg"
             onClick={onNext}
             disabled={!canGoNext || !selectedTool || isPending}
             className={cn(
-              "h-11 w-full max-w-sm text-md font-semibold md:max-w-xs",
+              "w-full max-w-sm text-md font-semibold md:max-w-xs",
               USER_BUTTON_PRIMARY_CLASS,
             )}
           >
