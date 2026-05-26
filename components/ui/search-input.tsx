@@ -26,7 +26,7 @@ function SearchInput({
         )}
         aria-hidden
       />
-      <Input type="search" className={cn("h-9 bg-background pl-8", className)} {...props} />
+      <Input type="search" className={cn("h-9 bg-surface-2 pl-8", className)} {...props} />
     </div>
   )
 }

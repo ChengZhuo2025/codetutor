@@ -134,6 +134,9 @@ export function MapPage() {
         workspacePage="map"
         mobileTitle="路径地图"
         mobileSubtitle="等待当前学习计划"
+        mobileNavVariant="minimal"
+        showMobileBrand={false}
+        mobileSheetTopSpacing="compact"
         asideLabel="任务摘要"
         renderSidebar={({ mobile }) => (
           <WorkspaceSidebar activeHref={ROUTES.map} mobile={mobile} />
@@ -184,13 +187,17 @@ export function MapPage() {
       workspacePage="map"
       mobileTitle="路径地图"
       mobileSubtitle={`${map.pathName} · 第 ${currentStage.id} 关 / 共 ${total} 关`}
+      mobileNavVariant="minimal"
+      showMobileBrand={false}
+      mobileSheetTopSpacing="compact"
       asideLabel="任务摘要"
       renderSidebar={({ mobile }) => (
         <WorkspaceSidebar activeHref={ROUTES.map} mobile={mobile} />
       )}
-      renderAside={() => (
+      renderAside={({ mobile }) => (
         <StageDetailPanel
           stage={selected}
+          compact={mobile}
           onContinueLearning={() => router.push(ROUTES.learn)}
           onOpenReview={() =>
             router.push(buildLearningReviewHref({
@@ -240,6 +247,11 @@ export function MapPage() {
                   })
                 }
                 onOpenLearning={() => router.push(ROUTES.learn)}
+                onOpenReview={(stage) =>
+                  router.push(buildLearningReviewHref({
+                    taskId: stage.taskId,
+                    reviewSessionId: stage.reviewSessionId,
+                  }))}
               />
             </PageSection>
           </div>

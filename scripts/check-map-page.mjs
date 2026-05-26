@@ -64,6 +64,30 @@ assert.match(
   "The /map content area should own vertical scrolling and hide the native scrollbar",
 )
 
+assert.match(
+  mapPageSource,
+  /mobileNavVariant="minimal"/,
+  "The /map page should use the same minimal mobile nav treatment as /learn.",
+)
+
+assert.match(
+  mapPageSource,
+  /showMobileBrand=\{false\}/,
+  "The /map mobile nav should hide the brand eyebrow like /learn.",
+)
+
+assert.match(
+  mapPageSource,
+  /mobileSheetTopSpacing="compact"/,
+  "The /map mobile sheets should use compact top spacing like /learn.",
+)
+
+assert.match(
+  mapPageSource,
+  /renderAside=\{\(\{ mobile \}\) =>[\s\S]*compact=\{mobile\}/,
+  "The /map aside renderer should pass mobile state into StageDetailPanel.",
+)
+
 assert.doesNotMatch(
   mapPageSource,
   /className="m-4 flex min-h-0 flex-1 flex-col overflow-hidden sm:m-6"/,
@@ -74,6 +98,24 @@ assert.match(
   mapHeaderSource,
   /className="shrink-0 border-b border-border\/50 bg-\[linear-gradient\(180deg,rgba\(255,255,255,0\.9\),rgba\(247,249,251,0\.82\)\)\] px-4 py-5 shadow-\[0_14px_38px_-34px_rgba\(15,23,42,0\.24\)\] backdrop-blur-sm dark:bg-\[linear-gradient\(180deg,oklch\(0\.19_0\.012_270\/0\.92\),oklch\(0\.16_0\.01_270\/0\.82\)\)\] sm:px-6"/,
   "The map header should keep the approved static shell styling, inset, and updated light-theme gradient treatment",
+)
+
+assert.match(
+  mapHeaderSource,
+  /useState\(true\)/,
+  "The map header should default to collapsed on mobile to preserve center content height.",
+)
+
+assert.match(
+  mapHeaderSource,
+  /ChevronDown|ChevronUp/,
+  "The map header should expose a chevron toggle for expanding and collapsing the summary.",
+)
+
+assert.match(
+  mapHeaderSource,
+  /text-xl font-bold/,
+  "The map header title should use text-xl instead of text-2xl.",
 )
 
 assert.doesNotMatch(
@@ -108,8 +150,26 @@ assert.match(
 
 assert.match(
   progressOverviewSource,
-  /lg:grid-cols-3/,
-  "The current goal, completion criteria, and next unlock cards should render in a 3-column row on large screens",
+  /w-full lg:w-\[75%\]/,
+  "The current-stage text block should use full width on mobile and preserve the desktop 75% width.",
+)
+
+assert.match(
+  progressOverviewSource,
+  /min-h-11 w-full[\s\S]*lg:w-auto/,
+  "The primary continue-learning CTA should be a full-width 44px touch target on mobile.",
+)
+
+assert.match(
+  progressOverviewSource,
+  /mt-6 text-xl font-bold/,
+  "The current task card title should use text-xl on mobile.",
+)
+
+assert.match(
+  progressOverviewSource,
+  /grid grid-cols-3 gap-2\.5/,
+  "The growth stat cards should render as three columns on mobile.",
 )
 
 assert.match(
@@ -140,6 +200,71 @@ assert.doesNotMatch(
   mapDetailSource,
   /后续规划/,
   "The map detail panel should stay focused and avoid low-value footer planning blocks",
+)
+
+assert.match(
+  mapDetailSource,
+  /compact\?: boolean/,
+  "StageDetailPanel should expose a compact mobile variant.",
+)
+
+assert.match(
+  mapDetailSource,
+  /if \(compact\)/,
+  "StageDetailPanel should render a dedicated compact mobile sheet branch.",
+)
+
+assert.match(
+  mapDetailSource,
+  /核心要点/,
+  "The compact map detail panel should prioritize key points instead of desktop-density detail cards.",
+)
+
+assert.match(
+  mapDetailSource,
+  /min-h-11/,
+  "StageDetailPanel CTA should keep a 44px mobile touch target.",
+)
+
+assert.match(
+  progressOverviewSource,
+  /min-h-11 w-full/,
+  "ProgressOverview should keep its mobile CTA at a 44px touch target.",
+)
+
+const stageTimelineSource = readFileSync(
+  new URL("../features/progress/components/stage-timeline.tsx", import.meta.url),
+  "utf8",
+)
+
+assert.match(
+  stageTimelineSource,
+  /<button[\s\S]*type="button"[\s\S]*onKeyDown=\{\(event\) => \{/,
+  "Stage timeline items should expose button semantics and keyboard activation.",
+)
+
+assert.match(
+  stageTimelineSource,
+  /min-h-11/,
+  "Stage timeline actions should keep 44px mobile touch targets.",
+)
+
+assert.match(
+  stageTimelineSource,
+  /h-10 w-10[\s\S]*sm:h-12 sm:w-12/,
+  "Stage timeline status nodes should be smaller on mobile and preserve desktop sizing.",
+)
+
+assert.match(
+  stageTimelineSource,
+  /absolute right-3 top-3/,
+  "Stage timeline XP labels should float at the card top-right instead of consuming text width.",
+)
+
+assert.match(
+  stageTimelineSource,
+  /onOpenReview/,
+  "Completed stages should expose a mobile review action instead of a static label.",
 )
 
 assert.match(

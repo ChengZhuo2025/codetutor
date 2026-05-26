@@ -161,7 +161,7 @@ assert.match(
 )
 assert.match(
   learnChatHeaderSource,
-  /className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"/,
+  /className="flex flex-row items-center justify-between gap-3 sm:items-start"/,
   "/learn header should lay out title and actions without reserving space for the aside toggle",
 )
 assert.match(

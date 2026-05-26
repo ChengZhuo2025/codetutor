@@ -47,7 +47,7 @@ export function ProgressOverview({
           <div className={cn(USER_PANEL_HERO_TOP_SECTION_CLASS, "px-4 py-5 sm:px-5")}>
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div className="min-w-0 w-[75%]">
+                <div className="min-w-0 w-full lg:w-[75%]">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span className="rounded-full border border-brand/18 bg-brand-dim px-2.5 py-1 font-medium text-brand">
                       当前任务
@@ -56,10 +56,10 @@ export function ProgressOverview({
                       第 {currentStage.id} 关 / 共 {total} 关
                     </span>
                   </div>
-                  <h2 className="mt-6 text-[1.5rem] font-bold leading-tight tracking-tight text-foreground">
+                  <h2 className="mt-6 text-xl font-bold leading-tight tracking-tight text-foreground">
                     {currentStage.title}
                   </h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
+                  <p className="mt-2 max-w-2xl text-sm leading-6 sm:leading-7 text-muted-foreground">
                     {currentStage.summary}
                   </p>
                 </div>
@@ -67,7 +67,7 @@ export function ProgressOverview({
                 <button
                   onClick={onContinueLearning}
                   className={cn(
-                    "mt-6 inline-flex items-center justify-center gap-1 px-5 py-3 text-sm font-semibold",
+                    "mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1 px-5 py-3 text-sm font-semibold lg:mt-6 lg:w-auto",
                     USER_BUTTON_PRIMARY_CLASS,
                   )}
                 >
@@ -164,7 +164,7 @@ export function ProgressOverview({
               </p>
             </div>
 
-            <div className="grid gap-2.5 md:grid-cols-3 lg:justify-self-end">
+            <div className="grid grid-cols-3 gap-2.5 lg:justify-self-end">
               <div className={insetPanelClass}>
                 <p className="text-[12px] uppercase tracking-[0.12em] text-muted-foreground/60">
                   连续学习

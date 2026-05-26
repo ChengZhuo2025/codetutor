@@ -1,4 +1,4 @@
-import { BookMarked, Lock, Play, RotateCcw, Target, Zap } from "lucide-react";
+import { BookMarked, CheckCircle2, Lock, Play, RotateCcw, Target, Zap } from "lucide-react";
 import {
   WORKSPACE_ASIDE_INSET_CARD_CLASS,
   WorkspaceAside,
@@ -12,12 +12,14 @@ import type { Stage } from "@/features/progress/types";
 
 type StageDetailPanelProps = {
   stage: Stage;
+  compact?: boolean;
   onContinueLearning: () => void;
   onOpenReview: () => void;
 };
 
 export function StageDetailPanel({
   stage,
+  compact = false,
   onContinueLearning,
   onOpenReview,
 }: StageDetailPanelProps) {
@@ -29,6 +31,105 @@ export function StageDetailPanel({
     : isDone
       ? "学习复盘"
       : "完成前一关后解锁";
+
+  if (compact) {
+    return (
+      <WorkspaceAside as="div" className="gap-3 p-4">
+        <div className="rounded-[24px] border border-border/60 bg-surface-2 px-4 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-brand/80">
+                第 {stage.id} 关
+              </p>
+              <h2 className="mt-1 text-xl font-bold leading-7 text-foreground">
+                {stage.title}
+              </h2>
+            </div>
+            <span className={cn(
+              "shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold",
+              isDone
+                ? "border-gold/25 bg-gold-dim text-gold"
+                : isCurrent
+                  ? "border-brand/20 bg-brand text-brand-foreground"
+                  : "border-border/70 bg-muted/60 text-muted-foreground",
+            )}>
+              {isDone ? "已完成" : isCurrent ? "当前任务" : "未解锁"}
+            </span>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            {stage.summary}
+          </p>
+        </div>
+
+        <div className="rounded-[24px] border border-border/60 bg-surface-2 px-4 py-4">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/90">
+            <Target className="h-3.5 w-3.5 text-brand" />
+            本关目标
+          </div>
+          <p className="mt-2 text-sm leading-6 text-foreground/85">
+            {isLocked ? (stage.unlockHint ?? "完成上一关后可进入本关。") : stage.goal}
+          </p>
+        </div>
+
+        <div className="rounded-[24px] border border-border/60 bg-surface-2 px-4 py-4">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/90">
+            <CheckCircle2 className="h-3.5 w-3.5 text-brand" />
+            核心要点
+          </div>
+          <ul className="mt-3 space-y-2">
+            {stage.keyPoints.slice(0, 3).map((point, index) => (
+              <li key={point} className="flex gap-2 text-sm leading-6 text-muted-foreground">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/15 text-[11px] font-semibold text-brand">
+                  {index + 1}
+                </span>
+                <span>{point}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="rounded-[24px] border border-border/60 bg-surface-2 px-4 py-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+            {isDone ? "复盘重点" : isLocked ? "解锁条件" : "完成标准"}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-foreground/85">
+            {isDone
+              ? stage.reviewSummary
+              : isLocked
+                ? (stage.unlockHint ?? "完成上一关后可进入本关。")
+                : stage.completionCriteria}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            <span className="rounded-full border border-border/70 bg-muted/60 px-2.5 py-1 text-muted-foreground">
+              {stage.estimatedTime}
+            </span>
+            <span className="rounded-full border border-gold/20 bg-gold-dim px-2.5 py-1 font-semibold text-gold">
+              +{stage.xp} XP
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={isDone ? onOpenReview : onContinueLearning}
+          disabled={isLocked}
+          className={cn(
+            "flex min-h-11 w-full items-center justify-center gap-2 px-4 py-3 text-sm font-semibold",
+            isLocked ? USER_BUTTON_SECONDARY_CLASS : USER_BUTTON_PRIMARY_CLASS,
+          )}
+        >
+          {isCurrent ? (
+            <Play className="h-4 w-4" />
+          ) : isDone ? (
+            <RotateCcw className="h-4 w-4" />
+          ) : (
+            <Lock className="h-4 w-4" />
+          )}
+          {ctaLabel}
+        </button>
+      </WorkspaceAside>
+    );
+  }
 
   return (
     <WorkspaceAside as="div">
@@ -137,10 +238,11 @@ export function StageDetailPanel({
           </div>
 
           <button
+            type="button"
             onClick={isDone ? onOpenReview : onContinueLearning}
             disabled={isLocked}
             className={cn(
-              "mt-4 flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-semibold",
+              "mt-4 flex min-h-11 w-full items-center justify-center gap-2 px-4 py-3 text-sm font-semibold",
               isLocked
                 ? USER_BUTTON_SECONDARY_CLASS
                 : USER_BUTTON_PRIMARY_CLASS,

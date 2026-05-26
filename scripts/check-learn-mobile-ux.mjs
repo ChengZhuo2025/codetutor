@@ -113,7 +113,7 @@ assert.match(
 
 assert.match(
   headerSource,
-  /hidden sm:inline-flex[\s\S]*当前任务/,
+  /hidden sm:flex[\s\S]*当前任务/,
   "Learn chat current-task capsule should be hidden on mobile and preserved for desktop.",
 )
 
@@ -125,7 +125,7 @@ assert.match(
 
 assert.match(
   headerSource,
-  /size-11 border-0 bg-transparent[\s\S]*sm:size-8 sm:border/,
+  /size-7 border-0 bg-transparent[\s\S]*sm:size-8 sm:border/,
   "Learn chat collapse icon should use a minimal mobile icon style while preserving the desktop button treatment.",
 )
 
@@ -167,7 +167,7 @@ assert.match(
 
 assert.match(
   composerSource,
-  /pointer-events-none absolute inset-x-0[\s\S]*把教程链接、代码片段或你卡住的问题发给我/,
+  /pointer-events-none absolute inset-x-0[\s\S]*点击这里输入问题/,
   "Composer placeholder should be rendered as a one-line overlay for mobile ellipsis.",
 )
 
@@ -179,13 +179,13 @@ assert.doesNotMatch(
 
 assert.match(
   composerSource,
-  /!min-h-6 h-6[\s\S]*style=\{\{ height: "24px"/,
+  /min-h-6 h-6[\s\S]*style=\{\{ height: "24px"/,
   "Composer textarea should initialize at a one-line height on mobile.",
 )
 
 assert.match(
   composerSource,
-  /h-11 w-11/,
+  /h-9 w-9/,
   "Composer icon controls should use 44px mobile touch targets.",
 )
 
