@@ -12,7 +12,6 @@ import {
   shouldCompleteCurrentTaskFromAssistantAction,
   shouldRenderAssistantMessageActions,
   shouldRenderAssistantNextStep,
-  shouldRenderLearningResumeCard,
   shouldRenderMessageTaskPatch,
   shouldRenderStructuredMessageSection,
   shouldStabilizePendingAssistantTone,
@@ -428,32 +427,6 @@ test("shouldStabilizePendingAssistantTone avoids content-based tone drift while 
     shouldStabilizePendingAssistantTone({
       messageId: 7,
       pendingAssistantMessageId: null,
-    }),
-    false,
-  )
-})
-
-test("shouldRenderLearningResumeCard hides the resume prompt after manual dismissal", () => {
-  assert.equal(
-    shouldRenderLearningResumeCard({
-      hasResume: true,
-      dismissed: false,
-    }),
-    true,
-  )
-
-  assert.equal(
-    shouldRenderLearningResumeCard({
-      hasResume: true,
-      dismissed: true,
-    }),
-    false,
-  )
-
-  assert.equal(
-    shouldRenderLearningResumeCard({
-      hasResume: false,
-      dismissed: false,
     }),
     false,
   )

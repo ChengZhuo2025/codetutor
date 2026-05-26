@@ -88,7 +88,6 @@ export function getLearningPageMock() {
     task: session.task,
     planSummary: session.planSummary,
     mission: session.mission,
-    resume: session.resume,
     initialMessages: session.messages,
     quickActions: session.quickActions,
     supportOptions: session.supportOptions,

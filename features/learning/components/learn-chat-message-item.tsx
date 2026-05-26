@@ -65,7 +65,7 @@ const MESSAGE_KIND_META = {
 
 const CHAT_TONE_CLASS = {
   info: {
-    panel: "border-border/65 bg-surface-2",
+    panel: "border-border/60 bg-surface-2",
     badge: "border-brand/20 bg-brand-dim/60 text-brand",
     icon: "text-brand",
   },
@@ -311,7 +311,7 @@ export function LearnChatMessageItem({
                     />
                   ) : attachment.type === "audio" ? (
                     <div className="flex items-center gap-2 px-3 py-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl bg-black/70 text-white">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl bg-foreground/80 dark:bg-surface-3 text-white">
                         <Mic className="h-4 w-4" />
                       </div>
                       {attachment.url ? (

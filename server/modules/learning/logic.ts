@@ -186,23 +186,6 @@ export function resolveAgentBindingInteractionFallbacks(
   return [interactionType]
 }
 
-export function hasLearningResumeHistory(input: {
-  completedSteps: number
-  currentTaskLastConversationId: string | null
-  persistedMessageCount: number
-}) {
-  if (input.completedSteps > 0) {
-    return true
-  }
-
-  if (input.persistedMessageCount > 0) {
-    return true
-  }
-
-  return typeof input.currentTaskLastConversationId === "string"
-    && input.currentTaskLastConversationId.trim().length > 0
-}
-
 function buildBlockedHelpNextAction(content: string) {
   if (/(截图|image|图片)/i.test(content)) {
     return "补充截图对应的报错位置、触发步骤和当前看到的结果"

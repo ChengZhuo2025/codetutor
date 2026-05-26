@@ -126,7 +126,7 @@ export function LearnChatHero({ mission, rightPanel }: LearnChatHeroProps) {
 
         <div className="mt-6 flex gap-4 sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <p className="max-w-[22rem] text-2xl font-bold tracking-tight text-foreground sm:text-[2.15rem]">
+            <p className="text-2xl font-bold tracking-tight text-foreground sm:text-[2.15rem]">
               {rightPanel.currentStep}
             </p>
           </div>

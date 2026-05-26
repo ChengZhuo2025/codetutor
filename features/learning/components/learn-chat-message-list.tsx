@@ -6,7 +6,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { StatePanel } from "@/components/ui/state-panel"
 import { LearnChatHero } from "@/features/learning/components/learn-chat-hero"
 import { LearnChatMessageItem } from "@/features/learning/components/learn-chat-message-item"
-import { LearnChatResumeCard } from "@/features/learning/components/learn-chat-resume-card"
 import type { ConnectionState } from "@/features/learning/components/learn-chat-types"
 import type { Message } from "@/features/learning/types"
 import type { LearningCurrentSessionResponseData, LearningTaskState } from "@/lib/api/contracts/learning"
@@ -22,10 +21,6 @@ type LearnChatMessageListProps = {
   isLoadingHistory: boolean
   historyError: string | null
   onLoadEarlierMessages: () => void
-  showResumeCard: boolean
-  resume: LearningCurrentSessionResponseData["resume"]
-  onDismissResume: () => void
-  onResume: () => void
   mission: LearningCurrentSessionResponseData["mission"]
   rightPanel: LearningCurrentSessionResponseData["rightPanel"]
   connectionState: ConnectionState
@@ -55,10 +50,6 @@ export function LearnChatMessageList({
   isLoadingHistory,
   historyError,
   onLoadEarlierMessages,
-  showResumeCard,
-  resume,
-  onDismissResume,
-  onResume,
   mission,
   rightPanel,
   connectionState,
@@ -94,14 +85,6 @@ export function LearnChatMessageList({
             </button>
             {historyError ? <p className="text-xs text-destructive">{historyError}</p> : null}
           </div>
-        ) : null}
-
-        {showResumeCard && resume ? (
-          <LearnChatResumeCard
-            resume={resume}
-            onDismiss={onDismissResume}
-            onResume={onResume}
-          />
         ) : null}
 
         <LearnChatHero mission={mission} rightPanel={rightPanel} />

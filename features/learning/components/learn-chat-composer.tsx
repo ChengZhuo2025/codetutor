@@ -380,7 +380,7 @@ export function LearnChatComposer({
                       : undefined
                   }
                   className={cn(
-                    "min-h-10 shrink-0 whitespace-nowrap px-3.5 py-2 text-[12px] font-medium sm:min-h-0 sm:shrink sm:py-1",
+                    "min-h-7 shrink-0 whitespace-nowrap px-3 py-1 text-[12px] font-medium sm:min-h-0 sm:shrink sm:py-1",
                     QUICK_ACTION_TONE_CLASS[action.tone],
                   )}
                 >

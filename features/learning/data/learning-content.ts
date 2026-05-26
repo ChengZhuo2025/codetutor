@@ -51,12 +51,6 @@ export const mockLearningCurrentSessionResponse: ApiSuccessResponse<LearningCurr
         selectionMode: "preset_training",
         pathName: currentLearningPlan.pathName,
       },
-      resume: {
-        title: "继续上次学习",
-        summary: "你已经完成了基础安装与第一次提问，现在继续验证 Ask 与 Agent 的职责边界。",
-        lastSeenLabel: "上次停留在 18 分钟前",
-        ctaLabel: "继续当前任务",
-      },
       mission: {
         title: currentStage.title,
         tool: currentLearningPlan.tool.label,

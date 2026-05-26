@@ -733,15 +733,6 @@ export const learningReplySchema = z
   })
   .openapi("LearningReply")
 
-export const learningResumeSchema = z
-  .object({
-    title: z.string(),
-    summary: z.string(),
-    lastSeenLabel: z.string(),
-    ctaLabel: z.string(),
-  })
-  .openapi("LearningResume")
-
 export const learningPlanSummarySchema = z
   .object({
     selectedToolName: z.string(),
@@ -839,7 +830,6 @@ export const learningCurrentSessionResponseDataSchema = z
     profile: profileMeResponseDataSchema,
     planSummary: learningPlanSummarySchema,
     mission: learningMissionSchema.nullable(),
-    resume: learningResumeSchema.nullable(),
     messages: z.array(messageSchema),
     quickActions: z.array(quickActionSchema),
     supportOptions: z.array(learningSupportOptionSchema),
@@ -1083,7 +1073,6 @@ export const analyticsTrackEventRequestSchema = z
       "onboarding_submit",
       "learning_input_send",
       "learning_quick_help",
-      "session_resumed",
       "stuck_help_requested",
       "task_completed",
       "daily_checkin",

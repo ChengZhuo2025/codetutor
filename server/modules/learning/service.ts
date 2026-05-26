@@ -24,7 +24,7 @@ import { resolveStageReviewSummary } from "@/features/progress/lib/review-naviga
 import { normalizeUuid } from "@/server/lib/identifiers"
 import { assertSupabaseSuccess, toIsoDate } from "@/server/lib/supabase"
 import { orchestrateLearningMessage } from "./orchestration.ts"
-import { hasLearningResumeHistory, parseStoredTaskPatchMetadata } from "./logic.ts"
+import { parseStoredTaskPatchMetadata } from "./logic.ts"
 import {
   buildPersistedLearningMessageId,
   normalizeLearningMessagesPageSize,
@@ -387,29 +387,6 @@ function readJsonRecord(value: unknown): JsonRecord {
 function readStringFromRecord(record: JsonRecord, key: string): string | null {
   const value = record[key]
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
-}
-
-function getRelativeLastSeenLabel(input: string | null) {
-  if (!input) {
-    return "刚刚"
-  }
-
-  const diffMinutes = Math.max(
-    1,
-    Math.round((Date.now() - new Date(input).getTime()) / 60000),
-  )
-
-  if (diffMinutes < 60) {
-    return `上次停留在 ${diffMinutes} 分钟前`
-  }
-
-  const diffHours = Math.round(diffMinutes / 60)
-  if (diffHours < 24) {
-    return `上次停留在 ${diffHours} 小时前`
-  }
-
-  const diffDays = Math.round(diffHours / 24)
-  return `上次停留在 ${diffDays} 天前`
 }
 
 function mapTaskState(status: TaskRow["status"]): LearningTaskState {
@@ -1161,7 +1138,6 @@ export async function getLearningCurrentSessionData(
     summary: currentStep.summary,
     goal: currentStep.goal,
   })
-  const isSelectedTaskReview = selectedTask.id !== currentTask.id
   const isCompletedReviewTask = selectedTask.status === "completed"
   const hasMaterialPlan = hasMaterialPlanFromPath(state.activePath)
   const whyThisStep =
@@ -1190,11 +1166,6 @@ export async function getLearningCurrentSessionData(
     totalSteps > 0
       ? Math.round(((state.activePath.completed_steps + (selectedTask.status === "in_progress" ? 0.5 : 0)) / totalSteps) * 100)
       : 0
-  const shouldExposeResume = hasLearningResumeHistory({
-    completedSteps: isSelectedTaskReview ? 0 : state.activePath.completed_steps,
-    currentTaskLastConversationId: selectedTask.last_conversation_id,
-    persistedMessageCount: persistedMessages.length,
-  })
   const quickActions =
     isCompletedReviewTask
       ? []
@@ -1353,17 +1324,6 @@ export async function getLearningCurrentSessionData(
       pathName: state.activePath.path_name_snapshot,
       hasMaterialPlan,
     },
-    resume:
-      shouldExposeResume && !isSelectedTaskReview
-        ? {
-            title: "继续上次学习",
-            summary: currentStep.summary,
-            lastSeenLabel: getRelativeLastSeenLabel(
-              state.activePath.last_activity_at ?? state.profile.last_learning_at,
-            ),
-            ctaLabel: "继续当前任务",
-          }
-        : null,
     mission: {
       title: currentStep.title,
       tool: state.tool.name,

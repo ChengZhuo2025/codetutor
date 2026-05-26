@@ -11,7 +11,6 @@ const headerSource = read("features/learning/components/learn-chat-header.tsx")
 const heroSource = read("features/learning/components/learn-chat-hero.tsx")
 const messageListSource = read("features/learning/components/learn-chat-message-list.tsx")
 const messageItemSource = read("features/learning/components/learn-chat-message-item.tsx")
-const resumeSource = read("features/learning/components/learn-chat-resume-card.tsx")
 const composerSource = read("features/learning/components/learn-chat-composer.tsx")
 const richContentSource = read("features/learning/components/learn-chat-rich-content.tsx")
 const materialPlanPanelSource = read("features/learning/components/material-plan-panel.tsx")
@@ -71,11 +70,6 @@ assert.match(
 
 assert.match(
   messageListSource,
-  /LearnChatResumeCard/,
-  "learn chat message list should compose a dedicated resume reminder card",
-)
-assert.match(
-  messageListSource,
   /LearnChatHero/,
   "learn chat message list should compose a dedicated hero component",
 )
@@ -116,8 +110,8 @@ assert.doesNotMatch(
 )
 assert.match(
   heroSource,
-  /max-w-\[22rem\] text-2xl font-bold/,
-  "learn chat hero top-row title block should keep a constrained width for side-by-side balance",
+  /text-2xl font-bold tracking-tight text-foreground sm:text-\[2\.15rem\]/,
+  "learn chat hero top-row title block should keep the responsive title typography",
 )
 assert.match(
   heroSource,
@@ -171,11 +165,6 @@ assert.doesNotMatch(
   heroSource,
   /mt-3 max-w-4xl text-\[15px\] leading-7 text-muted-foreground/,
   "learn chat hero should no longer keep description inside the title column",
-)
-assert.match(
-  resumeSource,
-  /继续上次学习提醒|关闭继续上次学习提醒/,
-  "learn chat resume card should keep the dismissible resume affordance",
 )
 assert.match(
   messageListSource,

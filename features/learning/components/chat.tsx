@@ -29,7 +29,6 @@ import {
   mergeAssistantActionIntoInput,
   resolveAssistantActionIntent,
   shouldAutoAdvanceFromAdvanceIntent,
-  shouldRenderLearningResumeCard,
   type StableAssistantAction,
 } from "@/features/learning/lib/chat-behavior"
 import type {
@@ -227,7 +226,6 @@ export function LearnChat({
     useState<ConnectionState>("online")
   const [showSupportOptions, setShowSupportOptions] = useState(false)
   const [taskState, setTaskState] = useState(learningData.task.status)
-  const [resumeCardDismissed, setResumeCardDismissed] = useState(false)
   const [historyPagination, setHistoryPagination] = useState(
     learningData.historyPagination,
   )
@@ -262,20 +260,11 @@ export function LearnChat({
   const speechRequestTokenRef = useRef(0)
   const messageAttachmentObjectUrlsRef = useRef<string[]>([])
 
-  const { mission, planSummary, resume, rightPanel, supportOptions } =
+  const { mission, planSummary, rightPanel, supportOptions } =
     learningData
   const isReviewMode = learningData.task.status === "completed"
   const isFinalTask = mission?.nextPreviewIsFinal ?? false
   const nextTaskTitle = isFinalTask ? null : mission?.nextUnlockTitle ?? null
-  const hasResume = Boolean(resume)
-  const showResumeCard = shouldRenderLearningResumeCard({
-    hasResume,
-    dismissed: resumeCardDismissed,
-  })
-
-  useEffect(() => {
-    setResumeCardDismissed(false)
-  }, [learningData.path.id, hasResume])
 
   const canTriggerCompleteQuickAction = canUseCompletionQuickAction({
     taskState,
@@ -1288,26 +1277,6 @@ export function LearnChat({
     })
   }
 
-  const handleResume = () => {
-    trackEvent(APP_EVENTS.sessionResumed, {
-      conversationId,
-      taskId: learningData.task.taskId,
-    })
-
-    if (taskState === "blocked") {
-      void syncTaskStatus("in_progress").catch((error) => {
-        setSendError(
-          error instanceof Error
-            ? error.message
-            : "恢复任务状态失败，请稍后重试。",
-        )
-      })
-    }
-
-    textareaRef.current?.focus()
-    scrollToConversationBottom()
-  }
-
   const handleLoadEarlierMessages = async () => {
     if (
       !conversationId ||
@@ -1463,10 +1432,6 @@ export function LearnChat({
           isLoadingHistory={isLoadingHistory}
           historyError={historyError}
           onLoadEarlierMessages={handleLoadEarlierMessages}
-          showResumeCard={showResumeCard}
-          resume={resume}
-          onDismissResume={() => setResumeCardDismissed(true)}
-          onResume={handleResume}
           mission={mission}
           rightPanel={rightPanel}
           connectionState={connectionState}

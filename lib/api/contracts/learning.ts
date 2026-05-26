@@ -4,7 +4,6 @@ import type {
   LearningMission,
   LearningPlanSummary,
   LearningReply,
-  LearningResume,
   LearningSupportOption,
   LearningTask,
   Message,
@@ -140,7 +139,6 @@ export type LearningCurrentSessionResponseData = {
   profile: ProfileMeResponseData
   planSummary: LearningPlanSummary
   mission: LearningMission | null
-  resume: LearningResume | null
   messages: Message[]
   quickActions: QuickAction[]
   supportOptions: LearningSupportOption[]

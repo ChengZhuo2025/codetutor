@@ -65,13 +65,6 @@ export type LearningReply = {
   nextStep?: string
 }
 
-export type LearningResume = {
-  title: string
-  summary: string
-  lastSeenLabel: string
-  ctaLabel: string
-}
-
 export type LearningPlanSummary = {
   selectedToolName: string
   learningLevelLabel: string

@@ -47,12 +47,12 @@ type ParsedMarkdownTable = {
 
 const CHAT_TONE_CLASS = {
   info: {
-    panel: "border-brand/15 bg-brand/10",
+    panel: "border-border/60 bg-surface-2",
     badge: "border-brand/20 bg-brand-dim/60 text-brand",
     icon: "text-brand",
   },
   warning: {
-    panel: "border-brand/15 bg-brand/10",
+    panel: "border-border/60 bg-surface-2",
     badge: "border-gold/25 bg-gold-dim text-gold",
     icon: "text-gold",
   },
@@ -731,7 +731,7 @@ export function renderStructuredContent(
                 ? CHAT_TONE_CLASS.warning.panel
                 : section.tone === "info"
                   ? interactionMeta.sectionClass
-                  : "border-brand/15 bg-brand/10"
+                  : "border-border/60 bg-surface-2"
 
           return (
             <div
