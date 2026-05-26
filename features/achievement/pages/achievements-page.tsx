@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { ChevronDown, ChevronUp } from "lucide-react"
 import { APP_EVENTS } from "@/constants/events"
 import { ROUTES } from "@/constants/routes"
 import { WORKSPACE_ASIDE_WIDTH_CLASS } from "@/constants/workspace-layout"
@@ -43,6 +44,7 @@ export function AchievementsPage() {
     })
   const [isSubmittingCheckin, setIsSubmittingCheckin] = useState(false)
   const [checkinMessage, setCheckinMessage] = useState<string | null>(null)
+  const [headerCollapsed, setHeaderCollapsed] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -156,6 +158,9 @@ export function AchievementsPage() {
         workspacePage="achievements"
         mobileTitle="我的学习成就"
         mobileSubtitle="等待成长数据"
+        mobileNavVariant="minimal"
+        showMobileBrand={false}
+        mobileSheetTopSpacing="compact"
         asideLabel="XP 流水"
         renderSidebar={({ mobile }) => (
           <WorkspaceSidebar activeHref={ROUTES.achievements} mobile={mobile} />
@@ -252,6 +257,9 @@ export function AchievementsPage() {
       workspacePage="achievements"
       mobileTitle="我的学习成就"
       mobileSubtitle="XP、段位、连续学习与徽章成长"
+      mobileNavVariant="minimal"
+      showMobileBrand={false}
+      mobileSheetTopSpacing="compact"
       asideLabel="XP 流水"
       renderSidebar={({ mobile }) => (
         <WorkspaceSidebar activeHref={ROUTES.achievements} mobile={mobile} />
@@ -267,10 +275,25 @@ export function AchievementsPage() {
     >
       <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="shrink-0 border-b border-border/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(247,249,251,0.82))] px-4 py-5 shadow-[0_14px_38px_-34px_rgba(15,23,42,0.24)] backdrop-blur-sm dark:bg-[linear-gradient(180deg,oklch(0.19_0.012_270/0.92),oklch(0.16_0.01_270/0.82))] sm:px-6">
-          <h1 className="text-2xl font-bold tracking-tight">我的学习成就</h1>
-          <p className="mt-1 text-sm leading-5 text-muted-foreground">
-            你在学习路径中真实积累的 XP、段位和徽章记录。
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold tracking-tight sm:text-2xl">我的学习成就</h1>
+              {!headerCollapsed ? (
+                <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                  你在学习路径中真实积累的 XP、段位和徽章记录。
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => setHeaderCollapsed((current) => !current)}
+              className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground dark:hover:bg-white/8 sm:size-8 sm:border sm:border-border/70 sm:bg-surface-1/92"
+              aria-label={headerCollapsed ? "展开我的成就标题区" : "收起我的成就标题区"}
+              title={headerCollapsed ? "展开标题区" : "收起标题区"}
+            >
+              {headerCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+            </button>
+          </div>
           {checkinMessage ? (
             <p className="mt-2 text-sm text-brand">{checkinMessage}</p>
           ) : null}

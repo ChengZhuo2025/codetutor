@@ -7,14 +7,14 @@ type AchievementStatsGridProps = {
 
 export function AchievementStatsGrid({ stats }: AchievementStatsGridProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {stats.map((stat) => {
         const Icon = stat.icon
 
         return (
           <div
             key={stat.label}
-            className="rounded-[28px] border border-border/70 bg-surface-1/95 px-5 py-5 shadow-[0_18px_48px_-34px_rgba(15,23,42,0.2)] ring-1 ring-black/[0.03] dark:border-white/10 dark:bg-white/5 dark:ring-white/6"
+            className="rounded-[22px] border border-border/70 bg-surface-1/95 px-4 py-4 shadow-[0_18px_48px_-34px_rgba(15,23,42,0.2)] ring-1 ring-black/[0.03] dark:border-white/10 dark:bg-white/5 dark:ring-white/6 sm:rounded-[28px] sm:px-5 sm:py-5"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -22,13 +22,13 @@ export function AchievementStatsGrid({ stats }: AchievementStatsGridProps) {
                   {stat.label}
                 </p>
                 <div className="mt-3 flex items-end gap-1.5">
-                  <span className="text-3xl font-bold tracking-tight text-foreground">
+                  <span className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                     {stat.value}
                   </span>
                   <span className="pb-1 text-sm text-muted-foreground">{stat.unit}</span>
                 </div>
               </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border/70 bg-muted/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.62)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-border/70 bg-muted/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.62)] dark:border-white/10 dark:bg-white/6 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:h-11 sm:w-11">
                 <Icon className={cn("h-5 w-5", stat.color)} />
               </div>
             </div>

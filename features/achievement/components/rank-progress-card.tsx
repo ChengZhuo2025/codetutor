@@ -36,33 +36,35 @@ export function RankProgressCard({
   );
 
   return (
-    <div className={cn("overflow-hidden rounded-[34px]", USER_PANEL_HERO_CARD_CLASS)}>
-      <div className={cn(USER_PANEL_HERO_TOP_SECTION_CLASS, "px-5 py-6 sm:px-6")}>
+    <div className={cn("overflow-hidden rounded-[28px] sm:rounded-[34px]", USER_PANEL_HERO_CARD_CLASS)}>
+      <div className={cn(USER_PANEL_HERO_TOP_SECTION_CLASS, "px-4 py-5 sm:px-6 sm:py-6")}>
         <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-brand/80">
           <Sparkles className="h-3.5 w-3.5" />
           当前段位
         </div>
 
-        <div className="mt-4 flex items-start gap-4">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[26px] border border-brand/30 bg-brand/10 text-brand dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center">
-              <Icon icon={CurrentRankIcon} width={40} height={40} className="block" />
+        <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-start">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[22px] border border-brand/30 bg-brand/10 text-brand dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:h-20 sm:w-20 sm:rounded-[26px]">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center">
+                <Icon icon={CurrentRankIcon} width={40} height={40} className="block" />
+              </div>
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-2xl font-bold tracking-tight text-brand sm:text-3xl">
+                {currentRank.name}
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
+                已累计 {overview.totalXP} XP，连续学习 {overview.streakDays}{" "}
+                天。完成当前关卡即可获得 XP，积累足够后自动晋升下一段位。
+              </p>
             </div>
           </div>
-          <div className="min-w-0">
-            <h2 className="text-3xl font-bold tracking-tight text-brand">
-              {currentRank.name}
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-              已累计 {overview.totalXP} XP，连续学习 {overview.streakDays}{" "}
-              天。完成当前关卡即可获得 XP，积累足够后自动晋升下一段位。
-            </p>
-          </div>
-          <div className="flex flex-col gap-3 xl:w-[180px] xl:justify-self-end">
+          <div className="flex w-full flex-col gap-3 lg:ml-auto lg:w-[180px] xl:justify-self-end">
             <button
               onClick={onContinueLearning}
               className={cn(
-                "flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-semibold",
+                "flex min-h-11 w-full items-center justify-center gap-2 px-4 py-3 text-sm font-semibold lg:w-auto",
                 USER_BUTTON_PRIMARY_CLASS,
               )}
             >
@@ -71,7 +73,7 @@ export function RankProgressCard({
             <button
               onClick={onOpenMap}
               className={cn(
-                "flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-medium",
+                "flex min-h-11 w-full items-center justify-center gap-2 px-4 py-3 text-sm font-medium lg:w-auto",
                 USER_BUTTON_SECONDARY_CLASS,
               )}
             >
@@ -81,8 +83,8 @@ export function RankProgressCard({
         </div>
       </div>
 
-      <div className="px-5 py-5 sm:px-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="px-4 py-5 sm:px-6">
+        <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground/60">
               段位提升进程
@@ -101,7 +103,7 @@ export function RankProgressCard({
           </div>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-5 sm:gap-0">
+        <div className="grid grid-cols-5 gap-2.5 sm:gap-3">
           {ranks.map((rank, index) => {
             const isCompleted = index < currentRankIdx;
             const isCurrent = index === currentRankIdx;
@@ -110,7 +112,7 @@ export function RankProgressCard({
             return (
               <div key={rank.name} className="relative">
                 {index < ranks.length - 1 ? (
-                  <div className="absolute left-[calc(50%+18px)] right-[calc(-50%+18px)] top-[18px] hidden sm:block">
+                  <div className="absolute left-[calc(50%+18px)] right-[calc(-50%+18px)] top-[18px]">
                     <div
                       className={cn(
                         "h-px border-t",
@@ -128,7 +130,7 @@ export function RankProgressCard({
                   </div>
                 ) : null}
 
-                <div className="relative flex flex-col items-start gap-3 sm:items-center sm:px-2">
+                <div className="relative flex flex-col items-center gap-2 sm:gap-3 sm:px-2">
                   <div
                     className={cn(
                       "relative z-10 flex h-9 w-9 items-center justify-center rounded-full border text-xs font-semibold transition-all duration-300",
@@ -142,10 +144,10 @@ export function RankProgressCard({
                     {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
                   </div>
 
-                  <div className="min-w-0 sm:text-center">
+                  <div className="min-w-0 text-center">
                     <p
                       className={cn(
-                        "text-sm font-semibold",
+                        "text-[11px] font-semibold leading-tight sm:text-sm",
                         isCurrent
                           ? "text-foreground"
                           : isCompleted
@@ -155,7 +157,7 @@ export function RankProgressCard({
                     >
                       {rank.name}
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground/65">
+                    <p className="mt-1 text-[10px] leading-tight text-muted-foreground/65 sm:text-xs">
                       {rank.min}
                       {index === ranks.length - 1 ? "+" : ` - ${rank.max}`}
                     </p>
