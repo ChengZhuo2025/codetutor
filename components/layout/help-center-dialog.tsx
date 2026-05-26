@@ -150,7 +150,7 @@ export function HelpCenterDialog({
                     "overflow-hidden rounded-xl border transition-all duration-300",
                     isExpanded
                       ? "border-brand/25 bg-brand/8 dark:border-brand/50 dark:bg-brand/20"
-                      : "border-border/50 bg-surface-2 hover:border-brand/25 hover:bg-brand/6 dark:border-white/14 dark:bg-surface-4 dark:hover:border-brand/30 dark:hover:bg-brand/15",
+                      : "border-border/50 bg-surface-2 hover:border-brand/25 hover:bg-brand/6 dark:border-white/10 dark:hover:border-brand/30 dark:hover:bg-brand/15",
                   )}
                 >
                   <button

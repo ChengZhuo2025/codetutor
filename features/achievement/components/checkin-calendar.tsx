@@ -151,8 +151,8 @@ export function CheckinCalendar({
                       checked
                         ? "border-brand/35 bg-brand/15 dark:bg-brand/20"
                         : isFuture
-                          ? "border-border bg-surface-3 dark:border-white/10 dark:bg-white/15"
-                          : "border-border/80 bg-surface-2 dark:border-white/10 dark:bg-white/6",
+                          ? "border-border bg-surface-3 dark:border-white/12"
+                          : "border-border/80 bg-surface-2 dark:border-white/12",
                     )}
                   >
                     <span

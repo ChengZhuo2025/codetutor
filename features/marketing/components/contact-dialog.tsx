@@ -245,7 +245,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
               <div className="flex h-64 items-center justify-center text-muted-foreground">加载联系方式...</div>
             ) : (
               <div className="grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
-                <section className="rounded-[28px] border border-border bg-muted/40 p-4 sm:p-5 dark:border-white/14 dark:bg-surface-4">
+                <section className="rounded-[28px] border border-border bg-surface-2 p-4 sm:p-5 dark:border-white/10">
                   <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-4 dark:border-white/10">
                     <div>
                       <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
@@ -335,7 +335,7 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                   </div>
                 </section>
 
-                <section className="rounded-[28px] border border-border/70 bg-muted/40 p-4 sm:p-5 dark:border-white/14 dark:bg-surface-4">
+                <section className="rounded-[28px] border border-border/70 bg-surface-2 p-4 sm:p-5 dark:border-white/10">
                   <div className="border-b border-border/60 pb-4 dark:border-white/10">
                     <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                       企业信息
@@ -350,9 +350,9 @@ export function ContactDialog({ triggerClassName }: ContactDialogProps) {
                       return (
                         <div
                           key={item.label}
-                          className="flex items-start gap-3 rounded-[14px] border border-border bg-muted/40 px-4 py-3 dark:border-white/10 dark:bg-white/3"
+                          className="flex items-start gap-3 rounded-[14px] border border-border bg-surface-3 px-4 py-3 dark:border-white/10"
                         >
-                          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-muted text-muted-foreground dark:bg-white/6">
+                          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/50 text-muted-foreground dark:bg-white/8">
                             <Icon className="h-4 w-4" />
                           </div>
                           <div className="min-w-0">

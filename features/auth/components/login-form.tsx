@@ -307,7 +307,7 @@ export function LoginForm({
                 <div className="w-full border-t border-border/50" />
               </div>
               <div className="relative flex justify-center">
-                <span className="rounded-full border border-border/50 bg-background px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                <span className="rounded-full border border-border/70 bg-surface-1 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                   其他登录方式
                 </span>
               </div>
@@ -370,7 +370,7 @@ export function LoginForm({
         </p>
 
         {site.information.icpNumber ? (
-          <div className="mt-3 pt-2 border-t border-border/50 text-center">
+          <div className="mt-20 pt-2 border-t border-border/50 text-center">
             <a
               href="https://beian.miit.gov.cn"
               target="_blank"
