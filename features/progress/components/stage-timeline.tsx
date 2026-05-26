@@ -7,11 +7,11 @@ const statusConfig = {
   done: {
     icon: CheckCircle2,
     nodeStyle:
-      "border-brand/55 bg-brand text-brand-foreground shadow-[0_0_0_6px_rgba(98,92,255,0.08)]",
+      "border-emerald-500/45 bg-emerald-500 text-white shadow-[0_0_0_6px_rgba(16,185,129,0.10)]",
     cardStyle:
-      "border-brand/10 bg-brand/5 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.18)] hover:border-brand/35 dark:bg-brand/18",
+      "border-emerald-500/20 bg-emerald-500/10 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.18)] hover:border-emerald-500/35 dark:border-emerald-300/24 dark:bg-emerald-500/14",
     label: "已完成",
-    labelStyle: "text-brand",
+    labelStyle: "text-emerald-700 dark:text-emerald-300",
   },
   current: {
     icon: Play,
@@ -88,7 +88,9 @@ export function StageTimeline({
                   <div
                     className={cn(
                       "w-0.5 flex-1",
-                      stage.status === "done" || stage.status === "current"
+                      stage.status === "done"
+                        ? "bg-emerald-500/45"
+                        : stage.status === "current"
                         ? "bg-brand/40"
                         : "bg-border/40",
                     )}
@@ -151,7 +153,14 @@ export function StageTimeline({
                   </div>
                 </button>
 
-                <div className="mt-3 border-t border-brand/20 pt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div
+                  className={cn(
+                    "mt-3 border-t pt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+                    stage.status === "done"
+                      ? "border-emerald-500/20"
+                      : "border-brand/20",
+                  )}
+                >
                   <p className="text-sm leading-5.5 text-foreground/78 line-clamp-1">
                     {stage.status === "done"
                       ? stage.reviewSummary
@@ -184,7 +193,7 @@ export function StageTimeline({
                         onStageClick?.(stage);
                         onOpenReview(stage);
                       }}
-                      className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-brand/22 bg-brand/10 px-3.5 py-2 text-sm font-medium text-brand transition-colors hover:border-brand/35 hover:bg-brand/14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 dark:bg-brand/16"
+                      className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3.5 py-2 text-sm font-medium text-emerald-700 transition-colors hover:border-emerald-500/40 hover:bg-emerald-500/14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/35 dark:border-emerald-300/24 dark:bg-emerald-500/14 dark:text-emerald-300"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                       学习复盘

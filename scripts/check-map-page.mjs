@@ -268,6 +268,24 @@ assert.match(
 )
 
 assert.match(
+  stageTimelineSource,
+  /done:[\s\S]*border-emerald-500\/45[\s\S]*bg-emerald-500[\s\S]*border-emerald-500\/20[\s\S]*bg-emerald-500\/10[\s\S]*text-emerald-700/,
+  "Completed stage timeline cards should use success green surfaces instead of brand blue.",
+)
+
+assert.match(
+  stageTimelineSource,
+  /stage\.status === "done"[\s\S]*bg-emerald-500\/45/,
+  "Completed stage timeline connectors should continue in success green.",
+)
+
+assert.match(
+  stageTimelineSource,
+  /border-emerald-500\/25 bg-emerald-500\/10[\s\S]*text-emerald-700/,
+  "Completed stage review buttons should use success green styling.",
+)
+
+assert.match(
   sharedPlanSource,
   /pathName: `\$\{primaryToolName\} 零基础起步营`/,
   "Shared plan data should derive the current plan name from the shared primary tool label",
