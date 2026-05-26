@@ -36,13 +36,14 @@ const WorkspaceLayoutContext = createContext<WorkspaceLayoutContextValue | null>
 
 function readLeftCollapsedFromStorage() {
   if (typeof window === "undefined") {
-    return false
+    return true
   }
 
   try {
-    return window.localStorage.getItem(LEFT_COLLAPSED_STORAGE_KEY) === "1"
+    const stored = window.localStorage.getItem(LEFT_COLLAPSED_STORAGE_KEY)
+    return stored === null ? true : stored === "1"
   } catch {
-    return false
+    return true
   }
 }
 
@@ -70,7 +71,7 @@ function readRightCollapsedFromStorage(): RightCollapsedByPage {
 }
 
 export function WorkspaceLayoutProvider({ children }: { children: ReactNode }) {
-  const [leftCollapsed, setLeftCollapsed] = useState(false)
+  const [leftCollapsed, setLeftCollapsed] = useState(true)
   const [rightCollapsedByPage, setRightCollapsedByPage] = useState<RightCollapsedByPage>(
     DEFAULT_RIGHT_COLLAPSED_BY_PAGE,
   )

@@ -19,13 +19,14 @@ type LearnChatHeaderProps = {
 
 function readHeaderCollapsedFromStorage() {
   if (typeof window === "undefined") {
-    return false
+    return true
   }
 
   try {
-    return window.localStorage.getItem(HEADER_COLLAPSED_STORAGE_KEY) === "1"
+    const stored = window.localStorage.getItem(HEADER_COLLAPSED_STORAGE_KEY)
+    return stored === null ? true : stored === "1"
   } catch {
-    return false
+    return true
   }
 }
 
@@ -36,7 +37,7 @@ export function LearnChatHeader({
   restartSubmitting,
   onRestart,
 }: LearnChatHeaderProps) {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
 
   useEffect(() => {
     let active = true

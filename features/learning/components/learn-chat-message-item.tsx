@@ -298,7 +298,7 @@ export function LearnChatMessageItem({
               {attachments.map((attachment, index) => (
                 <div
                   key={attachment.id ?? `${attachment.name}-${index}`}
-                  className="overflow-hidden rounded-2xl border border-border/30 bg-background/25"
+                  className="overflow-hidden rounded-2xl border border-border/30 bg-background/25 dark:border-white/15 dark:bg-white/10"
                 >
                   {attachment.type === "image" && attachment.url ? (
                     <Image
@@ -311,7 +311,7 @@ export function LearnChatMessageItem({
                     />
                   ) : attachment.type === "audio" ? (
                     <div className="flex items-center gap-2 px-3 py-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl bg-brand/85 text-brand-foreground">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-3xl bg-black/70 text-white">
                         <Mic className="h-4 w-4" />
                       </div>
                       {attachment.url ? (
@@ -329,7 +329,7 @@ export function LearnChatMessageItem({
                         {attachment.type === "audio" ? "已附上语音" : "已附上截图"}：{attachment.name}
                       </span>
                     {attachment.processingStatus ? (
-                        <span className="rounded-full border border-background/30 bg-background/20 px-2 py-0.5">
+                        <span className="rounded-full border border-background/30 bg-background/20 dark:bg-white/15 dark:border-white/25 px-2 py-0.5">
                           {attachment.processingStatus}
                         </span>
                       ) : null}
