@@ -61,6 +61,10 @@ import {
   adminSettingsOverviewResponseDataSchema,
   adminSiteArticleListResponseDataSchema,
   adminSiteArticleResponseDataSchema,
+  adminSiteHelpCategoryListResponseDataSchema,
+  adminSiteHelpCategoryResponseDataSchema,
+  adminSiteHelpItemListResponseDataSchema,
+  adminSiteHelpItemResponseDataSchema,
   adminSiteInformationResponseDataSchema,
   adminNotificationQuerySchema,
   adminNotificationListResponseDataSchema,
@@ -72,13 +76,20 @@ import {
   adminAlipayPaymentSettingsResponseDataSchema,
   adminSiteContactResponseDataSchema,
   publicSiteResponseDataSchema,
+  createSiteHelpCategoryRequestSchema,
+  createSiteHelpItemRequestSchema,
   siteArticleSlugParamsSchema,
+  siteHelpCategoryIdParamsSchema,
+  siteHelpItemIdParamsSchema,
+  siteHelpItemListQuerySchema,
   siteLogoUploadResponseDataSchema,
   adminUpsertSubscriptionPlanRequestSchema,
   adminUpdateAlipayPaymentSettingsRequestSchema,
   adminUpdateWechatPaymentSettingsRequestSchema,
   adminWechatPaymentSettingsResponseDataSchema,
   updateSiteArticleRequestSchema,
+  updateSiteHelpCategoryRequestSchema,
+  updateSiteHelpItemRequestSchema,
   updateSiteContactRequestSchema,
   updateSiteInformationRequestSchema,
   adminFeedbackListQuerySchema,
@@ -2002,6 +2013,52 @@ const successExamples = {
     updatedAt: "2026-05-18T10:00:00Z",
     updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
   },
+  adminSiteHelpCategoryList: {
+    items: [
+      {
+        id: "550e8400-e29b-41d4-a716-446655440101",
+        title: "开始学习",
+        description: "学习计划与路径相关问题",
+        displayOrder: 10,
+        enabled: true,
+        updatedAt: "2026-05-28T10:00:00Z",
+        updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
+      },
+    ],
+  },
+  adminSiteHelpCategory: {
+    id: "550e8400-e29b-41d4-a716-446655440101",
+    title: "开始学习",
+    description: "学习计划与路径相关问题",
+    displayOrder: 10,
+    enabled: true,
+    updatedAt: "2026-05-28T10:00:00Z",
+    updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
+  },
+  adminSiteHelpItemList: {
+    items: [
+      {
+        id: "550e8400-e29b-41d4-a716-446655440201",
+        categoryId: "550e8400-e29b-41d4-a716-446655440101",
+        question: "如何开始一条新的学习计划？",
+        answerMarkdown: "进入首页或学习页后，选择适合你的学习目标。",
+        displayOrder: 10,
+        enabled: true,
+        updatedAt: "2026-05-28T10:00:00Z",
+        updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
+      },
+    ],
+  },
+  adminSiteHelpItem: {
+    id: "550e8400-e29b-41d4-a716-446655440201",
+    categoryId: "550e8400-e29b-41d4-a716-446655440101",
+    question: "如何开始一条新的学习计划？",
+    answerMarkdown: "进入首页或学习页后，选择适合你的学习目标。",
+    displayOrder: 10,
+    enabled: true,
+    updatedAt: "2026-05-28T10:00:00Z",
+    updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
+  },
   publicSite: {
     information: {
       logoUrl: "https://cdn.example.com/site-assets/logo.png",
@@ -2037,6 +2094,29 @@ const successExamples = {
         effectiveDate: "2026-04-17",
         updatedAt: "2026-05-18T10:00:00Z",
       },
+    },
+    helpCenter: {
+      categories: [
+        {
+          id: "550e8400-e29b-41d4-a716-446655440101",
+          title: "开始学习",
+          description: "学习计划与路径相关问题",
+          displayOrder: 10,
+          enabled: true,
+          updatedAt: "2026-05-28T10:00:00Z",
+          items: [
+            {
+              id: "550e8400-e29b-41d4-a716-446655440201",
+              categoryId: "550e8400-e29b-41d4-a716-446655440101",
+              question: "如何开始一条新的学习计划？",
+              answerMarkdown: "进入首页或学习页后，选择适合你的学习目标。",
+              displayOrder: 10,
+              enabled: true,
+              updatedAt: "2026-05-28T10:00:00Z",
+            },
+          ],
+        },
+      ],
     },
   },
   adminWechatPaymentSettings: {
@@ -5209,6 +5289,165 @@ registry.registerPath({
       "通用文章已更新",
       successExamples.adminSiteArticle,
       "通用文章已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/site/help/categories",
+  operationId: "getAdminSiteHelpCategories",
+  tags: ["admin-site"],
+  summary: "获取帮助中心分类列表",
+  security: [],
+  responses: {
+    "200": successResponse(
+      adminSiteHelpCategoryListResponseDataSchema,
+      "AdminSiteHelpCategoryListResponse",
+      "帮助分类列表读取成功",
+      successExamples.adminSiteHelpCategoryList,
+      "帮助分类列表读取成功",
+    ),
+    ...commonErrorResponses(["403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/site/help/categories",
+  operationId: "createAdminSiteHelpCategory",
+  tags: ["admin-site"],
+  summary: "创建帮助中心分类",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: createSiteHelpCategoryRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteHelpCategoryResponseDataSchema,
+      "AdminSiteHelpCategoryResponse",
+      "帮助分类已创建",
+      successExamples.adminSiteHelpCategory,
+      "帮助分类已创建",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/site/help/categories/{categoryId}",
+  operationId: "updateAdminSiteHelpCategory",
+  tags: ["admin-site"],
+  summary: "更新帮助中心分类",
+  security: [],
+  request: {
+    params: siteHelpCategoryIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: updateSiteHelpCategoryRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteHelpCategoryResponseDataSchema,
+      "AdminSiteHelpCategoryResponse",
+      "帮助分类已更新",
+      successExamples.adminSiteHelpCategory,
+      "帮助分类已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/site/help/items",
+  operationId: "getAdminSiteHelpItems",
+  tags: ["admin-site"],
+  summary: "获取帮助中心问题列表",
+  security: [],
+  request: {
+    query: siteHelpItemListQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteHelpItemListResponseDataSchema,
+      "AdminSiteHelpItemListResponse",
+      "帮助内容列表读取成功",
+      successExamples.adminSiteHelpItemList,
+      "帮助内容列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/site/help/items",
+  operationId: "createAdminSiteHelpItem",
+  tags: ["admin-site"],
+  summary: "创建帮助中心问题",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: createSiteHelpItemRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteHelpItemResponseDataSchema,
+      "AdminSiteHelpItemResponse",
+      "帮助内容已创建",
+      successExamples.adminSiteHelpItem,
+      "帮助内容已创建",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/site/help/items/{itemId}",
+  operationId: "updateAdminSiteHelpItem",
+  tags: ["admin-site"],
+  summary: "更新帮助中心问题",
+  security: [],
+  request: {
+    params: siteHelpItemIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: updateSiteHelpItemRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteHelpItemResponseDataSchema,
+      "AdminSiteHelpItemResponse",
+      "帮助内容已更新",
+      successExamples.adminSiteHelpItem,
+      "帮助内容已更新",
     ),
     ...commonErrorResponses(["400", "403", "500"]),
   },

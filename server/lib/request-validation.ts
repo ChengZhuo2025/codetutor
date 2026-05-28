@@ -52,8 +52,12 @@ import {
 } from "@/lib/api/contracts/admin-settings"
 import {
   SITE_ARTICLE_SLUGS,
+  type CreateSiteHelpCategoryRequest,
+  type CreateSiteHelpItemRequest,
   type SiteArticleSlug,
   type UpdateSiteArticleRequest,
+  type UpdateSiteHelpCategoryRequest,
+  type UpdateSiteHelpItemRequest,
   type UpdateSiteInformationRequest,
 } from "@/lib/api/contracts/admin-site"
 import {
@@ -2813,6 +2817,168 @@ export function parseAdminSiteArticleBody(
     }
 
     data.effectiveDate = parsed.data
+  }
+
+  if (Object.keys(data).length === 0) {
+    return fail("VALIDATION_FAILED", "请至少提供一个要更新的字段。")
+  }
+
+  return ok(data)
+}
+
+export function parseSiteHelpCategoryId(value: unknown): ValidationResult<string> {
+  if (typeof value !== "string" || !isUuid(value.trim())) {
+    return fail("VALIDATION_FAILED", "帮助分类 ID 不合法。")
+  }
+
+  return ok(value.trim())
+}
+
+export function parseSiteHelpItemId(value: unknown): ValidationResult<string> {
+  if (typeof value !== "string" || !isUuid(value.trim())) {
+    return fail("VALIDATION_FAILED", "帮助内容 ID 不合法。")
+  }
+
+  return ok(value.trim())
+}
+
+function parseSiteHelpCategoryBody(
+  input: unknown,
+  mode: "create" | "update",
+): ValidationResult<CreateSiteHelpCategoryRequest | UpdateSiteHelpCategoryRequest> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return fail("BAD_REQUEST", "帮助分类请求体不合法。")
+  }
+
+  const body = input as Record<string, unknown>
+  const data: UpdateSiteHelpCategoryRequest = {}
+
+  if (body.title !== undefined) {
+    const parsed = parseTrimmedRequiredString(body.title, "title", 1, 120)
+    if (!parsed.ok) return parsed
+    data.title = parsed.data
+  }
+
+  if (body.description !== undefined) {
+    const parsed = parseTrimmedNullableString(body.description, "description", 2000)
+    if (!parsed.ok) return parsed
+    data.description = parsed.data
+  }
+
+  if (body.displayOrder !== undefined) {
+    const parsed = parsePositiveInteger(body.displayOrder, "displayOrder", 0, 1_000_000)
+    if (!parsed.ok) return parsed
+    data.displayOrder = parsed.data
+  }
+
+  if (body.enabled !== undefined) {
+    const parsed = parseBooleanField(body.enabled, "enabled")
+    if (!parsed.ok) return parsed
+    data.enabled = parsed.data
+  }
+
+  if (mode === "create" && !data.title) {
+    return fail("VALIDATION_FAILED", "请填写帮助分类名称。")
+  }
+
+  if (Object.keys(data).length === 0) {
+    return fail("VALIDATION_FAILED", "请至少提供一个要更新的字段。")
+  }
+
+  return ok(data as CreateSiteHelpCategoryRequest | UpdateSiteHelpCategoryRequest)
+}
+
+export function parseAdminSiteHelpCategoryCreateBody(
+  input: unknown,
+): ValidationResult<CreateSiteHelpCategoryRequest> {
+  const parsed = parseSiteHelpCategoryBody(input, "create")
+  if (!parsed.ok) return parsed
+  return ok(parsed.data as CreateSiteHelpCategoryRequest)
+}
+
+export function parseAdminSiteHelpCategoryUpdateBody(
+  input: unknown,
+): ValidationResult<UpdateSiteHelpCategoryRequest> {
+  const parsed = parseSiteHelpCategoryBody(input, "update")
+  if (!parsed.ok) return parsed
+  return ok(parsed.data)
+}
+
+export function parseAdminSiteHelpItemCreateBody(
+  input: unknown,
+): ValidationResult<CreateSiteHelpItemRequest> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return fail("BAD_REQUEST", "帮助内容请求体不合法。")
+  }
+
+  const body = input as Record<string, unknown>
+  const data: Partial<CreateSiteHelpItemRequest> = {}
+
+  const categoryId = parseSiteHelpCategoryId(body.categoryId)
+  if (!categoryId.ok) return categoryId
+  data.categoryId = categoryId.data
+
+  const question = parseTrimmedRequiredString(body.question, "question", 1, 240)
+  if (!question.ok) return question
+  data.question = question.data
+
+  const answerMarkdown = parseTrimmedRequiredString(body.answerMarkdown, "answerMarkdown", 1, 60000)
+  if (!answerMarkdown.ok) return answerMarkdown
+  data.answerMarkdown = answerMarkdown.data
+
+  if (body.displayOrder !== undefined) {
+    const parsed = parsePositiveInteger(body.displayOrder, "displayOrder", 0, 1_000_000)
+    if (!parsed.ok) return parsed
+    data.displayOrder = parsed.data
+  }
+
+  if (body.enabled !== undefined) {
+    const parsed = parseBooleanField(body.enabled, "enabled")
+    if (!parsed.ok) return parsed
+    data.enabled = parsed.data
+  }
+
+  return ok(data as CreateSiteHelpItemRequest)
+}
+
+export function parseAdminSiteHelpItemUpdateBody(
+  input: unknown,
+): ValidationResult<UpdateSiteHelpItemRequest> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return fail("BAD_REQUEST", "帮助内容请求体不合法。")
+  }
+
+  const body = input as Record<string, unknown>
+  const data: UpdateSiteHelpItemRequest = {}
+
+  if (body.categoryId !== undefined) {
+    const parsed = parseSiteHelpCategoryId(body.categoryId)
+    if (!parsed.ok) return parsed
+    data.categoryId = parsed.data
+  }
+
+  if (body.question !== undefined) {
+    const parsed = parseTrimmedRequiredString(body.question, "question", 1, 240)
+    if (!parsed.ok) return parsed
+    data.question = parsed.data
+  }
+
+  if (body.answerMarkdown !== undefined) {
+    const parsed = parseTrimmedRequiredString(body.answerMarkdown, "answerMarkdown", 1, 60000)
+    if (!parsed.ok) return parsed
+    data.answerMarkdown = parsed.data
+  }
+
+  if (body.displayOrder !== undefined) {
+    const parsed = parsePositiveInteger(body.displayOrder, "displayOrder", 0, 1_000_000)
+    if (!parsed.ok) return parsed
+    data.displayOrder = parsed.data
+  }
+
+  if (body.enabled !== undefined) {
+    const parsed = parseBooleanField(body.enabled, "enabled")
+    if (!parsed.ok) return parsed
+    data.enabled = parsed.data
   }
 
   if (Object.keys(data).length === 0) {

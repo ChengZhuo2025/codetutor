@@ -77,6 +77,7 @@
 25. `/admin/ai/test`：AI 测试与命中预览页
 26. `/admin/site/information`：网站信息页
 27. `/admin/site/articles`：通用文章页
+28. `/admin/site/help`：帮助中心页
 28. `/admin/settings`：系统设置页
 27. `/admin/feedback`：反馈工单列表页
 28. `/admin/feedback/[id]`：反馈工单详情页
@@ -457,10 +458,10 @@ features/<domain>/
 
 ### 管理后台站点信息页
 
-- 路由入口：`app/(admin-shell)/admin/site/information/page.tsx`、`app/(admin-shell)/admin/site/articles/page.tsx`
+- 路由入口：`app/(admin-shell)/admin/site/information/page.tsx`、`app/(admin-shell)/admin/site/articles/page.tsx`、`app/(admin-shell)/admin/site/help/page.tsx`
 - 当前业务模块：`features/admin-site`
-- 当前真实依赖：`GET/PATCH /api/admin/site/information`、`POST /api/admin/site/logo-upload`、`GET /api/admin/site/articles`、`GET/PATCH /api/admin/site/articles/{slug}`、公共读取 `GET /api/site/public`
-- 当前已落地：网站 Logo 上传、站点名称/副标题/Slogan/简介/SEO/备案/版权/版本号维护，以及关于我们/用户协议/隐私政策 Markdown 编辑和预览；首页、登录页、页脚文章弹窗与用户端版本展示从公共站点接口读取，接口异常时使用本地默认值兜底。
+- 当前真实依赖：`GET/PATCH /api/admin/site/information`、`POST /api/admin/site/logo-upload`、`GET /api/admin/site/articles`、`GET/PATCH /api/admin/site/articles/{slug}`、`GET/POST/PATCH /api/admin/site/help/*`、公共读取 `GET /api/site/public`
+- 当前已落地：网站 Logo 上传、站点名称/副标题/Slogan/简介/SEO/备案/版权/版本号维护、关于我们/用户协议/隐私政策 Markdown 编辑和预览，以及帮助中心分类/FAQ Markdown 编辑和预览；首页、登录页、页脚文章弹窗、帮助中心弹窗与用户端版本展示从公共站点接口读取，接口异常时使用本地默认值兜底。
 - 页面组件：`features/admin-settings/components/system-settings.tsx`
 - 页面联动：
   - 页面内部按“我的资料 / 安全设置 / 管理员账号 / 角色权限 / 操作审计 / 系统信息”分 tab 展示。

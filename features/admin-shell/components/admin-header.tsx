@@ -26,6 +26,7 @@ const breadcrumbMap: Record<string, string> = {
   "/admin/site": "站点信息",
   "/admin/site/information": "站点信息 / 网站信息",
   "/admin/site/articles": "站点信息 / 通用文章",
+  "/admin/site/help": "站点信息 / 帮助中心",
   "/admin/settings": "系统设置",
 }
 

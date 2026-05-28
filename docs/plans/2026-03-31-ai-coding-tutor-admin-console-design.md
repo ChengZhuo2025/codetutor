@@ -29,7 +29,7 @@
 > - **学习路径模板管理**已落地：`/admin/learning/templates` 和 `/admin/learning/templates/[templateId]` 支持管理 `learning_paths.source_type = self_directed` 的初始化模板，包含工具/水平唯一启用校验、步骤编辑、后台专用 `self-study-template-planner` AI 草稿生成、保存发布与未开始用户路径同步；业务域为 `features/admin-learning-templates`，服务层为 `server/modules/admin-learning-templates`，OpenAPI 分组仍为 `admin-learning`。
 > - **Ai 管理**已落地：`/admin/ai` 概览、Provider/Model/Agent 列表与独立详情页、命中规则、Skill 绑定、调用日志列表与独立详情页、命中预览与真实 provider 测试，以及多媒体管理（转译设置、附件管理）；路由为 `app/(admin-shell)/admin/ai/*`，业务域为 `features/admin-ai`，服务层为 `server/modules/admin-ai`，OpenAPI 分组为 `admin-ai`。
 > - **系统设置**已落地：资料与安全入口复用、管理员账号列表与启停、角色权限说明、操作审计列表、系统信息、企业联系方式管理与微信支付配置加密托管；路由为 `app/(admin-shell)/admin/settings`，业务域为 `features/admin-settings`，服务层为 `server/modules/admin-settings` / `server/modules/payments`，OpenAPI 分组为 `admin-settings` 与 `payment`。
-> - **站点信息**已落地：`/admin/site/information` 管理网站 Logo、站点名称、副标题、Slogan、简介、SEO、备案、版权和版本号；`/admin/site/articles` 管理关于我们、用户协议、隐私政策 Markdown 内容；服务层为 `server/modules/admin-site`，公共读取接口为 `GET /api/site/public`，OpenAPI 分组为 `admin-site`。
+> - **站点信息**已落地：`/admin/site/information` 管理网站 Logo、站点名称、副标题、Slogan、简介、SEO、备案、版权和版本号；`/admin/site/articles` 管理关于我们、用户协议、隐私政策 Markdown 内容；`/admin/site/help` 管理帮助中心分类与 FAQ Markdown 内容；服务层为 `server/modules/admin-site`，公共读取接口为 `GET /api/site/public`，OpenAPI 分组为 `admin-site`。
 > - **管理后台消息中心**已落地：右上角铃铛抽屉、独立消息中心页、消息列表与已读/忽略动作，以及反馈、支付回调/订单同步、AI 连接/调用失败、系统配置/审计异常、用户软删/恢复/账号冲突等高价值事件源自动入后台消息池；路由为 `app/(admin-shell)/admin/notifications/*`，业务域为 `features/admin-notifications`，服务层为 `server/modules/admin-notifications`，OpenAPI 分组为 `admin-notifications`。
 > - 管理端鉴权主链路已切换为 `admin-access-token` / `admin-refresh-token` Cookie，会话守卫与 `/api-docs` 访问守卫已接入 `proxy.ts`。
 > - 运行时 API 文档（`/api/docs/openapi`、`/api-docs`）已补齐 `admin-auth`、`admin-dashboard`、`admin-profile`、`admin-feedback`、`admin-users`、`admin-learning`、`admin-ai`、`admin-settings` 分组。
@@ -601,6 +601,7 @@ Agents 管理页必须补齐的辅助能力：
 | `app/(admin-shell)/admin/settings/page.tsx` | 系统设置 |
 | `app/(admin-shell)/admin/site/information/page.tsx` | 站点信息 / 网站信息 |
 | `app/(admin-shell)/admin/site/articles/page.tsx` | 站点信息 / 通用文章 |
+| `app/(admin-shell)/admin/site/help/page.tsx` | 站点信息 / 帮助中心 |
 
 建议新增后台前端业务域：
 
@@ -625,6 +626,7 @@ Agents 管理页必须补齐的辅助能力：
 - `/admin/settings`：系统设置
 - `/admin/site/information`：站点信息 / 网站信息
 - `/admin/site/articles`：站点信息 / 通用文章
+- `/admin/site/help`：站点信息 / 帮助中心
 - `/admin/feedback`：反馈工单
 - `/admin/notifications`：管理后台消息中心
 
@@ -730,7 +732,7 @@ Agents 管理页必须补齐的辅助能力：
 | AI 测试 | `POST /api/admin/ai/resolve-preview`、`POST /api/admin/ai/agent/test` | **已落地** |
 | 多媒体管理 | `GET /api/admin/ai/media/transcription-settings`、`PATCH /api/admin/ai/media/transcription-settings/{id}`、`GET /api/admin/ai/media/attachments` | **已落地** |
 | 审计 | `GET /api/admin/settings/audit-logs` | **已落地** |
-| 站点信息 | `GET/PATCH /api/admin/site/information`、`POST /api/admin/site/logo-upload`、`GET /api/admin/site/articles`、`GET/PATCH /api/admin/site/articles/{slug}`、`GET /api/site/public` | **已落地** |
+| 站点信息 | `GET/PATCH /api/admin/site/information`、`POST /api/admin/site/logo-upload`、`GET /api/admin/site/articles`、`GET/PATCH /api/admin/site/articles/{slug}`、`GET/POST/PATCH /api/admin/site/help/*`、`GET /api/site/public` | **已落地** |
 
 ### 7.5 写接口规范
 

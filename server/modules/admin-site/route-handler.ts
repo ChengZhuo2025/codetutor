@@ -1,12 +1,22 @@
 import { jsonError, jsonSuccess } from "@/server/lib/route-response"
 import {
+  parseAdminSiteHelpCategoryCreateBody,
+  parseAdminSiteHelpCategoryUpdateBody,
+  parseAdminSiteHelpItemCreateBody,
+  parseAdminSiteHelpItemUpdateBody,
   parseAdminSiteArticleBody,
   parseAdminSiteInformationBody,
   parseSiteArticleSlug,
+  parseSiteHelpCategoryId,
+  parseSiteHelpItemId,
 } from "@/server/lib/request-validation"
 import type {
+  CreateSiteHelpCategoryRequest,
+  CreateSiteHelpItemRequest,
   SiteArticleSlug,
   UpdateSiteArticleRequest,
+  UpdateSiteHelpCategoryRequest,
+  UpdateSiteHelpItemRequest,
   UpdateSiteInformationRequest,
 } from "@/lib/api/contracts/admin-site"
 
@@ -216,6 +226,217 @@ export function createAdminSiteArticlePatchHandler(dependencies: {
     } catch (error) {
       console.error("Admin site article PATCH error:", error)
       return toValidationError(error, "通用文章更新失败")
+    }
+  }
+}
+
+export function createAdminSiteHelpCategoryListGetHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  loadSiteHelpCategories: () => Promise<unknown>
+}) {
+  return async function GET(request: unknown) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+
+      const data = await dependencies.loadSiteHelpCategories()
+      return jsonSuccess(data, "帮助分类列表读取成功")
+    } catch (error) {
+      console.error("Admin site help category list GET error:", error)
+      return jsonError("INTERNAL_ERROR", "帮助分类列表读取失败", 500)
+    }
+  }
+}
+
+export function createAdminSiteHelpCategoryPostHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  createSiteHelpCategory: (
+    adminAccountId: string,
+    input: CreateSiteHelpCategoryRequest,
+  ) => Promise<unknown>
+}) {
+  return async function POST(request: Request) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+
+      let body: unknown
+      try {
+        body = await request.json()
+      } catch {
+        return jsonError("BAD_REQUEST", "无效的请求体", 400)
+      }
+
+      const parsed = parseAdminSiteHelpCategoryCreateBody(body)
+      if (!parsed.ok) {
+        return jsonError(parsed.code, parsed.message, 400)
+      }
+
+      const data = await dependencies.createSiteHelpCategory(admin.adminId, parsed.data)
+      return jsonSuccess(data, "帮助分类已创建")
+    } catch (error) {
+      console.error("Admin site help category POST error:", error)
+      return toValidationError(error, "帮助分类创建失败")
+    }
+  }
+}
+
+export function createAdminSiteHelpCategoryPatchHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  updateSiteHelpCategory: (
+    adminAccountId: string,
+    id: string,
+    input: UpdateSiteHelpCategoryRequest,
+  ) => Promise<unknown>
+}) {
+  return async function PATCH(
+    request: Request,
+    routeContext: { params: Promise<{ categoryId: string }> },
+  ) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+
+      const { categoryId: rawCategoryId } = await routeContext.params
+      const categoryId = parseSiteHelpCategoryId(rawCategoryId)
+      if (!categoryId.ok) {
+        return jsonError(categoryId.code, categoryId.message, 400)
+      }
+
+      let body: unknown
+      try {
+        body = await request.json()
+      } catch {
+        return jsonError("BAD_REQUEST", "无效的请求体", 400)
+      }
+
+      const parsed = parseAdminSiteHelpCategoryUpdateBody(body)
+      if (!parsed.ok) {
+        return jsonError(parsed.code, parsed.message, 400)
+      }
+
+      const data = await dependencies.updateSiteHelpCategory(admin.adminId, categoryId.data, parsed.data)
+      return jsonSuccess(data, "帮助分类已更新")
+    } catch (error) {
+      console.error("Admin site help category PATCH error:", error)
+      return toValidationError(error, "帮助分类更新失败")
+    }
+  }
+}
+
+export function createAdminSiteHelpItemListGetHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  loadSiteHelpItems: (categoryId?: string | null) => Promise<unknown>
+}) {
+  return async function GET(request: Request) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+
+      const url = new URL(request.url)
+      const rawCategoryId = url.searchParams.get("categoryId")
+      if (rawCategoryId) {
+        const categoryId = parseSiteHelpCategoryId(rawCategoryId)
+        if (!categoryId.ok) {
+          return jsonError(categoryId.code, categoryId.message, 400)
+        }
+        const data = await dependencies.loadSiteHelpItems(categoryId.data)
+        return jsonSuccess(data, "帮助内容列表读取成功")
+      }
+
+      const data = await dependencies.loadSiteHelpItems(null)
+      return jsonSuccess(data, "帮助内容列表读取成功")
+    } catch (error) {
+      console.error("Admin site help item list GET error:", error)
+      return jsonError("INTERNAL_ERROR", "帮助内容列表读取失败", 500)
+    }
+  }
+}
+
+export function createAdminSiteHelpItemPostHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  createSiteHelpItem: (
+    adminAccountId: string,
+    input: CreateSiteHelpItemRequest,
+  ) => Promise<unknown>
+}) {
+  return async function POST(request: Request) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+
+      let body: unknown
+      try {
+        body = await request.json()
+      } catch {
+        return jsonError("BAD_REQUEST", "无效的请求体", 400)
+      }
+
+      const parsed = parseAdminSiteHelpItemCreateBody(body)
+      if (!parsed.ok) {
+        return jsonError(parsed.code, parsed.message, 400)
+      }
+
+      const data = await dependencies.createSiteHelpItem(admin.adminId, parsed.data)
+      return jsonSuccess(data, "帮助内容已创建")
+    } catch (error) {
+      console.error("Admin site help item POST error:", error)
+      return toValidationError(error, "帮助内容创建失败")
+    }
+  }
+}
+
+export function createAdminSiteHelpItemPatchHandler(dependencies: {
+  getRequestAdmin: (request: unknown) => Awaitable<RequestAdminResult>
+  updateSiteHelpItem: (
+    adminAccountId: string,
+    id: string,
+    input: UpdateSiteHelpItemRequest,
+  ) => Promise<unknown>
+}) {
+  return async function PATCH(
+    request: Request,
+    routeContext: { params: Promise<{ itemId: string }> },
+  ) {
+    try {
+      const admin = await dependencies.getRequestAdmin(request)
+      if (!admin.ok) {
+        return jsonError("ADMIN_FORBIDDEN", admin.message, 403)
+      }
+
+      const { itemId: rawItemId } = await routeContext.params
+      const itemId = parseSiteHelpItemId(rawItemId)
+      if (!itemId.ok) {
+        return jsonError(itemId.code, itemId.message, 400)
+      }
+
+      let body: unknown
+      try {
+        body = await request.json()
+      } catch {
+        return jsonError("BAD_REQUEST", "无效的请求体", 400)
+      }
+
+      const parsed = parseAdminSiteHelpItemUpdateBody(body)
+      if (!parsed.ok) {
+        return jsonError(parsed.code, parsed.message, 400)
+      }
+
+      const data = await dependencies.updateSiteHelpItem(admin.adminId, itemId.data, parsed.data)
+      return jsonSuccess(data, "帮助内容已更新")
+    } catch (error) {
+      console.error("Admin site help item PATCH error:", error)
+      return toValidationError(error, "帮助内容更新失败")
     }
   }
 }

@@ -144,7 +144,7 @@ export function createAdminSettingsAuditLogListGetHandler(dependencies: {
   getAdminSettingsAuditLogList: (filters: {
     keyword?: string
     action: string
-    targetType: "all" | "admin_account" | "user_profile" | "user_learning_path" | "site_contact" | "site_information" | "site_article" | "payment_settings" | "subscription_plan"
+    targetType: "all" | "admin_account" | "user_profile" | "user_learning_path" | "site_contact" | "site_information" | "site_article" | "site_help_category" | "site_help_item" | "payment_settings" | "subscription_plan"
     limit: number
     page: number
   }) => Promise<unknown>

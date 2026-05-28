@@ -22,6 +22,7 @@ import {
   BarChart3,
   Globe2,
   FileText,
+  HelpCircle,
   Zap,
 } from "lucide-react"
 import type { MenuItem } from "../types"
@@ -105,6 +106,7 @@ export const menuItems: MenuItem[] = [
     children: [
       { label: "网站信息", href: "/admin/site/information", icon: Globe2, active: true },
       { label: "通用文章", href: "/admin/site/articles", icon: FileText, active: true },
+      { label: "帮助中心", href: "/admin/site/help", icon: HelpCircle, active: true },
     ],
   },
   {

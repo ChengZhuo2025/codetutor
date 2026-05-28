@@ -1,6 +1,151 @@
 import type { PublicSiteResponseData } from "@/lib/api/contracts/admin-site"
 import { APP_PACKAGE_VERSION } from "@/constants/app"
 
+export const DEFAULT_HELP_CENTER: PublicSiteResponseData["helpCenter"] = {
+  categories: [
+    {
+      id: "550e8400-e29b-41d4-a716-446655440101",
+      title: "开始学习",
+      description: "学习计划与路径相关问题",
+      displayOrder: 10,
+      enabled: true,
+      updatedAt: null,
+      items: [
+        {
+          id: "550e8400-e29b-41d4-a716-446655440201",
+          categoryId: "550e8400-e29b-41d4-a716-446655440101",
+          question: "如何开始一条新的学习计划？",
+          answerMarkdown:
+            "进入首页或学习页后，选择适合你的学习目标、当前水平和常用 AI 工具，系统会生成一条可执行的学习路径。已有进行中计划时，建议先继续当前计划，避免学习进度分散。",
+          displayOrder: 10,
+          enabled: true,
+          updatedAt: null,
+        },
+        {
+          id: "550e8400-e29b-41d4-a716-446655440202",
+          categoryId: "550e8400-e29b-41d4-a716-446655440101",
+          question: "不同 AI 工具可以混合学习吗？",
+          answerMarkdown:
+            "可以，但更建议先完成一个工具的核心路径，再切换到另一个工具。这样更容易建立完整工作流，也方便在历史记录里复盘每条计划的目标、任务和完成度。",
+          displayOrder: 20,
+          enabled: true,
+          updatedAt: null,
+        },
+      ],
+    },
+    {
+      id: "550e8400-e29b-41d4-a716-446655440102",
+      title: "学习记录",
+      description: "历史计划、进度与成长体系",
+      displayOrder: 20,
+      enabled: true,
+      updatedAt: null,
+      items: [
+        {
+          id: "550e8400-e29b-41d4-a716-446655440203",
+          categoryId: "550e8400-e29b-41d4-a716-446655440102",
+          question: "学习记录会保存多久？",
+          answerMarkdown:
+            "所有学习记录会长期保存，你可以随时回顾已完成的计划、查看任务进度和复盘学习成果。即使订阅过期，历史记录也不会因此被删除。",
+          displayOrder: 10,
+          enabled: true,
+          updatedAt: null,
+        },
+        {
+          id: "550e8400-e29b-41d4-a716-446655440204",
+          categoryId: "550e8400-e29b-41d4-a716-446655440102",
+          question: "可以重新学习已完成的计划吗？",
+          answerMarkdown:
+            "可以。在学习历史中打开已完成计划，使用学习复盘或重新开始相关入口即可再次学习。复盘会帮助你回顾关键任务，但同一计划的 XP 奖励通常只会计算一次。",
+          displayOrder: 20,
+          enabled: true,
+          updatedAt: null,
+        },
+        {
+          id: "550e8400-e29b-41d4-a716-446655440205",
+          categoryId: "550e8400-e29b-41d4-a716-446655440102",
+          question: "中途中断或放弃的计划如何继续？",
+          answerMarkdown:
+            "在学习记录里找到“已中断”或“已放弃”的计划，点击重新激活即可继续。若当前已有另一条活跃计划，系统会先阻止冲突操作，避免两条计划同时占用主学习流程。",
+          displayOrder: 30,
+          enabled: true,
+          updatedAt: null,
+        },
+        {
+          id: "550e8400-e29b-41d4-a716-446655440206",
+          categoryId: "550e8400-e29b-41d4-a716-446655440102",
+          question: "XP 和段位如何计算？",
+          answerMarkdown:
+            "完成学习任务可获得基础 XP，连续学习、打卡和达成特定目标会带来额外奖励。XP 累积到对应区间后，系统会自动更新你的段位和成就状态。",
+          displayOrder: 40,
+          enabled: true,
+          updatedAt: null,
+        },
+      ],
+    },
+    {
+      id: "550e8400-e29b-41d4-a716-446655440103",
+      title: "订阅订单",
+      description: "支付、订单与订阅权益",
+      displayOrder: 30,
+      enabled: true,
+      updatedAt: null,
+      items: [
+        {
+          id: "550e8400-e29b-41d4-a716-446655440207",
+          categoryId: "550e8400-e29b-41d4-a716-446655440103",
+          question: "待支付订单可以继续支付吗？",
+          answerMarkdown:
+            "可以。只要订单还没有过期，你可以在订单列表中点击继续支付，系统会重新展示微信 Native 支付二维码或支付宝扫码支付信息。",
+          displayOrder: 10,
+          enabled: true,
+          updatedAt: null,
+        },
+        {
+          id: "550e8400-e29b-41d4-a716-446655440208",
+          categoryId: "550e8400-e29b-41d4-a716-446655440103",
+          question: "取消订单会影响订阅吗？",
+          answerMarkdown:
+            "不会。只有已支付订单才会开通或续期订阅权益。取消待支付订单只是关闭本次支付记录，不会改变你当前已经拥有的套餐权益。",
+          displayOrder: 20,
+          enabled: true,
+          updatedAt: null,
+        },
+        {
+          id: "550e8400-e29b-41d4-a716-446655440209",
+          categoryId: "550e8400-e29b-41d4-a716-446655440103",
+          question: "删除订单后还能恢复吗？",
+          answerMarkdown:
+            "用户端删除主要用于隐藏已关闭、已过期或失败的订单。后台仍会保留必要财务记录用于对账和审计，因此删除操作不会影响已支付权益。",
+          displayOrder: 30,
+          enabled: true,
+          updatedAt: null,
+        },
+      ],
+    },
+    {
+      id: "550e8400-e29b-41d4-a716-446655440104",
+      title: "账号与反馈",
+      description: "登录、账号和问题反馈",
+      displayOrder: 40,
+      enabled: true,
+      updatedAt: null,
+      items: [
+        {
+          id: "550e8400-e29b-41d4-a716-446655440210",
+          categoryId: "550e8400-e29b-41d4-a716-446655440104",
+          question: "遇到登录、支付或学习内容问题怎么办？",
+          answerMarkdown:
+            "你可以优先在对应页面刷新状态或重新进入当前流程；如果问题仍然存在，请通过“联系我们”或站内反馈入口提交问题现象、发生时间和相关订单号或学习计划名称，方便我们定位处理。",
+          displayOrder: 10,
+          enabled: true,
+          updatedAt: null,
+        },
+      ],
+    },
+  ],
+}
+
 export const DEFAULT_USER_AGREEMENT_MARKDOWN = `生效日期：2026-04-17
 
 欢迎使用 CodeTutor（以下简称“本平台”）。本《用户协议》是你与本平台运营方之间就账号注册、登录和使用本平台服务所订立的协议。请在使用前认真阅读并充分理解全部内容；当你完成注册、登录或继续使用本平台服务时，即视为你已阅读、理解并同意本协议。
@@ -169,4 +314,5 @@ export const DEFAULT_PUBLIC_SITE: PublicSiteResponseData = {
       updatedAt: null,
     },
   },
+  helpCenter: DEFAULT_HELP_CENTER,
 }

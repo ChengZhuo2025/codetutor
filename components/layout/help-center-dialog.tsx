@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   ChevronDown,
   CreditCard,
@@ -17,6 +17,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { MarkdownContent } from "@/features/site/components/markdown-content"
+import { DEFAULT_HELP_CENTER } from "@/features/site/data/default-site"
+import { usePublicSite } from "@/features/site/providers/public-site-provider"
+import type { PublicSiteHelpItem } from "@/lib/api/contracts/admin-site"
 import { cn } from "@/lib/utils"
 
 type HelpCenterDialogProps = {
@@ -24,98 +28,45 @@ type HelpCenterDialogProps = {
   triggerClassName?: string
 }
 
-type HelpCenterFaqItem = {
-  id: string
-  category: "开始学习" | "学习记录" | "订阅订单" | "账号与反馈"
-  question: string
-  answer: string
+type HelpCenterFaqItem = PublicSiteHelpItem & {
+  category: string
 }
-
-const helpCenterFaqItems: HelpCenterFaqItem[] = [
-  {
-    id: "start-new-plan",
-    category: "开始学习",
-    question: "如何开始一条新的学习计划？",
-    answer:
-      "进入首页或学习页后，选择适合你的学习目标、当前水平和常用 AI 工具，系统会生成一条可执行的学习路径。已有进行中计划时，建议先继续当前计划，避免学习进度分散。",
-  },
-  {
-    id: "choose-tool",
-    category: "开始学习",
-    question: "不同 AI 工具可以混合学习吗？",
-    answer:
-      "可以，但更建议先完成一个工具的核心路径，再切换到另一个工具。这样更容易建立完整工作流，也方便在历史记录里复盘每条计划的目标、任务和完成度。",
-  },
-  {
-    id: "history-retention",
-    category: "学习记录",
-    question: "学习记录会保存多久？",
-    answer:
-      "所有学习记录会长期保存，你可以随时回顾已完成的计划、查看任务进度和复盘学习成果。即使订阅过期，历史记录也不会因此被删除。",
-  },
-  {
-    id: "restart-finished-plan",
-    category: "学习记录",
-    question: "可以重新学习已完成的计划吗？",
-    answer:
-      "可以。在学习历史中打开已完成计划，使用学习复盘或重新开始相关入口即可再次学习。复盘会帮助你回顾关键任务，但同一计划的 XP 奖励通常只会计算一次。",
-  },
-  {
-    id: "reactivate-plan",
-    category: "学习记录",
-    question: "中途中断或放弃的计划如何继续？",
-    answer:
-      "在学习记录里找到“已中断”或“已放弃”的计划，点击重新激活即可继续。若当前已有另一条活跃计划，系统会先阻止冲突操作，避免两条计划同时占用主学习流程。",
-  },
-  {
-    id: "xp-rank",
-    category: "学习记录",
-    question: "XP 和段位如何计算？",
-    answer:
-      "完成学习任务可获得基础 XP，连续学习、打卡和达成特定目标会带来额外奖励。XP 累积到对应区间后，系统会自动更新你的段位和成就状态。",
-  },
-  {
-    id: "continue-payment",
-    category: "订阅订单",
-    question: "待支付订单可以继续支付吗？",
-    answer:
-      "可以。只要订单还没有过期，你可以在订单列表中点击继续支付，系统会重新展示微信 Native 支付二维码或支付宝扫码支付信息。",
-  },
-  {
-    id: "cancel-order",
-    category: "订阅订单",
-    question: "取消订单会影响订阅吗？",
-    answer:
-      "不会。只有已支付订单才会开通或续期订阅权益。取消待支付订单只是关闭本次支付记录，不会改变你当前已经拥有的套餐权益。",
-  },
-  {
-    id: "delete-order",
-    category: "订阅订单",
-    question: "删除订单后还能恢复吗？",
-    answer:
-      "用户端删除主要用于隐藏已关闭、已过期或失败的订单。后台仍会保留必要财务记录用于对账和审计，因此删除操作不会影响已支付权益。",
-  },
-  {
-    id: "feedback",
-    category: "账号与反馈",
-    question: "遇到登录、支付或学习内容问题怎么办？",
-    answer:
-      "你可以优先在对应页面刷新状态或重新进入当前流程；如果问题仍然存在，请通过“联系我们”或站内反馈入口提交问题现象、发生时间和相关订单号或学习计划名称，方便我们定位处理。",
-  },
-]
 
 const categoryIcons = {
   开始学习: Sparkles,
   学习记录: History,
   订阅订单: CreditCard,
   账号与反馈: MessageSquare,
-} satisfies Record<HelpCenterFaqItem["category"], typeof HelpCircle>
+} satisfies Record<string, typeof HelpCircle>
+
+function getCategoryIcon(category: string) {
+  return (categoryIcons as Record<string, typeof HelpCircle>)[category] ?? HelpCircle
+}
 
 export function HelpCenterDialog({
   triggerLabel = "帮助中心",
   triggerClassName,
 }: HelpCenterDialogProps) {
-  const [expandedId, setExpandedId] = useState<string>(helpCenterFaqItems[0].id)
+  const { site } = usePublicSite()
+  const helpCenter = site.helpCenter?.categories?.length ? site.helpCenter : DEFAULT_HELP_CENTER
+  const helpCenterFaqItems = useMemo<HelpCenterFaqItem[]>(
+    () =>
+      helpCenter.categories
+        .filter((category) => category.enabled)
+        .flatMap((category) =>
+          category.items
+            .filter((item) => item.enabled)
+            .map((item) => ({
+              ...item,
+              category: category.title,
+            })),
+        ),
+    [helpCenter],
+  )
+  const [expandedId, setExpandedId] = useState<string>("")
+  const currentExpandedId = helpCenterFaqItems.some((item) => item.id === expandedId)
+    ? expandedId
+    : helpCenterFaqItems[0]?.id ?? ""
 
   return (
     <Dialog>
@@ -140,8 +91,8 @@ export function HelpCenterDialog({
         <div className="max-h-[72vh] overflow-y-auto px-4 py-4 sm:px-6">
           <div className="space-y-3">
             {helpCenterFaqItems.map((item) => {
-              const isExpanded = expandedId === item.id
-              const CategoryIcon = categoryIcons[item.category]
+              const isExpanded = currentExpandedId === item.id
+              const CategoryIcon = getCategoryIcon(item.category)
 
               return (
                 <div
@@ -199,9 +150,7 @@ export function HelpCenterDialog({
                     )}
                   >
                     <div className="border-t border-brand/15 dark:border-brand/25 px-4 pb-4 pt-3 sm:pl-[4.25rem]">
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        {item.answer}
-                      </p>
+                      <MarkdownContent content={item.answerMarkdown} className="space-y-3 text-sm leading-6" />
                     </div>
                   </div>
                 </div>

@@ -16,7 +16,7 @@ test("openapi document covers all registered api operations and special transpor
     ),
   )
 
-  assert.equal(operations.length, 150)
+  assert.equal(operations.length, 156)
 
   assert.ok(paths["/api/auth/login"]?.post)
   assert.ok(paths["/api/auth/oauth-temp-user/discard"]?.post)
@@ -98,6 +98,12 @@ test("openapi document covers all registered api operations and special transpor
   assert.ok(paths["/api/admin/site/articles"]?.get)
   assert.ok(paths["/api/admin/site/articles/{slug}"]?.get)
   assert.ok(paths["/api/admin/site/articles/{slug}"]?.patch)
+  assert.ok(paths["/api/admin/site/help/categories"]?.get)
+  assert.ok(paths["/api/admin/site/help/categories"]?.post)
+  assert.ok(paths["/api/admin/site/help/categories/{categoryId}"]?.patch)
+  assert.ok(paths["/api/admin/site/help/items"]?.get)
+  assert.ok(paths["/api/admin/site/help/items"]?.post)
+  assert.ok(paths["/api/admin/site/help/items/{itemId}"]?.patch)
   assert.ok(paths["/api/subscription/plans"]?.get)
   assert.ok(paths["/api/subscription/me"]?.get)
   assert.ok(paths["/api/payment/wechat/native-orders"]?.post)

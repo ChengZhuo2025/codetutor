@@ -27,7 +27,22 @@ assert.doesNotMatch(
 )
 assert.match(
   dialogSource,
-  /const \[expandedId, setExpandedId\] = useState<string>/,
+  /usePublicSite/,
+  "Help center should read managed public site help content.",
+)
+assert.match(
+  dialogSource,
+  /DEFAULT_HELP_CENTER/,
+  "Help center should keep local default FAQ content as a public fallback.",
+)
+assert.match(
+  dialogSource,
+  /MarkdownContent/,
+  "Help center answers should render managed Markdown content.",
+)
+assert.match(
+  dialogSource,
+  /const \[expandedId, setExpandedId\] = useState<string/,
   "Help center accordion should use one controlled expanded item id.",
 )
 assert.match(
@@ -52,18 +67,18 @@ assert.match(
 )
 assert.match(
   dialogSource,
-  /学习记录会保存多久/,
-  "Help center should include learning history guidance.",
+  /helpCenter\.categories/,
+  "Help center should render categories from public site data.",
 )
 assert.match(
   dialogSource,
-  /待支付订单可以继续支付吗/,
-  "Help center should include order payment guidance.",
+  /answerMarkdown/,
+  "Help center should use markdown answers instead of hard-coded plain text answers.",
 )
 assert.match(
   dialogSource,
-  /如何开始一条新的学习计划/,
-  "Help center should include getting-started guidance.",
+  /filter\(\(category\).*enabled/s,
+  "Help center should hide disabled categories and items from users.",
 )
 
 console.log("Help center dialog is reusable and uses a single-open FAQ accordion.")

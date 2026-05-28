@@ -5,12 +5,21 @@ import { readFileSync } from "node:fs"
 import {
   createAdminSiteArticleGetHandler,
   createAdminSiteArticlePatchHandler,
+  createAdminSiteHelpCategoryListGetHandler,
+  createAdminSiteHelpCategoryPatchHandler,
+  createAdminSiteHelpCategoryPostHandler,
+  createAdminSiteHelpItemListGetHandler,
+  createAdminSiteHelpItemPatchHandler,
+  createAdminSiteHelpItemPostHandler,
   createAdminSiteInformationGetHandler,
   createAdminSiteInformationPatchHandler,
   createPublicSiteGetHandler,
 } from "../server/modules/admin-site/route-handler.ts"
 import type {
   AdminSiteArticleResponseData,
+  AdminSiteHelpCategoryResponseData,
+  AdminSiteHelpItemListResponseData,
+  AdminSiteHelpItemResponseData,
   AdminSiteInformationResponseData,
   PublicSiteResponseData,
 } from "../lib/api/contracts/admin-site.ts"
@@ -48,6 +57,27 @@ const sampleArticle: AdminSiteArticleResponseData = {
   updatedByAdminId: okAdmin.adminId,
 }
 
+const sampleHelpCategory: AdminSiteHelpCategoryResponseData = {
+  id: "550e8400-e29b-41d4-a716-446655440101",
+  title: "开始学习",
+  description: "学习计划与路径相关问题",
+  displayOrder: 10,
+  enabled: true,
+  updatedAt: "2026-05-28T00:00:00.000Z",
+  updatedByAdminId: okAdmin.adminId,
+}
+
+const sampleHelpItem: AdminSiteHelpItemResponseData = {
+  id: "550e8400-e29b-41d4-a716-446655440201",
+  categoryId: sampleHelpCategory.id,
+  question: "如何开始一条新的学习计划？",
+  answerMarkdown: "进入首页或学习页后，选择适合你的学习目标。",
+  displayOrder: 10,
+  enabled: true,
+  updatedAt: "2026-05-28T00:00:00.000Z",
+  updatedByAdminId: okAdmin.adminId,
+}
+
 const samplePublic: PublicSiteResponseData = {
   information: sampleInformation,
   articles: {
@@ -72,6 +102,29 @@ const samplePublic: PublicSiteResponseData = {
       effectiveDate: "2026-04-17",
       updatedAt: "2026-05-18T00:00:00.000Z",
     },
+  },
+  helpCenter: {
+    categories: [
+      {
+        id: sampleHelpCategory.id,
+        title: sampleHelpCategory.title,
+        description: sampleHelpCategory.description,
+        displayOrder: sampleHelpCategory.displayOrder,
+        enabled: true,
+        updatedAt: sampleHelpCategory.updatedAt,
+        items: [
+          {
+            id: sampleHelpItem.id,
+            categoryId: sampleHelpItem.categoryId,
+            question: sampleHelpItem.question,
+            answerMarkdown: sampleHelpItem.answerMarkdown,
+            displayOrder: sampleHelpItem.displayOrder,
+            enabled: true,
+            updatedAt: sampleHelpItem.updatedAt,
+          },
+        ],
+      },
+    ],
   },
 }
 
@@ -197,6 +250,179 @@ test("admin site article patch updates markdown", async () => {
   assert.equal(body.data.contentMarkdown, "## 新隐私政策\n\n正文")
 })
 
+test("admin help categories require admin", async () => {
+  const handler = createAdminSiteHelpCategoryListGetHandler({
+    getRequestAdmin: async () => forbiddenAdmin,
+    loadSiteHelpCategories: async () => ({ items: [sampleHelpCategory] }),
+  })
+
+  const res = await handler(new Request("http://localhost/api/admin/site/help/categories"))
+  assert.equal(res.status, 403)
+})
+
+test("admin help category post rejects empty title", async () => {
+  const handler = createAdminSiteHelpCategoryPostHandler({
+    getRequestAdmin: async () => okAdmin,
+    createSiteHelpCategory: async () => {
+      throw new Error("should not call")
+    },
+  })
+
+  const res = await handler(
+    new Request("http://localhost/api/admin/site/help/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "   " }),
+    }),
+  )
+
+  assert.equal(res.status, 400)
+})
+
+test("admin help category post creates a category", async () => {
+  const handler = createAdminSiteHelpCategoryPostHandler({
+    getRequestAdmin: async () => okAdmin,
+    createSiteHelpCategory: async (_adminId, input) => ({
+      ...sampleHelpCategory,
+      title: input.title,
+      description: input.description ?? null,
+    }),
+  })
+
+  const res = await handler(
+    new Request("http://localhost/api/admin/site/help/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "账号与反馈", description: "登录、账号和反馈问题" }),
+    }),
+  )
+
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.data.title, "账号与反馈")
+  assert.equal(body.data.description, "登录、账号和反馈问题")
+})
+
+test("admin help category patch updates enabled state", async () => {
+  const handler = createAdminSiteHelpCategoryPatchHandler({
+    getRequestAdmin: async () => okAdmin,
+    updateSiteHelpCategory: async (_adminId, id, input) => ({
+      ...sampleHelpCategory,
+      id,
+      enabled: input.enabled ?? sampleHelpCategory.enabled,
+    }),
+  })
+
+  const res = await handler(
+    new Request(`http://localhost/api/admin/site/help/categories/${sampleHelpCategory.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: false }),
+    }),
+    { params: Promise.resolve({ categoryId: sampleHelpCategory.id }) },
+  )
+
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.data.enabled, false)
+})
+
+test("admin help items list supports category filtering", async () => {
+  const handler = createAdminSiteHelpItemListGetHandler({
+    getRequestAdmin: async () => okAdmin,
+    loadSiteHelpItems: async (categoryId) => {
+      assert.equal(categoryId, sampleHelpCategory.id)
+      return { items: [sampleHelpItem] } satisfies AdminSiteHelpItemListResponseData
+    },
+  })
+
+  const res = await handler(
+    new Request(`http://localhost/api/admin/site/help/items?categoryId=${sampleHelpCategory.id}`),
+  )
+
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.data.items[0].question, "如何开始一条新的学习计划？")
+})
+
+test("admin help item post rejects empty markdown answer", async () => {
+  const handler = createAdminSiteHelpItemPostHandler({
+    getRequestAdmin: async () => okAdmin,
+    createSiteHelpItem: async () => {
+      throw new Error("should not call")
+    },
+  })
+
+  const res = await handler(
+    new Request("http://localhost/api/admin/site/help/items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        categoryId: sampleHelpCategory.id,
+        question: "如何开始？",
+        answerMarkdown: "   ",
+      }),
+    }),
+  )
+
+  assert.equal(res.status, 400)
+})
+
+test("admin help item post creates a markdown FAQ item", async () => {
+  const handler = createAdminSiteHelpItemPostHandler({
+    getRequestAdmin: async () => okAdmin,
+    createSiteHelpItem: async (_adminId, input) => ({
+      ...sampleHelpItem,
+      categoryId: input.categoryId,
+      question: input.question,
+      answerMarkdown: input.answerMarkdown,
+    }),
+  })
+
+  const res = await handler(
+    new Request("http://localhost/api/admin/site/help/items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        categoryId: sampleHelpCategory.id,
+        question: "Markdown 支持什么格式？",
+        answerMarkdown: "支持 **加粗**、列表和链接。",
+      }),
+    }),
+  )
+
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.data.question, "Markdown 支持什么格式？")
+  assert.equal(body.data.answerMarkdown, "支持 **加粗**、列表和链接。")
+})
+
+test("admin help item patch updates markdown and enabled state", async () => {
+  const handler = createAdminSiteHelpItemPatchHandler({
+    getRequestAdmin: async () => okAdmin,
+    updateSiteHelpItem: async (_adminId, id, input) => ({
+      ...sampleHelpItem,
+      id,
+      answerMarkdown: input.answerMarkdown ?? sampleHelpItem.answerMarkdown,
+      enabled: input.enabled ?? sampleHelpItem.enabled,
+    }),
+  })
+
+  const res = await handler(
+    new Request(`http://localhost/api/admin/site/help/items/${sampleHelpItem.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answerMarkdown: "## 新答案", enabled: false }),
+    }),
+    { params: Promise.resolve({ itemId: sampleHelpItem.id }) },
+  )
+
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.data.answerMarkdown, "## 新答案")
+  assert.equal(body.data.enabled, false)
+})
+
 test("public site endpoint returns information and seeded articles", async () => {
   const handler = createPublicSiteGetHandler({
     loadPublicSite: async () => samplePublic,
@@ -207,4 +433,6 @@ test("public site endpoint returns information and seeded articles", async () =>
   const body = await res.json()
   assert.equal(body.data.information.siteName, "CodeTutor")
   assert.equal(body.data.articles.privacyPolicy.title, "隐私政策")
+  assert.equal(body.data.helpCenter.categories[0].title, "开始学习")
+  assert.equal(body.data.helpCenter.categories[0].items[0].answerMarkdown, sampleHelpItem.answerMarkdown)
 })

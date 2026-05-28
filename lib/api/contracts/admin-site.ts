@@ -57,11 +57,79 @@ export type UpdateSiteArticleRequest = {
   effectiveDate?: string | null
 }
 
+export type SiteHelpItem = {
+  id: string
+  categoryId: string
+  question: string
+  answerMarkdown: string
+  displayOrder: number
+  enabled: boolean
+  updatedAt: string | null
+  updatedByAdminId?: string | null
+}
+
+export type SiteHelpCategory = {
+  id: string
+  title: string
+  description: string | null
+  displayOrder: number
+  enabled: boolean
+  updatedAt: string | null
+  updatedByAdminId?: string | null
+  items?: SiteHelpItem[]
+}
+
+export type PublicSiteHelpItem = Omit<SiteHelpItem, "updatedByAdminId">
+
+export type PublicSiteHelpCategory = Omit<SiteHelpCategory, "updatedByAdminId" | "items"> & {
+  items: PublicSiteHelpItem[]
+}
+
+export type AdminSiteHelpCategoryResponseData = SiteHelpCategory
+
+export type AdminSiteHelpCategoryListResponseData = {
+  items: SiteHelpCategory[]
+}
+
+export type AdminSiteHelpItemResponseData = SiteHelpItem
+
+export type AdminSiteHelpItemListResponseData = {
+  items: SiteHelpItem[]
+}
+
+export type CreateSiteHelpCategoryRequest = {
+  title: string
+  description?: string | null
+  displayOrder?: number
+  enabled?: boolean
+}
+
+export type UpdateSiteHelpCategoryRequest = Partial<CreateSiteHelpCategoryRequest>
+
+export type CreateSiteHelpItemRequest = {
+  categoryId: string
+  question: string
+  answerMarkdown: string
+  displayOrder?: number
+  enabled?: boolean
+}
+
+export type UpdateSiteHelpItemRequest = {
+  categoryId?: string
+  question?: string
+  answerMarkdown?: string
+  displayOrder?: number
+  enabled?: boolean
+}
+
 export type PublicSiteResponseData = {
   information: SiteInformation
   articles: {
     aboutUs: PublicSiteArticle
     userAgreement: PublicSiteArticle
     privacyPolicy: PublicSiteArticle
+  }
+  helpCenter: {
+    categories: PublicSiteHelpCategory[]
   }
 }

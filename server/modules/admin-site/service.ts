@@ -1,13 +1,23 @@
 import type { AdminAuditAction } from "@/lib/api/contracts/admin"
 import {
   SITE_ARTICLE_SLUGS,
+  type AdminSiteHelpCategoryListResponseData,
+  type AdminSiteHelpCategoryResponseData,
+  type AdminSiteHelpItemListResponseData,
+  type AdminSiteHelpItemResponseData,
   type AdminSiteArticleListResponseData,
   type AdminSiteArticleResponseData,
   type AdminSiteInformationResponseData,
+  type CreateSiteHelpCategoryRequest,
+  type CreateSiteHelpItemRequest,
   type PublicSiteArticle,
+  type PublicSiteHelpCategory,
+  type PublicSiteHelpItem,
   type PublicSiteResponseData,
   type SiteArticleSlug,
   type UpdateSiteArticleRequest,
+  type UpdateSiteHelpCategoryRequest,
+  type UpdateSiteHelpItemRequest,
   type UpdateSiteInformationRequest,
 } from "@/lib/api/contracts/admin-site"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
@@ -39,6 +49,27 @@ type SiteArticleRow = {
   title: string
   content_markdown: string
   effective_date: string | null
+  updated_at: string | null
+  updated_by_admin_id: string | null
+}
+
+type SiteHelpCategoryRow = {
+  id: string
+  title: string
+  description: string | null
+  display_order: number
+  enabled: boolean
+  updated_at: string | null
+  updated_by_admin_id: string | null
+}
+
+type SiteHelpItemRow = {
+  id: string
+  category_id: string
+  question: string
+  answer_markdown: string
+  display_order: number
+  enabled: boolean
   updated_at: string | null
   updated_by_admin_id: string | null
 }
@@ -88,10 +119,68 @@ function toPublicArticle(article: AdminSiteArticleResponseData): PublicSiteArtic
   }
 }
 
+function mapHelpCategoryRow(row: SiteHelpCategoryRow): AdminSiteHelpCategoryResponseData {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    displayOrder: row.display_order,
+    enabled: row.enabled,
+    updatedAt: row.updated_at,
+    updatedByAdminId: row.updated_by_admin_id,
+  }
+}
+
+function mapHelpItemRow(row: SiteHelpItemRow): AdminSiteHelpItemResponseData {
+  return {
+    id: row.id,
+    categoryId: row.category_id,
+    question: row.question,
+    answerMarkdown: row.answer_markdown,
+    displayOrder: row.display_order,
+    enabled: row.enabled,
+    updatedAt: row.updated_at,
+    updatedByAdminId: row.updated_by_admin_id,
+  }
+}
+
+function toPublicHelpItem(item: AdminSiteHelpItemResponseData): PublicSiteHelpItem {
+  return {
+    id: item.id,
+    categoryId: item.categoryId,
+    question: item.question,
+    answerMarkdown: item.answerMarkdown,
+    displayOrder: item.displayOrder,
+    enabled: item.enabled,
+    updatedAt: item.updatedAt,
+  }
+}
+
+function toPublicHelpCategory(category: AdminSiteHelpCategoryResponseData & { items?: AdminSiteHelpItemResponseData[] }): PublicSiteHelpCategory {
+  return {
+    id: category.id,
+    title: category.title,
+    description: category.description,
+    displayOrder: category.displayOrder,
+    enabled: category.enabled,
+    updatedAt: category.updatedAt,
+    items: (category.items ?? []).map(toPublicHelpItem),
+  }
+}
+
 async function writeSiteAudit(input: {
   adminAccountId: string
-  action: Extract<AdminAuditAction, "site_information_update" | "site_article_update" | "site_logo_upload">
-  targetType: "site_information" | "site_article"
+  action: Extract<
+    AdminAuditAction,
+    | "site_information_update"
+    | "site_article_update"
+    | "site_help_category_create"
+    | "site_help_category_update"
+    | "site_help_item_create"
+    | "site_help_item_update"
+    | "site_logo_upload"
+  >
+  targetType: "site_information" | "site_article" | "site_help_category" | "site_help_item"
   targetId?: string | null
   beforeSnapshot?: Record<string, unknown> | null
   afterSnapshot?: Record<string, unknown> | null
@@ -308,10 +397,278 @@ export async function updateSiteArticle(
   return after
 }
 
+export async function loadSiteHelpCategories(): Promise<AdminSiteHelpCategoryListResponseData> {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("site_help_categories")
+    .select("*")
+    .order("display_order", { ascending: true })
+    .order("updated_at", { ascending: false })
+
+  assertSupabaseSuccess(error, "failed to load site help categories")
+
+  return {
+    items: ((data ?? []) as SiteHelpCategoryRow[]).map(mapHelpCategoryRow),
+  }
+}
+
+export async function createSiteHelpCategory(
+  adminAccountId: string,
+  input: CreateSiteHelpCategoryRequest,
+): Promise<AdminSiteHelpCategoryResponseData> {
+  if (!isUuid(adminAccountId)) {
+    const error = new Error("管理员ID无效")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("site_help_categories")
+    .insert({
+      title: input.title,
+      description: input.description ?? null,
+      display_order: input.displayOrder ?? 0,
+      enabled: input.enabled ?? true,
+      updated_by_admin_id: adminAccountId,
+    })
+    .select("*")
+    .single()
+
+  assertSupabaseSuccess(error, "failed to create site help category")
+
+  const after = mapHelpCategoryRow(data as SiteHelpCategoryRow)
+  await writeSiteAudit({
+    adminAccountId,
+    action: "site_help_category_create",
+    targetType: "site_help_category",
+    targetId: after.id,
+    beforeSnapshot: null,
+    afterSnapshot: after,
+  })
+
+  return after
+}
+
+export async function loadSiteHelpCategory(id: string): Promise<AdminSiteHelpCategoryResponseData> {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("site_help_categories")
+    .select("*")
+    .eq("id", id)
+    .single()
+
+  assertSupabaseSuccess(error, "failed to load site help category")
+
+  if (!data) {
+    throw new Error("SITE_HELP_CATEGORY_NOT_FOUND")
+  }
+
+  return mapHelpCategoryRow(data as SiteHelpCategoryRow)
+}
+
+export async function updateSiteHelpCategory(
+  adminAccountId: string,
+  id: string,
+  input: UpdateSiteHelpCategoryRequest,
+): Promise<AdminSiteHelpCategoryResponseData> {
+  if (!isUuid(adminAccountId) || !isUuid(id)) {
+    const error = new Error("ID无效")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+
+  const before = await loadSiteHelpCategory(id)
+  const updatePayload: Record<string, unknown> = {
+    updated_by_admin_id: adminAccountId,
+  }
+
+  if (input.title !== undefined) updatePayload.title = input.title
+  if (input.description !== undefined) updatePayload.description = input.description
+  if (input.displayOrder !== undefined) updatePayload.display_order = input.displayOrder
+  if (input.enabled !== undefined) updatePayload.enabled = input.enabled
+
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("site_help_categories")
+    .update(updatePayload)
+    .eq("id", id)
+    .select("*")
+    .single()
+
+  assertSupabaseSuccess(error, "failed to update site help category")
+
+  const after = mapHelpCategoryRow(data as SiteHelpCategoryRow)
+  await writeSiteAudit({
+    adminAccountId,
+    action: "site_help_category_update",
+    targetType: "site_help_category",
+    targetId: id,
+    beforeSnapshot: before,
+    afterSnapshot: after,
+  })
+
+  return after
+}
+
+export async function loadSiteHelpItems(categoryId?: string | null): Promise<AdminSiteHelpItemListResponseData> {
+  const supabase = createSupabaseAdminClient()
+  let query = supabase
+    .from("site_help_items")
+    .select("*")
+    .order("display_order", { ascending: true })
+    .order("updated_at", { ascending: false })
+
+  if (categoryId) {
+    query = query.eq("category_id", categoryId)
+  }
+
+  const { data, error } = await query
+  assertSupabaseSuccess(error, "failed to load site help items")
+
+  return {
+    items: ((data ?? []) as SiteHelpItemRow[]).map(mapHelpItemRow),
+  }
+}
+
+export async function createSiteHelpItem(
+  adminAccountId: string,
+  input: CreateSiteHelpItemRequest,
+): Promise<AdminSiteHelpItemResponseData> {
+  if (!isUuid(adminAccountId) || !isUuid(input.categoryId)) {
+    const error = new Error("ID无效")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("site_help_items")
+    .insert({
+      category_id: input.categoryId,
+      question: input.question,
+      answer_markdown: input.answerMarkdown,
+      display_order: input.displayOrder ?? 0,
+      enabled: input.enabled ?? true,
+      updated_by_admin_id: adminAccountId,
+    })
+    .select("*")
+    .single()
+
+  assertSupabaseSuccess(error, "failed to create site help item")
+
+  const after = mapHelpItemRow(data as SiteHelpItemRow)
+  await writeSiteAudit({
+    adminAccountId,
+    action: "site_help_item_create",
+    targetType: "site_help_item",
+    targetId: after.id,
+    beforeSnapshot: null,
+    afterSnapshot: after,
+  })
+
+  return after
+}
+
+export async function loadSiteHelpItem(id: string): Promise<AdminSiteHelpItemResponseData> {
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("site_help_items")
+    .select("*")
+    .eq("id", id)
+    .single()
+
+  assertSupabaseSuccess(error, "failed to load site help item")
+
+  if (!data) {
+    throw new Error("SITE_HELP_ITEM_NOT_FOUND")
+  }
+
+  return mapHelpItemRow(data as SiteHelpItemRow)
+}
+
+export async function updateSiteHelpItem(
+  adminAccountId: string,
+  id: string,
+  input: UpdateSiteHelpItemRequest,
+): Promise<AdminSiteHelpItemResponseData> {
+  if (!isUuid(adminAccountId) || !isUuid(id)) {
+    const error = new Error("ID无效")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+
+  if (input.categoryId !== undefined && !isUuid(input.categoryId)) {
+    const error = new Error("帮助分类ID无效")
+    error.name = "VALIDATION_FAILED"
+    throw error
+  }
+
+  const before = await loadSiteHelpItem(id)
+  const updatePayload: Record<string, unknown> = {
+    updated_by_admin_id: adminAccountId,
+  }
+
+  if (input.categoryId !== undefined) updatePayload.category_id = input.categoryId
+  if (input.question !== undefined) updatePayload.question = input.question
+  if (input.answerMarkdown !== undefined) updatePayload.answer_markdown = input.answerMarkdown
+  if (input.displayOrder !== undefined) updatePayload.display_order = input.displayOrder
+  if (input.enabled !== undefined) updatePayload.enabled = input.enabled
+
+  const supabase = createSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from("site_help_items")
+    .update(updatePayload)
+    .eq("id", id)
+    .select("*")
+    .single()
+
+  assertSupabaseSuccess(error, "failed to update site help item")
+
+  const after = mapHelpItemRow(data as SiteHelpItemRow)
+  await writeSiteAudit({
+    adminAccountId,
+    action: "site_help_item_update",
+    targetType: "site_help_item",
+    targetId: id,
+    beforeSnapshot: before,
+    afterSnapshot: after,
+  })
+
+  return after
+}
+
+export async function loadPublicHelpCenter(): Promise<PublicSiteResponseData["helpCenter"]> {
+  const [categoryList, itemList] = await Promise.all([
+    loadSiteHelpCategories(),
+    loadSiteHelpItems(),
+  ])
+
+  const enabledItemsByCategory = new Map<string, AdminSiteHelpItemResponseData[]>()
+  for (const item of itemList.items) {
+    if (!item.enabled) continue
+    const current = enabledItemsByCategory.get(item.categoryId) ?? []
+    current.push(item)
+    enabledItemsByCategory.set(item.categoryId, current)
+  }
+
+  const categories = categoryList.items
+    .filter((category) => category.enabled)
+    .map((category) => ({
+      ...category,
+      items: enabledItemsByCategory.get(category.id) ?? [],
+    }))
+    .filter((category) => category.items.length > 0)
+    .map(toPublicHelpCategory)
+
+  return { categories }
+}
+
 export async function loadPublicSite(): Promise<PublicSiteResponseData> {
-  const [information, articleList] = await Promise.all([
+  const [information, articleList, helpCenter] = await Promise.all([
     loadSiteInformation(),
     loadSiteArticleList(),
+    loadPublicHelpCenter(),
   ])
   const map = new Map(articleList.items.map((item) => [item.slug, item]))
 
@@ -330,5 +687,6 @@ export async function loadPublicSite(): Promise<PublicSiteResponseData> {
       userAgreement: toPublicArticle(userAgreement),
       privacyPolicy: toPublicArticle(privacyPolicy),
     },
+    helpCenter,
   }
 }

@@ -1663,12 +1663,14 @@ export const adminSettingsAuditLogListItemSchema = z
       "admin_account",
       "user_profile",
       "user_learning_path",
-      "site_contact",
-      "site_information",
-      "site_article",
-      "payment_settings",
-      "subscription_plan",
-    ]),
+    "site_contact",
+    "site_information",
+    "site_article",
+    "site_help_category",
+    "site_help_item",
+    "payment_settings",
+    "subscription_plan",
+  ]),
     targetId: z.string().nullable(),
     actorAdminAccountId: z.string(),
     actorDisplayName: z.string(),
@@ -1827,6 +1829,107 @@ export const siteArticleSlugParamsSchema = z
   })
   .openapi("SiteArticleSlugParams")
 
+export const siteHelpItemSchema = z
+  .object({
+    id: z.string().uuid(),
+    categoryId: z.string().uuid(),
+    question: z.string().min(1),
+    answerMarkdown: z.string().min(1),
+    displayOrder: z.number().int().nonnegative(),
+    enabled: z.boolean(),
+    updatedAt: z.string().nullable(),
+    updatedByAdminId: z.string().uuid().nullable().optional(),
+  })
+  .openapi("SiteHelpItem")
+
+export const siteHelpCategorySchema = z
+  .object({
+    id: z.string().uuid(),
+    title: z.string().min(1),
+    description: z.string().nullable(),
+    displayOrder: z.number().int().nonnegative(),
+    enabled: z.boolean(),
+    updatedAt: z.string().nullable(),
+    updatedByAdminId: z.string().uuid().nullable().optional(),
+  })
+  .openapi("SiteHelpCategory")
+
+export const publicSiteHelpItemSchema = siteHelpItemSchema
+  .omit({ updatedByAdminId: true })
+  .openapi("PublicSiteHelpItem")
+
+export const publicSiteHelpCategorySchema = siteHelpCategorySchema
+  .omit({ updatedByAdminId: true })
+  .extend({
+    items: z.array(publicSiteHelpItemSchema),
+  })
+  .openapi("PublicSiteHelpCategory")
+
+export const adminSiteHelpCategoryResponseDataSchema = siteHelpCategorySchema.openapi(
+  "AdminSiteHelpCategoryResponseData",
+)
+
+export const adminSiteHelpCategoryListResponseDataSchema = z
+  .object({
+    items: z.array(siteHelpCategorySchema),
+  })
+  .openapi("AdminSiteHelpCategoryListResponseData")
+
+export const adminSiteHelpItemResponseDataSchema = siteHelpItemSchema.openapi(
+  "AdminSiteHelpItemResponseData",
+)
+
+export const adminSiteHelpItemListResponseDataSchema = z
+  .object({
+    items: z.array(siteHelpItemSchema),
+  })
+  .openapi("AdminSiteHelpItemListResponseData")
+
+export const createSiteHelpCategoryRequestSchema = z
+  .object({
+    title: z.string().min(1),
+    description: z.string().nullable().optional(),
+    displayOrder: z.number().int().nonnegative().optional(),
+    enabled: z.boolean().optional(),
+  })
+  .openapi("CreateSiteHelpCategoryRequest")
+
+export const updateSiteHelpCategoryRequestSchema = createSiteHelpCategoryRequestSchema
+  .partial()
+  .openapi("UpdateSiteHelpCategoryRequest")
+
+export const createSiteHelpItemRequestSchema = z
+  .object({
+    categoryId: z.string().uuid(),
+    question: z.string().min(1),
+    answerMarkdown: z.string().min(1),
+    displayOrder: z.number().int().nonnegative().optional(),
+    enabled: z.boolean().optional(),
+  })
+  .openapi("CreateSiteHelpItemRequest")
+
+export const updateSiteHelpItemRequestSchema = createSiteHelpItemRequestSchema
+  .partial()
+  .openapi("UpdateSiteHelpItemRequest")
+
+export const siteHelpCategoryIdParamsSchema = z
+  .object({
+    categoryId: z.string().uuid(),
+  })
+  .openapi("SiteHelpCategoryIdParams")
+
+export const siteHelpItemIdParamsSchema = z
+  .object({
+    itemId: z.string().uuid(),
+  })
+  .openapi("SiteHelpItemIdParams")
+
+export const siteHelpItemListQuerySchema = z
+  .object({
+    categoryId: z.string().uuid().optional(),
+  })
+  .openapi("SiteHelpItemListQuery")
+
 export const publicSiteResponseDataSchema = z
   .object({
     information: siteInformationSchema,
@@ -1834,6 +1937,9 @@ export const publicSiteResponseDataSchema = z
       aboutUs: publicSiteArticleSchema,
       userAgreement: publicSiteArticleSchema,
       privacyPolicy: publicSiteArticleSchema,
+    }),
+    helpCenter: z.object({
+      categories: z.array(publicSiteHelpCategorySchema),
     }),
   })
   .openapi("PublicSiteResponseData")
