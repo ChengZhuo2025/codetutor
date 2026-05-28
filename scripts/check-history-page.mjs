@@ -116,25 +116,37 @@ assert.match(
 
 assert.match(
   historyCardSource,
-  /grid grid-cols-2 gap-2\.5[\s\S]*sm:grid-cols-3/,
-  "history card meta should use a two-column mobile grid",
+  /grid grid-cols-3 gap-2\.5/,
+  "history card meta should occupy a dedicated three-column row",
 )
 
 assert.match(
   historyCardSource,
-  /col-span-2[\s\S]*sm:col-span-1/,
-  "history card updated-at meta should span two mobile columns and collapse on desktop",
+  /flex justify-end gap-2/,
+  "history card actions should occupy a separate right-aligned row",
 )
 
 assert.match(
   historyCardSource,
-  /grid grid-cols-2 gap-2[\s\S]*sm:flex/,
-  "history card actions should use two-column full-width mobile buttons",
+  /w-\[calc\(50%-0\.25rem\)\][\s\S]*max-w-\[160px\]/,
+  "history card action buttons should stay parallel with a maximum width",
 )
 
 assert.match(
   historyCardSource,
-  /min-h-11 w-full/,
+  /variant="destructiveSoft"[\s\S]*删除记录/,
+  "history card delete buttons should use the same soft destructive style as order cards",
+)
+
+assert.match(
+  historyCardSource,
+  /historyReviewButtonClass[\s\S]*bg-green-600[\s\S]*学习复盘/,
+  "history review action should use a distinct success color from the continue action",
+)
+
+assert.match(
+  historyCardSource,
+  /min-h-11/,
   "history card action buttons should keep 44px mobile touch targets",
 )
 

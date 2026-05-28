@@ -34,7 +34,7 @@ interface HistoryCardProps {
 const statusConfig = {
   completed: {
     label: "已完成",
-    color: "text-green-700 dark:text-green-300",
+    color: "text-green-600 dark:text-green-300",
     bgColor: "bg-green-600/10 dark:bg-green-500/16",
     borderColor: "border-green-600/25 dark:border-green-400/25",
   },
@@ -57,6 +57,10 @@ const statusConfig = {
     borderColor: "border-border/70 dark:border-white/10",
   },
 } as const
+
+const historyActionButtonClass = "min-h-11 min-w-0 w-[calc(50%-0.25rem)] max-w-[160px] px-2 text-xs sm:px-3 sm:text-sm"
+const historyReviewButtonClass =
+  "border border-transparent bg-green-600 text-white shadow-[0_18px_46px_-28px_rgba(22,163,74,0.42)] hover:bg-green-600 focus-visible:ring-green-500/30 dark:bg-green-500 dark:text-white dark:shadow-[0_20px_52px_-30px_rgba(34,197,94,0.32)] dark:hover:bg-green-400 dark:[&_svg]:text-white [&_svg]:text-white"
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr)
@@ -85,7 +89,7 @@ export function HistoryCard({
             onClick={() => onManageAction(item, "abandon")}
             disabled={isMutating}
             variant="outline"
-            className={cn("min-h-11 w-full", USER_BUTTON_DANGER_CLASS)}
+            className={cn(historyActionButtonClass, USER_BUTTON_DANGER_CLASS)}
           >
             放弃本轮练习
           </Button>
@@ -93,7 +97,7 @@ export function HistoryCard({
             size="sm"
             onClick={() => onContinue(item)}
             disabled={isMutating}
-            className={cn("min-h-11 w-full gap-1.5 px-4", USER_BUTTON_PRIMARY_CLASS)}
+            className={cn(historyActionButtonClass, "gap-1.5", USER_BUTTON_PRIMARY_CLASS)}
           >
             <Play className="h-4 w-4" />
             继续学习
@@ -110,8 +114,8 @@ export function HistoryCard({
             size="sm"
             onClick={() => onManageAction(item, "archive")}
             disabled={isMutating}
-            variant="outline"
-            className={cn("min-h-11 w-full", USER_BUTTON_DANGER_CLASS)}
+            variant="destructiveSoft"
+            className={historyActionButtonClass}
           >
             <Trash2 className="h-4 w-4" />
             删除记录
@@ -120,7 +124,7 @@ export function HistoryCard({
             size="sm"
             onClick={() => onManageAction(item, "reactivate")}
             disabled={isMutating}
-            className={cn("min-h-11 w-full gap-1.5 px-4", USER_BUTTON_PRIMARY_CLASS)}
+            className={cn(historyActionButtonClass, "gap-1.5", USER_BUTTON_PRIMARY_CLASS)}
           >
             <RefreshCw className="h-4 w-4" />
             重新激活
@@ -137,8 +141,8 @@ export function HistoryCard({
             size="sm"
             onClick={() => onManageAction(item, "archive")}
             disabled={isMutating}
-            variant="outline"
-            className={cn("min-h-11 w-full", USER_BUTTON_DANGER_CLASS)}
+            variant="destructiveSoft"
+            className={historyActionButtonClass}
           >
             <Trash2 className="h-4 w-4" />
             删除记录
@@ -147,7 +151,7 @@ export function HistoryCard({
             size="sm"
             onClick={() => onReview(item)}
             disabled={isMutating}
-            className={cn("min-h-11 w-full gap-1.5 px-4", USER_BUTTON_PRIMARY_CLASS)}
+            className={cn(historyActionButtonClass, "gap-1.5", historyReviewButtonClass)}
           >
             <BookOpen className="h-4 w-4" />
             学习复盘
@@ -162,8 +166,8 @@ export function HistoryCard({
         size="sm"
         onClick={() => onManageAction(item, "archive")}
         disabled={isMutating}
-        variant="outline"
-        className={cn("min-h-11 w-full", USER_BUTTON_DANGER_CLASS)}
+        variant="destructiveSoft"
+        className={historyActionButtonClass}
       >
         <Trash2 className="h-4 w-4" />
         删除记录
@@ -225,7 +229,7 @@ export function HistoryCard({
             className={cn(
               "font-medium",
               item.status === "completed"
-                ? "text-green-700 dark:text-green-300"
+                ? "text-green-600 dark:text-green-300"
                 : item.status === "in_progress"
                   ? "text-brand"
                   : item.status === "interrupted"
@@ -253,23 +257,23 @@ export function HistoryCard({
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="grid grid-cols-2 gap-2.5 text-xs text-muted-foreground sm:grid-cols-3 lg:flex lg:flex-wrap lg:items-center lg:gap-4">
-          <span className={cn("flex flex-col gap-1 px-3 py-2 lg:flex-row lg:items-center", USER_PANEL_SUBTLE_SECTION_CLASS)}>
+      <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-3 gap-2.5 text-xs text-muted-foreground">
+          <span className={cn("flex flex-col gap-1 px-3 py-2 sm:flex-row sm:items-center", USER_PANEL_SUBTLE_SECTION_CLASS)}>
             <span className="inline-flex items-center gap-1">
               <Zap className="h-3.5 w-3.5 text-gold" />
-              XP
+              积分
             </span>
-            <span className="font-medium text-foreground">{item.xpEarned}</span>
+            <span className="font-medium text-foreground">{item.xpEarned} XP</span>
           </span>
-          <span className={cn("flex flex-col gap-1 px-3 py-2 lg:flex-row lg:items-center", USER_PANEL_SUBTLE_SECTION_CLASS)}>
+          <span className={cn("flex flex-col gap-1 px-3 py-2 sm:flex-row sm:items-center", USER_PANEL_SUBTLE_SECTION_CLASS)}>
             <span className="inline-flex items-center gap-1">
               <Calendar className="h-3.5 w-3.5" />
               开始
             </span>
             <span className="font-medium text-foreground">{formatDate(item.createdAt)}</span>
           </span>
-          <span className={cn("col-span-2 flex flex-col gap-1 px-3 py-2 sm:col-span-1 lg:flex-row lg:items-center", USER_PANEL_SUBTLE_SECTION_CLASS)}>
+          <span className={cn("flex flex-col gap-1 px-3 py-2 sm:flex-row sm:items-center", USER_PANEL_SUBTLE_SECTION_CLASS)}>
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3.5 w-3.5" />
               更新
@@ -278,7 +282,7 @@ export function HistoryCard({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+        <div className="flex justify-end gap-2">
           {renderActions()}
         </div>
       </div>
