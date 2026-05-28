@@ -57,6 +57,6 @@ test("orders page mobile layout matches the optimized workspace pages", () => {
   assert.match(list, /text-xl font-bold text-foreground sm:text-2xl/)
   assert.match(list, /grid grid-cols-2 gap-2\.5[\s\S]*sm:grid-cols-3/)
   assert.match(list, /col-span-2[\s\S]*sm:col-span-1/)
-  assert.match(list, /grid grid-cols-2 gap-2/)
-  assert.match(list, /min-h-11 w-full/)
+  assert.match(list, /flex flex-wrap justify-end gap-2/)
+  assert.match(list, /max-w-\[30%\]/)
 })

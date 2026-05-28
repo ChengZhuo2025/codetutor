@@ -67,6 +67,8 @@ function canDelete(order: PaymentOrderResponseData) {
   return order.status === "closed" || order.status === "expired" || order.status === "failed"
 }
 
+const orderActionButtonClass = "min-h-10 min-w-0 w-full max-w-[33%] text-xs sm:text-sm"
+
 export function OrderList({
   items,
   total,
@@ -144,12 +146,12 @@ export function OrderList({
                   <p className="mt-1 font-medium text-foreground">{formatDateTime(order.expiresAt)}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 border-t border-border/40 bg-muted/20 px-4 pt-3 pb-4 sm:flex sm:flex-wrap sm:justify-end sm:px-5">
+              <div className="flex flex-wrap justify-end gap-2 border-t border-border/40 bg-muted/20 px-4 pt-3 pb-4 sm:px-5">
                 {canContinue(order) ? (
                   <Button
                     type="button"
                     size="sm"
-                    className={cn("min-h-11 w-full", USER_BUTTON_PRIMARY_CLASS)}
+                    className={cn(orderActionButtonClass, USER_BUTTON_PRIMARY_CLASS)}
                     disabled={isMutating}
                     onClick={() => onContinuePay(order)}
                   >
@@ -162,7 +164,7 @@ export function OrderList({
                     type="button"
                     size="sm"
                     variant="outline"
-                    className={cn("min-h-11 w-full", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+                    className={cn(orderActionButtonClass, USER_PANEL_OUTLINE_BUTTON_CLASS)}
                     disabled={isMutating}
                     onClick={() => onSync(order)}
                   >
@@ -175,7 +177,7 @@ export function OrderList({
                     type="button"
                     size="sm"
                     variant="outline"
-                    className={cn("min-h-11 w-full", USER_PANEL_OUTLINE_BUTTON_CLASS)}
+                    className={cn(orderActionButtonClass, USER_PANEL_OUTLINE_BUTTON_CLASS)}
                     disabled={isMutating}
                     onClick={() => onCancel(order)}
                   >
@@ -188,7 +190,7 @@ export function OrderList({
                     type="button"
                     size="sm"
                     variant="destructiveSoft"
-                    className="min-h-11 w-full"
+                    className={orderActionButtonClass}
                     disabled={isMutating}
                     onClick={() => onDelete(order)}
                   >
