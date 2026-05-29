@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog"
 import { MarkdownContent } from "@/features/site/components/markdown-content"
 import { DEFAULT_HELP_CENTER } from "@/features/site/data/default-site"
+import { refreshPublicSiteWhenDialogOpens } from "@/features/site/lib/public-site-refresh"
 import { usePublicSite } from "@/features/site/providers/public-site-provider"
 import type { PublicSiteHelpItem } from "@/lib/api/contracts/admin-site"
 import { cn } from "@/lib/utils"
@@ -45,7 +46,7 @@ type HelpCenterFaqItem = PublicSiteHelpItem & {
   iconKey: string
 }
 
-  const helpCenterIconMap: Record<string, LucideIcon> = {
+const helpCenterIconMap: Record<string, LucideIcon> = {
   bell: Bell,
   "book-open": BookOpen,
   "credit-card": CreditCard,
@@ -97,7 +98,7 @@ export function HelpCenterDialog({
   return (
     <Dialog
       onOpenChange={(open) => {
-        if (open) void refreshPublicSite()
+        void refreshPublicSiteWhenDialogOpens(open, refreshPublicSite)
       }}
     >
       <DialogTrigger asChild>
@@ -114,7 +115,7 @@ export function HelpCenterDialog({
             <DialogTitle className="text-2xl font-semibold tracking-tight">帮助中心</DialogTitle>
             <DialogDescription className="max-w-3xl text-sm leading-6 text-muted-foreground">
               快速了解学习计划、历史记录、订阅订单与反馈处理方式。
-              </DialogDescription>
+            </DialogDescription>
           </DialogHeader>
         </div>
 

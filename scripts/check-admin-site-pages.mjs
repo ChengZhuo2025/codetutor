@@ -63,6 +63,8 @@ assert.match(siteHelpCenterPage, /查看[\s\S]*编辑/, "help center item action
 assert.doesNotMatch(siteHelpCenterPage, /xl:grid-cols-\[300px_minmax\(0,1fr\)\]/, "help center should not keep the old nested item editor grid")
 assert.match(siteHelpCenterPage, /HELP_CENTER_ICON_OPTIONS/, "help center category form should offer native icon options")
 assert.match(siteHelpCenterPage, /iconKey/, "help center category form should persist an icon key")
+assert.match(siteHelpCenterPage, /aria-pressed=\{selected\}/, "help center icon buttons should expose selected state")
+assert.match(siteHelpCenterPage, /selected && [\s\S]*border-brand[\s\S]*ring-2/, "selected help center icons should have a visible selected style")
 assert.match(siteHelpCenterPage, /Switch[\s\S]*openCategoryDialog/, "category cards should expose the enable switch before the edit dialog trigger")
 assert.doesNotMatch(siteHelpCenterPage, /编辑分类<\/Button>/, "category cards should not keep the old text edit action")
 assert.match(siteHelpCenterPage, /w-\[22%\][\s\S]*操作/, "help center item action column should be wide enough for inline actions")

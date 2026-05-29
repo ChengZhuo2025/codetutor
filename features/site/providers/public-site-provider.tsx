@@ -9,6 +9,7 @@ import {
   useState,
 } from "react"
 import { DEFAULT_PUBLIC_SITE } from "@/features/site/data/default-site"
+import { createLatestPublicSiteRequestGate } from "@/features/site/lib/public-site-refresh"
 import type { PublicSiteResponseData } from "@/lib/api/contracts/admin-site"
 import type { ApiResponse } from "@/lib/api/types"
 import { unwrapResponse } from "@/lib/api/types"
@@ -32,8 +33,11 @@ export function PublicSiteProvider({
 }: PublicSiteProviderProps) {
   const [site, setSite] = useState<PublicSiteResponseData>(initialSite ?? DEFAULT_PUBLIC_SITE)
   const [loading, setLoading] = useState(!initialSite)
+  const requestGate = useMemo(() => createLatestPublicSiteRequestGate(), [])
 
   const refreshPublicSite = useCallback(async () => {
+    const requestId = requestGate.nextRequestId()
+
     try {
       const response = await fetch("/api/site/public", {
         cache: "no-store",
@@ -43,18 +47,24 @@ export function PublicSiteProvider({
       const json = (await response.json()) as ApiResponse<PublicSiteResponseData>
       if (json.code !== "OK") return
 
+      if (!requestGate.shouldCommit(requestId)) return
       setSite(unwrapResponse(json))
     } catch {
       // Public pages keep rendering with local defaults if the database is temporarily unavailable.
     } finally {
-      setLoading(false)
+      if (requestGate.shouldCommit(requestId)) {
+        setLoading(false)
+      }
     }
-  }, [])
+  }, [requestGate])
 
   useEffect(() => {
     let cancelled = false
 
     async function load() {
+      if (initialSite) {
+        return
+      }
       if (cancelled) return
       await refreshPublicSite()
     }
@@ -64,7 +74,7 @@ export function PublicSiteProvider({
     return () => {
       cancelled = true
     }
-  }, [refreshPublicSite])
+  }, [initialSite, refreshPublicSite])
 
   const value = useMemo(
     () => ({

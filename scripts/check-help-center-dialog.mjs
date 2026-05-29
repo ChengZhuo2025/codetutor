@@ -6,6 +6,10 @@ const footerSource = readFileSync(
   new URL("../features/marketing/components/footer.tsx", import.meta.url),
   "utf8",
 )
+const publicSiteProviderSource = readFileSync(
+  new URL("../features/site/providers/public-site-provider.tsx", import.meta.url),
+  "utf8",
+)
 
 assert.equal(
   existsSync(dialogUrl),
@@ -84,6 +88,21 @@ assert.match(
   dialogSource,
   /iconKey/,
   "Help center should resolve FAQ category icons from managed icon keys.",
+)
+assert.match(
+  dialogSource,
+  /onOpenChange=\{\(open\)[\s\S]*refreshPublicSiteWhenDialogOpens\(open, refreshPublicSite\)/,
+  "Help center should refresh public site data when the dialog opens.",
+)
+assert.doesNotMatch(
+  dialogSource,
+  /legacyCategoryIcons|开始学习:\s*Sparkles|学习记录:\s*History|订阅订单:\s*CreditCard|账号与反馈:\s*MessageSquare/,
+  "Help center icons should not fall back to hard-coded category title mappings.",
+)
+assert.match(
+  publicSiteProviderSource,
+  /refreshPublicSite/,
+  "Public site provider should expose a refresh function for public dialogs.",
 )
 assert.match(
   dialogSource,
