@@ -2865,6 +2865,15 @@ function parseSiteHelpCategoryBody(
     data.description = parsed.data
   }
 
+  if (body.iconKey !== undefined) {
+    const parsed = parseTrimmedRequiredString(body.iconKey, "iconKey", 1, 60)
+    if (!parsed.ok) return parsed
+    if (!/^[a-z0-9-]+$/.test(parsed.data)) {
+      return fail("VALIDATION_FAILED", "帮助分类图标不合法。")
+    }
+    data.iconKey = parsed.data
+  }
+
   if (body.displayOrder !== undefined) {
     const parsed = parsePositiveInteger(body.displayOrder, "displayOrder", 0, 1_000_000)
     if (!parsed.ok) return parsed

@@ -61,6 +61,7 @@ const sampleHelpCategory: AdminSiteHelpCategoryResponseData = {
   id: "550e8400-e29b-41d4-a716-446655440101",
   title: "开始学习",
   description: "学习计划与路径相关问题",
+  iconKey: "sparkles",
   displayOrder: 10,
   enabled: true,
   updatedAt: "2026-05-28T00:00:00.000Z",
@@ -109,6 +110,7 @@ const samplePublic: PublicSiteResponseData = {
         id: sampleHelpCategory.id,
         title: sampleHelpCategory.title,
         description: sampleHelpCategory.description,
+        iconKey: sampleHelpCategory.iconKey,
         displayOrder: sampleHelpCategory.displayOrder,
         enabled: true,
         updatedAt: sampleHelpCategory.updatedAt,
@@ -286,6 +288,7 @@ test("admin help category post creates a category", async () => {
       ...sampleHelpCategory,
       title: input.title,
       description: input.description ?? null,
+      iconKey: input.iconKey ?? sampleHelpCategory.iconKey,
     }),
   })
 
@@ -293,7 +296,7 @@ test("admin help category post creates a category", async () => {
     new Request("http://localhost/api/admin/site/help/categories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: "账号与反馈", description: "登录、账号和反馈问题" }),
+      body: JSON.stringify({ title: "账号与反馈", description: "登录、账号和反馈问题", iconKey: "message-square" }),
     }),
   )
 
@@ -301,15 +304,17 @@ test("admin help category post creates a category", async () => {
   const body = await res.json()
   assert.equal(body.data.title, "账号与反馈")
   assert.equal(body.data.description, "登录、账号和反馈问题")
+  assert.equal(body.data.iconKey, "message-square")
 })
 
-test("admin help category patch updates enabled state", async () => {
+test("admin help category patch updates enabled state and icon", async () => {
   const handler = createAdminSiteHelpCategoryPatchHandler({
     getRequestAdmin: async () => okAdmin,
     updateSiteHelpCategory: async (_adminId, id, input) => ({
       ...sampleHelpCategory,
       id,
       enabled: input.enabled ?? sampleHelpCategory.enabled,
+      iconKey: input.iconKey ?? sampleHelpCategory.iconKey,
     }),
   })
 
@@ -317,7 +322,7 @@ test("admin help category patch updates enabled state", async () => {
     new Request(`http://localhost/api/admin/site/help/categories/${sampleHelpCategory.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled: false }),
+      body: JSON.stringify({ enabled: false, iconKey: "book-open" }),
     }),
     { params: Promise.resolve({ categoryId: sampleHelpCategory.id }) },
   )
@@ -325,6 +330,7 @@ test("admin help category patch updates enabled state", async () => {
   assert.equal(res.status, 200)
   const body = await res.json()
   assert.equal(body.data.enabled, false)
+  assert.equal(body.data.iconKey, "book-open")
 })
 
 test("admin help category patch maps missing category to not found", async () => {
@@ -512,5 +518,6 @@ test("public site endpoint returns information and seeded articles", async () =>
   assert.equal(body.data.information.siteName, "CodeTutor")
   assert.equal(body.data.articles.privacyPolicy.title, "隐私政策")
   assert.equal(body.data.helpCenter.categories[0].title, "开始学习")
+  assert.equal(body.data.helpCenter.categories[0].iconKey, "sparkles")
   assert.equal(body.data.helpCenter.categories[0].items[0].answerMarkdown, sampleHelpItem.answerMarkdown)
 })

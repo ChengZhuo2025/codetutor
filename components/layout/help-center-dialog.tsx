@@ -2,12 +2,24 @@
 
 import { useMemo, useState } from "react"
 import {
+  Bell,
+  BookOpen,
   ChevronDown,
   CreditCard,
+  FileQuestion,
+  GraduationCap,
   HelpCircle,
   History,
+  Lightbulb,
+  MapIcon,
   MessageSquare,
+  Route,
+  Settings,
+  ShieldQuestion,
   Sparkles,
+  Trophy,
+  UserRound,
+  type LucideIcon,
 } from "lucide-react"
 import {
   Dialog,
@@ -30,17 +42,37 @@ type HelpCenterDialogProps = {
 
 type HelpCenterFaqItem = PublicSiteHelpItem & {
   category: string
+  iconKey: string
 }
 
-const categoryIcons = {
+const helpCenterIconMap: Record<string, LucideIcon> = {
+  bell: Bell,
+  "book-open": BookOpen,
+  "credit-card": CreditCard,
+  "file-question": FileQuestion,
+  "graduation-cap": GraduationCap,
+  "help-circle": HelpCircle,
+  history: History,
+  lightbulb: Lightbulb,
+  map: MapIcon,
+  "message-square": MessageSquare,
+  route: Route,
+  settings: Settings,
+  "shield-question": ShieldQuestion,
+  sparkles: Sparkles,
+  trophy: Trophy,
+  "user-round": UserRound,
+}
+
+const legacyCategoryIcons: Record<string, LucideIcon> = {
   开始学习: Sparkles,
   学习记录: History,
   订阅订单: CreditCard,
   账号与反馈: MessageSquare,
-} satisfies Record<string, typeof HelpCircle>
+}
 
-function getCategoryIcon(category: string) {
-  return (categoryIcons as Record<string, typeof HelpCircle>)[category] ?? HelpCircle
+function getCategoryIcon(iconKey: string, category: string) {
+  return helpCenterIconMap[iconKey] ?? legacyCategoryIcons[category] ?? HelpCircle
 }
 
 export function HelpCenterDialog({
@@ -59,6 +91,7 @@ export function HelpCenterDialog({
             .map((item) => ({
               ...item,
               category: category.title,
+              iconKey: category.iconKey,
             })),
         ),
     [helpCenter],
@@ -92,7 +125,7 @@ export function HelpCenterDialog({
           <div className="space-y-3">
             {helpCenterFaqItems.map((item) => {
               const isExpanded = currentExpandedId === item.id
-              const CategoryIcon = getCategoryIcon(item.category)
+              const CategoryIcon = getCategoryIcon(item.iconKey, item.category)
 
               return (
                 <div

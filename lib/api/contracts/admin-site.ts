@@ -72,6 +72,7 @@ export type SiteHelpCategory = {
   id: string
   title: string
   description: string | null
+  iconKey: string
   displayOrder: number
   enabled: boolean
   updatedAt: string | null
@@ -100,6 +101,7 @@ export type AdminSiteHelpItemListResponseData = {
 export type CreateSiteHelpCategoryRequest = {
   title: string
   description?: string | null
+  iconKey?: string
   displayOrder?: number
   enabled?: boolean
 }

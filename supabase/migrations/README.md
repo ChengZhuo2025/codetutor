@@ -16,7 +16,7 @@ Repeat the same steps for later migrations, keeping a new sequential file under 
 
 ## Current sequence
 
-As of the current MVP snapshot, the migration sequence continues through **055**:
+As of the current MVP snapshot, the migration sequence continues through **056**:
 
 1. `001_init.sql` — 基础 schema 初始化
 2. `002_fix_update_updated_at_search_path.sql` — 修复 updated_at 触发器
@@ -73,7 +73,8 @@ As of the current MVP snapshot, the migration sequence continues through **055**
 53. `053_create_admin_session_lookup_rpc.sql` — **管理后台会话聚合 RPC**（一次返回管理员账号、角色与头像，供登录与会话校验复用）
 54. `054_self_directed_template_management.sql` — **自学路径模板管理**（模板启用唯一约束、步骤归档索引、模板保存/同步事务 RPC 与后台专用生成 agent）
 55. `055_create_site_help_center.sql` — **帮助中心后台化**（创建帮助中心分类与 FAQ 条目表，初始化原硬编码帮助内容，支持后台 Markdown 管理与公共读取）
+56. `056_add_site_help_category_icon_key.sql` — **帮助中心分类图标**（为帮助中心分类补充 `icon_key` 字段、格式约束和默认分类图标初始化，供后台编辑与用户端展示复用）
 
-**最新状态**：迁移已达 **055**。`site_information` + `site_articles` + `site_help_categories` + `site_help_items` + `site-assets` bucket 支持站点 Logo、站点名称、副标题、Slogan、SEO、备案、版权、版本号、关于我们/用户协议/隐私政策 Markdown 内容以及帮助中心分类/FAQ Markdown 后台管理；`site_contact_settings` + `qr-codes` bucket 实现了企业联系信息与真实二维码图片管理；`payment_settings`、`subscription_plans`、`payment_orders`、`user_subscriptions`、`payment_webhook_events` 支持微信 Native 与支付宝扫码支付闭环；`admin_notifications` 支持管理后台消息中心；`subscription_plans` 已支持后台自定义展示、上下架、可购买、推荐与软归档，免费版有效期已校准为 7 天；`complete_paid_payment_order` RPC 负责支付完成的原子化与幂等权益开通；支付/财务与材料计划 `SECURITY DEFINER` RPC 已固定空 `search_path`，支付相关 RLS policy 已按 `auth.uid()` 标量子查询做性能优化；学习对话已补充概念问答场景、多媒体附件持久化骨架、多媒体预处理 agent 场景与多媒体转译设置；`053_create_admin_session_lookup_rpc.sql` 将后台登录态聚合为单次 RPC 查询。**下一次新增迁移请从 `056_*.sql` 开始。**
+**最新状态**：迁移已达 **056**。`site_information` + `site_articles` + `site_help_categories` + `site_help_items` + `site-assets` bucket 支持站点 Logo、站点名称、副标题、Slogan、SEO、备案、版权、版本号、关于我们/用户协议/隐私政策 Markdown 内容以及帮助中心分类/FAQ Markdown 与分类图标后台管理；`site_contact_settings` + `qr-codes` bucket 实现了企业联系信息与真实二维码图片管理；`payment_settings`、`subscription_plans`、`payment_orders`、`user_subscriptions`、`payment_webhook_events` 支持微信 Native 与支付宝扫码支付闭环；`admin_notifications` 支持管理后台消息中心；`subscription_plans` 已支持后台自定义展示、上下架、可购买、推荐与软归档，免费版有效期已校准为 7 天；`complete_paid_payment_order` RPC 负责支付完成的原子化与幂等权益开通；支付/财务与材料计划 `SECURITY DEFINER` RPC 已固定空 `search_path`，支付相关 RLS policy 已按 `auth.uid()` 标量子查询做性能优化；学习对话已补充概念问答场景、多媒体附件持久化骨架、多媒体预处理 agent 场景与多媒体转译设置；`053_create_admin_session_lookup_rpc.sql` 将后台登录态聚合为单次 RPC 查询。**下一次新增迁移请从 `057_*.sql` 开始。**
 
 **仍需人工确认**：如果目标 Supabase 项目尚未创建 `qr-codes` bucket，请在 Supabase Dashboard → Storage 创建名为 `qr-codes` 的 **PUBLIC** bucket（允许匿名读取），否则企业联系方式二维码上传会失败。

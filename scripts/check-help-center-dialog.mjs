@@ -82,6 +82,11 @@ assert.match(
 )
 assert.match(
   dialogSource,
+  /iconKey/,
+  "Help center should resolve FAQ category icons from managed icon keys.",
+)
+assert.match(
+  dialogSource,
   /answerMarkdown/,
   "Help center should use markdown answers instead of hard-coded plain text answers.",
 )

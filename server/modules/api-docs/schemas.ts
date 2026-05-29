@@ -1847,6 +1847,7 @@ export const siteHelpCategorySchema = z
     id: z.string().uuid(),
     title: z.string().min(1),
     description: z.string().nullable(),
+    iconKey: z.string().min(1).max(60).regex(/^[a-z0-9-]+$/),
     displayOrder: z.number().int().nonnegative(),
     enabled: z.boolean(),
     updatedAt: z.string().nullable(),
@@ -1889,6 +1890,7 @@ export const createSiteHelpCategoryRequestSchema = z
   .object({
     title: z.string().min(1),
     description: z.string().nullable().optional(),
+    iconKey: z.string().min(1).max(60).regex(/^[a-z0-9-]+$/).optional(),
     displayOrder: z.number().int().nonnegative().optional(),
     enabled: z.boolean().optional(),
   })

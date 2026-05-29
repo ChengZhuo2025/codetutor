@@ -57,6 +57,7 @@ type SiteHelpCategoryRow = {
   id: string
   title: string
   description: string | null
+  icon_key: string | null
   display_order: number
   enabled: boolean
   updated_at: string | null
@@ -158,6 +159,7 @@ function mapHelpCategoryRow(row: SiteHelpCategoryRow): AdminSiteHelpCategoryResp
     id: row.id,
     title: row.title,
     description: row.description,
+    iconKey: row.icon_key ?? "help-circle",
     displayOrder: row.display_order,
     enabled: row.enabled,
     updatedAt: row.updated_at,
@@ -195,6 +197,7 @@ function toPublicHelpCategory(category: AdminSiteHelpCategoryResponseData & { it
     id: category.id,
     title: category.title,
     description: category.description,
+    iconKey: category.iconKey,
     displayOrder: category.displayOrder,
     enabled: category.enabled,
     updatedAt: category.updatedAt,
@@ -462,6 +465,7 @@ export async function createSiteHelpCategory(
     .insert({
       title: input.title,
       description: input.description ?? null,
+      icon_key: input.iconKey ?? "help-circle",
       display_order: input.displayOrder ?? 0,
       enabled: input.enabled ?? true,
       updated_by_admin_id: adminAccountId,
@@ -524,6 +528,7 @@ export async function updateSiteHelpCategory(
 
   if (input.title !== undefined) updatePayload.title = input.title
   if (input.description !== undefined) updatePayload.description = input.description
+  if (input.iconKey !== undefined) updatePayload.icon_key = input.iconKey
   if (input.displayOrder !== undefined) updatePayload.display_order = input.displayOrder
   if (input.enabled !== undefined) updatePayload.enabled = input.enabled
 
