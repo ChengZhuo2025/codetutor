@@ -39,7 +39,7 @@ export function LandingHero() {
   return (
     <section
       id="home"
-      className="relative overflow-hidden bg-background px-5 pt-20 pb-10 sm:px-6 lg:min-h-screen lg:pt-24 lg:pb-12"
+      className="mt-5 relative overflow-hidden bg-background px-5 pt-22 pb-10 sm:px-6 lg:min-h-[min(100svh,50.25rem)] lg:pt-24 lg:pb-12"
     >
       <div
         className="pointer-events-none absolute inset-0 z-[1] dark:hidden"
@@ -73,7 +73,7 @@ export function LandingHero() {
       <div className="pointer-events-none absolute inset-0 z-[1] hidden dark:block bg-[radial-gradient(ellipse_at_center,transparent_14%,oklch(0.12_0.008_270/0.62)_84%)]" />
       <div className="pointer-events-none absolute inset-0 z-[1] hidden dark:block bg-[linear-gradient(180deg,oklch(0.12_0.008_270/0.14),transparent_14%,transparent_78%,oklch(0.12_0.008_270/0.38)_100%)]" />
 
-      <div className="relative z-10 mx-auto grid w-full max-w-7xl gap-7 lg:min-h-[calc(100vh-8rem)] lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:gap-10">
+      <div className="relative z-10 mx-auto grid w-full max-w-7xl gap-7 lg:min-h-[min(calc(100svh_-_10rem),40.25rem)] lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:gap-10">
         <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-brand/40 px-4 py-1.5 text-sm text-brand backdrop-blur animate-fadeUp dark:border-brand/30 dark:bg-[oklch(0.60_0.24_270/0.20)] lg:mb-6">
             <Sparkles className="h-3.5 w-3.5" />
@@ -99,7 +99,7 @@ export function LandingHero() {
               asChild
               size="lg"
               className={cn(
-                "px-10 text-base font-semibold",
+                "h-12 px-12 text-base font-semibold md:h-12",
                 USER_BUTTON_PRIMARY_CLASS,
               )}
             >
@@ -145,7 +145,7 @@ export function LandingHero() {
             {heroStats.map((item) => (
               <div
                 key={item.label}
-                className="rounded-2xl border border-border/70 bg-card/90 px-3 py-3 text-left shadow-[0_16px_36px_-28px_rgba(15,23,42,0.14)] backdrop-blur-md dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none sm:px-4"
+                className="rounded-2xl border border-border/70 bg-card/90 px-3 py-3 text-left shadow-[0_16px_36px_-28px_rgba(15,23,42,0.14)] backdrop-blur-md dark:border-white/10 dark:bg-surface-2/85 dark:shadow-none sm:px-4 sm:py-5"
               >
                 <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground sm:text-[11px] sm:tracking-[0.14em]">
                   {item.label}
