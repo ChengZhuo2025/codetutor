@@ -114,29 +114,30 @@ export function ChangelogDialog({
           ) : null}
 
           {items.length > 0 ? (
-            <div className="space-y-4">
-              {items.map((entry) => (
-                <article
-                  key={entry.id}
-                  className="rounded-xl border border-border/60 bg-surface-2 px-4 py-4 dark:border-white/10 dark:bg-white/5 sm:px-5"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-base font-semibold tracking-tight text-foreground">
-                        {entry.title}
-                      </h3>
-                      <div className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
+            <ol className="space-y-0">
+              {items.map((entry, index) => (
+                <li key={entry.id} className="grid grid-cols-[24px_minmax(0,1fr)] gap-4">
+                  <div className="relative flex justify-center">
+                    <span className="mt-2 h-3 w-3 rounded-full border-2 border-background bg-primary shadow-[0_0_0_4px_oklch(0.72_0.18_245/0.18)] dark:border-background dark:shadow-[0_0_0_4px_oklch(0.78_0.16_245/0.18)]" />
+                    {index < items.length - 1 ? (
+                      <span className="absolute bottom-0 top-6 w-px bg-border/80 dark:bg-white/14" />
+                    ) : null}
+                  </div>
+                  <div className="pb-4 sm:pb-5">
+                    <header className="flex justify-between items-center gap-x-3 gap-y-1 pt-0.5">
+                      <h3 className="text-base font-semibold tracking-tight text-foreground">{entry.title}</h3>
+                      <time className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
                         <CalendarDays className="h-3.5 w-3.5" />
                         {formatDate(entry.publishedAt) || entry.logDate}
-                      </div>
-                    </div>
+                      </time>
+                    </header>
+                    <article className="mt-3 rounded-xl border border-border/60 bg-surface-2 px-4 py-4 dark:border-white/10 dark:bg-white/5 sm:px-5">
+                      <MarkdownContent content={entry.summaryMarkdown} className="space-y-3 leading-6" />
+                    </article>
                   </div>
-                  <div className="mt-4">
-                    <MarkdownContent content={entry.summaryMarkdown} className="space-y-3 leading-6" />
-                  </div>
-                </article>
+                </li>
               ))}
-            </div>
+            </ol>
           ) : null}
         </div>
       </DialogContent>

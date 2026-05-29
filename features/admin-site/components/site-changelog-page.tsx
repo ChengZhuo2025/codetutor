@@ -401,7 +401,7 @@ export function SiteChangelogPage() {
               <th className="px-4 py-3 font-medium">Commits</th>
               <th className="px-4 py-3 font-medium">模型</th>
               <th className="px-4 py-3 font-medium">最近更新</th>
-              <th className="w-[260px] px-4 py-3 text-right font-medium">操作</th>
+              <th className="w-[280px] px-4 py-3 text-right font-medium">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -424,11 +424,11 @@ export function SiteChangelogPage() {
                 <td className="px-4 py-4 text-muted-foreground">{formatDateTime(entry.updatedAt)}</td>
                 <td className="px-4 py-4">
                   <div className="flex flex-wrap justify-end gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => openSheet(entry, "view")}>
+                    <Button variant="outline" size="sm" onClick={() => openSheet(entry, "view")}>
                       <Eye className="h-4 w-4" />
                       查看
                     </Button>
-                    <Button variant="secondary" size="sm" onClick={() => openEditSheet(entry)}>
+                    <Button size="sm" onClick={() => openEditSheet(entry)}>
                       <PenLine className="h-4 w-4" />
                       编辑
                     </Button>

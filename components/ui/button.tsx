@@ -18,7 +18,7 @@ const buttonVariants = cva(
         outline:
           'border border-transparent bg-[oklch(0.70_0.30_230)] text-white shadow-[0_16px_42px_-32px_rgba(88,70,170,0.24)] hover:-translate-y-0.5 hover:bg-[oklch(0.75_0.30_230)] active:translate-y-0 dark:border-transparent dark:bg-[oklch(0.40_0.024_270)] dark:text-white dark:shadow-[0_20px_48px_-32px_rgba(0,0,0,0.42)] dark:hover:bg-[oklch(0.45_0.024_270)]',
         secondary:
-        'border border-transparent bg-[oklch(0.70_0.30_230)] text-white shadow-[0_16px_42px_-32px_rgba(88,70,170,0.24)] hover:-translate-y-0.5 hover:bg-[oklch(0.75_0.30_230)] active:translate-y-0 dark:border-transparent dark:bg-[oklch(0.40_0.024_270)] dark:text-white dark:shadow-[0_20px_48px_-32px_rgba(0,0,0,0.42)] dark:hover:bg-[oklch(0.45_0.024_270)]',
+          'border border-transparent bg-[oklch(0.70_0.30_230)] text-white shadow-[0_16px_42px_-32px_rgba(88,70,170,0.24)] hover:-translate-y-0.5 hover:bg-[oklch(0.75_0.30_230)] active:translate-y-0 dark:border-transparent dark:bg-[oklch(0.40_0.024_270)] dark:text-white dark:shadow-[0_20px_48px_-32px_rgba(0,0,0,0.42)] dark:hover:bg-[oklch(0.45_0.024_270)]',
         ghost:
           'hover:bg-muted hover:text-foreground dark:hover:bg-primary/15',
         link: 'text-primary underline-offset-4 hover:underline',
