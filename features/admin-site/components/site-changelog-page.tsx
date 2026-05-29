@@ -32,6 +32,7 @@ import {
 import { StatePanel } from "@/components/ui/state-panel"
 import { Textarea } from "@/components/ui/textarea"
 import { useAppToast } from "@/components/app-feedback/app-toast-provider"
+import { AdminListPaginationFooter } from "@/features/admin-shell/components/admin-list-pagination-footer"
 import { useAdminSessionExpiryRedirect } from "@/features/admin-shell/lib/use-admin-session-expiry-redirect"
 import { MarkdownContent } from "@/features/site/components/markdown-content"
 import type {
@@ -92,6 +93,9 @@ export function SiteChangelogPage() {
   useAdminSessionExpiryRedirect(authExpired)
 
   const [items, setItems] = useState<AdminSiteChangelogEntry[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState("20")
   const [status, setStatus] = useState<StatusFilter>("all")
   const [keyword, setKeyword] = useState("")
   const [startDate, setStartDate] = useState("")
@@ -123,12 +127,15 @@ export function SiteChangelogPage() {
   const queryString = useMemo(() => {
     const params = new URLSearchParams()
     params.set("status", status)
-    params.set("limit", "50")
+    params.set("page", String(page))
+    params.set("limit", limit)
     if (keyword.trim()) params.set("keyword", keyword.trim())
     if (startDate.trim()) params.set("startDate", startDate.trim())
     if (endDate.trim()) params.set("endDate", endDate.trim())
     return params.toString()
-  }, [endDate, keyword, startDate, status])
+  }, [endDate, keyword, limit, page, startDate, status])
+
+  const totalPages = Math.max(1, Math.ceil(total / (Number.parseInt(limit, 10) || 20)) || 1)
 
   const load = async (silent = false) => {
     if (silent) setRefreshing(true)
@@ -141,6 +148,11 @@ export function SiteChangelogPage() {
         "获取更新日志失败",
       )
       setItems(result.items)
+      setTotal(result.total)
+      // 当前页因删除/筛选变空但仍有数据时回退一页（再次触发加载）
+      if (result.items.length === 0 && result.total > 0 && page > 1) {
+        setPage((prev) => Math.max(1, prev - 1))
+      }
       if (selected) {
         const nextSelected = result.items.find((item) => item.id === selected.id) ?? null
         setSelected(nextSelected)
@@ -190,11 +202,16 @@ export function SiteChangelogPage() {
 
   const removeEntry = (entryId: string) => {
     setItems((prev) => prev.filter((item) => item.id !== entryId))
+    setTotal((prev) => Math.max(0, prev - 1))
     setPublishTarget((prev) => prev?.id === entryId ? null : prev)
     if (selected?.id === entryId) {
       setSelected(null)
       setForm(null)
       setSheetOpen(false)
+    }
+    // 删除当前页最后一条且非首页时回退一页
+    if (items.length <= 1 && page > 1) {
+      setPage((prev) => Math.max(1, prev - 1))
     }
   }
 
@@ -237,6 +254,7 @@ export function SiteChangelogPage() {
         "保存更新日志失败",
       )
       mergeEntry(result)
+      setSheetOpen(false)
       toast.success("更新日志已保存")
     } catch (saveError) {
       setAuthExpired(isAdminSessionExpiredError(saveError))
@@ -262,6 +280,7 @@ export function SiteChangelogPage() {
       )
       mergeEntry(result)
       setPublishTarget(null)
+      setSheetOpen(false)
       toast.success("更新日志已发布")
     } catch (publishError) {
       setAuthExpired(isAdminSessionExpiredError(publishError))
@@ -310,7 +329,7 @@ export function SiteChangelogPage() {
     }
   }
 
-  if (loading) {
+  if (loading && items.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
         加载中…
@@ -361,7 +380,7 @@ export function SiteChangelogPage() {
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4">
         <div className="space-y-1.5">
           <Label className="text-xs">状态</Label>
-          <Select value={status} onValueChange={(value) => setStatus(value as StatusFilter)}>
+          <Select value={status} onValueChange={(value) => { setPage(1); setStatus(value as StatusFilter) }}>
             <SelectTrigger className="w-[140px]">
               <SelectValue />
             </SelectTrigger>
@@ -375,15 +394,15 @@ export function SiteChangelogPage() {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">开始日期</Label>
-          <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className="w-[160px]" />
+          <Input type="date" value={startDate} onChange={(event) => { setPage(1); setStartDate(event.target.value) }} className="w-[160px]" />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">结束日期</Label>
-          <Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} className="w-[160px]" />
+          <Input type="date" value={endDate} onChange={(event) => { setPage(1); setEndDate(event.target.value) }} className="w-[160px]" />
         </div>
         <div className="min-w-[220px] flex-1 space-y-1.5">
           <Label className="text-xs">关键词</Label>
-          <Input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="标题或正文" />
+          <Input value={keyword} onChange={(event) => { setPage(1); setKeyword(event.target.value) }} placeholder="标题或正文" />
         </div>
         <Button variant="secondary" onClick={() => void load(true)} disabled={refreshing}>
           {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -449,6 +468,22 @@ export function SiteChangelogPage() {
             ) : null}
           </tbody>
         </table>
+        <AdminListPaginationFooter
+          limit={limit}
+          onLimitChange={(value) => {
+            setLimit(value)
+            setPage(1)
+          }}
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          canPrev={page > 1}
+          canNext={page < totalPages}
+          isLoading={loading || refreshing}
+          onPrevPage={() => setPage((prev) => Math.max(1, prev - 1))}
+          onNextPage={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+          centerContent={<span>当前页显示 {items.length} 条</span>}
+        />
       </div>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -542,7 +577,6 @@ export function SiteChangelogPage() {
               ) : null}
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setSheetOpen(false)}>关闭</Button>
               {sheetMode === "view" && selected?.status !== "archived" ? (
                 <Button variant="secondary" onClick={() => setSheetMode("edit")}>
                   <PenLine className="h-4 w-4" />

@@ -89,6 +89,10 @@ assert.doesNotMatch(siteChangelogPage, /仅草稿可编辑/, "site changelog pub
 assert.match(siteChangelogPage, /deleteTarget/, "site changelog page should confirm deletion")
 assert.match(siteChangelogPage, /\/admin\/site\/changelog\/\$\{deleteTarget\.id\}/, "site changelog page should call delete API")
 assert.match(siteChangelogPage, /更新日志已删除/, "site changelog page should show delete success")
+assert.match(siteChangelogPage, /setSheetOpen\(false\)\s+toast\.success\("更新日志已保存"\)/, "site changelog page should close the sheet after saving")
+assert.match(siteChangelogPage, /setSheetOpen\(false\)\s+toast\.success\("更新日志已发布"\)/, "site changelog page should close the sheet after publishing")
+assert.doesNotMatch(siteChangelogPage, />关闭</, "site changelog sheet should rely on the built-in close affordance instead of a redundant footer close button")
+assert.match(siteChangelogPage, /AdminListPaginationFooter/, "site changelog page should paginate the changelog list")
 assert.doesNotMatch(siteChangelogPage, /react-markdown|@uiw\/react-md-editor|monaco-editor/, "site changelog page should not import a new markdown editor")
 
 assert.match(footer, /usePublicSite/, "marketing footer should read public site data")

@@ -29,7 +29,14 @@ type ChangelogState =
   | { status: "error"; items: PublicSiteChangelogEntry[]; message: string }
 
 function formatDate(value: string | null) {
-  return value ? new Date(value).toLocaleDateString("zh-CN") : ""
+  return value
+    ? new Intl.DateTimeFormat("zh-CN", {
+        timeZone: "UTC",
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+      }).format(new Date(`${value}T00:00:00Z`))
+    : ""
 }
 
 export function ChangelogDialog({
@@ -128,7 +135,7 @@ export function ChangelogDialog({
                       <h3 className="text-base font-semibold tracking-tight text-foreground">{entry.title}</h3>
                       <time className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
                         <CalendarDays className="h-3.5 w-3.5" />
-                        {formatDate(entry.publishedAt) || entry.logDate}
+                        {formatDate(entry.logDate)}
                       </time>
                     </header>
                     <article className="mt-3 rounded-xl border border-border/60 bg-surface-2 px-4 py-4 dark:border-white/10 dark:bg-white/5 sm:px-5">

@@ -8,7 +8,14 @@ type ChangelogPageProps = {
 }
 
 function formatDate(value: string | null) {
-  return value ? new Date(value).toLocaleDateString("zh-CN") : ""
+  return value
+    ? new Intl.DateTimeFormat("zh-CN", {
+        timeZone: "UTC",
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+      }).format(new Date(`${value}T00:00:00Z`))
+    : ""
 }
 
 export function ChangelogPage({ entries }: ChangelogPageProps) {
@@ -39,7 +46,7 @@ export function ChangelogPage({ entries }: ChangelogPageProps) {
                   <h2 className="text-xl font-semibold tracking-tight">{entry.title}</h2>
                   <div className="mt-2 inline-flex items-center gap-2 text-sm text-muted-foreground">
                     <CalendarDays className="h-4 w-4" />
-                    {formatDate(entry.publishedAt) || entry.logDate}
+                    {formatDate(entry.logDate)}
                   </div>
                 </div>
               </div>
