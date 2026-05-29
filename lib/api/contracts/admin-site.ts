@@ -124,6 +124,90 @@ export type UpdateSiteHelpItemRequest = {
   enabled?: boolean
 }
 
+export const SITE_CHANGELOG_STATUSES = [
+  "draft",
+  "published",
+  "archived",
+] as const
+
+export type SiteChangelogStatus = (typeof SITE_CHANGELOG_STATUSES)[number]
+
+export type SiteChangelogCommit = {
+  sha: string
+  shortSha: string
+  subject: string
+  body: string | null
+  authorName: string
+  authorEmail: string | null
+  committedAt: string
+}
+
+export type AdminSiteChangelogEntry = {
+  id: string
+  logDate: string
+  title: string
+  summaryMarkdown: string
+  status: SiteChangelogStatus
+  commitFromSha: string | null
+  commitToSha: string | null
+  commitCount: number
+  sourceCommits: SiteChangelogCommit[]
+  generatedByAgentCode: string | null
+  providerCodeSnapshot: string | null
+  modelCodeSnapshot: string | null
+  llmInvocationId: string | null
+  generationError: string | null
+  publishedAt: string | null
+  archivedAt: string | null
+  updatedAt: string | null
+  updatedByAdminId: string | null
+}
+
+export type PublicSiteChangelogEntry = Pick<
+  AdminSiteChangelogEntry,
+  "id" | "logDate" | "title" | "summaryMarkdown" | "publishedAt"
+>
+
+export type AdminSiteChangelogListQuery = {
+  status: SiteChangelogStatus | "all"
+  keyword?: string
+  startDate?: string
+  endDate?: string
+  page: number
+  limit: number
+}
+
+export type PublicSiteChangelogListQuery = {
+  page: number
+  limit: number
+}
+
+export type AdminSiteChangelogGenerateRequest = {
+  logDate: string
+  regenerate?: boolean
+}
+
+export type AdminSiteChangelogUpdateRequest = {
+  title?: string
+  summaryMarkdown?: string
+}
+
+export type AdminSiteChangelogListResponseData = {
+  items: AdminSiteChangelogEntry[]
+  total: number
+  page: number
+  pageSize: number
+  hasMore: boolean
+}
+
+export type PublicSiteChangelogListResponseData = {
+  items: PublicSiteChangelogEntry[]
+  total: number
+  page: number
+  pageSize: number
+  hasMore: boolean
+}
+
 export type PublicSiteResponseData = {
   information: SiteInformation
   articles: {

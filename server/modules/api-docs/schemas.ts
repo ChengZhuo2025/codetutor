@@ -7,7 +7,7 @@ import {
   ADMIN_SETTINGS_ACCOUNT_STATUS_ACTIONS,
   ADMIN_SETTINGS_AUDIT_TARGET_TYPES,
 } from "@/lib/api/contracts/admin-settings"
-import { SITE_ARTICLE_SLUGS } from "@/lib/api/contracts/admin-site"
+import { SITE_ARTICLE_SLUGS, SITE_CHANGELOG_STATUSES } from "@/lib/api/contracts/admin-site"
 import { ADMIN_LEARNING_TEMPLATE_STATUSES } from "@/lib/api/contracts/admin-learning-templates"
 import {
   ADMIN_AI_ACTIVE_STATUS_OPTIONS,
@@ -53,6 +53,13 @@ export const ApiErrorCodeSchema = z
     "PLAN_DRAFT_NOT_FOUND",
     "PLAN_DRAFT_ALREADY_CONFIRMED",
     "AI_RESPONSE_INVALID",
+    "GIT_SOURCE_UNAVAILABLE",
+    "NO_COMMITS_FOUND",
+    "CHANGELOG_ALREADY_PUBLISHED",
+    "CHANGELOG_DRAFT_EXISTS",
+    "AI_MODEL_UNAVAILABLE",
+    "AI_GENERATION_FAILED",
+    "INVALID_STATUS_TRANSITION",
     "RATE_LIMITED",
     "INTERNAL_ERROR",
   ])
@@ -1931,6 +1938,113 @@ export const siteHelpItemListQuerySchema = z
     categoryId: z.string().uuid().optional(),
   })
   .openapi("SiteHelpItemListQuery")
+
+export const siteChangelogStatusSchema = z
+  .enum(SITE_CHANGELOG_STATUSES)
+  .openapi("SiteChangelogStatus")
+
+export const siteChangelogCommitSchema = z
+  .object({
+    sha: z.string(),
+    shortSha: z.string(),
+    subject: z.string(),
+    body: z.string().nullable(),
+    authorName: z.string(),
+    authorEmail: z.string().nullable(),
+    committedAt: z.string(),
+  })
+  .openapi("SiteChangelogCommit")
+
+export const adminSiteChangelogEntrySchema = z
+  .object({
+    id: z.string().uuid(),
+    logDate: z.string(),
+    title: z.string(),
+    summaryMarkdown: z.string(),
+    status: siteChangelogStatusSchema,
+    commitFromSha: z.string().nullable(),
+    commitToSha: z.string().nullable(),
+    commitCount: z.number().int().nonnegative(),
+    sourceCommits: z.array(siteChangelogCommitSchema),
+    generatedByAgentCode: z.string().nullable(),
+    providerCodeSnapshot: z.string().nullable(),
+    modelCodeSnapshot: z.string().nullable(),
+    llmInvocationId: z.string().uuid().nullable(),
+    generationError: z.string().nullable(),
+    publishedAt: z.string().nullable(),
+    archivedAt: z.string().nullable(),
+    updatedAt: z.string().nullable(),
+    updatedByAdminId: z.string().uuid().nullable(),
+  })
+  .openapi("AdminSiteChangelogEntry")
+
+export const publicSiteChangelogEntrySchema = adminSiteChangelogEntrySchema
+  .pick({
+    id: true,
+    logDate: true,
+    title: true,
+    summaryMarkdown: true,
+    publishedAt: true,
+  })
+  .openapi("PublicSiteChangelogEntry")
+
+export const adminSiteChangelogListQuerySchema = z
+  .object({
+    status: z.enum(["all", ...SITE_CHANGELOG_STATUSES]).optional(),
+    keyword: z.string().optional(),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
+    page: paginationPositiveIntSchema.optional(),
+    limit: paginationPositiveIntSchema.optional(),
+  })
+  .openapi("AdminSiteChangelogListQuery")
+
+export const publicSiteChangelogListQuerySchema = z
+  .object({
+    page: paginationPositiveIntSchema.optional(),
+    limit: paginationPositiveIntSchema.optional(),
+  })
+  .openapi("PublicSiteChangelogListQuery")
+
+export const siteChangelogEntryIdParamsSchema = z
+  .object({
+    entryId: z.string().uuid(),
+  })
+  .openapi("SiteChangelogEntryIdParams")
+
+export const adminSiteChangelogGenerateRequestSchema = z
+  .object({
+    logDate: z.string(),
+    regenerate: z.boolean().optional(),
+  })
+  .openapi("AdminSiteChangelogGenerateRequest")
+
+export const adminSiteChangelogUpdateRequestSchema = z
+  .object({
+    title: z.string().min(2).max(160).optional(),
+    summaryMarkdown: z.string().min(2).optional(),
+  })
+  .openapi("AdminSiteChangelogUpdateRequest")
+
+export const adminSiteChangelogListResponseDataSchema = z
+  .object({
+    items: z.array(adminSiteChangelogEntrySchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().positive(),
+    pageSize: z.number().int().positive(),
+    hasMore: z.boolean(),
+  })
+  .openapi("AdminSiteChangelogListResponseData")
+
+export const publicSiteChangelogListResponseDataSchema = z
+  .object({
+    items: z.array(publicSiteChangelogEntrySchema),
+    total: z.number().int().nonnegative(),
+    page: z.number().int().positive(),
+    pageSize: z.number().int().positive(),
+    hasMore: z.boolean(),
+  })
+  .openapi("PublicSiteChangelogListResponseData")
 
 export const publicSiteResponseDataSchema = z
   .object({

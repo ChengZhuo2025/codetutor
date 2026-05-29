@@ -2,6 +2,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 
 import {
+  parseMarkdownBlocks,
   renderMarkdownInlineHtml,
   sanitizeMarkdownHref,
 } from "../features/site/lib/markdown.ts"
@@ -24,4 +25,14 @@ test("renderMarkdownInlineHtml escapes text and strips unsafe links", () => {
   assert.match(html, /危险链接/)
   assert.doesNotMatch(html, /href="javascript:/)
   assert.doesNotMatch(html, /<script>/)
+})
+
+test("parseMarkdownBlocks keeps headings and ordered lists as separate blocks without blank lines", () => {
+  const blocks = parseMarkdownBlocks("### 小标题\n1. 第一步\n2. 第二步\n\n普通段落")
+
+  assert.deepEqual(blocks, [
+    { type: "heading", level: 3, text: "小标题" },
+    { type: "ordered-list", items: ["第一步", "第二步"] },
+    { type: "paragraph", text: "普通段落" },
+  ])
 })

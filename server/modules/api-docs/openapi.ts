@@ -66,6 +66,11 @@ import {
   adminSiteHelpItemListResponseDataSchema,
   adminSiteHelpItemResponseDataSchema,
   adminSiteInformationResponseDataSchema,
+  adminSiteChangelogEntrySchema,
+  adminSiteChangelogGenerateRequestSchema,
+  adminSiteChangelogListQuerySchema,
+  adminSiteChangelogListResponseDataSchema,
+  adminSiteChangelogUpdateRequestSchema,
   adminNotificationQuerySchema,
   adminNotificationListResponseDataSchema,
   adminNotificationMutationResponseDataSchema,
@@ -76,12 +81,16 @@ import {
   adminAlipayPaymentSettingsResponseDataSchema,
   adminSiteContactResponseDataSchema,
   publicSiteResponseDataSchema,
+  publicSiteChangelogEntrySchema,
+  publicSiteChangelogListQuerySchema,
+  publicSiteChangelogListResponseDataSchema,
   createSiteHelpCategoryRequestSchema,
   createSiteHelpItemRequestSchema,
   siteArticleSlugParamsSchema,
   siteHelpCategoryIdParamsSchema,
   siteHelpItemIdParamsSchema,
   siteHelpItemListQuerySchema,
+  siteChangelogEntryIdParamsSchema,
   siteLogoUploadResponseDataSchema,
   adminUpsertSubscriptionPlanRequestSchema,
   adminUpdateAlipayPaymentSettingsRequestSchema,
@@ -2060,6 +2069,86 @@ const successExamples = {
     enabled: true,
     updatedAt: "2026-05-28T10:00:00Z",
     updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
+  },
+  adminSiteChangelogEntry: {
+    id: "550e8400-e29b-41d4-a716-446655440301",
+    logDate: "2026-05-29",
+    title: "学习体验与后台能力更新",
+    summaryMarkdown: "## 新增\n\n- 管理员可以生成并审核站点更新日志。\n\n## 优化\n\n- 用户端新增公开更新日志入口。",
+    status: "draft",
+    commitFromSha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    commitToSha: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    commitCount: 2,
+    sourceCommits: [
+      {
+        sha: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        shortSha: "bbbbbbb",
+        subject: "feat: add site changelog",
+        body: null,
+        authorName: "Bao",
+        authorEmail: "bao@example.com",
+        committedAt: "2026-05-29T10:00:00Z",
+      },
+    ],
+    generatedByAgentCode: "site-changelog-writer",
+    providerCodeSnapshot: "siliconflow",
+    modelCodeSnapshot: "deepseek-v4-pro",
+    llmInvocationId: "550e8400-e29b-41d4-a716-446655440302",
+    generationError: null,
+    publishedAt: null,
+    archivedAt: null,
+    updatedAt: "2026-05-29T10:10:00Z",
+    updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
+  },
+  adminSiteChangelogList: {
+    items: [
+      {
+        id: "550e8400-e29b-41d4-a716-446655440301",
+        logDate: "2026-05-29",
+        title: "学习体验与后台能力更新",
+        summaryMarkdown: "## 新增\n\n- 管理员可以生成并审核站点更新日志。",
+        status: "draft",
+        commitFromSha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        commitToSha: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        commitCount: 2,
+        sourceCommits: [],
+        generatedByAgentCode: "site-changelog-writer",
+        providerCodeSnapshot: "siliconflow",
+        modelCodeSnapshot: "deepseek-v4-pro",
+        llmInvocationId: "550e8400-e29b-41d4-a716-446655440302",
+        generationError: null,
+        publishedAt: null,
+        archivedAt: null,
+        updatedAt: "2026-05-29T10:10:00Z",
+        updatedByAdminId: "550e8400-e29b-41d4-a716-446655440011",
+      },
+    ],
+    total: 1,
+    page: 1,
+    pageSize: 20,
+    hasMore: false,
+  },
+  publicSiteChangelogEntry: {
+    id: "550e8400-e29b-41d4-a716-446655440301",
+    logDate: "2026-05-29",
+    title: "学习体验与后台能力更新",
+    summaryMarkdown: "## 新增\n\n- 管理员可以生成并审核站点更新日志。",
+    publishedAt: "2026-05-29T10:30:00Z",
+  },
+  publicSiteChangelogList: {
+    items: [
+      {
+        id: "550e8400-e29b-41d4-a716-446655440301",
+        logDate: "2026-05-29",
+        title: "学习体验与后台能力更新",
+        summaryMarkdown: "## 新增\n\n- 管理员可以生成并审核站点更新日志。",
+        publishedAt: "2026-05-29T10:30:00Z",
+      },
+    ],
+    total: 1,
+    page: 1,
+    pageSize: 20,
+    hasMore: false,
   },
   publicSite: {
     information: {
@@ -5453,6 +5542,219 @@ registry.registerPath({
       "帮助内容已更新",
     ),
     ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/site/changelog",
+  operationId: "getAdminSiteChangelogEntries",
+  tags: ["admin-site"],
+  summary: "获取站点更新日志列表",
+  security: [],
+  request: {
+    query: adminSiteChangelogListQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteChangelogListResponseDataSchema,
+      "AdminSiteChangelogListResponse",
+      "更新日志列表读取成功",
+      successExamples.adminSiteChangelogList,
+      "更新日志列表读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/site/changelog/generate",
+  operationId: "generateAdminSiteChangelogDraft",
+  tags: ["admin-site"],
+  summary: "从本地 Git 生成更新日志草稿",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminSiteChangelogGenerateRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteChangelogEntrySchema,
+      "AdminSiteChangelogEntryResponse",
+      "更新日志草稿已生成",
+      successExamples.adminSiteChangelogEntry,
+      "更新日志草稿已生成",
+    ),
+    ...commonErrorResponses(["400", "403", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/site/changelog/{entryId}",
+  operationId: "getAdminSiteChangelogEntry",
+  tags: ["admin-site"],
+  summary: "获取站点更新日志详情",
+  security: [],
+  request: {
+    params: siteChangelogEntryIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteChangelogEntrySchema,
+      "AdminSiteChangelogEntryResponse",
+      "更新日志读取成功",
+      successExamples.adminSiteChangelogEntry,
+      "更新日志读取成功",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/site/changelog/{entryId}",
+  operationId: "updateAdminSiteChangelogEntry",
+  tags: ["admin-site"],
+  summary: "更新站点更新日志草稿或已发布内容",
+  security: [],
+  request: {
+    params: siteChangelogEntryIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: adminSiteChangelogUpdateRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteChangelogEntrySchema,
+      "AdminSiteChangelogEntryResponse",
+      "更新日志已更新",
+      successExamples.adminSiteChangelogEntry,
+      "更新日志已更新",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "delete",
+  path: "/api/admin/site/changelog/{entryId}",
+  operationId: "deleteAdminSiteChangelogEntry",
+  tags: ["admin-site"],
+  summary: "删除站点更新日志",
+  security: [],
+  request: {
+    params: siteChangelogEntryIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteChangelogEntrySchema,
+      "AdminSiteChangelogEntryResponse",
+      "更新日志已删除",
+      successExamples.adminSiteChangelogEntry,
+      "更新日志已删除",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/site/changelog/{entryId}/publish",
+  operationId: "publishAdminSiteChangelogEntry",
+  tags: ["admin-site"],
+  summary: "发布站点更新日志",
+  security: [],
+  request: {
+    params: siteChangelogEntryIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteChangelogEntrySchema,
+      "AdminSiteChangelogEntryResponse",
+      "更新日志已发布",
+      successExamples.adminSiteChangelogEntry,
+      "更新日志已发布",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/site/changelog/{entryId}/archive",
+  operationId: "archiveAdminSiteChangelogEntry",
+  tags: ["admin-site"],
+  summary: "归档站点更新日志",
+  security: [],
+  request: {
+    params: siteChangelogEntryIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      adminSiteChangelogEntrySchema,
+      "AdminSiteChangelogEntryResponse",
+      "更新日志已归档",
+      successExamples.adminSiteChangelogEntry,
+      "更新日志已归档",
+    ),
+    ...commonErrorResponses(["400", "403", "404", "409", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/site/changelog",
+  operationId: "getPublicSiteChangelogEntries",
+  tags: ["public", "marketing"],
+  summary: "获取公开站点更新日志列表",
+  security: [],
+  request: {
+    query: publicSiteChangelogListQuerySchema,
+  },
+  responses: {
+    "200": successResponse(
+      publicSiteChangelogListResponseDataSchema,
+      "PublicSiteChangelogListResponse",
+      "公开更新日志读取成功",
+      successExamples.publicSiteChangelogList,
+      "公开更新日志读取成功",
+    ),
+    ...commonErrorResponses(["400", "500"]),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/api/site/changelog/{entryId}",
+  operationId: "getPublicSiteChangelogEntry",
+  tags: ["public", "marketing"],
+  summary: "获取公开站点更新日志详情",
+  security: [],
+  request: {
+    params: siteChangelogEntryIdParamsSchema,
+  },
+  responses: {
+    "200": successResponse(
+      publicSiteChangelogEntrySchema,
+      "PublicSiteChangelogEntryResponse",
+      "公开更新日志读取成功",
+      successExamples.publicSiteChangelogEntry,
+      "公开更新日志读取成功",
+    ),
+    ...commonErrorResponses(["400", "404", "500"]),
   },
 })
 

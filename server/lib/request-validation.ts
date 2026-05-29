@@ -52,9 +52,13 @@ import {
 } from "@/lib/api/contracts/admin-settings"
 import {
   SITE_ARTICLE_SLUGS,
+  SITE_CHANGELOG_STATUSES,
+  type AdminSiteChangelogGenerateRequest,
+  type AdminSiteChangelogUpdateRequest,
   type CreateSiteHelpCategoryRequest,
   type CreateSiteHelpItemRequest,
   type SiteArticleSlug,
+  type SiteChangelogStatus,
   type UpdateSiteArticleRequest,
   type UpdateSiteHelpCategoryRequest,
   type UpdateSiteHelpItemRequest,
@@ -2824,6 +2828,156 @@ export function parseAdminSiteArticleBody(
   }
 
   return ok(data)
+}
+
+function isStrictIsoDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false
+  }
+  const [year, month, day] = value.split("-").map((part) => Number.parseInt(part, 10))
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return date.getUTCFullYear() === year
+    && date.getUTCMonth() === month - 1
+    && date.getUTCDate() === day
+}
+
+function parseSiteChangelogDateField(value: unknown, fieldName: string): ValidationResult<string> {
+  if (typeof value !== "string" || !isStrictIsoDate(value.trim())) {
+    return fail("VALIDATION_FAILED", `${fieldName} 必须是 YYYY-MM-DD 格式的有效日期。`)
+  }
+  return ok(value.trim())
+}
+
+export function parseSiteChangelogEntryId(value: unknown): ValidationResult<string> {
+  if (typeof value !== "string") {
+    return fail("VALIDATION_FAILED", "entryId 不合法。")
+  }
+
+  const normalized = normalizeUuid(value)
+  if (!normalized) {
+    return fail("VALIDATION_FAILED", "entryId 不合法。")
+  }
+
+  return ok(normalized)
+}
+
+export function parseAdminSiteChangelogListQuery(
+  searchParams: URLSearchParams,
+): ValidationResult<{
+  status: SiteChangelogStatus | "all"
+  keyword?: string
+  startDate?: string
+  endDate?: string
+  page: number
+  limit: number
+}> {
+  const pagination = parseSharedListPagination(searchParams)
+  if (!pagination.ok) {
+    return pagination
+  }
+
+  const rawStatus = searchParams.get("status")?.trim() || "all"
+  if (rawStatus !== "all" && !SITE_CHANGELOG_STATUSES.includes(rawStatus as SiteChangelogStatus)) {
+    return fail("VALIDATION_FAILED", "status 参数不合法。")
+  }
+
+  const rawStartDate = searchParams.get("startDate")?.trim()
+  const rawEndDate = searchParams.get("endDate")?.trim()
+  let startDate: string | undefined
+  let endDate: string | undefined
+
+  if (rawStartDate) {
+    const parsed = parseSiteChangelogDateField(rawStartDate, "startDate")
+    if (!parsed.ok) return parsed
+    startDate = parsed.data
+  }
+
+  if (rawEndDate) {
+    const parsed = parseSiteChangelogDateField(rawEndDate, "endDate")
+    if (!parsed.ok) return parsed
+    endDate = parsed.data
+  }
+
+  return ok({
+    status: rawStatus as SiteChangelogStatus | "all",
+    keyword: searchParams.get("keyword")?.trim() || undefined,
+    startDate,
+    endDate,
+    page: pagination.data.page,
+    limit: pagination.data.limit,
+  })
+}
+
+const adminSiteChangelogGenerateSchema = z.object({
+  logDate: z.unknown(),
+  regenerate: z.boolean().optional(),
+})
+
+export function parseAdminSiteChangelogGenerateBody(
+  input: unknown,
+): ValidationResult<AdminSiteChangelogGenerateRequest> {
+  const shape = adminSiteChangelogGenerateSchema.safeParse(input)
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "请求体格式不正确。")
+  }
+
+  const logDate = parseSiteChangelogDateField(shape.data.logDate, "logDate")
+  if (!logDate.ok) {
+    return logDate
+  }
+
+  return ok({
+    logDate: logDate.data,
+    regenerate: shape.data.regenerate ?? false,
+  })
+}
+
+const adminSiteChangelogUpdateSchema = z.object({
+  title: z.unknown().optional(),
+  summaryMarkdown: z.unknown().optional(),
+}).strict()
+
+export function parseAdminSiteChangelogUpdateBody(
+  input: unknown,
+): ValidationResult<AdminSiteChangelogUpdateRequest> {
+  const shape = adminSiteChangelogUpdateSchema.safeParse(input)
+  if (!shape.success) {
+    return fail("BAD_REQUEST", "请求体格式不正确。")
+  }
+
+  const data: AdminSiteChangelogUpdateRequest = {}
+  if (shape.data.title !== undefined) {
+    if (typeof shape.data.title !== "string" || shape.data.title.trim().length < 2 || shape.data.title.trim().length > 160) {
+      return fail("VALIDATION_FAILED", "标题长度需在 2 到 160 个字符之间。")
+    }
+    data.title = shape.data.title.trim()
+  }
+
+  if (shape.data.summaryMarkdown !== undefined) {
+    if (typeof shape.data.summaryMarkdown !== "string" || shape.data.summaryMarkdown.trim().length < 2) {
+      return fail("VALIDATION_FAILED", "更新日志正文不能为空。")
+    }
+    data.summaryMarkdown = shape.data.summaryMarkdown.trim()
+  }
+
+  if (Object.keys(data).length === 0) {
+    return fail("VALIDATION_FAILED", "至少提供一个可更新字段。")
+  }
+
+  return ok(data)
+}
+
+export function parsePublicSiteChangelogListQuery(
+  searchParams: URLSearchParams,
+): ValidationResult<{
+  page: number
+  limit: number
+}> {
+  const pagination = parseSharedListPagination(searchParams)
+  if (!pagination.ok) {
+    return pagination
+  }
+  return ok(pagination.data)
 }
 
 export function parseSiteHelpCategoryId(value: unknown): ValidationResult<string> {

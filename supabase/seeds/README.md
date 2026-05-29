@@ -14,6 +14,7 @@ This folder holds the idempotent SQL scripts that populate the MVP dictionary ta
 6. `supabase/seeds/006_ai_agent_and_binding_registry.sql` – run after `005_ai_provider_and_model_registry.sql`. It seeds the first batch of teaching agents, helper agents, and path / tool-level binding rules.
 7. `supabase/seeds/007_ai_skill_registry.sql` – run after `006_ai_agent_and_binding_registry.sql`. It seeds the first batch of built-in skill packs plus agent-to-skill bindings. Make sure the local `ai/skills/` directory exists and stays aligned with the seeded paths.
 8. `supabase/seeds/008_material_plan_planner_agent.sql` – run after `018_create_learning_material_plan_tables.sql` and after the AI provider/model registry is ready. It seeds `agent_templates.code = self-study-material-planner`, which is required by `POST /api/learning/plan-from-material` and the plan draft regenerate/confirm flow.
+9. `supabase/seeds/009_site_changelog_writer_agent.sql` – run after the AI provider/model registry is ready and after `057_create_site_changelog.sql` is applied. It seeds `agent_templates.code = site-changelog-writer`, defaulting to `deepseek-v4-pro`, for admin-reviewed site changelog draft generation.
 
 Recommended execution command:
 
@@ -44,6 +45,7 @@ Recommended execution command:
 - `006_ai_agent_and_binding_registry.sql` seeds the first batch of agent templates and routing bindings for current seeded paths and tools. It intentionally does not seed skill packs yet; those will follow once the local `ai/skills` directory structure is created.
 - `007_ai_skill_registry.sql` seeds the first batch of built-in skill packs and agent skill bindings. The database paths in that seed point to the checked-in `ai/skills/` directory in this repository.
 - `008_material_plan_planner_agent.sql` seeds the dedicated planner agent for the current self-directed material-plan flow. If it is missing, the planner runtime will fail with `planner agent self-study-material-planner not configured`.
+- `009_site_changelog_writer_agent.sql` seeds the dedicated admin changelog writer agent. If it is missing, `/api/admin/site/changelog/generate` will fail with an AI model / agent configuration error.
 - `001_create_admin_seeds.sql` is a manual helper script for a test admin account. It intentionally is not safe to run blindly because it depends on a real Auth user ID outside the repository.
 - For admin seed verification, the authoritative check is whether the remote database already has usable `admin_accounts` data plus the expected role binding, not whether the original seed nickname is unchanged.
 - The user script inserts `user_profiles`, `user_learning_preferences`, `user_learning_paths`, and `user_tasks`; it assumes the referenced path and tools already exist (hence the execution order).

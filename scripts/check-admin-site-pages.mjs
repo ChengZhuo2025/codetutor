@@ -17,6 +17,14 @@ const siteHelpCenterPage = readFileSync(
   new URL("../features/admin-site/components/site-help-center-page.tsx", import.meta.url),
   "utf8",
 )
+const siteChangelogPage = readFileSync(
+  new URL("../features/admin-site/components/site-changelog-page.tsx", import.meta.url),
+  "utf8",
+)
+const siteChangelogRoute = readFileSync(
+  new URL("../app/(admin-shell)/admin/site/changelog/page.tsx", import.meta.url),
+  "utf8",
+)
 const footer = readFileSync(
   new URL("../features/marketing/components/footer.tsx", import.meta.url),
   "utf8",
@@ -38,7 +46,9 @@ assert.match(menuConfig, /label:\s*"站点信息"/, "admin menu should include �
 assert.match(menuConfig, /href:\s*"\/admin\/site\/information"/, "admin menu should link to website information")
 assert.match(menuConfig, /href:\s*"\/admin\/site\/articles"/, "admin menu should link to site articles")
 assert.match(menuConfig, /href:\s*"\/admin\/site\/help"/, "admin menu should link to help center")
+assert.match(menuConfig, /href:\s*"\/admin\/site\/changelog"/, "admin menu should link to changelog")
 assert.match(menuConfig, /label:\s*"帮助中心"/, "admin menu should include 帮助中心")
+assert.match(menuConfig, /label:\s*"更新日志"/, "admin menu should include 更新日志")
 
 assert.match(siteInformationPage, /\/admin\/site\/information/, "site information page should call admin information API")
 assert.match(siteInformationPage, /\/admin\/site\/logo-upload/, "site information page should upload logo")
@@ -68,9 +78,23 @@ assert.match(siteHelpCenterPage, /selected && [\s\S]*border-brand[\s\S]*ring-2/,
 assert.match(siteHelpCenterPage, /Switch[\s\S]*openCategoryDialog/, "category cards should expose the enable switch before the edit dialog trigger")
 assert.doesNotMatch(siteHelpCenterPage, /编辑分类<\/Button>/, "category cards should not keep the old text edit action")
 assert.match(siteHelpCenterPage, /w-\[22%\][\s\S]*操作/, "help center item action column should be wide enough for inline actions")
+assert.match(siteChangelogRoute, /SiteChangelogPage/, "site changelog route should render SiteChangelogPage")
+assert.match(siteChangelogPage, /\/admin\/site\/changelog\/generate/, "site changelog page should generate drafts")
+assert.match(siteChangelogPage, /variant="code"/, "site changelog page should use the shared code textarea")
+assert.match(siteChangelogPage, /MarkdownContent/, "site changelog page should preview markdown")
+assert.match(siteChangelogPage, /确认发布更新日志/, "site changelog page should confirm publish")
+assert.match(siteChangelogPage, /openEditSheet/, "site changelog edit action should have an explicit handler")
+assert.doesNotMatch(siteChangelogPage, /disabled=\{entry\.status !== "draft"\}/, "site changelog edit action should not silently ignore clicks")
+assert.doesNotMatch(siteChangelogPage, /仅草稿可编辑/, "site changelog published entries should be editable")
+assert.match(siteChangelogPage, /deleteTarget/, "site changelog page should confirm deletion")
+assert.match(siteChangelogPage, /\/admin\/site\/changelog\/\$\{deleteTarget\.id\}/, "site changelog page should call delete API")
+assert.match(siteChangelogPage, /更新日志已删除/, "site changelog page should show delete success")
+assert.doesNotMatch(siteChangelogPage, /react-markdown|@uiw\/react-md-editor|monaco-editor/, "site changelog page should not import a new markdown editor")
 
 assert.match(footer, /usePublicSite/, "marketing footer should read public site data")
 assert.match(footer, /privacyPolicy/, "marketing footer should render managed privacy policy")
+assert.match(footer, /ChangelogDialog/, "marketing footer should open changelog in a dialog")
+assert.doesNotMatch(footer, /href="\/changelog"/, "marketing footer should not navigate away for changelog")
 assert.match(nav, /v\{information\.version\} Beta/, "marketing nav should render managed site version")
 assert.match(loginBrandPanel, /usePublicSite/, "login page brand panel should read public site data")
 assert.match(adminSidebar, /information\.logoUrl/, "admin sidebar brand should render managed site logo")

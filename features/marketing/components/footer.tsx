@@ -18,6 +18,7 @@ import { useLandingAuthState } from "@/features/marketing/providers/landing-auth
 import { MarkdownContent } from "@/features/site/components/markdown-content";
 import { usePublicSite } from "@/features/site/providers/public-site-provider";
 import { AboutDialog } from "./about-dialog";
+import { ChangelogDialog } from "./changelog-dialog";
 import { ContactDialog } from "./contact-dialog";
 
 type FooterMarketingTool = MarketingTool & {
@@ -143,6 +144,7 @@ export function LandingFooter() {
             />
             <ContactDialog triggerClassName="cursor-pointer transition-colors hover:text-foreground" />
             <HelpCenterDialog />
+            <ChangelogDialog />
             <Link
               href={ctaHref}
               className="font-medium text-foreground transition-colors hover:text-brand"

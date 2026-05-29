@@ -1,5 +1,20 @@
 const SAFE_LINK_PROTOCOLS = new Set(["http:", "https:", "mailto:", "tel:"])
 
+export type MarkdownBlock =
+  | {
+      type: "heading"
+      level: 2 | 3
+      text: string
+    }
+  | {
+      type: "ordered-list" | "unordered-list"
+      items: string[]
+    }
+  | {
+      type: "paragraph"
+      text: string
+    }
+
 export function escapeMarkdownHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -51,4 +66,82 @@ export function renderMarkdownInlineHtml(text: string): string {
   })
 
   return html
+}
+
+function flushParagraph(lines: string[], blocks: MarkdownBlock[]) {
+  if (lines.length === 0) return
+  blocks.push({
+    type: "paragraph",
+    text: lines.join("\n").trim(),
+  })
+  lines.length = 0
+}
+
+function flushList(
+  list: { type: "ordered-list" | "unordered-list"; items: string[] } | null,
+  blocks: MarkdownBlock[],
+) {
+  if (!list || list.items.length === 0) return null
+  blocks.push({
+    type: list.type,
+    items: list.items,
+  })
+  return null
+}
+
+export function parseMarkdownBlocks(content: string): MarkdownBlock[] {
+  const blocks: MarkdownBlock[] = []
+  const paragraphLines: string[] = []
+  let currentList: { type: "ordered-list" | "unordered-list"; items: string[] } | null = null
+
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim()
+
+    if (!line) {
+      flushParagraph(paragraphLines, blocks)
+      currentList = flushList(currentList, blocks)
+      continue
+    }
+
+    const heading = /^(#{2,3})\s+(.+)$/.exec(line)
+    if (heading) {
+      flushParagraph(paragraphLines, blocks)
+      currentList = flushList(currentList, blocks)
+      blocks.push({
+        type: "heading",
+        level: heading[1]?.length === 3 ? 3 : 2,
+        text: heading[2]?.trim() ?? "",
+      })
+      continue
+    }
+
+    const orderedListItem = /^\d+\.\s+(.+)$/.exec(line)
+    if (orderedListItem) {
+      flushParagraph(paragraphLines, blocks)
+      if (currentList?.type !== "ordered-list") {
+        currentList = flushList(currentList, blocks)
+        currentList = { type: "ordered-list", items: [] }
+      }
+      currentList.items.push(orderedListItem[1]?.trim() ?? "")
+      continue
+    }
+
+    const unorderedListItem = /^[-*]\s+(.+)$/.exec(line)
+    if (unorderedListItem) {
+      flushParagraph(paragraphLines, blocks)
+      if (currentList?.type !== "unordered-list") {
+        currentList = flushList(currentList, blocks)
+        currentList = { type: "unordered-list", items: [] }
+      }
+      currentList.items.push(unorderedListItem[1]?.trim() ?? "")
+      continue
+    }
+
+    currentList = flushList(currentList, blocks)
+    paragraphLines.push(line)
+  }
+
+  flushParagraph(paragraphLines, blocks)
+  flushList(currentList, blocks)
+  return blocks
 }

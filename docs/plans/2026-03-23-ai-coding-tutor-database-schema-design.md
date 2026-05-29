@@ -58,7 +58,7 @@
 - `046_harden_material_plan_generation.sql` (为材料计划生成 run 增加 claim / heartbeat 字段与 `claim_material_plan_generation_run`，并新增事务化 `confirm_learning_plan_draft` RPC)
 - `047_fix_material_plan_rpc_search_path.sql` (将材料计划生成与草稿确认 RPC 的函数级 `search_path` 固定为空字符串，消除 Supabase Security Advisor 警示)
 - `050_add_user_login_ip_tracking.sql` / `051_update_user_profile_export_view_with_ip.sql` (新增用户登录 IP / 城市追踪并扩展运营导出视图)
-- `052_create_site_information.sql` + `055_create_site_help_center.sql` + `056_add_site_help_category_icon_key.sql` (新增站点信息、通用文章、帮助中心与 `site-assets` public bucket，支持后台站点内容管理和帮助分类图标配置)
+- `052_create_site_information.sql` + `055_create_site_help_center.sql` + `056_add_site_help_category_icon_key.sql` + `057_create_site_changelog.sql` (新增站点信息、通用文章、帮助中心、更新日志与 `site-assets` public bucket，支持后台站点内容管理、帮助分类图标配置和更新日志审核发布)
 - `053_create_admin_session_lookup_rpc.sql` (新增管理后台会话聚合 RPC，一次返回管理员账号、角色与头像，供登录与会话校验复用)
 - `054_self_directed_template_management.sql` (新增自学路径模板管理约束：同一工具/水平仅一个启用 `metadata.templateScope = admin_self_directed_initial` 的 self-directed 初始化模板、未归档步骤索引、模板保存/同步事务 RPC，并在模型依赖存在时 seed 后台专用 `self-study-template-planner` agent)
 
@@ -1616,11 +1616,12 @@ MVP 阶段建议谨慎使用软删除：
 
 ## 6.31 站点信息与通用文章
 
-`052_create_site_information.sql`、`055_create_site_help_center.sql` 与 `056_add_site_help_category_icon_key.sql` 落地后台可维护的站点展示数据：
+`052_create_site_information.sql`、`055_create_site_help_center.sql`、`056_add_site_help_category_icon_key.sql` 与 `057_create_site_changelog.sql` 落地后台可维护的站点展示数据：
 
 - `site_information`：单行配置表，保存网站 Logo URL、站点名称、副标题、Slogan、简介、SEO 关键词、备案号、版权信息与版本号；由 `/admin/site/information` 管理，公共接口 `/api/site/public` 读取。
 - `site_articles`：以 `slug` 区分 `about_us`、`user_agreement`、`privacy_policy`，保存文章标题、生效日期、展示顺序和 Markdown 正文；初始化数据来自原前端硬编码文章，后台 `/admin/site/articles` 可直接编辑。
 - `site_help_categories` / `site_help_items`：保存帮助中心分类与 FAQ 条目，分类支持 `icon_key`、启用状态和展示排序，条目支持启用状态、展示排序与 Markdown 答案；初始化数据来自原前端硬编码帮助中心，后台 `/admin/site/help` 可直接编辑。
+- `site_changelog_entries`：保存站点更新日志草稿、发布内容、关联本地 Git commit 快照、Agent/provider/model 快照、`llm_invocation_id`、生成错误与管理员发布/归档状态；同一天只允许一个 `draft` 或 `published` 活跃日志，公开读取只返回 `published`。
 - `site-assets`：public Storage bucket，当前用于网站 Logo 上传；上传与配置保存分开，数据库仅保存公开 URL。
 
 这些表都允许匿名读取公开内容、仅允许 active admin 写入，并通过 `updated_by_admin_id` 与管理员审计日志保留操作追踪。

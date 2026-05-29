@@ -1576,6 +1576,10 @@ ai/skills/
 
 ## 12. API 形态
 
+## 12.0A 站点更新日志生成
+
+当前已新增后台专用 `site-changelog-writer` Agent seed（`supabase/seeds/009_site_changelog_writer_agent.sql`），默认模型 code 为 `deepseek-v4-pro`。该 Agent 只用于 `/api/admin/site/changelog/generate`：服务端读取本地 `.git` 指定日期 commits，调用非流式 `invokeAIProvider` 生成 JSON 草稿，写入 `llm_invocations` 与 `site_changelog_entries`，再由管理员审核发布。首版不自动发布，不接队列或定时任务；如果部署环境没有 `.git`，接口返回 `GIT_SOURCE_UNAVAILABLE`。
+
 ## 12.1 第一阶段保留现有入口
 
 第一阶段不新造很多聊天入口，而是在现有接口上演进：

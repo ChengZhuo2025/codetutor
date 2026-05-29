@@ -23,6 +23,7 @@ import {
   Globe2,
   FileText,
   HelpCircle,
+  ScrollText,
   Zap,
 } from "lucide-react"
 import type { MenuItem } from "../types"
@@ -107,6 +108,7 @@ export const menuItems: MenuItem[] = [
       { label: "网站信息", href: "/admin/site/information", icon: Globe2, active: true },
       { label: "通用文章", href: "/admin/site/articles", icon: FileText, active: true },
       { label: "帮助中心", href: "/admin/site/help", icon: HelpCircle, active: true },
+      { label: "更新日志", href: "/admin/site/changelog", icon: ScrollText, active: true },
     ],
   },
   {
