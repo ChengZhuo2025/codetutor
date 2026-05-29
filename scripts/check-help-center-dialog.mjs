@@ -35,6 +35,11 @@ assert.match(
   /DEFAULT_HELP_CENTER/,
   "Help center should keep local default FAQ content as a public fallback.",
 )
+assert.doesNotMatch(
+  dialogSource,
+  /site\.helpCenter\?\.categories\?\.length\s*\?\s*site\.helpCenter\s*:\s*DEFAULT_HELP_CENTER/,
+  "An intentionally empty managed help center should not fall back to local default FAQ content.",
+)
 assert.match(
   dialogSource,
   /MarkdownContent/,
@@ -60,10 +65,15 @@ assert.match(
   /aria-expanded=\{isExpanded\}/,
   "FAQ triggers should expose expanded state for accessibility.",
 )
+assert.doesNotMatch(
+  dialogSource,
+  /max-h-\[220px\]/,
+  "FAQ panels should not clip long managed Markdown answers at a fixed 220px height.",
+)
 assert.match(
   dialogSource,
-  /max-h-\[220px\].*opacity-100/s,
-  "FAQ panels should animate open with height and opacity transitions.",
+  /overflow-y-auto/,
+  "Expanded FAQ answers should remain readable when managed Markdown content is long.",
 )
 assert.match(
   dialogSource,

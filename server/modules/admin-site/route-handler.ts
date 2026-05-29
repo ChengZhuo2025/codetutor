@@ -38,6 +38,12 @@ function toValidationError(error: unknown, fallbackMessage: string) {
   if (err?.name === "VALIDATION_FAILED") {
     return jsonError("VALIDATION_FAILED", err.message, 400)
   }
+  if (err?.name === "NOT_FOUND") {
+    return jsonError("NOT_FOUND", err.message, 404)
+  }
+  if (err?.name === "CONFLICT") {
+    return jsonError("CONFLICT", err.message, 409)
+  }
   return jsonError("INTERNAL_ERROR", err?.message || fallbackMessage, 500)
 }
 

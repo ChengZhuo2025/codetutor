@@ -48,7 +48,7 @@ export function HelpCenterDialog({
   triggerClassName,
 }: HelpCenterDialogProps) {
   const { site } = usePublicSite()
-  const helpCenter = site.helpCenter?.categories?.length ? site.helpCenter : DEFAULT_HELP_CENTER
+  const helpCenter = site.helpCenter ?? DEFAULT_HELP_CENTER
   const helpCenterFaqItems = useMemo<HelpCenterFaqItem[]>(
     () =>
       helpCenter.categories
@@ -145,17 +145,26 @@ export function HelpCenterDialog({
                   <div
                     id={`${item.id}-panel`}
                     className={cn(
-                      "overflow-hidden transition-all duration-300 ease-out",
-                      isExpanded ? "max-h-[220px] opacity-100" : "max-h-0 opacity-0",
+                      "grid transition-[grid-template-rows,opacity] duration-300 ease-out",
+                      isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
                     )}
                   >
-                    <div className="border-t border-brand/15 dark:border-brand/25 px-4 pb-4 pt-3 sm:pl-[4.25rem]">
-                      <MarkdownContent content={item.answerMarkdown} className="space-y-3 text-sm leading-6" />
+                    <div className="min-h-0 overflow-hidden">
+                      <div className="border-t border-brand/15 px-4 pb-4 pt-3 dark:border-brand/25 sm:pl-[4.25rem]">
+                        <div className="max-h-[42vh] overflow-y-auto pr-1">
+                          <MarkdownContent content={item.answerMarkdown} className="space-y-3 text-sm leading-6" />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               )
             })}
+            {helpCenterFaqItems.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border bg-surface-2 px-4 py-8 text-center text-sm text-muted-foreground">
+                暂无帮助内容
+              </div>
+            ) : null}
           </div>
         </div>
       </DialogContent>

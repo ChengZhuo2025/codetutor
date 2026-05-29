@@ -327,6 +327,30 @@ test("admin help category patch updates enabled state", async () => {
   assert.equal(body.data.enabled, false)
 })
 
+test("admin help category patch maps missing category to not found", async () => {
+  const handler = createAdminSiteHelpCategoryPatchHandler({
+    getRequestAdmin: async () => okAdmin,
+    updateSiteHelpCategory: async () => {
+      const error = new Error("帮助分类不存在。")
+      error.name = "NOT_FOUND"
+      throw error
+    },
+  })
+
+  const res = await handler(
+    new Request(`http://localhost/api/admin/site/help/categories/${sampleHelpCategory.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: false }),
+    }),
+    { params: Promise.resolve({ categoryId: sampleHelpCategory.id }) },
+  )
+
+  assert.equal(res.status, 404)
+  const body = await res.json()
+  assert.equal(body.code, "NOT_FOUND")
+})
+
 test("admin help items list supports category filtering", async () => {
   const handler = createAdminSiteHelpItemListGetHandler({
     getRequestAdmin: async () => okAdmin,
@@ -421,6 +445,60 @@ test("admin help item patch updates markdown and enabled state", async () => {
   const body = await res.json()
   assert.equal(body.data.answerMarkdown, "## 新答案")
   assert.equal(body.data.enabled, false)
+})
+
+test("admin help item post maps missing category to validation error", async () => {
+  const handler = createAdminSiteHelpItemPostHandler({
+    getRequestAdmin: async () => okAdmin,
+    createSiteHelpItem: async () => {
+      const error = new Error("帮助分类不存在。")
+      error.name = "VALIDATION_FAILED"
+      throw error
+    },
+  })
+
+  const res = await handler(
+    new Request("http://localhost/api/admin/site/help/items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        categoryId: sampleHelpCategory.id,
+        question: "如何开始？",
+        answerMarkdown: "请先选择有效分类。",
+      }),
+    }),
+  )
+
+  assert.equal(res.status, 400)
+  const body = await res.json()
+  assert.equal(body.code, "VALIDATION_FAILED")
+})
+
+test("admin help item post maps category write conflict to conflict", async () => {
+  const handler = createAdminSiteHelpItemPostHandler({
+    getRequestAdmin: async () => okAdmin,
+    createSiteHelpItem: async () => {
+      const error = new Error("帮助分类不存在或已不可用。")
+      error.name = "CONFLICT"
+      throw error
+    },
+  })
+
+  const res = await handler(
+    new Request("http://localhost/api/admin/site/help/items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        categoryId: sampleHelpCategory.id,
+        question: "如何开始？",
+        answerMarkdown: "请先选择有效分类。",
+      }),
+    }),
+  )
+
+  assert.equal(res.status, 409)
+  const body = await res.json()
+  assert.equal(body.code, "CONFLICT")
 })
 
 test("public site endpoint returns information and seeded articles", async () => {

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils"
+import { renderMarkdownInlineHtml } from "@/features/site/lib/markdown"
 
 type MarkdownContentProps = {
   content: string
@@ -7,23 +8,6 @@ type MarkdownContentProps = {
 
 function stripMarker(value: string, marker: string) {
   return value.slice(marker.length).trim()
-}
-
-function renderInline(text: string): string {
-  let html = text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-
-  html = html.replace(/\*\*(.+?)\*\*/g, "<strong class='font-semibold text-foreground'>$1</strong>")
-  html = html.replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, "<em>$1</em>")
-  html = html.replace(/`([^`\n]+?)`/g, "<code class='rounded bg-muted px-1 py-0.5 text-xs font-mono'>$1</code>")
-  html = html.replace(
-    /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" class="underline decoration-muted-foreground/40 underline-offset-2" target="_blank" rel="noopener noreferrer">$1</a>'
-  )
-
-  return html
 }
 
 export function MarkdownContent({ content, className }: MarkdownContentProps) {
@@ -62,7 +46,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
                 <li
                   key={line}
                   dangerouslySetInnerHTML={{
-                    __html: renderInline(line.replace(/^\d+\.\s+/, "")),
+                    __html: renderMarkdownInlineHtml(line.replace(/^\d+\.\s+/, "")),
                   }}
                 />
               ))}
@@ -77,7 +61,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
                 <li
                   key={line}
                   dangerouslySetInnerHTML={{
-                    __html: renderInline(line.replace(/^[-*]\s+/, "")),
+                    __html: renderMarkdownInlineHtml(line.replace(/^[-*]\s+/, "")),
                   }}
                 />
               ))}
@@ -89,7 +73,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
           <p
             key={index}
             className="whitespace-pre-line"
-            dangerouslySetInnerHTML={{ __html: renderInline(block) }}
+            dangerouslySetInnerHTML={{ __html: renderMarkdownInlineHtml(block) }}
           />
         )
       })}

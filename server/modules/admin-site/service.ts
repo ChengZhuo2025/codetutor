@@ -74,6 +74,40 @@ type SiteHelpItemRow = {
   updated_by_admin_id: string | null
 }
 
+type SupabaseErrorLike = {
+  code?: string
+  message?: string
+  details?: string
+}
+
+function createNamedError(name: "VALIDATION_FAILED" | "NOT_FOUND" | "CONFLICT", message: string) {
+  const error = new Error(message)
+  error.name = name
+  return error
+}
+
+function isNoRowsError(error: SupabaseErrorLike | null | undefined) {
+  return error?.code === "PGRST116" || error?.message?.includes("no rows")
+}
+
+function isForeignKeyError(error: SupabaseErrorLike | null | undefined) {
+  return error?.code === "23503" || error?.message?.includes("foreign key constraint")
+}
+
+function throwSiteHelpMutationError(
+  error: SupabaseErrorLike | null | undefined,
+  context: string,
+  notFoundMessage = "帮助内容不存在。",
+): never {
+  if (isNoRowsError(error)) {
+    throw createNamedError("NOT_FOUND", notFoundMessage)
+  }
+  if (isForeignKeyError(error)) {
+    throw createNamedError("CONFLICT", "帮助分类不存在或已不可用。")
+  }
+  throw new Error(`${context}: ${error?.message ?? "unknown error"}`)
+}
+
 function normalizeKeywords(value: unknown): string[] {
   if (!Array.isArray(value)) return []
   return value
@@ -456,12 +490,17 @@ export async function loadSiteHelpCategory(id: string): Promise<AdminSiteHelpCat
     .from("site_help_categories")
     .select("*")
     .eq("id", id)
-    .single()
+    .maybeSingle()
 
-  assertSupabaseSuccess(error, "failed to load site help category")
+  if (error) {
+    if (isNoRowsError(error)) {
+      throw createNamedError("NOT_FOUND", "帮助分类不存在。")
+    }
+    assertSupabaseSuccess(error, "failed to load site help category")
+  }
 
   if (!data) {
-    throw new Error("SITE_HELP_CATEGORY_NOT_FOUND")
+    throw createNamedError("NOT_FOUND", "帮助分类不存在。")
   }
 
   return mapHelpCategoryRow(data as SiteHelpCategoryRow)
@@ -496,7 +535,9 @@ export async function updateSiteHelpCategory(
     .select("*")
     .single()
 
-  assertSupabaseSuccess(error, "failed to update site help category")
+  if (error) {
+    throwSiteHelpMutationError(error, "failed to update site help category", "帮助分类不存在。")
+  }
 
   const after = mapHelpCategoryRow(data as SiteHelpCategoryRow)
   await writeSiteAudit({
@@ -536,8 +577,15 @@ export async function createSiteHelpItem(
   input: CreateSiteHelpItemRequest,
 ): Promise<AdminSiteHelpItemResponseData> {
   if (!isUuid(adminAccountId) || !isUuid(input.categoryId)) {
-    const error = new Error("ID无效")
-    error.name = "VALIDATION_FAILED"
+    throw createNamedError("VALIDATION_FAILED", "ID无效")
+  }
+
+  try {
+    await loadSiteHelpCategory(input.categoryId)
+  } catch (error) {
+    if (error instanceof Error && error.name === "NOT_FOUND") {
+      throw createNamedError("VALIDATION_FAILED", "帮助分类不存在。")
+    }
     throw error
   }
 
@@ -555,7 +603,9 @@ export async function createSiteHelpItem(
     .select("*")
     .single()
 
-  assertSupabaseSuccess(error, "failed to create site help item")
+  if (error) {
+    throwSiteHelpMutationError(error, "failed to create site help item")
+  }
 
   const after = mapHelpItemRow(data as SiteHelpItemRow)
   await writeSiteAudit({
@@ -576,12 +626,17 @@ export async function loadSiteHelpItem(id: string): Promise<AdminSiteHelpItemRes
     .from("site_help_items")
     .select("*")
     .eq("id", id)
-    .single()
+    .maybeSingle()
 
-  assertSupabaseSuccess(error, "failed to load site help item")
+  if (error) {
+    if (isNoRowsError(error)) {
+      throw createNamedError("NOT_FOUND", "帮助内容不存在。")
+    }
+    assertSupabaseSuccess(error, "failed to load site help item")
+  }
 
   if (!data) {
-    throw new Error("SITE_HELP_ITEM_NOT_FOUND")
+    throw createNamedError("NOT_FOUND", "帮助内容不存在。")
   }
 
   return mapHelpItemRow(data as SiteHelpItemRow)
@@ -593,15 +648,22 @@ export async function updateSiteHelpItem(
   input: UpdateSiteHelpItemRequest,
 ): Promise<AdminSiteHelpItemResponseData> {
   if (!isUuid(adminAccountId) || !isUuid(id)) {
-    const error = new Error("ID无效")
-    error.name = "VALIDATION_FAILED"
-    throw error
+    throw createNamedError("VALIDATION_FAILED", "ID无效")
   }
 
   if (input.categoryId !== undefined && !isUuid(input.categoryId)) {
-    const error = new Error("帮助分类ID无效")
-    error.name = "VALIDATION_FAILED"
-    throw error
+    throw createNamedError("VALIDATION_FAILED", "帮助分类ID无效")
+  }
+
+  if (input.categoryId !== undefined) {
+    try {
+      await loadSiteHelpCategory(input.categoryId)
+    } catch (error) {
+      if (error instanceof Error && error.name === "NOT_FOUND") {
+        throw createNamedError("VALIDATION_FAILED", "帮助分类不存在。")
+      }
+      throw error
+    }
   }
 
   const before = await loadSiteHelpItem(id)
@@ -623,7 +685,9 @@ export async function updateSiteHelpItem(
     .select("*")
     .single()
 
-  assertSupabaseSuccess(error, "failed to update site help item")
+  if (error) {
+    throwSiteHelpMutationError(error, "failed to update site help item")
+  }
 
   const after = mapHelpItemRow(data as SiteHelpItemRow)
   await writeSiteAudit({
