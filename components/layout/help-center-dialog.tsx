@@ -45,7 +45,7 @@ type HelpCenterFaqItem = PublicSiteHelpItem & {
   iconKey: string
 }
 
-const helpCenterIconMap: Record<string, LucideIcon> = {
+  const helpCenterIconMap: Record<string, LucideIcon> = {
   bell: Bell,
   "book-open": BookOpen,
   "credit-card": CreditCard,
@@ -64,22 +64,15 @@ const helpCenterIconMap: Record<string, LucideIcon> = {
   "user-round": UserRound,
 }
 
-const legacyCategoryIcons: Record<string, LucideIcon> = {
-  开始学习: Sparkles,
-  学习记录: History,
-  订阅订单: CreditCard,
-  账号与反馈: MessageSquare,
-}
-
-function getCategoryIcon(iconKey: string, category: string) {
-  return helpCenterIconMap[iconKey] ?? legacyCategoryIcons[category] ?? HelpCircle
+function getCategoryIcon(iconKey: string) {
+  return helpCenterIconMap[iconKey] ?? HelpCircle
 }
 
 export function HelpCenterDialog({
   triggerLabel = "帮助中心",
   triggerClassName,
 }: HelpCenterDialogProps) {
-  const { site } = usePublicSite()
+  const { site, refreshPublicSite } = usePublicSite()
   const helpCenter = site.helpCenter ?? DEFAULT_HELP_CENTER
   const helpCenterFaqItems = useMemo<HelpCenterFaqItem[]>(
     () =>
@@ -102,7 +95,11 @@ export function HelpCenterDialog({
     : helpCenterFaqItems[0]?.id ?? ""
 
   return (
-    <Dialog>
+    <Dialog
+      onOpenChange={(open) => {
+        if (open) void refreshPublicSite()
+      }}
+    >
       <DialogTrigger asChild>
         <button
           type="button"
@@ -125,7 +122,7 @@ export function HelpCenterDialog({
           <div className="space-y-3">
             {helpCenterFaqItems.map((item) => {
               const isExpanded = currentExpandedId === item.id
-              const CategoryIcon = getCategoryIcon(item.iconKey, item.category)
+              const CategoryIcon = getCategoryIcon(item.iconKey)
 
               return (
                 <div

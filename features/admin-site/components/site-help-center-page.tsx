@@ -675,18 +675,20 @@ export function SiteHelpCenterPage() {
                   const selected = categoryForm.iconKey === option.key
 
                   return (
-                    <Button
+                    <button
                       key={option.key}
                       type="button"
-                      variant={selected ? "secondary" : "outline"}
-                      size="icon"
-                      className={cn("h-10 w-full", selected && "border-brand/50 text-brand")}
+                      aria-pressed={selected}
+                      className={cn(
+                        "flex h-10 w-full items-center justify-center rounded-lg border bg-background text-muted-foreground transition-all hover:border-brand/40 hover:bg-brand/8 hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35",
+                        selected && "border-brand bg-brand/12 text-brand shadow-[0_10px_24px_-18px_rgba(98,92,255,0.5)] ring-2 ring-brand/20 dark:bg-brand/20",
+                      )}
                       aria-label={`选择${option.label}图标`}
                       title={option.label}
                       onClick={() => updateCategoryForm("iconKey", option.key)}
                     >
                       <Icon className="h-4 w-4" />
-                    </Button>
+                    </button>
                   )
                 })}
               </div>
