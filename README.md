@@ -20,10 +20,10 @@ The repository is a full-stack MVP built with Next.js App Router, Supabase, Type
 | ![AI Learning Chat](public/screenshots/learn-chat.png) | ![Learning Map](public/screenshots/map.png) | ![Achievements](public/screenshots/achievements.png) |
 | *Streaming AI · multimodal · TTS* | *Visual progress tracking* | *Daily check-in · badges · credits* |
 
-| Material Intake | Admin Console | API Docs |
+| Material Intake | Admin Console | Landing Page |
 |:---:|:---:|:---:|
-| ![Material Intake](public/screenshots/material-intake.png) | ![Admin Console](public/screenshots/admin.png) | ![API Docs](public/screenshots/api-docs.png) |
-| *Paste a link → AI generates a learning plan* | *Users, learning, AI, finance dashboards* | *Interactive Swagger UI* |
+| ![Material Intake](public/screenshots/material-intake.png) | ![Admin Console](public/screenshots/admin.png) | ![Landing Page](public/screenshots/home.png) |
+| *Paste a link → AI generates a learning plan* | *Users, learning, AI, finance dashboards* | *Responsive landing & onboarding flow* |
 
 > 💡 Place screenshots in `public/screenshots/`. Recommended: `1280×720`, PNG or WebP.
 

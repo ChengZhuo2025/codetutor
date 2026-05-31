@@ -20,10 +20,10 @@ CodeTutor 是面向中文学习者的 AI 编程学习陪练。它把零散教程
 | ![AI 学习对话](public/screenshots/learn-chat.png) | ![学习地图](public/screenshots/map.png) | ![成就系统](public/screenshots/achievements.png) |
 | *流式 AI 对话 · 多模态素材 · TTS 朗读* | *学习路径可视化 · 进度追踪* | *每日签到 · 成就徽章 · 积分激励* |
 
-| 教程导入 | 管理后台 | API 文档 |
+| 教程导入 | 管理后台 | 首页落地 |
 |:---:|:---:|:---:|
-| ![教程导入](public/screenshots/material-intake.png) | ![管理后台](public/screenshots/admin.png) | ![API 文档](public/screenshots/api-docs.png) |
-| *粘贴链接 → AI 解析生成学习计划* | *用户/学习/AI/财务 全功能管理* | *Swagger UI 交互式 API 文档* |
+| ![教程导入](public/screenshots/material-intake.png) | ![管理后台](public/screenshots/admin.png) | ![首页落地](public/screenshots/home.png) |
+| *粘贴链接 → AI 解析生成学习计划* | *用户/学习/AI/财务 全功能管理* | *响应式首页 & 引导流程* |
 
 > 💡 截图文件请放置在 `public/screenshots/` 目录下。推荐分辨率：`1280×720`，格式：PNG 或 WebP。
 
