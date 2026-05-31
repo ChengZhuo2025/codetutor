@@ -15,46 +15,46 @@ The repository is a full-stack MVP built with Next.js App Router, Supabase, Type
 
 ## Screenshots
 
-| AI 学习对话 | 学习地图 | 成就系统 |
+| AI Learning Chat | Learning Map | Achievements |
 |:---:|:---:|:---:|
 | ![AI Learning Chat](public/screenshots/learn-chat.png) | ![Learning Map](public/screenshots/map.png) | ![Achievements](public/screenshots/achievements.png) |
-| *流式 AI 对话 · 多模态素材 · TTS 朗读* | *学习路径可视化 · 进度追踪* | *每日签到 · 成就徽章 · 积分激励* |
+| *Streaming AI · multimodal · TTS* | *Visual progress tracking* | *Daily check-in · badges · credits* |
 
-| 教程导入 | 管理后台 | API 文档 |
+| Material Intake | Admin Console | API Docs |
 |:---:|:---:|:---:|
 | ![Material Intake](public/screenshots/material-intake.png) | ![Admin Console](public/screenshots/admin.png) | ![API Docs](public/screenshots/api-docs.png) |
-| *粘贴链接 → AI 解析生成学习计划* | *用户/学习/AI/财务 全功能管理* | *Swagger UI 交互式 API 文档* |
+| *Paste a link → AI generates a learning plan* | *Users, learning, AI, finance dashboards* | *Interactive Swagger UI* |
 
-> 💡 截图文件请放置在 `public/screenshots/` 目录下。推荐分辨率：`1280×720`，格式：PNG 或 WebP。
+> 💡 Place screenshots in `public/screenshots/`. Recommended: `1280×720`, PNG or WebP.
 
 ## Why CodeTutor
 
-### 问题：学编程的"最后一公里"
+### The problem: the last mile of learning to code
 
-中文互联网不缺编程教程——B站、掘金、知乎、慕课网，到处是好内容。但**"看过"和"做成"之间有巨大的鸿沟**：
+The Chinese internet has no shortage of tutorials—Bilibili, Juejin, Zhihu, MOOCs. But there's a huge gap between **"I watched it"** and **"I can do it"**:
 
-- 📚 收藏了 100 个教程，真正跟完的不到 3 个
-- 🎯 不知道当前水平该学什么、按什么顺序学
-- 🤷 卡住了没人问，Google 半天也找不到对症的答案
-- 📉 学了就忘，没有追踪、没有反馈、没有成就感
+- 📚 Bookmarked 100 tutorials, finished fewer than 3
+- 🎯 No idea what to learn next at your current skill level
+- 🤷 Stuck with no one to ask, and Google doesn't understand your context
+- 📉 Learn-and-forget loop—no tracking, no feedback, no sense of progress
 
-### 方案：不是"另一个看视频的平台"
+### The solution: not just another video platform
 
-CodeTutor 不生产教程，它**把已有教程变成可执行的 AI 陪练计划**：
+CodeTutor doesn't create tutorials. It **turns existing tutorials into executable AI coaching plans**:
 
-1. **粘贴任意教程链接** → AI 自动解析内容，生成带关卡的学习计划
-2. **AI 教练实时陪练** → 流式对话、追问解释、检查代码、拆解下一步任务
-3. **让进步看得见** → 学习地图可视化、每日签到、成就徽章、积分体系
-4. **自部署、可扩展** → AGPL-3.0 开源，Supabase + Next.js 全栈，AI 供应商可替换
+1. **Paste any tutorial link** → AI parses the content and generates a leveled learning plan
+2. **AI coach in real time** → streaming chat, follow-up questions, code review, next-task breakdown
+3. **Visible progress** → learning map, daily check-ins, achievement badges, credit system
+4. **Self-hostable & extensible** → AGPL-3.0 open source, Supabase + Next.js, swappable AI providers
 
-### 适合谁
+### Who is this for
 
-| 角色 | 使用场景 |
+| Role | Use case |
 |------|---------|
-| 🧑‍💻 编程学习者 | 把散乱教程转化为有反馈、有追踪的 AI 陪练学习 |
-| 👨‍🏫 培训机构/老师 | 自部署学员管理系统，AI 辅助教学 |
-| 🏗️ 开发者 | 学习 Next.js 16 全栈实战架构、AI provider 抽象设计 |
-| 🔬 研究者 | 二次开发学习行为分析、AI 教学效果评估 |
+| 🧑‍💻 Programming learners | Turn scattered tutorials into AI-coached learning with feedback and tracking |
+| 👨‍🏫 Educators / bootcamps | Self-host a student management system with AI-assisted teaching |
+| 🏗️ Developers | Study a production-grade Next.js 16 full-stack architecture and AI provider design |
+| 🔬 Researchers | Build on top for learning behavior analytics and AI teaching effectiveness studies |
 
 ## Current Status
 
