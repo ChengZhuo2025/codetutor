@@ -9,6 +9,8 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
+> 📖 **技术文章**：[我把零散编程教程变成了 AI 陪练计划 — CodeTutor 全栈开源项目技术揭秘](https://juejin.cn/post/7645196794117783590)（掘金 · 前端专栏）
+
 CodeTutor is an AI coding tutor for Chinese-speaking learners. It turns scattered tutorials, videos, code snippets, and learning materials into guided learning paths with AI coaching, progress tracking, feedback loops, achievements, and admin operations.
 
 The repository is a full-stack MVP built with Next.js App Router, Supabase, TypeScript, and an extensible AI provider layer. It includes the learner workspace, admin console, API route handlers, service modules, Supabase migrations, and product/architecture planning documents.

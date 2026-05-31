@@ -9,6 +9,8 @@
 
 [English](README.md) | **简体中文**
 
+> 📖 **技术文章**：[我把零散编程教程变成了 AI 陪练计划 — CodeTutor 全栈开源项目技术揭秘](https://juejin.cn/post/7645196794117783590)（掘金 · 前端专栏）
+
 CodeTutor 是面向中文学习者的 AI 编程学习陪练。它把零散教程、视频、代码片段和学习资料转化为可执行、可追踪、可反馈的学习路径，并提供 AI 对话陪练、任务推进、成就系统和运营后台。
 
 这个仓库是一个基于 Next.js App Router、Supabase、TypeScript 和可扩展 AI Provider 层的全栈 MVP，包含用户端学习工作台、管理后台、API 路由、服务模块、Supabase 迁移和产品/架构规划文档。
