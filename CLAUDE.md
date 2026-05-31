@@ -37,7 +37,7 @@ pnpm test:admin-settings
 **本地开发环境：**
 - 技术栈：Next.js 16.2.0 + React 19.2.4 + TypeScript 5.7.3 + Tailwind CSS 4.2 + shadcn/ui + Zod + zod-to-openapi + Swagger UI
 - 本地 Node.js：`Node.js 22.18.0`
-- 数据库：阿里云 AnalyticDB PostgreSQL 版 Supabase（已接入远程库，迁移 `001`–`026`）
+- 数据库：Supabase PostgreSQL（迁移 `001`–`057`）
 - AI 服务：外部 provider 抽象层（已接通硅基流动，详见 AI Orchestration 设计文档）
 - 环境变量：参考 `.env.example` 配置，需要 `SUPABASE_*`、`AI_PROVIDER_SECRET_ENCRYPTION_KEY` 等
 
@@ -59,7 +59,7 @@ scripts/              # 功能验证脚本（check-*.mjs / check-*.ts）
 server/               # 服务端逻辑
   ├── lib/            # 通用库（请求校验、统一响应、错误映射、Supabase 客户端）
   └── modules/        # 按域划分的业务服务层（auth/、learning/、admin-*/ 等）
-supabase/migrations/  # 数据库迁移（001–026）
+supabase/migrations/  # 数据库迁移（001–057）
 types/                # 跨 feature 共用的类型定义
 vendor/               # vendored 依赖（如 server-only）
 ```

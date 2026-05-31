@@ -654,7 +654,7 @@ erDiagram
 说明：
 
 - 本节已按当前 AI 编排主文档的命名口径同步
-- 该表已通过 `012_create_ai_conversation_core.sql` 落地；字段级细化与运行时约束继续以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为主
+- 该表已通过 `012_create_ai_conversation_core.sql` 落地；字段级细化与运行时约束继续以 [AI Orchestration 设计文档](docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为主
 
 用途：
 

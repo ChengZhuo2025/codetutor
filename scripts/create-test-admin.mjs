@@ -35,6 +35,7 @@ async function createTestAdmin() {
     console.log("🔐 开始创建测试管理员账号...\n")
 
     // 1. 创建 Supabase Auth 用户
+    // 仅用于本地开发测试，生产环境务必更换为强密码
     const testEmail = "admin@test.local"
     const testPassword = "Admin@123456"
 

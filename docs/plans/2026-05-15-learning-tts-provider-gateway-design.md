@@ -9,12 +9,12 @@
 
 本地环境可以成功合成并播放，但部署到阿里云服务器后反复出现 25 秒超时。排查日志显示服务器链路可以建立 WebSocket，也能收到 DashScope 的 `session.created`，但无法稳定进入 `session.updated` / `response.created` / `response.audio.delta` 阶段，最终 `audioBytes=0` 超时。该问题已经超出普通业务逻辑错误范围，继续把用户端播读默认路径押在 realtime WebSocket 上，风险较高。
 
-同时，本机另一个项目 `/Users/baoyouhua/Documents/OpenMAIC` 的 TTS 功能可正常工作。OpenMAIC 的核心实现位于：
+同时，本机另一个项目 `../OpenMAIC` 的 TTS 功能可正常工作。OpenMAIC 的核心实现位于：
 
-- `/Users/baoyouhua/Documents/OpenMAIC/lib/audio/tts-providers.ts`
-- `/Users/baoyouhua/Documents/OpenMAIC/app/api/generate/tts/route.ts`
-- `/Users/baoyouhua/Documents/OpenMAIC/lib/audio/constants.ts`
-- `/Users/baoyouhua/Documents/OpenMAIC/lib/audio/use-tts-preview.ts`
+- `../OpenMAIC/lib/audio/tts-providers.ts`
+- `../OpenMAIC/app/api/generate/tts/route.ts`
+- `../OpenMAIC/lib/audio/constants.ts`
+- `../OpenMAIC/lib/audio/use-tts-preview.ts`
 
 OpenMAIC 采用统一 TTS provider 入口，根据 provider 分发到不同 HTTP TTS adapter。它的 Qwen TTS 实现没有使用 realtime WebSocket，而是调用 DashScope HTTP 多模态生成接口，获取音频 URL 后下载音频；MiniMax 也是同步 HTTP；前端只关心拿到音频并播放。
 
@@ -59,7 +59,7 @@ OpenMAIC 采用统一 TTS provider 入口，根据 provider 分发到不同 HTTP
 
 参考：
 
-- OpenMAIC: `/Users/baoyouhua/Documents/OpenMAIC/lib/audio/tts-providers.ts`
+- OpenMAIC: `../OpenMAIC/lib/audio/tts-providers.ts`
 - 阿里云百炼非实时 TTS 文档：https://www.alibabacloud.com/help/en/model-studio/non-realtime-tts-user-guide
 
 ### 4.2 MiniMax 和硅基流动也适合统一 HTTP adapter
@@ -68,7 +68,7 @@ MiniMax TTS 是同步 HTTP API，典型路径为 `/v1/t2a_v2`，请求中传 `mo
 
 参考：
 
-- OpenMAIC: `/Users/baoyouhua/Documents/OpenMAIC/lib/audio/tts-providers.ts`
+- OpenMAIC: `../OpenMAIC/lib/audio/tts-providers.ts`
 - MiniMax TTS 文档：https://platform.minimax.io/docs/api-reference/speech-t2a-http
 
 硅基流动提供 OpenAI-compatible 风格的 speech endpoint，典型路径为 `/v1/audio/speech`，直接返回音频二进制，适合实现为 `openai_audio_speech` adapter。

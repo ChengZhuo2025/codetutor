@@ -1,0 +1,54 @@
+name: Bug report
+description: Report a reproducible bug in CodeTutor
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Do not include secrets, real user data, or private production logs.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide clear steps that another contributor can follow.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: route
+    attributes:
+      label: Route or module
+      placeholder: /learn, /admin/users, server/modules/...
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, Node.js, pnpm, Supabase setup, or deployment details if relevant.
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification attempted
+      description: Commands, screenshots, logs, or checks. Redact sensitive data.

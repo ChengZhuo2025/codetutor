@@ -1,3 +1,5 @@
+// ⚠️ 本文件中所有密钥、证书和凭证均为本地单元测试用途，由测试代码动态生成，
+// 不可用于任何生产环境。生产支付凭据必须通过管理后台配置并加密存储在数据库中。
 import test from "node:test"
 import assert from "node:assert/strict"
 import { createHash, createPublicKey, createSign } from "node:crypto"

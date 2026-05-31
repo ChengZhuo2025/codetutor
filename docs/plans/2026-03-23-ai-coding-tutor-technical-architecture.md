@@ -537,7 +537,7 @@ sequenceDiagram
 
 ## 10. AI 编排架构（规划中）
 
-本节只保留总体架构摘要。字段级表结构、agent 绑定、skill 机制、provider 选择与首批路径命中规则，以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准。
+本节只保留总体架构摘要。字段级表结构、agent 绑定、skill 机制、provider 选择与首批路径命中规则，以 [AI Orchestration 设计文档](docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准。
 
 ## 10.1 设计目标
 

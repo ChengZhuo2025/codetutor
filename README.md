@@ -1,125 +1,224 @@
-# CodeTutor - AI 编程学习陪练
+# CodeTutor
 
-面向中文用户的 AI 编程学习陪练产品，把零散教程、视频、代码片段和学习资料转化为可执行、可追踪、可反馈的学习过程。
+[![License: AGPL-3.0-only](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](LICENSE)
+![Next.js](https://img.shields.io/badge/Next.js-16.2-black)
+![React](https://img.shields.io/badge/React-19.2-149eca)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6)
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3fcf8e)
 
-## 已落地能力
+**English** | [简体中文](README.zh-CN.md)
 
-### 用户端
+CodeTutor is an AI coding tutor for Chinese-speaking learners. It turns scattered tutorials, videos, code snippets, and learning materials into guided learning paths with AI coaching, progress tracking, feedback loops, achievements, and admin operations.
 
-- **首页** — 营销页 + 登录态恢复（未登录展示 CTA，已登录智能跳转到 `/learn` / `/history` / `/onboarding`）
-- **登录** — 手机验证码 + 微信 OAuth
-- **工具选择（Onboarding）** — Cursor、Windsurf、Claude Code、Codex CLI 等主流 AI 编程工具入门引导
-- **AI 学习页** — 真实 AI 对话陪练，SSE 流式输出，任务推进与学分联动
-- **学习地图** — 关卡式进度可视化
-- **成就系统** — 学分积累、段位晋升、每日打卡
-- **历史学习** — 历史计划查看、放弃/重新激活/删除
+The repository is a full-stack MVP built with Next.js App Router, Supabase, TypeScript, and an extensible AI provider layer. It includes the learner workspace, admin console, API route handlers, service modules, Supabase migrations, and product/architecture planning documents.
 
-### 管理后台（`/admin`）
+## Why CodeTutor
 
-- **看板总览** — 核心运营指标
-- **用户运营** — 用户列表筛选、CSV 导出、详情聚合、软删除/恢复
-- **学习记录** — 学习路径列表、详情、最近会话回看、`reactivate/archive` 状态操作
-- **Ai 管理** — Provider / Model / Agent 管理、绑定规则、Skill 配置、调用日志、Agent 测试
-- **系统设置** — 管理员账号、角色权限、操作审计
-- **反馈工单** — 用户反馈接收与处理
+- **Learning by doing**: convert external tutorials and materials into executable learning plans.
+- **AI coaching loop**: stream AI replies, support task progression, and connect learning actions to credits and achievements.
+- **Operations-ready MVP**: includes admin views for users, learning paths, AI providers, site content, notifications, finance, feedback, and settings.
+- **Self-hostable foundation**: Supabase migrations and Next.js server modules are checked in so contributors can inspect and extend the full stack.
+- **Open source with network copyleft**: AGPL-3.0-only keeps modified network services open to their users.
 
-### 数据与基础设施
+## Current Status
 
-- **OpenAPI 3.1 文档** — `/api-docs` Swagger UI 查看与调试，`/api/docs/openapi` 返回 JSON
-- **自学模式教程链接** — 异步摄取 + 多模态证据提取（文字/字幕/ASR/OCR） + 质量闸门 + 可编辑计划草稿
-- **Provider API Key 安全托管** — 数据库加密存储，脱敏展示，按需明文读取
-- **运行时加固** — 进程内鉴权缓存、AI 配置快照缓存、关键接口限流、结构化日志与观测头
-- **数据库** — Supabase PostgreSQL，迁移 `001`–`026`
+CodeTutor is a partially implemented full-stack MVP, not a polished turnkey distribution yet.
 
-## 技术栈
+Implemented areas include:
 
-| 层级 | 技术 |
-|------|------|
-| 前端框架 | Next.js 16.2.0 + React 19.2.4 |
-| 语言 | TypeScript 5.7.3 |
-| 样式 | Tailwind CSS 4.2 + shadcn/ui |
-| 数据校验 | Zod + zod-to-openapi |
-| 后端 | Next.js API Routes（BFF）+ `server/modules` 服务层 |
-| 数据库 | Supabase PostgreSQL（阿里云 AnalyticDB） |
-| 文件存储 | Supabase Storage |
-| AI 服务 | 外部 provider 抽象层（已接通硅基流动） |
-| 本地环境 | Node.js 22.18.0 |
+- Phone-first authentication, WeChat/Douyin identity linking, homepage session recovery, onboarding, profile, avatar upload, and feedback.
+- Learner workspace with AI learning chat, streaming responses, image/voice attachments, text-to-speech playback, task completion, daily check-in, achievements, history, and orders.
+- Self-directed tutorial-link intake with async material planning, multimodal evidence extraction, quality gates, editable drafts, and transactional confirmation.
+- Admin console for dashboard, users, learning paths/templates, AI provider/model/agent/media settings, site information, help center, changelog, notifications, system settings, finance, and feedback.
+- WeChat Native and Alipay scan payment configuration, subscription entitlement activation, order management, notification settings, analytics ingestion, and OpenAPI documentation.
+- Supabase migrations through `057`.
 
-## 快速开始
+Still planned or partial:
 
-### 前置条件
+- Finer-grained admin permissions.
+- Internal notes, manual score adjustment, refunds, auto-renewal, JSAPI/H5 payment variants, finance export, invoices, and deeper reconciliation.
+- Later AI orchestration operations such as prompt versioning, rollout controls, richer cost/stability dashboards, and shared queue infrastructure.
 
-- Node.js 22.18.0
+## Tech Stack
+
+| Layer | Technology |
+| --- | --- |
+| App framework | Next.js 16.2 App Router |
+| UI runtime | React 19.2 |
+| Language | TypeScript 5.7 |
+| Styling | Tailwind CSS 4.2, shadcn/ui-style primitives |
+| Data validation | Zod, zod-to-openapi |
+| Backend | Next.js route handlers plus `server/modules` services |
+| Database | Supabase PostgreSQL |
+| Storage | Supabase Storage |
+| AI layer | Provider/agent/skill abstractions under `ai/` and `server/modules` |
+| Package manager | pnpm |
+| Node.js | 22.18.0 recommended |
+
+## Repository Layout
+
+```text
+app/                     Next.js App Router pages and API routes
+app/api/                 BFF/API route handlers
+ai/                      AI provider, agent, and skill orchestration helpers
+components/              Shared layout and UI primitives
+constants/               Cross-feature constants
+docs/plans/              PRD, architecture, API, schema, and roadmap documents
+features/                Feature pages, components, static data, and view models
+hooks/                   Shared React hooks
+lib/                     API clients, helpers, and Supabase clients
+providers/               React context providers
+public/                  Static assets
+scripts/                 Targeted verification scripts
+server/lib/              Server-side shared utilities
+server/modules/          Domain services
+supabase/migrations/     Database migrations
+types/                   Shared TypeScript types
+```
+
+Core conventions:
+
+- `app/` stays thin. Page logic should live under `features/`.
+- Components used by one domain belong in `features/<domain>/components`; shared components belong in `components/`.
+- API contract changes should be reflected in `server/modules/api-docs/openapi.ts` and `server/modules/api-docs/schemas.ts`.
+- Database or environment changes should update migrations, `.env.example`, and the relevant planning docs.
+
+## Quick Start
+
+### Requirements
+
+- Node.js `22.18.0`
 - pnpm
-- Supabase 项目（本地或远程）
+- A Supabase project, local or remote
 
-### 安装与运行
+### Install
 
 ```bash
-# 安装依赖
 pnpm install
-
-# 配置环境变量
 cp .env.example .env.local
-# 编辑 .env.local，填入 SUPABASE_* 等变量
+```
 
-# 开发模式
+Fill the required Supabase and provider variables in `.env.local`. Do not commit real secrets.
+
+```bash
 pnpm dev
+```
 
-# 生产构建
+Open `http://localhost:3000`. The admin console lives under `/admin` and requires an admin account.
+
+### Database
+
+The schema is tracked in `supabase/migrations/` and currently runs through migration `057`.
+
+**Option A: Remote Supabase project (recommended for quick start)**
+
+1. Create a free project at [supabase.com](https://supabase.com)
+2. Get your project URL and anon/service-role keys from **Settings > API**
+3. Fill `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`
+4. Apply migrations using the Supabase Dashboard SQL editor or the helper script:
+
+   ```bash
+   pnpm db:run:file supabase/migrations/001_init.sql
+   # Repeat for 002 through 057, or concatenate and apply at once
+   ```
+
+5. Verify connectivity:
+
+   ```bash
+   pnpm db:check
+   ```
+
+**Option B: Local Supabase (via Supabase CLI)**
+
+1. Install the [Supabase CLI](https://supabase.com/docs/guides/cli)
+2. Start the local stack:
+
+   ```bash
+   supabase init   # first time only
+   supabase start
+   ```
+
+3. Copy the local project URL and keys from the CLI output to `.env.local`
+4. Apply all checked-in migrations:
+
+   ```bash
+   # Supabase CLI picks up migrations from supabase/migrations/
+   supabase db push
+   # Or use the helper scripts with your local DATABASE_* variables:
+   pnpm db:check
+   ```
+
+A one-command local Supabase bootstrap is not yet part of the public developer experience. Contributions to improve the local setup story are welcome.
+
+## Useful Scripts
+
+```bash
+pnpm dev
 pnpm build
 pnpm start
-
-# 代码检查
 pnpm lint
+pnpm test:openapi-document
+pnpm test:admin-users
+pnpm test:admin-learning
+pnpm test:admin-ai
+pnpm test:admin-site
+pnpm test:admin-settings
+pnpm test:payment
+pnpm test:workspace-sidebar
+pnpm test:workspace-shell-collapse
 ```
 
-访问 `http://localhost:3000`，管理后台在 `/admin`（需管理员账号）。
+The project also has many targeted scripts under `scripts/`. Prefer the smallest script that covers the area you changed.
 
-## 项目结构
+## Documentation
 
+Start with:
+
+- [docs/plans/README.md](docs/plans/README.md)
+- [Product requirements](docs/plans/2026-03-23-ai-coding-tutor-prd.md)
+- [Technical architecture](docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md)
+- [API spec](docs/plans/2026-03-23-ai-coding-tutor-api-spec.md)
+- [Database schema design](docs/plans/2026-03-23-ai-coding-tutor-database-schema-design.md)
+- [AI orchestration design](docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md)
+- [Admin console design](docs/plans/2026-03-31-ai-coding-tutor-admin-console-design.md)
+
+When code and documentation disagree, treat code and migrations as the source of truth, then update the docs.
+
+## Contributing
+
+Contributions are welcome. Good first areas include documentation, local setup improvements, targeted test scripts, UI polish, issue reproduction, and small service-level fixes.
+
+Before opening a pull request:
+
+1. Read [CONTRIBUTING.md](CONTRIBUTING.md).
+2. Keep the change narrowly scoped.
+3. Run the smallest relevant verification command.
+4. Never include secrets, production credentials, user data, or private operational notes.
+
+By contributing, you agree that your contribution is licensed under `AGPL-3.0-only`.
+
+## Security
+
+Please do not report vulnerabilities through public issues. See [SECURITY.md](SECURITY.md) for the private reporting process and secret-handling expectations.
+
+## License
+
+CodeTutor is licensed under the **GNU Affero General Public License v3.0 only**.
+
+Copyright (C) 2026 Shanghai Zhiku Shuneng Technology Co., Ltd. (上海智酷数能科技有限公司).
+
+SPDX identifier:
+
+```text
+AGPL-3.0-only
 ```
-app/                    # Next.js App Router 路由入口（薄层装配）
-  └── api/             # BFF 入口层，参数解析后分发到 server/modules
-ai/                    # AI provider 编排层（provider 抽象、agent、skill）
-components/            # 跨业务域共享组件（ui/、layout/）
-constants/             # 跨 feature 顶层常量（如 events.ts）
-docs/plans/            # 产品/设计/架构文档（YYYY-MM-DD-topic-name.md）
-features/              # 前端主工作目录，按业务域组织
-  └── */pages/         # 页面装配文件（极薄）
-  └── */components/     # 业务域内部组件
-  └── */data/           # 静态展示数据
-  └── */types.ts       # 业务域局部类型
-hooks/                 # 自定义 React Hooks
-lib/                   # 工具函数、API 契约、Supabase 客户端
-server/
-  ├── lib/             # 服务端通用库（请求校验、统一响应、错误映射）
-  └── modules/          # 按域划分的业务服务层
-supabase/migrations/    # 数据库迁移文件
-types/                 # 跨 feature 共用类型定义
-```
 
-**核心约定：**
-- `app/` 只做路由入口，页面逻辑在 `features/`
-- 组件只被一个域使用 → `features/<domain>/components`；被多个域复用 → `components/`
-- OpenAPI 文档维护：`server/modules/api-docs/openapi.ts` + `schemas.ts`（修改接口后需同步）
+You may use, modify, self-host, and provide commercial services with this software. If you modify CodeTutor and make it available to users over a network, you must provide those users access to the corresponding source code under AGPL-3.0.
 
-## 文档索引
+See [LICENSE](LICENSE) for the full license text.
 
-| 文档 | 内容 |
-|------|------|
-| `docs/plans/2026-03-23-ai-coding-tutor-prd.md` | 产品需求文档 |
-| `docs/plans/2026-03-23-ai-coding-tutor-frontend-engineering-guide.md` | 前端工程现状 |
-| `docs/plans/2026-03-23-ai-coding-tutor-api-spec.md` | API 规范与接口契约 |
-| `docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md` | 技术架构设计 |
-| `docs/plans/2026-03-23-ai-coding-tutor-database-schema-design.md` | 数据库 Schema 设计 |
-| `docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md` | AI 编排设计 |
-| `docs/plans/2026-03-31-ai-coding-tutor-admin-console-design.md` | 管理后台设计 |
+## Trademark and Branding
 
-完整文档列表见 `docs/plans/README.md`。
+The CodeTutor name, logo, the domain `www.codetutor.cn`, and all official service branding are proprietary to **Shanghai Zhiku Shuneng Technology Co., Ltd.（上海智酷数能科技有限公司）** and are not licensed under AGPL-3.0. Forks and self-hosted deployments may not imply they are the official CodeTutor service, and may not use the CodeTutor name or branding in ways that suggest endorsement or affiliation, unless they have explicit written permission.
 
-## 状态说明
-
-当前为"部分真实接口 + 部分静态展示数据"的同仓 MVP 阶段。已完成核心用户链路和管理后台 Phase 1；待落地能力包括：AI 编排第二阶段（更细粒度 agent 控制、prompt 版本化管理）、订阅支付、Redis/消息队列基础设施等。
-
-**文档与代码冲突时**，以代码和迁移文件为准，再回写文档。
+Production credentials, private user data, hosted-service data, and private infrastructure configuration are not part of the open-source release.

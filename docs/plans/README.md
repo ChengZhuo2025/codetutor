@@ -25,32 +25,32 @@
 
 ## 快速阅读顺序
 
-1. [PRD](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-prd.md)
+1. [PRD](docs/plans/2026-03-23-ai-coding-tutor-prd.md)
    当前产品范围、真实 MVP 边界、页面与能力口径。
-2. [页面级原型说明](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-page-prototype-spec.md)
+2. [页面级原型说明](docs/plans/2026-03-23-ai-coding-tutor-page-prototype-spec.md)
    当前 7 个用户端页面的功能定位、信息结构与页面职责。
-3. [前端工程说明](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-frontend-engineering-guide.md)
+3. [前端工程说明](docs/plans/2026-03-23-ai-coding-tutor-frontend-engineering-guide.md)
    当前仓库代码结构、页面落位、真实接口接入情况与前端实现现状。
-4. [技术架构设计](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md)
+4. [技术架构设计](docs/plans/2026-03-23-ai-coding-tutor-technical-architecture.md)
    当前全栈技术路线、领域划分、关键链路与系统边界。
-5. [API 规范](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-api-spec.md)
+5. [API 规范](docs/plans/2026-03-23-ai-coding-tutor-api-spec.md)
    当前前后端联调契约，已按前端原型校准。
-6. [数据库 Schema 设计](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-database-schema-design.md)
+6. [数据库 Schema 设计](docs/plans/2026-03-23-ai-coding-tutor-database-schema-design.md)
    当前核心实体、约束、查询场景与建模主线。
-7. [后端结构设计](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-backend-structure-design.md)
+7. [后端结构设计](docs/plans/2026-03-23-ai-coding-tutor-backend-structure-design.md)
    后端模块划分、职责边界与 MVP 开发顺序。
 
 按需补充阅读：
 
-- [UI 视觉设计说明](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-ui-visual-design-spec.md)
-- [ADR 合集](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-adr-records.md)
-- [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md)
-- [自由学习模式教程链接自动拆解实施方案](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-04-01-ai-coding-tutor-free-mode-material-plan-implementation.md)
-- [自由学习模式异步多模态实施计划](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-04-08-ai-coding-tutor-material-plan-async-multimodal-implementation-plan.md)
-- [自由模式初始化学习任务现状说明](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-05-21-free-mode-initial-learning-task-current-state.md)
-- [自学模式学习路径模板管理设计](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-05-22-self-directed-template-management-design.md)
-- [管理后台设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-31-ai-coding-tutor-admin-console-design.md)
-- [微信 Native 支付验收文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-04-26-wechat-native-payment-acceptance.md)
+- [UI 视觉设计说明](docs/plans/2026-03-23-ai-coding-tutor-ui-visual-design-spec.md)
+- [ADR 合集](docs/plans/2026-03-23-ai-coding-tutor-adr-records.md)
+- [AI Orchestration 设计文档](docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md)
+- [自由学习模式教程链接自动拆解实施方案](docs/plans/2026-04-01-ai-coding-tutor-free-mode-material-plan-implementation.md)
+- [自由学习模式异步多模态实施计划](docs/plans/2026-04-08-ai-coding-tutor-material-plan-async-multimodal-implementation-plan.md)
+- [自由模式初始化学习任务现状说明](docs/plans/2026-05-21-free-mode-initial-learning-task-current-state.md)
+- [自学模式学习路径模板管理设计](docs/plans/2026-05-22-self-directed-template-management-design.md)
+- [管理后台设计文档](docs/plans/2026-03-31-ai-coding-tutor-admin-console-design.md)
+- [微信 Native 支付验收文档](docs/plans/2026-04-26-wechat-native-payment-acceptance.md)
 
 ## 当前目录中各文档职责
 
@@ -132,7 +132,7 @@
 
 1. 先补 `管理员后台后续能力 + analytics/notifications 的运营化深化`（用户运营、学习记录、Ai 管理、系统设置、analytics 事件写入、通知设置落库/站内提醒与管理后台消息中心已交付；重点转为权限与审计深化、AI 更深运营化，以及更深用户运营写能力），把运营与运维能力接上。
 2. 再继续做学习消息链路的运营化增强，优先落 `15.2 第二阶段`，例如不同工具/路径/交互类型的 agent 拆分与 prompt 版本化管理。
-   当前 AI 相关权威设计以 [AI Orchestration 设计文档](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准。
+   当前 AI 相关权威设计以 [AI Orchestration 设计文档](docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md) 为准。
    其中第一阶段已完成；文档里的 `15.2 第二阶段`、`15.3 第三阶段` 目前都还没有开始。
 3. 然后再进入 `15.3 第三阶段` 的 Ai 管理深水区能力，例如 prompt 版本化、灰度/回滚、成本与稳定性可视化配置。
 4. 最后再进入 `支付深化 + Redis/共享队列 + 更完整测试体系`。

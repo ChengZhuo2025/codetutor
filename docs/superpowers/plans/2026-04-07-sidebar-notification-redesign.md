@@ -73,7 +73,7 @@ notifications: dedupeNotifications(notifications.items),
 
 - [ ] **Step 3: 验证构建**
 
-Run: `cd /Users/baoyouhua/Documents/CodeTutor && pnpm build 2>&1 | tail -20`
+Run: `pnpm build 2>&1 | tail -20`
 Expected: 无 TypeScript 错误，构建成功
 
 - [ ] **Step 4: Commit**

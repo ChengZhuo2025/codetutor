@@ -68,7 +68,7 @@ COMMIT;
 -- 2. 点击 "Add user" 创建新用户
 -- 3. 输入以下信息：
 --    - Email: admin@test.local
---    - Password: Admin@123456
+--    - Password: Admin@123456  （仅用于本地开发测试，生产环境务必更换）
 --    - Auto Confirm User: 勾选
 -- 4. 创建后，复制该用户的 ID（UUID）
 -- 5. 替换上面 SQL 中的 v_test_user_id 值

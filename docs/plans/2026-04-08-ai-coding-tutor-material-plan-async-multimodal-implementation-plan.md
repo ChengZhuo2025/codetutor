@@ -48,7 +48,7 @@
 
 ## 执行约束
 
-- 不直接复制 `/Users/baoyouhua/Documents/OpenMAIC` 代码；只借鉴 provider 拆分、SSRF guard、JSON repair、proxy-media 思路。
+- 不直接复制 `../OpenMAIC` 代码；只借鉴 provider 拆分、SSRF guard、JSON repair、proxy-media 思路。
 - 平台来源只处理公开页面，不绕过登录、不抓私有内容。
 - 任何“支持平台”的实现都要先保留 `MATERIAL_UNSUPPORTED_SOURCE` 降级出口。
 - 没有把握稳定抽取正文/字幕时，优先保留 source metadata 和 warning，不伪造内容。
@@ -151,7 +151,7 @@ Expected: 远程连接成功，且迁移文件可被后续执行脚本识别。
 
 **Step 5: 回写数据库主文档**
 
-更新 [2026-03-23-ai-coding-tutor-database-schema-design.md](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-database-schema-design.md)：
+更新 [2026-03-23-ai-coding-tutor-database-schema-design.md](docs/plans/2026-03-23-ai-coding-tutor-database-schema-design.md)：
 
 - intake 状态机从同步三态扩为可观测多阶段
 - 新增 `learning_material_chunks`
@@ -225,7 +225,7 @@ Expected: 连接检查通过；新迁移与 `022` 顺序兼容。
 
 **Step 5: 更新数据库文档**
 
-将 draft/revision 语义同步到 [2026-03-23-ai-coding-tutor-database-schema-design.md](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-database-schema-design.md)。
+将 draft/revision 语义同步到 [2026-03-23-ai-coding-tutor-database-schema-design.md](docs/plans/2026-03-23-ai-coding-tutor-database-schema-design.md)。
 
 **Step 6: Commit**
 
@@ -765,7 +765,7 @@ payload 至少带：
 
 **Step 2: 完整回写 API 主文档**
 
-更新 [2026-03-23-ai-coding-tutor-api-spec.md](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-23-ai-coding-tutor-api-spec.md)：
+更新 [2026-03-23-ai-coding-tutor-api-spec.md](docs/plans/2026-03-23-ai-coding-tutor-api-spec.md)：
 
 - `POST /api/learning/plan-from-material` 从同步改为异步
 - 新增 `GET /api/learning/material-intakes/{id}`
@@ -775,7 +775,7 @@ payload 至少带：
 
 **Step 3: 回写 AI orchestration 主文档**
 
-更新 [2026-03-30-ai-coding-tutor-ai-orchestration-design.md](/Users/baoyouhua/Documents/CodeTutor/docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md)，明确：
+更新 [2026-03-30-ai-coding-tutor-ai-orchestration-design.md](docs/plans/2026-03-30-ai-coding-tutor-ai-orchestration-design.md)，明确：
 
 - 材料计划链路是独立于学习消息主链路的第二条 AI 编排线
 - intake-side provider 分为 planner / quality / ASR / vision 几类
@@ -785,7 +785,7 @@ payload 至少带：
 
 只有在代码已真正落地后，才更新：
 
-- [docs/plans/README.md](/Users/baoyouhua/Documents/CodeTutor/docs/plans/README.md)
+- [docs/plans/README.md](docs/plans/README.md)
 - `AGENTS.md`
 
 禁止把“计划中能力”写成“已实现”。

@@ -1,12 +1,15 @@
 .vercel/
 .worktrees/
-.superpowers/
-.vscode
+.vscode/
 .serena
 
 # Environment variables
 .env*.local
 .env
+
+# AI coding assistant local data
+.claude/
+.superpowers/
 
 # Common ignores
 node_modules
