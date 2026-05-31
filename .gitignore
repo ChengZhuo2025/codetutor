@@ -10,6 +10,7 @@
 # AI coding assistant local data
 .claude/
 .superpowers/
+.playwright-mcp/
 
 # Common ignores
 node_modules
