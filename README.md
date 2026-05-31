@@ -5,6 +5,7 @@
 ![React](https://img.shields.io/badge/React-19.2-149eca)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3fcf8e)
+[![CI](https://github.com/ChengZhuo2025/codetutor/actions/workflows/ci.yml/badge.svg)](https://github.com/ChengZhuo2025/codetutor/actions/workflows/ci.yml)
 
 **English** | [简体中文](README.zh-CN.md)
 
@@ -12,13 +13,48 @@ CodeTutor is an AI coding tutor for Chinese-speaking learners. It turns scattere
 
 The repository is a full-stack MVP built with Next.js App Router, Supabase, TypeScript, and an extensible AI provider layer. It includes the learner workspace, admin console, API route handlers, service modules, Supabase migrations, and product/architecture planning documents.
 
+## Screenshots
+
+| AI 学习对话 | 学习地图 | 成就系统 |
+|:---:|:---:|:---:|
+| ![AI Learning Chat](public/screenshots/learn-chat.png) | ![Learning Map](public/screenshots/map.png) | ![Achievements](public/screenshots/achievements.png) |
+| *流式 AI 对话 · 多模态素材 · TTS 朗读* | *学习路径可视化 · 进度追踪* | *每日签到 · 成就徽章 · 积分激励* |
+
+| 教程导入 | 管理后台 | API 文档 |
+|:---:|:---:|:---:|
+| ![Material Intake](public/screenshots/material-intake.png) | ![Admin Console](public/screenshots/admin.png) | ![API Docs](public/screenshots/api-docs.png) |
+| *粘贴链接 → AI 解析生成学习计划* | *用户/学习/AI/财务 全功能管理* | *Swagger UI 交互式 API 文档* |
+
+> 💡 截图文件请放置在 `public/screenshots/` 目录下。推荐分辨率：`1280×720`，格式：PNG 或 WebP。
+
 ## Why CodeTutor
 
-- **Learning by doing**: convert external tutorials and materials into executable learning plans.
-- **AI coaching loop**: stream AI replies, support task progression, and connect learning actions to credits and achievements.
-- **Operations-ready MVP**: includes admin views for users, learning paths, AI providers, site content, notifications, finance, feedback, and settings.
-- **Self-hostable foundation**: Supabase migrations and Next.js server modules are checked in so contributors can inspect and extend the full stack.
-- **Open source with network copyleft**: AGPL-3.0-only keeps modified network services open to their users.
+### 问题：学编程的"最后一公里"
+
+中文互联网不缺编程教程——B站、掘金、知乎、慕课网，到处是好内容。但**"看过"和"做成"之间有巨大的鸿沟**：
+
+- 📚 收藏了 100 个教程，真正跟完的不到 3 个
+- 🎯 不知道当前水平该学什么、按什么顺序学
+- 🤷 卡住了没人问，Google 半天也找不到对症的答案
+- 📉 学了就忘，没有追踪、没有反馈、没有成就感
+
+### 方案：不是"另一个看视频的平台"
+
+CodeTutor 不生产教程，它**把已有教程变成可执行的 AI 陪练计划**：
+
+1. **粘贴任意教程链接** → AI 自动解析内容，生成带关卡的学习计划
+2. **AI 教练实时陪练** → 流式对话、追问解释、检查代码、拆解下一步任务
+3. **让进步看得见** → 学习地图可视化、每日签到、成就徽章、积分体系
+4. **自部署、可扩展** → AGPL-3.0 开源，Supabase + Next.js 全栈，AI 供应商可替换
+
+### 适合谁
+
+| 角色 | 使用场景 |
+|------|---------|
+| 🧑‍💻 编程学习者 | 把散乱教程转化为有反馈、有追踪的 AI 陪练学习 |
+| 👨‍🏫 培训机构/老师 | 自部署学员管理系统，AI 辅助教学 |
+| 🏗️ 开发者 | 学习 Next.js 16 全栈实战架构、AI provider 抽象设计 |
+| 🔬 研究者 | 二次开发学习行为分析、AI 教学效果评估 |
 
 ## Current Status
 
